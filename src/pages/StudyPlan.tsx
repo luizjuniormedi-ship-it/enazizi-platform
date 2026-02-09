@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check, FileDown, Bell, BellOff } from "lucide-react";
+import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check, FileDown, Bell, BellOff, GripVertical } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +61,8 @@ const StudyPlan = () => {
   const [showConfig, setShowConfig] = useState(false);
   const [editingTask, setEditingTask] = useState<{ day: number; task: number } | null>(null);
   const [editValues, setEditValues] = useState<Task>({ time: "", subject: "", duration: "" });
+  const [dragSource, setDragSource] = useState<{ day: number; task: number } | null>(null);
+  const [dragOver, setDragOver] = useState<{ day: number; task: number } | null>(null);
 
   // Load existing plan
   useEffect(() => {
@@ -232,6 +234,56 @@ const StudyPlan = () => {
     setEditingTask(null);
     await savePlan(updated);
     toast({ title: "Bloco atualizado!" });
+  };
+
+  const handleDragStart = (dayIndex: number, taskIndex: number, e: React.DragEvent) => {
+    setDragSource({ day: dayIndex, task: taskIndex });
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", `${dayIndex}-${taskIndex}`);
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = "0.5";
+    }
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = "1";
+    }
+    setDragSource(null);
+    setDragOver(null);
+  };
+
+  const handleDragOver = (dayIndex: number, taskIndex: number, e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOver({ day: dayIndex, task: taskIndex });
+  };
+
+  const handleDragOverDay = (dayIndex: number, e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const daySchedule = schedule[dayIndex];
+    setDragOver({ day: dayIndex, task: daySchedule.tasks.length });
+  };
+
+  const handleDrop = async (targetDay: number, targetTask: number, e: React.DragEvent) => {
+    e.preventDefault();
+    if (!dragSource) return;
+
+    const updated = schedule.map((d) => ({ ...d, tasks: [...d.tasks] }));
+    const [removed] = updated[dragSource.day].tasks.splice(dragSource.task, 1);
+
+    // Adjust target index if moving within same day and source was before target
+    let adjustedTarget = targetTask;
+    if (dragSource.day === targetDay && dragSource.task < targetTask) {
+      adjustedTarget--;
+    }
+
+    updated[targetDay].tasks.splice(adjustedTarget, 0, removed);
+    setSchedule(updated);
+    setDragSource(null);
+    setDragOver(null);
+    await savePlan(updated);
   };
 
   const daysUntilExam = examDate ? Math.ceil((examDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
@@ -434,11 +486,17 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
       {schedule.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {schedule.map((day, dayIndex) => (
-            <div key={day.day} className="glass-card p-5">
+            <div
+              key={day.day}
+              className="glass-card p-5"
+              onDragOver={(e) => handleDragOverDay(dayIndex, e)}
+              onDrop={(e) => handleDrop(dayIndex, schedule[dayIndex].tasks.length, e)}
+            >
               <h3 className="font-semibold text-primary mb-3">{day.day}</h3>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {day.tasks.map((task, taskIndex) => {
                   const isEditing = editingTask?.day === dayIndex && editingTask?.task === taskIndex;
+                  const isDragTarget = dragOver?.day === dayIndex && dragOver?.task === taskIndex;
                   return isEditing ? (
                     <div key={taskIndex} className={`p-3 rounded-lg bg-secondary/50 space-y-2 ${typeColor(task.type)}`}>
                       <div className="grid grid-cols-2 gap-2">
@@ -471,17 +529,26 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
                       </div>
                     </div>
                   ) : (
-                    <div key={taskIndex} className={`flex gap-3 items-start p-3 rounded-lg bg-secondary/50 ${typeColor(task.type)}`}>
+                    <div
+                      key={taskIndex}
+                      draggable
+                      onDragStart={(e) => handleDragStart(dayIndex, taskIndex, e)}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={(e) => handleDragOver(dayIndex, taskIndex, e)}
+                      onDrop={(e) => { e.stopPropagation(); handleDrop(dayIndex, taskIndex, e); }}
+                      className={`flex gap-2 items-start p-3 rounded-lg bg-secondary/50 cursor-grab active:cursor-grabbing transition-all ${typeColor(task.type)} ${isDragTarget ? "ring-2 ring-primary/50 ring-offset-1" : ""}`}
+                    >
+                      <GripVertical className="h-4 w-4 text-muted-foreground/50 mt-0.5 flex-shrink-0" />
                       <Clock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                      <div className="flex-1">
-                        <div className="text-sm font-medium">{task.subject}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{task.subject}</div>
                         <div className="text-xs text-muted-foreground">{task.time} • {task.duration}</div>
                       </div>
                       <button aria-label="Editar bloco" title="Editar" onClick={() => startEdit(dayIndex, taskIndex)} className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
-                        <Pencil className="h-4.5 w-4.5" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button aria-label="Remover bloco" title="Remover" onClick={() => removeTask(dayIndex, taskIndex)} className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
-                        <Trash2 className="h-4.5 w-4.5" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   );
