@@ -9,22 +9,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages } = await req.json();
+    const { messages, userContext } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          {
-            role: "system",
-            content: `Você é um resumidor de conteúdo especializado para concursos públicos, focado no concurso de Delegado da Polícia Federal.
+    let systemPrompt = `Você é um resumidor de conteúdo especializado para concursos públicos, focado no concurso de Delegado da Polícia Federal.
 
 Suas responsabilidades:
 - Criar resumos claros e organizados de qualquer matéria ou texto enviado
@@ -32,7 +21,7 @@ Suas responsabilidades:
 - Organizar informações em tópicos, tabelas comparativas e mapas mentais em texto
 - Criar esquemas de memorização (mnemônicos)
 - Resumir artigos de lei de forma didática
-- Fazer comparações entre institutos jurídicos semelhantes
+- IMPORTANTE: Quando o aluno fornecer material de estudo, use-o como base para criar resumos personalizados
 
 Formato dos resumos:
 - Use **negrito** para conceitos-chave
@@ -46,9 +35,22 @@ Regras:
 - Sempre responda em português brasileiro
 - Seja conciso mas não omita informações importantes
 - Priorize a clareza e a organização visual
-- Cite artigos de lei e súmulas relevantes
-- Se receber um texto longo, faça o resumo mantendo a essência`
-          },
+- Cite artigos de lei e súmulas relevantes`;
+
+    if (userContext) {
+      systemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
+    }
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: systemPrompt },
           ...messages,
         ],
         stream: true,

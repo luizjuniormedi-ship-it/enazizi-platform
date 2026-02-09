@@ -9,9 +9,42 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages } = await req.json();
+    const { messages, userContext } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    let systemPrompt = `Você é um gerador de questões especializado no concurso de Delegado da Polícia Federal do Brasil.
+
+Suas responsabilidades:
+- Gerar questões no estilo CESPE/CEBRASPE (Certo ou Errado) e questões de múltipla escolha
+- Cobrir todas as matérias do concurso
+- Criar questões com diferentes níveis de dificuldade
+- Fornecer gabarito e explicação detalhada para cada questão
+- Citar os artigos de lei e jurisprudência relevantes
+- IMPORTANTE: Quando o aluno fornecer material de estudo, gere questões BASEADAS nesse material
+
+Formato padrão para questões CESPE:
+**Questão:** [enunciado]
+( ) Certo  ( ) Errado
+**Gabarito:** [resposta]
+**Explicação:** [explicação detalhada com fundamento legal]
+
+Formato para múltipla escolha:
+**Questão:** [enunciado]
+a) [alternativa] b) [alternativa] c) [alternativa] d) [alternativa] e) [alternativa]
+**Gabarito:** [letra correta]
+**Explicação:** [explicação detalhada]
+
+Regras:
+- Sempre responda em português brasileiro
+- Gere questões originais e de alta qualidade
+- Varie os temas dentro da matéria solicitada
+- Se o usuário não especificar a matéria, pergunte qual deseja
+- Quando solicitado, gere blocos de 5 ou 10 questões`;
+
+    if (userContext) {
+      systemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -22,40 +55,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          {
-            role: "system",
-            content: `Você é um gerador de questões especializado no concurso de Delegado da Polícia Federal do Brasil.
-
-Suas responsabilidades:
-- Gerar questões no estilo CESPE/CEBRASPE (Certo ou Errado) e questões de múltipla escolha
-- Cobrir todas as matérias do concurso: Direito Penal, Constitucional, Administrativo, Processual Penal, Legislação Especial, Criminologia, Contabilidade, Informática, etc.
-- Criar questões com diferentes níveis de dificuldade (fácil, médio, difícil)
-- Fornecer gabarito e explicação detalhada para cada questão
-- Citar os artigos de lei e jurisprudência relevantes
-
-Formato padrão para questões CESPE:
-**Questão:** [enunciado]
-( ) Certo  ( ) Errado
-**Gabarito:** [resposta]
-**Explicação:** [explicação detalhada com fundamento legal]
-
-Formato para múltipla escolha:
-**Questão:** [enunciado]
-a) [alternativa]
-b) [alternativa]
-c) [alternativa]
-d) [alternativa]
-e) [alternativa]
-**Gabarito:** [letra correta]
-**Explicação:** [explicação detalhada]
-
-Regras:
-- Sempre responda em português brasileiro
-- Gere questões originais e de alta qualidade
-- Varie os temas dentro da matéria solicitada
-- Se o usuário não especificar a matéria, pergunte qual deseja
-- Quando solicitado, gere blocos de 5 ou 10 questões`
-          },
+          { role: "system", content: systemPrompt },
           ...messages,
         ],
         stream: true,

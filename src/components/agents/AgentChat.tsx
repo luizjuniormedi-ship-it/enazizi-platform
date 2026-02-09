@@ -34,10 +34,37 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functio
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [userContext, setUserContext] = useState<string>("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`;
+
+  // Load user uploads as context (RAG simplificado)
+  useEffect(() => {
+    if (!user) return;
+    const loadUploads = async () => {
+      const { data } = await supabase
+        .from("uploads")
+        .select("filename, extracted_text, category")
+        .eq("user_id", user.id)
+        .eq("status", "processed")
+        .not("extracted_text", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (data && data.length > 0) {
+        // Limit total context to ~8000 chars to stay within token limits
+        let ctx = "";
+        for (const upload of data) {
+          const snippet = upload.extracted_text?.slice(0, 2000) || "";
+          if (ctx.length + snippet.length > 8000) break;
+          ctx += `\n\n📄 ${upload.filename} (${upload.category || "material"}):\n${snippet}`;
+        }
+        setUserContext(ctx.trim());
+      }
+    };
+    loadUploads();
+  }, [user]);
 
   // Load conversation list
   const loadConversations = useCallback(async () => {
@@ -135,6 +162,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functio
         },
         body: JSON.stringify({
           messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
+          userContext: userContext || undefined,
         }),
       });
 
