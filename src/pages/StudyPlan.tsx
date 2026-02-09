@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check, FileDown, Bell, BellOff, GripVertical } from "lucide-react";
+import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check, FileDown, Bell, BellOff, GripVertical, CheckCircle2, Circle } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +63,8 @@ const StudyPlan = () => {
   const [editValues, setEditValues] = useState<Task>({ time: "", subject: "", duration: "" });
   const [dragSource, setDragSource] = useState<{ day: number; task: number } | null>(null);
   const [dragOver, setDragOver] = useState<{ day: number; task: number } | null>(null);
+  const [completedKeys, setCompletedKeys] = useState<Set<string>>(new Set());
+  const [completedTaskIds, setCompletedTaskIds] = useState<Record<string, string>>({});
 
   // Load existing plan
   useEffect(() => {
@@ -86,6 +88,28 @@ const StudyPlan = () => {
           if (plan.config.examDate) setExamDate(new Date(plan.config.examDate));
           setHoursPerDay(String(plan.config.hoursPerDay || 4));
           setDaysPerWeek(String(plan.config.daysPerWeek || 5));
+        }
+
+        // Load completed tasks for this plan
+        const { data: tasksData } = await supabase
+          .from("study_tasks")
+          .select("id, task_json, completed")
+          .eq("user_id", user.id)
+          .eq("study_plan_id", data.id)
+          .eq("completed", true);
+
+        if (tasksData) {
+          const keys = new Set<string>();
+          const idMap: Record<string, string> = {};
+          for (const t of tasksData) {
+            const tj = t.task_json as any;
+            if (tj?.key) {
+              keys.add(tj.key);
+              idMap[tj.key] = t.id;
+            }
+          }
+          setCompletedKeys(keys);
+          setCompletedTaskIds(idMap);
         }
       } else {
         setShowConfig(true);
@@ -207,6 +231,41 @@ const StudyPlan = () => {
       await supabase.from("study_plans").update({
         plan_json: JSON.parse(JSON.stringify({ weeklySchedule: updatedSchedule, subjects, tips, config: { examDate: examDate?.toISOString() || "", hoursPerDay: Number(hoursPerDay), daysPerWeek: Number(daysPerWeek), hasEdital: !!editalText } })),
       }).eq("id", planId);
+    }
+  };
+
+  const taskKey = (dayIndex: number, taskIndex: number) => {
+    const day = schedule[dayIndex];
+    const task = day.tasks[taskIndex];
+    return `${day.day}-${task.time}-${task.subject}`;
+  };
+
+  const toggleComplete = async (dayIndex: number, taskIndex: number) => {
+    if (!user || !planId) return;
+    const key = taskKey(dayIndex, taskIndex);
+    const task = schedule[dayIndex].tasks[taskIndex];
+    const isCompleted = completedKeys.has(key);
+
+    if (isCompleted) {
+      // Uncomplete
+      const taskId = completedTaskIds[key];
+      if (taskId) {
+        await supabase.from("study_tasks").delete().eq("id", taskId);
+      }
+      setCompletedKeys((prev) => { const next = new Set(prev); next.delete(key); return next; });
+      setCompletedTaskIds((prev) => { const next = { ...prev }; delete next[key]; return next; });
+    } else {
+      // Complete
+      const { data } = await supabase.from("study_tasks").insert({
+        user_id: user.id,
+        study_plan_id: planId,
+        completed: true,
+        task_json: { key, subject: task.subject, duration: task.duration, time: task.time, day: schedule[dayIndex].day },
+      }).select("id").single();
+      if (data) {
+        setCompletedKeys((prev) => new Set(prev).add(key));
+        setCompletedTaskIds((prev) => ({ ...prev, [key]: data.id }));
+      }
     }
   };
 
@@ -492,11 +551,18 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
               onDragOver={(e) => handleDragOverDay(dayIndex, e)}
               onDrop={(e) => handleDrop(dayIndex, schedule[dayIndex].tasks.length, e)}
             >
-              <h3 className="font-semibold text-primary mb-3">{day.day}</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-primary">{day.day}</h3>
+                <span className="text-xs text-muted-foreground">
+                  {day.tasks.filter((t) => completedKeys.has(`${day.day}-${t.time}-${t.subject}`)).length}/{day.tasks.length}
+                </span>
+              </div>
               <div className="space-y-2">
                 {day.tasks.map((task, taskIndex) => {
                   const isEditing = editingTask?.day === dayIndex && editingTask?.task === taskIndex;
                   const isDragTarget = dragOver?.day === dayIndex && dragOver?.task === taskIndex;
+                  const key = `${day.day}-${task.time}-${task.subject}`;
+                  const isCompleted = completedKeys.has(key);
                   return isEditing ? (
                     <div key={taskIndex} className={`p-3 rounded-lg bg-secondary/50 space-y-2 ${typeColor(task.type)}`}>
                       <div className="grid grid-cols-2 gap-2">
@@ -536,12 +602,22 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
                       onDragEnd={handleDragEnd}
                       onDragOver={(e) => handleDragOver(dayIndex, taskIndex, e)}
                       onDrop={(e) => { e.stopPropagation(); handleDrop(dayIndex, taskIndex, e); }}
-                      className={`flex gap-2 items-start p-3 rounded-lg bg-secondary/50 cursor-grab active:cursor-grabbing transition-all ${typeColor(task.type)} ${isDragTarget ? "ring-2 ring-primary/50 ring-offset-1" : ""}`}
+                      className={`flex gap-2 items-start p-3 rounded-lg transition-all cursor-grab active:cursor-grabbing ${typeColor(task.type)} ${isDragTarget ? "ring-2 ring-primary/50 ring-offset-1" : ""} ${isCompleted ? "bg-primary/5 opacity-75" : "bg-secondary/50"}`}
                     >
+                      <button
+                        aria-label={isCompleted ? "Desmarcar como concluído" : "Marcar como concluído"}
+                        title={isCompleted ? "Desmarcar" : "Concluir"}
+                        onClick={() => toggleComplete(dayIndex, taskIndex)}
+                        className="mt-0.5 flex-shrink-0 transition-colors"
+                      >
+                        {isCompleted
+                          ? <CheckCircle2 className="h-4 w-4 text-primary" />
+                          : <Circle className="h-4 w-4 text-muted-foreground/50 hover:text-primary" />
+                        }
+                      </button>
                       <GripVertical className="h-4 w-4 text-muted-foreground/50 mt-0.5 flex-shrink-0" />
-                      <Clock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{task.subject}</div>
+                        <div className={`text-sm font-medium truncate ${isCompleted ? "line-through text-muted-foreground" : ""}`}>{task.subject}</div>
                         <div className="text-xs text-muted-foreground">{task.time} • {task.duration}</div>
                       </div>
                       <button aria-label="Editar bloco" title="Editar" onClick={() => startEdit(dayIndex, taskIndex)} className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
