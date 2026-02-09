@@ -14,12 +14,20 @@ export interface ParsedQuestion {
 export function parseQuestionsFromText(text: string): ParsedQuestion[] {
   const questions: ParsedQuestion[] = [];
 
-  // Split by numbered question markers: "Questão 01", "**Questão 1:**", etc.
-  // Use lookahead so each block starts with its marker.
-  const parts = text.split(/(?=\*{0,2}Questão\s*\d+\s*:?\s*\*{0,2})/gi).filter((b) => b.trim());
+  // Try splitting by numbered questions first: "Questão 01", "Questão 1", etc.
+  let parts = text.split(/(?=\*{0,2}Questão\s+\d+\s*:?\s*\*{0,2})/gi).filter((b) => b.trim());
+
+  // If that yields only 1 block, try splitting by Tópico markers
+  if (parts.length <= 1) {
+    parts = text.split(/(?=\*{0,2}Tópico\s*:)/gi).filter((b) => b.trim());
+  }
+
+  // If still 1 block, try splitting by standalone "Questão:" (without number)
+  if (parts.length <= 1) {
+    parts = text.split(/(?=\*{0,2}Questão\s*:\s*\*{0,2})/gi).filter((b) => b.trim());
+  }
 
   for (const part of parts) {
-    // Must contain answer options to be a real question block
     if (!/\(\s*\)\s*certo/i.test(part) && !/^[a-e]\)\s/im.test(part)) continue;
     try {
       const q = parseBlock(part.trim());
@@ -33,9 +41,8 @@ export function parseQuestionsFromText(text: string): ParsedQuestion[] {
 }
 
 function parseBlock(block: string): ParsedQuestion | null {
-  // Extract topic — many formats:
-  // Tópico: X / **Tópico:** X / Tópico: [X] / **Tópico:** [X]
-  const topicMatch = block.match(/\*{0,2}Tópico\s*:?\s*\*{0,2}\s*\[?\s*([^\]\n]+?)\s*\]?\s*(?:\n|$)/i);
+  // Extract topic: Tópico: X / **Tópico:** X / Tópico: [X]
+  const topicMatch = block.match(/\*{0,2}Tópico\s*:?\s*\*{0,2}\s*\[?\s*([^\]\n]+?)\s*\]?\s*(?=Questão|$|\n)/i);
   let topic: string | undefined;
   if (topicMatch) {
     const raw = topicMatch[1].trim().replace(/\*+/g, "");
@@ -57,7 +64,6 @@ function parseBlock(block: string): ParsedQuestion | null {
 
   if (isCespe) {
     let statement = block.split(/\(\s*\)\s*certo/i)[0].trim();
-    // Clean: remove header lines (Questão X, Tópico, Questão:)
     statement = cleanStatement(statement);
     if (!statement) return null;
 
@@ -83,10 +89,9 @@ function parseBlock(block: string): ParsedQuestion | null {
   return null;
 }
 
-/** Remove header lines (Questão N, Tópico, Questão:) from statement text */
 function cleanStatement(text: string): string {
   return text
     .replace(/\*{0,2}Questão\s*\d*\s*:?\s*\*{0,2}\s*/gi, "")
-    .replace(/\*{0,2}Tópico\s*:?\s*\*{0,2}\s*\[?[^\]\n]*\]?\s*/gi, "")
+    .replace(/\*{0,2}Tópico\s*:?\s*\*{0,2}\s*\[?[^\]\n]*?\]?\s*/gi, "")
     .trim();
 }
