@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -11,7 +11,9 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -19,16 +21,19 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) throw new Error("Unauthorized");
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const userId = claimsData.claims.sub as string;
 
     const { examDate, hoursPerDay, daysPerWeek, editalText, currentPlanId } = await req.json();
 
     if (!examDate || !hoursPerDay || !daysPerWeek) {
-      throw new Error("Missing required fields: examDate, hoursPerDay, daysPerWeek");
+      return new Response(JSON.stringify({ error: "Missing required fields: examDate, hoursPerDay, daysPerWeek" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const today = new Date().toISOString().split("T")[0];
     const daysUntilExam = Math.ceil((new Date(examDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
     const prompt = `Você é um especialista em planejamento de estudos para concursos públicos brasileiros.
@@ -77,9 +82,11 @@ Regras:
 
     if (!aiResp.ok) {
       const status = aiResp.status;
+      const errText = await aiResp.text();
+      console.error("AI gateway error:", status, errText);
       if (status === 429) return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em instantes." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       if (status === 402) return new Response(JSON.stringify({ error: "Créditos insuficientes." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      throw new Error(`AI error: ${status}`);
+      return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const aiData = await aiResp.json();
@@ -91,12 +98,13 @@ Regras:
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
       planJson = JSON.parse(jsonMatch?.[0] || raw);
     } catch {
-      throw new Error("Failed to parse AI response");
+      console.error("Failed to parse AI response:", raw);
+      return new Response(JSON.stringify({ error: "Falha ao processar resposta da IA" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Save to DB
     const planData = {
-      user_id: user.id,
+      user_id: userId,
       plan_json: {
         ...planJson,
         config: { examDate, hoursPerDay, daysPerWeek, hasEdital: !!editalText },
@@ -110,7 +118,7 @@ Regras:
         .from("study_plans")
         .update({ plan_json: planData.plan_json })
         .eq("id", currentPlanId)
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .select()
         .single();
       if (error) throw error;
@@ -130,7 +138,7 @@ Regras:
     });
   } catch (e) {
     console.error("generate-study-plan error:", e);
-    return new Response(JSON.stringify({ error: e.message }), {
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
