@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Brain, LayoutDashboard, CalendarDays, FlipVertical,
-  FileText, Upload, MessageSquare, BarChart3, Settings, LogOut, Shield
+  FileText, Upload, MessageSquare, BarChart3, Settings, LogOut, Shield, User
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -54,7 +54,18 @@ const DashboardSidebar = () => {
             </Link>
           );
         })}
-        <div className="pt-4 border-t border-sidebar-border mt-4">
+        <div className="pt-4 border-t border-sidebar-border mt-4 space-y-1">
+          <Link
+            to="/dashboard/perfil"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              location.pathname === "/dashboard/perfil"
+                ? "bg-sidebar-accent text-sidebar-primary"
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+            }`}
+          >
+            <User className="h-4 w-4" />
+            Meu Perfil
+          </Link>
           <Link
             to="/admin"
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
