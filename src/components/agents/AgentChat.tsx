@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, User, Loader2, Plus, History, Trash2 } from "lucide-react";
+import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +14,13 @@ interface Conversation {
   id: string;
   title: string;
   created_at: string;
+}
+
+interface Upload {
+  id: string;
+  filename: string;
+  category: string | null;
+  extracted_text: string | null;
 }
 
 interface AgentChatProps {
@@ -34,37 +42,64 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functio
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
-  const [userContext, setUserContext] = useState<string>("");
+  const [availableUploads, setAvailableUploads] = useState<Upload[]>([]);
+  const [selectedUploadIds, setSelectedUploadIds] = useState<Set<string>>(new Set());
+  const [showUploads, setShowUploads] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`;
 
-  // Load user uploads as context (RAG simplificado)
+  // Load user uploads
   useEffect(() => {
     if (!user) return;
     const loadUploads = async () => {
       const { data } = await supabase
         .from("uploads")
-        .select("filename, extracted_text, category")
+        .select("id, filename, extracted_text, category")
         .eq("user_id", user.id)
         .eq("status", "processed")
         .not("extracted_text", "is", null)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(20);
       if (data && data.length > 0) {
-        // Limit total context to ~8000 chars to stay within token limits
-        let ctx = "";
-        for (const upload of data) {
-          const snippet = upload.extracted_text?.slice(0, 2000) || "";
-          if (ctx.length + snippet.length > 8000) break;
-          ctx += `\n\n📄 ${upload.filename} (${upload.category || "material"}):\n${snippet}`;
-        }
-        setUserContext(ctx.trim());
+        setAvailableUploads(data);
+        // Select all by default
+        setSelectedUploadIds(new Set(data.map((u) => u.id)));
       }
     };
     loadUploads();
   }, [user]);
+
+  // Build context from selected uploads
+  const buildUserContext = useCallback(() => {
+    if (selectedUploadIds.size === 0) return "";
+    let ctx = "";
+    for (const upload of availableUploads) {
+      if (!selectedUploadIds.has(upload.id)) continue;
+      const snippet = upload.extracted_text?.slice(0, 2000) || "";
+      if (ctx.length + snippet.length > 8000) break;
+      ctx += `\n\n📄 ${upload.filename} (${upload.category || "material"}):\n${snippet}`;
+    }
+    return ctx.trim();
+  }, [availableUploads, selectedUploadIds]);
+
+  const toggleUpload = (id: string) => {
+    setSelectedUploadIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selectedUploadIds.size === availableUploads.length) {
+      setSelectedUploadIds(new Set());
+    } else {
+      setSelectedUploadIds(new Set(availableUploads.map((u) => u.id)));
+    }
+  };
 
   // Load conversation list
   const loadConversations = useCallback(async () => {
@@ -81,7 +116,6 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functio
 
   useEffect(() => { loadConversations(); }, [loadConversations]);
 
-  // Load messages for a conversation
   const loadConversation = async (convId: string) => {
     const { data } = await supabase
       .from("chat_messages")
@@ -123,7 +157,6 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functio
     setInput("");
     setIsLoading(true);
 
-    // Create or reuse conversation
     let convId = activeConversationId;
     if (!convId) {
       const convTitle = input.slice(0, 60);
@@ -135,23 +168,21 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functio
       if (newConv) {
         convId = newConv.id;
         setActiveConversationId(convId);
-        // Save welcome message
         await supabase.from("chat_messages").insert({
           conversation_id: convId, user_id: user.id, role: "assistant", content: welcomeMessage,
         });
       }
     }
 
-    // Save user message
     if (convId) {
       await supabase.from("chat_messages").insert({
         conversation_id: convId, user_id: user.id, role: "user", content: input,
       });
-      // Update conversation title & timestamp
       await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
     }
 
     let assistantSoFar = "";
+    const contextToSend = buildUserContext();
 
     try {
       const resp = await fetch(CHAT_URL, {
@@ -162,7 +193,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functio
         },
         body: JSON.stringify({
           messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
-          userContext: userContext || undefined,
+          userContext: contextToSend || undefined,
         }),
       });
 
@@ -217,7 +248,6 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functio
         }
       }
 
-      // Flush remaining buffer
       if (textBuffer.trim()) {
         for (let raw of textBuffer.split("\n")) {
           if (!raw) continue;
@@ -237,7 +267,6 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functio
         }
       }
 
-      // Save assistant response
       if (convId && assistantSoFar) {
         await supabase.from("chat_messages").insert({
           conversation_id: convId, user_id: user.id, role: "assistant", content: assistantSoFar,
@@ -251,6 +280,9 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functio
       setIsLoading(false);
     }
   };
+
+  const selectedCount = selectedUploadIds.size;
+  const totalUploads = availableUploads.length;
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] animate-fade-in">
@@ -270,6 +302,65 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functio
             <History className="h-4 w-4" /> Histórico
           </Button>
         </div>
+      </div>
+
+      {/* Context indicator */}
+      <div className="mb-3">
+        <button
+          onClick={() => totalUploads > 0 && setShowUploads(!showUploads)}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors w-full ${
+            totalUploads > 0
+              ? selectedCount > 0
+                ? "bg-primary/10 text-primary hover:bg-primary/15"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+              : "bg-muted text-muted-foreground"
+          }`}
+        >
+          <FileText className="h-3.5 w-3.5 flex-shrink-0" />
+          {totalUploads === 0 ? (
+            <span>Nenhum material disponível — faça upload para enriquecer as respostas</span>
+          ) : (
+            <>
+              <span>{selectedCount} de {totalUploads} {totalUploads === 1 ? "material" : "materiais"} como contexto</span>
+              <ChevronDown className={`h-3.5 w-3.5 ml-auto transition-transform ${showUploads ? "rotate-180" : ""}`} />
+            </>
+          )}
+        </button>
+
+        {showUploads && totalUploads > 0 && (
+          <div className="glass-card p-3 mt-2 max-h-40 overflow-y-auto space-y-1">
+            <button
+              onClick={toggleAll}
+              className="flex items-center gap-2 px-2 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors w-full"
+            >
+              <Checkbox
+                checked={selectedCount === totalUploads}
+                className="h-3.5 w-3.5"
+                onCheckedChange={toggleAll}
+              />
+              {selectedCount === totalUploads ? "Desmarcar todos" : "Selecionar todos"}
+            </button>
+            {availableUploads.map((u) => (
+              <label
+                key={u.id}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-secondary cursor-pointer text-xs"
+              >
+                <Checkbox
+                  checked={selectedUploadIds.has(u.id)}
+                  onCheckedChange={() => toggleUpload(u.id)}
+                  className="h-3.5 w-3.5"
+                />
+                <FileText className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                <span className="truncate">{u.filename}</span>
+                {u.category && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground flex-shrink-0">
+                    {u.category}
+                  </span>
+                )}
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
       {showHistory && (
