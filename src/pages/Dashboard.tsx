@@ -195,54 +195,35 @@ const Dashboard = () => {
             : "Bem-vindo de volta! Aqui está seu progresso."}
       </p>
 
-      {/* Warning Messages */}
+      {/* Warning Messages — FORCE ALL FOR PREVIEW */}
       {(() => {
-        const warnings: { title: string; message: string; severity: "red" | "orange" | "yellow" }[] = [];
-
-        // No tasks completed today but there are tasks scheduled
-        if (stats.todayTotal > 0 && stats.todayCompleted === 0) {
-          warnings.push({
+        const warnings: { title: string; message: string; severity: "red" | "orange" | "yellow" }[] = [
+          {
             title: "Você ainda não estudou hoje!",
             message: "O dia está passando e você não concluiu nenhum bloco do cronograma. Cada dia sem estudar é um dia mais longe do seu sonho. Bora começar agora!",
             severity: "red",
-          });
-        }
-
-        // Less than 50% of today's tasks done and it's past 6pm
-        if (stats.todayTotal > 0 && stats.todayCompleted > 0 && stats.todayCompleted < stats.todayTotal * 0.5 && new Date().getHours() >= 18) {
-          warnings.push({
+          },
+          {
             title: "Seu progresso de hoje está baixo",
-            message: `Você completou apenas ${stats.todayCompleted} de ${stats.todayTotal} blocos. O dia já está acabando — aproveite o tempo que resta!`,
+            message: "Você completou apenas 2 de 8 blocos. O dia já está acabando — aproveite o tempo que resta!",
             severity: "orange",
-          });
-        }
-
-        // Overall task completion below 30%
-        if (stats.totalTasks > 10 && taskPercent < 30) {
-          warnings.push({
+          },
+          {
             title: "Seu cronograma está ficando para trás!",
-            message: `Apenas ${taskPercent}% das suas tarefas foram concluídas. Se você não seguir o plano, não vai realizar seu sonho de aprovação. Retome o foco agora!`,
+            message: "Apenas 18% das suas tarefas foram concluídas. Se você não seguir o plano, não vai realizar seu sonho de aprovação. Retome o foco agora!",
             severity: "red",
-          });
-        }
-
-        // Streak is 0
-        if (stats.streak === 0 && stats.totalTasks > 0) {
-          warnings.push({
+          },
+          {
             title: "Sua sequência de estudos zerou!",
             message: "Você perdeu sua sequência de dias consecutivos. Grandes aprovações exigem constância. Comece uma nova sequência hoje mesmo!",
             severity: "orange",
-          });
-        }
-
-        // Exam is close and progress is low
-        if (stats.daysUntilExam !== null && stats.daysUntilExam <= 30 && taskPercent < 60) {
-          warnings.push({
+          },
+          {
             title: "⚠️ Faltam poucos dias para a prova!",
-            message: `Restam apenas ${stats.daysUntilExam} dias e você só completou ${taskPercent}% do cronograma. Intensifique seus estudos agora ou vai ficar difícil alcançar seu objetivo!`,
+            message: "Restam apenas 12 dias e você só completou 18% do cronograma. Intensifique seus estudos agora ou vai ficar difícil alcançar seu objetivo!",
             severity: "red",
-          });
-        }
+          },
+        ];
 
         if (warnings.length === 0) return null;
 
