@@ -85,6 +85,7 @@ Regras:
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
       }),
     });
 
@@ -98,16 +99,34 @@ Regras:
     }
 
     const aiData = await aiResp.json();
+    console.log("AI response structure:", JSON.stringify(Object.keys(aiData)));
     const raw = aiData.choices?.[0]?.message?.content || "";
+    console.log("AI raw content length:", raw.length, "preview:", raw.substring(0, 200));
     
     // Extract JSON from response
     let planJson;
     try {
-      const jsonMatch = raw.match(/\{[\s\S]*\}/);
-      planJson = JSON.parse(jsonMatch?.[0] || raw);
+      // Try direct parse first
+      planJson = JSON.parse(raw);
     } catch {
-      console.error("Failed to parse AI response:", raw);
-      return new Response(JSON.stringify({ error: "Falha ao processar resposta da IA" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      try {
+        // Try extracting from markdown code blocks
+        const codeBlockMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (codeBlockMatch) {
+          planJson = JSON.parse(codeBlockMatch[1].trim());
+        } else {
+          // Try extracting any JSON object
+          const jsonMatch = raw.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            planJson = JSON.parse(jsonMatch[0]);
+          } else {
+            throw new Error("No JSON found in response");
+          }
+        }
+      } catch (parseErr) {
+        console.error("Failed to parse AI response:", raw);
+        return new Response(JSON.stringify({ error: "Falha ao processar resposta da IA. Tente novamente." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
 
     // Save to DB
