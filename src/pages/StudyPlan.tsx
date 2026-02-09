@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap } from "lucide-react";
+import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -241,10 +241,27 @@ const StudyPlan = () => {
               : "Configure seu plano de estudos personalizado."}
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setShowConfig(!showConfig)}>
-          <Settings2 className="h-4 w-4 mr-2" />
-          Configurar
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowConfig(!showConfig)}>
+            <Settings2 className="h-4 w-4 mr-2" />
+            Configurar
+          </Button>
+          <Button size="sm" onClick={() => {
+            setPlanId(null);
+            setSchedule([]);
+            setSubjects([]);
+            setTips("");
+            setExamDate(undefined);
+            setHoursPerDay("4");
+            setDaysPerWeek("5");
+            setEditalText("");
+            setEditalFileName("");
+            setShowConfig(true);
+          }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Cronograma
+          </Button>
+        </div>
       </div>
 
       {/* Config Panel */}
