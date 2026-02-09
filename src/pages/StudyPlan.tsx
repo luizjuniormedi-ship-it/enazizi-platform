@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check, FileDown } from "lucide-react";
+import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check, FileDown, Bell, BellOff } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useStudyReminders } from "@/hooks/useStudyReminders";
 
 interface Task {
   time: string;
@@ -52,6 +53,7 @@ const StudyPlan = () => {
   // Plan state
   const [planId, setPlanId] = useState<string | null>(null);
   const [schedule, setSchedule] = useState<DaySchedule[]>([]);
+  const reminders = useStudyReminders(schedule);
   const [subjects, setSubjects] = useState<string[]>([]);
   const [tips, setTips] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -286,10 +288,16 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
         </div>
         <div className="flex gap-2">
           {schedule.length > 0 && (
-            <Button variant="outline" size="sm" onClick={handleExportPDF}>
-              <FileDown className="h-4 w-4 mr-2" />
-              Exportar PDF
-            </Button>
+            <>
+              <Button variant={reminders.enabled ? "default" : "outline"} size="sm" onClick={reminders.toggle}>
+                {reminders.enabled ? <Bell className="h-4 w-4 mr-2" /> : <BellOff className="h-4 w-4 mr-2" />}
+                {reminders.enabled ? "Lembretes On" : "Lembretes"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportPDF}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
+            </>
           )}
           <Button variant="outline" size="sm" onClick={() => setShowConfig(!showConfig)}>
             <Settings2 className="h-4 w-4 mr-2" />
