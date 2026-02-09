@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Brain, LayoutDashboard, CalendarDays, FlipVertical,
   FileText, Upload, MessageSquare, BarChart3, LogOut, Shield, User,
-  HelpCircle, BookOpen, Heart, Bot
+  HelpCircle, BookOpen, Heart, Bot, Database
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -15,6 +15,7 @@ const navItems = [
   { to: "/dashboard/agentes", icon: Bot, label: "Agentes IA" },
   { to: "/dashboard/mentor", icon: MessageSquare, label: "Mentor IA" },
   { to: "/dashboard/questoes", icon: HelpCircle, label: "Gerador de Questões" },
+  { to: "/dashboard/banco-questoes", icon: Database, label: "Banco de Questões" },
   { to: "/dashboard/resumos", icon: BookOpen, label: "Resumidor" },
   { to: "/dashboard/coach", icon: Heart, label: "Coach Motivacional" },
   { to: "/dashboard/analytics", icon: BarChart3, label: "Analytics" },

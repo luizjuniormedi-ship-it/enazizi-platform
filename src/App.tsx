@@ -15,6 +15,7 @@ import Simulados from "./pages/Simulados";
 import Uploads from "./pages/Uploads";
 import AIMentor from "./pages/AIMentor";
 import QuestionGenerator from "./pages/QuestionGenerator";
+import QuestionsBank from "./pages/QuestionsBank";
 import ContentSummarizer from "./pages/ContentSummarizer";
 import MotivationalCoach from "./pages/MotivationalCoach";
 import AgentsHub from "./pages/AgentsHub";
@@ -46,6 +47,7 @@ const App = () => (
               <Route path="agentes" element={<AgentsHub />} />
               <Route path="mentor" element={<AIMentor />} />
               <Route path="questoes" element={<QuestionGenerator />} />
+              <Route path="banco-questoes" element={<QuestionsBank />} />
               <Route path="resumos" element={<ContentSummarizer />} />
               <Route path="coach" element={<MotivationalCoach />} />
               <Route path="analytics" element={<Analytics />} />
