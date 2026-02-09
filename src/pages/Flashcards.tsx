@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
-import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Check, X, Loader2 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface Flashcard {
   id: string;
@@ -11,33 +12,109 @@ interface Flashcard {
   topic: string | null;
 }
 
+interface Review {
+  id: string;
+  flashcard_id: string;
+  interval_days: number;
+  next_review: string;
+}
+
+const INTERVALS = [1, 3, 7, 14, 30];
+
 const Flashcards = () => {
-  const [cards, setCards] = useState<Flashcard[]>([]);
+  const [allCards, setAllCards] = useState<Flashcard[]>([]);
+  const [dueCards, setDueCards] = useState<Flashcard[]>([]);
+  const [reviews, setReviews] = useState<Map<string, Review>>(new Map());
   const [loading, setLoading] = useState(true);
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  const [mode, setMode] = useState<"due" | "all">("due");
   const { user } = useAuth();
+  const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchCards = async () => {
-      if (!user) return;
-      const { data, error } = await supabase
-        .from("flashcards")
-        .select("id, question, answer, topic")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-      if (!error && data) setCards(data);
-      setLoading(false);
-    };
-    fetchCards();
+  const fetchData = useCallback(async () => {
+    if (!user) return;
+    const [cardsRes, reviewsRes] = await Promise.all([
+      supabase.from("flashcards").select("id, question, answer, topic").eq("user_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("reviews").select("id, flashcard_id, interval_days, next_review").eq("user_id", user.id),
+    ]);
+
+    const cards = cardsRes.data || [];
+    setAllCards(cards);
+
+    const reviewMap = new Map<string, Review>();
+    (reviewsRes.data || []).forEach((r) => reviewMap.set(r.flashcard_id, r));
+    setReviews(reviewMap);
+
+    const now = new Date().toISOString();
+    const due = cards.filter((c) => {
+      const review = reviewMap.get(c.id);
+      return !review || review.next_review <= now;
+    });
+    setDueCards(due);
+    setLoading(false);
   }, [user]);
 
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const currentCards = mode === "due" ? dueCards : allCards;
+  const card = currentCards[idx];
+
+  const handleReview = async (quality: "again" | "good" | "easy") => {
+    if (!user || !card) return;
+
+    const existing = reviews.get(card.id);
+    const currentInterval = existing?.interval_days || 0;
+
+    let newInterval: number;
+    if (quality === "again") {
+      newInterval = 1;
+    } else if (quality === "good") {
+      const currentIdx = INTERVALS.indexOf(currentInterval);
+      newInterval = INTERVALS[Math.min(currentIdx + 1, INTERVALS.length - 1)] || INTERVALS[1];
+    } else {
+      // easy - skip ahead
+      const currentIdx = INTERVALS.indexOf(currentInterval);
+      newInterval = INTERVALS[Math.min(currentIdx + 2, INTERVALS.length - 1)] || INTERVALS[INTERVALS.length - 1];
+    }
+
+    const nextReview = new Date();
+    nextReview.setDate(nextReview.getDate() + newInterval);
+
+    if (existing) {
+      await supabase.from("reviews").update({
+        interval_days: newInterval,
+        next_review: nextReview.toISOString(),
+      }).eq("id", existing.id);
+    } else {
+      await supabase.from("reviews").insert({
+        user_id: user.id,
+        flashcard_id: card.id,
+        interval_days: newInterval,
+        next_review: nextReview.toISOString(),
+      });
+    }
+
+    // Remove from due list
+    if (mode === "due") {
+      const newDue = dueCards.filter((c) => c.id !== card.id);
+      setDueCards(newDue);
+      setIdx(Math.min(idx, Math.max(0, newDue.length - 1)));
+    } else {
+      setIdx(Math.min(idx + 1, currentCards.length - 1));
+    }
+    setFlipped(false);
+
+    const labels = { again: "Revisar amanhã", good: `Próxima em ${newInterval} dias`, easy: `Próxima em ${newInterval} dias` };
+    toast({ title: labels[quality] });
+  };
+
   const handleDelete = async () => {
-    if (!cards[idx]) return;
-    await supabase.from("flashcards").delete().eq("id", cards[idx].id);
-    const newCards = cards.filter((_, i) => i !== idx);
-    setCards(newCards);
-    setIdx(Math.min(idx, newCards.length - 1));
+    if (!card) return;
+    await supabase.from("flashcards").delete().eq("id", card.id);
+    setAllCards((prev) => prev.filter((c) => c.id !== card.id));
+    setDueCards((prev) => prev.filter((c) => c.id !== card.id));
+    setIdx(Math.min(idx, Math.max(0, currentCards.length - 2)));
     setFlipped(false);
   };
 
@@ -49,7 +126,7 @@ const Flashcards = () => {
     );
   }
 
-  if (cards.length === 0) {
+  if (allCards.length === 0) {
     return (
       <div className="space-y-8 animate-fade-in">
         <div>
@@ -68,58 +145,110 @@ const Flashcards = () => {
     );
   }
 
-  const card = cards[idx];
-  const topics = [...new Set(cards.map(c => c.topic).filter(Boolean))];
+  const reviewedCount = allCards.length - dueCards.length;
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <FlipVertical className="h-6 w-6 text-primary" />
-          Flashcards
-        </h1>
-        <p className="text-muted-foreground">
-          {cards.length} flashcards • {topics.length} tópicos
-        </p>
-      </div>
-
-      <div className="flex items-center justify-center">
-        <div
-          className="glass-card w-full max-w-2xl min-h-[320px] p-8 cursor-pointer flex flex-col items-center justify-center text-center relative group hover:border-primary/30 transition-all"
-          onClick={() => setFlipped(!flipped)}
-        >
-          <div className="absolute top-4 left-4 text-xs text-primary/70 font-medium px-2 py-1 rounded-md bg-primary/10">
-            {card.topic || "Geral"}
-          </div>
-          <div className="absolute top-4 right-4 text-xs text-muted-foreground">
-            {idx + 1}/{cards.length} • Clique para virar
-          </div>
-          <div className="text-xs uppercase tracking-wider text-primary mb-4 font-semibold">
-            {flipped ? "Resposta" : "Pergunta"}
-          </div>
-          <p className="text-lg leading-relaxed">
-            {flipped ? card.answer : card.question}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <FlipVertical className="h-6 w-6 text-primary" />
+            Flashcards
+          </h1>
+          <p className="text-muted-foreground">
+            {allCards.length} total • {dueCards.length} para revisar hoje • {reviewedCount} em dia
           </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant={mode === "due" ? "default" : "outline"} size="sm" onClick={() => { setMode("due"); setIdx(0); setFlipped(false); }}>
+            <Brain className="h-4 w-4 mr-2" />
+            Revisão ({dueCards.length})
+          </Button>
+          <Button variant={mode === "all" ? "default" : "outline"} size="sm" onClick={() => { setMode("all"); setIdx(0); setFlipped(false); }}>
+            Todos ({allCards.length})
+          </Button>
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => { setIdx(Math.max(0, idx - 1)); setFlipped(false); }} disabled={idx === 0}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <Button variant="outline" size="icon" onClick={() => setFlipped(false)}>
-          <RotateCcw className="h-4 w-4" />
-        </Button>
-        <Button variant="destructive" size="icon" title="Remover" onClick={handleDelete}>
-          <X className="h-4 w-4" />
-        </Button>
-        <Button size="icon" className="bg-success hover:bg-success/90" title="Próximo" onClick={() => { setIdx(Math.min(cards.length - 1, idx + 1)); setFlipped(false); }} disabled={idx === cards.length - 1}>
-          <Check className="h-4 w-4" />
-        </Button>
-        <Button variant="outline" size="icon" onClick={() => { setIdx(Math.min(cards.length - 1, idx + 1)); setFlipped(false); }} disabled={idx === cards.length - 1}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+      {/* Stats bar */}
+      <div className="grid grid-cols-5 gap-2">
+        {INTERVALS.map((interval) => {
+          const count = Array.from(reviews.values()).filter((r) => r.interval_days === interval).length;
+          return (
+            <div key={interval} className="glass-card p-3 text-center">
+              <div className="text-lg font-bold text-primary">{count}</div>
+              <div className="text-xs text-muted-foreground">{interval}d</div>
+            </div>
+          );
+        })}
       </div>
+
+      {currentCards.length === 0 ? (
+        <div className="glass-card p-12 text-center">
+          <CalendarDays className="h-12 w-12 text-primary/30 mx-auto mb-4" />
+          <p className="text-lg font-medium mb-2">Tudo em dia! 🎉</p>
+          <p className="text-sm text-muted-foreground">Nenhum flashcard para revisar agora. Volte mais tarde.</p>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-center">
+            <div
+              className="glass-card w-full max-w-2xl min-h-[320px] p-8 cursor-pointer flex flex-col items-center justify-center text-center relative group hover:border-primary/30 transition-all"
+              onClick={() => setFlipped(!flipped)}
+            >
+              <div className="absolute top-4 left-4 text-xs text-primary/70 font-medium px-2 py-1 rounded-md bg-primary/10">
+                {card.topic || "Geral"}
+              </div>
+              <div className="absolute top-4 right-4 text-xs text-muted-foreground">
+                {idx + 1}/{currentCards.length} • Clique para virar
+              </div>
+              {reviews.get(card.id) && (
+                <div className="absolute bottom-4 left-4 text-xs text-muted-foreground flex items-center gap-1">
+                  <CalendarDays className="h-3 w-3" />
+                  Intervalo: {reviews.get(card.id)!.interval_days}d
+                </div>
+              )}
+              <div className="text-xs uppercase tracking-wider text-primary mb-4 font-semibold">
+                {flipped ? "Resposta" : "Pergunta"}
+              </div>
+              <p className="text-lg leading-relaxed">
+                {flipped ? card.answer : card.question}
+              </p>
+            </div>
+          </div>
+
+          {/* Controls */}
+          {flipped ? (
+            <div className="flex items-center justify-center gap-3">
+              <Button variant="destructive" onClick={() => handleReview("again")} className="min-w-[100px]">
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Errei (1d)
+              </Button>
+              <Button variant="outline" onClick={() => handleReview("good")} className="min-w-[100px]">
+                Bom
+              </Button>
+              <Button className="bg-success hover:bg-success/90 min-w-[100px]" onClick={() => handleReview("easy")}>
+                Fácil
+              </Button>
+              <Button variant="ghost" size="icon" title="Remover" onClick={handleDelete}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-4">
+              <Button variant="outline" size="icon" onClick={() => { setIdx(Math.max(0, idx - 1)); setFlipped(false); }} disabled={idx === 0}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="default" onClick={() => setFlipped(true)}>
+                Mostrar resposta
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => { setIdx(Math.min(currentCards.length - 1, idx + 1)); setFlipped(false); }} disabled={idx === currentCards.length - 1}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };
