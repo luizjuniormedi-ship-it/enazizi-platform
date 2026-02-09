@@ -1,7 +1,8 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Brain, LayoutDashboard, CalendarDays, FlipVertical,
-  FileText, Upload, MessageSquare, BarChart3, Settings, LogOut, Shield, User
+  FileText, Upload, MessageSquare, BarChart3, LogOut, Shield, User,
+  HelpCircle, BookOpen, Heart
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -12,6 +13,9 @@ const navItems = [
   { to: "/dashboard/simulados", icon: FileText, label: "Simulados" },
   { to: "/dashboard/uploads", icon: Upload, label: "Uploads" },
   { to: "/dashboard/mentor", icon: MessageSquare, label: "Mentor IA" },
+  { to: "/dashboard/questoes", icon: HelpCircle, label: "Gerador de Questões" },
+  { to: "/dashboard/resumos", icon: BookOpen, label: "Resumidor" },
+  { to: "/dashboard/coach", icon: Heart, label: "Coach Motivacional" },
   { to: "/dashboard/analytics", icon: BarChart3, label: "Analytics" },
 ];
 
