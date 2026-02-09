@@ -31,6 +31,10 @@ export function parseQuestionsFromText(text: string): ParsedQuestion[] {
 }
 
 function parseBlock(block: string): ParsedQuestion | null {
+  // Extract topic
+  const topicMatch = block.match(/\*{0,2}Tópico\s*:?\s*\*{0,2}\s*(.+)/i);
+  const topic = topicMatch?.[1]?.trim().replace(/\*+/g, "") || undefined;
+
   // Extract explanation — supports **Explicação:** and Explicação:
   const explMatch = block.match(/\*{0,2}Explicação\s*:?\s*\*{0,2}\s*([\s\S]*?)$/i);
   const explanation = explMatch?.[1]?.trim().replace(/^\*{1,2}\s*/, "") || "";
@@ -43,24 +47,22 @@ function parseBlock(block: string): ParsedQuestion | null {
   const isCespe = /\(\s*\)\s*certo\s*\(\s*\)\s*errado/i.test(block);
 
   if (isCespe) {
-    const statement = block.split(/\(\s*\)\s*certo/i)[0].trim();
+    let statement = block.split(/\(\s*\)\s*certo/i)[0].trim();
+    // Remove topic line from statement
+    statement = statement.replace(/\*{0,2}Tópico\s*:?\s*\*{0,2}\s*.+\n?/i, "").trim();
     if (!statement) return null;
 
     const correctIndex = gabText.includes("certo") ? 0 : 1;
 
-    return {
-      statement,
-      options: ["Certo", "Errado"],
-      correctIndex,
-      explanation,
-    };
+    return { statement, options: ["Certo", "Errado"], correctIndex, explanation, topic };
   }
 
   // Multiple choice
   const optionMatches = block.match(/^[a-e]\)\s*.+/gim);
   if (optionMatches && optionMatches.length >= 2) {
     const firstOptIdx = block.search(/^[a-e]\)\s*/im);
-    const statement = block.slice(0, firstOptIdx).trim();
+    let statement = block.slice(0, firstOptIdx).trim();
+    statement = statement.replace(/\*{0,2}Tópico\s*:?\s*\*{0,2}\s*.+\n?/i, "").trim();
     const options = optionMatches.map((o) => o.replace(/^[a-e]\)\s*/i, "").trim());
 
     const letterMatch = gabText.match(/([a-e])/i);
@@ -68,7 +70,7 @@ function parseBlock(block: string): ParsedQuestion | null {
 
     if (!statement) return null;
 
-    return { statement, options, correctIndex, explanation };
+    return { statement, options, correctIndex, explanation, topic };
   }
 
   return null;
