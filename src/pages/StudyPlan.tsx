@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus } from "lucide-react";
+import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,8 @@ const StudyPlan = () => {
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showConfig, setShowConfig] = useState(false);
+  const [editingTask, setEditingTask] = useState<{ day: number; task: number } | null>(null);
+  const [editValues, setEditValues] = useState<Task>({ time: "", subject: "", duration: "" });
 
   // Load existing plan
   useEffect(() => {
@@ -196,17 +198,38 @@ const StudyPlan = () => {
     }
   };
 
+  const savePlan = async (updatedSchedule: DaySchedule[]) => {
+    if (planId) {
+      await supabase.from("study_plans").update({
+        plan_json: JSON.parse(JSON.stringify({ weeklySchedule: updatedSchedule, subjects, tips, config: { examDate: examDate?.toISOString() || "", hoursPerDay: Number(hoursPerDay), daysPerWeek: Number(daysPerWeek), hasEdital: !!editalText } })),
+      }).eq("id", planId);
+    }
+  };
+
   const removeTask = async (dayIndex: number, taskIndex: number) => {
     const updated = schedule.map((day, di) => {
       if (di !== dayIndex) return day;
       return { ...day, tasks: day.tasks.filter((_, ti) => ti !== taskIndex) };
     });
     setSchedule(updated);
-    if (planId) {
-      await supabase.from("study_plans").update({
-        plan_json: JSON.parse(JSON.stringify({ weeklySchedule: updated, subjects, tips, config: { examDate: examDate?.toISOString() || "", hoursPerDay: Number(hoursPerDay), daysPerWeek: Number(daysPerWeek), hasEdital: !!editalText } })),
-      }).eq("id", planId);
-    }
+    await savePlan(updated);
+  };
+
+  const startEdit = (dayIndex: number, taskIndex: number) => {
+    setEditingTask({ day: dayIndex, task: taskIndex });
+    setEditValues({ ...schedule[dayIndex].tasks[taskIndex] });
+  };
+
+  const saveEdit = async () => {
+    if (!editingTask) return;
+    const updated = schedule.map((day, di) => {
+      if (di !== editingTask.day) return day;
+      return { ...day, tasks: day.tasks.map((t, ti) => ti === editingTask.task ? { ...t, ...editValues } : t) };
+    });
+    setSchedule(updated);
+    setEditingTask(null);
+    await savePlan(updated);
+    toast({ title: "Bloco atualizado!" });
   };
 
   const daysUntilExam = examDate ? Math.ceil((examDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
@@ -380,18 +403,55 @@ const StudyPlan = () => {
             <div key={day.day} className="glass-card p-5">
               <h3 className="font-semibold text-primary mb-3">{day.day}</h3>
               <div className="space-y-3">
-                {day.tasks.map((task, taskIndex) => (
-                  <div key={taskIndex} className={`flex gap-3 items-start p-3 rounded-lg bg-secondary/50 ${typeColor(task.type)}`}>
-                    <Clock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">{task.subject}</div>
-                      <div className="text-xs text-muted-foreground">{task.time} • {task.duration}</div>
+                {day.tasks.map((task, taskIndex) => {
+                  const isEditing = editingTask?.day === dayIndex && editingTask?.task === taskIndex;
+                  return isEditing ? (
+                    <div key={taskIndex} className={`p-3 rounded-lg bg-secondary/50 space-y-2 ${typeColor(task.type)}`}>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          value={editValues.time}
+                          onChange={(e) => setEditValues(v => ({ ...v, time: e.target.value }))}
+                          placeholder="08:00"
+                          className="h-8 text-xs"
+                        />
+                        <Input
+                          value={editValues.duration}
+                          onChange={(e) => setEditValues(v => ({ ...v, duration: e.target.value }))}
+                          placeholder="2h"
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <Input
+                        value={editValues.subject}
+                        onChange={(e) => setEditValues(v => ({ ...v, subject: e.target.value }))}
+                        placeholder="Matéria"
+                        className="h-8 text-xs"
+                      />
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingTask(null)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="default" size="icon" className="h-7 w-7" onClick={saveEdit}>
+                          <Check className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
-                    <button onClick={() => removeTask(dayIndex, taskIndex)} className="text-muted-foreground hover:text-destructive transition-colors">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
+                  ) : (
+                    <div key={taskIndex} className={`flex gap-3 items-start p-3 rounded-lg bg-secondary/50 ${typeColor(task.type)}`}>
+                      <Clock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{task.subject}</div>
+                        <div className="text-xs text-muted-foreground">{task.time} • {task.duration}</div>
+                      </div>
+                      <button onClick={() => startEdit(dayIndex, taskIndex)} className="text-muted-foreground hover:text-primary transition-colors">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button onClick={() => removeTask(dayIndex, taskIndex)} className="text-muted-foreground hover:text-destructive transition-colors">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))}
