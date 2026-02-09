@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check } from "lucide-react";
+import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check, FileDown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -234,6 +234,26 @@ const StudyPlan = () => {
 
   const daysUntilExam = examDate ? Math.ceil((examDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
 
+  const handleExportPDF = () => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+
+    const rows = schedule.flatMap((day) =>
+      day.tasks.map((t) => `<tr><td>${day.day}</td><td>${t.time}</td><td>${t.subject}</td><td>${t.duration}</td><td>${t.type === "revisao" ? "Revisão" : t.type === "simulado" ? "Simulado" : "Estudo"}</td></tr>`)
+    ).join("");
+
+    printWindow.document.write(`<!DOCTYPE html><html><head><title>Cronograma de Estudos</title>
+<style>body{font-family:system-ui,sans-serif;padding:40px;color:#1a1a1a}h1{font-size:22px;margin-bottom:4px}p{color:#666;margin-bottom:20px;font-size:14px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px 12px;text-align:left;font-size:13px}th{background:#f5f5f5;font-weight:600}tr:nth-child(even){background:#fafafa}.tip{margin-top:20px;padding:12px;background:#f0f9ff;border-left:4px solid #3b82f6;font-size:13px;border-radius:4px}.subjects{margin-top:16px;font-size:13px}.subjects span{display:inline-block;background:#e0e7ff;color:#3730a3;padding:2px 10px;border-radius:12px;margin:2px 4px;font-size:12px}</style></head><body>
+<h1>📅 Cronograma de Estudos</h1>
+<p>${daysUntilExam && daysUntilExam > 0 ? `${daysUntilExam} dias até a prova • ${hoursPerDay}h/dia • ${daysPerWeek} dias/semana` : ""}</p>
+<table><thead><tr><th>Dia</th><th>Horário</th><th>Matéria</th><th>Duração</th><th>Tipo</th></tr></thead><tbody>${rows}</tbody></table>
+${tips ? `<div class="tip">💡 ${tips}</div>` : ""}
+${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${subjects.map(s => `<span>${s}</span>`).join("")}</div>` : ""}
+</body></html>`);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
   const typeColor = (type?: string) => {
     switch (type) {
       case "revisao": return "border-l-4 border-l-accent";
@@ -265,6 +285,12 @@ const StudyPlan = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          {schedule.length > 0 && (
+            <Button variant="outline" size="sm" onClick={handleExportPDF}>
+              <FileDown className="h-4 w-4 mr-2" />
+              Exportar PDF
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => setShowConfig(!showConfig)}>
             <Settings2 className="h-4 w-4 mr-2" />
             Configurar
