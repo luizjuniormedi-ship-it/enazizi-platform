@@ -16,6 +16,7 @@ import Uploads from "./pages/Uploads";
 import AIMentor from "./pages/AIMentor";
 import Analytics from "./pages/Analytics";
 import Admin from "./pages/Admin";
+import Profile from "./pages/Profile";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="uploads" element={<Uploads />} />
               <Route path="mentor" element={<AIMentor />} />
               <Route path="analytics" element={<Analytics />} />
+              <Route path="perfil" element={<Profile />} />
             </Route>
             <Route path="/admin" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
               <Route index element={<Admin />} />
