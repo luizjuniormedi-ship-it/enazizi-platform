@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
-import { Database, Filter, Play, Trash2, ChevronDown, ChevronUp, Search } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { Database, Play, Trash2, ChevronDown, ChevronUp, Search, BarChart3, Target, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +18,13 @@ interface Question {
   topic: string | null;
   source: string | null;
   created_at: string;
+}
+
+interface TopicStat {
+  topic: string;
+  total: number;
+  correct: number;
+  rate: number;
 }
 
 function parseOptions(raw: Json | null): string[] {
@@ -34,6 +42,11 @@ const QuestionsBank = () => {
   const [topicFilter, setTopicFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
 
+  // Stats
+  const [topicStats, setTopicStats] = useState<TopicStat[]>([]);
+  const [globalStats, setGlobalStats] = useState({ total: 0, correct: 0 });
+  const [showStats, setShowStats] = useState(true);
+
   // Practice mode
   const [practicing, setPracticing] = useState(false);
   const [practiceIdx, setPracticeIdx] = useState(0);
@@ -43,6 +56,48 @@ const QuestionsBank = () => {
 
   // Expanded explanations
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const loadStats = useCallback(async () => {
+    if (!user) return;
+    // Fetch attempts joined with question topic
+    const { data } = await supabase
+      .from("practice_attempts")
+      .select("correct, question_id, questions_bank(topic)")
+      .eq("user_id", user.id);
+
+    if (!data || data.length === 0) {
+      setTopicStats([]);
+      setGlobalStats({ total: 0, correct: 0 });
+      return;
+    }
+
+    let totalAll = 0;
+    let correctAll = 0;
+    const map = new Map<string, { total: number; correct: number }>();
+
+    for (const row of data) {
+      totalAll++;
+      if (row.correct) correctAll++;
+
+      const topic = (row.questions_bank as any)?.topic || "Sem tópico";
+      const entry = map.get(topic) || { total: 0, correct: 0 };
+      entry.total++;
+      if (row.correct) entry.correct++;
+      map.set(topic, entry);
+    }
+
+    setGlobalStats({ total: totalAll, correct: correctAll });
+    setTopicStats(
+      Array.from(map.entries())
+        .map(([topic, s]) => ({
+          topic,
+          total: s.total,
+          correct: s.correct,
+          rate: Math.round((s.correct / s.total) * 100),
+        }))
+        .sort((a, b) => b.total - a.total)
+    );
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -67,7 +122,8 @@ const QuestionsBank = () => {
       setLoading(false);
     };
     load();
-  }, [user]);
+    loadStats();
+  }, [user, loadStats]);
 
   const topics = useMemo(() => {
     const set = new Set(questions.map((q) => q.topic).filter(Boolean) as string[]);
@@ -106,21 +162,30 @@ const QuestionsBank = () => {
 
   const practiceQuestion = filtered[practiceIdx];
 
-  const confirmAnswer = () => {
-    if (selected === null) return;
+  const confirmAnswer = async () => {
+    if (selected === null || !user || !practiceQuestion) return;
+    const isCorrect = selected === practiceQuestion.correct_index;
     setAnswered(true);
     setScore((s) => ({
-      correct: s.correct + (selected === practiceQuestion.correct_index ? 1 : 0),
+      correct: s.correct + (isCorrect ? 1 : 0),
       total: s.total + 1,
     }));
+
+    // Save attempt to DB
+    await supabase.from("practice_attempts").insert({
+      user_id: user.id,
+      question_id: practiceQuestion.id,
+      correct: isCorrect,
+    });
   };
 
   const nextQuestion = () => {
     if (practiceIdx + 1 >= filtered.length) {
       setPracticing(false);
+      loadStats(); // Refresh stats after practice
       toast({
         title: "Prática finalizada!",
-        description: `Você acertou ${score.correct + (selected === practiceQuestion.correct_index ? 1 : 0)} de ${score.total + 1} questões.`,
+        description: `Você acertou ${score.correct + (selected === practiceQuestion?.correct_index ? 1 : 0)} de ${score.total + 1} questões.`,
       });
       return;
     }
@@ -129,6 +194,8 @@ const QuestionsBank = () => {
     setAnswered(false);
   };
 
+  const globalRate = globalStats.total > 0 ? Math.round((globalStats.correct / globalStats.total) * 100) : 0;
+
   if (practicing && practiceQuestion) {
     return (
       <div className="space-y-6 animate-fade-in max-w-3xl">
@@ -136,7 +203,7 @@ const QuestionsBank = () => {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Play className="h-6 w-6 text-primary" /> Modo Prática
           </h1>
-          <Button variant="outline" size="sm" onClick={() => setPracticing(false)}>
+          <Button variant="outline" size="sm" onClick={() => { setPracticing(false); loadStats(); }}>
             Voltar ao Banco
           </Button>
         </div>
@@ -210,10 +277,77 @@ const QuestionsBank = () => {
             {questions.length} questão(ões) salva(s) no total
           </p>
         </div>
-        <Button onClick={startPractice} disabled={filtered.length === 0} className="gap-2">
-          <Play className="h-4 w-4" /> Praticar ({filtered.length})
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowStats(!showStats)} className="gap-1.5">
+            <BarChart3 className="h-4 w-4" /> Estatísticas
+          </Button>
+          <Button onClick={startPractice} disabled={filtered.length === 0} className="gap-2">
+            <Play className="h-4 w-4" /> Praticar ({filtered.length})
+          </Button>
+        </div>
       </div>
+
+      {/* Stats Panel */}
+      {showStats && globalStats.total > 0 && (
+        <div className="space-y-4">
+          {/* Global stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="glass-card p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Target className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{globalStats.total}</p>
+                <p className="text-xs text-muted-foreground">Questões respondidas</p>
+              </div>
+            </div>
+            <div className="glass-card p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-green-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{globalStats.correct}</p>
+                <p className="text-xs text-muted-foreground">Acertos</p>
+              </div>
+            </div>
+            <div className="glass-card p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                <BarChart3 className="h-5 w-5 text-accent" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{globalRate}%</p>
+                <p className="text-xs text-muted-foreground">Taxa de acerto</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Per-topic stats */}
+          {topicStats.length > 0 && (
+            <div className="glass-card p-4">
+              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-primary" />
+                Desempenho por Tópico
+              </h3>
+              <div className="space-y-3">
+                {topicStats.map((s) => (
+                  <div key={s.topic}>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span className="font-medium truncate mr-2">{s.topic}</span>
+                      <span className="text-muted-foreground flex-shrink-0">
+                        {s.correct}/{s.total} ({s.rate}%)
+                      </span>
+                    </div>
+                    <Progress
+                      value={s.rate}
+                      className="h-2"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
