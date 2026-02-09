@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check } from "lucide-react";
+import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -30,9 +30,10 @@ interface AgentChatProps {
   welcomeMessage: string;
   placeholder: string;
   functionName: string;
+  onSaveMessage?: (content: string) => Promise<number>;
 }
 
-const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functionName }: AgentChatProps) => {
+const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functionName, onSaveMessage }: AgentChatProps) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([
     { role: "assistant", content: welcomeMessage },
@@ -45,6 +46,8 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functio
   const [availableUploads, setAvailableUploads] = useState<Upload[]>([]);
   const [selectedUploadIds, setSelectedUploadIds] = useState<Set<string>>(new Set());
   const [showUploads, setShowUploads] = useState(false);
+  const [savingMsgIdx, setSavingMsgIdx] = useState<number | null>(null);
+  const [savedMsgIdxs, setSavedMsgIdxs] = useState<Set<number>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -281,6 +284,20 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functio
     }
   };
 
+  const handleSaveMessage = async (idx: number, content: string) => {
+    if (!onSaveMessage || savingMsgIdx !== null) return;
+    setSavingMsgIdx(idx);
+    try {
+      const count = await onSaveMessage(content);
+      setSavedMsgIdxs((prev) => new Set(prev).add(idx));
+      toast({ title: "Salvo!", description: `${count} questão(ões) salva(s) no seu banco.` });
+    } catch (e) {
+      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao salvar questões.", variant: "destructive" });
+    } finally {
+      setSavingMsgIdx(null);
+    }
+  };
+
   const selectedCount = selectedUploadIds.size;
   const totalUploads = availableUploads.length;
 
@@ -410,6 +427,25 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functio
                 </div>
               ) : (
                 <span className="whitespace-pre-wrap">{msg.content}</span>
+              )}
+              {msg.role === "assistant" && onSaveMessage && i > 0 && !isLoading && (
+                <div className="mt-2 pt-2 border-t border-border/50">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs gap-1.5"
+                    disabled={savingMsgIdx === i || savedMsgIdxs.has(i)}
+                    onClick={() => handleSaveMessage(i, msg.content)}
+                  >
+                    {savedMsgIdxs.has(i) ? (
+                      <><Check className="h-3.5 w-3.5 text-green-500" /> Salvo</>
+                    ) : savingMsgIdx === i ? (
+                      <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Salvando...</>
+                    ) : (
+                      <><Save className="h-3.5 w-3.5" /> Salvar questões</>
+                    )}
+                  </Button>
+                </div>
               )}
             </div>
             {msg.role === "user" && (
