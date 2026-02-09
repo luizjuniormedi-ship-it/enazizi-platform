@@ -92,6 +92,7 @@ function parseBlock(block: string): ParsedQuestion | null {
 function cleanStatement(text: string): string {
   return text
     .replace(/\*{0,2}Questão\s*\d*\s*:?\s*\*{0,2}\s*/gi, "")
-    .replace(/\*{0,2}Tópico\s*:?\s*\*{0,2}\s*\[?[^\]\n]*?\]?\s*/gi, "")
+    .replace(/\*{0,2}Tópico\s*:?\s*\*{0,2}\s*\[[^\]]*\]\s*/gi, "")
+    .replace(/\*{0,2}Tópico\s*:?\s*\*{0,2}\s*[^\n(]{1,80}(?=\s)/i, "")
     .trim();
 }
