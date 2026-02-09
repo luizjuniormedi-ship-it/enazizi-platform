@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Brain, LayoutDashboard, CalendarDays, FlipVertical,
   FileText, Upload, MessageSquare, BarChart3, LogOut, Shield, User,
-  HelpCircle, BookOpen, Heart
+  HelpCircle, BookOpen, Heart, Bot
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -12,6 +12,7 @@ const navItems = [
   { to: "/dashboard/flashcards", icon: FlipVertical, label: "Flashcards" },
   { to: "/dashboard/simulados", icon: FileText, label: "Simulados" },
   { to: "/dashboard/uploads", icon: Upload, label: "Uploads" },
+  { to: "/dashboard/agentes", icon: Bot, label: "Agentes IA" },
   { to: "/dashboard/mentor", icon: MessageSquare, label: "Mentor IA" },
   { to: "/dashboard/questoes", icon: HelpCircle, label: "Gerador de Questões" },
   { to: "/dashboard/resumos", icon: BookOpen, label: "Resumidor" },

@@ -1,4 +1,4 @@
-import { CalendarDays, FlipVertical, FileText, Upload, TrendingUp, Clock, BookOpen, CheckCircle2, Loader2, BarChart3, Flame, CalendarCheck, AlertTriangle, XCircle } from "lucide-react";
+import { CalendarDays, FlipVertical, FileText, Upload, TrendingUp, Clock, BookOpen, CheckCircle2, Loader2, BarChart3, Flame, CalendarCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import DashboardWarnings from "@/components/dashboard/DashboardWarnings";
 
 interface PlanJson {
   weeklySchedule?: { day: string; tasks: { time: string; subject: string; duration: string; type?: string }[] }[];
@@ -195,56 +195,14 @@ const Dashboard = () => {
             : "Bem-vindo de volta! Aqui está seu progresso."}
       </p>
 
-      {/* Warning Messages — FORCE ALL FOR PREVIEW */}
-      {(() => {
-        const warnings: { title: string; message: string; severity: "red" | "orange" | "yellow" }[] = [
-          {
-            title: "Você ainda não estudou hoje!",
-            message: "O dia está passando e você não concluiu nenhum bloco do cronograma. Cada dia sem estudar é um dia mais longe do seu sonho. Bora começar agora!",
-            severity: "red",
-          },
-          {
-            title: "Seu progresso de hoje está baixo",
-            message: "Você completou apenas 2 de 8 blocos. O dia já está acabando — aproveite o tempo que resta!",
-            severity: "orange",
-          },
-          {
-            title: "Seu cronograma está ficando para trás!",
-            message: "Apenas 18% das suas tarefas foram concluídas. Se você não seguir o plano, não vai realizar seu sonho de aprovação. Retome o foco agora!",
-            severity: "red",
-          },
-          {
-            title: "Sua sequência de estudos zerou!",
-            message: "Você perdeu sua sequência de dias consecutivos. Grandes aprovações exigem constância. Comece uma nova sequência hoje mesmo!",
-            severity: "orange",
-          },
-          {
-            title: "⚠️ Faltam poucos dias para a prova!",
-            message: "Restam apenas 12 dias e você só completou 18% do cronograma. Intensifique seus estudos agora ou vai ficar difícil alcançar seu objetivo!",
-            severity: "red",
-          },
-        ];
-
-        if (warnings.length === 0) return null;
-
-        const severityStyles = {
-          red: "border-destructive/50 bg-destructive/5 text-destructive",
-          orange: "border-orange-500/50 bg-orange-500/5 text-orange-700 dark:text-orange-400",
-          yellow: "border-yellow-500/50 bg-yellow-500/5 text-yellow-700 dark:text-yellow-400",
-        };
-
-        return (
-          <div className="space-y-3">
-            {warnings.map((w, i) => (
-              <Alert key={i} className={`${severityStyles[w.severity]} animate-fade-in`}>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle className="font-bold">{w.title}</AlertTitle>
-                <AlertDescription>{w.message}</AlertDescription>
-              </Alert>
-            ))}
-          </div>
-        );
-      })()}
+      <DashboardWarnings
+        todayCompleted={stats.todayCompleted}
+        todayTotal={stats.todayTotal}
+        completedTasks={stats.completedTasks}
+        totalTasks={stats.totalTasks}
+        streak={stats.streak}
+        daysUntilExam={stats.daysUntilExam}
+      />
       </div>
 
       {/* Stat Cards */}
