@@ -3,16 +3,29 @@ import { Brain, Mail, Lock, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { signUp } = useAuth();
+  const { toast } = useToast();
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/dashboard");
+    setLoading(true);
+    const { error } = await signUp(email, password, name);
+    setLoading(false);
+    if (error) {
+      toast({ title: "Erro ao criar conta", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Conta criada!", description: "Verifique seu email para confirmar o cadastro." });
+      navigate("/login");
+    }
   };
 
   return (
@@ -34,24 +47,26 @@ const Register = () => {
             <label className="text-sm font-medium">Nome</label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Seu nome" className="pl-10 bg-secondary border-border" value={name} onChange={(e) => setName(e.target.value)} />
+              <Input placeholder="Seu nome" className="pl-10 bg-secondary border-border" value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Email</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input type="email" placeholder="seu@email.com" className="pl-10 bg-secondary border-border" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input type="email" placeholder="seu@email.com" className="pl-10 bg-secondary border-border" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Senha</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input type="password" placeholder="••••••••" className="pl-10 bg-secondary border-border" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Input type="password" placeholder="Mínimo 6 caracteres" className="pl-10 bg-secondary border-border" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
             </div>
           </div>
-          <Button type="submit" className="w-full glow">Criar conta</Button>
+          <Button type="submit" className="w-full glow" disabled={loading}>
+            {loading ? "Criando conta..." : "Criar conta"}
+          </Button>
         </form>
 
         <p className="text-center text-sm text-muted-foreground mt-6">

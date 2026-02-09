@@ -1,8 +1,9 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Brain, LayoutDashboard, CalendarDays, FlipVertical,
   FileText, Upload, MessageSquare, BarChart3, Settings, LogOut, Shield
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -16,6 +17,13 @@ const navItems = [
 
 const DashboardSidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <aside className="hidden lg:flex flex-col w-64 border-r border-sidebar-border bg-sidebar min-h-screen">
@@ -58,13 +66,13 @@ const DashboardSidebar = () => {
       </nav>
 
       <div className="p-3 border-t border-sidebar-border">
-        <Link
-          to="/"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-colors"
+        <button
+          onClick={handleSignOut}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-colors w-full"
         >
           <LogOut className="h-4 w-4" />
           Sair
-        </Link>
+        </button>
       </div>
     </aside>
   );
