@@ -1,4 +1,4 @@
-import { CalendarDays, FlipVertical, FileText, Upload, TrendingUp, Clock, BookOpen, CheckCircle2, Loader2, BarChart3 } from "lucide-react";
+import { CalendarDays, FlipVertical, FileText, Upload, TrendingUp, Clock, BookOpen, CheckCircle2, Loader2, BarChart3, Flame, CalendarCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +25,9 @@ interface Stats {
   upcomingReviews: { topic: string; next: string }[];
   daysUntilExam: number | null;
   weeklyChart: { week: string; hours: number; timestamp: number }[];
+  streak: number;
+  todayCompleted: number;
+  todayTotal: number;
 }
 
 const Dashboard = () => {
@@ -94,6 +97,43 @@ const Dashboard = () => {
         next: r.next_review,
       }));
 
+      // Today's completion
+      const DAY_MAP: Record<string, number> = { Dom: 0, Seg: 1, Ter: 2, Qua: 3, Qui: 4, Sex: 5, "Sáb": 6, Sab: 6 };
+      const todayDow = new Date().getDay();
+      const todaySchedule = plan?.weeklySchedule?.find((d) => DAY_MAP[d.day] === todayDow);
+      const todayTotal = todaySchedule?.tasks.length || 0;
+      const completedToday = tasks.filter((t: any) => {
+        if (!t.completed) return false;
+        const d = new Date(t.created_at);
+        const now = new Date();
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+      });
+      const todayCompleted = completedToday.length;
+
+      // Streak calculation
+      const completedDates = new Set(
+        tasks.filter((t: any) => t.completed).map((t: any) => {
+          const d = new Date(t.created_at);
+          return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        })
+      );
+      let streak = 0;
+      const checkDate = new Date();
+      // If no tasks today yet, start from yesterday
+      const todayKey = `${checkDate.getFullYear()}-${checkDate.getMonth()}-${checkDate.getDate()}`;
+      if (!completedDates.has(todayKey)) {
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+      while (true) {
+        const key = `${checkDate.getFullYear()}-${checkDate.getMonth()}-${checkDate.getDate()}`;
+        if (completedDates.has(key)) {
+          streak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+
       setStats({
         flashcards: flashcardsRes.count || 0,
         uploads: uploadsRes.count || 0,
@@ -105,6 +145,9 @@ const Dashboard = () => {
         upcomingReviews,
         daysUntilExam,
         weeklyChart,
+        streak,
+        todayCompleted,
+        todayTotal,
       });
       setLoading(false);
     };
@@ -164,6 +207,46 @@ const Dashboard = () => {
             <div className="text-sm text-muted-foreground">{s.label}</div>
           </Link>
         ))}
+      </div>
+
+      {/* Daily Summary & Streak */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="glass-card p-5 flex items-center gap-4">
+          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <CalendarCheck className="h-6 w-6 text-primary" />
+          </div>
+          <div className="flex-1">
+            <div className="text-sm text-muted-foreground">Progresso de hoje</div>
+            <div className="text-2xl font-bold">{stats.todayTotal > 0 ? Math.round((stats.todayCompleted / stats.todayTotal) * 100) : 0}%</div>
+            <div className="text-xs text-muted-foreground">{stats.todayCompleted} de {stats.todayTotal} blocos concluídos</div>
+          </div>
+          {stats.todayTotal > 0 && (
+            <div className="w-16 h-16 flex-shrink-0">
+              <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                <circle cx="18" cy="18" r="15.9" fill="none" className="stroke-secondary" strokeWidth="3" />
+                <circle
+                  cx="18" cy="18" r="15.9" fill="none"
+                  className="stroke-primary"
+                  strokeWidth="3"
+                  strokeDasharray={`${(stats.todayCompleted / stats.todayTotal) * 100} ${100 - (stats.todayCompleted / stats.todayTotal) * 100}`}
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+          )}
+        </div>
+        <div className="glass-card p-5 flex items-center gap-4">
+          <div className={`h-12 w-12 rounded-full flex items-center justify-center flex-shrink-0 ${stats.streak > 0 ? "bg-orange-500/10" : "bg-muted"}`}>
+            <Flame className={`h-6 w-6 ${stats.streak > 0 ? "text-orange-500" : "text-muted-foreground"}`} />
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground">Streak de estudos</div>
+            <div className="text-2xl font-bold">{stats.streak} {stats.streak === 1 ? "dia" : "dias"}</div>
+            <div className="text-xs text-muted-foreground">
+              {stats.streak === 0 ? "Complete uma tarefa para começar!" : stats.streak >= 7 ? "🔥 Sequência incrível!" : "Continue assim!"}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Task Progress Bar */}
