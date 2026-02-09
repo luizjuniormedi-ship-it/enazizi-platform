@@ -2,3 +2,6 @@ project_id = "qszsyskumcmuknumwxtk"
 
 [functions.mentor-chat]
 verify_jwt = false
+
+[functions.process-upload]
+verify_jwt = false
