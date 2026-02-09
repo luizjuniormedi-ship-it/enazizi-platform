@@ -24,12 +24,14 @@ Suas responsabilidades:
 - IMPORTANTE: Quando o aluno fornecer material de estudo, gere questões BASEADAS nesse material
 
 Formato padrão para questões CESPE:
+**Tópico:** [matéria - subtema]
 **Questão:** [enunciado]
 ( ) Certo  ( ) Errado
 **Gabarito:** [resposta]
 **Explicação:** [explicação detalhada com fundamento legal]
 
 Formato para múltipla escolha:
+**Tópico:** [matéria - subtema]
 **Questão:** [enunciado]
 a) [alternativa] b) [alternativa] c) [alternativa] d) [alternativa] e) [alternativa]
 **Gabarito:** [letra correta]
@@ -40,7 +42,8 @@ Regras:
 - Gere questões originais e de alta qualidade
 - Varie os temas dentro da matéria solicitada
 - Se o usuário não especificar a matéria, pergunte qual deseja
-- Quando solicitado, gere blocos de 5 ou 10 questões`;
+- Quando solicitado, gere blocos de 5 ou 10 questões
+- SEMPRE inclua a linha **Tópico:** antes de cada questão com a matéria e subtema`;
 
     if (userContext) {
       systemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
