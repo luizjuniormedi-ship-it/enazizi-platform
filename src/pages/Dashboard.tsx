@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { Button } from "@/components/ui/button";
 
 interface PlanJson {
   weeklySchedule?: { day: string; tasks: { time: string; subject: string; duration: string; type?: string }[] }[];
@@ -23,13 +24,14 @@ interface Stats {
   subjectHours: Record<string, number>;
   upcomingReviews: { topic: string; next: string }[];
   daysUntilExam: number | null;
-  weeklyChart: { week: string; hours: number }[];
+  weeklyChart: { week: string; hours: number; timestamp: number }[];
 }
 
 const Dashboard = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [weekFilter, setWeekFilter] = useState<4 | 8 | 12>(8);
 
   useEffect(() => {
     if (!user) return;
@@ -47,22 +49,23 @@ const Dashboard = () => {
       const completedTasks = tasks.filter((t: any) => t.completed).length;
 
       // Build weekly chart from completed tasks
-      const weekMap: Record<string, number> = {};
+      const weekMap: Record<string, { hours: number; timestamp: number }> = {};
       for (const task of tasks) {
         if (!(task as any).completed) continue;
         const date = new Date((task as any).created_at);
         const weekStart = new Date(date);
         weekStart.setDate(date.getDate() - date.getDay());
+        weekStart.setHours(0, 0, 0, 0);
         const key = `${String(weekStart.getDate()).padStart(2, "0")}/${String(weekStart.getMonth() + 1).padStart(2, "0")}`;
         const taskJson = (task as any).task_json as any;
         const durationMatch = taskJson?.duration?.match?.(/(\d+(?:\.\d+)?)/);
         const hours = durationMatch ? parseFloat(durationMatch[1]) : 1;
-        weekMap[key] = (weekMap[key] || 0) + hours;
+        if (!weekMap[key]) weekMap[key] = { hours: 0, timestamp: weekStart.getTime() };
+        weekMap[key].hours += hours;
       }
       const weeklyChart = Object.entries(weekMap)
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .slice(-8)
-        .map(([week, hours]) => ({ week, hours: Math.round(hours * 10) / 10 }));
+        .sort((a, b) => a[1].timestamp - b[1].timestamp)
+        .map(([week, { hours, timestamp }]) => ({ week, hours: Math.round(hours * 10) / 10, timestamp }));
 
       const plan = plansRes.data?.plan_json as PlanJson | null;
       const subjects = plan?.subjects || [];
@@ -178,30 +181,51 @@ const Dashboard = () => {
       )}
 
       {/* Weekly Evolution Chart */}
-      <div className="glass-card p-6">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-primary" />
-          Evolução semanal (horas estudadas)
-        </h2>
-        {stats.weeklyChart.length > 0 ? (
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={stats.weeklyChart} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-              <XAxis dataKey="week" tick={{ fontSize: 12 }} className="fill-muted-foreground" />
-              <YAxis tick={{ fontSize: 12 }} className="fill-muted-foreground" unit="h" />
-              <Tooltip
-                contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 13 }}
-                labelStyle={{ color: "hsl(var(--foreground))" }}
-                formatter={(value: number) => [`${value}h`, "Horas"]}
-                labelFormatter={(label) => `Semana de ${label}`}
-              />
-              <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <p className="text-sm text-muted-foreground text-center py-8">Complete tarefas do cronograma para ver sua evolução aqui.</p>
-        )}
-      </div>
+      {(() => {
+        const cutoff = Date.now() - weekFilter * 7 * 24 * 60 * 60 * 1000;
+        const filteredChart = stats.weeklyChart.filter((d) => d.timestamp >= cutoff);
+        return (
+          <div className="glass-card p-6">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Evolução semanal
+              </h2>
+              <div className="flex gap-1">
+                {([4, 8, 12] as const).map((w) => (
+                  <Button
+                    key={w}
+                    variant={weekFilter === w ? "default" : "outline"}
+                    size="sm"
+                    className="h-7 text-xs px-3"
+                    onClick={() => setWeekFilter(w)}
+                  >
+                    {w} sem
+                  </Button>
+                ))}
+              </div>
+            </div>
+            {filteredChart.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={filteredChart} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="week" tick={{ fontSize: 12 }} className="fill-muted-foreground" />
+                  <YAxis tick={{ fontSize: 12 }} className="fill-muted-foreground" unit="h" />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 13 }}
+                    labelStyle={{ color: "hsl(var(--foreground))" }}
+                    formatter={(value: number) => [`${value}h`, "Horas"]}
+                    labelFormatter={(label) => `Semana de ${label}`}
+                  />
+                  <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">Nenhum dado neste período. Complete tarefas do cronograma!</p>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming Reviews */}
