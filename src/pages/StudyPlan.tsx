@@ -443,11 +443,11 @@ const StudyPlan = () => {
                         <div className="text-sm font-medium">{task.subject}</div>
                         <div className="text-xs text-muted-foreground">{task.time} • {task.duration}</div>
                       </div>
-                      <button onClick={() => startEdit(dayIndex, taskIndex)} className="text-muted-foreground hover:text-primary transition-colors">
-                        <Pencil className="h-3.5 w-3.5" />
+                      <button onClick={() => startEdit(dayIndex, taskIndex)} className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
+                        <Pencil className="h-4.5 w-4.5" />
                       </button>
-                      <button onClick={() => removeTask(dayIndex, taskIndex)} className="text-muted-foreground hover:text-destructive transition-colors">
-                        <Trash2 className="h-3.5 w-3.5" />
+                      <button onClick={() => removeTask(dayIndex, taskIndex)} className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                        <Trash2 className="h-4.5 w-4.5" />
                       </button>
                     </div>
                   );
