@@ -14,13 +14,17 @@ export interface ParsedQuestion {
 export function parseQuestionsFromText(text: string): ParsedQuestion[] {
   const questions: ParsedQuestion[] = [];
 
-  // Split by question markers — supports:
-  // **Questão:** / **Questão 1:** / Questão 01 / Questão: etc.
-  const blocks = text.split(/\*{0,2}Questão\s*\d*\s*:?\s*\*{0,2}/i).slice(1);
+  // Split by Tópico or Questão markers — each block should contain one question.
+  // We split on "Tópico" first (since it comes before Questão), falling back to "Questão".
+  // Use a lookahead-like approach: split on lines starting with Tópico or Questão markers.
+  const blockRegex = /(?=\*{0,2}(?:Tópico|Questão)\s*\d*\s*:?\s*\*{0,2})/gi;
+  const rawBlocks = text.split(blockRegex).filter((b) => b.trim());
 
-  for (const block of blocks) {
+  for (const raw of rawBlocks) {
+    // Skip blocks that don't contain a question indicator (Certo/Errado or a-e options)
+    if (!/\(\s*\)\s*certo/i.test(raw) && !/^[a-e]\)\s/im.test(raw)) continue;
     try {
-      const q = parseBlock(block.trim());
+      const q = parseBlock(raw.trim());
       if (q) questions.push(q);
     } catch {
       // skip unparseable blocks
@@ -31,9 +35,16 @@ export function parseQuestionsFromText(text: string): ParsedQuestion[] {
 }
 
 function parseBlock(block: string): ParsedQuestion | null {
-  // Extract topic
+  // Extract topic — only accept short, clean topic strings
   const topicMatch = block.match(/\*{0,2}Tópico\s*:?\s*\*{0,2}\s*(.+)/i);
-  const topic = topicMatch?.[1]?.trim().replace(/\*+/g, "") || undefined;
+  let topic: string | undefined;
+  if (topicMatch) {
+    const raw = topicMatch[1].trim().replace(/\*+/g, "");
+    // Only keep if it looks like a real topic (< 80 chars, no question-like text)
+    if (raw.length > 0 && raw.length < 80 && !/\?\s*$/.test(raw)) {
+      topic = raw;
+    }
+  }
 
   // Extract explanation — supports **Explicação:** and Explicação:
   const explMatch = block.match(/\*{0,2}Explicação\s*:?\s*\*{0,2}\s*([\s\S]*?)$/i);
