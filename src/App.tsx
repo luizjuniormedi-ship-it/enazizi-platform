@@ -14,6 +14,9 @@ import StudyPlan from "./pages/StudyPlan";
 import Simulados from "./pages/Simulados";
 import Uploads from "./pages/Uploads";
 import AIMentor from "./pages/AIMentor";
+import QuestionGenerator from "./pages/QuestionGenerator";
+import ContentSummarizer from "./pages/ContentSummarizer";
+import MotivationalCoach from "./pages/MotivationalCoach";
 import Analytics from "./pages/Analytics";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
@@ -40,6 +43,9 @@ const App = () => (
               <Route path="simulados" element={<Simulados />} />
               <Route path="uploads" element={<Uploads />} />
               <Route path="mentor" element={<AIMentor />} />
+              <Route path="questoes" element={<QuestionGenerator />} />
+              <Route path="resumos" element={<ContentSummarizer />} />
+              <Route path="coach" element={<MotivationalCoach />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="perfil" element={<Profile />} />
             </Route>
