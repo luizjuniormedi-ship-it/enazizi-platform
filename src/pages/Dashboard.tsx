@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Progress } from "@/components/ui/progress";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 interface PlanJson {
   weeklySchedule?: { day: string; tasks: { time: string; subject: string; duration: string; type?: string }[] }[];
@@ -22,6 +23,7 @@ interface Stats {
   subjectHours: Record<string, number>;
   upcomingReviews: { topic: string; next: string }[];
   daysUntilExam: number | null;
+  weeklyChart: { week: string; hours: number }[];
 }
 
 const Dashboard = () => {
@@ -36,13 +38,31 @@ const Dashboard = () => {
       const [flashcardsRes, uploadsRes, tasksRes, plansRes, reviewsRes] = await Promise.all([
         supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("study_tasks").select("completed").eq("user_id", user.id),
+        supabase.from("study_tasks").select("completed, created_at, task_json").eq("user_id", user.id),
         supabase.from("study_plans").select("plan_json").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("reviews").select("next_review, flashcard_id, flashcards(topic)").eq("user_id", user.id).gte("next_review", new Date().toISOString()).order("next_review", { ascending: true }).limit(5),
       ]);
 
       const tasks = tasksRes.data || [];
-      const completedTasks = tasks.filter((t) => t.completed).length;
+      const completedTasks = tasks.filter((t: any) => t.completed).length;
+
+      // Build weekly chart from completed tasks
+      const weekMap: Record<string, number> = {};
+      for (const task of tasks) {
+        if (!(task as any).completed) continue;
+        const date = new Date((task as any).created_at);
+        const weekStart = new Date(date);
+        weekStart.setDate(date.getDate() - date.getDay());
+        const key = `${String(weekStart.getDate()).padStart(2, "0")}/${String(weekStart.getMonth() + 1).padStart(2, "0")}`;
+        const taskJson = (task as any).task_json as any;
+        const durationMatch = taskJson?.duration?.match?.(/(\d+(?:\.\d+)?)/);
+        const hours = durationMatch ? parseFloat(durationMatch[1]) : 1;
+        weekMap[key] = (weekMap[key] || 0) + hours;
+      }
+      const weeklyChart = Object.entries(weekMap)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .slice(-8)
+        .map(([week, hours]) => ({ week, hours: Math.round(hours * 10) / 10 }));
 
       const plan = plansRes.data?.plan_json as PlanJson | null;
       const subjects = plan?.subjects || [];
@@ -81,6 +101,7 @@ const Dashboard = () => {
         subjectHours,
         upcomingReviews,
         daysUntilExam,
+        weeklyChart,
       });
       setLoading(false);
     };
@@ -155,6 +176,32 @@ const Dashboard = () => {
           <Progress value={taskPercent} className="h-3" />
         </div>
       )}
+
+      {/* Weekly Evolution Chart */}
+      <div className="glass-card p-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-primary" />
+          Evolução semanal (horas estudadas)
+        </h2>
+        {stats.weeklyChart.length > 0 ? (
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={stats.weeklyChart} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <XAxis dataKey="week" tick={{ fontSize: 12 }} className="fill-muted-foreground" />
+              <YAxis tick={{ fontSize: 12 }} className="fill-muted-foreground" unit="h" />
+              <Tooltip
+                contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 13 }}
+                labelStyle={{ color: "hsl(var(--foreground))" }}
+                formatter={(value: number) => [`${value}h`, "Horas"]}
+                labelFormatter={(label) => `Semana de ${label}`}
+              />
+              <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-8">Complete tarefas do cronograma para ver sua evolução aqui.</p>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming Reviews */}
