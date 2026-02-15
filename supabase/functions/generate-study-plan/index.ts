@@ -44,15 +44,15 @@ serve(async (req) => {
 
     const daysUntilExam = Math.ceil((new Date(examDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
-    const prompt = `Você é um especialista em planejamento de estudos para concursos públicos brasileiros.
+    const prompt = `Você é um especialista em planejamento de estudos para provas de Residência Médica no Brasil (ENARE, USP, UNIFESP, Santa Casa, etc.).
 
 Dados do aluno:
 - Data da prova: ${examDate} (${daysUntilExam} dias restantes)
 - Horas disponíveis por dia: ${hoursPerDay}
 - Dias de estudo por semana: ${daysPerWeek}
-${editalText ? `\nConteúdo do edital:\n${editalText.substring(0, 8000)}` : ""}
+${editalText ? `\nConteúdo programático/edital:\n${editalText.substring(0, 8000)}` : ""}
 
-Gere um cronograma semanal de estudos otimizado. Retorne APENAS um JSON válido (sem markdown) no formato:
+Gere um cronograma semanal de estudos otimizado para residência médica. Retorne APENAS um JSON válido (sem markdown) no formato:
 {
   "subjects": ["matéria1", "matéria2", ...],
   "weeklySchedule": [
@@ -67,11 +67,13 @@ Gere um cronograma semanal de estudos otimizado. Retorne APENAS um JSON válido 
 }
 
 Regras:
-- Distribua as matérias proporcionalmente ao peso no edital (se disponível)
-- Inclua revisões e simulados
+- As matérias principais são: Clínica Médica, Cirurgia, Pediatria, Ginecologia e Obstetrícia, Medicina Preventiva/Saúde Coletiva
+- Distribua as matérias proporcionalmente ao peso nas provas (Clínica Médica geralmente tem maior peso)
+- Inclua revisões, resolução de questões e simulados
 - Respeite o limite de horas/dia
 - Use os dias da semana: Seg, Ter, Qua, Qui, Sex, Sáb, Dom (apenas ${daysPerWeek} dias)
-- Tipos: "estudo", "revisao", "simulado"`;
+- Tipos: "estudo", "revisao", "simulado", "questoes"
+- Considere que o aluno pode ter plantões/internato e precisa de flexibilidade`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
