@@ -8,9 +8,12 @@ import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/dashboard/plano-dia", icon: Zap, label: "Plano do Dia" },
+  { to: "/dashboard/diagnostico", icon: Stethoscope, label: "Diagnóstico" },
   { to: "/dashboard/cronograma", icon: CalendarDays, label: "Cronograma" },
   { to: "/dashboard/flashcards", icon: FlipVertical, label: "Flashcards" },
   { to: "/dashboard/simulados", icon: FileText, label: "Simulados" },
+  { to: "/dashboard/simulado-completo", icon: Award, label: "Simulado Completo" },
   { to: "/dashboard/uploads", icon: Upload, label: "Uploads" },
   { to: "/dashboard/agentes", icon: Bot, label: "Agentes IA" },
   { to: "/dashboard/mentor", icon: MessageSquare, label: "Mentor IA" },
@@ -18,6 +21,7 @@ const navItems = [
   { to: "/dashboard/banco-questoes", icon: Database, label: "Banco de Questões" },
   { to: "/dashboard/resumos", icon: BookOpen, label: "Resumidor" },
   { to: "/dashboard/coach", icon: Heart, label: "Coach Motivacional" },
+  { to: "/dashboard/predictor", icon: TrendingUp, label: "Previsão de Desempenho" },
   { to: "/dashboard/analytics", icon: BarChart3, label: "Analytics" },
 ];
 

@@ -54,6 +54,10 @@ const App = () => (
               <Route path="banco-questoes" element={<QuestionsBank />} />
               <Route path="resumos" element={<ContentSummarizer />} />
               <Route path="coach" element={<MotivationalCoach />} />
+              <Route path="plano-dia" element={<DailyPlan />} />
+              <Route path="predictor" element={<PerformancePredictor />} />
+              <Route path="diagnostico" element={<Diagnostic />} />
+              <Route path="simulado-completo" element={<ExamSimulator />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="perfil" element={<Profile />} />
             </Route>

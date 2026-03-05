@@ -17,3 +17,9 @@ verify_jwt = false
 
 [functions.motivational-coach]
 verify_jwt = false
+
+[functions.learning-optimizer]
+verify_jwt = false
+
+[functions.performance-predictor]
+verify_jwt = false
