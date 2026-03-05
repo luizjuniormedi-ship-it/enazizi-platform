@@ -76,6 +76,92 @@ export type Database = {
           },
         ]
       }
+      diagnostic_results: {
+        Row: {
+          completed_at: string
+          created_at: string
+          id: string
+          results_json: Json | null
+          score: number
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          created_at?: string
+          id?: string
+          results_json?: Json | null
+          score?: number
+          total_questions?: number
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          created_at?: string
+          id?: string
+          results_json?: Json | null
+          score?: number
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      exam_sessions: {
+        Row: {
+          answers_json: Json | null
+          created_at: string
+          finished_at: string | null
+          id: string
+          organization_id: string | null
+          results_json: Json | null
+          score: number | null
+          started_at: string
+          status: string
+          time_limit_minutes: number
+          title: string
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          answers_json?: Json | null
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          organization_id?: string | null
+          results_json?: Json | null
+          score?: number | null
+          started_at?: string
+          status?: string
+          time_limit_minutes?: number
+          title?: string
+          total_questions?: number
+          user_id: string
+        }
+        Update: {
+          answers_json?: Json | null
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          organization_id?: string | null
+          results_json?: Json | null
+          score?: number | null
+          started_at?: string
+          status?: string
+          time_limit_minutes?: number
+          title?: string
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flashcards: {
         Row: {
           answer: string
@@ -129,6 +215,42 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      performance_predictions: {
+        Row: {
+          approval_probability: number
+          created_at: string
+          details_json: Json | null
+          estimated_ranking: number | null
+          estimated_score: number
+          id: string
+          predicted_at: string
+          trend: string | null
+          user_id: string
+        }
+        Insert: {
+          approval_probability?: number
+          created_at?: string
+          details_json?: Json | null
+          estimated_ranking?: number | null
+          estimated_score?: number
+          id?: string
+          predicted_at?: string
+          trend?: string | null
+          user_id: string
+        }
+        Update: {
+          approval_probability?: number
+          created_at?: string
+          details_json?: Json | null
+          estimated_ranking?: number | null
+          estimated_score?: number
+          id?: string
+          predicted_at?: string
+          trend?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -192,30 +314,42 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          daily_study_hours: number | null
           display_name: string | null
           email: string | null
+          exam_date: string | null
+          has_completed_diagnostic: boolean | null
           id: string
           organization_id: string | null
+          target_specialty: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          daily_study_hours?: number | null
           display_name?: string | null
           email?: string | null
+          exam_date?: string | null
+          has_completed_diagnostic?: boolean | null
           id?: string
           organization_id?: string | null
+          target_specialty?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          daily_study_hours?: number | null
           display_name?: string | null
           email?: string | null
+          exam_date?: string | null
+          has_completed_diagnostic?: boolean | null
           id?: string
           organization_id?: string | null
+          target_specialty?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -233,10 +367,14 @@ export type Database = {
         Row: {
           correct_index: number | null
           created_at: string
+          difficulty: number | null
           explanation: string | null
           id: string
+          is_global: boolean | null
           options: Json | null
           organization_id: string | null
+          original_question_id: string | null
+          review_status: string | null
           source: string | null
           statement: string
           topic: string | null
@@ -245,10 +383,14 @@ export type Database = {
         Insert: {
           correct_index?: number | null
           created_at?: string
+          difficulty?: number | null
           explanation?: string | null
           id?: string
+          is_global?: boolean | null
           options?: Json | null
           organization_id?: string | null
+          original_question_id?: string | null
+          review_status?: string | null
           source?: string | null
           statement: string
           topic?: string | null
@@ -257,10 +399,14 @@ export type Database = {
         Update: {
           correct_index?: number | null
           created_at?: string
+          difficulty?: number | null
           explanation?: string | null
           id?: string
+          is_global?: boolean | null
           options?: Json | null
           organization_id?: string | null
+          original_question_id?: string | null
+          review_status?: string | null
           source?: string | null
           statement?: string
           topic?: string | null
@@ -272,6 +418,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_original_question_id_fkey"
+            columns: ["original_question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
             referencedColumns: ["id"]
           },
         ]
@@ -523,6 +676,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_quotas: {
+        Row: {
+          created_at: string
+          extra_questions: number
+          extra_transcription_minutes: number
+          id: string
+          questions_limit: number
+          questions_used: number
+          reset_at: string
+          transcription_minutes_limit: number
+          transcription_minutes_used: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          extra_questions?: number
+          extra_transcription_minutes?: number
+          id?: string
+          questions_limit?: number
+          questions_used?: number
+          reset_at?: string
+          transcription_minutes_limit?: number
+          transcription_minutes_used?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          extra_questions?: number
+          extra_transcription_minutes?: number
+          id?: string
+          questions_limit?: number
+          questions_used?: number
+          reset_at?: string
+          transcription_minutes_limit?: number
+          transcription_minutes_used?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
