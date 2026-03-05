@@ -22,6 +22,10 @@ import AgentsHub from "./pages/AgentsHub";
 import Analytics from "./pages/Analytics";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
+import DailyPlan from "./pages/DailyPlan";
+import PerformancePredictor from "./pages/PerformancePredictor";
+import Diagnostic from "./pages/Diagnostic";
+import ExamSimulator from "./pages/ExamSimulator";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
