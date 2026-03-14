@@ -197,22 +197,15 @@ serve(async (req) => {
     await supabase.from("uploads").update({ extracted_text: truncatedText.slice(0, 50000) }).eq("id", uploadId);
 
     // Validate medical content
-    const validationResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
-        messages: [
-          {
-            role: "system",
-            content: `Analise o texto e determine se é relacionado a medicina/saúde. Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicação", "main_topic": "especialidade médica principal"}`
-          },
-          { role: "user", content: `Classifique:\n\n${truncatedText.slice(0, 3000)}` }
-        ],
-      }),
+    const validationResponse = await aiFetch({
+      model: "google/gemini-2.5-flash-lite",
+      messages: [
+        {
+          role: "system",
+          content: `Analise o texto e determine se é relacionado a medicina/saúde. Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicação", "main_topic": "especialidade médica principal"}`
+        },
+        { role: "user", content: `Classifique:\n\n${truncatedText.slice(0, 3000)}` }
+      ],
     });
 
     let detectedTopic = "Clínica Médica";
