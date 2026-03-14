@@ -266,6 +266,8 @@ const ChatGPT = () => {
     setCurrentTopic("");
     setMessages([]);
     setActiveConversationId(null);
+    setEnaziziStep(1);
+    await saveEnaziziStep(1, null);
     toast({ title: "Sessão finalizada!", description: `Dados salvos. ${sessionQuestions} questões nesta sessão.` });
   };
 
