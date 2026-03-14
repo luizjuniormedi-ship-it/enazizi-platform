@@ -670,7 +670,7 @@ const ChatGPT = () => {
               onKeyDown={(e) => e.key === "Enter" && handleStartStudy()}
               className="bg-secondary border-border text-base"
             />
-            <Button onClick={handleStartStudy} className="glow gap-2 px-6" disabled={!topic.trim()}>
+            <Button onClick={() => handleStartStudy()} className="glow gap-2 px-6" disabled={!topic.trim()}>
               <GraduationCap className="h-4 w-4" />
               Vamos estudar
             </Button>
