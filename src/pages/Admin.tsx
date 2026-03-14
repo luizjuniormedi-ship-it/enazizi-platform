@@ -308,7 +308,17 @@ const Admin = () => {
                   <div className="col-span-1 flex items-center text-xs text-muted-foreground">
                     {u.quota ? `${u.quota.questions_used}/${u.quota.questions_limit}` : "—"}
                   </div>
-                  <div className="col-span-2 flex items-center justify-end gap-2">
+                  <div className="col-span-2 flex items-center justify-end gap-1.5 flex-wrap">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1"
+                      disabled={isCurrentlyActioning}
+                      onClick={() => setAdminDialog({ open: true, user: u, makeAdmin: !u.roles.includes("admin") })}
+                    >
+                      {u.roles.includes("admin") ? <ShieldOff className="h-3 w-3" /> : <ShieldCheck className="h-3 w-3" />}
+                      {u.roles.includes("admin") ? "Remover Admin" : "Admin"}
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
