@@ -6,16 +6,32 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Brain, TrendingDown, TrendingUp, Minus, RefreshCw, BookOpen, AlertTriangle } from "lucide-react";
+import { Brain, RefreshCw, BookOpen, AlertTriangle, ChevronDown, ChevronRight, GraduationCap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const SPECIALTIES = [
-  "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia",
-  "Gastroenterologia", "Nefrologia", "Infectologia", "Hematologia",
-  "Reumatologia", "Pediatria", "Ginecologia e Obstetrícia", "Cirurgia",
-  "Psiquiatria", "Dermatologia", "Oftalmologia", "Otorrinolaringologia",
-  "Medicina Preventiva", "Medicina de Emergência", "Terapia Intensiva",
-];
+const SPECIALTIES_WITH_TOPICS: Record<string, string[]> = {
+  "Cardiologia": ["Insuficiência Cardíaca", "Síndromes Coronarianas", "Arritmias", "Valvopatias", "Hipertensão Arterial", "Endocardite", "Pericardite", "Cardiopatias Congênitas"],
+  "Pneumologia": ["DPOC", "Asma", "Pneumonias", "Tuberculose", "Embolia Pulmonar", "Derrame Pleural", "Fibrose Pulmonar", "Câncer de Pulmão"],
+  "Neurologia": ["AVC", "Epilepsia", "Cefaleias", "Meningites", "Esclerose Múltipla", "Parkinson", "Alzheimer", "Neuropatias Periféricas"],
+  "Endocrinologia": ["Diabetes Mellitus", "Distúrbios da Tireoide", "Insuficiência Adrenal", "Síndrome de Cushing", "Hipopituitarismo", "Feocromocitoma", "Obesidade", "Dislipidemias"],
+  "Gastroenterologia": ["Doença do Refluxo", "Úlcera Péptica", "Hepatites", "Cirrose", "Doença de Crohn", "Retocolite Ulcerativa", "Pancreatite", "Câncer Colorretal"],
+  "Nefrologia": ["Insuficiência Renal Aguda", "Doença Renal Crônica", "Glomerulonefrites", "Síndrome Nefrótica", "Distúrbios Eletrolíticos", "Infecção Urinária", "Litíase Renal", "Diálise"],
+  "Infectologia": ["HIV/AIDS", "Sepse", "Dengue", "Malária", "Infecções Oportunistas", "Antibioticoterapia", "Parasitoses", "Infecções Hospitalares"],
+  "Hematologia": ["Anemias", "Leucemias", "Linfomas", "Distúrbios de Coagulação", "Trombocitopenia", "Hemoglobinopatias", "Mieloma Múltiplo", "Hemoterapia"],
+  "Reumatologia": ["Lúpus Eritematoso", "Artrite Reumatoide", "Vasculites", "Espondiloartrites", "Esclerose Sistêmica", "Fibromialgia", "Gota", "Síndrome de Sjögren"],
+  "Pediatria": ["Puericultura", "Doenças Exantemáticas", "Infecções Respiratórias", "Diarreias", "Imunização", "Aleitamento Materno", "Neonatologia", "Distúrbios do Crescimento"],
+  "Ginecologia e Obstetrícia": ["Pré-Natal", "Trabalho de Parto", "Síndromes Hipertensivas", "Diabetes Gestacional", "Hemorragias Obstétricas", "Câncer de Colo", "Endometriose", "Climatério"],
+  "Cirurgia": ["Abdome Agudo", "Apendicite", "Colecistite", "Hérnias", "Trauma", "Queimaduras", "Pré e Pós-Operatório", "Cirurgia Vascular"],
+  "Psiquiatria": ["Depressão", "Transtorno Bipolar", "Esquizofrenia", "Transtornos de Ansiedade", "TOC", "TDAH", "Dependência Química", "Psicofarmacologia"],
+  "Dermatologia": ["Dermatites", "Psoríase", "Infecções Cutâneas", "Melanoma", "Hanseníase", "Urticária", "Acne", "Lesões Pré-Malignas"],
+  "Oftalmologia": ["Glaucoma", "Catarata", "Retinopatia Diabética", "Descolamento de Retina", "Conjuntivite", "Uveíte", "Erros de Refração", "Trauma Ocular"],
+  "Otorrinolaringologia": ["Otite", "Sinusite", "Amigdalite", "Rinite", "Surdez", "Vertigem", "Apneia do Sono", "Tumores de Cabeça e Pescoço"],
+  "Medicina Preventiva": ["Epidemiologia", "Vigilância em Saúde", "SUS", "Atenção Primária", "Política de Saúde", "Vacinação", "Indicadores de Saúde", "Saúde do Trabalhador"],
+  "Medicina de Emergência": ["PCR e RCP", "Choque", "Politrauma", "Emergências Respiratórias", "Intoxicações", "Queimaduras", "Emergências Obstétricas", "ATLS"],
+  "Terapia Intensiva": ["Ventilação Mecânica", "Sedação e Analgesia", "Choque Séptico", "Monitorização", "Nutrição em UTI", "Distúrbios Ácido-Base", "SDRA", "Morte Encefálica"],
+};
+
+const SPECIALTIES = Object.keys(SPECIALTIES_WITH_TOPICS);
 
 interface DomainEntry {
   specialty: string;
@@ -55,6 +71,26 @@ const MedicalDomainMap = () => {
   const [domains, setDomains] = useState<DomainEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [recalculating, setRecalculating] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (specialty: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(specialty)) next.delete(specialty);
+      else next.add(specialty);
+      return next;
+    });
+  };
+
+  const handleStudyTopic = (specialty: string, subtopic?: string) => {
+    const topic = subtopic ? `${subtopic} (${specialty})` : specialty;
+    navigate("/dashboard/chatgpt", {
+      state: {
+        initialMessage: `Quero estudar o tópico "${topic}". Me dê uma aula completa seguindo o protocolo ENAZIZI.`,
+        fromErrorBank: true,
+      },
+    });
+  };
 
   const fetchDomains = async () => {
     if (!user) return;
@@ -64,11 +100,8 @@ const MedicalDomainMap = () => {
       .eq("user_id", user.id)
       .order("domain_score", { ascending: true });
 
-    if (error) {
-      console.error("Error fetching domains:", error);
-    }
+    if (error) console.error("Error fetching domains:", error);
 
-    // Merge with all specialties (show 0% for untracked ones)
     const existingMap = new Map((data || []).map((d: any) => [d.specialty, d]));
     const merged = SPECIALTIES.map((s) => existingMap.get(s) || {
       specialty: s, domain_score: 0, questions_answered: 0, correct_answers: 0,
@@ -83,25 +116,21 @@ const MedicalDomainMap = () => {
     if (!user) return;
     setRecalculating(true);
     try {
-      // Fetch error bank data to calculate domain scores
       const { data: errors } = await supabase
         .from("error_bank")
         .select("tema, subtema, vezes_errado, dificuldade")
         .eq("user_id", user.id);
 
-      // Fetch practice attempts with question topics
       const { data: attempts } = await supabase
         .from("practice_attempts")
         .select("correct, question_id, questions_bank(topic)")
         .eq("user_id", user.id);
 
-      // Build performance map per specialty
       const perfMap: Record<string, { answered: number; correct: number; errors: number; totalDiff: number }> = {};
 
       (attempts || []).forEach((a: any) => {
         const topic = a.questions_bank?.topic;
         if (!topic) return;
-        // Map topic to specialty
         const specialty = mapTopicToSpecialty(topic);
         if (!specialty) return;
         if (!perfMap[specialty]) perfMap[specialty] = { answered: 0, correct: 0, errors: 0, totalDiff: 0 };
@@ -117,10 +146,9 @@ const MedicalDomainMap = () => {
         perfMap[specialty].totalDiff += e.dificuldade || 3;
       });
 
-      // Calculate and upsert scores
       for (const [specialty, perf] of Object.entries(perfMap)) {
         const accuracy = perf.answered > 0 ? (perf.correct / perf.answered) * 100 : 0;
-        const errorPenalty = Math.min(perf.errors * 3, 30); // max 30% penalty
+        const errorPenalty = Math.min(perf.errors * 3, 30);
         const score = Math.max(0, Math.min(100, Math.round(accuracy - errorPenalty)));
 
         await supabase.from("medical_domain_map").upsert({
@@ -168,10 +196,10 @@ const MedicalDomainMap = () => {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Brain className="h-7 w-7 text-primary" />
-            Mapa de Domínio Médico
+            Mapa de Evolução
           </h1>
           <p className="text-muted-foreground mt-1">
-            Seu nível de domínio em cada especialidade médica
+            Seu nível de domínio em cada especialidade médica — clique para ver os assuntos
           </p>
         </div>
         <Button onClick={recalculateFromErrors} disabled={recalculating} variant="outline" size="sm">
@@ -221,7 +249,7 @@ const MedicalDomainMap = () => {
                   size="sm"
                   variant="ghost"
                   className="text-primary text-xs"
-                  onClick={() => navigate("/dashboard/chatgpt")}
+                  onClick={() => handleStudyTopic(d.specialty)}
                 >
                   <BookOpen className="h-3 w-3 mr-1" /> Estudar
                 </Button>
@@ -236,35 +264,72 @@ const MedicalDomainMap = () => {
         <CardHeader>
           <CardTitle className="text-lg">Todas as Especialidades</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-1">
           {sorted.map((d) => {
             const badge = getBadge(d.domain_score);
+            const isExpanded = expanded.has(d.specialty);
+            const subtopics = SPECIALTIES_WITH_TOPICS[d.specialty] || [];
+
             return (
-              <div key={d.specialty} className="space-y-1.5">
-                <div className="flex items-center justify-between">
+              <div key={d.specialty} className="border border-border/50 rounded-lg overflow-hidden">
+                {/* Specialty header row */}
+                <button
+                  onClick={() => toggleExpand(d.specialty)}
+                  className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/30 transition-colors"
+                >
                   <div className="flex items-center gap-2">
+                    {isExpanded ? (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    )}
                     <span className="text-sm font-medium text-foreground">{d.specialty}</span>
                     <Badge variant={badge.variant} className={`text-[10px] px-1.5 py-0 ${badge.className}`}>
                       {badge.label}
                     </Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-sm font-bold ${getScoreColor(d.domain_score)}`}>
-                      {d.domain_score}%
+                    <span className="text-[10px] text-muted-foreground">
+                      {subtopics.length} assuntos
                     </span>
+                  </div>
+                  <div className="flex items-center gap-3">
                     {d.questions_answered > 0 && (
                       <span className="text-[10px] text-muted-foreground">
                         ({d.correct_answers}/{d.questions_answered} questões)
                       </span>
                     )}
+                    <span className={`text-sm font-bold ${getScoreColor(d.domain_score)}`}>
+                      {d.domain_score}%
+                    </span>
+                  </div>
+                </button>
+
+                {/* Progress bar */}
+                <div className="px-4 pb-2">
+                  <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${getProgressColor(d.domain_score)}`}
+                      style={{ width: `${d.domain_score}%` }}
+                    />
                   </div>
                 </div>
-                <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${getProgressColor(d.domain_score)}`}
-                    style={{ width: `${d.domain_score}%` }}
-                  />
-                </div>
+
+                {/* Subtopics panel */}
+                {isExpanded && (
+                  <div className="px-4 pb-3 border-t border-border/30">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-2">
+                      {subtopics.map((sub) => (
+                        <button
+                          key={sub}
+                          onClick={() => handleStudyTopic(d.specialty, sub)}
+                          className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left hover:bg-primary/10 transition-colors group"
+                        >
+                          <GraduationCap className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                          <span className="text-foreground group-hover:text-primary transition-colors">{sub}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
