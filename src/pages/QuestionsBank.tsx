@@ -266,13 +266,30 @@ const QuestionsBank = () => {
             </div>
           )}
 
-          <div className="flex gap-3 mt-6">
+          <div className="flex gap-3 mt-6 flex-wrap">
             {!answered ? (
               <Button onClick={confirmAnswer} disabled={selected === null}>Confirmar</Button>
             ) : (
-              <Button onClick={nextQuestion}>
-                {practiceIdx + 1 >= filtered.length ? "Finalizar" : "Próxima"}
-              </Button>
+              <>
+                <Button onClick={nextQuestion}>
+                  {practiceIdx + 1 >= filtered.length ? "Finalizar" : "Próxima"}
+                </Button>
+                {selected !== practiceQuestion.correct_index && (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => navigate("/dashboard/chatgpt", {
+                      state: {
+                        initialMessage: `Errei uma questão sobre "${practiceQuestion.topic || "Medicina"}". O enunciado era: "${practiceQuestion.statement.slice(0, 200)}". A resposta correta era "${practiceQuestion.options[practiceQuestion.correct_index]}". Me explique este tema seguindo o protocolo ENAZIZI.`,
+                        fromErrorBank: true,
+                      },
+                    })}
+                  >
+                    <GraduationCap className="h-4 w-4" />
+                    Estudar com Tutor IA
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>

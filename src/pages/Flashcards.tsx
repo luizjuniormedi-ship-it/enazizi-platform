@@ -301,7 +301,7 @@ const Flashcards = () => {
           )}
 
           {flipped && (
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-3 flex-wrap">
               <Button variant="destructive" onClick={() => handleReview("again")} className="min-w-[100px]">
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Errei (1d)
@@ -315,6 +315,22 @@ const Flashcards = () => {
               <Button variant="ghost" size="icon" title="Remover" onClick={handleDelete}>
                 <X className="h-4 w-4" />
               </Button>
+              {answerSubmitted && !isAnswerCorrect() && card.topic && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                  onClick={() => navigate("/dashboard/chatgpt", {
+                    state: {
+                      initialMessage: `Errei um flashcard sobre "${card.topic}". A pergunta era: "${card.question}". A resposta correta era: "${card.answer}". Me explique este tema seguindo o protocolo ENAZIZI.`,
+                      fromErrorBank: true,
+                    },
+                  })}
+                >
+                  <GraduationCap className="h-3.5 w-3.5" />
+                  Aprofundar no Tutor IA
+                </Button>
+              )}
             </div>
           )}
         </>

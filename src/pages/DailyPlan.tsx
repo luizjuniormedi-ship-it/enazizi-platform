@@ -170,10 +170,12 @@ const DailyPlan = () => {
               return (
                 <div
                   key={block.order}
-                  className={`glass-card p-4 flex items-start gap-4 cursor-pointer transition-all ${done ? "opacity-50" : ""} ${priorityColors[block.priority] || ""}`}
-                  onClick={() => toggleBlock(block.order)}
+                  className={`glass-card p-4 flex items-start gap-4 transition-all ${done ? "opacity-50" : ""} ${priorityColors[block.priority] || ""}`}
                 >
-                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${done ? "bg-primary/20" : "bg-primary/10"}`}>
+                  <div
+                    className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 cursor-pointer ${done ? "bg-primary/20" : "bg-primary/10"}`}
+                    onClick={() => toggleBlock(block.order)}
+                  >
                     {done ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <Icon className="h-5 w-5 text-primary" />}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -183,6 +185,22 @@ const DailyPlan = () => {
                     </div>
                     <p className="text-xs text-muted-foreground">{block.description}</p>
                     <p className="text-xs text-muted-foreground/70 mt-1 italic">{block.reason}</p>
+                    {!done && (block.type === "study" || block.type === "review") && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2 gap-1.5 text-xs h-7 px-2 text-primary hover:text-primary"
+                        onClick={() => navigate("/dashboard/chatgpt", {
+                          state: {
+                            initialMessage: `Quero estudar o tópico "${block.topic}". Me dê uma aula completa seguindo o protocolo ENAZIZI.`,
+                            fromErrorBank: true,
+                          },
+                        })}
+                      >
+                        <GraduationCap className="h-3.5 w-3.5" />
+                        Estudar com Tutor IA
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
