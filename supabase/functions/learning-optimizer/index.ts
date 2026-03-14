@@ -5,6 +5,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const NON_MEDICAL_CONTENT_REGEX = /(direito|jur[ií]d|penal|constitucional|processo penal|inquérito|inqu[eé]rito|stf|stj|delegad|advogad|pol[ií]cia federal|c[oó]digo penal|a[cç][aã]o penal|inform[aá]tica|tecnologia da informa[cç][aã]o|engenharia|contabil|economia|administra[cç][aã]o)/i;
+const MEDICAL_CONTENT_REGEX = /(medicin|sa[uú]de|paciente|diagn[oó]st|tratament|sintom|doen[cç]|fisiopat|farmac|anatom|cl[íi]nic|cirurg|pediatr|ginec|obstetr|preventiva|resid[eê]ncia|enare|revalida|protocolo|diretriz|sus)/i;
+
+const isMedicalContent = (text: string) => MEDICAL_CONTENT_REGEX.test(text) && !NON_MEDICAL_CONTENT_REGEX.test(text);
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -13,9 +18,25 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
+    const sanitizeTopicList = (value: unknown) => Array.isArray(value)
+      ? value.map(String).filter((t) => isMedicalContent(t))
+      : [];
+
+    const safeCompletedTopics = sanitizeTopicList(completedTopics);
+    const safeWeakAreas = sanitizeTopicList(weakAreas);
+    const safeRecentErrors = sanitizeTopicList(recentErrors);
+
+    const safePerformanceData = Object.fromEntries(
+      Object.entries(performanceData || {}).filter(([k]) => isMedicalContent(k))
+    );
+
     const today = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
-    
+
     const systemPrompt = `Você é o Learning Optimization Agent, um agente de IA especializado em otimizar o estudo diário para Residência Médica.
+
+⛔ RESTRIÇÃO ABSOLUTA DE ESCOPO:
+Você SOMENTE pode gerar plano para MEDICINA, SAÚDE e CIÊNCIAS BIOMÉDICAS.
+NUNCA inclua Direito, Engenharia, Informática ou áreas não médicas.
 
 DATA DE HOJE: ${today}
 
@@ -29,11 +50,11 @@ Sua função é decidir EXATAMENTE o que o aluno deve estudar hoje, baseado em:
 DADOS DO ALUNO:
 - Data da prova: ${examDate || "Não definida"}
 - Horas disponíveis hoje: ${dailyHours || 4}h
-- Tópicos já estudados: ${JSON.stringify(completedTopics || [])}
-- Áreas fracas: ${JSON.stringify(weakAreas || [])}
+- Tópicos já estudados: ${JSON.stringify(safeCompletedTopics)}
+- Áreas fracas: ${JSON.stringify(safeWeakAreas)}
 - Flashcards pendentes: ${flashcardsDue || 0}
-- Erros recentes: ${JSON.stringify(recentErrors || [])}
-- Desempenho geral: ${JSON.stringify(performanceData || {})}
+- Erros recentes: ${JSON.stringify(safeRecentErrors)}
+- Desempenho geral: ${JSON.stringify(safePerformanceData)}
 
 RETORNE um plano do dia estruturado em JSON com a seguinte estrutura:
 {
@@ -100,16 +121,58 @@ Regras:
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
     
-    // Parse JSON from response
-    let plan;
+    // Parse and sanitize JSON from response
+    let plan: any;
     try {
       const jsonMatch = content.match(/\{[\s\S]*\}/);
-      plan = jsonMatch ? JSON.parse(jsonMatch[0]) : { error: "Failed to parse plan" };
+      if (!jsonMatch) throw new Error("Failed to parse plan");
+      plan = JSON.parse(jsonMatch[0]);
     } catch {
-      plan = { raw: content };
+      return new Response(JSON.stringify({ error: "Falha ao processar plano diário gerado." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    return new Response(JSON.stringify(plan), {
+    const safeFocusAreas = Array.isArray(plan?.focus_areas)
+      ? plan.focus_areas.map(String).filter((t: string) => isMedicalContent(t))
+      : [];
+
+    const safeBlocks = Array.isArray(plan?.blocks)
+      ? plan.blocks
+          .map((b: any, i: number) => ({
+            order: Number(b?.order ?? i + 1),
+            type: String(b?.type || "study"),
+            topic: String(b?.topic || "Revisão médica"),
+            duration_minutes: Number(b?.duration_minutes || 30),
+            description: String(b?.description || ""),
+            priority: String(b?.priority || "medium"),
+            reason: String(b?.reason || ""),
+          }))
+          .filter((b: any) => isMedicalContent(`${b.topic} ${b.description} ${b.reason}`))
+      : [];
+
+    if (safeBlocks.length === 0) {
+      return new Response(JSON.stringify({ error: "A IA retornou um plano sem conteúdo médico válido." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const safeTips = Array.isArray(plan?.tips)
+      ? plan.tips.map(String).filter((tip: string) => !NON_MEDICAL_CONTENT_REGEX.test(tip))
+      : [];
+
+    const safePlan = {
+      greeting: String(plan?.greeting || "Vamos focar na sua evolução médica hoje."),
+      focus_areas: safeFocusAreas,
+      blocks: safeBlocks,
+      total_minutes: Number(plan?.total_minutes || safeBlocks.reduce((acc: number, b: any) => acc + b.duration_minutes, 0)),
+      tips: safeTips,
+      review_reminder: String(plan?.review_reminder || ""),
+    };
+
+    return new Response(JSON.stringify(safePlan), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

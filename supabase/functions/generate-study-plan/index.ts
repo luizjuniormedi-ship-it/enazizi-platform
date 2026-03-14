@@ -6,6 +6,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const NON_MEDICAL_CONTENT_REGEX = /(direito|jur[ií]d|penal|constitucional|processo penal|inquérito|inqu[eé]rito|stf|stj|delegad|advogad|pol[ií]cia federal|c[oó]digo penal|a[cç][aã]o penal|inform[aá]tica|tecnologia da informa[cç][aã]o|engenharia|contabil|economia|administra[cç][aã]o)/i;
+const MEDICAL_CONTENT_REGEX = /(medicin|sa[uú]de|paciente|diagn[oó]st|tratament|sintom|doen[cç]|fisiopat|farmac|anatom|cl[íi]nic|cirurg|pediatr|ginec|obstetr|preventiva|resid[eê]ncia|enare|revalida|protocolo|diretriz|sus)/i;
+
+const isMedicalContent = (text: string) => MEDICAL_CONTENT_REGEX.test(text) && !NON_MEDICAL_CONTENT_REGEX.test(text);
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -42,15 +47,27 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Missing required fields: examDate, hoursPerDay, daysPerWeek" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    const editalPreview = String(editalText || "").slice(0, 8000);
+    if (editalPreview && !isMedicalContent(editalPreview)) {
+      return new Response(JSON.stringify({ error: "Edital rejeitado: somente conteúdo médico é permitido para gerar cronograma." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const daysUntilExam = Math.ceil((new Date(examDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
     const prompt = `Você é um especialista em planejamento de estudos para provas de Residência Médica no Brasil (ENARE, USP, UNIFESP, Santa Casa, etc.).
+
+⛔ RESTRIÇÃO ABSOLUTA DE ESCOPO:
+Você só pode montar planos de estudo de MEDICINA, SAÚDE e CIÊNCIAS BIOMÉDICAS.
+Se identificar tema não médico, responda com JSON de erro sem gerar plano.
 
 Dados do aluno:
 - Data da prova: ${examDate} (${daysUntilExam} dias restantes)
 - Horas disponíveis por dia: ${hoursPerDay}
 - Dias de estudo por semana: ${daysPerWeek}
-${editalText ? `\nConteúdo programático/edital:\n${editalText.substring(0, 8000)}` : ""}
+${editalPreview ? `\nConteúdo programático/edital:\n${editalPreview}` : ""}
 
 Gere um cronograma semanal de estudos otimizado para residência médica. Retorne APENAS um JSON válido (sem markdown) no formato:
 {
@@ -68,6 +85,7 @@ Gere um cronograma semanal de estudos otimizado para residência médica. Retorn
 
 Regras:
 - As matérias principais são: Clínica Médica, Cirurgia, Pediatria, Ginecologia e Obstetrícia, Medicina Preventiva/Saúde Coletiva
+- NUNCA incluir Direito, Engenharia, Informática ou qualquer área não médica
 - Distribua as matérias proporcionalmente ao peso nas provas (Clínica Médica geralmente tem maior peso)
 - Inclua revisões, resolução de questões e simulados
 - Respeite o limite de horas/dia
@@ -101,10 +119,8 @@ Regras:
     }
 
     const aiData = await aiResp.json();
-    console.log("AI response structure:", JSON.stringify(Object.keys(aiData)));
     const raw = aiData.choices?.[0]?.message?.content || "";
-    console.log("AI raw content length:", raw.length, "preview:", raw.substring(0, 200));
-    
+
     // Extract JSON from response
     let planJson;
     try {
@@ -125,10 +141,39 @@ Regras:
             throw new Error("No JSON found in response");
           }
         }
-      } catch (parseErr) {
+      } catch {
         console.error("Failed to parse AI response:", raw);
         return new Response(JSON.stringify({ error: "Falha ao processar resposta da IA. Tente novamente." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+    }
+
+    const safeSubjects = Array.isArray(planJson?.subjects)
+      ? planJson.subjects.map(String).filter((s: string) => isMedicalContent(s))
+      : [];
+
+    const safeWeeklySchedule = Array.isArray(planJson?.weeklySchedule)
+      ? planJson.weeklySchedule
+          .map((day: any) => ({
+            day: String(day?.day || ""),
+            tasks: Array.isArray(day?.tasks)
+              ? day.tasks
+                  .map((t: any) => ({
+                    time: String(t?.time || ""),
+                    subject: String(t?.subject || ""),
+                    duration: String(t?.duration || ""),
+                    type: String(t?.type || "estudo"),
+                  }))
+                  .filter((t: any) => isMedicalContent(`${t.subject} ${t.type}`))
+              : [],
+          }))
+          .filter((d: any) => d.tasks.length > 0)
+      : [];
+
+    if (safeWeeklySchedule.length === 0) {
+      return new Response(JSON.stringify({ error: "A IA retornou um cronograma sem conteúdo médico válido." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Save to DB
@@ -136,6 +181,8 @@ Regras:
       user_id: userId,
       plan_json: {
         ...planJson,
+        subjects: safeSubjects,
+        weeklySchedule: safeWeeklySchedule,
         config: { examDate, hoursPerDay, daysPerWeek, hasEdital: !!editalText },
         generatedAt: new Date().toISOString(),
       },
