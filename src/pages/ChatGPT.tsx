@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
+import { mapTopicToSpecialty } from "@/lib/mapTopicToSpecialty";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -335,6 +336,50 @@ const ChatGPT = () => {
       taxa_acerto: newAccuracy,
       historico_estudo: newHistory,
     });
+
+    // Update medical_domain_map for the studied specialty
+    if (user && currentTopic) {
+      const specialty = mapTopicToSpecialty(currentTopic);
+      if (specialty) {
+        try {
+          const { data: existing } = await supabase
+            .from("medical_domain_map")
+            .select("id, questions_answered, correct_answers, reviews_count")
+            .eq("user_id", user.id)
+            .eq("specialty", specialty)
+            .maybeSingle();
+
+          const newQuestionsAnswered = (existing?.questions_answered || 0) + sessionQuestions;
+          const newCorrectAnswers = (existing?.correct_answers || 0) + sessionCorrect;
+          const newReviews = (existing?.reviews_count || 0) + 1;
+          const accuracy = newQuestionsAnswered > 0 ? (newCorrectAnswers / newQuestionsAnswered) * 100 : 0;
+          const domainScore = Math.max(0, Math.min(100, Math.round(accuracy)));
+
+          if (existing) {
+            await supabase.from("medical_domain_map").update({
+              questions_answered: newQuestionsAnswered,
+              correct_answers: newCorrectAnswers,
+              reviews_count: newReviews,
+              domain_score: domainScore,
+              last_studied_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }).eq("id", existing.id);
+          } else {
+            await supabase.from("medical_domain_map").insert({
+              user_id: user.id,
+              specialty,
+              questions_answered: sessionQuestions,
+              correct_answers: sessionCorrect,
+              reviews_count: 1,
+              domain_score: domainScore,
+              last_studied_at: new Date().toISOString(),
+            });
+          }
+        } catch (e) {
+          console.error("Error updating domain map:", e);
+        }
+      }
+    }
 
     setSessionQuestions(0);
     setSessionCorrect(0);
@@ -994,6 +1039,11 @@ const ChatGPT = () => {
             {enaziziStep === 12 && (
               <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("update")} disabled={isLoading}>
                 📈 Atualizar
+              </Button>
+            )}
+            {enaziziStep === 13 && (
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("consolidation")} disabled={isLoading}>
+                🔁 Consolidação
               </Button>
             )}
           </div>

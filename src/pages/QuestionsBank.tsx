@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { logErrorToBank } from "@/lib/errorBankLogger";
-import { Database, Play, Trash2, ChevronDown, ChevronUp, Search, BarChart3, Target, TrendingUp } from "lucide-react";
+import { Database, Play, Trash2, ChevronDown, ChevronUp, Search, BarChart3, Target, TrendingUp, GraduationCap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -37,6 +38,7 @@ function parseOptions(raw: Json | null): string[] {
 const QuestionsBank = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -264,13 +266,30 @@ const QuestionsBank = () => {
             </div>
           )}
 
-          <div className="flex gap-3 mt-6">
+          <div className="flex gap-3 mt-6 flex-wrap">
             {!answered ? (
               <Button onClick={confirmAnswer} disabled={selected === null}>Confirmar</Button>
             ) : (
-              <Button onClick={nextQuestion}>
-                {practiceIdx + 1 >= filtered.length ? "Finalizar" : "Próxima"}
-              </Button>
+              <>
+                <Button onClick={nextQuestion}>
+                  {practiceIdx + 1 >= filtered.length ? "Finalizar" : "Próxima"}
+                </Button>
+                {selected !== practiceQuestion.correct_index && (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => navigate("/dashboard/chatgpt", {
+                      state: {
+                        initialMessage: `Errei uma questão sobre "${practiceQuestion.topic || "Medicina"}". O enunciado era: "${practiceQuestion.statement.slice(0, 200)}". A resposta correta era "${practiceQuestion.options[practiceQuestion.correct_index]}". Me explique este tema seguindo o protocolo ENAZIZI.`,
+                        fromErrorBank: true,
+                      },
+                    })}
+                  >
+                    <GraduationCap className="h-4 w-4" />
+                    Estudar com Tutor IA
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>

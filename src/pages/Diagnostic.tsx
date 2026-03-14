@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { logErrorToBank } from "@/lib/errorBankLogger";
-import { Stethoscope, Clock, CheckCircle2, Loader2, ArrowRight, Award } from "lucide-react";
+import { Stethoscope, Clock, CheckCircle2, Loader2, ArrowRight, Award, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -225,6 +225,38 @@ const Diagnostic = () => {
             })}
           </div>
         </div>
+
+        {/* Weak areas → study with Tutor IA */}
+        {(() => {
+          const weakAreas = Object.entries(areaResults).filter(([, v]) => (v.correct / v.total) < 0.6);
+          return weakAreas.length > 0 && (
+            <div className="glass-card p-4">
+              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <GraduationCap className="h-4 w-4 text-primary" />
+                Estude suas áreas fracas com o Tutor IA
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {weakAreas.map(([area]) => (
+                  <Button
+                    key={area}
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs"
+                    onClick={() => navigate("/dashboard/chatgpt", {
+                      state: {
+                        initialMessage: `No diagnóstico inicial, tive dificuldade em "${area}" (${Math.round((areaResults[area].correct / areaResults[area].total) * 100)}% de acerto). Me dê uma aula completa seguindo o protocolo ENAZIZI para reforçar este tema.`,
+                        fromErrorBank: true,
+                      },
+                    })}
+                  >
+                    <GraduationCap className="h-3.5 w-3.5" />
+                    {area}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         <div className="flex gap-3">
           <Button onClick={() => navigate("/dashboard")} className="flex-1">Ir para o Dashboard</Button>
