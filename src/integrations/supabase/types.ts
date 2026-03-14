@@ -464,6 +464,45 @@ export type Database = {
           },
         ]
       }
+      study_performance: {
+        Row: {
+          created_at: string
+          historico_estudo: Json
+          id: string
+          pontuacao_discursiva: number | null
+          questoes_respondidas: number
+          taxa_acerto: number
+          tema_atual: string | null
+          temas_fracos: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          historico_estudo?: Json
+          id?: string
+          pontuacao_discursiva?: number | null
+          questoes_respondidas?: number
+          taxa_acerto?: number
+          tema_atual?: string | null
+          temas_fracos?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          historico_estudo?: Json
+          id?: string
+          pontuacao_discursiva?: number | null
+          questoes_respondidas?: number
+          taxa_acerto?: number
+          tema_atual?: string | null
+          temas_fracos?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       study_plans: {
         Row: {
           created_at: string
