@@ -22,6 +22,31 @@ interface StudyPerformance {
   historico_estudo: Array<{ tema: string; data: string; questoes: number; acerto: number; discursiva: number | null }>;
 }
 
+interface EnaziziProgress {
+  estado_atual: number;
+  tema_atual: string | null;
+  questoes_respondidas: number;
+  taxa_acerto: number;
+  pontuacao_discursiva: number | null;
+  temas_fracos: string[];
+  historico_estudo: string[];
+}
+
+const ENAZIZI_STEPS = [
+  { num: 1, label: "Painel", icon: "📊" },
+  { num: 2, label: "Tema", icon: "📚" },
+  { num: 3, label: "Bloco 1", icon: "📖" },
+  { num: 4, label: "Recall", icon: "🧠" },
+  { num: 5, label: "Bloco 2", icon: "🔬" },
+  { num: 6, label: "Recall", icon: "🧠" },
+  { num: 7, label: "Bloco 3", icon: "🏥" },
+  { num: 8, label: "Questão", icon: "❓" },
+  { num: 9, label: "Discussão", icon: "💬" },
+  { num: 10, label: "Discursivo", icon: "✍️" },
+  { num: 11, label: "Correção", icon: "✅" },
+  { num: 12, label: "Atualizar", icon: "📈" },
+];
+
 const FUNCTION_NAME = "chatgpt-agent";
 
 const ChatGPT = () => {
