@@ -63,35 +63,71 @@ const Simulados = () => {
     setPhase("loading");
     try {
       const topicsStr = selectedTopics.join(", ");
-      const res = await supabase.functions.invoke("question-generator", {
-        body: {
-          messages: [{
-            role: "user",
-            content: `Gere exatamente ${count} questões de múltipla escolha para simulado de residência médica sobre: ${topicsStr}. 
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            messages: [{
+              role: "user",
+              content: `Gere exatamente ${count} questões de múltipla escolha para simulado de residência médica sobre: ${topicsStr}. 
 Formato OBRIGATÓRIO: JSON array puro, sem markdown, sem texto extra.
 [{"statement":"caso clínico...", "options":["a","b","c","d","e"], "correct_index": 0, "topic":"Área", "explanation":"explicação detalhada"}]
 Distribua igualmente entre os temas solicitados. Nível intermediário a difícil com casos clínicos.`
-          }],
-        },
-      });
+            }],
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Erro ao conectar com o gerador de questões");
+      }
+
+      // Read SSE stream and accumulate full text
+      let fullText = "";
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          for (const line of chunk.split("\n")) {
+            if (!line.startsWith("data: ")) continue;
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === "[DONE]") continue;
+            try {
+              const parsed = JSON.parse(jsonStr);
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) fullText += content;
+            } catch {}
+          }
+        }
+      }
 
       let parsed: SimQuestion[] = [];
-      if (!res.error && res.data) {
-        const content = typeof res.data === "string" ? res.data : JSON.stringify(res.data);
-        try {
-          const match = content.match(/\[[\s\S]*\]/);
-          if (match) {
-            const arr = JSON.parse(match[0]);
-            parsed = (Array.isArray(arr) ? arr : []).map((q: any) => ({
-              statement: String(q.statement || ""),
-              options: Array.isArray(q.options) ? q.options.map(String) : [],
-              correct: Number.isInteger(q.correct_index) ? q.correct_index : 0,
-              topic: String(q.topic || selectedTopics[0]),
-              explanation: String(q.explanation || ""),
-            })).filter((q: SimQuestion) => q.options.length >= 4 && q.statement.length > 10);
-          }
-        } catch {}
-      }
+      try {
+        const match = fullText.match(/\[[\s\S]*\]/);
+        if (match) {
+          const arr = JSON.parse(match[0]);
+          parsed = (Array.isArray(arr) ? arr : []).map((q: any) => ({
+            statement: String(q.statement || ""),
+            options: Array.isArray(q.options) ? q.options.map(String) : [],
+            correct: Number.isInteger(q.correct_index) ? q.correct_index : 0,
+            topic: String(q.topic || selectedTopics[0]),
+            explanation: String(q.explanation || ""),
+          })).filter((q: SimQuestion) => q.options.length >= 4 && q.statement.length > 10);
+        }
+      } catch {}
 
       if (parsed.length === 0) {
         toast({ title: "Erro ao gerar questões. Tente novamente.", variant: "destructive" });
