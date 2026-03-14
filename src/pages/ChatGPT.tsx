@@ -141,6 +141,7 @@ const ChatGPT = () => {
 
   // Load questions from bank for context
   const [bankQuestions, setBankQuestions] = useState<Array<{ statement: string; options: any; correct_index: number | null; explanation: string | null; topic: string | null }>>([]);
+  const [errorBankData, setErrorBankData] = useState<Array<{ tema: string; subtema: string | null; tipo_questao: string; categoria_erro: string | null; vezes_errado: number }>>([]);
 
   useEffect(() => {
     if (!user || !currentTopic) { setBankQuestions([]); return; }
@@ -156,6 +157,21 @@ const ChatGPT = () => {
     };
     loadQuestions();
   }, [user, currentTopic]);
+
+  // Load error bank data
+  useEffect(() => {
+    if (!user) return;
+    const loadErrorBank = async () => {
+      const { data } = await supabase
+        .from("error_bank")
+        .select("tema, subtema, tipo_questao, categoria_erro, vezes_errado")
+        .eq("user_id", user.id)
+        .order("vezes_errado", { ascending: false })
+        .limit(20);
+      setErrorBankData((data as any[]) || []);
+    };
+    loadErrorBank();
+  }, [user]);
 
   const buildUserContext = useCallback(() => {
     let ctx = "";
