@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useAuth } from "@/hooks/useAuth";
-import { FileText, Clock, Award } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { FileText, Clock, Award, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const questions = [
@@ -14,6 +15,7 @@ const questions = [
       "Aguardar troponina seriada antes de qualquer conduta",
     ],
     correct: 1,
+    topic: "Cardiologia",
   },
   {
     statement: "Lactente de 8 meses, febre alta, irritabilidade e fontanela abaulada. Qual exame deve ser considerado para confirmação diagnóstica de meningite, se não houver contraindicação?",
@@ -24,11 +26,13 @@ const questions = [
       "ECG de repouso",
     ],
     correct: 1,
+    topic: "Pediatria",
   },
 ];
 
 const Simulados = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
@@ -42,13 +46,23 @@ const Simulados = () => {
     if (selected !== q.correct && user) {
       logErrorToBank({
         userId: user.id,
-        tema: "Clínica Médica",
+        tema: q.topic || "Clínica Médica",
         tipoQuestao: "simulado",
         conteudo: q.statement,
         motivoErro: `Marcou "${q.options[selected]}" — Correta: "${q.options[q.correct]}"`,
         categoriaErro: "conceito",
       });
     }
+  };
+
+  const handleStudyWithTutor = () => {
+    const topic = q.topic || "Clínica Médica";
+    navigate("/dashboard/chatgpt", {
+      state: {
+        initialMessage: `Errei uma questão sobre "${topic}". O enunciado era: "${q.statement.slice(0, 200)}". A resposta correta era "${q.options[q.correct]}". Me explique este tema em detalhes seguindo o protocolo ENAZIZI.`,
+        fromErrorBank: true,
+      },
+    });
   };
 
   return (
@@ -96,9 +110,17 @@ const Simulados = () => {
           {!answered ? (
             <Button onClick={handleAnswer} disabled={selected === null}>Confirmar</Button>
           ) : (
-            <Button onClick={() => { setCurrent(Math.min(questions.length - 1, current + 1)); setSelected(null); setAnswered(false); }}>
-              Próxima
-            </Button>
+            <div className="flex gap-3 flex-wrap">
+              <Button onClick={() => { setCurrent(Math.min(questions.length - 1, current + 1)); setSelected(null); setAnswered(false); }}>
+                Próxima
+              </Button>
+              {selected !== q.correct && (
+                <Button variant="outline" onClick={handleStudyWithTutor} className="gap-2">
+                  <GraduationCap className="h-4 w-4" />
+                  Estudar com Tutor IA
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </div>
