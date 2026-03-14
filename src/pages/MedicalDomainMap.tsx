@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Brain, RefreshCw, BookOpen, AlertTriangle, ChevronDown, ChevronRight, GraduationCap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { mapTopicToSpecialty } from "@/lib/mapTopicToSpecialty";
 
 const SPECIALTIES_WITH_TOPICS: Record<string, string[]> = {
   "Cardiologia": [
