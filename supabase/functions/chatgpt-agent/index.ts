@@ -157,6 +157,35 @@ SEMPRE responder em português brasileiro.`;
       instructions += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
     }
 
+    if (enazizi_progress) {
+      const stepNames: Record<number, string> = {
+        1: "Painel de desempenho",
+        2: "Escolha do tema",
+        3: "Aula bloco 1 (explicação simples)",
+        4: "Active Recall 1",
+        5: "Aula bloco 2 (fisiopatologia)",
+        6: "Active Recall 2",
+        7: "Aula bloco 3 (aplicação clínica)",
+        8: "Questão objetiva A-E",
+        9: "Discussão da questão",
+        10: "Caso clínico discursivo",
+        11: "Correção do caso",
+        12: "Atualização de desempenho",
+      };
+      const step = enazizi_progress.estado_atual || 1;
+      const stepName = stepNames[step] || "Desconhecido";
+      instructions += `\n\n--- ESTADO ATUAL DO ALUNO ---
+Etapa atual: ${step}/12 — ${stepName}
+Tema: ${enazizi_progress.tema_atual || "não definido"}
+Questões respondidas: ${enazizi_progress.questoes_respondidas || 0}
+Taxa de acerto: ${enazizi_progress.taxa_acerto || 0}%
+Pontuação discursiva: ${enazizi_progress.pontuacao_discursiva ?? "não avaliado"}
+Temas fracos: ${(enazizi_progress.temas_fracos || []).join(", ") || "nenhum"}
+
+IMPORTANTE: Você está na etapa ${step} (${stepName}). Continue EXATAMENTE a partir desta etapa. NÃO repita etapas anteriores. NÃO pule para etapas futuras.
+--- FIM DO ESTADO ---`;
+    }
+
     // Build input array for Responses API
     const input = messages.map((m) => ({
       role: m.role,
