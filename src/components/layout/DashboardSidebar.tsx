@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/dashboard/estudar", icon: Brain, label: "📚 Estudar (ENAZIZI)" },
   { to: "/dashboard/plano-dia", icon: Zap, label: "Plano do Dia" },
   { to: "/dashboard/diagnostico", icon: Stethoscope, label: "Diagnóstico" },
   { to: "/dashboard/cronograma", icon: CalendarDays, label: "Cronograma" },
