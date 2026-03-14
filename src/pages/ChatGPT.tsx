@@ -46,6 +46,7 @@ const ENAZIZI_STEPS = [
   { num: 11, label: "Discursivo", icon: "✍️" },
   { num: 12, label: "Correção", icon: "✅" },
   { num: 13, label: "Atualizar", icon: "📈" },
+  { num: 14, label: "Consolidação", icon: "🔁" },
 ];
 
 const FUNCTION_NAME = "chatgpt-agent";
@@ -535,6 +536,10 @@ const ChatGPT = () => {
       "update": {
         prompt: `Atualize meu painel de desempenho com base nesta sessão sobre ${currentTopic}. Mostre: questões respondidas, taxa de acerto, temas fracos, desempenho clínico e discursivo.`,
         step: 13,
+      },
+      "consolidation": {
+        prompt: `Agora inicie o BLOCO DE CONSOLIDAÇÃO sobre ${currentTopic}. Gere 5 questões objetivas sequenciais (uma por vez, espere minha resposta antes de enviar a próxima). Cada questão deve ter caso clínico curto + alternativas A–E. Após cada resposta, diga se acertou ou errou com breve explicação. Ao final das 5, apresente um resumo: acertos/erros, taxa, pontos fracos detectados e recomendação de próximo tema.`,
+        step: 14,
       },
     };
     const action = phaseMap[phase];
