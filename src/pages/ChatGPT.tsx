@@ -35,16 +35,17 @@ interface EnaziziProgress {
 const ENAZIZI_STEPS = [
   { num: 1, label: "Painel", icon: "📊" },
   { num: 2, label: "Tema", icon: "📚" },
-  { num: 3, label: "Bloco 1", icon: "📖" },
-  { num: 4, label: "Recall", icon: "🧠" },
-  { num: 5, label: "Bloco 2", icon: "🔬" },
-  { num: 6, label: "Recall", icon: "🧠" },
-  { num: 7, label: "Bloco 3", icon: "🏥" },
-  { num: 8, label: "Questão", icon: "❓" },
-  { num: 9, label: "Discussão", icon: "💬" },
-  { num: 10, label: "Discursivo", icon: "✍️" },
-  { num: 11, label: "Correção", icon: "✅" },
-  { num: 12, label: "Atualizar", icon: "📈" },
+  { num: 3, label: "Técnico 1", icon: "🔬" },
+  { num: 4, label: "Leigo 1", icon: "💡" },
+  { num: 5, label: "Técnico 2", icon: "🔬" },
+  { num: 6, label: "Leigo 2", icon: "💡" },
+  { num: 7, label: "Técnico 3", icon: "🏥" },
+  { num: 8, label: "Leigo 3", icon: "💡" },
+  { num: 9, label: "Questão", icon: "❓" },
+  { num: 10, label: "Discussão", icon: "💬" },
+  { num: 11, label: "Discursivo", icon: "✍️" },
+  { num: 12, label: "Correção", icon: "✅" },
+  { num: 13, label: "Atualizar", icon: "📈" },
 ];
 
 const FUNCTION_NAME = "chatgpt-agent";
