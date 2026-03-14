@@ -20,6 +20,7 @@ const navItems = [
   { to: "/dashboard/resumos", icon: BookOpen, label: "📖 Resumidor" },
   { to: "/dashboard/coach", icon: Heart, label: "💪 Coach Motivacional" },
   { to: "/dashboard/predictor", icon: TrendingUp, label: "📈 Previsão de Desempenho" },
+  { to: "/dashboard/banco-erros", icon: AlertTriangle, label: "🚨 Banco de Erros" },
   { to: "/dashboard/uploads", icon: Upload, label: "📤 Uploads" },
   { to: "/dashboard/analytics", icon: BarChart3, label: "📊 Analytics" },
 ];

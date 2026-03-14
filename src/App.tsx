@@ -64,6 +64,7 @@ const App = () => (
               <Route path="predictor" element={<PerformancePredictor />} />
               <Route path="diagnostico" element={<Diagnostic />} />
               <Route path="simulado-completo" element={<ExamSimulator />} />
+              <Route path="banco-erros" element={<ErrorBank />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="perfil" element={<Profile />} />
             </Route>
