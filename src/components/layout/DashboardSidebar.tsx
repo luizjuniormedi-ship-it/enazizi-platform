@@ -1,10 +1,11 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Brain, LayoutDashboard, CalendarDays, FlipVertical,
+  LayoutDashboard, CalendarDays, FlipVertical,
   FileText, Upload, MessageSquare, BarChart3, LogOut, Shield, User,
   HelpCircle, BookOpen, Heart, Bot, Database, Zap, TrendingUp, Stethoscope, Award, Sparkles, AlertTriangle, Map
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import enazizi from "@/assets/enazizi-mascot.png";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -40,9 +41,7 @@ const DashboardSidebar = () => {
     <aside className="hidden lg:flex flex-col w-64 border-r border-sidebar-border bg-sidebar min-h-screen">
       <div className="p-6">
         <Link to="/" className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Brain className="h-5 w-5 text-primary" />
-          </div>
+          <img src={enazizi} alt="ENAZIZI" className="h-9 w-9 rounded-lg object-cover" />
           <span className="text-lg font-bold text-sidebar-foreground">ENAZIZI</span>
         </Link>
       </div>
