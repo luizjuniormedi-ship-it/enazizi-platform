@@ -75,6 +75,8 @@ const ChatGPT = () => {
   const [sessionQuestions, setSessionQuestions] = useState(0);
   const [sessionCorrect, setSessionCorrect] = useState(0);
   const [enaziziStep, setEnaziziStep] = useState(1);
+  const [changingTopic, setChangingTopic] = useState(false);
+  const [newTopic, setNewTopic] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -431,9 +433,10 @@ const ChatGPT = () => {
 
   const NON_MEDICAL_KEYWORDS = /\b(direito|jurídic|advocacia|contabil|engenharia|arquitetura|economia|finanças|marketing|administração de empresas|programação|software|TI\b|informática|matemática pura|filosofia|sociologia|letras|pedagogia)\b/i;
 
-  const handleStartStudy = () => {
-    if (!topic.trim()) return;
-    if (NON_MEDICAL_KEYWORDS.test(topic)) {
+  const handleStartStudy = (overrideTopic?: string) => {
+    const t = overrideTopic || topic;
+    if (!t.trim()) return;
+    if (NON_MEDICAL_KEYWORDS.test(t)) {
       toast({
         title: "⛔ Tema não médico",
         description: "Esta plataforma é exclusiva para Residência Médica. Por favor, escolha um tema de medicina.",
@@ -442,13 +445,39 @@ const ChatGPT = () => {
       return;
     }
     setStudyStarted(true);
-    setCurrentTopic(topic);
+    setCurrentTopic(t);
     setSessionQuestions(0);
     setSessionCorrect(0);
     setEnaziziStep(3);
-    savePerformance({ tema_atual: topic });
-    saveEnaziziStep(3, topic);
-    sendMessage(`Quero estudar o tema: ${topic}. Comece com o Bloco Técnico 1 (conceito e definição — explicação técnica baseada na literatura). Estou na etapa 3/13 do Protocolo ENAZIZI.`);
+    savePerformance({ tema_atual: t });
+    saveEnaziziStep(3, t);
+    sendMessage(`Quero estudar o tema: ${t}. Comece com o Bloco Técnico 1 (conceito e definição — explicação técnica baseada na literatura). Estou na etapa 3/13 do Protocolo ENAZIZI.`);
+  };
+
+
+  const handleChangeTopic = () => {
+    if (!newTopic.trim()) return;
+    if (NON_MEDICAL_KEYWORDS.test(newTopic)) {
+      toast({
+        title: "⛔ Tema não médico",
+        description: "Esta plataforma é exclusiva para Residência Médica.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setChangingTopic(false);
+    setTopic(newTopic);
+    // Reset flow to STATE 2 (concept) with new topic
+    setMessages((prev) => [
+      ...prev,
+      { role: "user" as const, content: `--- MUDANÇA DE TEMA ---\nNovo tema: ${newTopic}` },
+    ]);
+    setCurrentTopic(newTopic);
+    setEnaziziStep(3);
+    saveEnaziziStep(3, newTopic);
+    savePerformance({ tema_atual: newTopic });
+    sendMessage(`MUDANÇA DE TEMA: Quero mudar para o tema "${newTopic}". Reinicie o fluxo pedagógico. Comece do STATE 2 — Bloco Técnico 1 (conceito e definição) sobre ${newTopic}.`);
+    setNewTopic("");
   };
 
   const handlePhaseAction = (phase: string) => {
@@ -641,7 +670,7 @@ const ChatGPT = () => {
               onKeyDown={(e) => e.key === "Enter" && handleStartStudy()}
               className="bg-secondary border-border text-base"
             />
-            <Button onClick={handleStartStudy} className="glow gap-2 px-6" disabled={!topic.trim()}>
+            <Button onClick={() => handleStartStudy()} className="glow gap-2 px-6" disabled={!topic.trim()}>
               <GraduationCap className="h-4 w-4" />
               Vamos estudar
             </Button>
@@ -712,7 +741,7 @@ const ChatGPT = () => {
         <>
           {/* Step Progress Indicator */}
           <div className="mb-3">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
                 📚 {currentTopic}
               </span>
@@ -724,7 +753,25 @@ const ChatGPT = () => {
                   {sessionQuestions}Q • {Math.round((sessionCorrect / sessionQuestions) * 100)}%
                 </span>
               )}
+              <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 ml-auto" onClick={() => setChangingTopic(!changingTopic)} disabled={isLoading}>
+                <RefreshCw className="h-3 w-3" /> Mudar Tema
+              </Button>
             </div>
+            {changingTopic && (
+              <div className="flex gap-2 mb-2 max-w-md">
+                <Input
+                  placeholder="Novo tema médico..."
+                  value={newTopic}
+                  onChange={(e) => setNewTopic(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleChangeTopic()}
+                  className="bg-secondary border-border text-sm h-8"
+                  autoFocus
+                />
+                <Button size="sm" className="h-8 text-xs" onClick={handleChangeTopic} disabled={!newTopic.trim()}>
+                  Iniciar
+                </Button>
+              </div>
+            )}
             <div className="flex gap-0.5">
               {ENAZIZI_STEPS.map((s) => (
                 <div
