@@ -229,15 +229,12 @@ const Flashcards = () => {
       ) : (
         <>
           <div className="flex items-center justify-center">
-            <div
-              className="glass-card w-full max-w-2xl min-h-[320px] p-8 cursor-pointer flex flex-col items-center justify-center text-center relative group hover:border-primary/30 transition-all"
-              onClick={() => setFlipped(!flipped)}
-            >
+            <div className="glass-card w-full max-w-2xl min-h-[320px] p-8 flex flex-col items-center justify-center text-center relative group transition-all">
               <div className="absolute top-4 left-4 text-xs text-primary/70 font-medium px-2 py-1 rounded-md bg-primary/10">
                 {card.topic || "Geral"}
               </div>
               <div className="absolute top-4 right-4 text-xs text-muted-foreground">
-                {idx + 1}/{currentCards.length} • Clique para virar
+                {idx + 1}/{currentCards.length}
               </div>
               {reviews.get(card.id) && (
                 <div className="absolute bottom-4 left-4 text-xs text-muted-foreground flex items-center gap-1">
@@ -245,17 +242,63 @@ const Flashcards = () => {
                   Intervalo: {reviews.get(card.id)!.interval_days}d
                 </div>
               )}
+
               <div className="text-xs uppercase tracking-wider text-primary mb-4 font-semibold">
-                {flipped ? "Resposta" : "Pergunta"}
+                Pergunta
               </div>
-              <p className="text-lg leading-relaxed">
-                {flipped ? card.answer : card.question}
-              </p>
+              <p className="text-lg leading-relaxed mb-6">{card.question}</p>
+
+              {flipped && (
+                <div className={`w-full border-t border-border pt-4 mt-2 rounded-b-lg ${answerSubmitted ? (isAnswerCorrect() ? "bg-success/5" : "bg-destructive/5") : ""}`}>
+                  <div className="text-xs uppercase tracking-wider text-primary mb-2 font-semibold flex items-center justify-center gap-2">
+                    Resposta
+                    {answerSubmitted && (
+                      isAnswerCorrect()
+                        ? <CheckCircle className="h-4 w-4 text-success" />
+                        : <XCircle className="h-4 w-4 text-destructive" />
+                    )}
+                  </div>
+                  {answerSubmitted && (
+                    <div className="mb-3 p-2 rounded-md bg-muted/50 text-sm">
+                      <span className="text-muted-foreground">Sua resposta: </span>
+                      <span className={isAnswerCorrect() ? "text-success font-medium" : "text-destructive font-medium"}>
+                        {userAnswer}
+                      </span>
+                    </div>
+                  )}
+                  <p className="text-lg leading-relaxed font-medium">{card.answer}</p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Controls */}
-          {flipped ? (
+          {!flipped && (
+            <div className="flex items-center justify-center gap-2 max-w-2xl mx-auto w-full">
+              <Button variant="outline" size="icon" onClick={() => { setIdx(Math.max(0, idx - 1)); setFlipped(false); setUserAnswer(""); setAnswerSubmitted(false); }} disabled={idx === 0}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <form onSubmit={(e) => { e.preventDefault(); handleSubmitAnswer(); }} className="flex-1 flex gap-2">
+                <Input
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  placeholder="Digite sua resposta..."
+                  className="flex-1"
+                />
+                <Button type="submit" disabled={!userAnswer.trim()}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Responder
+                </Button>
+              </form>
+              <Button variant="ghost" size="sm" onClick={() => { setFlipped(true); setAnswerSubmitted(false); }} className="text-muted-foreground text-xs">
+                Pular
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => { setIdx(Math.min(currentCards.length - 1, idx + 1)); setFlipped(false); setUserAnswer(""); setAnswerSubmitted(false); }} disabled={idx === currentCards.length - 1}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          {flipped && (
             <div className="flex items-center justify-center gap-3">
               <Button variant="destructive" onClick={() => handleReview("again")} className="min-w-[100px]">
                 <RotateCcw className="h-4 w-4 mr-2" />
@@ -269,18 +312,6 @@ const Flashcards = () => {
               </Button>
               <Button variant="ghost" size="icon" title="Remover" onClick={handleDelete}>
                 <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-4">
-              <Button variant="outline" size="icon" onClick={() => { setIdx(Math.max(0, idx - 1)); setFlipped(false); }} disabled={idx === 0}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="default" onClick={() => setFlipped(true)}>
-                Mostrar resposta
-              </Button>
-              <Button variant="outline" size="icon" onClick={() => { setIdx(Math.min(currentCards.length - 1, idx + 1)); setFlipped(false); }} disabled={idx === currentCards.length - 1}>
-                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           )}
