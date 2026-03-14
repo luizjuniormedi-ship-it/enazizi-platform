@@ -113,7 +113,7 @@ const DashboardLayout = () => (
           <img
             src={enazizi}
             alt=""
-            className="w-[40vmin] h-[40vmin] object-contain opacity-[0.08] select-none"
+            className="w-[40vmin] h-[40vmin] object-contain opacity-[0.25] select-none"
             draggable={false}
           />
         </div>
