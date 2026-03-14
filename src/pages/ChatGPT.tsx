@@ -73,6 +73,7 @@ const ChatGPT = () => {
   });
   const [sessionQuestions, setSessionQuestions] = useState(0);
   const [sessionCorrect, setSessionCorrect] = useState(0);
+  const [enaziziStep, setEnaziziStep] = useState(1);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
