@@ -119,10 +119,8 @@ Regras:
     }
 
     const aiData = await aiResp.json();
-    console.log("AI response structure:", JSON.stringify(Object.keys(aiData)));
     const raw = aiData.choices?.[0]?.message?.content || "";
-    console.log("AI raw content length:", raw.length, "preview:", raw.substring(0, 200));
-    
+
     // Extract JSON from response
     let planJson;
     try {
@@ -143,7 +141,7 @@ Regras:
             throw new Error("No JSON found in response");
           }
         }
-      } catch (parseErr) {
+      } catch {
         console.error("Failed to parse AI response:", raw);
         return new Response(JSON.stringify({ error: "Falha ao processar resposta da IA. Tente novamente." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
