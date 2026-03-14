@@ -191,9 +191,24 @@ const Uploads = () => {
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{f.filename}</div>
                   <div className="text-xs text-muted-foreground">
-                    {f.file_type} • {f.status === "processed" ? `✅ ${f.extracted_json?.flashcards_count || 0} flashcards gerados` : f.status} • {new Date(f.created_at).toLocaleDateString("pt-BR")}
+                    {f.file_type} • {f.status === "processed"
+                      ? `✅ ${f.extracted_json?.flashcards_count || 0} flashcards${f.extracted_json?.questions_count ? ` • ${f.extracted_json.questions_count} questões` : ""}`
+                      : f.status}
+                    {" • "}{new Date(f.created_at).toLocaleDateString("pt-BR")}
                   </div>
                 </div>
+                {isAdmin && f.status === "processed" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs"
+                    disabled={populating === f.id}
+                    onClick={() => handlePopulateQuestions(f)}
+                  >
+                    {populating === f.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Database className="h-3 w-3" />}
+                    {populating === f.id ? "Gerando..." : "Gerar Questões"}
+                  </Button>
+                )}
                 <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDelete(f)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
