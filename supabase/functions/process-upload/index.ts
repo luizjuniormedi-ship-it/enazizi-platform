@@ -124,9 +124,9 @@ Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicaç
         messages: [
           {
             role: "system",
-            content: `Você é um assistente especializado em criar flashcards educativos para concursos públicos, especialmente Delegado da Polícia Federal.
+            content: `Você é um assistente especializado em criar flashcards educativos para Residência Médica (ENARE, USP, UNIFESP).
 Analise o texto fornecido e gere flashcards no formato JSON.
-Cada flashcard deve ter: question (pergunta objetiva), answer (resposta concisa), topic (tema/matéria).
+Cada flashcard deve ter: question (pergunta objetiva), answer (resposta concisa), topic (tema/matéria médica).
 Gere entre 5 e 15 flashcards relevantes baseados no conteúdo.
 Responda APENAS com o JSON, sem markdown ou texto adicional.
 Formato: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}`
