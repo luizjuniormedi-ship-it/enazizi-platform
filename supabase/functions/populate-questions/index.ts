@@ -205,33 +205,40 @@ serve(async (req) => {
       .eq("id", uploadId)
       .maybeSingle();
 
-    if (!upload || !upload.storage_path) {
+    if (!upload) {
       return new Response(JSON.stringify({ error: "Upload not found" }), { status: 404, headers: corsHeaders });
     }
 
-    const { data: fileData } = await supabaseAdmin.storage
-      .from("user-uploads")
-      .download(upload.storage_path);
-
-    if (!fileData) {
-      return new Response(JSON.stringify({ error: "File not found in storage" }), { status: 404, headers: corsHeaders });
-    }
-
     let fullText = "";
-    const fileType = (upload.file_type || "").toLowerCase();
-    if (fileType === "txt") {
-      fullText = await fileData.text();
-    } else {
-      fullText = await extractPdfText(fileData);
+    
+    // Prefer already-extracted text
+    if (upload.extracted_text && upload.extracted_text.trim().length > 100) {
+      fullText = upload.extracted_text;
+      console.log("Using pre-extracted text, length:", fullText.length);
+    } else if (upload.storage_path) {
+      const { data: fileData } = await supabaseAdmin.storage
+        .from("user-uploads")
+        .download(upload.storage_path);
+
+      if (!fileData) {
+        return new Response(JSON.stringify({ error: "File not found in storage" }), { status: 404, headers: corsHeaders });
+      }
+
+      const fileType = (upload.file_type || "").toLowerCase();
+      if (fileType === "txt") {
+        fullText = await fileData.text();
+      } else {
+        fullText = await extractPdfText(fileData);
+      }
+
+      await supabaseAdmin.from("uploads").update({ 
+        extracted_text: fullText.slice(0, 50000) 
+      }).eq("id", uploadId);
     }
 
     if (!fullText.trim()) {
       return new Response(JSON.stringify({ error: "No text extracted" }), { status: 400, headers: corsHeaders });
     }
-
-    await supabaseAdmin.from("uploads").update({ 
-      extracted_text: fullText.slice(0, 50000) 
-    }).eq("id", uploadId);
 
     const fn = upload.filename.toLowerCase();
     let topic = "Clínica Médica";
