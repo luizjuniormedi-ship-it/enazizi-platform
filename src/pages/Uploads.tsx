@@ -168,7 +168,7 @@ const Uploads = () => {
           <>
             <Loader2 className="h-12 w-12 text-primary mx-auto mb-4 animate-spin" />
             <p className="text-lg font-medium mb-1">Enviando e processando...</p>
-            <p className="text-sm text-muted-foreground">Gerando flashcards com IA</p>
+            <p className="text-sm text-muted-foreground">Gerando flashcards e questões com IA</p>
           </>
         ) : (
           <>
