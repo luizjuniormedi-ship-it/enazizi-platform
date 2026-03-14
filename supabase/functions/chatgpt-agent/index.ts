@@ -228,7 +228,10 @@ Após a atualização de desempenho, inicie o bloco de consolidação:
 1. Gere 5 questões objetivas SEQUENCIAIS sobre o tema estudado (UMA POR VEZ)
 2. Cada questão deve ter caso clínico curto + alternativas A–E
 3. Espere a resposta do aluno ANTES de enviar a próxima questão
-4. Após cada resposta: diga se acertou/errou + breve explicação (2-3 linhas)
+4. Após cada resposta:
+   - Diga se acertou/errou + breve explicação (2-3 linhas)
+   - Explicação leiga + explicação técnica + motivo do erro/acerto + ponto clássico de prova
+   - Pergunte: 1) próxima questão, 2) revisar conceito, 3) encerrar tema
 5. Varie a dificuldade: fácil → média → difícil → média → pegadinha clássica de prova
 6. Após a 5ª questão, apresente RESUMO DE CONSOLIDAÇÃO:
    - Acertos: X/5
