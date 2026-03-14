@@ -63,43 +63,66 @@ const ExamSimulator = () => {
     setPhase("loading");
     try {
       // Fetch questions from bank or generate
-      const { data: bankQuestions } = await supabase
+      const { data: bankQuestions, error: bankError } = await supabase
         .from("questions_bank")
         .select("id, statement, options, correct_index, topic, explanation")
         .or(`user_id.eq.${user!.id},is_global.eq.true`)
-        .limit(examConfig.questionCount);
+        .limit(examConfig.questionCount * 2);
 
-      let examQuestions: ExamQuestion[] = (bankQuestions || []).map((q: any) => ({
-        id: q.id,
-        statement: q.statement,
-        options: Array.isArray(q.options) ? q.options : [],
-        correct_index: q.correct_index || 0,
-        topic: q.topic || "Geral",
-        explanation: q.explanation || "",
-      }));
+      if (bankError) throw bankError;
+
+      let examQuestions: ExamQuestion[] = (bankQuestions || [])
+        .map((q: any) => ({
+          id: q.id,
+          statement: q.statement,
+          options: Array.isArray(q.options) ? q.options.map(String) : [],
+          correct_index: q.correct_index || 0,
+          topic: q.topic || "Geral",
+          explanation: q.explanation || "",
+        }))
+        .filter((q) => q.options.length >= 2)
+        .filter(isMedicalQuestion);
 
       // If not enough, generate more via AI
       if (examQuestions.length < examConfig.questionCount) {
         const needed = examConfig.questionCount - examQuestions.length;
         const res = await supabase.functions.invoke("question-generator", {
           body: {
-            messages: [{ role: "user", content: `Gere ${needed} questões de múltipla escolha para simulado de residência médica. Áreas: ${examConfig.areas.join(", ")}. Retorne JSON array: [{"statement":"...", "options":["a","b","c","d","e"], "correct_index": 0, "topic":"Área", "explanation":"..."}]` }],
+            messages: [{ role: "user", content: `Gere ${needed} questões EXCLUSIVAMENTE médicas para simulado de residência médica. Áreas: ${examConfig.areas.join(", ")}. Retorne JSON array: [{"statement":"...", "options":["a","b","c","d","e"], "correct_index": 0, "topic":"Área", "explanation":"..."}]` }],
           },
         });
+
         if (!res.error && res.data) {
-          const content = typeof res.data === "string" ? res.data : "";
+          const content = typeof res.data === "string" ? res.data : JSON.stringify(res.data);
           try {
             const match = content.match(/\[[\s\S]*\]/);
             if (match) {
-              const extra = JSON.parse(match[0]).map((q: any, i: number) => ({ ...q, id: `gen-${i}` }));
+              const parsed = JSON.parse(match[0]);
+              const extra: ExamQuestion[] = (Array.isArray(parsed) ? parsed : [])
+                .map((q: any, i: number) => ({
+                  id: `gen-${i}`,
+                  statement: String(q.statement || ""),
+                  options: Array.isArray(q.options) ? q.options.map(String) : [],
+                  correct_index: Number.isInteger(q.correct_index) ? q.correct_index : 0,
+                  topic: String(q.topic || "Geral"),
+                  explanation: String(q.explanation || ""),
+                }))
+                .filter((q) => q.options.length >= 2)
+                .filter(isMedicalQuestion);
+
               examQuestions = [...examQuestions, ...extra];
             }
-          } catch {}
+          } catch {
+            // ignore parse errors and continue with existing medical bank questions
+          }
         }
       }
 
-      // Shuffle
       examQuestions = examQuestions.sort(() => Math.random() - 0.5).slice(0, examConfig.questionCount);
+
+      if (examQuestions.length === 0) {
+        throw new Error("Não encontrei questões médicas válidas para montar o simulado.");
+      }
 
       // Create session
       const { data: session } = await supabase.from("exam_sessions").insert({
