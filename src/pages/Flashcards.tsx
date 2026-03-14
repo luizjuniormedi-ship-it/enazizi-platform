@@ -24,6 +24,7 @@ interface Review {
 const INTERVALS = [1, 3, 7, 14, 30];
 
 const Flashcards = () => {
+  const navigate = useNavigate();
   const [allCards, setAllCards] = useState<Flashcard[]>([]);
   const [dueCards, setDueCards] = useState<Flashcard[]>([]);
   const [reviews, setReviews] = useState<Map<string, Review>>(new Map());
