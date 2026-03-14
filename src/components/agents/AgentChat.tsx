@@ -23,22 +23,31 @@ interface Upload {
   extracted_text: string | null;
 }
 
+interface QuickAction {
+  label: string;
+  prompt: string;
+  icon?: string;
+}
+
 interface AgentChatProps {
   title: string;
   subtitle: string;
   icon: React.ReactNode;
   welcomeMessage: string;
+  welcomeMessageWithUploads?: string;
   placeholder: string;
   functionName: string;
   onSaveMessage?: (content: string) => Promise<number>;
+  quickActions?: QuickAction[];
 }
 
-const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functionName, onSaveMessage }: AgentChatProps) => {
+const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions }: AgentChatProps) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([
     { role: "assistant", content: welcomeMessage },
   ]);
   const [input, setInput] = useState("");
+  const [hasShownUploadWelcome, setHasShownUploadWelcome] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
@@ -73,6 +82,24 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functio
     };
     loadUploads();
   }, [user]);
+
+  // Update welcome message when uploads are detected
+  useEffect(() => {
+    if (hasShownUploadWelcome || !welcomeMessageWithUploads) return;
+    if (availableUploads.length > 0 && selectedUploadIds.size > 0 && messages.length === 1 && messages[0].role === "assistant") {
+      const materialNames = availableUploads
+        .filter(u => selectedUploadIds.has(u.id))
+        .map(u => u.filename)
+        .slice(0, 3)
+        .join(", ");
+      const suffix = availableUploads.length > 3 ? ` e mais ${availableUploads.length - 3}` : "";
+      const contextMsg = welcomeMessageWithUploads
+        .replace("{materiais}", materialNames + suffix)
+        .replace("{count}", String(selectedUploadIds.size));
+      setMessages([{ role: "assistant", content: contextMsg }]);
+      setHasShownUploadWelcome(true);
+    }
+  }, [availableUploads, selectedUploadIds, hasShownUploadWelcome, welcomeMessageWithUploads, messages]);
 
   // Build context from selected uploads
   const buildUserContext = useCallback(() => {
@@ -466,6 +493,24 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functio
           </div>
         )}
       </div>
+
+      {/* Quick action buttons */}
+      {quickActions && quickActions.length > 0 && messages.length <= 2 && !isLoading && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {quickActions.map((action, idx) => (
+            <button
+              key={idx}
+              onClick={() => {
+                setInput(action.prompt);
+              }}
+              className="px-3 py-2 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+            >
+              {action.icon && <span className="mr-1">{action.icon}</span>}
+              {action.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="flex gap-2">
         <Input
