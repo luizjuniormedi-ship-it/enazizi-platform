@@ -241,6 +241,7 @@ serve(async (req) => {
         9: "Caso clínico discursivo",
         10: "Correção discursiva (nota 0-5)",
         11: "Atualização de desempenho",
+        12: "Bloco de consolidação (5 questões sequenciais)",
       };
       const step = enazizi_progress.estado_atual || 0;
       const stepName = stepNames[step] || "Desconhecido";
