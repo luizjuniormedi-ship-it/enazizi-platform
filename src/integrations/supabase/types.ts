@@ -106,6 +106,51 @@ export type Database = {
         }
         Relationships: []
       }
+      enazizi_progress: {
+        Row: {
+          created_at: string
+          estado_atual: number
+          historico_estudo: Json
+          id: string
+          pontuacao_discursiva: number | null
+          questoes_respondidas: number
+          taxa_acerto: number
+          tema_atual: string | null
+          temas_fracos: Json
+          ultima_interacao: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          estado_atual?: number
+          historico_estudo?: Json
+          id?: string
+          pontuacao_discursiva?: number | null
+          questoes_respondidas?: number
+          taxa_acerto?: number
+          tema_atual?: string | null
+          temas_fracos?: Json
+          ultima_interacao?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          estado_atual?: number
+          historico_estudo?: Json
+          id?: string
+          pontuacao_discursiva?: number | null
+          questoes_respondidas?: number
+          taxa_acerto?: number
+          tema_atual?: string | null
+          temas_fracos?: Json
+          ultima_interacao?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       exam_sessions: {
         Row: {
           answers_json: Json | null
