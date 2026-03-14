@@ -36,14 +36,17 @@ const Simulados = () => {
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
+  const [finished, setFinished] = useState(false);
+  const [score, setScore] = useState({ correct: 0, total: 0 });
   const q = questions[current];
 
   const handleAnswer = () => {
     if (selected === null) return;
     setAnswered(true);
+    const isCorrect = selected === q.correct;
+    setScore(prev => ({ correct: prev.correct + (isCorrect ? 1 : 0), total: prev.total + 1 }));
 
-    // Log wrong answer to error_bank
-    if (selected !== q.correct && user) {
+    if (!isCorrect && user) {
       logErrorToBank({
         userId: user.id,
         tema: q.topic || "Clínica Médica",
@@ -55,6 +58,24 @@ const Simulados = () => {
     }
   };
 
+  const handleNext = () => {
+    if (current < questions.length - 1) {
+      setCurrent(current + 1);
+      setSelected(null);
+      setAnswered(false);
+    } else {
+      setFinished(true);
+    }
+  };
+
+  const handleRestart = () => {
+    setCurrent(0);
+    setSelected(null);
+    setAnswered(false);
+    setFinished(false);
+    setScore({ correct: 0, total: 0 });
+  };
+
   const handleStudyWithTutor = () => {
     const topic = q.topic || "Clínica Médica";
     navigate("/dashboard/chatgpt", {
@@ -64,6 +85,24 @@ const Simulados = () => {
       },
     });
   };
+
+  if (finished) {
+    const pct = Math.round((score.correct / score.total) * 100);
+    return (
+      <div className="space-y-8 animate-fade-in max-w-3xl">
+        <div className="text-center py-8">
+          <Award className="h-16 w-16 text-primary mx-auto mb-4" />
+          <h1 className="text-3xl font-bold mb-2">Simulado Concluído!</h1>
+          <div className="text-5xl font-black text-primary">{pct}%</div>
+          <p className="text-muted-foreground mt-2">{score.correct} de {score.total} questões corretas</p>
+        </div>
+        <div className="flex gap-3 justify-center">
+          <Button onClick={handleRestart}>Refazer Simulado</Button>
+          <Button variant="outline" onClick={() => navigate("/dashboard")}>Voltar ao Dashboard</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -111,8 +150,8 @@ const Simulados = () => {
             <Button onClick={handleAnswer} disabled={selected === null}>Confirmar</Button>
           ) : (
             <div className="flex gap-3 flex-wrap">
-              <Button onClick={() => { setCurrent(Math.min(questions.length - 1, current + 1)); setSelected(null); setAnswered(false); }}>
-                Próxima
+              <Button onClick={handleNext}>
+                {current < questions.length - 1 ? "Próxima" : "Finalizar"}
               </Button>
               {selected !== q.correct && (
                 <Button variant="outline" onClick={handleStudyWithTutor} className="gap-2">
