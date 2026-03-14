@@ -3,8 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Brain, AlertTriangle, CheckCircle2, BookOpen, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Brain, AlertTriangle, CheckCircle2, BookOpen, Loader2, GraduationCap } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 const SPECIALTIES = [
