@@ -431,9 +431,10 @@ const ChatGPT = () => {
 
   const NON_MEDICAL_KEYWORDS = /\b(direito|jurídic|advocacia|contabil|engenharia|arquitetura|economia|finanças|marketing|administração de empresas|programação|software|TI\b|informática|matemática pura|filosofia|sociologia|letras|pedagogia)\b/i;
 
-  const handleStartStudy = () => {
-    if (!topic.trim()) return;
-    if (NON_MEDICAL_KEYWORDS.test(topic)) {
+  const handleStartStudy = (overrideTopic?: string) => {
+    const t = overrideTopic || topic;
+    if (!t.trim()) return;
+    if (NON_MEDICAL_KEYWORDS.test(t)) {
       toast({
         title: "⛔ Tema não médico",
         description: "Esta plataforma é exclusiva para Residência Médica. Por favor, escolha um tema de medicina.",
@@ -442,13 +443,41 @@ const ChatGPT = () => {
       return;
     }
     setStudyStarted(true);
-    setCurrentTopic(topic);
+    setCurrentTopic(t);
     setSessionQuestions(0);
     setSessionCorrect(0);
     setEnaziziStep(3);
-    savePerformance({ tema_atual: topic });
-    saveEnaziziStep(3, topic);
-    sendMessage(`Quero estudar o tema: ${topic}. Comece com o Bloco Técnico 1 (conceito e definição — explicação técnica baseada na literatura). Estou na etapa 3/13 do Protocolo ENAZIZI.`);
+    savePerformance({ tema_atual: t });
+    saveEnaziziStep(3, t);
+    sendMessage(`Quero estudar o tema: ${t}. Comece com o Bloco Técnico 1 (conceito e definição — explicação técnica baseada na literatura). Estou na etapa 3/13 do Protocolo ENAZIZI.`);
+  };
+
+  const [changingTopic, setChangingTopic] = useState(false);
+  const [newTopic, setNewTopic] = useState("");
+
+  const handleChangeTopic = () => {
+    if (!newTopic.trim()) return;
+    if (NON_MEDICAL_KEYWORDS.test(newTopic)) {
+      toast({
+        title: "⛔ Tema não médico",
+        description: "Esta plataforma é exclusiva para Residência Médica.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setChangingTopic(false);
+    setTopic(newTopic);
+    // Reset flow to STATE 2 (concept) with new topic
+    setMessages((prev) => [
+      ...prev,
+      { role: "user" as const, content: `--- MUDANÇA DE TEMA ---\nNovo tema: ${newTopic}` },
+    ]);
+    setCurrentTopic(newTopic);
+    setEnaziziStep(3);
+    saveEnaziziStep(3, newTopic);
+    savePerformance({ tema_atual: newTopic });
+    sendMessage(`MUDANÇA DE TEMA: Quero mudar para o tema "${newTopic}". Reinicie o fluxo pedagógico. Comece do STATE 2 — Bloco Técnico 1 (conceito e definição) sobre ${newTopic}.`);
+    setNewTopic("");
   };
 
   const handlePhaseAction = (phase: string) => {
