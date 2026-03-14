@@ -435,45 +435,53 @@ const ChatGPT = () => {
     setCurrentTopic(topic);
     setSessionQuestions(0);
     setSessionCorrect(0);
-    setEnaziziStep(3); // Jump to step 3 (Aula bloco 1) since panel=1 and tema=2 are done via UI
+    setEnaziziStep(3);
     savePerformance({ tema_atual: topic });
     saveEnaziziStep(3, topic);
-    sendMessage(`Quero estudar o tema: ${topic}. Comece com a Aula Bloco 1 (explicação simples) seguindo o Protocolo ENAZIZI. Estou na etapa 3.`);
+    sendMessage(`Quero estudar o tema: ${topic}. Comece com o Bloco Técnico 1 (conceito e definição — explicação técnica baseada na literatura). Estou na etapa 3/13 do Protocolo ENAZIZI.`);
   };
 
   const handlePhaseAction = (phase: string) => {
     const phaseMap: Record<string, { prompt: string; step: number }> = {
-      "active-recall": {
-        prompt: `Agora faça o Active Recall sobre ${currentTopic}. Faça 5-7 perguntas curtas de memória ativa.`,
-        step: enaziziStep === 3 ? 4 : 6,
+      "leigo1": {
+        prompt: `Agora traduza o bloco técnico 1 sobre ${currentTopic} para linguagem leiga e faça UMA pergunta curta de active recall.`,
+        step: 4,
       },
-      "bloco2": {
-        prompt: `Agora avance para a Aula Bloco 2 (fisiopatologia) sobre ${currentTopic}. Base: Guyton, Robbins, Harrison.`,
+      "tecnico2": {
+        prompt: `Agora avance para o Bloco Técnico 2 (fisiopatologia) sobre ${currentTopic}. Base: Guyton, Robbins, Harrison. Explicação técnica profunda.`,
         step: 5,
       },
-      "bloco3": {
-        prompt: `Agora avance para a Aula Bloco 3 (aplicação clínica) sobre ${currentTopic}. Sinais, sintomas, exames, tratamento.`,
+      "leigo2": {
+        prompt: `Agora traduza o bloco técnico 2 (fisiopatologia) sobre ${currentTopic} para linguagem leiga e faça UMA pergunta curta.`,
+        step: 6,
+      },
+      "tecnico3": {
+        prompt: `Agora avance para o Bloco Técnico 3 (aplicação clínica) sobre ${currentTopic}. Sinais, sintomas, exames, tratamento, diagnósticos diferenciais. Explicação técnica.`,
         step: 7,
       },
-      "questions": {
-        prompt: `Agora crie uma questão de múltipla escolha (A-E) com caso clínico sobre ${currentTopic}. Não revele a resposta, espere eu responder.`,
+      "leigo3": {
+        prompt: `Agora traduza o bloco técnico 3 (aplicação clínica) sobre ${currentTopic} para linguagem leiga e faça UMA pergunta curta.`,
         step: 8,
       },
-      "discussion": {
-        prompt: `Agora faça a discussão completa da questão sobre ${currentTopic}.`,
+      "questions": {
+        prompt: `Agora crie 1 questão objetiva estilo prova médica com caso clínico e alternativas A–E sobre ${currentTopic}. Não revele a resposta, espere eu responder.`,
         step: 9,
       },
-      "discursive": {
-        prompt: `Agora crie um caso clínico discursivo sobre ${currentTopic}. Sem alternativas. Pergunte: diagnóstico, conduta, exames, justificativa.`,
+      "discussion": {
+        prompt: `Agora faça a discussão completa da questão sobre ${currentTopic}: alternativa correta, explicação simples+técnica, raciocínio clínico, diferenciais, análise de todas alternativas, ponto de prova, mini resumo.`,
         step: 10,
       },
-      "correction": {
-        prompt: `Corrija minha resposta discursiva com nota de 0-5 (Diagnóstico 0-2, Conduta 0-2, Justificativa 0-1). Depois explique o caso.`,
+      "discursive": {
+        prompt: `Agora crie um caso clínico discursivo sobre ${currentTopic}. Pergunte: diagnóstico provável, conduta inicial, exames necessários, justificativa clínica.`,
         step: 11,
       },
-      "update": {
-        prompt: `Atualize meu painel de desempenho com base nesta sessão sobre ${currentTopic}.`,
+      "correction": {
+        prompt: `Corrija minha resposta discursiva com nota de 0-5 (Diagnóstico 0-2, Conduta 0-2, Justificativa 0-1). Depois apresente: resposta esperada, explicação simples+técnica, raciocínio clínico completo, pontos obrigatórios, erros clássicos, mini aula de reforço.`,
         step: 12,
+      },
+      "update": {
+        prompt: `Atualize meu painel de desempenho com base nesta sessão sobre ${currentTopic}. Mostre: questões respondidas, taxa de acerto, temas fracos, desempenho clínico e discursivo.`,
+        step: 13,
       },
     };
     const action = phaseMap[phase];
