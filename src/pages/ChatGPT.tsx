@@ -794,27 +794,28 @@ const ChatGPT = () => {
 
       {/* Topic Input */}
       {!studyStarted && (
-        <div className="glass-card p-6 mb-4 text-center space-y-4">
-          <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-            <Sparkles className="h-8 w-8 text-primary" />
+        <div className="glass-card p-4 sm:p-6 mb-3 sm:mb-4 text-center space-y-3 sm:space-y-4">
+          <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+            <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold">O que você quer estudar?</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Digite o tema e o ChatGPT seguirá o Protocolo ENAZIZI completo
+            <h2 className="text-lg sm:text-xl font-semibold">O que você quer estudar?</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+              Digite o tema e o ChatGPT seguirá o Protocolo ENAZIZI
             </p>
           </div>
           <div className="flex gap-2 max-w-lg mx-auto">
             <Input
-              placeholder="Ex: Sepse, IAM, Pneumonia, TEP..."
+              placeholder="Ex: Sepse, IAM, Pneumonia..."
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleStartStudy()}
-              className="bg-secondary border-border text-base"
+              className="bg-secondary border-border text-sm sm:text-base"
             />
-            <Button onClick={() => handleStartStudy()} className="glow gap-2 px-6" disabled={!topic.trim()}>
+            <Button onClick={() => handleStartStudy()} className="glow gap-1.5 px-3 sm:px-6 flex-shrink-0 text-xs sm:text-sm" disabled={!topic.trim()}>
               <GraduationCap className="h-4 w-4" />
-              Vamos estudar
+              <span className="hidden sm:inline">Vamos estudar</span>
+              <span className="sm:hidden">Ir</span>
             </Button>
           </div>
 
@@ -828,12 +829,12 @@ const ChatGPT = () => {
                 : "bg-muted text-muted-foreground"
             }`}
           >
-            <FileText className="h-3.5 w-3.5" />
+            <FileText className="h-3.5 w-3.5 flex-shrink-0" />
             {availableUploads.length === 0 ? (
               <span>Nenhum material disponível</span>
             ) : (
               <>
-                <span>{selectedUploadIds.size} de {availableUploads.length} materiais como contexto</span>
+                <span>{selectedUploadIds.size}/{availableUploads.length} materiais</span>
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showUploads ? "rotate-180" : ""}`} />
               </>
             )}
