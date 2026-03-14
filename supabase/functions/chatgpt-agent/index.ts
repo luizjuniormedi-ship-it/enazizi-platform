@@ -383,6 +383,7 @@ NÃO repita estados anteriores. NÃO pule para estados futuros. Avance apenas UM
       instructions += `\n--- FIM DO BANCO DE ERROS ---`;
     }
 
+    const input = messages.map((m: { role: string; content: string }) => ({
       role: m.role,
       content: m.content,
     }));
