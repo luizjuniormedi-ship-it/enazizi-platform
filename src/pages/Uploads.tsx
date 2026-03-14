@@ -39,9 +39,9 @@ const Uploads = () => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    const maxSize = 50 * 1024 * 1024;
+    const maxSize = 20 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast({ title: "Arquivo muito grande", description: "Máximo de 50MB.", variant: "destructive" });
+      toast({ title: "Arquivo muito grande", description: "Máximo de 20MB para processamento estável.", variant: "destructive" });
       return;
     }
 
@@ -134,7 +134,7 @@ const Uploads = () => {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".pdf,.txt,.docx"
+        accept=".pdf,.txt"
         className="hidden"
         onChange={handleFileSelect}
       />
@@ -153,7 +153,7 @@ const Uploads = () => {
           <>
             <Upload className="h-12 w-12 text-primary/50 mx-auto mb-4" />
             <p className="text-lg font-medium mb-1">Clique para enviar arquivo</p>
-            <p className="text-sm text-muted-foreground">PDF, DOCX, TXT — máx 50MB</p>
+            <p className="text-sm text-muted-foreground">PDF, TXT — máx 20MB</p>
           </>
         )}
       </div>
