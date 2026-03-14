@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { GraduationCap, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import enazizi from "@/assets/enazizi-mascot.png";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
