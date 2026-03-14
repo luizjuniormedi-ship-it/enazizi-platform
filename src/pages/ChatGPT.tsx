@@ -22,6 +22,31 @@ interface StudyPerformance {
   historico_estudo: Array<{ tema: string; data: string; questoes: number; acerto: number; discursiva: number | null }>;
 }
 
+interface EnaziziProgress {
+  estado_atual: number;
+  tema_atual: string | null;
+  questoes_respondidas: number;
+  taxa_acerto: number;
+  pontuacao_discursiva: number | null;
+  temas_fracos: string[];
+  historico_estudo: string[];
+}
+
+const ENAZIZI_STEPS = [
+  { num: 1, label: "Painel", icon: "📊" },
+  { num: 2, label: "Tema", icon: "📚" },
+  { num: 3, label: "Bloco 1", icon: "📖" },
+  { num: 4, label: "Recall", icon: "🧠" },
+  { num: 5, label: "Bloco 2", icon: "🔬" },
+  { num: 6, label: "Recall", icon: "🧠" },
+  { num: 7, label: "Bloco 3", icon: "🏥" },
+  { num: 8, label: "Questão", icon: "❓" },
+  { num: 9, label: "Discussão", icon: "💬" },
+  { num: 10, label: "Discursivo", icon: "✍️" },
+  { num: 11, label: "Correção", icon: "✅" },
+  { num: 12, label: "Atualizar", icon: "📈" },
+];
+
 const FUNCTION_NAME = "chatgpt-agent";
 
 const ChatGPT = () => {
@@ -48,12 +73,13 @@ const ChatGPT = () => {
   });
   const [sessionQuestions, setSessionQuestions] = useState(0);
   const [sessionCorrect, setSessionCorrect] = useState(0);
+  const [enaziziStep, setEnaziziStep] = useState(1);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${FUNCTION_NAME}`;
 
-  // Load performance from DB
+  // Load performance + enazizi progress from DB
   useEffect(() => {
     if (!user) return;
     const loadPerformance = async () => {
@@ -71,6 +97,19 @@ const ChatGPT = () => {
           temas_fracos: (data.temas_fracos as string[]) || [],
           historico_estudo: (data.historico_estudo as StudyPerformance["historico_estudo"]) || [],
         });
+      }
+      // Load enazizi step
+      const { data: progress } = await supabase
+        .from("enazizi_progress")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (progress) {
+        setEnaziziStep(progress.estado_atual || 1);
+        if (progress.tema_atual && progress.estado_atual > 2) {
+          // Resume session
+          setCurrentTopic(progress.tema_atual);
+        }
       }
     };
     loadPerformance();
@@ -173,6 +212,32 @@ const ChatGPT = () => {
     }
   };
 
+  const saveEnaziziStep = async (step: number, tema?: string | null) => {
+    if (!user) return;
+    setEnaziziStep(step);
+    const dbData = {
+      user_id: user.id,
+      estado_atual: step,
+      tema_atual: tema !== undefined ? tema : currentTopic || null,
+      questoes_respondidas: performance.questoes_respondidas + sessionQuestions,
+      taxa_acerto: performance.taxa_acerto,
+      pontuacao_discursiva: performance.pontuacao_discursiva,
+      temas_fracos: performance.temas_fracos as any,
+      historico_estudo: [] as any,
+      ultima_interacao: new Date().toISOString(),
+    };
+    const { data: existing } = await supabase
+      .from("enazizi_progress")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (existing) {
+      await supabase.from("enazizi_progress").update(dbData).eq("user_id", user.id);
+    } else {
+      await supabase.from("enazizi_progress").insert(dbData);
+    }
+  };
+
   const handleFinishSession = async () => {
     const totalQuestions = performance.questoes_respondidas + sessionQuestions;
     const totalCorrect = Math.round((performance.taxa_acerto / 100) * performance.questoes_respondidas) + sessionCorrect;
@@ -201,6 +266,8 @@ const ChatGPT = () => {
     setCurrentTopic("");
     setMessages([]);
     setActiveConversationId(null);
+    setEnaziziStep(1);
+    await saveEnaziziStep(1, null);
     toast({ title: "Sessão finalizada!", description: `Dados salvos. ${sessionQuestions} questões nesta sessão.` });
   };
 
@@ -269,6 +336,14 @@ const ChatGPT = () => {
         body: JSON.stringify({
           messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
           userContext: contextToSend || undefined,
+          enazizi_progress: {
+            estado_atual: enaziziStep,
+            tema_atual: currentTopic || null,
+            questoes_respondidas: performance.questoes_respondidas + sessionQuestions,
+            taxa_acerto: performance.taxa_acerto,
+            pontuacao_discursiva: performance.pontuacao_discursiva,
+            temas_fracos: performance.temas_fracos,
+          },
         }),
       });
 
@@ -359,18 +434,53 @@ const ChatGPT = () => {
     setCurrentTopic(topic);
     setSessionQuestions(0);
     setSessionCorrect(0);
+    setEnaziziStep(3); // Jump to step 3 (Aula bloco 1) since panel=1 and tema=2 are done via UI
     savePerformance({ tema_atual: topic });
-    sendMessage(`Quero estudar o tema: ${topic}. Comece com a aula completa seguindo o Protocolo ENAZIZI.`);
+    saveEnaziziStep(3, topic);
+    sendMessage(`Quero estudar o tema: ${topic}. Comece com a Aula Bloco 1 (explicação simples) seguindo o Protocolo ENAZIZI. Estou na etapa 3.`);
   };
 
   const handlePhaseAction = (phase: string) => {
-    const prompts: Record<string, string> = {
-      "active-recall": `Agora faça o Active Recall sobre ${currentTopic}. Faça 5-7 perguntas curtas de memória ativa.`,
-      "questions": `Agora crie uma questão de múltipla escolha (A-E) com caso clínico sobre ${currentTopic}. Não revele a resposta, espere eu responder.`,
-      "discursive": `Agora crie um caso clínico discursivo sobre ${currentTopic}. Sem alternativas. Depois corrija com nota de 0 a 10.`,
-      "review": `Revise o conteúdo de ${currentTopic}. Faça um resumo com os pontos principais, pegadinhas de prova e mnemônicos.`,
+    const phaseMap: Record<string, { prompt: string; step: number }> = {
+      "active-recall": {
+        prompt: `Agora faça o Active Recall sobre ${currentTopic}. Faça 5-7 perguntas curtas de memória ativa.`,
+        step: enaziziStep === 3 ? 4 : 6,
+      },
+      "bloco2": {
+        prompt: `Agora avance para a Aula Bloco 2 (fisiopatologia) sobre ${currentTopic}. Base: Guyton, Robbins, Harrison.`,
+        step: 5,
+      },
+      "bloco3": {
+        prompt: `Agora avance para a Aula Bloco 3 (aplicação clínica) sobre ${currentTopic}. Sinais, sintomas, exames, tratamento.`,
+        step: 7,
+      },
+      "questions": {
+        prompt: `Agora crie uma questão de múltipla escolha (A-E) com caso clínico sobre ${currentTopic}. Não revele a resposta, espere eu responder.`,
+        step: 8,
+      },
+      "discussion": {
+        prompt: `Agora faça a discussão completa da questão sobre ${currentTopic}.`,
+        step: 9,
+      },
+      "discursive": {
+        prompt: `Agora crie um caso clínico discursivo sobre ${currentTopic}. Sem alternativas. Pergunte: diagnóstico, conduta, exames, justificativa.`,
+        step: 10,
+      },
+      "correction": {
+        prompt: `Corrija minha resposta discursiva com nota de 0-5 (Diagnóstico 0-2, Conduta 0-2, Justificativa 0-1). Depois explique o caso.`,
+        step: 11,
+      },
+      "update": {
+        prompt: `Atualize meu painel de desempenho com base nesta sessão sobre ${currentTopic}.`,
+        step: 12,
+      },
     };
-    if (prompts[phase]) sendMessage(prompts[phase]);
+    const action = phaseMap[phase];
+    if (action) {
+      setEnaziziStep(action.step);
+      saveEnaziziStep(action.step);
+      sendMessage(action.prompt);
+    }
   };
 
   const recentHistory = performance.historico_estudo.slice(-5).reverse();
@@ -581,30 +691,97 @@ const ChatGPT = () => {
       {/* Chat area */}
       {studyStarted && (
         <>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
-              📚 Estudando: {currentTopic}
-            </span>
-            {sessionQuestions > 0 && (
-              <span className="px-3 py-1 rounded-full bg-secondary text-muted-foreground text-xs">
-                {sessionQuestions} questões • {sessionQuestions > 0 ? Math.round((sessionCorrect / sessionQuestions) * 100) : 0}% acerto
+          {/* Step Progress Indicator */}
+          <div className="mb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                📚 {currentTopic}
               </span>
-            )}
+              <span className="px-3 py-1 rounded-full bg-secondary text-muted-foreground text-xs">
+                Etapa {enaziziStep}/12
+              </span>
+              {sessionQuestions > 0 && (
+                <span className="px-3 py-1 rounded-full bg-secondary text-muted-foreground text-xs">
+                  {sessionQuestions}Q • {Math.round((sessionCorrect / sessionQuestions) * 100)}%
+                </span>
+              )}
+            </div>
+            <div className="flex gap-0.5">
+              {ENAZIZI_STEPS.map((s) => (
+                <div
+                  key={s.num}
+                  title={`${s.num}. ${s.label}`}
+                  className={`flex-1 h-2 rounded-full transition-colors ${
+                    s.num < enaziziStep
+                      ? "bg-primary"
+                      : s.num === enaziziStep
+                      ? "bg-primary/60 animate-pulse"
+                      : "bg-muted"
+                  }`}
+                />
+              ))}
+            </div>
+            <div className="flex justify-between mt-1">
+              {ENAZIZI_STEPS.map((s) => (
+                <span
+                  key={s.num}
+                  className={`text-[9px] ${
+                    s.num === enaziziStep ? "text-primary font-bold" : "text-muted-foreground"
+                  }`}
+                >
+                  {s.icon}
+                </span>
+              ))}
+            </div>
           </div>
 
+          {/* Phase action buttons — show next logical step */}
           <div className="flex flex-wrap gap-2 mb-3">
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs border-amber-500/30 text-amber-500 hover:bg-amber-500/10" onClick={() => handlePhaseAction("active-recall")} disabled={isLoading}>
-              <BookOpen className="h-3.5 w-3.5" /> Active Recall
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs border-blue-500/30 text-blue-500 hover:bg-blue-500/10" onClick={() => handlePhaseAction("questions")} disabled={isLoading}>
-              <HelpCircle className="h-3.5 w-3.5" /> Questões A-E
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs border-violet-500/30 text-violet-500 hover:bg-violet-500/10" onClick={() => handlePhaseAction("discursive")} disabled={isLoading}>
-              <Stethoscope className="h-3.5 w-3.5" /> Caso Discursivo
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10" onClick={() => handlePhaseAction("review")} disabled={isLoading}>
-              <RefreshCw className="h-3.5 w-3.5" /> Revisar Conteúdo
-            </Button>
+            {enaziziStep <= 4 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("active-recall")} disabled={isLoading}>
+                <BookOpen className="h-3.5 w-3.5" /> 🧠 Active Recall
+              </Button>
+            )}
+            {enaziziStep >= 4 && enaziziStep < 5 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("bloco2")} disabled={isLoading}>
+                <BookOpen className="h-3.5 w-3.5" /> 🔬 Bloco 2 — Fisiopatologia
+              </Button>
+            )}
+            {enaziziStep >= 5 && enaziziStep < 7 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("active-recall")} disabled={isLoading}>
+                <BookOpen className="h-3.5 w-3.5" /> 🧠 Active Recall 2
+              </Button>
+            )}
+            {enaziziStep >= 6 && enaziziStep < 7 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("bloco3")} disabled={isLoading}>
+                <BookOpen className="h-3.5 w-3.5" /> 🏥 Bloco 3 — Clínica
+              </Button>
+            )}
+            {enaziziStep >= 7 && enaziziStep < 8 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("questions")} disabled={isLoading}>
+                <HelpCircle className="h-3.5 w-3.5" /> ❓ Questão Objetiva
+              </Button>
+            )}
+            {enaziziStep >= 8 && enaziziStep < 9 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("discussion")} disabled={isLoading}>
+                <HelpCircle className="h-3.5 w-3.5" /> 💬 Discussão
+              </Button>
+            )}
+            {enaziziStep >= 9 && enaziziStep < 10 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("discursive")} disabled={isLoading}>
+                <Stethoscope className="h-3.5 w-3.5" /> ✍️ Caso Discursivo
+              </Button>
+            )}
+            {enaziziStep >= 10 && enaziziStep < 11 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("correction")} disabled={isLoading}>
+                <Check className="h-3.5 w-3.5" /> ✅ Correção
+              </Button>
+            )}
+            {enaziziStep >= 11 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("update")} disabled={isLoading}>
+                <BarChart3 className="h-3.5 w-3.5" /> 📈 Atualizar Desempenho
+              </Button>
+            )}
           </div>
 
           <div ref={scrollRef} className="flex-1 glass-card p-4 overflow-y-auto space-y-4 mb-4">
