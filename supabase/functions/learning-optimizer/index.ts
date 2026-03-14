@@ -15,7 +15,7 @@ serve(async (req) => {
 
   try {
     const { performanceData, examDate, dailyHours, completedTopics, weakAreas, flashcardsDue, recentErrors } = await req.json();
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    
 
     const sanitizeTopicList = (value: unknown) => Array.isArray(value)
       ? value.map(String).filter((t) => isMedicalContent(t))
