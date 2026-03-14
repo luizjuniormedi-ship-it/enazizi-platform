@@ -539,6 +539,35 @@ const Admin = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={passwordDialog.open} onOpenChange={(open) => !open && setPasswordDialog({ open: false, user: null, password: "" })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Redefinir senha</DialogTitle>
+            <DialogDescription>
+              Defina uma nova senha para "{passwordDialog.user?.display_name || passwordDialog.user?.email}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              type="password"
+              placeholder="Nova senha (mín. 6 caracteres)"
+              value={passwordDialog.password}
+              onChange={(e) => setPasswordDialog((p) => ({ ...p, password: e.target.value }))}
+              minLength={6}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPasswordDialog({ open: false, user: null, password: "" })}>
+              Cancelar
+            </Button>
+            <Button onClick={handleResetPassword} disabled={!!actionLoading || passwordDialog.password.length < 6}>
+              Redefinir senha
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
