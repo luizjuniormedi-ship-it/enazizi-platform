@@ -336,6 +336,14 @@ const ChatGPT = () => {
         body: JSON.stringify({
           messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
           userContext: contextToSend || undefined,
+          enazizi_progress: {
+            estado_atual: enaziziStep,
+            tema_atual: currentTopic || null,
+            questoes_respondidas: performance.questoes_respondidas + sessionQuestions,
+            taxa_acerto: performance.taxa_acerto,
+            pontuacao_discursiva: performance.pontuacao_discursiva,
+            temas_fracos: performance.temas_fracos,
+          },
         }),
       });
 
