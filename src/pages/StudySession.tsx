@@ -1,29 +1,75 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 import {
   BookOpen, Brain, HelpCircle, MessageSquare, BarChart3,
-  Send, Loader2, GraduationCap, Play, RotateCcw
+  Send, Loader2, GraduationCap, Play, RotateCcw, Stethoscope,
+  FileText, AlertTriangle, TrendingUp, Target
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
-type Phase = "start" | "lesson" | "active-recall" | "questions" | "discussion" | "performance";
+type Phase = "start" | "performance" | "lesson" | "active-recall" | "questions" | "discussion" | "discursive" | "scoring";
 type Msg = { role: "user" | "assistant"; content: string };
 
-const PHASE_CONFIG: Record<Phase, { label: string; icon: typeof BookOpen; color: string }> = {
-  start: { label: "Início", icon: Play, color: "bg-primary/10 text-primary" },
-  lesson: { label: "📚 Aula", icon: BookOpen, color: "bg-blue-500/10 text-blue-400" },
-  "active-recall": { label: "🧠 Active Recall", icon: Brain, color: "bg-purple-500/10 text-purple-400" },
-  questions: { label: "📝 Questões", icon: HelpCircle, color: "bg-orange-500/10 text-orange-400" },
-  discussion: { label: "🔬 Discussão", icon: MessageSquare, color: "bg-green-500/10 text-green-400" },
-  performance: { label: "📊 Desempenho", icon: BarChart3, color: "bg-red-500/10 text-red-400" },
+interface SpecialtyScore {
+  name: string;
+  score: number;
+  total: number;
+}
+
+interface PerformanceData {
+  totalQuestions: number;
+  correctAnswers: number;
+  level: string;
+  readiness: number;
+  specialties: SpecialtyScore[];
+  weakTopics: string[];
+  studiedTopics: string[];
+}
+
+const PHASE_META: Record<Phase, { label: string; icon: typeof BookOpen; shortLabel: string }> = {
+  start: { label: "Início", icon: Play, shortLabel: "Início" },
+  performance: { label: "📊 Painel", icon: BarChart3, shortLabel: "Painel" },
+  lesson: { label: "📚 Aula", icon: BookOpen, shortLabel: "Aula" },
+  "active-recall": { label: "🧠 Recall", icon: Brain, shortLabel: "Recall" },
+  questions: { label: "📝 Questões", icon: HelpCircle, shortLabel: "MCQ" },
+  discussion: { label: "🔬 Discussão", icon: MessageSquare, shortLabel: "Discussão" },
+  discursive: { label: "🏥 Caso Discursivo", icon: Stethoscope, shortLabel: "Discursivo" },
+  scoring: { label: "📈 Pontuação", icon: TrendingUp, shortLabel: "Score" },
 };
 
-const PHASES: Phase[] = ["lesson", "active-recall", "questions", "discussion", "performance"];
+const FLOW_PHASES: Phase[] = ["performance", "lesson", "active-recall", "questions", "discussion", "discursive", "scoring"];
+
+const INITIAL_PERFORMANCE: PerformanceData = {
+  totalQuestions: 0,
+  correctAnswers: 0,
+  level: "Iniciante",
+  readiness: 0,
+  specialties: [
+    { name: "Cardiologia", score: 0, total: 0 },
+    { name: "Pneumologia", score: 0, total: 0 },
+    { name: "Neurologia", score: 0, total: 0 },
+    { name: "Endocrinologia", score: 0, total: 0 },
+    { name: "Gastroenterologia", score: 0, total: 0 },
+    { name: "Pediatria", score: 0, total: 0 },
+    { name: "Ginecologia/Obstetrícia", score: 0, total: 0 },
+    { name: "Cirurgia", score: 0, total: 0 },
+    { name: "Medicina Preventiva", score: 0, total: 0 },
+  ],
+  weakTopics: [],
+  studiedTopics: [],
+};
+
+const SUGGESTED_TOPICS = [
+  "Insuficiência Cardíaca", "TEP", "AVC", "Diabetes Mellitus",
+  "Pneumonia", "Asma", "Apendicite", "Pré-eclâmpsia",
+  "IAM", "DPOC", "Sepse", "Meningite",
+];
 
 const StudySession = () => {
   const { user } = useAuth();
@@ -33,11 +79,27 @@ const StudySession = () => {
   const [phase, setPhase] = useState<Phase>("start");
   const [topic, setTopic] = useState("");
   const [topicInput, setTopicInput] = useState("");
+  const [performance, setPerformance] = useState<PerformanceData>(INITIAL_PERFORMANCE);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  // Load performance from localStorage
+  useEffect(() => {
+    if (!user) return;
+    const saved = localStorage.getItem(`enazizi-perf-${user.id}`);
+    if (saved) {
+      try { setPerformance(JSON.parse(saved)); } catch {}
+    }
+  }, [user]);
+
+  const savePerformance = useCallback((data: PerformanceData) => {
+    setPerformance(data);
+    if (user) localStorage.setItem(`enazizi-perf-${user.id}`, JSON.stringify(data));
+  }, [user]);
 
   const streamChat = async (msgs: Msg[], currentPhase: Phase, currentTopic: string) => {
     setIsLoading(true);
@@ -50,12 +112,23 @@ const StudySession = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: msgs, phase: currentPhase, topic: currentTopic }),
+        body: JSON.stringify({
+          messages: msgs,
+          phase: currentPhase,
+          topic: currentTopic,
+          performanceData: performance,
+        }),
       });
 
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({ error: "Erro desconhecido" }));
-        toast({ title: "Erro", description: err.error, variant: "destructive" });
+        if (resp.status === 429) {
+          toast({ title: "Limite atingido", description: "Aguarde alguns segundos e tente novamente.", variant: "destructive" });
+        } else if (resp.status === 402) {
+          toast({ title: "Créditos esgotados", description: "Adicione créditos ao workspace.", variant: "destructive" });
+        } else {
+          toast({ title: "Erro", description: err.error, variant: "destructive" });
+        }
         setIsLoading(false);
         return;
       }
@@ -70,10 +143,10 @@ const StudySession = () => {
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
 
-        let newlineIdx: number;
-        while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, newlineIdx);
-          buffer = buffer.slice(newlineIdx + 1);
+        let idx: number;
+        while ((idx = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 1);
           if (line.endsWith("\r")) line = line.slice(0, -1);
           if (!line.startsWith("data: ")) continue;
           const json = line.slice(6).trim();
@@ -94,7 +167,7 @@ const StudySession = () => {
           } catch {}
         }
       }
-    } catch (e) {
+    } catch {
       toast({ title: "Erro de conexão", description: "Não foi possível conectar ao servidor.", variant: "destructive" });
     }
     setIsLoading(false);
@@ -105,21 +178,21 @@ const StudySession = () => {
     const t = topicInput.trim();
     setTopic(t);
     setPhase("lesson");
-    const userMsg: Msg = { role: "user", content: `Quero estudar: ${t}` };
+    const updated = { ...performance, studiedTopics: [...new Set([...performance.studiedTopics, t])] };
+    savePerformance(updated);
+    const userMsg: Msg = { role: "user", content: `Quero estudar: ${t}. Comece pela aula completa.` };
     setMessages([userMsg]);
     await streamChat([userMsg], "lesson", t);
   };
 
-  const advancePhase = async () => {
-    const currentIdx = PHASES.indexOf(phase);
-    if (currentIdx < PHASES.length - 1) {
-      const next = PHASES[currentIdx + 1];
-      setPhase(next);
-      const userMsg: Msg = { role: "user", content: `Estou pronto. Avançar para: ${PHASE_CONFIG[next].label}` };
-      const newMsgs = [...messages, userMsg];
-      setMessages(newMsgs);
-      await streamChat(newMsgs, next, topic);
-    }
+  const goToPhase = async (targetPhase: Phase) => {
+    if (isLoading) return;
+    setPhase(targetPhase);
+    const label = PHASE_META[targetPhase].label;
+    const userMsg: Msg = { role: "user", content: `Avançar para: ${label}` };
+    const newMsgs = [...messages, userMsg];
+    setMessages(newMsgs);
+    await streamChat(newMsgs, targetPhase, topic);
   };
 
   const sendMessage = async () => {
@@ -138,152 +211,311 @@ const StudySession = () => {
     setTopicInput("");
   };
 
-  const currentPhaseIdx = PHASES.indexOf(phase);
+  const currentIdx = FLOW_PHASES.indexOf(phase);
+  const progressPercent = phase === "start" ? 0 : Math.round(((currentIdx + 1) / FLOW_PHASES.length) * 100);
+  const acuracyPercent = performance.totalQuestions > 0
+    ? Math.round((performance.correctAnswers / performance.totalQuestions) * 100) : 0;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <GraduationCap className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold">ENAZIZI — Sessão de Estudo</h1>
-            {topic && <p className="text-xs text-muted-foreground">Tema: {topic}</p>}
-          </div>
-        </div>
-        {phase !== "start" && (
-          <Button variant="ghost" size="sm" onClick={resetSession}>
-            <RotateCcw className="h-4 w-4 mr-1" /> Novo tema
-          </Button>
-        )}
-      </div>
-
-      {/* Phase Progress */}
-      {phase !== "start" && (
-        <div className="flex items-center gap-1 px-4 py-2 border-b border-border overflow-x-auto">
-          {PHASES.map((p, i) => {
-            const cfg = PHASE_CONFIG[p];
-            const isActive = p === phase;
-            const isDone = i < currentPhaseIdx;
-            return (
-              <Badge
-                key={p}
-                variant={isActive ? "default" : isDone ? "secondary" : "outline"}
-                className={`text-xs whitespace-nowrap ${isActive ? "ring-2 ring-primary/50" : ""}`}
-              >
-                {cfg.label}
-              </Badge>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Start Screen */}
-      {phase === "start" && (
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="max-w-lg w-full text-center space-y-6">
-            <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-              <GraduationCap className="h-10 w-10 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Vamos estudar! 🎯</h2>
-              <p className="text-muted-foreground">
-                Digite o tema e o ENAZIZI vai guiar você pelo protocolo completo:
-                <br />
-                <span className="text-sm">Aula → Active Recall → Questões → Discussão → Desempenho</span>
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Input
-                value={topicInput}
-                onChange={(e) => setTopicInput(e.target.value)}
-                placeholder="Ex: Insuficiência Cardíaca, TEP, Diabetes..."
-                onKeyDown={(e) => e.key === "Enter" && startStudy()}
-                className="flex-1"
-              />
-              <Button onClick={startStudy} disabled={!topicInput.trim()}>
-                <Play className="h-4 w-4 mr-1" /> Começar
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {["Insuficiência Cardíaca", "TEP", "AVC", "Diabetes Mellitus", "Pneumonia", "Asma", "Apendicite", "Pré-eclâmpsia"].map((t) => (
-                <Button
-                  key={t}
-                  variant="outline"
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => { setTopicInput(t); }}
-                >
-                  {t}
-                </Button>
-              ))}
+    <div className="flex h-[calc(100vh-4rem)] animate-fade-in">
+      {/* Left Sidebar — Performance Panel */}
+      <aside className={`${sidebarOpen ? "w-72" : "w-0"} transition-all duration-300 overflow-hidden border-r border-border flex-shrink-0 bg-card/50`}>
+        <div className="w-72 h-full overflow-y-auto p-4 space-y-4">
+          {/* Performance Summary */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              Painel de Desempenho
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-lg bg-secondary/50 p-3 text-center">
+                <div className="text-lg font-bold text-foreground">{performance.totalQuestions}</div>
+                <div className="text-[10px] text-muted-foreground">Questões</div>
+              </div>
+              <div className="rounded-lg bg-secondary/50 p-3 text-center">
+                <div className="text-lg font-bold text-foreground">{acuracyPercent}%</div>
+                <div className="text-[10px] text-muted-foreground">Acerto</div>
+              </div>
+              <div className="rounded-lg bg-secondary/50 p-3 text-center">
+                <div className="text-lg font-bold text-foreground">{performance.level}</div>
+                <div className="text-[10px] text-muted-foreground">Nível</div>
+              </div>
+              <div className="rounded-lg bg-secondary/50 p-3 text-center">
+                <div className="text-lg font-bold text-primary">{performance.readiness}%</div>
+                <div className="text-[10px] text-muted-foreground">Preparo</div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Chat Area */}
-      {phase !== "start" && (
-        <>
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
-                    m.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "glass-card"
-                  }`}
-                >
-                  {m.role === "assistant" ? (
-                    <div className="prose prose-sm prose-invert max-w-none">
-                      <ReactMarkdown>{m.content}</ReactMarkdown>
+          {/* Specialty Map */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
+              <Target className="h-4 w-4 text-primary" />
+              Domínio por Especialidade
+            </h3>
+            <div className="space-y-1.5">
+              {performance.specialties.map((s) => {
+                const pct = s.total > 0 ? Math.round((s.score / s.total) * 100) : 0;
+                return (
+                  <div key={s.name}>
+                    <div className="flex justify-between text-[11px] mb-0.5">
+                      <span className="text-muted-foreground truncate">{s.name}</span>
+                      <span className="text-foreground font-medium">{pct}%</span>
                     </div>
-                  ) : (
-                    m.content
+                    <div className="h-1.5 rounded-full bg-secondary">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Weak Topics */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              Temas Fracos
+            </h3>
+            {performance.weakTopics.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {performance.weakTopics.map((t) => (
+                  <Badge key={t} variant="destructive" className="text-[10px]">{t}</Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">Nenhum tema fraco identificado ainda.</p>
+            )}
+          </div>
+
+          {/* Studied Topics */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
+              <BookOpen className="h-4 w-4 text-primary" />
+              Temas Estudados
+            </h3>
+            {performance.studiedTopics.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {performance.studiedTopics.map((t) => (
+                  <Badge key={t} variant="secondary" className="text-[10px]">{t}</Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">Comece a estudar para ver o progresso.</p>
+            )}
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Bar */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              <BarChart3 className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <GraduationCap className="h-5 w-5 text-primary" />
+              <h1 className="text-base font-bold">ENAZIZI</h1>
+              {topic && (
+                <Badge variant="secondary" className="text-xs">{topic}</Badge>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {phase !== "start" && (
+              <>
+                <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>{PHASE_META[phase].label}</span>
+                  <span>•</span>
+                  <span>{progressPercent}%</span>
+                </div>
+                <Button variant="ghost" size="sm" onClick={resetSession} className="text-xs">
+                  <RotateCcw className="h-3.5 w-3.5 mr-1" /> Novo
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Phase Progress Bar */}
+        {phase !== "start" && (
+          <div className="px-4 py-1.5 border-b border-border">
+            <Progress value={progressPercent} className="h-1.5" />
+            <div className="flex gap-1 mt-1.5 overflow-x-auto pb-0.5">
+              {FLOW_PHASES.map((p, i) => {
+                const meta = PHASE_META[p];
+                const isActive = p === phase;
+                const isDone = i < currentIdx;
+                const isNext = i === currentIdx + 1;
+                return (
+                  <button
+                    key={p}
+                    onClick={() => {
+                      if ((isDone || isNext) && !isLoading) goToPhase(p);
+                    }}
+                    disabled={!isDone && !isNext && !isActive}
+                    className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap transition-all ${
+                      isActive
+                        ? "bg-primary text-primary-foreground font-bold"
+                        : isDone
+                        ? "bg-secondary text-secondary-foreground cursor-pointer hover:bg-secondary/80"
+                        : isNext
+                        ? "bg-secondary/50 text-muted-foreground cursor-pointer hover:bg-secondary/80 border border-primary/30"
+                        : "bg-secondary/30 text-muted-foreground/50 cursor-not-allowed"
+                    }`}
+                  >
+                    {meta.shortLabel}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Start Screen */}
+        {phase === "start" && (
+          <div className="flex-1 flex items-center justify-center p-6">
+            <div className="max-w-xl w-full space-y-6">
+              <div className="text-center space-y-3">
+                <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+                  <GraduationCap className="h-8 w-8 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold">Vamos estudar! 🎯</h2>
+                <p className="text-muted-foreground text-sm">
+                  O ENAZIZI segue o protocolo pedagógico completo:
+                </p>
+                <div className="flex flex-wrap justify-center gap-1.5 text-xs">
+                  {FLOW_PHASES.map((p) => (
+                    <Badge key={p} variant="outline" className="text-[10px]">
+                      {PHASE_META[p].label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Input
+                  value={topicInput}
+                  onChange={(e) => setTopicInput(e.target.value)}
+                  placeholder="Digite o tema: Ex: Insuficiência Cardíaca, TEP..."
+                  onKeyDown={(e) => e.key === "Enter" && startStudy()}
+                  className="flex-1"
+                  autoFocus
+                />
+                <Button onClick={startStudy} disabled={!topicInput.trim()}>
+                  <Play className="h-4 w-4 mr-1" /> Estudar
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5 justify-center">
+                {SUGGESTED_TOPICS.map((t) => (
+                  <Button
+                    key={t}
+                    variant="outline"
+                    size="sm"
+                    className="text-[11px] h-7"
+                    onClick={() => setTopicInput(t)}
+                  >
+                    {t}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Chat */}
+        {phase !== "start" && (
+          <>
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+              {messages.map((m, i) => (
+                <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
+                      m.role === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "glass-card"
+                    }`}
+                  >
+                    {m.role === "assistant" ? (
+                      <div className="prose prose-sm prose-invert max-w-none [&_table]:text-xs [&_th]:px-2 [&_td]:px-2">
+                        <ReactMarkdown>{m.content}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      m.content
+                    )}
+                  </div>
+                </div>
+              ))}
+              {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
+                <div className="flex justify-start">
+                  <div className="glass-card rounded-2xl px-4 py-3">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Phase Action Buttons */}
+            <div className="border-t border-border px-3 pt-2 space-y-2">
+              {!isLoading && phase !== "scoring" && (
+                <div className="flex gap-1.5 overflow-x-auto pb-1">
+                  {phase === "lesson" && (
+                    <Button variant="outline" size="sm" className="text-xs whitespace-nowrap border-purple-500/30 text-purple-400 hover:bg-purple-500/10" onClick={() => goToPhase("active-recall")}>
+                      <Brain className="h-3.5 w-3.5 mr-1" /> Active Recall
+                    </Button>
+                  )}
+                  {(phase === "active-recall" || phase === "lesson") && (
+                    <Button variant="outline" size="sm" className="text-xs whitespace-nowrap border-orange-500/30 text-orange-400 hover:bg-orange-500/10" onClick={() => goToPhase("questions")}>
+                      <HelpCircle className="h-3.5 w-3.5 mr-1" /> Questões MCQ
+                    </Button>
+                  )}
+                  {(phase === "questions") && (
+                    <Button variant="outline" size="sm" className="text-xs whitespace-nowrap border-green-500/30 text-green-400 hover:bg-green-500/10" onClick={() => goToPhase("discussion")}>
+                      <MessageSquare className="h-3.5 w-3.5 mr-1" /> Discussão Clínica
+                    </Button>
+                  )}
+                  {(phase === "discussion" || phase === "questions") && (
+                    <Button variant="outline" size="sm" className="text-xs whitespace-nowrap border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10" onClick={() => goToPhase("discursive")}>
+                      <Stethoscope className="h-3.5 w-3.5 mr-1" /> Caso Discursivo
+                    </Button>
+                  )}
+                  {(phase === "discursive" || phase === "discussion") && (
+                    <Button variant="outline" size="sm" className="text-xs whitespace-nowrap border-primary/30 text-primary hover:bg-primary/10" onClick={() => goToPhase("scoring")}>
+                      <TrendingUp className="h-3.5 w-3.5 mr-1" /> Pontuar Sessão
+                    </Button>
                   )}
                 </div>
-              </div>
-            ))}
-            {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-              <div className="flex justify-start">
-                <div className="glass-card rounded-2xl px-4 py-3">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                </div>
-              </div>
-            )}
-          </div>
+              )}
 
-          {/* Action Bar */}
-          <div className="border-t border-border p-3 space-y-2">
-            {!isLoading && currentPhaseIdx < PHASES.length - 1 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={advancePhase}
-                className="w-full text-primary border-primary/30 hover:bg-primary/10"
-              >
-                Avançar para: {PHASE_CONFIG[PHASES[currentPhaseIdx + 1]].label} →
-              </Button>
-            )}
-            <div className="flex gap-2">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Digite sua resposta ou dúvida..."
-                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                disabled={isLoading}
-                className="flex-1"
-              />
-              <Button onClick={sendMessage} disabled={isLoading || !input.trim()} size="icon">
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              </Button>
+              {/* Input */}
+              <div className="flex gap-2 pb-2">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Digite sua resposta ou dúvida..."
+                  onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                  disabled={isLoading}
+                  className="flex-1"
+                />
+                <Button onClick={sendMessage} disabled={isLoading || !input.trim()} size="icon">
+                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                </Button>
+              </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 };
