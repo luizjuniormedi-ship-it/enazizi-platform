@@ -742,7 +742,7 @@ const ChatGPT = () => {
       </div>
 
       {/* Weak topics & recent history (only on start screen) */}
-      {!studyStarted && (performance.temas_fracos.length > 0 || recentHistory.length > 0) && (
+      {!studyStarted && !isFullscreen && (performance.temas_fracos.length > 0 || recentHistory.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
           {performance.temas_fracos.length > 0 && (
             <div className="glass-card p-4">
