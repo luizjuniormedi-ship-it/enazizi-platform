@@ -119,22 +119,35 @@ Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicaç
       }),
     });
 
-    if (validationResponse.ok) {
-      const valData = await validationResponse.json();
-      const valContent = valData.choices?.[0]?.message?.content || "";
-      try {
-        const cleaned = valContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-        const validation = JSON.parse(cleaned);
-        if (!validation.is_medicine) {
-          await supabaseAdmin.from("uploads").delete().eq("id", uploadId);
-          await supabase.storage.from("user-uploads").remove([upload.storage_path]);
-          return new Response(JSON.stringify({ 
-            error: `Conteúdo rejeitado: apenas materiais de medicina são permitidos. ${validation.reason || ""}` 
-          }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        }
-      } catch (parseErr) {
-        console.warn("Validation parse error, proceeding anyway:", parseErr);
+    if (!validationResponse.ok) {
+      const validationError = await validationResponse.text();
+      console.error("Validation API error:", validationResponse.status, validationError);
+      await supabase.from("uploads").update({ status: "error" }).eq("id", uploadId);
+      return new Response(JSON.stringify({ error: "Falha ao validar se o material é médico." }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const valData = await validationResponse.json();
+    const valContent = valData.choices?.[0]?.message?.content || "";
+    try {
+      const cleaned = valContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+      const validation = JSON.parse(cleaned);
+      if (!validation.is_medicine) {
+        await supabaseAdmin.from("uploads").delete().eq("id", uploadId);
+        await supabase.storage.from("user-uploads").remove([upload.storage_path]);
+        return new Response(JSON.stringify({
+          error: `Conteúdo rejeitado: apenas materiais de medicina são permitidos. ${validation.reason || ""}`
+        }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+    } catch (parseErr) {
+      console.warn("Validation parse error, rejecting upload:", parseErr);
+      await supabaseAdmin.from("uploads").delete().eq("id", uploadId);
+      await supabase.storage.from("user-uploads").remove([upload.storage_path]);
+      return new Response(JSON.stringify({
+        error: "Não foi possível validar o conteúdo com segurança. Envie um material médico com texto legível."
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Step 2: Generate flashcards with AI
