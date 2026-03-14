@@ -134,7 +134,7 @@ const Uploads = () => {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".pdf,.txt,.docx"
+        accept=".pdf,.txt"
         className="hidden"
         onChange={handleFileSelect}
       />
