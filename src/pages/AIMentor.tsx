@@ -3,11 +3,11 @@ import AgentChat from "@/components/agents/AgentChat";
 
 const AIMentor = () => (
   <AgentChat
-    title="Mentor IA"
-    subtitle="Tire dúvidas e receba orientação personalizada."
+    title="MentorMed"
+    subtitle="Mentor especializado em Residência Médica e Revalida."
     icon={<MessageSquare className="h-6 w-6 text-primary" />}
-    welcomeMessage="Olá! Sou o MentorPF, seu mentor IA especializado no concurso de Delegado da Polícia Federal. Como posso ajudá-lo hoje? 🚀"
-    placeholder="Faça uma pergunta ao mentor..."
+    welcomeMessage="Olá! Sou o MentorMed, seu mentor IA especializado em Residência Médica (ENARE, USP, UNIFESP, Santa Casa). Posso tirar dúvidas de Clínica Médica, Cirurgia, Pediatria, GO e Preventiva com base em guidelines e protocolos. Como posso ajudá-lo? 🩺"
+    placeholder="Faça uma pergunta sobre residência médica..."
     functionName="mentor-chat"
   />
 );
