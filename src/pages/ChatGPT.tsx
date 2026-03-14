@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap, LogOut, AlertTriangle } from "lucide-react";
+import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap, LogOut, AlertTriangle, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -77,6 +77,7 @@ const ChatGPT = () => {
   const [enaziziStep, setEnaziziStep] = useState(1);
   const [changingTopic, setChangingTopic] = useState(false);
   const [newTopic, setNewTopic] = useState("");
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -547,7 +548,7 @@ const ChatGPT = () => {
   const recentHistory = performance.historico_estudo.slice(-5).reverse();
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] animate-fade-in">
+    <div className={`flex flex-col animate-fade-in ${isFullscreen ? "fixed inset-0 z-50 bg-background p-4" : "h-[calc(100vh-4rem)]"}`}>
       {/* Header */}
       <div className="mb-4 flex items-start justify-between">
         <div>
@@ -558,6 +559,10 @@ const ChatGPT = () => {
           <p className="text-muted-foreground">Agente principal — Protocolo ENAZIZI com GPT-4o</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1.5" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            {isFullscreen ? "Sair" : "Tela cheia"}
+          </Button>
           {studyStarted && (
             <Button variant="destructive" size="sm" onClick={handleFinishSession} className="gap-1.5">
               <LogOut className="h-4 w-4" /> Finalizar Sessão
