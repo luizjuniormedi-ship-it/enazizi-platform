@@ -69,10 +69,16 @@ Se não encontrar questões, retorne {"questions": []}`
         }),
       });
 
-      if (!response.ok) continue;
+      console.log("AI response status:", response.status);
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error("AI error:", errText);
+        continue;
+      }
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content || "";
+      console.log("AI content length:", content.length, "preview:", content.slice(0, 200));
       const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
       
       let parsed: any = null;
@@ -87,12 +93,13 @@ Se não encontrar questões, retorne {"questions": []}`
             const arrMatch = cleaned.match(/\[[\s\S]*\]/);
             if (arrMatch) parsed = { questions: JSON.parse(arrMatch[0]) };
           } catch {
+            console.error("JSON parse failed, cleaned:", cleaned.slice(0, 300));
             continue;
           }
         }
       }
 
-      if (!parsed) continue;
+      if (!parsed) { console.log("No parsed result"); continue; }
 
       const questions = (parsed.questions || []).filter((q: any) =>
         q.statement && Array.isArray(q.options) && q.options.length >= 2 && typeof q.correct_index === "number"
