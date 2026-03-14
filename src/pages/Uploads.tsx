@@ -21,9 +21,11 @@ const Uploads = () => {
   const [files, setFiles] = useState<UploadRecord[]>([]);
   const [uploading, setUploading] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [populating, setPopulating] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isAdmin } = useAdminCheck();
 
   const fetchUploads = async () => {
     if (!user) return;
