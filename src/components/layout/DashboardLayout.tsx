@@ -105,7 +105,7 @@ const DashboardLayout = () => (
     <div className="flex-1 flex flex-col min-w-0">
       <header className="lg:hidden h-14 border-b border-border flex items-center px-4 gap-3 flex-shrink-0">
         <MobileNav />
-        <Brain className="h-5 w-5 text-primary" />
+        <img src={enazizi} alt="ENAZIZI" className="h-6 w-6 rounded object-cover" />
         <span className="font-bold text-sm">ENAZIZI</span>
       </header>
       <main className="flex-1 p-3 sm:p-6 lg:p-8 overflow-auto">
