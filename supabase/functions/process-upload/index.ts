@@ -52,28 +52,21 @@ async function generateQuestionsFromText(
 
   for (const chunk of chunksToProcess) {
     try {
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            {
-              role: "system",
-              content: `Extraia questões de múltipla escolha do texto fornecido. Se o texto já contiver questões formatadas, converta-as para o formato JSON. Se for conteúdo teórico, gere questões baseadas no conteúdo.
+      const response = await aiFetch({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content: `Extraia questões de múltipla escolha do texto fornecido. Se o texto já contiver questões formatadas, converta-as para o formato JSON. Se for conteúdo teórico, gere questões baseadas no conteúdo.
 
 IMPORTANTE: Gere o MÁXIMO de questões possível (10-20 por chunk).
 Formato JSON PURO (sem markdown): 
 {"questions": [{"statement": "enunciado completo com caso clínico", "options": ["A", "B", "C", "D", "E"], "correct_index": 0, "explanation": "explicação detalhada", "topic": "especialidade médica"}]}
 
 Se não encontrar questões válidas, retorne {"questions": []}`
-            },
-            { role: "user", content: `Tema principal: ${topic}\n\nTexto:\n${chunk}` }
-          ],
-        }),
+          },
+          { role: "user", content: `Tema principal: ${topic}\n\nTexto:\n${chunk}` }
+        ],
       });
 
       if (!response.ok) continue;
