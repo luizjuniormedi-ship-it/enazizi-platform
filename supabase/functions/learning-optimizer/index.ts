@@ -121,16 +121,58 @@ Regras:
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
     
-    // Parse JSON from response
-    let plan;
+    // Parse and sanitize JSON from response
+    let plan: any;
     try {
       const jsonMatch = content.match(/\{[\s\S]*\}/);
-      plan = jsonMatch ? JSON.parse(jsonMatch[0]) : { error: "Failed to parse plan" };
+      if (!jsonMatch) throw new Error("Failed to parse plan");
+      plan = JSON.parse(jsonMatch[0]);
     } catch {
-      plan = { raw: content };
+      return new Response(JSON.stringify({ error: "Falha ao processar plano diário gerado." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    return new Response(JSON.stringify(plan), {
+    const safeFocusAreas = Array.isArray(plan?.focus_areas)
+      ? plan.focus_areas.map(String).filter((t: string) => isMedicalContent(t))
+      : [];
+
+    const safeBlocks = Array.isArray(plan?.blocks)
+      ? plan.blocks
+          .map((b: any, i: number) => ({
+            order: Number(b?.order ?? i + 1),
+            type: String(b?.type || "study"),
+            topic: String(b?.topic || "Revisão médica"),
+            duration_minutes: Number(b?.duration_minutes || 30),
+            description: String(b?.description || ""),
+            priority: String(b?.priority || "medium"),
+            reason: String(b?.reason || ""),
+          }))
+          .filter((b: any) => isMedicalContent(`${b.topic} ${b.description} ${b.reason}`))
+      : [];
+
+    if (safeBlocks.length === 0) {
+      return new Response(JSON.stringify({ error: "A IA retornou um plano sem conteúdo médico válido." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const safeTips = Array.isArray(plan?.tips)
+      ? plan.tips.map(String).filter((tip: string) => !NON_MEDICAL_CONTENT_REGEX.test(tip))
+      : [];
+
+    const safePlan = {
+      greeting: String(plan?.greeting || "Vamos focar na sua evolução médica hoje."),
+      focus_areas: safeFocusAreas,
+      blocks: safeBlocks,
+      total_minutes: Number(plan?.total_minutes || safeBlocks.reduce((acc: number, b: any) => acc + b.duration_minutes, 0)),
+      tips: safeTips,
+      review_reminder: String(plan?.review_reminder || ""),
+    };
+
+    return new Response(JSON.stringify(safePlan), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
