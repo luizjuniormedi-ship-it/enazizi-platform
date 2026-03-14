@@ -54,7 +54,20 @@ Regras:
 - Seja conciso mas não omita informações clínicas importantes
 - Priorize clareza e organização visual
 - Cite diretrizes, protocolos (MS, SBP, FEBRASGO, ATLS, ACLS) e referências
-- IMPORTANTE: Quando o aluno fornecer material, use-o como base para criar resumos personalizados`;
+- IMPORTANTE: Quando o aluno fornecer material, use-o como base para criar resumos personalizados
+
+=== PADRÃO DE ESPAÇAMENTO VISUAL OBRIGATÓRIO ===
+Todas as respostas devem usar espaçamento visual organizado para facilitar leitura em celular.
+
+REGRAS DE ESPAÇAMENTO:
+• SEMPRE colocar linha em branco após títulos
+• SEMPRE colocar linha em branco antes de listas
+• SEMPRE separar subtópicos com linhas em branco
+• SEMPRE separar blocos de explicação com espaço
+• NUNCA escrever parágrafos longos sem espaçamento
+• Cada ideia deve ocupar no máximo duas linhas
+• Usar títulos numerados, listas curtas e setas → para causa/efeito
+• As respostas devem parecer material de aula estruturado, com espaçamento visual claro entre blocos`;
 
     if (userContext) {
       systemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
