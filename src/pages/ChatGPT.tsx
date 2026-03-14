@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
+import { mapTopicToSpecialty } from "@/lib/mapTopicToSpecialty";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
