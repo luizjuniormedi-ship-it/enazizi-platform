@@ -116,6 +116,23 @@ const Uploads = () => {
     }
   };
 
+  const handlePopulateQuestions = async (upload: UploadRecord) => {
+    setPopulating(upload.id);
+    try {
+      const res = await supabase.functions.invoke("populate-questions", {
+        body: { uploadId: upload.id },
+      });
+      if (res.error) throw res.error;
+      const data = res.data as any;
+      toast({ title: "Questões geradas!", description: data.message || `${data.questions_count} questões adicionadas ao banco.` });
+      fetchUploads();
+    } catch (err: any) {
+      toast({ title: "Erro ao popular questões", description: err.message, variant: "destructive" });
+    } finally {
+      setPopulating(null);
+    }
+  };
+
   const statusIcon = (status: string | null) => {
     switch (status) {
       case "processed": return <CheckCircle className="h-4 w-4 text-success" />;
