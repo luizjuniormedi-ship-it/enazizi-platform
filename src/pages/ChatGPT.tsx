@@ -707,7 +707,7 @@ const ChatGPT = () => {
                 📚 {currentTopic}
               </span>
               <span className="px-3 py-1 rounded-full bg-secondary text-muted-foreground text-xs">
-                Etapa {enaziziStep}/12
+                Etapa {enaziziStep}/13
               </span>
               {sessionQuestions > 0 && (
                 <span className="px-3 py-1 rounded-full bg-secondary text-muted-foreground text-xs">
