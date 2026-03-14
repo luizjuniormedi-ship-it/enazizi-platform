@@ -691,30 +691,97 @@ const ChatGPT = () => {
       {/* Chat area */}
       {studyStarted && (
         <>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
-              📚 Estudando: {currentTopic}
-            </span>
-            {sessionQuestions > 0 && (
-              <span className="px-3 py-1 rounded-full bg-secondary text-muted-foreground text-xs">
-                {sessionQuestions} questões • {sessionQuestions > 0 ? Math.round((sessionCorrect / sessionQuestions) * 100) : 0}% acerto
+          {/* Step Progress Indicator */}
+          <div className="mb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                📚 {currentTopic}
               </span>
-            )}
+              <span className="px-3 py-1 rounded-full bg-secondary text-muted-foreground text-xs">
+                Etapa {enaziziStep}/12
+              </span>
+              {sessionQuestions > 0 && (
+                <span className="px-3 py-1 rounded-full bg-secondary text-muted-foreground text-xs">
+                  {sessionQuestions}Q • {Math.round((sessionCorrect / sessionQuestions) * 100)}%
+                </span>
+              )}
+            </div>
+            <div className="flex gap-0.5">
+              {ENAZIZI_STEPS.map((s) => (
+                <div
+                  key={s.num}
+                  title={`${s.num}. ${s.label}`}
+                  className={`flex-1 h-2 rounded-full transition-colors ${
+                    s.num < enaziziStep
+                      ? "bg-primary"
+                      : s.num === enaziziStep
+                      ? "bg-primary/60 animate-pulse"
+                      : "bg-muted"
+                  }`}
+                />
+              ))}
+            </div>
+            <div className="flex justify-between mt-1">
+              {ENAZIZI_STEPS.map((s) => (
+                <span
+                  key={s.num}
+                  className={`text-[9px] ${
+                    s.num === enaziziStep ? "text-primary font-bold" : "text-muted-foreground"
+                  }`}
+                >
+                  {s.icon}
+                </span>
+              ))}
+            </div>
           </div>
 
+          {/* Phase action buttons — show next logical step */}
           <div className="flex flex-wrap gap-2 mb-3">
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs border-amber-500/30 text-amber-500 hover:bg-amber-500/10" onClick={() => handlePhaseAction("active-recall")} disabled={isLoading}>
-              <BookOpen className="h-3.5 w-3.5" /> Active Recall
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs border-blue-500/30 text-blue-500 hover:bg-blue-500/10" onClick={() => handlePhaseAction("questions")} disabled={isLoading}>
-              <HelpCircle className="h-3.5 w-3.5" /> Questões A-E
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs border-violet-500/30 text-violet-500 hover:bg-violet-500/10" onClick={() => handlePhaseAction("discursive")} disabled={isLoading}>
-              <Stethoscope className="h-3.5 w-3.5" /> Caso Discursivo
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10" onClick={() => handlePhaseAction("review")} disabled={isLoading}>
-              <RefreshCw className="h-3.5 w-3.5" /> Revisar Conteúdo
-            </Button>
+            {enaziziStep <= 4 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("active-recall")} disabled={isLoading}>
+                <BookOpen className="h-3.5 w-3.5" /> 🧠 Active Recall
+              </Button>
+            )}
+            {enaziziStep >= 4 && enaziziStep < 5 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("bloco2")} disabled={isLoading}>
+                <BookOpen className="h-3.5 w-3.5" /> 🔬 Bloco 2 — Fisiopatologia
+              </Button>
+            )}
+            {enaziziStep >= 5 && enaziziStep < 7 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("active-recall")} disabled={isLoading}>
+                <BookOpen className="h-3.5 w-3.5" /> 🧠 Active Recall 2
+              </Button>
+            )}
+            {enaziziStep >= 6 && enaziziStep < 7 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("bloco3")} disabled={isLoading}>
+                <BookOpen className="h-3.5 w-3.5" /> 🏥 Bloco 3 — Clínica
+              </Button>
+            )}
+            {enaziziStep >= 7 && enaziziStep < 8 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("questions")} disabled={isLoading}>
+                <HelpCircle className="h-3.5 w-3.5" /> ❓ Questão Objetiva
+              </Button>
+            )}
+            {enaziziStep >= 8 && enaziziStep < 9 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("discussion")} disabled={isLoading}>
+                <HelpCircle className="h-3.5 w-3.5" /> 💬 Discussão
+              </Button>
+            )}
+            {enaziziStep >= 9 && enaziziStep < 10 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("discursive")} disabled={isLoading}>
+                <Stethoscope className="h-3.5 w-3.5" /> ✍️ Caso Discursivo
+              </Button>
+            )}
+            {enaziziStep >= 10 && enaziziStep < 11 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("correction")} disabled={isLoading}>
+                <Check className="h-3.5 w-3.5" /> ✅ Correção
+              </Button>
+            )}
+            {enaziziStep >= 11 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("update")} disabled={isLoading}>
+                <BarChart3 className="h-3.5 w-3.5" /> 📈 Atualizar Desempenho
+              </Button>
+            )}
           </div>
 
           <div ref={scrollRef} className="flex-1 glass-card p-4 overflow-y-auto space-y-4 mb-4">
