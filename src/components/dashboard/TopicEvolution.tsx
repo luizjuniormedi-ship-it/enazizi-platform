@@ -3,8 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Brain, AlertTriangle, CheckCircle2, BookOpen, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Brain, AlertTriangle, CheckCircle2, BookOpen, Loader2, GraduationCap } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 const SPECIALTIES = [
@@ -24,9 +24,19 @@ interface DomainEntry {
 
 const TopicEvolution = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [domains, setDomains] = useState<DomainEntry[]>([]);
   const [errorTopics, setErrorTopics] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+
+  const handleStudyTopic = (specialty: string) => {
+    navigate("/dashboard/chatgpt", {
+      state: {
+        initialMessage: `Quero estudar o tópico "${specialty}". Me dê uma aula completa seguindo o protocolo ENAZIZI.`,
+        fromErrorBank: true,
+      },
+    });
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -120,6 +130,15 @@ const TopicEvolution = () => {
                     <Badge variant={getBadgeVariant(d.domain_score)} className="text-xs">
                       {Math.round(d.domain_score)}%
                     </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs gap-1"
+                      onClick={() => handleStudyTopic(s)}
+                    >
+                      <GraduationCap className="h-3.5 w-3.5" />
+                      Estudar
+                    </Button>
                   </div>
                 </div>
                 <Progress value={d.domain_score} className="h-2" />
@@ -138,7 +157,13 @@ const TopicEvolution = () => {
           </h3>
           <div className="flex flex-wrap gap-1.5">
             {notStudied.map((s) => (
-              <Badge key={s} variant="outline" className="text-xs font-normal">
+              <Badge
+                key={s}
+                variant="outline"
+                className="text-xs font-normal cursor-pointer hover:bg-primary/10 transition-colors gap-1"
+                onClick={() => handleStudyTopic(s)}
+              >
+                <GraduationCap className="h-3 w-3" />
                 {s}
               </Badge>
             ))}
