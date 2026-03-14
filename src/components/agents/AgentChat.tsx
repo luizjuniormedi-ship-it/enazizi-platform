@@ -41,12 +41,13 @@ interface AgentChatProps {
   quickActions?: QuickAction[];
 }
 
-const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functionName, onSaveMessage }: AgentChatProps) => {
+const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions }: AgentChatProps) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([
     { role: "assistant", content: welcomeMessage },
   ]);
   const [input, setInput] = useState("");
+  const [hasShownUploadWelcome, setHasShownUploadWelcome] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
