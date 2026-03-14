@@ -56,7 +56,7 @@ const App = () => (
               <Route path="banco-questoes" element={<QuestionsBank />} />
               <Route path="resumos" element={<ContentSummarizer />} />
               <Route path="coach" element={<MotivationalCoach />} />
-              <Route path="estudar" element={<StudySession />} />
+              {/* estudar removed - merged into ChatGPT */}
               <Route path="chatgpt" element={<ChatGPT />} />
               <Route path="plano-dia" element={<DailyPlan />} />
               <Route path="predictor" element={<PerformancePredictor />} />
