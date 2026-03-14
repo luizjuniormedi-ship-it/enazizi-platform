@@ -255,7 +255,6 @@ serve(async (req) => {
       `upload:${upload.filename}`,
       userId,
       supabaseAdmin,
-      LOVABLE_API_KEY,
     );
 
     await supabaseAdmin.from("uploads").update({
