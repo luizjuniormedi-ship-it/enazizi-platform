@@ -741,7 +741,7 @@ const ChatGPT = () => {
         <>
           {/* Step Progress Indicator */}
           <div className="mb-3">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
                 📚 {currentTopic}
               </span>
@@ -753,7 +753,25 @@ const ChatGPT = () => {
                   {sessionQuestions}Q • {Math.round((sessionCorrect / sessionQuestions) * 100)}%
                 </span>
               )}
+              <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 ml-auto" onClick={() => setChangingTopic(!changingTopic)} disabled={isLoading}>
+                <RefreshCw className="h-3 w-3" /> Mudar Tema
+              </Button>
             </div>
+            {changingTopic && (
+              <div className="flex gap-2 mb-2 max-w-md">
+                <Input
+                  placeholder="Novo tema médico..."
+                  value={newTopic}
+                  onChange={(e) => setNewTopic(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleChangeTopic()}
+                  className="bg-secondary border-border text-sm h-8"
+                  autoFocus
+                />
+                <Button size="sm" className="h-8 text-xs" onClick={handleChangeTopic} disabled={!newTopic.trim()}>
+                  Iniciar
+                </Button>
+              </div>
+            )}
             <div className="flex gap-0.5">
               {ENAZIZI_STEPS.map((s) => (
                 <div
