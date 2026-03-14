@@ -139,17 +139,53 @@ const ChatGPT = () => {
     load();
   }, [user]);
 
+  // Load questions from bank for context
+  const [bankQuestions, setBankQuestions] = useState<Array<{ statement: string; options: any; correct_index: number | null; explanation: string | null; topic: string | null }>>([]);
+
+  useEffect(() => {
+    if (!user || !currentTopic) { setBankQuestions([]); return; }
+    const loadQuestions = async () => {
+      const { data } = await supabase
+        .from("questions_bank")
+        .select("statement, options, correct_index, explanation, topic")
+        .or(`user_id.eq.${user.id},is_global.eq.true`)
+        .ilike("topic", `%${currentTopic}%`)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      setBankQuestions(data || []);
+    };
+    loadQuestions();
+  }, [user, currentTopic]);
+
   const buildUserContext = useCallback(() => {
-    if (selectedUploadIds.size === 0) return "";
     let ctx = "";
+
+    // Add uploaded materials
     for (const upload of availableUploads) {
       if (!selectedUploadIds.has(upload.id)) continue;
       const snippet = upload.extracted_text?.slice(0, 2000) || "";
-      if (ctx.length + snippet.length > 8000) break;
+      if (ctx.length + snippet.length > 6000) break;
       ctx += `\n\n📄 ${upload.filename} (${upload.category || "material"}):\n${snippet}`;
     }
+
+    // Add questions bank
+    if (bankQuestions.length > 0) {
+      ctx += `\n\n📋 BANCO DE QUESTÕES DO ALUNO (${bankQuestions.length} questões sobre "${currentTopic}"):\n`;
+      bankQuestions.slice(0, 5).forEach((q, i) => {
+        ctx += `\nQ${i + 1}: ${q.statement.slice(0, 300)}`;
+        if (q.options && Array.isArray(q.options)) {
+          (q.options as string[]).forEach((opt: string, j: number) => {
+            ctx += `\n  ${String.fromCharCode(65 + j)}) ${opt}`;
+          });
+        }
+        if (q.correct_index != null) ctx += `\n  Gabarito: ${String.fromCharCode(65 + q.correct_index)}`;
+        if (q.explanation) ctx += `\n  Explicação: ${q.explanation.slice(0, 200)}`;
+      });
+      ctx += `\n\nUSE estas questões como referência para o estilo, dificuldade e temas. Priorize CASOS CLÍNICOS.`;
+    }
+
     return ctx.trim();
-  }, [availableUploads, selectedUploadIds]);
+  }, [availableUploads, selectedUploadIds, bankQuestions, currentTopic]);
 
   const toggleUpload = (id: string) => {
     setSelectedUploadIds((prev) => {
