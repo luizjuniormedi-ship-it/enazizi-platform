@@ -66,7 +66,7 @@ const App = () => (
               <Route path="analytics" element={<Analytics />} />
               <Route path="perfil" element={<Profile />} />
             </Route>
-            <Route path="/admin" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+            <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
               <Route index element={<Admin />} />
             </Route>
             <Route path="*" element={<NotFound />} />
