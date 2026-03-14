@@ -1041,6 +1041,11 @@ const ChatGPT = () => {
                 📈 Atualizar
               </Button>
             )}
+            {enaziziStep === 13 && (
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("consolidation")} disabled={isLoading}>
+                🔁 Consolidação
+              </Button>
+            )}
           </div>
 
           <div ref={scrollRef} className="flex-1 glass-card p-2 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 mb-2 sm:mb-4 min-h-0">
