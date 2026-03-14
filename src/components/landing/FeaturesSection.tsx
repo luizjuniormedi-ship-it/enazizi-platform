@@ -5,7 +5,7 @@ const features = [
   { icon: Brain, title: "Active Recall", desc: "Após cada aula, perguntas curtas de memória ativa para fixação de longo prazo." },
   { icon: HelpCircle, title: "Questões Estilo Prova", desc: "Casos clínicos com 5 alternativas no padrão ENARE, USP, UNIFESP e Revalida." },
   { icon: MessageSquare, title: "Discussão Clínica Detalhada", desc: "Cada questão vira uma micro aula: raciocínio clínico, diagnóstico diferencial e análise de todas as alternativas." },
-  { icon: BarChart3, title: "Mapa de Domínio", desc: "Desempenho por especialidade: cardiologia, pneumologia, neurologia e mais. Identifica seus pontos fracos." },
+  { icon: BarChart3, title: "Mapa de Evolução", desc: "Desempenho por especialidade: cardiologia, pneumologia, neurologia e mais. Identifica seus pontos fracos." },
   { icon: Repeat, title: "Repetição Inteligente", desc: "Conteúdos errados reaparecem em novos casos clínicos com SRS (Spaced Repetition System)." },
   { icon: Upload, title: "Upload de Provas e Materiais", desc: "Envie simulados, provas anteriores e PDFs para análise e treino personalizado." },
   { icon: BookOpen, title: "Protocolo Pedagógico", desc: "Nunca começa com questões. Sequência obrigatória: Ensinar → Avaliar → Discutir → Analisar." },
