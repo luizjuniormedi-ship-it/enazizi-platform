@@ -42,7 +42,7 @@ const QuestionGenerator = () => {
       title="Gerador de Questões"
       subtitle="Questões estilo ENARE, USP e UNIFESP com casos clínicos."
       icon={<HelpCircle className="h-6 w-6 text-primary" />}
-      welcomeMessage="Olá! Sou o Gerador de Questões para Residência Médica. Crio questões com casos clínicos no padrão ENARE/USP/UNIFESP, com gabarito comentado e referências (Harrison, Sabiston, Nelson, guidelines). Qual área quer treinar? 📝"
+      welcomeMessage="Olá! Sou o Gerador de Questões para Residência Médica. 📝 Me diga: qual **assunto/especialidade** você quer treinar e **quantas questões** deseja? Exemplo: '10 questões de Cardiologia' ou '5 questões difíceis de Pediatria'."
       welcomeMessageWithUploads="📚 Detectei {count} material(is) do seu acervo: {materiais}. Vou usar como base para gerar questões! Escolha abaixo quantas questões e o nível de dificuldade, ou me diga o que prefere. 👇"
       placeholder="Ex: Gere 5 questões de Cardiologia sobre Insuficiência Cardíaca..."
       functionName="question-generator"
