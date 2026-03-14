@@ -944,56 +944,56 @@ const ChatGPT = () => {
             </div>
           </div>
 
-          {/* Phase action buttons — show next logical step */}
-          <div className="flex flex-wrap gap-2 mb-3">
+          {/* Phase action buttons */}
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-2 sm:mb-3 overflow-x-auto">
             {enaziziStep === 3 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("leigo1")} disabled={isLoading}>
-                <BookOpen className="h-3.5 w-3.5" /> 💡 Tradução Leiga + Pergunta
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("leigo1")} disabled={isLoading}>
+                💡 Tradução Leiga
               </Button>
             )}
             {enaziziStep === 4 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("tecnico2")} disabled={isLoading}>
-                <BookOpen className="h-3.5 w-3.5" /> 🔬 Bloco Técnico 2 — Fisiopatologia
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("tecnico2")} disabled={isLoading}>
+                🔬 Fisiopatologia
               </Button>
             )}
             {enaziziStep === 5 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("leigo2")} disabled={isLoading}>
-                <BookOpen className="h-3.5 w-3.5" /> 💡 Tradução Leiga 2 + Pergunta
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("leigo2")} disabled={isLoading}>
+                💡 Tradução 2
               </Button>
             )}
             {enaziziStep === 6 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("tecnico3")} disabled={isLoading}>
-                <BookOpen className="h-3.5 w-3.5" /> 🏥 Bloco Técnico 3 — Clínica
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("tecnico3")} disabled={isLoading}>
+                🏥 Clínica
               </Button>
             )}
             {enaziziStep === 7 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("leigo3")} disabled={isLoading}>
-                <BookOpen className="h-3.5 w-3.5" /> 💡 Tradução Leiga 3 + Pergunta
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("leigo3")} disabled={isLoading}>
+                💡 Tradução 3
               </Button>
             )}
             {enaziziStep === 8 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("questions")} disabled={isLoading}>
-                <HelpCircle className="h-3.5 w-3.5" /> ❓ Questão Objetiva
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("questions")} disabled={isLoading}>
+                ❓ Questão
               </Button>
             )}
             {enaziziStep === 9 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("discussion")} disabled={isLoading}>
-                <HelpCircle className="h-3.5 w-3.5" /> 💬 Discussão
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("discussion")} disabled={isLoading}>
+                💬 Discussão
               </Button>
             )}
             {enaziziStep === 10 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("discursive")} disabled={isLoading}>
-                <Stethoscope className="h-3.5 w-3.5" /> ✍️ Caso Discursivo
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("discursive")} disabled={isLoading}>
+                ✍️ Discursivo
               </Button>
             )}
             {enaziziStep === 11 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("correction")} disabled={isLoading}>
-                <Check className="h-3.5 w-3.5" /> ✅ Correção
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("correction")} disabled={isLoading}>
+                ✅ Correção
               </Button>
             )}
             {enaziziStep === 12 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("update")} disabled={isLoading}>
-                <BarChart3 className="h-3.5 w-3.5" /> 📈 Atualizar Desempenho
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("update")} disabled={isLoading}>
+                📈 Atualizar
               </Button>
             )}
           </div>
