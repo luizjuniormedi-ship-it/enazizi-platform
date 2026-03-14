@@ -39,9 +39,9 @@ const Uploads = () => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    const maxSize = 50 * 1024 * 1024;
+    const maxSize = 20 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast({ title: "Arquivo muito grande", description: "Máximo de 50MB.", variant: "destructive" });
+      toast({ title: "Arquivo muito grande", description: "Máximo de 20MB para processamento estável.", variant: "destructive" });
       return;
     }
 
