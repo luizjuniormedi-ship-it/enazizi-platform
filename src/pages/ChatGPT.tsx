@@ -473,6 +473,53 @@ const ChatGPT = () => {
           conversation_id: convId, user_id: user.id, role: "assistant", content: assistantSoFar,
         });
         loadConversations();
+
+        // Auto-detect errors and save to error_bank
+        if (user && currentTopic) {
+          const errorPatterns = [
+            /(?:incorret|errad|não está corret|resposta errada|infelizmente|não é essa)/i,
+            /alternativa correta[:\s]+([A-E])/i,
+            /a resposta (?:correta|certa) (?:é|seria|era)/i,
+          ];
+          const hasError = errorPatterns.some((p) => p.test(assistantSoFar));
+          if (hasError) {
+            // Extract error details from the response
+            const subtemaMatch = assistantSoFar.match(/(?:subtema|tópico|sobre):\s*([^\n.]+)/i);
+            const categoriaMatch = assistantSoFar.match(/\[ERRO_TIPO:(\w+)\]/i);
+            const motivoMatch = assistantSoFar.match(/\[ERRO_MOTIVO:([^\]]+)\]/i);
+            const conteudoSnippet = assistantSoFar.slice(0, 300);
+
+            const errorData = {
+              user_id: user.id,
+              tema: currentTopic,
+              subtema: subtemaMatch?.[1]?.trim() || null,
+              tipo_questao: enaziziStep >= 9 && enaziziStep <= 10 ? "objetiva" : enaziziStep >= 11 && enaziziStep <= 12 ? "discursiva" : "active_recall",
+              conteudo: conteudoSnippet,
+              motivo_erro: motivoMatch?.[1]?.trim() || null,
+              categoria_erro: categoriaMatch?.[1]?.trim() || null,
+              dificuldade: 3,
+              vezes_errado: 1,
+            };
+
+            // Check if similar error exists (same tema + subtema + tipo)
+            const { data: existing } = await supabase
+              .from("error_bank")
+              .select("id, vezes_errado")
+              .eq("user_id", user.id)
+              .eq("tema", errorData.tema)
+              .eq("tipo_questao", errorData.tipo_questao)
+              .maybeSingle();
+
+            if (existing) {
+              await supabase
+                .from("error_bank")
+                .update({ vezes_errado: (existing.vezes_errado || 1) + 1, updated_at: new Date().toISOString(), conteudo: conteudoSnippet })
+                .eq("id", existing.id);
+            } else {
+              await supabase.from("error_bank").insert(errorData);
+            }
+          }
+        }
       }
     } catch (e) {
       console.error(e);
