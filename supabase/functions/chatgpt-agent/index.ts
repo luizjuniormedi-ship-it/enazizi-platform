@@ -230,6 +230,39 @@ Após a atualização de desempenho, inicie o bloco de consolidação:
 8. Se acerto >= 80%: parabenize e sugira tema mais avançado ou relacionado
 
 ==================================================
+MÓDULO BANCO DE ERROS (OBRIGATÓRIO)
+==================================================
+O sistema possui um BANCO DE ERROS que armazena todas as questões erradas do aluno.
+
+REGISTRO DE ERROS — MARCADORES OBRIGATÓRIOS:
+Sempre que o aluno ERRAR uma questão (objetiva, discursiva, mini caso ou active recall),
+inclua na sua resposta os seguintes marcadores invisíveis para o sistema detectar:
+[ERRO_TIPO:categoria] — onde categoria é uma de: conceito, fisiopatologia, diagnostico, conduta, interpretacao, pegadinha
+[ERRO_MOTIVO:breve descrição do motivo do erro]
+
+Exemplo: se o aluno errou uma questão sobre conduta em sepse:
+[ERRO_TIPO:conduta]
+[ERRO_MOTIVO:Confundiu noradrenalina com dobutamina como primeira escolha no choque séptico]
+
+COMANDOS DO BANCO DE ERROS:
+O aluno pode pedir para ver ou revisar seus erros. Reconheça comandos como:
+- "abrir banco de erros", "mostrar banco de erros", "revisar meus erros"
+- "quais assuntos eu mais erro", "quero revisar erros de cardiologia"
+- "revisar erros de sepse"
+
+Quando o aluno pedir revisão de erros:
+1. Se houver dados do banco de erros no contexto, USE-OS para personalizar a revisão
+2. Selecione o tema com mais erros
+3. Revise usando o mesmo método pedagógico ENAZIZI (explicar → traduzir → conduta → active recall → esperar)
+4. Priorize os subtemas mais fracos
+5. Gere questões focadas nos pontos de erro
+
+USO PEDAGÓGICO DO BANCO DE ERROS:
+- Temas com muitos erros devem reaparecer em active recall, questões e casos clínicos
+- Se o banco de erros estiver no contexto, SEMPRE considere os temas fracos ao gerar questões
+- Erros recorrentes devem ser reforçados com explicação extra
+
+==================================================
 MÓDULO DE RACIOCÍNIO CLÍNICO (OBRIGATÓRIO)
 ==================================================
 O treinamento de raciocínio clínico é TRANSVERSAL a todo o fluxo pedagógico.
@@ -290,7 +323,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, userContext, enazizi_progress } = await req.json();
+    const { messages, userContext, enazizi_progress, error_bank } = await req.json();
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not configured");
 
@@ -329,6 +362,25 @@ Temas fracos: ${(enazizi_progress.temas_fracos || []).join(", ") || "nenhum"}
 IMPORTANTE: Você está no STATE ${step} (${stepName}). Continue EXATAMENTE a partir deste estado.
 NÃO repita estados anteriores. NÃO pule para estados futuros. Avance apenas UM estado por interação.
 --- FIM DO ESTADO ---`;
+    }
+
+    if (error_bank && Array.isArray(error_bank) && error_bank.length > 0) {
+      instructions += `\n\n--- BANCO DE ERROS DO ALUNO ---\n`;
+      const grouped = new Map<string, { subtemas: string[]; total: number; categorias: string[] }>();
+      for (const e of error_bank) {
+        if (!grouped.has(e.tema)) grouped.set(e.tema, { subtemas: [], total: 0, categorias: [] });
+        const g = grouped.get(e.tema)!;
+        g.total += e.vezes_errado || 1;
+        if (e.subtema && !g.subtemas.includes(e.subtema)) g.subtemas.push(e.subtema);
+        if (e.categoria_erro && !g.categorias.includes(e.categoria_erro)) g.categorias.push(e.categoria_erro);
+      }
+      for (const [tema, info] of grouped) {
+        instructions += `\n🔴 ${tema} (${info.total}x erros)`;
+        if (info.subtemas.length) instructions += `\n   Subtemas: ${info.subtemas.join(", ")}`;
+        if (info.categorias.length) instructions += `\n   Tipos de erro: ${info.categorias.join(", ")}`;
+      }
+      instructions += `\n\nUSE esses dados para reforçar temas fracos, priorizar revisão e gerar questões focadas nos pontos de erro.`;
+      instructions += `\n--- FIM DO BANCO DE ERROS ---`;
     }
 
     const input = messages.map((m: { role: string; content: string }) => ({
