@@ -11,8 +11,6 @@ serve(async (req) => {
 
   try {
     const { messages, userContext } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const systemPrompt = `Você é o GERADOR OFICIAL DE FLASHCARDS CLÍNICOS do sistema ENAZIZI.
 
