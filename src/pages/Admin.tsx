@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Shield, Users, CreditCard, TrendingUp, Ban, CheckCircle, UserCog, Search, RefreshCw, ChevronDown } from "lucide-react";
+import { Shield, Users, CreditCard, TrendingUp, Ban, CheckCircle, UserCog, Search, RefreshCw, ChevronDown, ShieldCheck, ShieldOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -57,6 +57,10 @@ const Admin = () => {
   // Dialog state for block/unblock
   const [blockDialog, setBlockDialog] = useState<{ open: boolean; user: AdminUser | null; block: boolean }>({
     open: false, user: null, block: false,
+  });
+  // Dialog state for admin toggle
+  const [adminDialog, setAdminDialog] = useState<{ open: boolean; user: AdminUser | null; makeAdmin: boolean }>({
+    open: false, user: null, makeAdmin: false,
   });
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-actions`;
@@ -130,6 +134,28 @@ const Admin = () => {
         description: `${planDialog.user.display_name || planDialog.user.email} agora está no plano ${planDialog.plan}.`,
       });
       setPlanDialog({ open: false, user: null, plan: "" });
+      loadData();
+    } catch (e) {
+      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleToggleAdmin = async () => {
+    if (!adminDialog.user) return;
+    setActionLoading(adminDialog.user.user_id);
+    try {
+      await callAdmin({
+        action: "toggle_admin",
+        target_user_id: adminDialog.user.user_id,
+        make_admin: adminDialog.makeAdmin,
+      });
+      toast({
+        title: adminDialog.makeAdmin ? "Admin promovido" : "Admin removido",
+        description: `${adminDialog.user.display_name || adminDialog.user.email} ${adminDialog.makeAdmin ? "agora é administrador" : "não é mais administrador"}.`,
+      });
+      setAdminDialog({ open: false, user: null, makeAdmin: false });
       loadData();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
@@ -282,7 +308,17 @@ const Admin = () => {
                   <div className="col-span-1 flex items-center text-xs text-muted-foreground">
                     {u.quota ? `${u.quota.questions_used}/${u.quota.questions_limit}` : "—"}
                   </div>
-                  <div className="col-span-2 flex items-center justify-end gap-2">
+                  <div className="col-span-2 flex items-center justify-end gap-1.5 flex-wrap">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1"
+                      disabled={isCurrentlyActioning}
+                      onClick={() => setAdminDialog({ open: true, user: u, makeAdmin: !u.roles.includes("admin") })}
+                    >
+                      {u.roles.includes("admin") ? <ShieldOff className="h-3 w-3" /> : <ShieldCheck className="h-3 w-3" />}
+                      {u.roles.includes("admin") ? "Remover Admin" : "Admin"}
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -365,6 +401,28 @@ const Admin = () => {
             </Button>
             <Button onClick={handleChangePlan} disabled={!!actionLoading || !planDialog.plan}>
               Confirmar alteração
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Toggle Admin Dialog */}
+      <Dialog open={adminDialog.open} onOpenChange={(open) => !open && setAdminDialog({ open: false, user: null, makeAdmin: false })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{adminDialog.makeAdmin ? "Promover a Administrador" : "Remover Administrador"}</DialogTitle>
+            <DialogDescription>
+              {adminDialog.makeAdmin
+                ? `Deseja tornar "${adminDialog.user?.display_name || adminDialog.user?.email}" um administrador? Ele terá acesso total ao painel de gestão.`
+                : `Deseja remover o acesso admin de "${adminDialog.user?.display_name || adminDialog.user?.email}"?`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAdminDialog({ open: false, user: null, makeAdmin: false })}>
+              Cancelar
+            </Button>
+            <Button onClick={handleToggleAdmin} disabled={!!actionLoading}>
+              {adminDialog.makeAdmin ? "Promover" : "Remover"}
             </Button>
           </DialogFooter>
         </DialogContent>
