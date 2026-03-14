@@ -6,17 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const NON_MEDICAL_CONTENT_REGEX = /(direito|jur[ií]d|penal|constitucional|processo penal|inquérito|inqu[eé]rito|stf|stj|delegad|advogad|pol[ií]cia federal|c[oó]digo penal|a[cç][aã]o penal|inform[aá]tica|tecnologia da informa[cç][aã]o|arquivos? digitais?|\/mediaBox|\/type\/pages|engenharia|contabilidade|economia|administra[cç][aã]o|programa[cç][aã]o)/i;
-const MEDICAL_CONTENT_REGEX = /(medicin|sa[uú]de|paciente|diagn[oó]st|tratament|sintom|doen[cç]|fisiopat|farmac|anatom|cl[íi]nic|cirurg|pediatr|ginec|obstetr|preventiva|resid[eê]ncia|enare|revalida|protocolo|diretriz)/i;
-
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
+const NON_MEDICAL_CONTENT_REGEX = /(direito|jur[ií]d|penal|constitucional|processo penal|inquérito|inqu[eé]rito|stf|stj|delegad|advogad|pol[ií]cia federal|c[oó]digo penal|a[cç][aã]o penal|inform[aá]tica|tecnologia da informa[cç][aã]o|engenharia|contabilidade|economia|administra[cç][aã]o|programa[cç][aã]o)/i;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -35,7 +25,6 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
     if (userError || !user) {
-      console.error("Auth error:", userError?.message);
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
     const userId = user.id;
@@ -60,15 +49,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Upload not found" }), { status: 404, headers: corsHeaders });
     }
 
-    // Download file from storage
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from("user-uploads")
-      .download(upload.storage_path);
-
-    if (downloadError || !fileData) {
-      console.error("Download error:", downloadError);
-      return new Response(JSON.stringify({ error: "Failed to download file" }), { status: 500, headers: corsHeaders });
-    }
+    await supabase.from("uploads").update({ status: "processing" }).eq("id", uploadId);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
@@ -77,17 +58,26 @@ serve(async (req) => {
     let extractedText = "";
 
     if (fileType === "txt") {
-      // TXT files can be read directly
+      // TXT files can be read directly - small memory footprint
+      const { data: fileData, error: downloadError } = await supabase.storage
+        .from("user-uploads")
+        .download(upload.storage_path);
+      if (downloadError || !fileData) {
+        return new Response(JSON.stringify({ error: "Failed to download file" }), { status: 500, headers: corsHeaders });
+      }
       extractedText = await fileData.text();
     } else {
-      // For PDF and DOCX, use AI vision/document understanding to extract text
-      // Convert file to base64 and send to Gemini which can read PDFs natively
-      const arrayBuffer = await fileData.arrayBuffer();
-      const base64Content = arrayBufferToBase64(arrayBuffer);
+      // For PDF/DOCX: create a signed URL and pass it to Gemini
+      const { data: signedUrlData, error: signedUrlError } = await supabaseAdmin.storage
+        .from("user-uploads")
+        .createSignedUrl(upload.storage_path, 600); // 10 min expiry
 
-      await supabase.from("uploads").update({ status: "processing" }).eq("id", uploadId);
+      if (signedUrlError || !signedUrlData?.signedUrl) {
+        console.error("Signed URL error:", signedUrlError);
+        return new Response(JSON.stringify({ error: "Failed to generate file access URL" }), { status: 500, headers: corsHeaders });
+      }
 
-      // Use Gemini to extract text from the PDF
+      // Use Gemini to extract text from the PDF via URL
       const extractionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -99,21 +89,20 @@ serve(async (req) => {
           messages: [
             {
               role: "system",
-              content: "Você é um extrator de texto. Extraia TODO o conteúdo textual do documento fornecido. Retorne APENAS o texto extraído, sem formatação adicional, sem comentários. Se o documento contiver questões médicas, mantenha a estrutura (enunciado, alternativas, gabarito). Extraia o máximo de conteúdo possível."
+              content: "Você é um extrator de texto de documentos médicos. Extraia TODO o conteúdo textual do documento. Retorne APENAS o texto extraído, sem comentários seus. Se contiver questões médicas, mantenha a estrutura (enunciado, alternativas). Extraia o máximo de conteúdo possível de forma organizada."
             },
             {
               role: "user",
               content: [
                 {
-                  type: "file",
-                  file: {
-                    filename: upload.filename,
-                    file_data: `data:application/pdf;base64,${base64Content}`
+                  type: "image_url",
+                  image_url: {
+                    url: signedUrlData.signedUrl
                   }
                 },
                 {
                   type: "text",
-                  text: "Extraia todo o conteúdo textual deste documento."
+                  text: "Extraia todo o conteúdo textual deste documento médico. Retorne apenas o texto."
                 }
               ]
             }
@@ -124,36 +113,27 @@ serve(async (req) => {
       if (!extractionResponse.ok) {
         const errText = await extractionResponse.text();
         console.error("Text extraction error:", extractionResponse.status, errText);
-        
-        // Fallback: try reading as text
-        extractedText = await fileData.text();
-        
-        // Check if it's just raw PDF structure
-        const pdfMarkers = [/\/Type\b/i, /\/Pages?\b/i, /\/MediaBox\b/i, /endobj\b/i, /xref\b/i, /trailer\b/i];
-        const hits = pdfMarkers.reduce((acc, rx) => acc + (rx.test(extractedText) ? 1 : 0), 0);
-        if (hits >= 3) {
-          await supabase.from("uploads").update({ status: "error", extracted_text: "Não foi possível extrair texto do PDF." }).eq("id", uploadId);
-          return new Response(JSON.stringify({ 
-            error: "Não foi possível extrair o conteúdo do PDF. Tente enviar um PDF com texto selecionável (não escaneado)." 
-          }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        }
-      } else {
-        const extractionData = await extractionResponse.json();
-        extractedText = extractionData.choices?.[0]?.message?.content || "";
+        await supabase.from("uploads").update({ status: "error" }).eq("id", uploadId);
+        return new Response(JSON.stringify({
+          error: "Não foi possível extrair o conteúdo do PDF. Tente um arquivo menor ou com texto selecionável."
+        }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+
+      const extractionData = await extractionResponse.json();
+      extractedText = extractionData.choices?.[0]?.message?.content || "";
     }
 
     const truncatedText = extractedText.slice(0, 15000);
 
     if (!truncatedText.trim()) {
-      await supabase.from("uploads").update({ status: "error", extracted_text: "Não foi possível extrair texto do arquivo." }).eq("id", uploadId);
+      await supabase.from("uploads").update({ status: "error", extracted_text: "Sem texto extraído." }).eq("id", uploadId);
       return new Response(JSON.stringify({ error: "Não foi possível extrair texto do arquivo." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Save extracted text
-    await supabase.from("uploads").update({ extracted_text: truncatedText, status: "processing" }).eq("id", uploadId);
+    await supabase.from("uploads").update({ extracted_text: truncatedText }).eq("id", uploadId);
 
-    // Step 1: Validate if content is medicine-related
+    // Validate if content is medicine-related
     const validationResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -165,42 +145,32 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Você é um classificador de conteúdo. Analise o texto e determine se é relacionado a medicina, saúde, ciências biomédicas, residência médica, ou áreas correlatas (anatomia, fisiologia, farmacologia, patologia, clínica médica, cirurgia, pediatria, ginecologia, medicina preventiva, saúde pública, bioquímica, etc).
-Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicação"}`
+            content: `Analise o texto e determine se é relacionado a medicina/saúde. Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicação"}`
           },
-          { role: "user", content: `Classifique este conteúdo:\n\n${truncatedText.slice(0, 3000)}` }
+          { role: "user", content: `Classifique:\n\n${truncatedText.slice(0, 3000)}` }
         ],
       }),
     });
 
-    if (!validationResponse.ok) {
-      const validationError = await validationResponse.text();
-      console.error("Validation API error:", validationResponse.status, validationError);
-      await supabase.from("uploads").update({ status: "error" }).eq("id", uploadId);
-      return new Response(JSON.stringify({ error: "Falha ao validar se o material é médico." }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const valData = await validationResponse.json();
-    const valContent = valData.choices?.[0]?.message?.content || "";
-    try {
-      const cleaned = valContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-      const validation = JSON.parse(cleaned);
-      if (!validation.is_medicine) {
-        await supabaseAdmin.from("uploads").delete().eq("id", uploadId);
-        await supabase.storage.from("user-uploads").remove([upload.storage_path]);
-        return new Response(JSON.stringify({
-          error: `Conteúdo rejeitado: apenas materiais de medicina são permitidos. ${validation.reason || ""}`
-        }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (validationResponse.ok) {
+      const valData = await validationResponse.json();
+      const valContent = valData.choices?.[0]?.message?.content || "";
+      try {
+        const cleaned = valContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+        const validation = JSON.parse(cleaned);
+        if (!validation.is_medicine) {
+          await supabaseAdmin.from("uploads").delete().eq("id", uploadId);
+          await supabaseAdmin.storage.from("user-uploads").remove([upload.storage_path]);
+          return new Response(JSON.stringify({
+            error: `Conteúdo rejeitado: apenas materiais de medicina são permitidos. ${validation.reason || ""}`
+          }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+      } catch {
+        // If can't parse validation, proceed anyway
       }
-    } catch (parseErr) {
-      console.warn("Validation parse error, allowing upload to proceed:", parseErr);
-      // Instead of rejecting, allow it to proceed - better UX
     }
 
-    // Step 2: Generate flashcards with AI
+    // Generate flashcards
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -212,16 +182,14 @@ Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicaç
         messages: [
           {
             role: "system",
-            content: `Você é um assistente especializado em criar flashcards educativos para Residência Médica (ENARE, USP, UNIFESP).
-Analise o texto fornecido e gere flashcards no formato JSON.
-Cada flashcard deve ter: question (pergunta objetiva), answer (resposta concisa), topic (tema/matéria médica).
-Gere entre 5 e 15 flashcards relevantes baseados no conteúdo.
-Responda APENAS com JSON válido, sem markdown, sem texto adicional.
-Formato exato: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}`
+            content: `Crie flashcards educativos para Residência Médica a partir do texto.
+Cada flashcard: question, answer, topic.
+Gere 5-15 flashcards relevantes.
+Responda APENAS com JSON: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}`
           },
           {
             role: "user",
-            content: `Gere flashcards a partir do seguinte conteúdo médico:\n\n${truncatedText}`
+            content: `Gere flashcards:\n\n${truncatedText}`
           }
         ],
       }),
@@ -230,14 +198,9 @@ Formato exato: {"flashcards": [{"question": "...", "answer": "...", "topic": "..
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
       console.error("AI error:", aiResponse.status, errText);
-
       if (aiResponse.status === 429) {
         return new Response(JSON.stringify({ error: "Limite de IA atingido. Tente novamente em alguns segundos." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos de IA esgotados." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-
       await supabase.from("uploads").update({ status: "error" }).eq("id", uploadId);
       return new Response(JSON.stringify({ error: "Falha no processamento com IA." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -245,73 +208,51 @@ Formato exato: {"flashcards": [{"question": "...", "answer": "...", "topic": "..
     const aiData = await aiResponse.json();
     let flashcards: Array<{ question: string; answer: string; topic: string }> = [];
 
-    // Try to extract flashcards from response
     const content = aiData.choices?.[0]?.message?.content || "";
-    
-    // First try tool calls
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+    
     if (toolCall?.function?.arguments) {
       try {
-        const parsed = JSON.parse(toolCall.function.arguments);
-        flashcards = parsed.flashcards || [];
-      } catch (e) {
-        console.error("Tool call parse error:", e);
-      }
+        flashcards = JSON.parse(toolCall.function.arguments).flashcards || [];
+      } catch {}
     }
     
-    // If no tool calls, parse from content
     if (flashcards.length === 0 && content) {
       try {
         const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-        const parsed = JSON.parse(cleaned);
-        flashcards = parsed.flashcards || [];
-      } catch (e) {
-        console.error("Content parse error:", e);
-      }
+        flashcards = JSON.parse(cleaned).flashcards || [];
+      } catch {}
     }
 
-    const normalizedFlashcards = flashcards
+    const finalFlashcards = flashcards
       .map((fc) => ({
         question: String(fc.question || "").trim(),
         answer: String(fc.answer || "").trim(),
         topic: String(fc.topic || "Geral").trim(),
       }))
-      .filter((fc) => fc.question && fc.answer);
-
-    // Less strict filtering - only reject clearly non-medical
-    const validMedicalFlashcards = normalizedFlashcards.filter((fc) => {
-      const textBlob = `${fc.topic} ${fc.question} ${fc.answer}`;
-      return !NON_MEDICAL_CONTENT_REGEX.test(textBlob);
-    });
-
-    const finalFlashcards = validMedicalFlashcards.length > 0 ? validMedicalFlashcards : normalizedFlashcards;
+      .filter((fc) => fc.question && fc.answer)
+      .filter((fc) => {
+        const blob = `${fc.topic} ${fc.question} ${fc.answer}`;
+        return !NON_MEDICAL_CONTENT_REGEX.test(blob);
+      });
 
     if (finalFlashcards.length === 0) {
       await supabase.from("uploads").update({ status: "error" }).eq("id", uploadId);
       return new Response(JSON.stringify({
-        error: "Não foi possível gerar flashcards a partir deste conteúdo. Tente um material com mais texto legível."
+        error: "Não foi possível gerar flashcards. Tente um material com mais conteúdo médico legível."
       }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Insert flashcards
-    const flashcardRows = finalFlashcards.map((fc) => ({
-      user_id: userId,
-      question: fc.question,
-      answer: fc.answer,
-      topic: fc.topic,
-    }));
+    const { error: insertError } = await supabase.from("flashcards").insert(
+      finalFlashcards.map((fc) => ({ user_id: userId, question: fc.question, answer: fc.answer, topic: fc.topic }))
+    );
 
-    const { error: insertError } = await supabase.from("flashcards").insert(flashcardRows);
     if (insertError) {
-      console.error("Insert flashcards error:", insertError);
+      console.error("Insert error:", insertError);
       await supabase.from("uploads").update({ status: "error" }).eq("id", uploadId);
-      return new Response(JSON.stringify({ error: "Falha ao salvar flashcards." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({ error: "Falha ao salvar flashcards." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Update upload status
     await supabase.from("uploads").update({
       status: "processed",
       extracted_json: {
@@ -328,8 +269,7 @@ Formato exato: {"flashcards": [{"question": "...", "answer": "...", "topic": "..
   } catch (e) {
     console.error("process-upload error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
