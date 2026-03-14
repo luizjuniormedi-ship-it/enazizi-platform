@@ -34,7 +34,7 @@ const Login = () => {
             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center glow">
               <Brain className="h-6 w-6 text-primary" />
             </div>
-            <span className="text-xl font-bold">MentorPF</span>
+            <span className="text-xl font-bold">ENAZIZI</span>
           </Link>
           <h1 className="text-2xl font-bold">Bem-vindo de volta</h1>
           <p className="text-muted-foreground mt-1">Entre na sua conta para continuar</p>
