@@ -108,8 +108,18 @@ const DashboardLayout = () => (
         <img src={enazizi} alt="ENAZIZI" className="h-6 w-6 rounded object-cover" />
         <span className="font-bold text-sm">ENAZIZI</span>
       </header>
-      <main className="flex-1 p-3 sm:p-6 lg:p-8 overflow-auto">
-        <Outlet />
+      <main className="flex-1 p-3 sm:p-6 lg:p-8 overflow-auto relative">
+        <div className="pointer-events-none fixed inset-0 flex items-center justify-center z-0">
+          <img
+            src={enazizi}
+            alt=""
+            className="w-[40vmin] h-[40vmin] object-contain opacity-[0.04] select-none"
+            draggable={false}
+          />
+        </div>
+        <div className="relative z-10">
+          <Outlet />
+        </div>
       </main>
     </div>
   </div>
