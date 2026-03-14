@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getDocument } from "https://esm.sh/pdfjs-serverless";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,6 +8,29 @@ const corsHeaders = {
 };
 
 const NON_MEDICAL_CONTENT_REGEX = /(direito|jur[ií]d|penal|constitucional|processo penal|inquérito|inqu[eé]rito|stf|stj|delegad|advogad|pol[ií]cia federal|c[oó]digo penal|a[cç][aã]o penal|inform[aá]tica|tecnologia da informa[cç][aã]o|engenharia|contabilidade|economia|administra[cç][aã]o|programa[cç][aã]o)/i;
+const MAX_PROCESS_FILE_BYTES = 20 * 1024 * 1024; // 20MB
+const MAX_PDF_PAGES_TO_PARSE = 120;
+
+async function extractPdfText(fileData: Blob): Promise<string> {
+  const data = new Uint8Array(await fileData.arrayBuffer());
+  const document = await getDocument({ data, useSystemFonts: true }).promise;
+  const totalPages = Math.min(document.numPages, MAX_PDF_PAGES_TO_PARSE);
+
+  const pages: string[] = [];
+  for (let i = 1; i <= totalPages; i++) {
+    const page = await document.getPage(i);
+    const textContent = await page.getTextContent();
+    const text = textContent.items
+      .map((item: unknown) => (typeof item === "object" && item !== null && "str" in item ? String((item as { str: string }).str) : ""))
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (text) pages.push(text);
+  }
+
+  return pages.join("\n\n");
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -51,6 +75,21 @@ serve(async (req) => {
 
     await supabase.from("uploads").update({ status: "processing" }).eq("id", uploadId);
 
+    const { data: fileData, error: downloadError } = await supabase.storage
+      .from("user-uploads")
+      .download(upload.storage_path);
+
+    if (downloadError || !fileData) {
+      return new Response(JSON.stringify({ error: "Failed to download file" }), { status: 500, headers: corsHeaders });
+    }
+
+    if (fileData.size > MAX_PROCESS_FILE_BYTES) {
+      await supabase.from("uploads").update({ status: "error" }).eq("id", uploadId);
+      return new Response(JSON.stringify({
+        error: "Arquivo muito grande para processamento (máx 20MB)."
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -58,82 +97,27 @@ serve(async (req) => {
     let extractedText = "";
 
     if (fileType === "txt") {
-      // TXT files can be read directly - small memory footprint
-      const { data: fileData, error: downloadError } = await supabase.storage
-        .from("user-uploads")
-        .download(upload.storage_path);
-      if (downloadError || !fileData) {
-        return new Response(JSON.stringify({ error: "Failed to download file" }), { status: 500, headers: corsHeaders });
-      }
       extractedText = await fileData.text();
+    } else if (fileType === "pdf") {
+      extractedText = await extractPdfText(fileData);
     } else {
-      // For PDF/DOCX: create a signed URL and pass it to Gemini
-      const { data: signedUrlData, error: signedUrlError } = await supabaseAdmin.storage
-        .from("user-uploads")
-        .createSignedUrl(upload.storage_path, 600); // 10 min expiry
-
-      if (signedUrlError || !signedUrlData?.signedUrl) {
-        console.error("Signed URL error:", signedUrlError);
-        return new Response(JSON.stringify({ error: "Failed to generate file access URL" }), { status: 500, headers: corsHeaders });
-      }
-
-      // Use Gemini to extract text from the PDF via URL
-      const extractionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            {
-              role: "system",
-              content: "Você é um extrator de texto de documentos médicos. Extraia TODO o conteúdo textual do documento. Retorne APENAS o texto extraído, sem comentários seus. Se contiver questões médicas, mantenha a estrutura (enunciado, alternativas). Extraia o máximo de conteúdo possível de forma organizada."
-            },
-            {
-              role: "user",
-              content: [
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: signedUrlData.signedUrl
-                  }
-                },
-                {
-                  type: "text",
-                  text: "Extraia todo o conteúdo textual deste documento médico. Retorne apenas o texto."
-                }
-              ]
-            }
-          ],
-        }),
-      });
-
-      if (!extractionResponse.ok) {
-        const errText = await extractionResponse.text();
-        console.error("Text extraction error:", extractionResponse.status, errText);
-        await supabase.from("uploads").update({ status: "error" }).eq("id", uploadId);
-        return new Response(JSON.stringify({
-          error: "Não foi possível extrair o conteúdo do PDF. Tente um arquivo menor ou com texto selecionável."
-        }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-
-      const extractionData = await extractionResponse.json();
-      extractedText = extractionData.choices?.[0]?.message?.content || "";
+      await supabase.from("uploads").update({ status: "error" }).eq("id", uploadId);
+      return new Response(JSON.stringify({
+        error: "Formato não suportado no momento. Envie PDF ou TXT."
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const truncatedText = extractedText.slice(0, 15000);
 
     if (!truncatedText.trim()) {
       await supabase.from("uploads").update({ status: "error", extracted_text: "Sem texto extraído." }).eq("id", uploadId);
-      return new Response(JSON.stringify({ error: "Não foi possível extrair texto do arquivo." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({
+        error: "Não foi possível extrair texto do arquivo. Se for PDF escaneado (imagem), envie uma versão com texto selecionável."
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Save extracted text
     await supabase.from("uploads").update({ extracted_text: truncatedText }).eq("id", uploadId);
 
-    // Validate if content is medicine-related
     const validationResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -170,7 +154,6 @@ serve(async (req) => {
       }
     }
 
-    // Generate flashcards
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -210,18 +193,22 @@ Responda APENAS com JSON: {"flashcards": [{"question": "...", "answer": "...", "
 
     const content = aiData.choices?.[0]?.message?.content || "";
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    
+
     if (toolCall?.function?.arguments) {
       try {
         flashcards = JSON.parse(toolCall.function.arguments).flashcards || [];
-      } catch {}
+      } catch {
+        // continue with fallback
+      }
     }
-    
+
     if (flashcards.length === 0 && content) {
       try {
         const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
         flashcards = JSON.parse(cleaned).flashcards || [];
-      } catch {}
+      } catch {
+        // keep empty
+      }
     }
 
     const finalFlashcards = flashcards

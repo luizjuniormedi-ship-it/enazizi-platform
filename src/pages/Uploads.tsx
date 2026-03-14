@@ -153,7 +153,7 @@ const Uploads = () => {
           <>
             <Upload className="h-12 w-12 text-primary/50 mx-auto mb-4" />
             <p className="text-lg font-medium mb-1">Clique para enviar arquivo</p>
-            <p className="text-sm text-muted-foreground">PDF, DOCX, TXT — máx 50MB</p>
+            <p className="text-sm text-muted-foreground">PDF, TXT — máx 20MB</p>
           </>
         )}
       </div>
