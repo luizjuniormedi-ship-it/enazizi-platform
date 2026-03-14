@@ -27,6 +27,101 @@ async function extractPdfText(fileData: Blob): Promise<string> {
   return pages.join("\n\n");
 }
 
+async function processTextToQuestions(
+  fullText: string,
+  topic: string,
+  source: string,
+  userId: string,
+  supabaseAdmin: any,
+  LOVABLE_API_KEY: string,
+): Promise<number> {
+  const chunkSize = 10000;
+  const chunks: string[] = [];
+  for (let i = 0; i < fullText.length; i += chunkSize) {
+    chunks.push(fullText.slice(i, i + chunkSize));
+  }
+
+  let totalQuestions = 0;
+  for (const chunk of chunks.slice(0, 10)) {
+    try {
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "system",
+              content: `Extraia TODAS as questões de múltipla escolha do texto. Se encontrar questões já formatadas, converta para JSON preservando EXATAMENTE o enunciado e alternativas originais. Se for texto teórico, gere questões baseadas no conteúdo.
+
+GERE O MÁXIMO POSSÍVEL (10-30 por bloco).
+
+IMPORTANTE: Para questões que já existem no texto com gabarito/comentário, use o correct_index correto baseado no gabarito fornecido. Se não houver gabarito, use seu conhecimento médico para determinar a resposta correta.
+
+Formato JSON PURO: {"questions": [{"statement": "enunciado completo", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "explanation": "explicação detalhada do raciocínio clínico", "topic": "especialidade médica"}]}
+Se não encontrar questões, retorne {"questions": []}`
+            },
+            { role: "user", content: `Tema: ${topic}\n\n${chunk}` }
+          ],
+        }),
+      });
+
+      if (!response.ok) continue;
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || "";
+      const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+      
+      let parsed: any = null;
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        try {
+          const jsonMatch = cleaned.match(/\{"questions"\s*:\s*\[[\s\S]*?\]\s*\}/);
+          if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
+        } catch {
+          try {
+            const arrMatch = cleaned.match(/\[[\s\S]*\]/);
+            if (arrMatch) parsed = { questions: JSON.parse(arrMatch[0]) };
+          } catch {
+            continue;
+          }
+        }
+      }
+
+      if (!parsed) continue;
+
+      const questions = (parsed.questions || []).filter((q: any) =>
+        q.statement && Array.isArray(q.options) && q.options.length >= 2 && typeof q.correct_index === "number"
+      );
+
+      if (questions.length > 0) {
+        const rows = questions.map((q: any) => ({
+          user_id: userId,
+          statement: String(q.statement).trim(),
+          options: q.options.map(String),
+          correct_index: q.correct_index,
+          explanation: String(q.explanation || "").trim(),
+          topic: String(q.topic || topic).trim(),
+          source: source,
+          is_global: true,
+        }));
+
+        const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
+        if (!error) totalQuestions += rows.length;
+        else console.error("Insert error:", error);
+      }
+    } catch (e) {
+      console.error("Chunk error:", e);
+    }
+  }
+
+  return totalQuestions;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -41,7 +136,6 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Verify admin
     const token = authHeader.replace("Bearer ", "");
     const { data: { user } } = await supabaseAdmin.auth.getUser(token);
     if (!user) {
@@ -59,11 +153,35 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: corsHeaders });
     }
 
-    const { uploadId } = await req.json();
+    const body = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    // Get upload
+    // Mode 1: Raw text input (for batch imports)
+    if (body.text && body.source) {
+      const topic = body.topic || "Clínica Médica";
+      const totalQuestions = await processTextToQuestions(
+        body.text.slice(0, 80000),
+        topic,
+        body.source,
+        user.id,
+        supabaseAdmin,
+        LOVABLE_API_KEY,
+      );
+
+      return new Response(JSON.stringify({
+        message: `${totalQuestions} questões extraídas de ${body.source}`,
+        questions_count: totalQuestions,
+        topic,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Mode 2: Upload-based (existing flow)
+    const { uploadId } = body;
+    if (!uploadId) {
+      return new Response(JSON.stringify({ error: "uploadId or text+source required" }), { status: 400, headers: corsHeaders });
+    }
+
     const { data: upload } = await supabaseAdmin
       .from("uploads")
       .select("*")
@@ -74,7 +192,6 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Upload not found" }), { status: 404, headers: corsHeaders });
     }
 
-    // Download and extract PDF
     const { data: fileData } = await supabaseAdmin.storage
       .from("user-uploads")
       .download(upload.storage_path);
@@ -95,12 +212,10 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "No text extracted" }), { status: 400, headers: corsHeaders });
     }
 
-    // Save full extracted text
     await supabaseAdmin.from("uploads").update({ 
       extracted_text: fullText.slice(0, 50000) 
     }).eq("id", uploadId);
 
-    // Infer topic from filename
     const fn = upload.filename.toLowerCase();
     let topic = "Clínica Médica";
     if (fn.includes("car") || fn.includes("cardio")) topic = "Cardiologia";
@@ -111,92 +226,15 @@ serve(async (req) => {
     else if (fn.includes("neuro")) topic = "Neurologia";
     else if (fn.includes("pneumo")) topic = "Pneumologia";
 
-    // Process in chunks
-    const chunkSize = 10000;
-    const chunks: string[] = [];
-    for (let i = 0; i < fullText.length; i += chunkSize) {
-      chunks.push(fullText.slice(i, i + chunkSize));
-    }
+    const totalQuestions = await processTextToQuestions(
+      fullText,
+      topic,
+      `upload:${upload.filename}`,
+      user.id,
+      supabaseAdmin,
+      LOVABLE_API_KEY,
+    );
 
-    let totalQuestions = 0;
-    // Process up to 8 chunks
-    for (const chunk of chunks.slice(0, 8)) {
-      try {
-        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
-            messages: [
-              {
-                role: "system",
-                content: `Extraia TODAS as questões de múltipla escolha do texto. Se encontrar questões já formatadas, converta para JSON. Se for texto teórico, gere questões baseadas no conteúdo.
-
-GERE O MÁXIMO POSSÍVEL (10-30 por bloco).
-Formato JSON PURO: {"questions": [{"statement": "enunciado completo", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "explanation": "explicação", "topic": "especialidade"}]}
-Se não encontrar questões, retorne {"questions": []}`
-              },
-              { role: "user", content: `Tema: ${topic}\n\n${chunk}` }
-            ],
-          }),
-        });
-
-        if (!response.ok) continue;
-
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content || "";
-        const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-        
-        // Try multiple JSON extraction strategies
-        let parsed: any = null;
-        try {
-          parsed = JSON.parse(cleaned);
-        } catch {
-          try {
-            const jsonMatch = cleaned.match(/\{"questions"\s*:\s*\[[\s\S]*?\]\s*\}/);
-            if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
-          } catch {
-            try {
-              const arrMatch = cleaned.match(/\[[\s\S]*\]/);
-              if (arrMatch) parsed = { questions: JSON.parse(arrMatch[0]) };
-            } catch {
-              // Skip this chunk
-              continue;
-            }
-          }
-        }
-
-        if (!parsed) continue;
-
-        const questions = (parsed.questions || []).filter((q: any) =>
-          q.statement && Array.isArray(q.options) && q.options.length >= 4 && typeof q.correct_index === "number"
-        );
-
-        if (questions.length > 0) {
-          const rows = questions.map((q: any) => ({
-            user_id: user.id,
-            statement: String(q.statement).trim(),
-            options: q.options.map(String),
-            correct_index: q.correct_index,
-            explanation: String(q.explanation || "").trim(),
-            topic: String(q.topic || topic).trim(),
-            source: `upload:${upload.filename}`,
-            is_global: true,
-          }));
-
-          const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
-          if (!error) totalQuestions += rows.length;
-          else console.error("Insert error:", error);
-        }
-      } catch (e) {
-        console.error("Chunk error:", e);
-      }
-    }
-
-    // Update upload metadata
     await supabaseAdmin.from("uploads").update({
       extracted_json: {
         ...(upload.extracted_json as any || {}),
