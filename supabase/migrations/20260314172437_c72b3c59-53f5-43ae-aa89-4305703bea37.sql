@@ -1,0 +1,1 @@
+DELETE FROM public.uploads WHERE id = '62d62d53-e6c2-4956-8372-78e8b7b13c3f';
