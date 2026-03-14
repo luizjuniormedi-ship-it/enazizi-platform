@@ -494,6 +494,24 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
         )}
       </div>
 
+      {/* Quick action buttons */}
+      {quickActions && quickActions.length > 0 && messages.length <= 2 && !isLoading && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {quickActions.map((action, idx) => (
+            <button
+              key={idx}
+              onClick={() => {
+                setInput(action.prompt);
+              }}
+              className="px-3 py-2 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+            >
+              {action.icon && <span className="mr-1">{action.icon}</span>}
+              {action.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="flex gap-2">
         <Input
           placeholder={placeholder}
