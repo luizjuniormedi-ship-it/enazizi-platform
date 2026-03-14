@@ -194,6 +194,31 @@ Deno.serve(async (req) => {
         });
       }
 
+      case "toggle_admin": {
+        const { target_user_id, make_admin } = params;
+        if (!target_user_id) throw new Error("target_user_id obrigatório");
+
+        if (target_user_id === user.id) {
+          throw new Error("Você não pode remover seu próprio acesso admin.");
+        }
+
+        if (make_admin) {
+          await supabaseAuth
+            .from("user_roles")
+            .upsert({ user_id: target_user_id, role: "admin" }, { onConflict: "user_id,role" });
+        } else {
+          await supabaseAuth
+            .from("user_roles")
+            .delete()
+            .eq("user_id", target_user_id)
+            .eq("role", "admin");
+        }
+
+        return new Response(JSON.stringify({ success: true, is_admin: make_admin }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       case "get_stats": {
         const { count: totalUsers } = await supabaseAuth
           .from("profiles")
