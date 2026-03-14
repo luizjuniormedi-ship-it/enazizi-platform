@@ -138,6 +138,7 @@ STATE 8 — Discussão da questão
 STATE 9 — Caso clínico discursivo
 STATE 10 — Correção discursiva (0-5 pontos)
 STATE 11 — Atualização de desempenho
+STATE 12 — Bloco de consolidação (5 questões sequenciais)
 Nunca pule estados. Nunca avance mais de um estado por interação.
 
 ==================================================
