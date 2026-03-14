@@ -62,6 +62,9 @@ const Admin = () => {
   const [adminDialog, setAdminDialog] = useState<{ open: boolean; user: AdminUser | null; makeAdmin: boolean }>({
     open: false, user: null, makeAdmin: false,
   });
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [showAuditLog, setShowAuditLog] = useState(false);
+  const [auditLoading, setAuditLoading] = useState(false);
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-actions`;
 
