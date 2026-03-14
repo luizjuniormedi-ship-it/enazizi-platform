@@ -31,7 +31,7 @@ const Uploads = () => {
     if (!user) return;
     const { data, error } = await supabase
       .from("uploads")
-      .select("id, filename, file_type, category, status, created_at, extracted_json")
+      .select("id, filename, file_type, category, status, created_at, extracted_json, is_global")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (!error && data) setFiles(data);
