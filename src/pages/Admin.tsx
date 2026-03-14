@@ -374,6 +374,15 @@ const Admin = () => {
                       <CreditCard className="h-3 w-3" /> Plano
                     </Button>
                     <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1"
+                      disabled={isCurrentlyActioning}
+                      onClick={() => setPasswordDialog({ open: true, user: u, password: "" })}
+                    >
+                      <KeyRound className="h-3 w-3" /> Senha
+                    </Button>
+                    <Button
                       variant={isBlocked ? "outline" : "destructive"}
                       size="sm"
                       className="h-7 text-xs gap-1"
