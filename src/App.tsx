@@ -27,6 +27,7 @@ import PerformancePredictor from "./pages/PerformancePredictor";
 import Diagnostic from "./pages/Diagnostic";
 import ExamSimulator from "./pages/ExamSimulator";
 import StudySession from "./pages/StudySession";
+import ChatGPT from "./pages/ChatGPT";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
