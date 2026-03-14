@@ -249,25 +249,18 @@ serve(async (req) => {
 
     // Generate flashcards
     try {
-      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            {
-              role: "system",
-              content: `Crie flashcards educativos para Residência Médica a partir do texto.
+      const aiResponse = await aiFetch({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content: `Crie flashcards educativos para Residência Médica a partir do texto.
 Cada flashcard: question, answer, topic.
 Gere 5-15 flashcards relevantes.
 Responda APENAS com JSON: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}`
-            },
-            { role: "user", content: `Gere flashcards:\n\n${truncatedText.slice(0, 15000)}` }
-          ],
-        }),
+          },
+          { role: "user", content: `Gere flashcards:\n\n${truncatedText.slice(0, 15000)}` }
+        ],
       });
 
       if (aiResponse.ok) {
