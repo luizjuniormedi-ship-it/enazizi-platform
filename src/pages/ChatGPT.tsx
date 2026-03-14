@@ -35,16 +35,17 @@ interface EnaziziProgress {
 const ENAZIZI_STEPS = [
   { num: 1, label: "Painel", icon: "📊" },
   { num: 2, label: "Tema", icon: "📚" },
-  { num: 3, label: "Bloco 1", icon: "📖" },
-  { num: 4, label: "Recall", icon: "🧠" },
-  { num: 5, label: "Bloco 2", icon: "🔬" },
-  { num: 6, label: "Recall", icon: "🧠" },
-  { num: 7, label: "Bloco 3", icon: "🏥" },
-  { num: 8, label: "Questão", icon: "❓" },
-  { num: 9, label: "Discussão", icon: "💬" },
-  { num: 10, label: "Discursivo", icon: "✍️" },
-  { num: 11, label: "Correção", icon: "✅" },
-  { num: 12, label: "Atualizar", icon: "📈" },
+  { num: 3, label: "Técnico 1", icon: "🔬" },
+  { num: 4, label: "Leigo 1", icon: "💡" },
+  { num: 5, label: "Técnico 2", icon: "🔬" },
+  { num: 6, label: "Leigo 2", icon: "💡" },
+  { num: 7, label: "Técnico 3", icon: "🏥" },
+  { num: 8, label: "Leigo 3", icon: "💡" },
+  { num: 9, label: "Questão", icon: "❓" },
+  { num: 10, label: "Discussão", icon: "💬" },
+  { num: 11, label: "Discursivo", icon: "✍️" },
+  { num: 12, label: "Correção", icon: "✅" },
+  { num: 13, label: "Atualizar", icon: "📈" },
 ];
 
 const FUNCTION_NAME = "chatgpt-agent";
@@ -434,45 +435,53 @@ const ChatGPT = () => {
     setCurrentTopic(topic);
     setSessionQuestions(0);
     setSessionCorrect(0);
-    setEnaziziStep(3); // Jump to step 3 (Aula bloco 1) since panel=1 and tema=2 are done via UI
+    setEnaziziStep(3);
     savePerformance({ tema_atual: topic });
     saveEnaziziStep(3, topic);
-    sendMessage(`Quero estudar o tema: ${topic}. Comece com a Aula Bloco 1 (explicação simples) seguindo o Protocolo ENAZIZI. Estou na etapa 3.`);
+    sendMessage(`Quero estudar o tema: ${topic}. Comece com o Bloco Técnico 1 (conceito e definição — explicação técnica baseada na literatura). Estou na etapa 3/13 do Protocolo ENAZIZI.`);
   };
 
   const handlePhaseAction = (phase: string) => {
     const phaseMap: Record<string, { prompt: string; step: number }> = {
-      "active-recall": {
-        prompt: `Agora faça o Active Recall sobre ${currentTopic}. Faça 5-7 perguntas curtas de memória ativa.`,
-        step: enaziziStep === 3 ? 4 : 6,
+      "leigo1": {
+        prompt: `Agora traduza o bloco técnico 1 sobre ${currentTopic} para linguagem leiga e faça UMA pergunta curta de active recall.`,
+        step: 4,
       },
-      "bloco2": {
-        prompt: `Agora avance para a Aula Bloco 2 (fisiopatologia) sobre ${currentTopic}. Base: Guyton, Robbins, Harrison.`,
+      "tecnico2": {
+        prompt: `Agora avance para o Bloco Técnico 2 (fisiopatologia) sobre ${currentTopic}. Base: Guyton, Robbins, Harrison. Explicação técnica profunda.`,
         step: 5,
       },
-      "bloco3": {
-        prompt: `Agora avance para a Aula Bloco 3 (aplicação clínica) sobre ${currentTopic}. Sinais, sintomas, exames, tratamento.`,
+      "leigo2": {
+        prompt: `Agora traduza o bloco técnico 2 (fisiopatologia) sobre ${currentTopic} para linguagem leiga e faça UMA pergunta curta.`,
+        step: 6,
+      },
+      "tecnico3": {
+        prompt: `Agora avance para o Bloco Técnico 3 (aplicação clínica) sobre ${currentTopic}. Sinais, sintomas, exames, tratamento, diagnósticos diferenciais. Explicação técnica.`,
         step: 7,
       },
-      "questions": {
-        prompt: `Agora crie uma questão de múltipla escolha (A-E) com caso clínico sobre ${currentTopic}. Não revele a resposta, espere eu responder.`,
+      "leigo3": {
+        prompt: `Agora traduza o bloco técnico 3 (aplicação clínica) sobre ${currentTopic} para linguagem leiga e faça UMA pergunta curta.`,
         step: 8,
       },
-      "discussion": {
-        prompt: `Agora faça a discussão completa da questão sobre ${currentTopic}.`,
+      "questions": {
+        prompt: `Agora crie 1 questão objetiva estilo prova médica com caso clínico e alternativas A–E sobre ${currentTopic}. Não revele a resposta, espere eu responder.`,
         step: 9,
       },
-      "discursive": {
-        prompt: `Agora crie um caso clínico discursivo sobre ${currentTopic}. Sem alternativas. Pergunte: diagnóstico, conduta, exames, justificativa.`,
+      "discussion": {
+        prompt: `Agora faça a discussão completa da questão sobre ${currentTopic}: alternativa correta, explicação simples+técnica, raciocínio clínico, diferenciais, análise de todas alternativas, ponto de prova, mini resumo.`,
         step: 10,
       },
-      "correction": {
-        prompt: `Corrija minha resposta discursiva com nota de 0-5 (Diagnóstico 0-2, Conduta 0-2, Justificativa 0-1). Depois explique o caso.`,
+      "discursive": {
+        prompt: `Agora crie um caso clínico discursivo sobre ${currentTopic}. Pergunte: diagnóstico provável, conduta inicial, exames necessários, justificativa clínica.`,
         step: 11,
       },
-      "update": {
-        prompt: `Atualize meu painel de desempenho com base nesta sessão sobre ${currentTopic}.`,
+      "correction": {
+        prompt: `Corrija minha resposta discursiva com nota de 0-5 (Diagnóstico 0-2, Conduta 0-2, Justificativa 0-1). Depois apresente: resposta esperada, explicação simples+técnica, raciocínio clínico completo, pontos obrigatórios, erros clássicos, mini aula de reforço.`,
         step: 12,
+      },
+      "update": {
+        prompt: `Atualize meu painel de desempenho com base nesta sessão sobre ${currentTopic}. Mostre: questões respondidas, taxa de acerto, temas fracos, desempenho clínico e discursivo.`,
+        step: 13,
       },
     };
     const action = phaseMap[phase];
@@ -698,7 +707,7 @@ const ChatGPT = () => {
                 📚 {currentTopic}
               </span>
               <span className="px-3 py-1 rounded-full bg-secondary text-muted-foreground text-xs">
-                Etapa {enaziziStep}/12
+                Etapa {enaziziStep}/13
               </span>
               {sessionQuestions > 0 && (
                 <span className="px-3 py-1 rounded-full bg-secondary text-muted-foreground text-xs">
@@ -737,47 +746,52 @@ const ChatGPT = () => {
 
           {/* Phase action buttons — show next logical step */}
           <div className="flex flex-wrap gap-2 mb-3">
-            {enaziziStep <= 4 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("active-recall")} disabled={isLoading}>
-                <BookOpen className="h-3.5 w-3.5" /> 🧠 Active Recall
+            {enaziziStep === 3 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("leigo1")} disabled={isLoading}>
+                <BookOpen className="h-3.5 w-3.5" /> 💡 Tradução Leiga + Pergunta
               </Button>
             )}
-            {enaziziStep >= 4 && enaziziStep < 5 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("bloco2")} disabled={isLoading}>
-                <BookOpen className="h-3.5 w-3.5" /> 🔬 Bloco 2 — Fisiopatologia
+            {enaziziStep === 4 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("tecnico2")} disabled={isLoading}>
+                <BookOpen className="h-3.5 w-3.5" /> 🔬 Bloco Técnico 2 — Fisiopatologia
               </Button>
             )}
-            {enaziziStep >= 5 && enaziziStep < 7 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("active-recall")} disabled={isLoading}>
-                <BookOpen className="h-3.5 w-3.5" /> 🧠 Active Recall 2
+            {enaziziStep === 5 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("leigo2")} disabled={isLoading}>
+                <BookOpen className="h-3.5 w-3.5" /> 💡 Tradução Leiga 2 + Pergunta
               </Button>
             )}
-            {enaziziStep >= 6 && enaziziStep < 7 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("bloco3")} disabled={isLoading}>
-                <BookOpen className="h-3.5 w-3.5" /> 🏥 Bloco 3 — Clínica
+            {enaziziStep === 6 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("tecnico3")} disabled={isLoading}>
+                <BookOpen className="h-3.5 w-3.5" /> 🏥 Bloco Técnico 3 — Clínica
               </Button>
             )}
-            {enaziziStep >= 7 && enaziziStep < 8 && (
+            {enaziziStep === 7 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("leigo3")} disabled={isLoading}>
+                <BookOpen className="h-3.5 w-3.5" /> 💡 Tradução Leiga 3 + Pergunta
+              </Button>
+            )}
+            {enaziziStep === 8 && (
               <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("questions")} disabled={isLoading}>
                 <HelpCircle className="h-3.5 w-3.5" /> ❓ Questão Objetiva
               </Button>
             )}
-            {enaziziStep >= 8 && enaziziStep < 9 && (
+            {enaziziStep === 9 && (
               <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("discussion")} disabled={isLoading}>
                 <HelpCircle className="h-3.5 w-3.5" /> 💬 Discussão
               </Button>
             )}
-            {enaziziStep >= 9 && enaziziStep < 10 && (
+            {enaziziStep === 10 && (
               <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("discursive")} disabled={isLoading}>
                 <Stethoscope className="h-3.5 w-3.5" /> ✍️ Caso Discursivo
               </Button>
             )}
-            {enaziziStep >= 10 && enaziziStep < 11 && (
+            {enaziziStep === 11 && (
               <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("correction")} disabled={isLoading}>
                 <Check className="h-3.5 w-3.5" /> ✅ Correção
               </Button>
             )}
-            {enaziziStep >= 11 && (
+            {enaziziStep === 12 && (
               <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("update")} disabled={isLoading}>
                 <BarChart3 className="h-3.5 w-3.5" /> 📈 Atualizar Desempenho
               </Button>
