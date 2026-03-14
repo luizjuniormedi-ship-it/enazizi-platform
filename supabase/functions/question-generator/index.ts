@@ -48,7 +48,7 @@ Regras:
 - SEMPRE em português brasileiro
 - Gere questões originais com casos clínicos realistas
 - Varie a dificuldade conforme solicitado
-- IMPORTANTE: Quando o aluno fornecer material, gere questões BASEADAS nesse material`;
+- IMPORTANTE: Quando o aluno fornecer material, gere questões BASEADAS nesse material
 - Varie os temas dentro da área solicitada
 - Se o usuário não especificar a área, pergunte qual deseja
 - Quando solicitado, gere blocos de 5 ou 10 questões
