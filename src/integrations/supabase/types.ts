@@ -178,6 +178,51 @@ export type Database = {
         }
         Relationships: []
       }
+      error_bank: {
+        Row: {
+          categoria_erro: string | null
+          conteudo: string | null
+          created_at: string
+          dificuldade: number | null
+          id: string
+          motivo_erro: string | null
+          subtema: string | null
+          tema: string
+          tipo_questao: string
+          updated_at: string
+          user_id: string
+          vezes_errado: number
+        }
+        Insert: {
+          categoria_erro?: string | null
+          conteudo?: string | null
+          created_at?: string
+          dificuldade?: number | null
+          id?: string
+          motivo_erro?: string | null
+          subtema?: string | null
+          tema: string
+          tipo_questao?: string
+          updated_at?: string
+          user_id: string
+          vezes_errado?: number
+        }
+        Update: {
+          categoria_erro?: string | null
+          conteudo?: string | null
+          created_at?: string
+          dificuldade?: number | null
+          id?: string
+          motivo_erro?: string | null
+          subtema?: string | null
+          tema?: string
+          tipo_questao?: string
+          updated_at?: string
+          user_id?: string
+          vezes_errado?: number
+        }
+        Relationships: []
+      }
       exam_sessions: {
         Row: {
           answers_json: Json | null
