@@ -228,17 +228,37 @@ Formato: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}`
     // Extract from tool call response
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
-      const parsed = JSON.parse(toolCall.function.arguments);
-      flashcards = parsed.flashcards || [];
+      try {
+        const parsed = JSON.parse(toolCall.function.arguments);
+        flashcards = parsed.flashcards || [];
+      } catch (parseError) {
+        console.error("Flashcards parse error:", parseError);
+      }
     }
 
-    if (flashcards.length === 0) {
-      await supabase.from("uploads").update({ status: "processed", extracted_json: { flashcards: [] } }).eq("id", uploadId);
-      return new Response(JSON.stringify({ message: "No flashcards generated", flashcards: [] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const normalizedFlashcards = flashcards
+      .map((fc) => ({
+        question: String(fc.question || "").trim(),
+        answer: String(fc.answer || "").trim(),
+        topic: String(fc.topic || "Geral").trim(),
+      }))
+      .filter((fc) => fc.question && fc.answer);
+
+    const validMedicalFlashcards = normalizedFlashcards.filter((fc) => {
+      const textBlob = `${fc.topic} ${fc.question} ${fc.answer}`;
+      return MEDICAL_CONTENT_REGEX.test(textBlob) && !NON_MEDICAL_CONTENT_REGEX.test(textBlob);
+    });
+
+    if (validMedicalFlashcards.length === 0) {
+      await supabaseAdmin.from("uploads").delete().eq("id", uploadId);
+      await supabase.storage.from("user-uploads").remove([upload.storage_path]);
+      return new Response(JSON.stringify({
+        error: "Conteúdo rejeitado: os flashcards gerados não são médicos o suficiente."
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Insert flashcards into database
-    const flashcardRows = flashcards.map((fc) => ({
+    // Insert only validated medical flashcards
+    const flashcardRows = validMedicalFlashcards.map((fc) => ({
       user_id: userId,
       question: fc.question,
       answer: fc.answer,
@@ -248,17 +268,26 @@ Formato: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}`
     const { error: insertError } = await supabase.from("flashcards").insert(flashcardRows);
     if (insertError) {
       console.error("Insert flashcards error:", insertError);
+      await supabase.from("uploads").update({ status: "error" }).eq("id", uploadId);
+      return new Response(JSON.stringify({ error: "Falha ao salvar flashcards." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Update upload status
     await supabase.from("uploads").update({
       status: "processed",
-      extracted_json: { flashcards_count: flashcards.length, topics: [...new Set(flashcards.map(f => f.topic))] }
+      extracted_json: {
+        flashcards_count: validMedicalFlashcards.length,
+        discarded_non_medical: normalizedFlashcards.length - validMedicalFlashcards.length,
+        topics: [...new Set(validMedicalFlashcards.map((f) => f.topic))],
+      }
     }).eq("id", uploadId);
 
     return new Response(JSON.stringify({
-      message: `${flashcards.length} flashcards gerados com sucesso!`,
-      flashcards_count: flashcards.length,
+      message: `${validMedicalFlashcards.length} flashcards médicos gerados com sucesso!`,
+      flashcards_count: validMedicalFlashcards.length,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (e) {
