@@ -434,18 +434,53 @@ const ChatGPT = () => {
     setCurrentTopic(topic);
     setSessionQuestions(0);
     setSessionCorrect(0);
+    setEnaziziStep(3); // Jump to step 3 (Aula bloco 1) since panel=1 and tema=2 are done via UI
     savePerformance({ tema_atual: topic });
-    sendMessage(`Quero estudar o tema: ${topic}. Comece com a aula completa seguindo o Protocolo ENAZIZI.`);
+    saveEnaziziStep(3, topic);
+    sendMessage(`Quero estudar o tema: ${topic}. Comece com a Aula Bloco 1 (explicação simples) seguindo o Protocolo ENAZIZI. Estou na etapa 3.`);
   };
 
   const handlePhaseAction = (phase: string) => {
-    const prompts: Record<string, string> = {
-      "active-recall": `Agora faça o Active Recall sobre ${currentTopic}. Faça 5-7 perguntas curtas de memória ativa.`,
-      "questions": `Agora crie uma questão de múltipla escolha (A-E) com caso clínico sobre ${currentTopic}. Não revele a resposta, espere eu responder.`,
-      "discursive": `Agora crie um caso clínico discursivo sobre ${currentTopic}. Sem alternativas. Depois corrija com nota de 0 a 10.`,
-      "review": `Revise o conteúdo de ${currentTopic}. Faça um resumo com os pontos principais, pegadinhas de prova e mnemônicos.`,
+    const phaseMap: Record<string, { prompt: string; step: number }> = {
+      "active-recall": {
+        prompt: `Agora faça o Active Recall sobre ${currentTopic}. Faça 5-7 perguntas curtas de memória ativa.`,
+        step: enaziziStep === 3 ? 4 : 6,
+      },
+      "bloco2": {
+        prompt: `Agora avance para a Aula Bloco 2 (fisiopatologia) sobre ${currentTopic}. Base: Guyton, Robbins, Harrison.`,
+        step: 5,
+      },
+      "bloco3": {
+        prompt: `Agora avance para a Aula Bloco 3 (aplicação clínica) sobre ${currentTopic}. Sinais, sintomas, exames, tratamento.`,
+        step: 7,
+      },
+      "questions": {
+        prompt: `Agora crie uma questão de múltipla escolha (A-E) com caso clínico sobre ${currentTopic}. Não revele a resposta, espere eu responder.`,
+        step: 8,
+      },
+      "discussion": {
+        prompt: `Agora faça a discussão completa da questão sobre ${currentTopic}.`,
+        step: 9,
+      },
+      "discursive": {
+        prompt: `Agora crie um caso clínico discursivo sobre ${currentTopic}. Sem alternativas. Pergunte: diagnóstico, conduta, exames, justificativa.`,
+        step: 10,
+      },
+      "correction": {
+        prompt: `Corrija minha resposta discursiva com nota de 0-5 (Diagnóstico 0-2, Conduta 0-2, Justificativa 0-1). Depois explique o caso.`,
+        step: 11,
+      },
+      "update": {
+        prompt: `Atualize meu painel de desempenho com base nesta sessão sobre ${currentTopic}.`,
+        step: 12,
+      },
     };
-    if (prompts[phase]) sendMessage(prompts[phase]);
+    const action = phaseMap[phase];
+    if (action) {
+      setEnaziziStep(action.step);
+      saveEnaziziStep(action.step);
+      sendMessage(action.prompt);
+    }
   };
 
   const recentHistory = performance.historico_estudo.slice(-5).reverse();
