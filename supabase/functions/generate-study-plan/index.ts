@@ -47,15 +47,27 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Missing required fields: examDate, hoursPerDay, daysPerWeek" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    const editalPreview = String(editalText || "").slice(0, 8000);
+    if (editalPreview && !isMedicalContent(editalPreview)) {
+      return new Response(JSON.stringify({ error: "Edital rejeitado: somente conteúdo médico é permitido para gerar cronograma." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const daysUntilExam = Math.ceil((new Date(examDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
     const prompt = `Você é um especialista em planejamento de estudos para provas de Residência Médica no Brasil (ENARE, USP, UNIFESP, Santa Casa, etc.).
+
+⛔ RESTRIÇÃO ABSOLUTA DE ESCOPO:
+Você só pode montar planos de estudo de MEDICINA, SAÚDE e CIÊNCIAS BIOMÉDICAS.
+Se identificar tema não médico, responda com JSON de erro sem gerar plano.
 
 Dados do aluno:
 - Data da prova: ${examDate} (${daysUntilExam} dias restantes)
 - Horas disponíveis por dia: ${hoursPerDay}
 - Dias de estudo por semana: ${daysPerWeek}
-${editalText ? `\nConteúdo programático/edital:\n${editalText.substring(0, 8000)}` : ""}
+${editalPreview ? `\nConteúdo programático/edital:\n${editalPreview}` : ""}
 
 Gere um cronograma semanal de estudos otimizado para residência médica. Retorne APENAS um JSON válido (sem markdown) no formato:
 {
@@ -73,6 +85,7 @@ Gere um cronograma semanal de estudos otimizado para residência médica. Retorn
 
 Regras:
 - As matérias principais são: Clínica Médica, Cirurgia, Pediatria, Ginecologia e Obstetrícia, Medicina Preventiva/Saúde Coletiva
+- NUNCA incluir Direito, Engenharia, Informática ou qualquer área não médica
 - Distribua as matérias proporcionalmente ao peso nas provas (Clínica Médica geralmente tem maior peso)
 - Inclua revisões, resolução de questões e simulados
 - Respeite o limite de horas/dia
