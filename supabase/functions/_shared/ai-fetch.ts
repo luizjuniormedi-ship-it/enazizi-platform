@@ -30,7 +30,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     const body: any = {
       model: lovableModel,
       messages: options.messages,
-      max_tokens: 4096,
+      max_tokens: 8192,
     };
     if (options.stream !== undefined) body.stream = options.stream;
     if (options.tools) body.tools = options.tools;
