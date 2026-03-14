@@ -317,6 +317,54 @@ export type Database = {
           },
         ]
       }
+      medical_domain_map: {
+        Row: {
+          avg_difficulty: number
+          clinical_cases_score: number
+          correct_answers: number
+          created_at: string
+          domain_score: number
+          errors_count: number
+          id: string
+          last_studied_at: string | null
+          questions_answered: number
+          reviews_count: number
+          specialty: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_difficulty?: number
+          clinical_cases_score?: number
+          correct_answers?: number
+          created_at?: string
+          domain_score?: number
+          errors_count?: number
+          id?: string
+          last_studied_at?: string | null
+          questions_answered?: number
+          reviews_count?: number
+          specialty: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_difficulty?: number
+          clinical_cases_score?: number
+          correct_answers?: number
+          created_at?: string
+          domain_score?: number
+          errors_count?: number
+          id?: string
+          last_studied_at?: string | null
+          questions_answered?: number
+          reviews_count?: number
+          specialty?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       organizations: {
         Row: {
           created_at: string
