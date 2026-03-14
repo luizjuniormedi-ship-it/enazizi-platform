@@ -63,6 +63,24 @@ const Flashcards = () => {
   const currentCards = mode === "due" ? dueCards : allCards;
   const card = currentCards[idx];
 
+  const handleSubmitAnswer = () => {
+    if (!userAnswer.trim()) return;
+    setAnswerSubmitted(true);
+    setFlipped(true);
+  };
+
+  const isAnswerCorrect = useCallback(() => {
+    if (!card || !userAnswer.trim()) return false;
+    const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, "").trim();
+    const userNorm = normalize(userAnswer);
+    const answerNorm = normalize(card.answer);
+    // Check if user answer contains key words from the correct answer (at least 40% match)
+    const answerWords = answerNorm.split(/\s+/).filter(w => w.length > 3);
+    if (answerWords.length === 0) return userNorm === answerNorm;
+    const matchCount = answerWords.filter(w => userNorm.includes(w)).length;
+    return matchCount / answerWords.length >= 0.4;
+  }, [card, userAnswer]);
+
   const handleReview = async (quality: "again" | "good" | "easy") => {
     if (!user || !card) return;
 
@@ -76,7 +94,6 @@ const Flashcards = () => {
       const currentIdx = INTERVALS.indexOf(currentInterval);
       newInterval = INTERVALS[Math.min(currentIdx + 1, INTERVALS.length - 1)] || INTERVALS[1];
     } else {
-      // easy - skip ahead
       const currentIdx = INTERVALS.indexOf(currentInterval);
       newInterval = INTERVALS[Math.min(currentIdx + 2, INTERVALS.length - 1)] || INTERVALS[INTERVALS.length - 1];
     }
@@ -98,6 +115,19 @@ const Flashcards = () => {
       });
     }
 
+    // Log error to error_bank if wrong
+    if (quality === "again" && card.topic) {
+      await supabase.from("error_bank").upsert({
+        user_id: user.id,
+        tema: card.topic || "Flashcard",
+        tipo_questao: "flashcard",
+        conteudo: card.question,
+        motivo_erro: `Resposta do aluno: "${userAnswer}" — Resposta correta: "${card.answer}"`,
+        categoria_erro: "conceito",
+        vezes_errado: 1,
+      }, { onConflict: "user_id,tema,conteudo" }).select();
+    }
+
     // Remove from due list
     if (mode === "due") {
       const newDue = dueCards.filter((c) => c.id !== card.id);
@@ -107,6 +137,8 @@ const Flashcards = () => {
       setIdx(Math.min(idx + 1, currentCards.length - 1));
     }
     setFlipped(false);
+    setUserAnswer("");
+    setAnswerSubmitted(false);
 
     const labels = { again: "Revisar amanhã", good: `Próxima em ${newInterval} dias`, easy: `Próxima em ${newInterval} dias` };
     toast({ title: labels[quality] });
@@ -119,6 +151,8 @@ const Flashcards = () => {
     setDueCards((prev) => prev.filter((c) => c.id !== card.id));
     setIdx(Math.min(idx, Math.max(0, currentCards.length - 2)));
     setFlipped(false);
+    setUserAnswer("");
+    setAnswerSubmitted(false);
   };
 
   if (loading) {
