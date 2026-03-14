@@ -702,7 +702,7 @@ const ChatGPT = () => {
       </div>
 
       {/* Performance Panel */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
+      <div className={`grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4 ${isFullscreen ? "hidden" : ""}`}>
         <div className="glass-card p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
           <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
             <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
