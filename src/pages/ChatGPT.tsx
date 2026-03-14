@@ -559,6 +559,10 @@ const ChatGPT = () => {
           <p className="text-muted-foreground">Agente principal — Protocolo ENAZIZI com GPT-4o</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1.5" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            {isFullscreen ? "Sair" : "Tela cheia"}
+          </Button>
           {studyStarted && (
             <Button variant="destructive" size="sm" onClick={handleFinishSession} className="gap-1.5">
               <LogOut className="h-4 w-4" /> Finalizar Sessão
