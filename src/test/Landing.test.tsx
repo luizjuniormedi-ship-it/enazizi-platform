@@ -46,7 +46,7 @@ describe("Landing Page Components", () => {
     expect(screen.getByText("Active Recall")).toBeInTheDocument();
     expect(screen.getByText("Questões Estilo Prova")).toBeInTheDocument();
     expect(screen.getByText("Discussão Clínica Detalhada")).toBeInTheDocument();
-    expect(screen.getByText("Mapa de Domínio")).toBeInTheDocument();
+    expect(screen.getByText("Mapa de Evolução")).toBeInTheDocument();
     expect(screen.getByText("Repetição Inteligente")).toBeInTheDocument();
     expect(screen.getByText("Protocolo Pedagógico")).toBeInTheDocument();
   });

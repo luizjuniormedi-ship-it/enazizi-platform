@@ -23,7 +23,7 @@ const mobileNavItems = [
   { to: "/dashboard/coach", label: "💪 Coach Motivacional" },
   { to: "/dashboard/predictor", label: "📈 Previsão de Desempenho" },
   { to: "/dashboard/banco-erros", label: "🚨 Banco de Erros" },
-  { to: "/dashboard/mapa-dominio", label: "🗺️ Mapa de Domínio" },
+  { to: "/dashboard/mapa-dominio", label: "🗺️ Mapa de Evolução" },
   { to: "/dashboard/uploads", label: "📤 Uploads" },
   { to: "/dashboard/analytics", label: "📊 Analytics" },
 ];
