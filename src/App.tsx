@@ -29,6 +29,7 @@ import Diagnostic from "./pages/Diagnostic";
 import ExamSimulator from "./pages/ExamSimulator";
 
 import ChatGPT from "./pages/ChatGPT";
+import ErrorBank from "./pages/ErrorBank";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
