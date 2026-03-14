@@ -41,6 +41,7 @@ const priorityColors: Record<string, string> = {
 const DailyPlan = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [plan, setPlan] = useState<DailyPlanData | null>(null);
   const [loading, setLoading] = useState(false);
   const [completedBlocks, setCompletedBlocks] = useState<Set<number>>(new Set());
