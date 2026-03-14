@@ -1,9 +1,10 @@
-import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 
 interface UploadRecord {
   id: string;
@@ -13,21 +14,24 @@ interface UploadRecord {
   status: string | null;
   created_at: string;
   extracted_json: any;
+  is_global?: boolean;
 }
 
 const Uploads = () => {
   const [files, setFiles] = useState<UploadRecord[]>([]);
   const [uploading, setUploading] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [populating, setPopulating] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isAdmin } = useAdminCheck();
 
   const fetchUploads = async () => {
     if (!user) return;
     const { data, error } = await supabase
       .from("uploads")
-      .select("id, filename, file_type, category, status, created_at, extracted_json")
+      .select("id, filename, file_type, category, status, created_at, extracted_json, is_global")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (!error && data) setFiles(data);
@@ -112,6 +116,23 @@ const Uploads = () => {
     }
   };
 
+  const handlePopulateQuestions = async (upload: UploadRecord) => {
+    setPopulating(upload.id);
+    try {
+      const res = await supabase.functions.invoke("populate-questions", {
+        body: { uploadId: upload.id },
+      });
+      if (res.error) throw res.error;
+      const data = res.data as any;
+      toast({ title: "Questões geradas!", description: data.message || `${data.questions_count} questões adicionadas ao banco.` });
+      fetchUploads();
+    } catch (err: any) {
+      toast({ title: "Erro ao popular questões", description: err.message, variant: "destructive" });
+    } finally {
+      setPopulating(null);
+    }
+  };
+
   const statusIcon = (status: string | null) => {
     switch (status) {
       case "processed": return <CheckCircle className="h-4 w-4 text-success" />;
@@ -128,7 +149,7 @@ const Uploads = () => {
           <Upload className="h-6 w-6 text-primary" />
           Uploads
         </h1>
-        <p className="text-muted-foreground">Envie materiais de medicina para gerar flashcards automaticamente com IA. Apenas conteúdo médico é aceito.</p>
+        <p className="text-muted-foreground">Envie materiais de medicina para gerar flashcards e questões automaticamente com IA.</p>
       </div>
 
       <input
@@ -147,7 +168,7 @@ const Uploads = () => {
           <>
             <Loader2 className="h-12 w-12 text-primary mx-auto mb-4 animate-spin" />
             <p className="text-lg font-medium mb-1">Enviando e processando...</p>
-            <p className="text-sm text-muted-foreground">Gerando flashcards com IA</p>
+            <p className="text-sm text-muted-foreground">Gerando flashcards e questões com IA</p>
           </>
         ) : (
           <>
@@ -170,9 +191,24 @@ const Uploads = () => {
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{f.filename}</div>
                   <div className="text-xs text-muted-foreground">
-                    {f.file_type} • {f.status === "processed" ? `✅ ${f.extracted_json?.flashcards_count || 0} flashcards gerados` : f.status} • {new Date(f.created_at).toLocaleDateString("pt-BR")}
+                    {f.file_type} • {f.status === "processed"
+                      ? `✅ ${f.extracted_json?.flashcards_count || 0} flashcards${f.extracted_json?.questions_count ? ` • ${f.extracted_json.questions_count} questões` : ""}`
+                      : f.status}
+                    {" • "}{new Date(f.created_at).toLocaleDateString("pt-BR")}
                   </div>
                 </div>
+                {isAdmin && f.status === "processed" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs"
+                    disabled={populating === f.id}
+                    onClick={() => handlePopulateQuestions(f)}
+                  >
+                    {populating === f.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Database className="h-3 w-3" />}
+                    {populating === f.id ? "Gerando..." : "Gerar Questões"}
+                  </Button>
+                )}
                 <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDelete(f)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>

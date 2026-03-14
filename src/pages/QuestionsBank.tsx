@@ -109,8 +109,9 @@ const QuestionsBank = () => {
       const { data, error } = await supabase
         .from("questions_bank")
         .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .or(`user_id.eq.${user.id},is_global.eq.true`)
+        .order("created_at", { ascending: false })
+        .limit(1000);
 
       if (data) {
         setQuestions(
