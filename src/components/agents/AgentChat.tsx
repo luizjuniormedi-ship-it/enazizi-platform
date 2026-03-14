@@ -69,14 +69,12 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
       const { data } = await supabase
         .from("uploads")
         .select("id, filename, extracted_text, category")
-        .eq("user_id", user.id)
         .eq("status", "processed")
         .not("extracted_text", "is", null)
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(50);
       if (data && data.length > 0) {
         setAvailableUploads(data);
-        // Select all by default
         setSelectedUploadIds(new Set(data.map((u) => u.id)));
       }
     };
