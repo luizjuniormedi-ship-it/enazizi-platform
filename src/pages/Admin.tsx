@@ -432,6 +432,7 @@ const Admin = () => {
                   change_plan: { label: "Alterou plano", color: "text-primary" },
                   promote_admin: { label: "Promoveu admin", color: "text-accent" },
                   demote_admin: { label: "Removeu admin", color: "text-muted-foreground" },
+                  reset_password: { label: "Redefiniu senha", color: "text-orange-500" },
                 };
                 const info = actionLabels[log.action] || { label: log.action, color: "text-foreground" };
 
