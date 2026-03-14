@@ -65,6 +65,10 @@ const Admin = () => {
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [auditLoading, setAuditLoading] = useState(false);
+  // Dialog state for password reset
+  const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; user: AdminUser | null; password: string }>({
+    open: false, user: null, password: "",
+  });
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-actions`;
 
