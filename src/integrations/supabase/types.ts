@@ -852,6 +852,7 @@ export type Database = {
           file_type: string | null
           filename: string
           id: string
+          is_global: boolean
           organization_id: string | null
           status: string | null
           storage_path: string | null
@@ -865,6 +866,7 @@ export type Database = {
           file_type?: string | null
           filename: string
           id?: string
+          is_global?: boolean
           organization_id?: string | null
           status?: string | null
           storage_path?: string | null
@@ -878,6 +880,7 @@ export type Database = {
           file_type?: string | null
           filename?: string
           id?: string
+          is_global?: boolean
           organization_id?: string | null
           status?: string | null
           storage_path?: string | null
