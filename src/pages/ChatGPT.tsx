@@ -672,71 +672,71 @@ const ChatGPT = () => {
   const recentHistory = performance.historico_estudo.slice(-5).reverse();
 
   return (
-    <div className={`flex flex-col animate-fade-in ${isFullscreen ? "fixed inset-0 z-50 bg-background p-4" : "h-[calc(100vh-4rem)]"}`}>
+    <div className={`flex flex-col animate-fade-in min-w-0 ${isFullscreen ? "fixed inset-0 z-50 bg-background p-2 sm:p-4" : "h-[calc(100vh-7rem)] sm:h-[calc(100vh-4rem)]"}`}>
       {/* Header */}
-      <div className="mb-4 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
-            ChatGPT Médico
+      <div className="mb-2 sm:mb-4 flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2 truncate">
+            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+            <span className="truncate">ChatGPT Médico</span>
           </h1>
-          <p className="text-muted-foreground">Agente principal — Protocolo ENAZIZI com GPT-4o</p>
+          <p className="text-xs sm:text-sm text-muted-foreground truncate">Protocolo ENAZIZI com GPT-4o</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1.5" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+        <div className="flex gap-1 sm:gap-2 flex-shrink-0 flex-wrap justify-end">
+          <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            {isFullscreen ? "Sair" : "Tela cheia"}
+            <span className="hidden sm:inline">{isFullscreen ? "Sair" : "Tela cheia"}</span>
           </Button>
           {studyStarted && (
-            <Button variant="destructive" size="sm" onClick={handleFinishSession} className="gap-1.5">
-              <LogOut className="h-4 w-4" /> Finalizar Sessão
+            <Button variant="destructive" size="sm" onClick={handleFinishSession} className="gap-1 h-8 px-2 text-xs">
+              <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">Finalizar</span>
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={startNewSession} className="gap-1.5">
-            <Plus className="h-4 w-4" /> Nova
+          <Button variant="outline" size="sm" onClick={startNewSession} className="gap-1 h-8 px-2 text-xs">
+            <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nova</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)} className="gap-1.5">
-            <History className="h-4 w-4" /> Histórico
+          <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)} className="gap-1 h-8 px-2 text-xs">
+            <History className="h-4 w-4" /> <span className="hidden sm:inline">Histórico</span>
           </Button>
         </div>
       </div>
 
       {/* Performance Panel */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <div className="glass-card p-3 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <BarChart3 className="h-5 w-5 text-primary" />
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
+        <div className="glass-card p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
+          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Questões</p>
-            <p className="text-lg font-bold">{performance.questoes_respondidas}</p>
-          </div>
-        </div>
-        <div className="glass-card p-3 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-            <Check className="h-5 w-5 text-emerald-500" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Taxa de Acerto</p>
-            <p className="text-lg font-bold">{performance.taxa_acerto}%</p>
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Questões</p>
+            <p className="text-base sm:text-lg font-bold">{performance.questoes_respondidas}</p>
           </div>
         </div>
-        <div className="glass-card p-3 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
-            <Stethoscope className="h-5 w-5 text-violet-500" />
+        <div className="glass-card p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
+          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+            <Check className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500" />
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Nota Discursiva</p>
-            <p className="text-lg font-bold">{performance.pontuacao_discursiva != null ? `${performance.pontuacao_discursiva}/10` : "—"}</p>
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Acerto</p>
+            <p className="text-base sm:text-lg font-bold">{performance.taxa_acerto}%</p>
           </div>
         </div>
-        <div className="glass-card p-3 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-            <GraduationCap className="h-5 w-5 text-amber-500" />
+        <div className="glass-card p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
+          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-violet-500/10 flex items-center justify-center flex-shrink-0">
+            <Stethoscope className="h-4 w-4 sm:h-5 sm:w-5 text-violet-500" />
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Sessões</p>
-            <p className="text-lg font-bold">{performance.historico_estudo.length}</p>
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Discursiva</p>
+            <p className="text-base sm:text-lg font-bold">{performance.pontuacao_discursiva != null ? `${performance.pontuacao_discursiva}/10` : "—"}</p>
+          </div>
+        </div>
+        <div className="glass-card p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
+          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+            <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Sessões</p>
+            <p className="text-base sm:text-lg font-bold">{performance.historico_estudo.length}</p>
           </div>
         </div>
       </div>
@@ -794,27 +794,28 @@ const ChatGPT = () => {
 
       {/* Topic Input */}
       {!studyStarted && (
-        <div className="glass-card p-6 mb-4 text-center space-y-4">
-          <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-            <Sparkles className="h-8 w-8 text-primary" />
+        <div className="glass-card p-4 sm:p-6 mb-3 sm:mb-4 text-center space-y-3 sm:space-y-4">
+          <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+            <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold">O que você quer estudar?</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Digite o tema e o ChatGPT seguirá o Protocolo ENAZIZI completo
+            <h2 className="text-lg sm:text-xl font-semibold">O que você quer estudar?</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+              Digite o tema e o ChatGPT seguirá o Protocolo ENAZIZI
             </p>
           </div>
           <div className="flex gap-2 max-w-lg mx-auto">
             <Input
-              placeholder="Ex: Sepse, IAM, Pneumonia, TEP..."
+              placeholder="Ex: Sepse, IAM, Pneumonia..."
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleStartStudy()}
-              className="bg-secondary border-border text-base"
+              className="bg-secondary border-border text-sm sm:text-base"
             />
-            <Button onClick={() => handleStartStudy()} className="glow gap-2 px-6" disabled={!topic.trim()}>
+            <Button onClick={() => handleStartStudy()} className="glow gap-1.5 px-3 sm:px-6 flex-shrink-0 text-xs sm:text-sm" disabled={!topic.trim()}>
               <GraduationCap className="h-4 w-4" />
-              Vamos estudar
+              <span className="hidden sm:inline">Vamos estudar</span>
+              <span className="sm:hidden">Ir</span>
             </Button>
           </div>
 
@@ -828,12 +829,12 @@ const ChatGPT = () => {
                 : "bg-muted text-muted-foreground"
             }`}
           >
-            <FileText className="h-3.5 w-3.5" />
+            <FileText className="h-3.5 w-3.5 flex-shrink-0" />
             {availableUploads.length === 0 ? (
               <span>Nenhum material disponível</span>
             ) : (
               <>
-                <span>{selectedUploadIds.size} de {availableUploads.length} materiais como contexto</span>
+                <span>{selectedUploadIds.size}/{availableUploads.length} materiais</span>
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showUploads ? "rotate-180" : ""}`} />
               </>
             )}
@@ -882,25 +883,25 @@ const ChatGPT = () => {
       {studyStarted && (
         <>
           {/* Step Progress Indicator */}
-          <div className="mb-3">
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+          <div className="mb-2 sm:mb-3">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-2 flex-wrap">
+              <span className="px-2 sm:px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] sm:text-xs font-medium truncate max-w-[40%]">
                 📚 {currentTopic}
               </span>
-              <span className="px-3 py-1 rounded-full bg-secondary text-muted-foreground text-xs">
-                Etapa {enaziziStep}/13
+              <span className="px-2 sm:px-3 py-1 rounded-full bg-secondary text-muted-foreground text-[10px] sm:text-xs">
+                {enaziziStep}/13
               </span>
               {sessionQuestions > 0 && (
-                <span className="px-3 py-1 rounded-full bg-secondary text-muted-foreground text-xs">
+                <span className="px-2 sm:px-3 py-1 rounded-full bg-secondary text-muted-foreground text-[10px] sm:text-xs">
                   {sessionQuestions}Q • {Math.round((sessionCorrect / sessionQuestions) * 100)}%
                 </span>
               )}
-              <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 ml-auto" onClick={() => setChangingTopic(!changingTopic)} disabled={isLoading}>
-                <RefreshCw className="h-3 w-3" /> Mudar Tema
+              <Button variant="ghost" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 ml-auto px-2" onClick={() => setChangingTopic(!changingTopic)} disabled={isLoading}>
+                <RefreshCw className="h-3 w-3" /> <span className="hidden sm:inline">Mudar</span> Tema
               </Button>
             </div>
             {changingTopic && (
-              <div className="flex gap-2 mb-2 max-w-md">
+              <div className="flex gap-2 mb-2">
                 <Input
                   placeholder="Novo tema médico..."
                   value={newTopic}
@@ -909,7 +910,7 @@ const ChatGPT = () => {
                   className="bg-secondary border-border text-sm h-8"
                   autoFocus
                 />
-                <Button size="sm" className="h-8 text-xs" onClick={handleChangeTopic} disabled={!newTopic.trim()}>
+                <Button size="sm" className="h-8 text-xs flex-shrink-0" onClick={handleChangeTopic} disabled={!newTopic.trim()}>
                   Iniciar
                 </Button>
               </div>
@@ -919,7 +920,7 @@ const ChatGPT = () => {
                 <div
                   key={s.num}
                   title={`${s.num}. ${s.label}`}
-                  className={`flex-1 h-2 rounded-full transition-colors ${
+                  className={`flex-1 h-1.5 sm:h-2 rounded-full transition-colors ${
                     s.num < enaziziStep
                       ? "bg-primary"
                       : s.num === enaziziStep
@@ -929,7 +930,7 @@ const ChatGPT = () => {
                 />
               ))}
             </div>
-            <div className="flex justify-between mt-1">
+            <div className="hidden sm:flex justify-between mt-1">
               {ENAZIZI_STEPS.map((s) => (
                 <span
                   key={s.num}
@@ -943,73 +944,73 @@ const ChatGPT = () => {
             </div>
           </div>
 
-          {/* Phase action buttons — show next logical step */}
-          <div className="flex flex-wrap gap-2 mb-3">
+          {/* Phase action buttons */}
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-2 sm:mb-3 overflow-x-auto">
             {enaziziStep === 3 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("leigo1")} disabled={isLoading}>
-                <BookOpen className="h-3.5 w-3.5" /> 💡 Tradução Leiga + Pergunta
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("leigo1")} disabled={isLoading}>
+                💡 Tradução Leiga
               </Button>
             )}
             {enaziziStep === 4 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("tecnico2")} disabled={isLoading}>
-                <BookOpen className="h-3.5 w-3.5" /> 🔬 Bloco Técnico 2 — Fisiopatologia
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("tecnico2")} disabled={isLoading}>
+                🔬 Fisiopatologia
               </Button>
             )}
             {enaziziStep === 5 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("leigo2")} disabled={isLoading}>
-                <BookOpen className="h-3.5 w-3.5" /> 💡 Tradução Leiga 2 + Pergunta
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("leigo2")} disabled={isLoading}>
+                💡 Tradução 2
               </Button>
             )}
             {enaziziStep === 6 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("tecnico3")} disabled={isLoading}>
-                <BookOpen className="h-3.5 w-3.5" /> 🏥 Bloco Técnico 3 — Clínica
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("tecnico3")} disabled={isLoading}>
+                🏥 Clínica
               </Button>
             )}
             {enaziziStep === 7 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("leigo3")} disabled={isLoading}>
-                <BookOpen className="h-3.5 w-3.5" /> 💡 Tradução Leiga 3 + Pergunta
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("leigo3")} disabled={isLoading}>
+                💡 Tradução 3
               </Button>
             )}
             {enaziziStep === 8 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("questions")} disabled={isLoading}>
-                <HelpCircle className="h-3.5 w-3.5" /> ❓ Questão Objetiva
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("questions")} disabled={isLoading}>
+                ❓ Questão
               </Button>
             )}
             {enaziziStep === 9 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("discussion")} disabled={isLoading}>
-                <HelpCircle className="h-3.5 w-3.5" /> 💬 Discussão
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("discussion")} disabled={isLoading}>
+                💬 Discussão
               </Button>
             )}
             {enaziziStep === 10 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("discursive")} disabled={isLoading}>
-                <Stethoscope className="h-3.5 w-3.5" /> ✍️ Caso Discursivo
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("discursive")} disabled={isLoading}>
+                ✍️ Discursivo
               </Button>
             )}
             {enaziziStep === 11 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("correction")} disabled={isLoading}>
-                <Check className="h-3.5 w-3.5" /> ✅ Correção
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("correction")} disabled={isLoading}>
+                ✅ Correção
               </Button>
             )}
             {enaziziStep === 12 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("update")} disabled={isLoading}>
-                <BarChart3 className="h-3.5 w-3.5" /> 📈 Atualizar Desempenho
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("update")} disabled={isLoading}>
+                📈 Atualizar
               </Button>
             )}
           </div>
 
-          <div ref={scrollRef} className="flex-1 glass-card p-4 overflow-y-auto space-y-4 mb-4">
+          <div ref={scrollRef} className="flex-1 glass-card p-2 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 mb-2 sm:mb-4 min-h-0">
             {messages.map((msg, i) => (
-              <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
+              <div key={i} className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
                 {msg.role === "assistant" && (
-                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Bot className="h-4 w-4 text-primary" />
+                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                   </div>
                 )}
-                <div className={`rounded-xl px-4 py-3 text-sm leading-relaxed ${
-                  msg.role === "user" ? "max-w-[75%] bg-primary text-primary-foreground" : "w-full bg-secondary text-secondary-foreground"
+                <div className={`rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm leading-relaxed ${
+                  msg.role === "user" ? "max-w-[85%] sm:max-w-[75%] bg-primary text-primary-foreground" : "w-full bg-secondary text-secondary-foreground"
                 }`}>
                   {msg.role === "assistant" ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+                    <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-xs sm:text-sm">
                       <ReactMarkdown>{msg.content}</ReactMarkdown>
                     </div>
                   ) : (
@@ -1017,16 +1018,16 @@ const ChatGPT = () => {
                   )}
                 </div>
                 {msg.role === "user" && (
-                  <div className="h-8 w-8 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0">
-                    <User className="h-4 w-4 text-accent" />
+                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0">
+                    <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
                   </div>
                 )}
               </div>
             ))}
             {isLoading && messages[messages.length - 1]?.role === "user" && (
-              <div className="flex gap-3">
-                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Bot className="h-4 w-4 text-primary" />
+              <div className="flex gap-2 sm:gap-3">
+                <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                 </div>
                 <div className="rounded-xl px-4 py-3 bg-secondary">
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -1037,14 +1038,14 @@ const ChatGPT = () => {
 
           <div className="flex gap-2">
             <Input
-              placeholder="Digite sua resposta ou dúvida..."
-              className="bg-secondary border-border"
+              placeholder="Sua resposta ou dúvida..."
+              className="bg-secondary border-border text-sm"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
               disabled={isLoading}
             />
-            <Button onClick={() => sendMessage(input)} size="icon" className="glow flex-shrink-0" disabled={isLoading || !input.trim()}>
+            <Button onClick={() => sendMessage(input)} size="icon" className="glow flex-shrink-0 h-9 w-9 sm:h-10 sm:w-10" disabled={isLoading || !input.trim()}>
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
