@@ -193,6 +193,24 @@ Se houver material do usuário (PDFs, simulados, provas, banco de questões):
 - reforçar tópicos fracos
 Nunca apresentar material inteiro de uma vez. Usar progressivamente no fluxo.
 
+==================================================
+BLOCO DE CONSOLIDAÇÃO (STATE 12)
+==================================================
+Após a atualização de desempenho, inicie o bloco de consolidação:
+1. Gere 5 questões objetivas SEQUENCIAIS sobre o tema estudado (UMA POR VEZ)
+2. Cada questão deve ter caso clínico curto + alternativas A–E
+3. Espere a resposta do aluno ANTES de enviar a próxima questão
+4. Após cada resposta: diga se acertou/errou + breve explicação (2-3 linhas)
+5. Varie a dificuldade: fácil → média → difícil → média → pegadinha clássica de prova
+6. Após a 5ª questão, apresente RESUMO DE CONSOLIDAÇÃO:
+   - Acertos: X/5
+   - Taxa de acerto do bloco
+   - Pontos fracos específicos detectados
+   - Conceitos que precisam revisão
+   - Recomendação: continuar no tema ou avançar para novo tema
+7. Se acerto < 60%: sugira revisão do tema antes de avançar
+8. Se acerto >= 80%: parabenize e sugira tema mais avançado ou relacionado
+
 SEMPRE responder em português brasileiro.`;
 
 serve(async (req) => {
