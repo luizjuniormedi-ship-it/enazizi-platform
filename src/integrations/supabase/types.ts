@@ -429,6 +429,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           avatar_url: string | null
           created_at: string
           daily_study_hours: number | null
@@ -439,11 +441,14 @@ export type Database = {
           id: string
           is_blocked: boolean
           organization_id: string | null
+          status: string
           target_specialty: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           avatar_url?: string | null
           created_at?: string
           daily_study_hours?: number | null
@@ -454,11 +459,14 @@ export type Database = {
           id?: string
           is_blocked?: boolean
           organization_id?: string | null
+          status?: string
           target_specialty?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           avatar_url?: string | null
           created_at?: string
           daily_study_hours?: number | null
@@ -469,6 +477,7 @@ export type Database = {
           id?: string
           is_blocked?: boolean
           organization_id?: string | null
+          status?: string
           target_specialty?: string | null
           updated_at?: string
           user_id?: string
