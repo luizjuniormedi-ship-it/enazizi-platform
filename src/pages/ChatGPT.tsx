@@ -883,25 +883,25 @@ const ChatGPT = () => {
       {studyStarted && (
         <>
           {/* Step Progress Indicator */}
-          <div className="mb-3">
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+          <div className="mb-2 sm:mb-3">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-2 flex-wrap">
+              <span className="px-2 sm:px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] sm:text-xs font-medium truncate max-w-[40%]">
                 📚 {currentTopic}
               </span>
-              <span className="px-3 py-1 rounded-full bg-secondary text-muted-foreground text-xs">
-                Etapa {enaziziStep}/13
+              <span className="px-2 sm:px-3 py-1 rounded-full bg-secondary text-muted-foreground text-[10px] sm:text-xs">
+                {enaziziStep}/13
               </span>
               {sessionQuestions > 0 && (
-                <span className="px-3 py-1 rounded-full bg-secondary text-muted-foreground text-xs">
+                <span className="px-2 sm:px-3 py-1 rounded-full bg-secondary text-muted-foreground text-[10px] sm:text-xs">
                   {sessionQuestions}Q • {Math.round((sessionCorrect / sessionQuestions) * 100)}%
                 </span>
               )}
-              <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 ml-auto" onClick={() => setChangingTopic(!changingTopic)} disabled={isLoading}>
-                <RefreshCw className="h-3 w-3" /> Mudar Tema
+              <Button variant="ghost" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 ml-auto px-2" onClick={() => setChangingTopic(!changingTopic)} disabled={isLoading}>
+                <RefreshCw className="h-3 w-3" /> <span className="hidden sm:inline">Mudar</span> Tema
               </Button>
             </div>
             {changingTopic && (
-              <div className="flex gap-2 mb-2 max-w-md">
+              <div className="flex gap-2 mb-2">
                 <Input
                   placeholder="Novo tema médico..."
                   value={newTopic}
@@ -910,7 +910,7 @@ const ChatGPT = () => {
                   className="bg-secondary border-border text-sm h-8"
                   autoFocus
                 />
-                <Button size="sm" className="h-8 text-xs" onClick={handleChangeTopic} disabled={!newTopic.trim()}>
+                <Button size="sm" className="h-8 text-xs flex-shrink-0" onClick={handleChangeTopic} disabled={!newTopic.trim()}>
                   Iniciar
                 </Button>
               </div>
@@ -920,7 +920,7 @@ const ChatGPT = () => {
                 <div
                   key={s.num}
                   title={`${s.num}. ${s.label}`}
-                  className={`flex-1 h-2 rounded-full transition-colors ${
+                  className={`flex-1 h-1.5 sm:h-2 rounded-full transition-colors ${
                     s.num < enaziziStep
                       ? "bg-primary"
                       : s.num === enaziziStep
@@ -930,7 +930,7 @@ const ChatGPT = () => {
                 />
               ))}
             </div>
-            <div className="flex justify-between mt-1">
+            <div className="hidden sm:flex justify-between mt-1">
               {ENAZIZI_STEPS.map((s) => (
                 <span
                   key={s.num}
