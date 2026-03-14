@@ -672,31 +672,31 @@ const ChatGPT = () => {
   const recentHistory = performance.historico_estudo.slice(-5).reverse();
 
   return (
-    <div className={`flex flex-col animate-fade-in ${isFullscreen ? "fixed inset-0 z-50 bg-background p-4" : "h-[calc(100vh-4rem)]"}`}>
+    <div className={`flex flex-col animate-fade-in min-w-0 ${isFullscreen ? "fixed inset-0 z-50 bg-background p-2 sm:p-4" : "h-[calc(100vh-7rem)] sm:h-[calc(100vh-4rem)]"}`}>
       {/* Header */}
-      <div className="mb-4 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
-            ChatGPT Médico
+      <div className="mb-2 sm:mb-4 flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2 truncate">
+            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+            <span className="truncate">ChatGPT Médico</span>
           </h1>
-          <p className="text-muted-foreground">Agente principal — Protocolo ENAZIZI com GPT-4o</p>
+          <p className="text-xs sm:text-sm text-muted-foreground truncate">Protocolo ENAZIZI com GPT-4o</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1.5" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+        <div className="flex gap-1 sm:gap-2 flex-shrink-0 flex-wrap justify-end">
+          <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            {isFullscreen ? "Sair" : "Tela cheia"}
+            <span className="hidden sm:inline">{isFullscreen ? "Sair" : "Tela cheia"}</span>
           </Button>
           {studyStarted && (
-            <Button variant="destructive" size="sm" onClick={handleFinishSession} className="gap-1.5">
-              <LogOut className="h-4 w-4" /> Finalizar Sessão
+            <Button variant="destructive" size="sm" onClick={handleFinishSession} className="gap-1 h-8 px-2 text-xs">
+              <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">Finalizar</span>
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={startNewSession} className="gap-1.5">
-            <Plus className="h-4 w-4" /> Nova
+          <Button variant="outline" size="sm" onClick={startNewSession} className="gap-1 h-8 px-2 text-xs">
+            <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nova</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)} className="gap-1.5">
-            <History className="h-4 w-4" /> Histórico
+          <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)} className="gap-1 h-8 px-2 text-xs">
+            <History className="h-4 w-4" /> <span className="hidden sm:inline">Histórico</span>
           </Button>
         </div>
       </div>
