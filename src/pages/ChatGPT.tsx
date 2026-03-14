@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap, LogOut, AlertTriangle, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,7 @@ const FUNCTION_NAME = "chatgpt-agent";
 
 const ChatGPT = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [topic, setTopic] = useState("");
   const [studyStarted, setStudyStarted] = useState(false);
   const [currentTopic, setCurrentTopic] = useState("");
@@ -225,6 +227,23 @@ const ChatGPT = () => {
   }, [user]);
 
   useEffect(() => { loadConversations(); }, [loadConversations]);
+
+  // Handle navigation from ErrorBank with initialMessage
+  const errorBankHandled = useRef(false);
+  useEffect(() => {
+    const state = location.state as { initialMessage?: string; fromErrorBank?: boolean } | null;
+    if (state?.fromErrorBank && state?.initialMessage && !errorBankHandled.current && user) {
+      errorBankHandled.current = true;
+      setStudyStarted(true);
+      setCurrentTopic("Revisão do Banco de Erros");
+      // Small delay to ensure sendMessage is ready
+      setTimeout(() => {
+        sendMessage(state.initialMessage!);
+      }, 500);
+      // Clear location state to prevent re-trigger
+      window.history.replaceState({}, document.title);
+    }
+  }, [user, location.state]);
 
   const loadConversation = async (convId: string) => {
     const { data } = await supabase

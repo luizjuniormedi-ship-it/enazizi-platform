@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { AlertTriangle, BookOpen, BarChart3, Trash2, RefreshCw, ArrowRight } from "lucide-react";
+import { AlertTriangle, BookOpen, BarChart3, Trash2, RefreshCw, ArrowRight, Brain, HelpCircle, Stethoscope, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,6 +35,13 @@ const CATEGORIA_LABELS: Record<string, string> = {
   interpretacao: "Erro de Interpretação Clínica",
   pegadinha: "Erro de Prova / Pegadinha",
 };
+
+const REVIEW_MODES = [
+  { id: "revisar", label: "Revisar um tema específico", icon: BookOpen, description: "Explicação técnica + leiga + conduta + active recall", color: "text-primary" },
+  { id: "questoes", label: "Questões baseadas nos erros", icon: HelpCircle, description: "Questões objetivas dos temas com mais erros", color: "text-amber-400" },
+  { id: "casos", label: "Mini casos clínicos dos erros", icon: Stethoscope, description: "Casos clínicos para treinar raciocínio", color: "text-emerald-400" },
+  { id: "completa", label: "Revisão completa dos erros", icon: ListChecks, description: "Revisa todos os temas fracos sequencialmente", color: "text-accent" },
+];
 
 const ErrorBank = () => {
   const { user } = useAuth();
@@ -78,6 +85,31 @@ const ErrorBank = () => {
     toast({ title: "Banco limpo", description: "Todos os erros foram removidos." });
   };
 
+  // Build error summary for AI context
+  const buildErrorContext = (mode: string, tema?: string) => {
+    const relevantErrors = tema ? errors.filter((e) => e.tema === tema) : errors;
+    const summary = relevantErrors.slice(0, 20).map((e) =>
+      `- ${e.tema}${e.subtema ? ` > ${e.subtema}` : ""}: ${e.vezes_errado}x errado${e.categoria_erro ? ` (${CATEGORIA_LABELS[e.categoria_erro] || e.categoria_erro})` : ""}${e.motivo_erro ? ` — ${e.motivo_erro}` : ""}`
+    ).join("\n");
+
+    const prompts: Record<string, string> = {
+      revisar: tema
+        ? `[BANCO DE ERROS - REVISÃO DE TEMA]\n\nO aluno quer revisar o tema "${tema}" onde apresentou os seguintes erros:\n${summary}\n\nInicie a revisão seguindo: 1) Explicação técnica 2) Tradução leiga 3) Aplicação clínica 4) Conduta baseada em protocolos 5) Active recall. Foque nos pontos onde o aluno errou.`
+        : `[BANCO DE ERROS - REVISÃO]\n\nMostrar os temas com mais erros e perguntar qual o aluno quer revisar:\n${summary}`,
+      questoes: `[BANCO DE ERROS - QUESTÕES BASEADAS NOS ERROS]\n\nGere questões objetivas (A-E) baseadas nos temas onde o aluno mais errou${tema ? ` (foco em ${tema})` : ""}. Apresente UMA questão por vez. Após resposta, explique: alternativa correta, explicação leiga, explicação técnica, motivo do erro/acerto, ponto clássico de prova.\n\nErros do aluno:\n${summary}`,
+      casos: `[BANCO DE ERROS - MINI CASOS CLÍNICOS]\n\nGere mini casos clínicos baseados nos temas onde o aluno errou${tema ? ` (foco em ${tema})` : ""}. Estrutura: paciente com sintomas do tema → pergunta (diagnóstico provável ou conduta inicial). Após resposta: explicar raciocínio clínico, conduta correta, revisar conceito do erro.\n\nErros do aluno:\n${summary}`,
+      completa: `[BANCO DE ERROS - REVISÃO COMPLETA]\n\nInicie uma revisão completa sequencial dos temas com mais erros. Para cada tema: 1) revisar rapidamente o conteúdo 2) apresentar uma questão 3) corrigir 4) passar para o próximo tema.\n\nErros do aluno (em ordem de prioridade):\n${summary}`,
+    };
+
+    return prompts[mode] || prompts.revisar;
+  };
+
+  const startReviewMode = (mode: string, tema?: string) => {
+    const context = buildErrorContext(mode, tema);
+    // Navigate to ChatGPT with the error context as initial message
+    navigate("/dashboard/chatgpt", { state: { initialMessage: context, fromErrorBank: true } });
+  };
+
   // Aggregate stats by theme
   const themeStats: ThemeStats[] = (() => {
     const map = new Map<string, { total: number; subtemas: Map<string, number>; categorias: Map<string, number> }>();
@@ -101,11 +133,6 @@ const ErrorBank = () => {
   const filteredErrors = selectedTema ? errors.filter((e) => e.tema === selectedTema) : errors;
   const totalErrors = errors.reduce((s, e) => s + e.vezes_errado, 0);
 
-  const handleReviewTopic = (tema: string) => {
-    navigate(`/dashboard/chatgpt`);
-    // The user can type "revisar erros de {tema}" in the chat
-  };
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -114,7 +141,7 @@ const ErrorBank = () => {
             <AlertTriangle className="h-6 w-6 text-destructive" />
             Banco de Erros
           </h1>
-          <p className="text-muted-foreground text-sm">Memória pedagógica — Revisão ativa dos seus pontos fracos</p>
+          <p className="text-muted-foreground text-sm">Revisão ativa e personalizada dos seus pontos fracos</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={loadErrors} className="gap-1.5">
@@ -165,8 +192,8 @@ const ErrorBank = () => {
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
-              <AlertTriangle className="h-5 w-5 text-violet-500" />
+            <div className="h-10 w-10 rounded-xl bg-accent/10 flex items-center justify-center">
+              <Brain className="h-5 w-5 text-accent" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Tema Mais Fraco</p>
@@ -175,6 +202,40 @@ const ErrorBank = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Review Mode Selection */}
+      {errors.length > 0 && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Brain className="h-5 w-5 text-primary" />
+              O que deseja fazer com seus erros?
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {REVIEW_MODES.map((mode) => (
+                <button
+                  key={mode.id}
+                  onClick={() => startReviewMode(mode.id, selectedTema || undefined)}
+                  className="flex items-start gap-3 p-4 rounded-xl bg-card border border-border hover:border-primary/40 hover:bg-secondary/50 transition-all text-left group"
+                >
+                  <div className={`h-9 w-9 rounded-lg bg-secondary flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors`}>
+                    <mode.icon className={`h-4.5 w-4.5 ${mode.color}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">{mode.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{mode.description}</p>
+                    {selectedTema && (
+                      <p className="text-[10px] text-primary mt-1">Foco: {selectedTema}</p>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">Carregando...</div>
@@ -225,25 +286,22 @@ const ErrorBank = () => {
               </button>
             ))}
 
-            {/* Review suggestions */}
-            {themeStats.length > 0 && (
+            {/* Quick review buttons per theme */}
+            {selectedTema && (
               <Card className="mt-4">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">📌 Revisão Prioritária</CardTitle>
+                  <CardTitle className="text-sm">📌 Ações para {selectedTema}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  {themeStats.slice(0, 3).map((s) => (
-                    <Button
-                      key={s.tema}
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-between text-xs"
-                      onClick={() => handleReviewTopic(s.tema)}
-                    >
-                      Revisar {s.tema}
-                      <ArrowRight className="h-3 w-3" />
-                    </Button>
-                  ))}
+                  <Button variant="outline" size="sm" className="w-full justify-between text-xs" onClick={() => startReviewMode("revisar", selectedTema)}>
+                    Revisar conceitos <ArrowRight className="h-3 w-3" />
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full justify-between text-xs" onClick={() => startReviewMode("questoes", selectedTema)}>
+                    Fazer questões <ArrowRight className="h-3 w-3" />
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full justify-between text-xs" onClick={() => startReviewMode("casos", selectedTema)}>
+                    Casos clínicos <ArrowRight className="h-3 w-3" />
+                  </Button>
                 </CardContent>
               </Card>
             )}
