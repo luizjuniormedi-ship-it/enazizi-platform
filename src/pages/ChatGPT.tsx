@@ -702,41 +702,41 @@ const ChatGPT = () => {
       </div>
 
       {/* Performance Panel */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <div className="glass-card p-3 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <BarChart3 className="h-5 w-5 text-primary" />
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
+        <div className="glass-card p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
+          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Questões</p>
-            <p className="text-lg font-bold">{performance.questoes_respondidas}</p>
-          </div>
-        </div>
-        <div className="glass-card p-3 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-            <Check className="h-5 w-5 text-emerald-500" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Taxa de Acerto</p>
-            <p className="text-lg font-bold">{performance.taxa_acerto}%</p>
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Questões</p>
+            <p className="text-base sm:text-lg font-bold">{performance.questoes_respondidas}</p>
           </div>
         </div>
-        <div className="glass-card p-3 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
-            <Stethoscope className="h-5 w-5 text-violet-500" />
+        <div className="glass-card p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
+          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+            <Check className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500" />
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Nota Discursiva</p>
-            <p className="text-lg font-bold">{performance.pontuacao_discursiva != null ? `${performance.pontuacao_discursiva}/10` : "—"}</p>
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Acerto</p>
+            <p className="text-base sm:text-lg font-bold">{performance.taxa_acerto}%</p>
           </div>
         </div>
-        <div className="glass-card p-3 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-            <GraduationCap className="h-5 w-5 text-amber-500" />
+        <div className="glass-card p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
+          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-violet-500/10 flex items-center justify-center flex-shrink-0">
+            <Stethoscope className="h-4 w-4 sm:h-5 sm:w-5 text-violet-500" />
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Sessões</p>
-            <p className="text-lg font-bold">{performance.historico_estudo.length}</p>
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Discursiva</p>
+            <p className="text-base sm:text-lg font-bold">{performance.pontuacao_discursiva != null ? `${performance.pontuacao_discursiva}/10` : "—"}</p>
+          </div>
+        </div>
+        <div className="glass-card p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
+          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+            <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Sessões</p>
+            <p className="text-base sm:text-lg font-bold">{performance.historico_estudo.length}</p>
           </div>
         </div>
       </div>
