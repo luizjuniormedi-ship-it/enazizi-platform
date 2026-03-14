@@ -202,6 +202,21 @@ const ExamSimulator = () => {
     setPhase("result");
   };
 
+  const ALL_AREAS = [
+    "Clínica Médica", "Cirurgia", "Pediatria", "GO", "Preventiva",
+    "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia", "Gastroenterologia",
+    "Nefrologia", "Infectologia", "Hematologia", "Reumatologia", "Dermatologia",
+    "Urologia", "Ortopedia", "Psiquiatria", "Oftalmologia", "Otorrinolaringologia",
+    "Medicina de Emergência", "Terapia Intensiva",
+  ];
+
+  const toggleArea = (area: string) => {
+    setExamConfig(prev => ({
+      ...prev,
+      areas: prev.areas.includes(area) ? prev.areas.filter(a => a !== area) : [...prev.areas, area],
+    }));
+  };
+
   // SETUP
   if (phase === "setup") {
     return (
@@ -212,16 +227,44 @@ const ExamSimulator = () => {
           <p className="text-muted-foreground">Modo prova real com cronômetro e relatório detalhado.</p>
         </div>
 
-        <div className="glass-card p-6 space-y-4">
+        <div className="glass-card p-6 space-y-5">
+          {/* Area/Topic selection */}
           <div>
-            <label className="text-sm font-medium">Número de questões</label>
+            <label className="text-sm font-semibold mb-3 block">Selecione as áreas/assuntos</label>
+            <div className="flex flex-wrap gap-2">
+              {ALL_AREAS.map(area => (
+                <button
+                  key={area}
+                  onClick={() => toggleArea(area)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                    examConfig.areas.includes(area)
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/30"
+                  }`}
+                >
+                  {area}
+                </button>
+              ))}
+            </div>
             <div className="flex gap-2 mt-2">
+              <Button variant="ghost" size="sm" className="text-xs" onClick={() => setExamConfig(p => ({ ...p, areas: [...ALL_AREAS] }))}>
+                Selecionar todos
+              </Button>
+              <Button variant="ghost" size="sm" className="text-xs" onClick={() => setExamConfig(p => ({ ...p, areas: [] }))}>
+                Limpar
+              </Button>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold mb-2 block">Número de questões</label>
+            <div className="flex gap-2">
               {[25, 50, 100].map(n => (
                 <Button
                   key={n}
                   variant={examConfig.questionCount === n ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setExamConfig(p => ({ ...p, questionCount: n, timeMinutes: n * 2.5 }))}
+                  onClick={() => setExamConfig(p => ({ ...p, questionCount: n, timeMinutes: Math.round(n * 2.5) }))}
                 >
                   {n} questões
                 </Button>
@@ -229,10 +272,10 @@ const ExamSimulator = () => {
             </div>
           </div>
           <div>
-            <label className="text-sm font-medium">Tempo limite</label>
+            <label className="text-sm font-semibold">Tempo limite</label>
             <p className="text-sm text-muted-foreground">{examConfig.timeMinutes} minutos ({Math.round(examConfig.timeMinutes / 60)}h)</p>
           </div>
-          <Button size="lg" className="w-full" onClick={startExam}>
+          <Button size="lg" className="w-full" onClick={startExam} disabled={examConfig.areas.length === 0}>
             <Play className="h-4 w-4 mr-2" /> Iniciar Simulado
           </Button>
         </div>

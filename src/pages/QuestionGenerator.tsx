@@ -6,10 +6,10 @@ import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { useCallback } from "react";
 
 const quickActions = [
-  { label: "📝 5 questões fáceis", prompt: "Gere 5 questões de nível fácil com base no meu material. Formato ENARE com casos clínicos curtos.", icon: "🟢" },
-  { label: "📝 10 questões médias", prompt: "Gere 10 questões de nível intermediário com base no meu material. Formato USP/UNIFESP com casos clínicos detalhados.", icon: "🟡" },
-  { label: "📝 5 questões difíceis", prompt: "Gere 5 questões de nível difícil/avançado com base no meu material. Casos clínicos complexos com pegadinhas de prova.", icon: "🔴" },
-  { label: "📝 Mix completo (15)", prompt: "Gere 15 questões variadas: 5 fáceis, 5 intermediárias e 5 difíceis. Use todo o meu material como base.", icon: "🎯" },
+  { label: "📝 Escolher tema e quantidade", prompt: "Quero gerar questões. Me pergunte sobre qual tema/especialidade e quantas questões eu quero antes de começar.", icon: "🎯" },
+  { label: "🫀 Cardiologia (10)", prompt: "Gere 10 questões de Cardiologia nível intermediário. Formato ENARE com casos clínicos.", icon: "🟢" },
+  { label: "🧒 Pediatria (10)", prompt: "Gere 10 questões de Pediatria nível intermediário. Formato ENARE com casos clínicos.", icon: "🟡" },
+  { label: "🔪 Cirurgia (10)", prompt: "Gere 10 questões de Cirurgia nível intermediário. Formato ENARE com casos clínicos.", icon: "🔴" },
 ];
 
 const QuestionGenerator = () => {
