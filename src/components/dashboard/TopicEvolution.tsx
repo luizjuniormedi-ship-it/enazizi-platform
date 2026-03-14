@@ -24,9 +24,19 @@ interface DomainEntry {
 
 const TopicEvolution = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [domains, setDomains] = useState<DomainEntry[]>([]);
   const [errorTopics, setErrorTopics] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+
+  const handleStudyTopic = (specialty: string) => {
+    navigate("/dashboard/chatgpt", {
+      state: {
+        initialMessage: `Quero estudar o tópico "${specialty}". Me dê uma aula completa seguindo o protocolo ENAZIZI.`,
+        fromErrorBank: true,
+      },
+    });
+  };
 
   useEffect(() => {
     if (!user) return;
