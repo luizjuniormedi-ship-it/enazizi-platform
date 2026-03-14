@@ -149,7 +149,7 @@ const Uploads = () => {
           <Upload className="h-6 w-6 text-primary" />
           Uploads
         </h1>
-        <p className="text-muted-foreground">Envie materiais de medicina para gerar flashcards automaticamente com IA. Apenas conteúdo médico é aceito.</p>
+        <p className="text-muted-foreground">Envie materiais de medicina para gerar flashcards e questões automaticamente com IA.</p>
       </div>
 
       <input
