@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Brain, LayoutDashboard, CalendarDays, FlipVertical,
   FileText, Upload, MessageSquare, BarChart3, LogOut, Shield, User,
-  HelpCircle, BookOpen, Heart, Bot, Database, Zap, TrendingUp, Stethoscope, Award, Sparkles, AlertTriangle
+  HelpCircle, BookOpen, Heart, Bot, Database, Zap, TrendingUp, Stethoscope, Award, Sparkles, AlertTriangle, Map
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -21,6 +21,7 @@ const navItems = [
   { to: "/dashboard/coach", icon: Heart, label: "💪 Coach Motivacional" },
   { to: "/dashboard/predictor", icon: TrendingUp, label: "📈 Previsão de Desempenho" },
   { to: "/dashboard/banco-erros", icon: AlertTriangle, label: "🚨 Banco de Erros" },
+  { to: "/dashboard/mapa-dominio", icon: Map, label: "🗺️ Mapa de Domínio" },
   { to: "/dashboard/uploads", icon: Upload, label: "📤 Uploads" },
   { to: "/dashboard/analytics", icon: BarChart3, label: "📊 Analytics" },
 ];

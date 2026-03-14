@@ -30,6 +30,7 @@ import ExamSimulator from "./pages/ExamSimulator";
 
 import ChatGPT from "./pages/ChatGPT";
 import ErrorBank from "./pages/ErrorBank";
+import MedicalDomainMap from "./pages/MedicalDomainMap";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
@@ -65,6 +66,7 @@ const App = () => (
               <Route path="diagnostico" element={<Diagnostic />} />
               <Route path="simulado-completo" element={<ExamSimulator />} />
               <Route path="banco-erros" element={<ErrorBank />} />
+              <Route path="mapa-dominio" element={<MedicalDomainMap />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="perfil" element={<Profile />} />
             </Route>
