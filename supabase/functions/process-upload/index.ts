@@ -64,7 +64,6 @@ serve(async (req) => {
     const truncatedText = text.slice(0, 15000); // Limit for AI context
 
     if (!truncatedText.trim()) {
-      // Update status
       await supabase.from("uploads").update({ status: "error", extracted_text: "Não foi possível extrair texto do arquivo." }).eq("id", uploadId);
       return new Response(JSON.stringify({ error: "Could not extract text from file" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -72,10 +71,48 @@ serve(async (req) => {
     // Save extracted text
     await supabase.from("uploads").update({ extracted_text: truncatedText, status: "processing" }).eq("id", uploadId);
 
-    // Generate flashcards with AI
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    // Step 1: Validate if content is medicine-related
+    const validationResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [
+          {
+            role: "system",
+            content: `Você é um classificador de conteúdo. Analise o texto e determine se é relacionado a medicina, saúde, ciências biomédicas, residência médica, ou áreas correlatas (anatomia, fisiologia, farmacologia, patologia, clínica médica, cirurgia, pediatria, ginecologia, medicina preventiva, saúde pública, bioquímica, etc).
+Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicação"}`
+          },
+          { role: "user", content: `Classifique este conteúdo:\n\n${truncatedText.slice(0, 3000)}` }
+        ],
+      }),
+    });
+
+    if (validationResponse.ok) {
+      const valData = await validationResponse.json();
+      const valContent = valData.choices?.[0]?.message?.content || "";
+      try {
+        const cleaned = valContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+        const validation = JSON.parse(cleaned);
+        if (!validation.is_medicine) {
+          await supabaseAdmin.from("uploads").delete().eq("id", uploadId);
+          await supabase.storage.from("user-uploads").remove([upload.storage_path]);
+          return new Response(JSON.stringify({ 
+            error: `Conteúdo rejeitado: apenas materiais de medicina são permitidos. ${validation.reason || ""}` 
+          }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+      } catch (parseErr) {
+        console.warn("Validation parse error, proceeding anyway:", parseErr);
+      }
+    }
+
+    // Step 2: Generate flashcards with AI
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
