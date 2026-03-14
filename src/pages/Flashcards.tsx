@@ -29,6 +29,8 @@ const Flashcards = () => {
   const [loading, setLoading] = useState(true);
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  const [userAnswer, setUserAnswer] = useState("");
+  const [answerSubmitted, setAnswerSubmitted] = useState(false);
   const [mode, setMode] = useState<"due" | "all">("due");
   const { user } = useAuth();
   const { toast } = useToast();
