@@ -34,7 +34,6 @@ async function processTextToQuestions(
   source: string,
   userId: string,
   supabaseAdmin: any,
-  LOVABLE_API_KEY: string,
 ): Promise<number> {
   const chunkSize = 10000;
   const chunks: string[] = [];
