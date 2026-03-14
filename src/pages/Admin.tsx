@@ -405,6 +405,28 @@ const Admin = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Toggle Admin Dialog */}
+      <Dialog open={adminDialog.open} onOpenChange={(open) => !open && setAdminDialog({ open: false, user: null, makeAdmin: false })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{adminDialog.makeAdmin ? "Promover a Administrador" : "Remover Administrador"}</DialogTitle>
+            <DialogDescription>
+              {adminDialog.makeAdmin
+                ? `Deseja tornar "${adminDialog.user?.display_name || adminDialog.user?.email}" um administrador? Ele terá acesso total ao painel de gestão.`
+                : `Deseja remover o acesso admin de "${adminDialog.user?.display_name || adminDialog.user?.email}"?`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAdminDialog({ open: false, user: null, makeAdmin: false })}>
+              Cancelar
+            </Button>
+            <Button onClick={handleToggleAdmin} disabled={!!actionLoading}>
+              {adminDialog.makeAdmin ? "Promover" : "Remover"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
