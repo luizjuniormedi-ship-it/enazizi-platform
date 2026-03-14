@@ -55,7 +55,7 @@ const DashboardLayout = () => (
       <header className="lg:hidden h-14 border-b border-border flex items-center px-4 gap-3">
         <MobileNav />
         <Brain className="h-5 w-5 text-primary" />
-        <span className="font-bold text-sm">MentorPF</span>
+        <span className="font-bold text-sm">ENAZIZI</span>
       </header>
       <main className="flex-1 p-6 lg:p-8 overflow-auto">
         <Outlet />
