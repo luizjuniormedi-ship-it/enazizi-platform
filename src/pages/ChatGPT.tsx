@@ -212,6 +212,32 @@ const ChatGPT = () => {
     }
   };
 
+  const saveEnaziziStep = async (step: number, tema?: string | null) => {
+    if (!user) return;
+    setEnaziziStep(step);
+    const dbData = {
+      user_id: user.id,
+      estado_atual: step,
+      tema_atual: tema !== undefined ? tema : currentTopic || null,
+      questoes_respondidas: performance.questoes_respondidas + sessionQuestions,
+      taxa_acerto: performance.taxa_acerto,
+      pontuacao_discursiva: performance.pontuacao_discursiva,
+      temas_fracos: performance.temas_fracos as any,
+      historico_estudo: [] as any,
+      ultima_interacao: new Date().toISOString(),
+    };
+    const { data: existing } = await supabase
+      .from("enazizi_progress")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (existing) {
+      await supabase.from("enazizi_progress").update(dbData).eq("user_id", user.id);
+    } else {
+      await supabase.from("enazizi_progress").insert(dbData);
+    }
+  };
+
   const handleFinishSession = async () => {
     const totalQuestions = performance.questoes_respondidas + sessionQuestions;
     const totalCorrect = Math.round((performance.taxa_acerto / 100) * performance.questoes_respondidas) + sessionCorrect;
