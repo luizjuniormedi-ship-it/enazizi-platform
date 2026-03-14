@@ -47,7 +47,7 @@ const MobileNav = () => {
       <SheetContent side="left" className="bg-sidebar border-sidebar-border w-72 p-0">
         <div className="p-6 border-b border-sidebar-border">
           <Link to="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-            <Brain className="h-5 w-5 text-primary" />
+            <img src={enazizi} alt="ENAZIZI" className="h-7 w-7 rounded-lg object-cover" />
             <span className="font-bold">ENAZIZI</span>
           </Link>
         </div>
