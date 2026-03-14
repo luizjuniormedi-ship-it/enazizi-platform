@@ -35,7 +35,7 @@ async function extractPdfText(fileData: Blob): Promise<string> {
 
 async function generateQuestionsFromText(
   text: string,
-  apiKey: string,
+  _apiKey: string,
   topic: string
 ): Promise<Array<{ statement: string; options: string[]; correct_index: number; explanation: string; topic: string }>> {
   const allQuestions: Array<{ statement: string; options: string[]; correct_index: number; explanation: string; topic: string }> = [];
