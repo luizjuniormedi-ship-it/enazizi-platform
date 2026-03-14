@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Flashcards from "./pages/Flashcards";
+import FlashcardGenerator from "./pages/FlashcardGenerator";
 import StudyPlan from "./pages/StudyPlan";
 import Simulados from "./pages/Simulados";
 import Uploads from "./pages/Uploads";
@@ -51,6 +52,7 @@ const App = () => (
               <Route index element={<Dashboard />} />
               <Route path="cronograma" element={<StudyPlan />} />
               <Route path="flashcards" element={<Flashcards />} />
+              <Route path="gerar-flashcards" element={<FlashcardGenerator />} />
               <Route path="simulados" element={<Simulados />} />
               <Route path="uploads" element={<Uploads />} />
               <Route path="agentes" element={<AgentsHub />} />
