@@ -157,7 +157,13 @@ const TopicEvolution = () => {
           </h3>
           <div className="flex flex-wrap gap-1.5">
             {notStudied.map((s) => (
-              <Badge key={s} variant="outline" className="text-xs font-normal">
+              <Badge
+                key={s}
+                variant="outline"
+                className="text-xs font-normal cursor-pointer hover:bg-primary/10 transition-colors gap-1"
+                onClick={() => handleStudyTopic(s)}
+              >
+                <GraduationCap className="h-3 w-3" />
                 {s}
               </Badge>
             ))}
