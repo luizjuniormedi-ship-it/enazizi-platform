@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Save, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap } from "lucide-react";
+import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap, LogOut, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,17 +10,16 @@ import ReactMarkdown from "react-markdown";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-interface Conversation {
-  id: string;
-  title: string;
-  created_at: string;
-}
+interface Conversation { id: string; title: string; created_at: string; }
+interface Upload { id: string; filename: string; category: string | null; extracted_text: string | null; }
 
-interface Upload {
-  id: string;
-  filename: string;
-  category: string | null;
-  extracted_text: string | null;
+interface StudyPerformance {
+  tema_atual: string | null;
+  questoes_respondidas: number;
+  taxa_acerto: number;
+  pontuacao_discursiva: number | null;
+  temas_fracos: string[];
+  historico_estudo: Array<{ tema: string; data: string; questoes: number; acerto: number; discursiva: number | null }>;
 }
 
 const FUNCTION_NAME = "chatgpt-agent";
@@ -39,11 +38,43 @@ const ChatGPT = () => {
   const [availableUploads, setAvailableUploads] = useState<Upload[]>([]);
   const [selectedUploadIds, setSelectedUploadIds] = useState<Set<string>>(new Set());
   const [showUploads, setShowUploads] = useState(false);
-  const [stats, setStats] = useState({ questionsAnswered: 0, correctAnswers: 0, sessionsCompleted: 0 });
+  const [performance, setPerformance] = useState<StudyPerformance>({
+    tema_atual: null,
+    questoes_respondidas: 0,
+    taxa_acerto: 0,
+    pontuacao_discursiva: null,
+    temas_fracos: [],
+    historico_estudo: [],
+  });
+  const [sessionQuestions, setSessionQuestions] = useState(0);
+  const [sessionCorrect, setSessionCorrect] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${FUNCTION_NAME}`;
+
+  // Load performance from DB
+  useEffect(() => {
+    if (!user) return;
+    const loadPerformance = async () => {
+      const { data } = await supabase
+        .from("study_performance")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data) {
+        setPerformance({
+          tema_atual: data.tema_atual,
+          questoes_respondidas: data.questoes_respondidas,
+          taxa_acerto: Number(data.taxa_acerto),
+          pontuacao_discursiva: data.pontuacao_discursiva != null ? Number(data.pontuacao_discursiva) : null,
+          temas_fracos: (data.temas_fracos as string[]) || [],
+          historico_estudo: (data.historico_estudo as StudyPerformance["historico_estudo"]) || [],
+        });
+      }
+    };
+    loadPerformance();
+  }, [user]);
 
   // Load uploads
   useEffect(() => {
@@ -62,33 +93,6 @@ const ChatGPT = () => {
       }
     };
     load();
-  }, [user]);
-
-  // Load stats
-  useEffect(() => {
-    if (!user) return;
-    const loadStats = async () => {
-      const { count: attempts } = await supabase
-        .from("practice_attempts")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id);
-      const { count: correct } = await supabase
-        .from("practice_attempts")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .eq("correct", true);
-      const { count: sessions } = await supabase
-        .from("chat_conversations")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .eq("agent_type", FUNCTION_NAME);
-      setStats({
-        questionsAnswered: attempts || 0,
-        correctAnswers: correct || 0,
-        sessionsCompleted: sessions || 0,
-      });
-    };
-    loadStats();
   }, [user]);
 
   const buildUserContext = useCallback(() => {
@@ -141,6 +145,65 @@ const ChatGPT = () => {
     setShowHistory(false);
   };
 
+  const savePerformance = async (updates: Partial<StudyPerformance>) => {
+    if (!user) return;
+    const newPerf = { ...performance, ...updates };
+    setPerformance(newPerf);
+
+    const dbData = {
+      user_id: user.id,
+      tema_atual: newPerf.tema_atual,
+      questoes_respondidas: newPerf.questoes_respondidas,
+      taxa_acerto: newPerf.taxa_acerto,
+      pontuacao_discursiva: newPerf.pontuacao_discursiva,
+      temas_fracos: newPerf.temas_fracos as any,
+      historico_estudo: newPerf.historico_estudo as any,
+    };
+
+    const { data: existing } = await supabase
+      .from("study_performance")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase.from("study_performance").update(dbData).eq("user_id", user.id);
+    } else {
+      await supabase.from("study_performance").insert(dbData);
+    }
+  };
+
+  const handleFinishSession = async () => {
+    const totalQuestions = performance.questoes_respondidas + sessionQuestions;
+    const totalCorrect = Math.round((performance.taxa_acerto / 100) * performance.questoes_respondidas) + sessionCorrect;
+    const newAccuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+
+    const sessionEntry = {
+      tema: currentTopic,
+      data: new Date().toISOString(),
+      questoes: sessionQuestions,
+      acerto: sessionQuestions > 0 ? Math.round((sessionCorrect / sessionQuestions) * 100) : 0,
+      discursiva: null as number | null,
+    };
+
+    const newHistory = [...performance.historico_estudo, sessionEntry].slice(-50);
+
+    await savePerformance({
+      tema_atual: null,
+      questoes_respondidas: totalQuestions,
+      taxa_acerto: newAccuracy,
+      historico_estudo: newHistory,
+    });
+
+    setSessionQuestions(0);
+    setSessionCorrect(0);
+    setStudyStarted(false);
+    setCurrentTopic("");
+    setMessages([]);
+    setActiveConversationId(null);
+    toast({ title: "Sessão finalizada!", description: `Dados salvos. ${sessionQuestions} questões nesta sessão.` });
+  };
+
   const startNewSession = () => {
     setActiveConversationId(null);
     setMessages([]);
@@ -148,6 +211,8 @@ const ChatGPT = () => {
     setCurrentTopic("");
     setTopic("");
     setShowHistory(false);
+    setSessionQuestions(0);
+    setSessionCorrect(0);
   };
 
   const deleteConversation = async (convId: string, e: React.MouseEvent) => {
@@ -255,7 +320,6 @@ const ChatGPT = () => {
         }
       }
 
-      // Final flush
       if (textBuffer.trim()) {
         for (let raw of textBuffer.split("\n")) {
           if (!raw) continue;
@@ -293,6 +357,9 @@ const ChatGPT = () => {
     if (!topic.trim()) return;
     setStudyStarted(true);
     setCurrentTopic(topic);
+    setSessionQuestions(0);
+    setSessionCorrect(0);
+    savePerformance({ tema_atual: topic });
     sendMessage(`Quero estudar o tema: ${topic}. Comece com a aula completa seguindo o Protocolo ENAZIZI.`);
   };
 
@@ -306,9 +373,7 @@ const ChatGPT = () => {
     if (prompts[phase]) sendMessage(prompts[phase]);
   };
 
-  const accuracyRate = stats.questionsAnswered > 0
-    ? Math.round((stats.correctAnswers / stats.questionsAnswered) * 100)
-    : 0;
+  const recentHistory = performance.historico_estudo.slice(-5).reverse();
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] animate-fade-in">
@@ -322,8 +387,13 @@ const ChatGPT = () => {
           <p className="text-muted-foreground">Agente principal — Protocolo ENAZIZI com GPT-4o</p>
         </div>
         <div className="flex gap-2">
+          {studyStarted && (
+            <Button variant="destructive" size="sm" onClick={handleFinishSession} className="gap-1.5">
+              <LogOut className="h-4 w-4" /> Finalizar Sessão
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={startNewSession} className="gap-1.5">
-            <Plus className="h-4 w-4" /> Nova Sessão
+            <Plus className="h-4 w-4" /> Nova
           </Button>
           <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)} className="gap-1.5">
             <History className="h-4 w-4" /> Histórico
@@ -332,14 +402,14 @@ const ChatGPT = () => {
       </div>
 
       {/* Performance Panel */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <div className="glass-card p-3 flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
             <BarChart3 className="h-5 w-5 text-primary" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Questões</p>
-            <p className="text-lg font-bold">{stats.questionsAnswered}</p>
+            <p className="text-lg font-bold">{performance.questoes_respondidas}</p>
           </div>
         </div>
         <div className="glass-card p-3 flex items-center gap-3">
@@ -348,21 +418,81 @@ const ChatGPT = () => {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Taxa de Acerto</p>
-            <p className="text-lg font-bold">{accuracyRate}%</p>
+            <p className="text-lg font-bold">{performance.taxa_acerto}%</p>
           </div>
         </div>
         <div className="glass-card p-3 flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
-            <GraduationCap className="h-5 w-5 text-violet-500" />
+            <Stethoscope className="h-5 w-5 text-violet-500" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Nota Discursiva</p>
+            <p className="text-lg font-bold">{performance.pontuacao_discursiva != null ? `${performance.pontuacao_discursiva}/10` : "—"}</p>
+          </div>
+        </div>
+        <div className="glass-card p-3 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+            <GraduationCap className="h-5 w-5 text-amber-500" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Sessões</p>
-            <p className="text-lg font-bold">{stats.sessionsCompleted}</p>
+            <p className="text-lg font-bold">{performance.historico_estudo.length}</p>
           </div>
         </div>
       </div>
 
-      {/* Topic Input (shown when no study started) */}
+      {/* Weak topics & recent history (only on start screen) */}
+      {!studyStarted && (performance.temas_fracos.length > 0 || recentHistory.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          {performance.temas_fracos.length > 0 && (
+            <div className="glass-card p-4">
+              <h3 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                Temas Fracos
+              </h3>
+              <div className="flex flex-wrap gap-1.5">
+                {performance.temas_fracos.map((t, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setTopic(t)}
+                    className="px-2.5 py-1 rounded-full text-xs bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-colors"
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {recentHistory.length > 0 && (
+            <div className="glass-card p-4">
+              <h3 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
+                <History className="h-4 w-4 text-muted-foreground" />
+                Últimas Sessões
+              </h3>
+              <div className="space-y-1.5">
+                {recentHistory.map((h, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <button
+                      onClick={() => setTopic(h.tema)}
+                      className="text-foreground hover:text-primary transition-colors truncate mr-2"
+                    >
+                      {h.tema}
+                    </button>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-muted-foreground">{new Date(h.data).toLocaleDateString("pt-BR")}</span>
+                      <span className={`font-medium ${h.acerto >= 70 ? "text-emerald-500" : h.acerto >= 50 ? "text-amber-500" : "text-destructive"}`}>
+                        {h.acerto}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Topic Input */}
       {!studyStarted && (
         <div className="glass-card p-6 mb-4 text-center space-y-4">
           <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
@@ -388,7 +518,6 @@ const ChatGPT = () => {
             </Button>
           </div>
 
-          {/* Upload context indicator */}
           <button
             onClick={() => availableUploads.length > 0 && setShowUploads(!showUploads)}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors mx-auto ${
@@ -449,61 +578,35 @@ const ChatGPT = () => {
         </div>
       )}
 
-      {/* Chat area (shown when study started) */}
+      {/* Chat area */}
       {studyStarted && (
         <>
-          {/* Current topic badge */}
           <div className="flex items-center gap-2 mb-2">
             <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
               📚 Estudando: {currentTopic}
             </span>
+            {sessionQuestions > 0 && (
+              <span className="px-3 py-1 rounded-full bg-secondary text-muted-foreground text-xs">
+                {sessionQuestions} questões • {sessionQuestions > 0 ? Math.round((sessionCorrect / sessionQuestions) * 100) : 0}% acerto
+              </span>
+            )}
           </div>
 
-          {/* Phase action buttons */}
           <div className="flex flex-wrap gap-2 mb-3">
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs border-amber-500/30 text-amber-500 hover:bg-amber-500/10"
-              onClick={() => handlePhaseAction("active-recall")}
-              disabled={isLoading}
-            >
-              <BookOpen className="h-3.5 w-3.5" />
-              Active Recall
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs border-amber-500/30 text-amber-500 hover:bg-amber-500/10" onClick={() => handlePhaseAction("active-recall")} disabled={isLoading}>
+              <BookOpen className="h-3.5 w-3.5" /> Active Recall
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs border-blue-500/30 text-blue-500 hover:bg-blue-500/10"
-              onClick={() => handlePhaseAction("questions")}
-              disabled={isLoading}
-            >
-              <HelpCircle className="h-3.5 w-3.5" />
-              Questões A-E
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs border-blue-500/30 text-blue-500 hover:bg-blue-500/10" onClick={() => handlePhaseAction("questions")} disabled={isLoading}>
+              <HelpCircle className="h-3.5 w-3.5" /> Questões A-E
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs border-violet-500/30 text-violet-500 hover:bg-violet-500/10"
-              onClick={() => handlePhaseAction("discursive")}
-              disabled={isLoading}
-            >
-              <Stethoscope className="h-3.5 w-3.5" />
-              Caso Discursivo
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs border-violet-500/30 text-violet-500 hover:bg-violet-500/10" onClick={() => handlePhaseAction("discursive")} disabled={isLoading}>
+              <Stethoscope className="h-3.5 w-3.5" /> Caso Discursivo
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10"
-              onClick={() => handlePhaseAction("review")}
-              disabled={isLoading}
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              Revisar Conteúdo
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10" onClick={() => handlePhaseAction("review")} disabled={isLoading}>
+              <RefreshCw className="h-3.5 w-3.5" /> Revisar Conteúdo
             </Button>
           </div>
 
-          {/* Messages */}
           <div ref={scrollRef} className="flex-1 glass-card p-4 overflow-y-auto space-y-4 mb-4">
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
@@ -542,7 +645,6 @@ const ChatGPT = () => {
             )}
           </div>
 
-          {/* Chat input */}
           <div className="flex gap-2">
             <Input
               placeholder="Digite sua resposta ou dúvida..."
