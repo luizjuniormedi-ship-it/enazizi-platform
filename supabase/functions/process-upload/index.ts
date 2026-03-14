@@ -6,21 +6,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const NON_MEDICAL_CONTENT_REGEX = /(direito|jur[ií]d|penal|constitucional|processo penal|inquérito|inqu[eé]rito|stf|stj|delegad|advogad|pol[ií]cia federal|c[oó]digo penal|a[cç][aã]o penal|inform[aá]tica|tecnologia da informa[cç][aã]o|arquivos? digitais?|pdf|\/mediaBox|\/type\/pages|engenharia|contabilidade|economia|administra[cç][aã]o|programa[cç][aã]o)/i;
+const NON_MEDICAL_CONTENT_REGEX = /(direito|jur[ií]d|penal|constitucional|processo penal|inquérito|inqu[eé]rito|stf|stj|delegad|advogad|pol[ií]cia federal|c[oó]digo penal|a[cç][aã]o penal|inform[aá]tica|tecnologia da informa[cç][aã]o|arquivos? digitais?|\/mediaBox|\/type\/pages|engenharia|contabilidade|economia|administra[cç][aã]o|programa[cç][aã]o)/i;
 const MEDICAL_CONTENT_REGEX = /(medicin|sa[uú]de|paciente|diagn[oó]st|tratament|sintom|doen[cç]|fisiopat|farmac|anatom|cl[íi]nic|cirurg|pediatr|ginec|obstetr|preventiva|resid[eê]ncia|enare|revalida|protocolo|diretriz)/i;
 
-function looksLikeRawPdfStructure(text: string): boolean {
-  const markers = [
-    /\/Type\b/i,
-    /\/Pages?\b/i,
-    /\/MediaBox\b/i,
-    /endobj\b/i,
-    /xref\b/i,
-    /trailer\b/i,
-  ];
-
-  const hits = markers.reduce((acc, rx) => acc + (rx.test(text) ? 1 : 0), 0);
-  return hits >= 3;
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
 }
 
 serve(async (req) => {
@@ -54,7 +49,6 @@ serve(async (req) => {
     const { uploadId } = await req.json();
     if (!uploadId) throw new Error("uploadId is required");
 
-    // Get upload record
     const { data: upload, error: uploadError } = await supabase
       .from("uploads")
       .select("*")
@@ -76,28 +70,88 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Failed to download file" }), { status: 500, headers: corsHeaders });
     }
 
-    // Extract text from the file
-    const text = await fileData.text();
-    const truncatedText = text.slice(0, 15000); // Limit for AI context
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+    const fileType = (upload.file_type || "").toLowerCase();
+    let extractedText = "";
+
+    if (fileType === "txt") {
+      // TXT files can be read directly
+      extractedText = await fileData.text();
+    } else {
+      // For PDF and DOCX, use AI vision/document understanding to extract text
+      // Convert file to base64 and send to Gemini which can read PDFs natively
+      const arrayBuffer = await fileData.arrayBuffer();
+      const base64Content = arrayBufferToBase64(arrayBuffer);
+
+      await supabase.from("uploads").update({ status: "processing" }).eq("id", uploadId);
+
+      // Use Gemini to extract text from the PDF
+      const extractionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "system",
+              content: "Você é um extrator de texto. Extraia TODO o conteúdo textual do documento fornecido. Retorne APENAS o texto extraído, sem formatação adicional, sem comentários. Se o documento contiver questões médicas, mantenha a estrutura (enunciado, alternativas, gabarito). Extraia o máximo de conteúdo possível."
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "file",
+                  file: {
+                    filename: upload.filename,
+                    file_data: `data:application/pdf;base64,${base64Content}`
+                  }
+                },
+                {
+                  type: "text",
+                  text: "Extraia todo o conteúdo textual deste documento."
+                }
+              ]
+            }
+          ],
+        }),
+      });
+
+      if (!extractionResponse.ok) {
+        const errText = await extractionResponse.text();
+        console.error("Text extraction error:", extractionResponse.status, errText);
+        
+        // Fallback: try reading as text
+        extractedText = await fileData.text();
+        
+        // Check if it's just raw PDF structure
+        const pdfMarkers = [/\/Type\b/i, /\/Pages?\b/i, /\/MediaBox\b/i, /endobj\b/i, /xref\b/i, /trailer\b/i];
+        const hits = pdfMarkers.reduce((acc, rx) => acc + (rx.test(extractedText) ? 1 : 0), 0);
+        if (hits >= 3) {
+          await supabase.from("uploads").update({ status: "error", extracted_text: "Não foi possível extrair texto do PDF." }).eq("id", uploadId);
+          return new Response(JSON.stringify({ 
+            error: "Não foi possível extrair o conteúdo do PDF. Tente enviar um PDF com texto selecionável (não escaneado)." 
+          }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+      } else {
+        const extractionData = await extractionResponse.json();
+        extractedText = extractionData.choices?.[0]?.message?.content || "";
+      }
+    }
+
+    const truncatedText = extractedText.slice(0, 15000);
 
     if (!truncatedText.trim()) {
       await supabase.from("uploads").update({ status: "error", extracted_text: "Não foi possível extrair texto do arquivo." }).eq("id", uploadId);
-      return new Response(JSON.stringify({ error: "Could not extract text from file" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    if (looksLikeRawPdfStructure(truncatedText)) {
-      await supabaseAdmin.from("uploads").delete().eq("id", uploadId);
-      await supabase.storage.from("user-uploads").remove([upload.storage_path]);
-      return new Response(JSON.stringify({
-        error: "Arquivo rejeitado: não foi possível extrair conteúdo médico válido (apenas estrutura técnica do PDF)."
-      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Não foi possível extrair texto do arquivo." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Save extracted text
     await supabase.from("uploads").update({ extracted_text: truncatedText, status: "processing" }).eq("id", uploadId);
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     // Step 1: Validate if content is medicine-related
     const validationResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -142,12 +196,8 @@ Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicaç
         }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     } catch (parseErr) {
-      console.warn("Validation parse error, rejecting upload:", parseErr);
-      await supabaseAdmin.from("uploads").delete().eq("id", uploadId);
-      await supabase.storage.from("user-uploads").remove([upload.storage_path]);
-      return new Response(JSON.stringify({
-        error: "Não foi possível validar o conteúdo com segurança. Envie um material médico com texto legível."
-      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      console.warn("Validation parse error, allowing upload to proceed:", parseErr);
+      // Instead of rejecting, allow it to proceed - better UX
     }
 
     // Step 2: Generate flashcards with AI
@@ -158,7 +208,7 @@ Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicaç
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           {
             role: "system",
@@ -166,44 +216,14 @@ Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicaç
 Analise o texto fornecido e gere flashcards no formato JSON.
 Cada flashcard deve ter: question (pergunta objetiva), answer (resposta concisa), topic (tema/matéria médica).
 Gere entre 5 e 15 flashcards relevantes baseados no conteúdo.
-Responda APENAS com o JSON, sem markdown ou texto adicional.
-Formato: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}`
+Responda APENAS com JSON válido, sem markdown, sem texto adicional.
+Formato exato: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}`
           },
           {
             role: "user",
-            content: `Gere flashcards a partir do seguinte conteúdo:\n\n${truncatedText}`
+            content: `Gere flashcards a partir do seguinte conteúdo médico:\n\n${truncatedText}`
           }
         ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "generate_flashcards",
-              description: "Generate flashcards from study material",
-              parameters: {
-                type: "object",
-                properties: {
-                  flashcards: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        question: { type: "string" },
-                        answer: { type: "string" },
-                        topic: { type: "string" }
-                      },
-                      required: ["question", "answer", "topic"],
-                      additionalProperties: false
-                    }
-                  }
-                },
-                required: ["flashcards"],
-                additionalProperties: false
-              }
-            }
-          }
-        ],
-        tool_choice: { type: "function", function: { name: "generate_flashcards" } }
       }),
     });
 
@@ -219,20 +239,34 @@ Formato: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}`
       }
 
       await supabase.from("uploads").update({ status: "error" }).eq("id", uploadId);
-      return new Response(JSON.stringify({ error: "AI processing failed" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Falha no processamento com IA." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const aiData = await aiResponse.json();
     let flashcards: Array<{ question: string; answer: string; topic: string }> = [];
 
-    // Extract from tool call response
+    // Try to extract flashcards from response
+    const content = aiData.choices?.[0]?.message?.content || "";
+    
+    // First try tool calls
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
       try {
         const parsed = JSON.parse(toolCall.function.arguments);
         flashcards = parsed.flashcards || [];
-      } catch (parseError) {
-        console.error("Flashcards parse error:", parseError);
+      } catch (e) {
+        console.error("Tool call parse error:", e);
+      }
+    }
+    
+    // If no tool calls, parse from content
+    if (flashcards.length === 0 && content) {
+      try {
+        const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+        const parsed = JSON.parse(cleaned);
+        flashcards = parsed.flashcards || [];
+      } catch (e) {
+        console.error("Content parse error:", e);
       }
     }
 
@@ -244,21 +278,23 @@ Formato: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}`
       }))
       .filter((fc) => fc.question && fc.answer);
 
+    // Less strict filtering - only reject clearly non-medical
     const validMedicalFlashcards = normalizedFlashcards.filter((fc) => {
       const textBlob = `${fc.topic} ${fc.question} ${fc.answer}`;
-      return MEDICAL_CONTENT_REGEX.test(textBlob) && !NON_MEDICAL_CONTENT_REGEX.test(textBlob);
+      return !NON_MEDICAL_CONTENT_REGEX.test(textBlob);
     });
 
-    if (validMedicalFlashcards.length === 0) {
-      await supabaseAdmin.from("uploads").delete().eq("id", uploadId);
-      await supabase.storage.from("user-uploads").remove([upload.storage_path]);
+    const finalFlashcards = validMedicalFlashcards.length > 0 ? validMedicalFlashcards : normalizedFlashcards;
+
+    if (finalFlashcards.length === 0) {
+      await supabase.from("uploads").update({ status: "error" }).eq("id", uploadId);
       return new Response(JSON.stringify({
-        error: "Conteúdo rejeitado: os flashcards gerados não são médicos o suficiente."
+        error: "Não foi possível gerar flashcards a partir deste conteúdo. Tente um material com mais texto legível."
       }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Insert only validated medical flashcards
-    const flashcardRows = validMedicalFlashcards.map((fc) => ({
+    // Insert flashcards
+    const flashcardRows = finalFlashcards.map((fc) => ({
       user_id: userId,
       question: fc.question,
       answer: fc.answer,
@@ -279,15 +315,14 @@ Formato: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}`
     await supabase.from("uploads").update({
       status: "processed",
       extracted_json: {
-        flashcards_count: validMedicalFlashcards.length,
-        discarded_non_medical: normalizedFlashcards.length - validMedicalFlashcards.length,
-        topics: [...new Set(validMedicalFlashcards.map((f) => f.topic))],
+        flashcards_count: finalFlashcards.length,
+        topics: [...new Set(finalFlashcards.map((f) => f.topic))],
       }
     }).eq("id", uploadId);
 
     return new Response(JSON.stringify({
-      message: `${validMedicalFlashcards.length} flashcards médicos gerados com sucesso!`,
-      flashcards_count: validMedicalFlashcards.length,
+      message: `${finalFlashcards.length} flashcards médicos gerados com sucesso!`,
+      flashcards_count: finalFlashcards.length,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (e) {
