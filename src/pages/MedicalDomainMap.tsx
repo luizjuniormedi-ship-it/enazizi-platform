@@ -472,7 +472,5 @@ const MedicalDomainMap = () => {
     </div>
   );
 };
-// Re-export from shared utility
-import { mapTopicToSpecialty } from "@/lib/mapTopicToSpecialty";
 
 export default MedicalDomainMap;
