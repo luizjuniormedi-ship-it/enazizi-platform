@@ -299,6 +299,19 @@ const ChatGPT = () => {
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading || !user) return;
 
+    // Auto-detect topic change from chat input
+    const topicChangeMatch = text.match(/(?:quero estudar|vamos estudar|mudar (?:tema|assunto) (?:para)?|agora (?:quero|vamos) (?:estudar)?)\s+(.+)/i);
+    if (topicChangeMatch && studyStarted) {
+      const detectedTopic = topicChangeMatch[1].replace(/[.!?]+$/, "").trim();
+      if (detectedTopic && detectedTopic.toLowerCase() !== currentTopic.toLowerCase()) {
+        setCurrentTopic(detectedTopic);
+        setEnaziziStep(3);
+        setChangingTopic(false);
+        saveEnaziziStep(3, detectedTopic);
+        savePerformance({ tema_atual: detectedTopic });
+      }
+    }
+
     const userMsg: Msg = { role: "user", content: text };
     const allMessages = [...messages, userMsg];
     setMessages(allMessages);
