@@ -184,6 +184,31 @@ const Admin = () => {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!passwordDialog.user || !passwordDialog.password) return;
+    if (passwordDialog.password.length < 6) {
+      toast({ title: "Erro", description: "A senha deve ter pelo menos 6 caracteres.", variant: "destructive" });
+      return;
+    }
+    setActionLoading(passwordDialog.user.user_id);
+    try {
+      await callAdmin({
+        action: "reset_password",
+        target_user_id: passwordDialog.user.user_id,
+        new_password: passwordDialog.password,
+      });
+      toast({
+        title: "Senha redefinida",
+        description: `A senha de ${passwordDialog.user.display_name || passwordDialog.user.email} foi redefinida com sucesso.`,
+      });
+      setPasswordDialog({ open: false, user: null, password: "" });
+    } catch (e) {
+      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const filteredUsers = users.filter((u) => {
     const q = search.toLowerCase();
     return (
