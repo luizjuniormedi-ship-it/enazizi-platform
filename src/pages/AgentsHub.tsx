@@ -1,7 +1,16 @@
 import { Link } from "react-router-dom";
-import { MessageSquare, HelpCircle, BookOpen, Heart, ArrowRight, Zap, TrendingUp, GraduationCap, Brain, Stethoscope } from "lucide-react";
+import { MessageSquare, HelpCircle, BookOpen, Heart, ArrowRight, Zap, TrendingUp, GraduationCap, Brain, Stethoscope, Sparkles } from "lucide-react";
 
 const agents = [
+  {
+    to: "/dashboard/chatgpt",
+    icon: Sparkles,
+    title: "🤖 ChatGPT Médico — Consultor Principal",
+    description: "Agente principal com GPT-4o. Consulte aqui primeiro! Tira dúvidas, explica temas e direciona para o agente ideal.",
+    color: "text-green-400",
+    bgColor: "bg-green-500/10",
+    highlight: true,
+  },
   {
     to: "/dashboard/estudar",
     icon: GraduationCap,
@@ -9,7 +18,6 @@ const agents = [
     description: "Protocolo completo: Aula → Active Recall → Questões → Discussão → Caso Discursivo → Pontuação. Nunca começa com questões.",
     color: "text-primary",
     bgColor: "bg-primary/10",
-    highlight: true,
   },
   {
     to: "/dashboard/mentor",

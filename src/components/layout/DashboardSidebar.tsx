@@ -2,12 +2,13 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Brain, LayoutDashboard, CalendarDays, FlipVertical,
   FileText, Upload, MessageSquare, BarChart3, LogOut, Shield, User,
-  HelpCircle, BookOpen, Heart, Bot, Database, Zap, TrendingUp, Stethoscope, Award
+  HelpCircle, BookOpen, Heart, Bot, Database, Zap, TrendingUp, Stethoscope, Award, Sparkles
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/dashboard/chatgpt", icon: Sparkles, label: "🤖 ChatGPT Médico" },
   { to: "/dashboard/estudar", icon: Brain, label: "📚 Estudar (ENAZIZI)" },
   { to: "/dashboard/plano-dia", icon: Zap, label: "Plano do Dia" },
   { to: "/dashboard/diagnostico", icon: Stethoscope, label: "Diagnóstico" },
