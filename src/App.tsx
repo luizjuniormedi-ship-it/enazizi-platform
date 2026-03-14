@@ -51,12 +51,12 @@ const App = () => (
               <Route path="simulados" element={<Simulados />} />
               <Route path="uploads" element={<Uploads />} />
               <Route path="agentes" element={<AgentsHub />} />
-              <Route path="mentor" element={<AIMentor />} />
+              {/* mentor removed - merged into ChatGPT */}
               <Route path="questoes" element={<QuestionGenerator />} />
               <Route path="banco-questoes" element={<QuestionsBank />} />
               <Route path="resumos" element={<ContentSummarizer />} />
               <Route path="coach" element={<MotivationalCoach />} />
-              <Route path="estudar" element={<StudySession />} />
+              {/* estudar removed - merged into ChatGPT */}
               <Route path="chatgpt" element={<ChatGPT />} />
               <Route path="plano-dia" element={<DailyPlan />} />
               <Route path="predictor" element={<PerformancePredictor />} />
