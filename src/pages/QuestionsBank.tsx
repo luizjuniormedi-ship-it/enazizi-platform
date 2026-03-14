@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { logErrorToBank } from "@/lib/errorBankLogger";
 import { Database, Play, Trash2, ChevronDown, ChevronUp, Search, BarChart3, Target, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -177,6 +178,18 @@ const QuestionsBank = () => {
       question_id: practiceQuestion.id,
       correct: isCorrect,
     });
+
+    // Log wrong answer to error_bank
+    if (!isCorrect) {
+      await logErrorToBank({
+        userId: user.id,
+        tema: practiceQuestion.topic || "Geral",
+        tipoQuestao: "objetiva",
+        conteudo: practiceQuestion.statement,
+        motivoErro: `Marcou "${practiceQuestion.options[selected]}" — Correta: "${practiceQuestion.options[practiceQuestion.correct_index]}"`,
+        categoriaErro: "conceito",
+      });
+    }
   };
 
   const nextQuestion = () => {

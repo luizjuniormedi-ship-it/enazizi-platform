@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { logErrorToBank } from "@/lib/errorBankLogger";
 import { Stethoscope, Clock, CheckCircle2, Loader2, ArrowRight, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -94,13 +95,27 @@ const Diagnostic = () => {
 
   const handleAnswer = () => {
     if (selected === null) return;
+    const q = questions[current];
+    const isCorrect = selected === q.correct_index;
     setAnswered(true);
     setAnswers(prev => [...prev, {
       questionIdx: current,
       selected,
-      correct: selected === questions[current].correct_index,
-      topic: questions[current].topic,
+      correct: isCorrect,
+      topic: q.topic,
     }]);
+
+    // Log wrong answer to error_bank
+    if (!isCorrect && user) {
+      logErrorToBank({
+        userId: user.id,
+        tema: q.topic || "Geral",
+        tipoQuestao: "diagnostico",
+        conteudo: q.statement,
+        motivoErro: `Marcou "${q.options[selected]}" — Correta: "${q.options[q.correct_index]}"`,
+        categoriaErro: "conceito",
+      });
+    }
   };
 
   const nextQuestion = () => {
