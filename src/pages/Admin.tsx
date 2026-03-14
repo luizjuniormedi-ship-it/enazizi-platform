@@ -142,6 +142,28 @@ const Admin = () => {
     }
   };
 
+  const handleToggleAdmin = async () => {
+    if (!adminDialog.user) return;
+    setActionLoading(adminDialog.user.user_id);
+    try {
+      await callAdmin({
+        action: "toggle_admin",
+        target_user_id: adminDialog.user.user_id,
+        make_admin: adminDialog.makeAdmin,
+      });
+      toast({
+        title: adminDialog.makeAdmin ? "Admin promovido" : "Admin removido",
+        description: `${adminDialog.user.display_name || adminDialog.user.email} ${adminDialog.makeAdmin ? "agora é administrador" : "não é mais administrador"}.`,
+      });
+      setAdminDialog({ open: false, user: null, makeAdmin: false });
+      loadData();
+    } catch (e) {
+      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const filteredUsers = users.filter((u) => {
     const q = search.toLowerCase();
     return (
