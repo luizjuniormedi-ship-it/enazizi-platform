@@ -429,8 +429,18 @@ const ChatGPT = () => {
     }
   };
 
+  const NON_MEDICAL_KEYWORDS = /\b(direito|jurídic|advocacia|contabil|engenharia|arquitetura|economia|finanças|marketing|administração de empresas|programação|software|TI\b|informática|matemática pura|filosofia|sociologia|letras|pedagogia)\b/i;
+
   const handleStartStudy = () => {
     if (!topic.trim()) return;
+    if (NON_MEDICAL_KEYWORDS.test(topic)) {
+      toast({
+        title: "⛔ Tema não médico",
+        description: "Esta plataforma é exclusiva para Residência Médica. Por favor, escolha um tema de medicina.",
+        variant: "destructive",
+      });
+      return;
+    }
     setStudyStarted(true);
     setCurrentTopic(topic);
     setSessionQuestions(0);
