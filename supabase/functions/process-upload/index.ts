@@ -6,6 +6,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const NON_MEDICAL_CONTENT_REGEX = /(direito|jur[ií]d|penal|constitucional|processo penal|inquérito|inqu[eé]rito|stf|stj|delegad|advogad|pol[ií]cia federal|c[oó]digo penal|a[cç][aã]o penal|inform[aá]tica|tecnologia da informa[cç][aã]o|arquivos? digitais?|pdf|\/mediaBox|\/type\/pages|engenharia|contabilidade|economia|administra[cç][aã]o|programa[cç][aã]o)/i;
+const MEDICAL_CONTENT_REGEX = /(medicin|sa[uú]de|paciente|diagn[oó]st|tratament|sintom|doen[cç]|fisiopat|farmac|anatom|cl[íi]nic|cirurg|pediatr|ginec|obstetr|preventiva|resid[eê]ncia|enare|revalida|protocolo|diretriz)/i;
+
+function looksLikeRawPdfStructure(text: string): boolean {
+  const markers = [
+    /\/Type\b/i,
+    /\/Pages?\b/i,
+    /\/MediaBox\b/i,
+    /endobj\b/i,
+    /xref\b/i,
+    /trailer\b/i,
+  ];
+
+  const hits = markers.reduce((acc, rx) => acc + (rx.test(text) ? 1 : 0), 0);
+  return hits >= 3;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -68,6 +85,14 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Could not extract text from file" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    if (looksLikeRawPdfStructure(truncatedText)) {
+      await supabaseAdmin.from("uploads").delete().eq("id", uploadId);
+      await supabase.storage.from("user-uploads").remove([upload.storage_path]);
+      return new Response(JSON.stringify({
+        error: "Arquivo rejeitado: não foi possível extrair conteúdo médico válido (apenas estrutura técnica do PDF)."
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // Save extracted text
     await supabase.from("uploads").update({ extracted_text: truncatedText, status: "processing" }).eq("id", uploadId);
 
@@ -94,22 +119,35 @@ Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicaç
       }),
     });
 
-    if (validationResponse.ok) {
-      const valData = await validationResponse.json();
-      const valContent = valData.choices?.[0]?.message?.content || "";
-      try {
-        const cleaned = valContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-        const validation = JSON.parse(cleaned);
-        if (!validation.is_medicine) {
-          await supabaseAdmin.from("uploads").delete().eq("id", uploadId);
-          await supabase.storage.from("user-uploads").remove([upload.storage_path]);
-          return new Response(JSON.stringify({ 
-            error: `Conteúdo rejeitado: apenas materiais de medicina são permitidos. ${validation.reason || ""}` 
-          }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        }
-      } catch (parseErr) {
-        console.warn("Validation parse error, proceeding anyway:", parseErr);
+    if (!validationResponse.ok) {
+      const validationError = await validationResponse.text();
+      console.error("Validation API error:", validationResponse.status, validationError);
+      await supabase.from("uploads").update({ status: "error" }).eq("id", uploadId);
+      return new Response(JSON.stringify({ error: "Falha ao validar se o material é médico." }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const valData = await validationResponse.json();
+    const valContent = valData.choices?.[0]?.message?.content || "";
+    try {
+      const cleaned = valContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+      const validation = JSON.parse(cleaned);
+      if (!validation.is_medicine) {
+        await supabaseAdmin.from("uploads").delete().eq("id", uploadId);
+        await supabase.storage.from("user-uploads").remove([upload.storage_path]);
+        return new Response(JSON.stringify({
+          error: `Conteúdo rejeitado: apenas materiais de medicina são permitidos. ${validation.reason || ""}`
+        }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+    } catch (parseErr) {
+      console.warn("Validation parse error, rejecting upload:", parseErr);
+      await supabaseAdmin.from("uploads").delete().eq("id", uploadId);
+      await supabase.storage.from("user-uploads").remove([upload.storage_path]);
+      return new Response(JSON.stringify({
+        error: "Não foi possível validar o conteúdo com segurança. Envie um material médico com texto legível."
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Step 2: Generate flashcards with AI
@@ -190,17 +228,37 @@ Formato: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}`
     // Extract from tool call response
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
-      const parsed = JSON.parse(toolCall.function.arguments);
-      flashcards = parsed.flashcards || [];
+      try {
+        const parsed = JSON.parse(toolCall.function.arguments);
+        flashcards = parsed.flashcards || [];
+      } catch (parseError) {
+        console.error("Flashcards parse error:", parseError);
+      }
     }
 
-    if (flashcards.length === 0) {
-      await supabase.from("uploads").update({ status: "processed", extracted_json: { flashcards: [] } }).eq("id", uploadId);
-      return new Response(JSON.stringify({ message: "No flashcards generated", flashcards: [] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const normalizedFlashcards = flashcards
+      .map((fc) => ({
+        question: String(fc.question || "").trim(),
+        answer: String(fc.answer || "").trim(),
+        topic: String(fc.topic || "Geral").trim(),
+      }))
+      .filter((fc) => fc.question && fc.answer);
+
+    const validMedicalFlashcards = normalizedFlashcards.filter((fc) => {
+      const textBlob = `${fc.topic} ${fc.question} ${fc.answer}`;
+      return MEDICAL_CONTENT_REGEX.test(textBlob) && !NON_MEDICAL_CONTENT_REGEX.test(textBlob);
+    });
+
+    if (validMedicalFlashcards.length === 0) {
+      await supabaseAdmin.from("uploads").delete().eq("id", uploadId);
+      await supabase.storage.from("user-uploads").remove([upload.storage_path]);
+      return new Response(JSON.stringify({
+        error: "Conteúdo rejeitado: os flashcards gerados não são médicos o suficiente."
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Insert flashcards into database
-    const flashcardRows = flashcards.map((fc) => ({
+    // Insert only validated medical flashcards
+    const flashcardRows = validMedicalFlashcards.map((fc) => ({
       user_id: userId,
       question: fc.question,
       answer: fc.answer,
@@ -210,17 +268,26 @@ Formato: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}`
     const { error: insertError } = await supabase.from("flashcards").insert(flashcardRows);
     if (insertError) {
       console.error("Insert flashcards error:", insertError);
+      await supabase.from("uploads").update({ status: "error" }).eq("id", uploadId);
+      return new Response(JSON.stringify({ error: "Falha ao salvar flashcards." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Update upload status
     await supabase.from("uploads").update({
       status: "processed",
-      extracted_json: { flashcards_count: flashcards.length, topics: [...new Set(flashcards.map(f => f.topic))] }
+      extracted_json: {
+        flashcards_count: validMedicalFlashcards.length,
+        discarded_non_medical: normalizedFlashcards.length - validMedicalFlashcards.length,
+        topics: [...new Set(validMedicalFlashcards.map((f) => f.topic))],
+      }
     }).eq("id", uploadId);
 
     return new Response(JSON.stringify({
-      message: `${flashcards.length} flashcards gerados com sucesso!`,
-      flashcards_count: flashcards.length,
+      message: `${validMedicalFlashcards.length} flashcards médicos gerados com sucesso!`,
+      flashcards_count: validMedicalFlashcards.length,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (e) {
