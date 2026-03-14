@@ -27,7 +27,7 @@ const MobileNav = () => {
         <div className="p-6">
           <Link to="/" className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-primary" />
-            <span className="font-bold">MentorPF</span>
+            <span className="font-bold">ENAZIZI</span>
           </Link>
         </div>
         <nav className="px-3 space-y-1">
