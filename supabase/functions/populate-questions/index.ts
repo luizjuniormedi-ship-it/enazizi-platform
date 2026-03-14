@@ -183,7 +183,6 @@ serve(async (req) => {
         body.source,
         userId,
         supabaseAdmin,
-        LOVABLE_API_KEY,
       );
 
       return new Response(JSON.stringify({
