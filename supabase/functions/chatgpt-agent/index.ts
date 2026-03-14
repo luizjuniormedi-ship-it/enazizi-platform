@@ -364,7 +364,25 @@ NÃO repita estados anteriores. NÃO pule para estados futuros. Avance apenas UM
 --- FIM DO ESTADO ---`;
     }
 
-    const input = messages.map((m: { role: string; content: string }) => ({
+    if (error_bank && Array.isArray(error_bank) && error_bank.length > 0) {
+      instructions += `\n\n--- BANCO DE ERROS DO ALUNO ---\n`;
+      const grouped = new Map<string, { subtemas: string[]; total: number; categorias: string[] }>();
+      for (const e of error_bank) {
+        if (!grouped.has(e.tema)) grouped.set(e.tema, { subtemas: [], total: 0, categorias: [] });
+        const g = grouped.get(e.tema)!;
+        g.total += e.vezes_errado || 1;
+        if (e.subtema && !g.subtemas.includes(e.subtema)) g.subtemas.push(e.subtema);
+        if (e.categoria_erro && !g.categorias.includes(e.categoria_erro)) g.categorias.push(e.categoria_erro);
+      }
+      for (const [tema, info] of grouped) {
+        instructions += `\n🔴 ${tema} (${info.total}x erros)`;
+        if (info.subtemas.length) instructions += `\n   Subtemas: ${info.subtemas.join(", ")}`;
+        if (info.categorias.length) instructions += `\n   Tipos de erro: ${info.categorias.join(", ")}`;
+      }
+      instructions += `\n\nUSE esses dados para reforçar temas fracos, priorizar revisão e gerar questões focadas nos pontos de erro.`;
+      instructions += `\n--- FIM DO BANCO DE ERROS ---`;
+    }
+
       role: m.role,
       content: m.content,
     }));
