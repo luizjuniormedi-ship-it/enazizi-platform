@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Flashcards from "./pages/Flashcards";
+import FlashcardGenerator from "./pages/FlashcardGenerator";
 import StudyPlan from "./pages/StudyPlan";
 import Simulados from "./pages/Simulados";
 import Uploads from "./pages/Uploads";
