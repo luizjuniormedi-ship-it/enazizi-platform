@@ -99,6 +99,19 @@ const Admin = () => {
     }
   }, [session, callAdmin, toast]);
 
+  const loadAuditLog = useCallback(async () => {
+    if (!session) return;
+    setAuditLoading(true);
+    try {
+      const res = await callAdmin({ action: "get_audit_log", limit: 50 });
+      setAuditLogs(res.logs || []);
+    } catch (e) {
+      toast({ title: "Erro", description: "Erro ao carregar log de auditoria", variant: "destructive" });
+    } finally {
+      setAuditLoading(false);
+    }
+  }, [session, callAdmin, toast]);
+
   useEffect(() => { loadData(); }, [loadData]);
 
   const handleBlock = async () => {
