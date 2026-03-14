@@ -1,9 +1,10 @@
-import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 
 interface UploadRecord {
   id: string;
@@ -13,6 +14,7 @@ interface UploadRecord {
   status: string | null;
   created_at: string;
   extracted_json: any;
+  is_global?: boolean;
 }
 
 const Uploads = () => {
