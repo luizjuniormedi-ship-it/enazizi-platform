@@ -58,6 +58,10 @@ const Admin = () => {
   const [blockDialog, setBlockDialog] = useState<{ open: boolean; user: AdminUser | null; block: boolean }>({
     open: false, user: null, block: false,
   });
+  // Dialog state for admin toggle
+  const [adminDialog, setAdminDialog] = useState<{ open: boolean; user: AdminUser | null; makeAdmin: boolean }>({
+    open: false, user: null, makeAdmin: false,
+  });
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-actions`;
 
