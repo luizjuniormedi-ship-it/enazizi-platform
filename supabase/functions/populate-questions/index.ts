@@ -69,10 +69,16 @@ Se não encontrar questões, retorne {"questions": []}`
         }),
       });
 
-      if (!response.ok) continue;
+      console.log("AI response status:", response.status);
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error("AI error:", errText);
+        continue;
+      }
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content || "";
+      console.log("AI content length:", content.length, "preview:", content.slice(0, 200));
       const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
       
       let parsed: any = null;
@@ -87,12 +93,13 @@ Se não encontrar questões, retorne {"questions": []}`
             const arrMatch = cleaned.match(/\[[\s\S]*\]/);
             if (arrMatch) parsed = { questions: JSON.parse(arrMatch[0]) };
           } catch {
+            console.error("JSON parse failed, cleaned:", cleaned.slice(0, 300));
             continue;
           }
         }
       }
 
-      if (!parsed) continue;
+      if (!parsed) { console.log("No parsed result"); continue; }
 
       const questions = (parsed.questions || []).filter((q: any) =>
         q.statement && Array.isArray(q.options) && q.options.length >= 2 && typeof q.correct_index === "number"
@@ -137,20 +144,37 @@ serve(async (req) => {
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user } } = await supabaseAdmin.auth.getUser(token);
-    if (!user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
-    }
+    
+    // Allow service_role key access (for automated pipelines)
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    let userId: string;
+    
+    if (token === serviceRoleKey) {
+      // Service role access - use a default admin user
+      const { data: adminRole } = await supabaseAdmin
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin")
+        .limit(1)
+        .maybeSingle();
+      userId = adminRole?.user_id || "92736dea-6422-48ff-8330-de9f0d1094e9";
+    } else {
+      const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+      if (!user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+      }
 
-    const { data: roleData } = await supabaseAdmin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .maybeSingle();
+      const { data: roleData } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
 
-    if (!roleData) {
-      return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: corsHeaders });
+      if (!roleData) {
+        return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: corsHeaders });
+      }
+      userId = user.id;
     }
 
     const body = await req.json();
@@ -164,7 +188,7 @@ serve(async (req) => {
         body.text.slice(0, 80000),
         topic,
         body.source,
-        user.id,
+        userId,
         supabaseAdmin,
         LOVABLE_API_KEY,
       );
@@ -188,33 +212,40 @@ serve(async (req) => {
       .eq("id", uploadId)
       .maybeSingle();
 
-    if (!upload || !upload.storage_path) {
+    if (!upload) {
       return new Response(JSON.stringify({ error: "Upload not found" }), { status: 404, headers: corsHeaders });
     }
 
-    const { data: fileData } = await supabaseAdmin.storage
-      .from("user-uploads")
-      .download(upload.storage_path);
-
-    if (!fileData) {
-      return new Response(JSON.stringify({ error: "File not found in storage" }), { status: 404, headers: corsHeaders });
-    }
-
     let fullText = "";
-    const fileType = (upload.file_type || "").toLowerCase();
-    if (fileType === "txt") {
-      fullText = await fileData.text();
-    } else {
-      fullText = await extractPdfText(fileData);
+    
+    // Prefer already-extracted text
+    if (upload.extracted_text && upload.extracted_text.trim().length > 100) {
+      fullText = upload.extracted_text;
+      console.log("Using pre-extracted text, length:", fullText.length);
+    } else if (upload.storage_path) {
+      const { data: fileData } = await supabaseAdmin.storage
+        .from("user-uploads")
+        .download(upload.storage_path);
+
+      if (!fileData) {
+        return new Response(JSON.stringify({ error: "File not found in storage" }), { status: 404, headers: corsHeaders });
+      }
+
+      const fileType = (upload.file_type || "").toLowerCase();
+      if (fileType === "txt") {
+        fullText = await fileData.text();
+      } else {
+        fullText = await extractPdfText(fileData);
+      }
+
+      await supabaseAdmin.from("uploads").update({ 
+        extracted_text: fullText.slice(0, 50000) 
+      }).eq("id", uploadId);
     }
 
     if (!fullText.trim()) {
       return new Response(JSON.stringify({ error: "No text extracted" }), { status: 400, headers: corsHeaders });
     }
-
-    await supabaseAdmin.from("uploads").update({ 
-      extracted_text: fullText.slice(0, 50000) 
-    }).eq("id", uploadId);
 
     const fn = upload.filename.toLowerCase();
     let topic = "Clínica Médica";
@@ -230,7 +261,7 @@ serve(async (req) => {
       fullText,
       topic,
       `upload:${upload.filename}`,
-      user.id,
+      userId,
       supabaseAdmin,
       LOVABLE_API_KEY,
     );
