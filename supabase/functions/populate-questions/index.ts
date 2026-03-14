@@ -170,26 +170,26 @@ Se não encontrar questões, retorne {"questions": []}`
         }
 
         if (!parsed) continue;
-          const questions = (parsed.questions || []).filter((q: any) =>
-            q.statement && Array.isArray(q.options) && q.options.length >= 4 && typeof q.correct_index === "number"
-          );
 
-          if (questions.length > 0) {
-            const rows = questions.map((q: any) => ({
-              user_id: user.id,
-              statement: String(q.statement).trim(),
-              options: q.options.map(String),
-              correct_index: q.correct_index,
-              explanation: String(q.explanation || "").trim(),
-              topic: String(q.topic || topic).trim(),
-              source: `upload:${upload.filename}`,
-              is_global: true,
-            }));
+        const questions = (parsed.questions || []).filter((q: any) =>
+          q.statement && Array.isArray(q.options) && q.options.length >= 4 && typeof q.correct_index === "number"
+        );
 
-            const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
-            if (!error) totalQuestions += rows.length;
-            else console.error("Insert error:", error);
-          }
+        if (questions.length > 0) {
+          const rows = questions.map((q: any) => ({
+            user_id: user.id,
+            statement: String(q.statement).trim(),
+            options: q.options.map(String),
+            correct_index: q.correct_index,
+            explanation: String(q.explanation || "").trim(),
+            topic: String(q.topic || topic).trim(),
+            source: `upload:${upload.filename}`,
+            is_global: true,
+          }));
+
+          const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
+          if (!error) totalQuestions += rows.length;
+          else console.error("Insert error:", error);
         }
       } catch (e) {
         console.error("Chunk error:", e);
