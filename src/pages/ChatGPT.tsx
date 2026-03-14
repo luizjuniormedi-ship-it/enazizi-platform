@@ -77,6 +77,7 @@ const ChatGPT = () => {
   const [enaziziStep, setEnaziziStep] = useState(1);
   const [changingTopic, setChangingTopic] = useState(false);
   const [newTopic, setNewTopic] = useState("");
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
