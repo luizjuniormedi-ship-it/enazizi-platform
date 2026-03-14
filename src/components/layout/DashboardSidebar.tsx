@@ -1,10 +1,11 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Brain, LayoutDashboard, CalendarDays, FlipVertical,
+  LayoutDashboard, CalendarDays, FlipVertical,
   FileText, Upload, MessageSquare, BarChart3, LogOut, Shield, User,
   HelpCircle, BookOpen, Heart, Bot, Database, Zap, TrendingUp, Stethoscope, Award, Sparkles, AlertTriangle, Map
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import enazizi from "@/assets/enazizi-mascot.png";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
