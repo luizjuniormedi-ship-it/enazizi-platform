@@ -746,47 +746,52 @@ const ChatGPT = () => {
 
           {/* Phase action buttons — show next logical step */}
           <div className="flex flex-wrap gap-2 mb-3">
-            {enaziziStep <= 4 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("active-recall")} disabled={isLoading}>
-                <BookOpen className="h-3.5 w-3.5" /> 🧠 Active Recall
+            {enaziziStep === 3 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("leigo1")} disabled={isLoading}>
+                <BookOpen className="h-3.5 w-3.5" /> 💡 Tradução Leiga + Pergunta
               </Button>
             )}
-            {enaziziStep >= 4 && enaziziStep < 5 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("bloco2")} disabled={isLoading}>
-                <BookOpen className="h-3.5 w-3.5" /> 🔬 Bloco 2 — Fisiopatologia
+            {enaziziStep === 4 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("tecnico2")} disabled={isLoading}>
+                <BookOpen className="h-3.5 w-3.5" /> 🔬 Bloco Técnico 2 — Fisiopatologia
               </Button>
             )}
-            {enaziziStep >= 5 && enaziziStep < 7 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("active-recall")} disabled={isLoading}>
-                <BookOpen className="h-3.5 w-3.5" /> 🧠 Active Recall 2
+            {enaziziStep === 5 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("leigo2")} disabled={isLoading}>
+                <BookOpen className="h-3.5 w-3.5" /> 💡 Tradução Leiga 2 + Pergunta
               </Button>
             )}
-            {enaziziStep >= 6 && enaziziStep < 7 && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("bloco3")} disabled={isLoading}>
-                <BookOpen className="h-3.5 w-3.5" /> 🏥 Bloco 3 — Clínica
+            {enaziziStep === 6 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("tecnico3")} disabled={isLoading}>
+                <BookOpen className="h-3.5 w-3.5" /> 🏥 Bloco Técnico 3 — Clínica
               </Button>
             )}
-            {enaziziStep >= 7 && enaziziStep < 8 && (
+            {enaziziStep === 7 && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("leigo3")} disabled={isLoading}>
+                <BookOpen className="h-3.5 w-3.5" /> 💡 Tradução Leiga 3 + Pergunta
+              </Button>
+            )}
+            {enaziziStep === 8 && (
               <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("questions")} disabled={isLoading}>
                 <HelpCircle className="h-3.5 w-3.5" /> ❓ Questão Objetiva
               </Button>
             )}
-            {enaziziStep >= 8 && enaziziStep < 9 && (
+            {enaziziStep === 9 && (
               <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("discussion")} disabled={isLoading}>
                 <HelpCircle className="h-3.5 w-3.5" /> 💬 Discussão
               </Button>
             )}
-            {enaziziStep >= 9 && enaziziStep < 10 && (
+            {enaziziStep === 10 && (
               <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("discursive")} disabled={isLoading}>
                 <Stethoscope className="h-3.5 w-3.5" /> ✍️ Caso Discursivo
               </Button>
             )}
-            {enaziziStep >= 10 && enaziziStep < 11 && (
+            {enaziziStep === 11 && (
               <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("correction")} disabled={isLoading}>
                 <Check className="h-3.5 w-3.5" /> ✅ Correção
               </Button>
             )}
-            {enaziziStep >= 11 && (
+            {enaziziStep === 12 && (
               <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePhaseAction("update")} disabled={isLoading}>
                 <BarChart3 className="h-3.5 w-3.5" /> 📈 Atualizar Desempenho
               </Button>
