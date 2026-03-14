@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Brain, Menu, X } from "lucide-react";
+import { GraduationCap, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
@@ -11,9 +11,9 @@ const Navbar = () => {
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 glow">
-            <Brain className="h-5 w-5 text-primary" />
+            <GraduationCap className="h-5 w-5 text-primary" />
           </div>
-          <span className="text-lg font-bold">MentorPF</span>
+          <span className="text-lg font-bold">ENAZIZI</span>
         </Link>
 
         <div className="hidden md:flex items-center gap-8">
