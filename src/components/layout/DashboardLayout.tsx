@@ -101,13 +101,13 @@ const MobileNav = () => {
 const DashboardLayout = () => (
   <div className="flex min-h-screen bg-background">
     <DashboardSidebar />
-    <div className="flex-1 flex flex-col">
-      <header className="lg:hidden h-14 border-b border-border flex items-center px-4 gap-3">
+    <div className="flex-1 flex flex-col min-w-0">
+      <header className="lg:hidden h-14 border-b border-border flex items-center px-4 gap-3 flex-shrink-0">
         <MobileNav />
         <Brain className="h-5 w-5 text-primary" />
         <span className="font-bold text-sm">ENAZIZI</span>
       </header>
-      <main className="flex-1 p-6 lg:p-8 overflow-auto">
+      <main className="flex-1 p-3 sm:p-6 lg:p-8 overflow-auto">
         <Outlet />
       </main>
     </div>
