@@ -13,7 +13,7 @@ import Flashcards from "./pages/Flashcards";
 import StudyPlan from "./pages/StudyPlan";
 import Simulados from "./pages/Simulados";
 import Uploads from "./pages/Uploads";
-import AIMentor from "./pages/AIMentor";
+
 import QuestionGenerator from "./pages/QuestionGenerator";
 import QuestionsBank from "./pages/QuestionsBank";
 import ContentSummarizer from "./pages/ContentSummarizer";
