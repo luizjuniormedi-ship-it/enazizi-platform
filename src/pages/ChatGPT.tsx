@@ -228,6 +228,23 @@ const ChatGPT = () => {
 
   useEffect(() => { loadConversations(); }, [loadConversations]);
 
+  // Handle navigation from ErrorBank with initialMessage
+  const errorBankHandled = useRef(false);
+  useEffect(() => {
+    const state = location.state as { initialMessage?: string; fromErrorBank?: boolean } | null;
+    if (state?.fromErrorBank && state?.initialMessage && !errorBankHandled.current && user) {
+      errorBankHandled.current = true;
+      setStudyStarted(true);
+      setCurrentTopic("Revisão do Banco de Erros");
+      // Small delay to ensure sendMessage is ready
+      setTimeout(() => {
+        sendMessage(state.initialMessage!);
+      }, 500);
+      // Clear location state to prevent re-trigger
+      window.history.replaceState({}, document.title);
+    }
+  }, [user, location.state]);
+
   const loadConversation = async (convId: string) => {
     const { data } = await supabase
       .from("chat_messages")
