@@ -15,7 +15,6 @@ serve(async (req) => {
 
   try {
     const { performanceData, examDate, dailyHours, completedTopics, weakAreas, flashcardsDue, recentErrors } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const sanitizeTopicList = (value: unknown) => Array.isArray(value)
