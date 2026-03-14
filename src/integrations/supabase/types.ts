@@ -365,6 +365,7 @@ export type Database = {
           exam_date: string | null
           has_completed_diagnostic: boolean | null
           id: string
+          is_blocked: boolean
           organization_id: string | null
           target_specialty: string | null
           updated_at: string
@@ -379,6 +380,7 @@ export type Database = {
           exam_date?: string | null
           has_completed_diagnostic?: boolean | null
           id?: string
+          is_blocked?: boolean
           organization_id?: string | null
           target_specialty?: string | null
           updated_at?: string
@@ -393,6 +395,7 @@ export type Database = {
           exam_date?: string | null
           has_completed_diagnostic?: boolean | null
           id?: string
+          is_blocked?: boolean
           organization_id?: string | null
           target_specialty?: string | null
           updated_at?: string
