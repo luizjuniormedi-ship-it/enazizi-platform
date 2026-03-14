@@ -149,11 +149,42 @@ Regras:
       }
     }
 
+    const safeSubjects = Array.isArray(planJson?.subjects)
+      ? planJson.subjects.map(String).filter((s: string) => isMedicalContent(s))
+      : [];
+
+    const safeWeeklySchedule = Array.isArray(planJson?.weeklySchedule)
+      ? planJson.weeklySchedule
+          .map((day: any) => ({
+            day: String(day?.day || ""),
+            tasks: Array.isArray(day?.tasks)
+              ? day.tasks
+                  .map((t: any) => ({
+                    time: String(t?.time || ""),
+                    subject: String(t?.subject || ""),
+                    duration: String(t?.duration || ""),
+                    type: String(t?.type || "estudo"),
+                  }))
+                  .filter((t: any) => isMedicalContent(`${t.subject} ${t.type}`))
+              : [],
+          }))
+          .filter((d: any) => d.tasks.length > 0)
+      : [];
+
+    if (safeWeeklySchedule.length === 0) {
+      return new Response(JSON.stringify({ error: "A IA retornou um cronograma sem conteúdo médico válido." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Save to DB
     const planData = {
       user_id: userId,
       plan_json: {
         ...planJson,
+        subjects: safeSubjects,
+        weeklySchedule: safeWeeklySchedule,
         config: { examDate, hoursPerDay, daysPerWeek, hasEdital: !!editalText },
         generatedAt: new Date().toISOString(),
       },
