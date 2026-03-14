@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays } from "lucide-react";
+import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays, Send, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
 
 interface Flashcard {
   id: string;
@@ -28,6 +29,8 @@ const Flashcards = () => {
   const [loading, setLoading] = useState(true);
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  const [userAnswer, setUserAnswer] = useState("");
+  const [answerSubmitted, setAnswerSubmitted] = useState(false);
   const [mode, setMode] = useState<"due" | "all">("due");
   const { user } = useAuth();
   const { toast } = useToast();
@@ -60,6 +63,24 @@ const Flashcards = () => {
   const currentCards = mode === "due" ? dueCards : allCards;
   const card = currentCards[idx];
 
+  const handleSubmitAnswer = () => {
+    if (!userAnswer.trim()) return;
+    setAnswerSubmitted(true);
+    setFlipped(true);
+  };
+
+  const isAnswerCorrect = useCallback(() => {
+    if (!card || !userAnswer.trim()) return false;
+    const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, "").trim();
+    const userNorm = normalize(userAnswer);
+    const answerNorm = normalize(card.answer);
+    // Check if user answer contains key words from the correct answer (at least 40% match)
+    const answerWords = answerNorm.split(/\s+/).filter(w => w.length > 3);
+    if (answerWords.length === 0) return userNorm === answerNorm;
+    const matchCount = answerWords.filter(w => userNorm.includes(w)).length;
+    return matchCount / answerWords.length >= 0.4;
+  }, [card, userAnswer]);
+
   const handleReview = async (quality: "again" | "good" | "easy") => {
     if (!user || !card) return;
 
@@ -73,7 +94,6 @@ const Flashcards = () => {
       const currentIdx = INTERVALS.indexOf(currentInterval);
       newInterval = INTERVALS[Math.min(currentIdx + 1, INTERVALS.length - 1)] || INTERVALS[1];
     } else {
-      // easy - skip ahead
       const currentIdx = INTERVALS.indexOf(currentInterval);
       newInterval = INTERVALS[Math.min(currentIdx + 2, INTERVALS.length - 1)] || INTERVALS[INTERVALS.length - 1];
     }
@@ -95,6 +115,19 @@ const Flashcards = () => {
       });
     }
 
+    // Log error to error_bank if wrong
+    if (quality === "again" && card.topic) {
+      await supabase.from("error_bank").upsert({
+        user_id: user.id,
+        tema: card.topic || "Flashcard",
+        tipo_questao: "flashcard",
+        conteudo: card.question,
+        motivo_erro: `Resposta do aluno: "${userAnswer}" — Resposta correta: "${card.answer}"`,
+        categoria_erro: "conceito",
+        vezes_errado: 1,
+      }, { onConflict: "user_id,tema,conteudo" }).select();
+    }
+
     // Remove from due list
     if (mode === "due") {
       const newDue = dueCards.filter((c) => c.id !== card.id);
@@ -104,6 +137,8 @@ const Flashcards = () => {
       setIdx(Math.min(idx + 1, currentCards.length - 1));
     }
     setFlipped(false);
+    setUserAnswer("");
+    setAnswerSubmitted(false);
 
     const labels = { again: "Revisar amanhã", good: `Próxima em ${newInterval} dias`, easy: `Próxima em ${newInterval} dias` };
     toast({ title: labels[quality] });
@@ -116,6 +151,8 @@ const Flashcards = () => {
     setDueCards((prev) => prev.filter((c) => c.id !== card.id));
     setIdx(Math.min(idx, Math.max(0, currentCards.length - 2)));
     setFlipped(false);
+    setUserAnswer("");
+    setAnswerSubmitted(false);
   };
 
   if (loading) {
@@ -192,15 +229,12 @@ const Flashcards = () => {
       ) : (
         <>
           <div className="flex items-center justify-center">
-            <div
-              className="glass-card w-full max-w-2xl min-h-[320px] p-8 cursor-pointer flex flex-col items-center justify-center text-center relative group hover:border-primary/30 transition-all"
-              onClick={() => setFlipped(!flipped)}
-            >
+            <div className="glass-card w-full max-w-2xl min-h-[320px] p-8 flex flex-col items-center justify-center text-center relative group transition-all">
               <div className="absolute top-4 left-4 text-xs text-primary/70 font-medium px-2 py-1 rounded-md bg-primary/10">
                 {card.topic || "Geral"}
               </div>
               <div className="absolute top-4 right-4 text-xs text-muted-foreground">
-                {idx + 1}/{currentCards.length} • Clique para virar
+                {idx + 1}/{currentCards.length}
               </div>
               {reviews.get(card.id) && (
                 <div className="absolute bottom-4 left-4 text-xs text-muted-foreground flex items-center gap-1">
@@ -208,17 +242,63 @@ const Flashcards = () => {
                   Intervalo: {reviews.get(card.id)!.interval_days}d
                 </div>
               )}
+
               <div className="text-xs uppercase tracking-wider text-primary mb-4 font-semibold">
-                {flipped ? "Resposta" : "Pergunta"}
+                Pergunta
               </div>
-              <p className="text-lg leading-relaxed">
-                {flipped ? card.answer : card.question}
-              </p>
+              <p className="text-lg leading-relaxed mb-6">{card.question}</p>
+
+              {flipped && (
+                <div className={`w-full border-t border-border pt-4 mt-2 rounded-b-lg ${answerSubmitted ? (isAnswerCorrect() ? "bg-success/5" : "bg-destructive/5") : ""}`}>
+                  <div className="text-xs uppercase tracking-wider text-primary mb-2 font-semibold flex items-center justify-center gap-2">
+                    Resposta
+                    {answerSubmitted && (
+                      isAnswerCorrect()
+                        ? <CheckCircle className="h-4 w-4 text-success" />
+                        : <XCircle className="h-4 w-4 text-destructive" />
+                    )}
+                  </div>
+                  {answerSubmitted && (
+                    <div className="mb-3 p-2 rounded-md bg-muted/50 text-sm">
+                      <span className="text-muted-foreground">Sua resposta: </span>
+                      <span className={isAnswerCorrect() ? "text-success font-medium" : "text-destructive font-medium"}>
+                        {userAnswer}
+                      </span>
+                    </div>
+                  )}
+                  <p className="text-lg leading-relaxed font-medium">{card.answer}</p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Controls */}
-          {flipped ? (
+          {!flipped && (
+            <div className="flex items-center justify-center gap-2 max-w-2xl mx-auto w-full">
+              <Button variant="outline" size="icon" onClick={() => { setIdx(Math.max(0, idx - 1)); setFlipped(false); setUserAnswer(""); setAnswerSubmitted(false); }} disabled={idx === 0}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <form onSubmit={(e) => { e.preventDefault(); handleSubmitAnswer(); }} className="flex-1 flex gap-2">
+                <Input
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  placeholder="Digite sua resposta..."
+                  className="flex-1"
+                />
+                <Button type="submit" disabled={!userAnswer.trim()}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Responder
+                </Button>
+              </form>
+              <Button variant="ghost" size="sm" onClick={() => { setFlipped(true); setAnswerSubmitted(false); }} className="text-muted-foreground text-xs">
+                Pular
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => { setIdx(Math.min(currentCards.length - 1, idx + 1)); setFlipped(false); setUserAnswer(""); setAnswerSubmitted(false); }} disabled={idx === currentCards.length - 1}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          {flipped && (
             <div className="flex items-center justify-center gap-3">
               <Button variant="destructive" onClick={() => handleReview("again")} className="min-w-[100px]">
                 <RotateCcw className="h-4 w-4 mr-2" />
@@ -232,18 +312,6 @@ const Flashcards = () => {
               </Button>
               <Button variant="ghost" size="icon" title="Remover" onClick={handleDelete}>
                 <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-4">
-              <Button variant="outline" size="icon" onClick={() => { setIdx(Math.max(0, idx - 1)); setFlipped(false); }} disabled={idx === 0}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="default" onClick={() => setFlipped(true)}>
-                Mostrar resposta
-              </Button>
-              <Button variant="outline" size="icon" onClick={() => { setIdx(Math.min(currentCards.length - 1, idx + 1)); setFlipped(false); }} disabled={idx === currentCards.length - 1}>
-                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           )}
