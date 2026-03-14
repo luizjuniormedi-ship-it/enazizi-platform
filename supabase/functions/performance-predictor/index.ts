@@ -11,7 +11,7 @@ serve(async (req) => {
 
   try {
     const { totalQuestions, correctAnswers, areaBreakdown, studyHoursPerWeek, daysUntilExam, diagnosticScore, streakDays, flashcardsReviewed, simuladoScores } = await req.json();
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    
 
     const systemPrompt = `Você é o Performance Predictor Agent, especializado em prever o desempenho de candidatos a Residência Médica.
 
