@@ -447,7 +447,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
               }`}
             >
               {msg.role === "assistant" ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+                <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 prose-p:my-3 prose-headings:mt-5 prose-headings:mb-2 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 [&>p+p]:mt-4 [&_strong]:text-foreground [&_hr]:my-4 [&_blockquote]:my-3">
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
               ) : (
