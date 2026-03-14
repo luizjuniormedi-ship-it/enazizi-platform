@@ -28,12 +28,28 @@ const questions = [
 ];
 
 const Simulados = () => {
+  const { user } = useAuth();
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
   const q = questions[current];
 
-  const handleAnswer = () => setAnswered(true);
+  const handleAnswer = () => {
+    if (selected === null) return;
+    setAnswered(true);
+
+    // Log wrong answer to error_bank
+    if (selected !== q.correct && user) {
+      logErrorToBank({
+        userId: user.id,
+        tema: "Clínica Médica",
+        tipoQuestao: "simulado",
+        conteudo: q.statement,
+        motivoErro: `Marcou "${q.options[selected]}" — Correta: "${q.options[q.correct]}"`,
+        categoriaErro: "conceito",
+      });
+    }
+  };
 
   return (
     <div className="space-y-8 animate-fade-in">
