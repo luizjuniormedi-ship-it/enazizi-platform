@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Brain, LayoutDashboard, CalendarDays, FlipVertical,
   FileText, Upload, MessageSquare, BarChart3, LogOut, Shield, User,
-  HelpCircle, BookOpen, Heart, Bot, Database, Zap, TrendingUp, Stethoscope, Award, Sparkles
+  HelpCircle, BookOpen, Heart, Bot, Database, Zap, TrendingUp, Stethoscope, Award, Sparkles, AlertTriangle
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
