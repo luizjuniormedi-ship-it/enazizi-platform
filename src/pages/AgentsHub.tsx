@@ -18,7 +18,6 @@ const agents = [
     description: "Protocolo completo: Aula → Active Recall → Questões → Discussão → Caso Discursivo → Pontuação. Nunca começa com questões.",
     color: "text-primary",
     bgColor: "bg-primary/10",
-    highlight: true,
   },
   {
     to: "/dashboard/mentor",
