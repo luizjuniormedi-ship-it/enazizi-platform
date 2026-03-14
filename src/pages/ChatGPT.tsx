@@ -454,8 +454,6 @@ const ChatGPT = () => {
     sendMessage(`Quero estudar o tema: ${t}. Comece com o Bloco Técnico 1 (conceito e definição — explicação técnica baseada na literatura). Estou na etapa 3/13 do Protocolo ENAZIZI.`);
   };
 
-  const [changingTopic, setChangingTopic] = useState(false);
-  const [newTopic, setNewTopic] = useState("");
 
   const handleChangeTopic = () => {
     if (!newTopic.trim()) return;
