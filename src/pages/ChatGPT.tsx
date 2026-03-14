@@ -46,6 +46,7 @@ const ENAZIZI_STEPS = [
   { num: 11, label: "Discursivo", icon: "✍️" },
   { num: 12, label: "Correção", icon: "✅" },
   { num: 13, label: "Atualizar", icon: "📈" },
+  { num: 14, label: "Consolidação", icon: "🔁" },
 ];
 
 const FUNCTION_NAME = "chatgpt-agent";
