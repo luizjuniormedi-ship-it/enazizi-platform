@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getDocument } from "https://esm.sh/pdfjs-serverless";
+import { aiFetch } from "../_shared/ai-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,7 +35,7 @@ async function extractPdfText(fileData: Blob): Promise<string> {
 
 async function generateQuestionsFromText(
   text: string,
-  apiKey: string,
+  _apiKey: string,
   topic: string
 ): Promise<Array<{ statement: string; options: string[]; correct_index: number; explanation: string; topic: string }>> {
   const allQuestions: Array<{ statement: string; options: string[]; correct_index: number; explanation: string; topic: string }> = [];
@@ -51,28 +52,21 @@ async function generateQuestionsFromText(
 
   for (const chunk of chunksToProcess) {
     try {
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            {
-              role: "system",
-              content: `Extraia questões de múltipla escolha do texto fornecido. Se o texto já contiver questões formatadas, converta-as para o formato JSON. Se for conteúdo teórico, gere questões baseadas no conteúdo.
+      const response = await aiFetch({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content: `Extraia questões de múltipla escolha do texto fornecido. Se o texto já contiver questões formatadas, converta-as para o formato JSON. Se for conteúdo teórico, gere questões baseadas no conteúdo.
 
 IMPORTANTE: Gere o MÁXIMO de questões possível (10-20 por chunk).
 Formato JSON PURO (sem markdown): 
 {"questions": [{"statement": "enunciado completo com caso clínico", "options": ["A", "B", "C", "D", "E"], "correct_index": 0, "explanation": "explicação detalhada", "topic": "especialidade médica"}]}
 
 Se não encontrar questões válidas, retorne {"questions": []}`
-            },
-            { role: "user", content: `Tema principal: ${topic}\n\nTexto:\n${chunk}` }
-          ],
-        }),
+          },
+          { role: "user", content: `Tema principal: ${topic}\n\nTexto:\n${chunk}` }
+        ],
       });
 
       if (!response.ok) continue;
@@ -173,8 +167,8 @@ serve(async (req) => {
       }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+
 
     const fileType = (upload.file_type || "").toLowerCase();
     let extractedText = "";
@@ -203,22 +197,15 @@ serve(async (req) => {
     await supabase.from("uploads").update({ extracted_text: truncatedText.slice(0, 50000) }).eq("id", uploadId);
 
     // Validate medical content
-    const validationResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
-        messages: [
-          {
-            role: "system",
-            content: `Analise o texto e determine se é relacionado a medicina/saúde. Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicação", "main_topic": "especialidade médica principal"}`
-          },
-          { role: "user", content: `Classifique:\n\n${truncatedText.slice(0, 3000)}` }
-        ],
-      }),
+    const validationResponse = await aiFetch({
+      model: "google/gemini-2.5-flash-lite",
+      messages: [
+        {
+          role: "system",
+          content: `Analise o texto e determine se é relacionado a medicina/saúde. Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicação", "main_topic": "especialidade médica principal"}`
+        },
+        { role: "user", content: `Classifique:\n\n${truncatedText.slice(0, 3000)}` }
+      ],
     });
 
     let detectedTopic = "Clínica Médica";
@@ -262,25 +249,18 @@ serve(async (req) => {
 
     // Generate flashcards
     try {
-      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            {
-              role: "system",
-              content: `Crie flashcards educativos para Residência Médica a partir do texto.
+      const aiResponse = await aiFetch({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content: `Crie flashcards educativos para Residência Médica a partir do texto.
 Cada flashcard: question, answer, topic.
 Gere 5-15 flashcards relevantes.
 Responda APENAS com JSON: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}`
-            },
-            { role: "user", content: `Gere flashcards:\n\n${truncatedText.slice(0, 15000)}` }
-          ],
-        }),
+          },
+          { role: "user", content: `Gere flashcards:\n\n${truncatedText.slice(0, 15000)}` }
+        ],
       });
 
       if (aiResponse.ok) {
@@ -315,7 +295,7 @@ Responda APENAS com JSON: {"flashcards": [{"question": "...", "answer": "...", "
 
     // Generate questions for questions_bank
     try {
-      const questions = await generateQuestionsFromText(truncatedText, LOVABLE_API_KEY, detectedTopic);
+      const questions = await generateQuestionsFromText(truncatedText, "", detectedTopic);
 
       if (questions.length > 0) {
         const rows = questions.map((q) => ({
