@@ -172,13 +172,28 @@ const ExamSimulator = () => {
         status: "finished",
       }).eq("id", sessionId);
 
-      // Save practice attempts
+      // Save practice attempts and log errors
       for (let i = 0; i < questions.length; i++) {
-        if (questions[i].id && !questions[i].id.startsWith("gen-")) {
+        const q = questions[i];
+        const isCorrect = selectedAnswers[i] === q.correct_index;
+
+        if (q.id && !q.id.startsWith("gen-")) {
           await supabase.from("practice_attempts").insert({
             user_id: user.id,
-            question_id: questions[i].id,
-            correct: selectedAnswers[i] === questions[i].correct_index,
+            question_id: q.id,
+            correct: isCorrect,
+          });
+        }
+
+        // Log wrong answers to error_bank
+        if (!isCorrect && selectedAnswers[i] !== undefined) {
+          await logErrorToBank({
+            userId: user.id,
+            tema: q.topic || "Geral",
+            tipoQuestao: "simulado",
+            conteudo: q.statement,
+            motivoErro: `Marcou "${q.options[selectedAnswers[i]]}" — Correta: "${q.options[q.correct_index]}"`,
+            categoriaErro: "conceito",
           });
         }
       }

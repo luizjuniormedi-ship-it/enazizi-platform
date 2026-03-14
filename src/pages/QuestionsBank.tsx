@@ -178,6 +178,18 @@ const QuestionsBank = () => {
       question_id: practiceQuestion.id,
       correct: isCorrect,
     });
+
+    // Log wrong answer to error_bank
+    if (!isCorrect) {
+      await logErrorToBank({
+        userId: user.id,
+        tema: practiceQuestion.topic || "Geral",
+        tipoQuestao: "objetiva",
+        conteudo: practiceQuestion.statement,
+        motivoErro: `Marcou "${practiceQuestion.options[selected]}" — Correta: "${practiceQuestion.options[practiceQuestion.correct_index]}"`,
+        categoriaErro: "conceito",
+      });
+    }
   };
 
   const nextQuestion = () => {
