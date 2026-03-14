@@ -414,6 +414,7 @@ const ChatGPT = () => {
             pontuacao_discursiva: performance.pontuacao_discursiva,
             temas_fracos: performance.temas_fracos,
           },
+          error_bank: errorBankData.length > 0 ? errorBankData : undefined,
         }),
       });
 
