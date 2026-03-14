@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Button } from "@/components/ui/button";
 import DashboardWarnings from "@/components/dashboard/DashboardWarnings";
+import TopicEvolution from "@/components/dashboard/TopicEvolution";
 
 interface PlanJson {
   weeklySchedule?: { day: string; tasks: { time: string; subject: string; duration: string; type?: string }[] }[];
@@ -369,6 +370,9 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Topic Evolution */}
+      <TopicEvolution />
 
       {/* Subjects */}
       {stats.subjects.length > 0 && (
