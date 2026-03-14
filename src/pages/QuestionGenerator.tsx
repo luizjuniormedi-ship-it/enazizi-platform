@@ -33,10 +33,10 @@ const QuestionGenerator = () => {
   return (
     <AgentChat
       title="Gerador de Questões"
-      subtitle="Gere questões no estilo CESPE e múltipla escolha para treinar."
+      subtitle="Questões estilo ENARE, USP e UNIFESP com casos clínicos."
       icon={<HelpCircle className="h-6 w-6 text-primary" />}
-      welcomeMessage="Olá! Sou o Gerador de Questões do MentorPF. Posso criar questões no estilo CESPE (Certo/Errado) ou múltipla escolha sobre qualquer matéria do concurso de Delegado PF. Qual matéria você quer treinar? 📝"
-      placeholder="Ex: Gere 5 questões de Direito Penal sobre crimes contra a administração pública..."
+      welcomeMessage="Olá! Sou o Gerador de Questões para Residência Médica. Crio questões com casos clínicos no padrão ENARE/USP/UNIFESP, com gabarito comentado e referências (Harrison, Sabiston, Nelson, guidelines). Qual área quer treinar? 📝"
+      placeholder="Ex: Gere 5 questões de Cardiologia sobre Insuficiência Cardíaca..."
       functionName="question-generator"
       onSaveMessage={handleSaveQuestions}
     />

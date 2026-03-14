@@ -4,10 +4,10 @@ import AgentChat from "@/components/agents/AgentChat";
 const ContentSummarizer = () => (
   <AgentChat
     title="Resumidor de Conteúdo"
-    subtitle="Crie resumos inteligentes e mapas mentais de qualquer matéria."
+    subtitle="Resumos estruturados com mnemônicos e pontos de prova."
     icon={<BookOpen className="h-6 w-6 text-primary" />}
-    welcomeMessage="Olá! Sou o Resumidor do MentorPF. Posso criar resumos organizados, quadros comparativos, mnemônicos e mapas mentais em texto de qualquer matéria do concurso. Cole um texto ou me diga o tema que deseja resumir! 📚"
-    placeholder="Ex: Resuma os tipos de controle da administração pública..."
+    welcomeMessage="Olá! Sou o Resumidor especializado em Residência Médica. Crio resumos com tabelas comparativas, mnemônicos 🧠, pegadinhas de prova ⚠️, condutas 💊 e pontos de alta incidência 📌. Cole um texto ou me diga o tema! 📚"
+    placeholder="Ex: Resuma Insuficiência Cardíaca com diagnóstico diferencial..."
     functionName="content-summarizer"
   />
 );
