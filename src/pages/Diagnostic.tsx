@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { logErrorToBank } from "@/lib/errorBankLogger";
 import { Stethoscope, Clock, CheckCircle2, Loader2, ArrowRight, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";

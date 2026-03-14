@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { logErrorToBank } from "@/lib/errorBankLogger";
+import { useAuth } from "@/hooks/useAuth";
 import { FileText, Clock, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
