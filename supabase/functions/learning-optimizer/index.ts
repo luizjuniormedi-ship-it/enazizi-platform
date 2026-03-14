@@ -18,9 +18,25 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
+    const sanitizeTopicList = (value: unknown) => Array.isArray(value)
+      ? value.map(String).filter((t) => isMedicalContent(t))
+      : [];
+
+    const safeCompletedTopics = sanitizeTopicList(completedTopics);
+    const safeWeakAreas = sanitizeTopicList(weakAreas);
+    const safeRecentErrors = sanitizeTopicList(recentErrors);
+
+    const safePerformanceData = Object.fromEntries(
+      Object.entries(performanceData || {}).filter(([k]) => isMedicalContent(k))
+    );
+
     const today = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
-    
+
     const systemPrompt = `Você é o Learning Optimization Agent, um agente de IA especializado em otimizar o estudo diário para Residência Médica.
+
+⛔ RESTRIÇÃO ABSOLUTA DE ESCOPO:
+Você SOMENTE pode gerar plano para MEDICINA, SAÚDE e CIÊNCIAS BIOMÉDICAS.
+NUNCA inclua Direito, Engenharia, Informática ou áreas não médicas.
 
 DATA DE HOJE: ${today}
 
@@ -34,11 +50,11 @@ Sua função é decidir EXATAMENTE o que o aluno deve estudar hoje, baseado em:
 DADOS DO ALUNO:
 - Data da prova: ${examDate || "Não definida"}
 - Horas disponíveis hoje: ${dailyHours || 4}h
-- Tópicos já estudados: ${JSON.stringify(completedTopics || [])}
-- Áreas fracas: ${JSON.stringify(weakAreas || [])}
+- Tópicos já estudados: ${JSON.stringify(safeCompletedTopics)}
+- Áreas fracas: ${JSON.stringify(safeWeakAreas)}
 - Flashcards pendentes: ${flashcardsDue || 0}
-- Erros recentes: ${JSON.stringify(recentErrors || [])}
-- Desempenho geral: ${JSON.stringify(performanceData || {})}
+- Erros recentes: ${JSON.stringify(safeRecentErrors)}
+- Desempenho geral: ${JSON.stringify(safePerformanceData)}
 
 RETORNE um plano do dia estruturado em JSON com a seguinte estrutura:
 {
