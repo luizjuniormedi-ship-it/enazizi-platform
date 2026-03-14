@@ -44,18 +44,12 @@ async function processTextToQuestions(
   let totalQuestions = 0;
   for (const chunk of chunks.slice(0, 10)) {
     try {
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            {
-              role: "system",
-              content: `Extraia TODAS as questões de múltipla escolha do texto. Se encontrar questões já formatadas, converta para JSON preservando EXATAMENTE o enunciado e alternativas originais. Se for texto teórico, gere questões baseadas no conteúdo.
+      const response = await aiFetch({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content: `Extraia TODAS as questões de múltipla escolha do texto. Se encontrar questões já formatadas, converta para JSON preservando EXATAMENTE o enunciado e alternativas originais. Se for texto teórico, gere questões baseadas no conteúdo.
 
 GERE O MÁXIMO POSSÍVEL (10-30 por bloco).
 
@@ -63,10 +57,9 @@ IMPORTANTE: Para questões que já existem no texto com gabarito/comentário, us
 
 Formato JSON PURO: {"questions": [{"statement": "enunciado completo", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "explanation": "explicação detalhada do raciocínio clínico", "topic": "especialidade médica"}]}
 Se não encontrar questões, retorne {"questions": []}`
-            },
-            { role: "user", content: `Tema: ${topic}\n\n${chunk}` }
-          ],
-        }),
+          },
+          { role: "user", content: `Tema: ${topic}\n\n${chunk}` }
+        ],
       });
 
       console.log("AI response status:", response.status);
