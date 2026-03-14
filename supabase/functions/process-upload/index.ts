@@ -85,6 +85,14 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Could not extract text from file" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    if (looksLikeRawPdfStructure(truncatedText)) {
+      await supabaseAdmin.from("uploads").delete().eq("id", uploadId);
+      await supabase.storage.from("user-uploads").remove([upload.storage_path]);
+      return new Response(JSON.stringify({
+        error: "Arquivo rejeitado: não foi possível extrair conteúdo médico válido (apenas estrutura técnica do PDF)."
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // Save extracted text
     await supabase.from("uploads").update({ extracted_text: truncatedText, status: "processing" }).eq("id", uploadId);
 
