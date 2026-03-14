@@ -247,7 +247,7 @@ serve(async (req) => {
       fullText,
       topic,
       `upload:${upload.filename}`,
-      user.id,
+      userId,
       supabaseAdmin,
       LOVABLE_API_KEY,
     );
