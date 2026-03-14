@@ -149,10 +149,27 @@ Se não encontrar questões, retorne {"questions": []}`
         const data = await response.json();
         const content = data.choices?.[0]?.message?.content || "";
         const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+        
+        // Try multiple JSON extraction strategies
+        let parsed: any = null;
+        try {
+          parsed = JSON.parse(cleaned);
+        } catch {
+          try {
+            const jsonMatch = cleaned.match(/\{"questions"\s*:\s*\[[\s\S]*?\]\s*\}/);
+            if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
+          } catch {
+            try {
+              const arrMatch = cleaned.match(/\[[\s\S]*\]/);
+              if (arrMatch) parsed = { questions: JSON.parse(arrMatch[0]) };
+            } catch {
+              // Skip this chunk
+              continue;
+            }
+          }
+        }
 
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
+        if (!parsed) continue;
           const questions = (parsed.questions || []).filter((q: any) =>
             q.statement && Array.isArray(q.options) && q.options.length >= 4 && typeof q.correct_index === "number"
           );
