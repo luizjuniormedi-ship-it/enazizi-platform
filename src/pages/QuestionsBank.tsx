@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { logErrorToBank } from "@/lib/errorBankLogger";
-import { Database, Play, Trash2, ChevronDown, ChevronUp, Search, BarChart3, Target, TrendingUp } from "lucide-react";
+import { Database, Play, Trash2, ChevronDown, ChevronUp, Search, BarChart3, Target, TrendingUp, GraduationCap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
