@@ -83,6 +83,24 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     loadUploads();
   }, [user]);
 
+  // Update welcome message when uploads are detected
+  useEffect(() => {
+    if (hasShownUploadWelcome || !welcomeMessageWithUploads) return;
+    if (availableUploads.length > 0 && selectedUploadIds.size > 0 && messages.length === 1 && messages[0].role === "assistant") {
+      const materialNames = availableUploads
+        .filter(u => selectedUploadIds.has(u.id))
+        .map(u => u.filename)
+        .slice(0, 3)
+        .join(", ");
+      const suffix = availableUploads.length > 3 ? ` e mais ${availableUploads.length - 3}` : "";
+      const contextMsg = welcomeMessageWithUploads
+        .replace("{materiais}", materialNames + suffix)
+        .replace("{count}", String(selectedUploadIds.size));
+      setMessages([{ role: "assistant", content: contextMsg }]);
+      setHasShownUploadWelcome(true);
+    }
+  }, [availableUploads, selectedUploadIds, hasShownUploadWelcome, welcomeMessageWithUploads, messages]);
+
   // Build context from selected uploads
   const buildUserContext = useCallback(() => {
     if (selectedUploadIds.size === 0) return "";
