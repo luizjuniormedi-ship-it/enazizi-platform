@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/dashboard/estudar", icon: Brain, label: "📚 Estudar (ENAZIZI)" },
   { to: "/dashboard/plano-dia", icon: Zap, label: "Plano do Dia" },
   { to: "/dashboard/diagnostico", icon: Stethoscope, label: "Diagnóstico" },
   { to: "/dashboard/cronograma", icon: CalendarDays, label: "Cronograma" },
@@ -42,7 +43,7 @@ const DashboardSidebar = () => {
           <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
             <Brain className="h-5 w-5 text-primary" />
           </div>
-          <span className="text-lg font-bold text-sidebar-foreground">MentorPF</span>
+          <span className="text-lg font-bold text-sidebar-foreground">ENAZIZI</span>
         </Link>
       </div>
 

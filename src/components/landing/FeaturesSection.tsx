@@ -1,14 +1,14 @@
-import { Brain, CalendarDays, FileText, FlipVertical, MessageSquare, BarChart3, Upload, Shield } from "lucide-react";
+import { BookOpen, Brain, HelpCircle, MessageSquare, BarChart3, Upload, GraduationCap, Repeat } from "lucide-react";
 
 const features = [
-  { icon: Brain, title: "Mentor IA", desc: "Chat inteligente que conhece o edital, tira dúvidas e sugere estratégias personalizadas." },
-  { icon: CalendarDays, title: "Cronograma Inteligente", desc: "Plano de estudos gerado por IA, adaptado ao seu tempo e desempenho." },
-  { icon: FlipVertical, title: "Flashcards Automáticos", desc: "Envie PDFs e receba flashcards prontos com revisão espaçada." },
-  { icon: FileText, title: "Simulados Personalizados", desc: "Questões geradas por IA baseadas no edital e provas anteriores." },
-  { icon: Upload, title: "Upload de Materiais", desc: "Envie editais, provas e cursos em PDF para análise automática." },
-  { icon: BarChart3, title: "Analytics Completos", desc: "Acompanhe seu desempenho com dashboards detalhados." },
-  { icon: MessageSquare, title: "Resumos Inteligentes", desc: "Resumos estruturados gerados automaticamente dos seus materiais." },
-  { icon: Shield, title: "Multiusuário & SaaS", desc: "Gerencie equipes e organizações com planos escaláveis." },
+  { icon: GraduationCap, title: "Aulas Completas com IA", desc: "Explicação leiga, fisiopatologia, aplicação clínica, diagnóstico diferencial e pontos de prova — tudo estruturado." },
+  { icon: Brain, title: "Active Recall", desc: "Após cada aula, perguntas curtas de memória ativa para fixação de longo prazo." },
+  { icon: HelpCircle, title: "Questões Estilo Prova", desc: "Casos clínicos com 5 alternativas no padrão ENARE, USP, UNIFESP e Revalida." },
+  { icon: MessageSquare, title: "Discussão Clínica Detalhada", desc: "Cada questão vira uma micro aula: raciocínio clínico, diagnóstico diferencial e análise de todas as alternativas." },
+  { icon: BarChart3, title: "Mapa de Domínio", desc: "Desempenho por especialidade: cardiologia, pneumologia, neurologia e mais. Identifica seus pontos fracos." },
+  { icon: Repeat, title: "Repetição Inteligente", desc: "Conteúdos errados reaparecem em novos casos clínicos com SRS (Spaced Repetition System)." },
+  { icon: Upload, title: "Upload de Provas e Materiais", desc: "Envie simulados, provas anteriores e PDFs para análise e treino personalizado." },
+  { icon: BookOpen, title: "Protocolo Pedagógico", desc: "Nunca começa com questões. Sequência obrigatória: Ensinar → Avaliar → Discutir → Analisar." },
 ];
 
 const FeaturesSection = () => {
@@ -20,7 +20,7 @@ const FeaturesSection = () => {
             Tudo que você precisa para <span className="gradient-text">ser aprovado</span>
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Uma plataforma completa com inteligência artificial para maximizar seus estudos.
+            Protocolo ENAZIZI: ensino profundo + active recall + questões clínicas + análise estatística.
           </p>
         </div>
 

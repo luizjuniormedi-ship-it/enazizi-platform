@@ -26,6 +26,7 @@ import DailyPlan from "./pages/DailyPlan";
 import PerformancePredictor from "./pages/PerformancePredictor";
 import Diagnostic from "./pages/Diagnostic";
 import ExamSimulator from "./pages/ExamSimulator";
+import StudySession from "./pages/StudySession";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="banco-questoes" element={<QuestionsBank />} />
               <Route path="resumos" element={<ContentSummarizer />} />
               <Route path="coach" element={<MotivationalCoach />} />
+              <Route path="estudar" element={<StudySession />} />
               <Route path="plano-dia" element={<DailyPlan />} />
               <Route path="predictor" element={<PerformancePredictor />} />
               <Route path="diagnostico" element={<Diagnostic />} />
