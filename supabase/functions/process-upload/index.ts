@@ -6,6 +6,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const NON_MEDICAL_CONTENT_REGEX = /(direito|jur[ií]d|penal|constitucional|processo penal|inquérito|inqu[eé]rito|stf|stj|delegad|advogad|pol[ií]cia federal|c[oó]digo penal|a[cç][aã]o penal|inform[aá]tica|tecnologia da informa[cç][aã]o|arquivos? digitais?|pdf|\/mediaBox|\/type\/pages|engenharia|contabilidade|economia|administra[cç][aã]o|programa[cç][aã]o)/i;
+const MEDICAL_CONTENT_REGEX = /(medicin|sa[uú]de|paciente|diagn[oó]st|tratament|sintom|doen[cç]|fisiopat|farmac|anatom|cl[íi]nic|cirurg|pediatr|ginec|obstetr|preventiva|resid[eê]ncia|enare|revalida|protocolo|diretriz)/i;
+
+function looksLikeRawPdfStructure(text: string): boolean {
+  const markers = [
+    /\/Type\b/i,
+    /\/Pages?\b/i,
+    /\/MediaBox\b/i,
+    /endobj\b/i,
+    /xref\b/i,
+    /trailer\b/i,
+  ];
+
+  const hits = markers.reduce((acc, rx) => acc + (rx.test(text) ? 1 : 0), 0);
+  return hits >= 3;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
