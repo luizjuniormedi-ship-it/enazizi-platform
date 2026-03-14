@@ -54,6 +54,7 @@ const FUNCTION_NAME = "chatgpt-agent";
 
 const ChatGPT = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [topic, setTopic] = useState("");
   const [studyStarted, setStudyStarted] = useState(false);
   const [currentTopic, setCurrentTopic] = useState("");
