@@ -548,7 +548,7 @@ const ChatGPT = () => {
   const recentHistory = performance.historico_estudo.slice(-5).reverse();
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] animate-fade-in">
+    <div className={`flex flex-col animate-fade-in ${isFullscreen ? "fixed inset-0 z-50 bg-background p-4" : "h-[calc(100vh-4rem)]"}`}>
       {/* Header */}
       <div className="mb-4 flex items-start justify-between">
         <div>
