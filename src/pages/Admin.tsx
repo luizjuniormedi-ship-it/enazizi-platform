@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Shield, Users, CreditCard, TrendingUp, Ban, CheckCircle, UserCog, Search, RefreshCw, ChevronDown, ShieldCheck, ShieldOff, ClipboardList } from "lucide-react";
+import { Shield, Users, CreditCard, TrendingUp, Ban, CheckCircle, UserCog, Search, RefreshCw, ChevronDown, ShieldCheck, ShieldOff, ClipboardList, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -65,6 +65,10 @@ const Admin = () => {
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [auditLoading, setAuditLoading] = useState(false);
+  // Dialog state for password reset
+  const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; user: AdminUser | null; password: string }>({
+    open: false, user: null, password: "",
+  });
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-actions`;
 
@@ -173,6 +177,31 @@ const Admin = () => {
       });
       setAdminDialog({ open: false, user: null, makeAdmin: false });
       loadData();
+    } catch (e) {
+      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!passwordDialog.user || !passwordDialog.password) return;
+    if (passwordDialog.password.length < 6) {
+      toast({ title: "Erro", description: "A senha deve ter pelo menos 6 caracteres.", variant: "destructive" });
+      return;
+    }
+    setActionLoading(passwordDialog.user.user_id);
+    try {
+      await callAdmin({
+        action: "reset_password",
+        target_user_id: passwordDialog.user.user_id,
+        new_password: passwordDialog.password,
+      });
+      toast({
+        title: "Senha redefinida",
+        description: `A senha de ${passwordDialog.user.display_name || passwordDialog.user.email} foi redefinida com sucesso.`,
+      });
+      setPasswordDialog({ open: false, user: null, password: "" });
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
     } finally {
@@ -345,6 +374,15 @@ const Admin = () => {
                       <CreditCard className="h-3 w-3" /> Plano
                     </Button>
                     <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1"
+                      disabled={isCurrentlyActioning}
+                      onClick={() => setPasswordDialog({ open: true, user: u, password: "" })}
+                    >
+                      <KeyRound className="h-3 w-3" /> Senha
+                    </Button>
+                    <Button
                       variant={isBlocked ? "outline" : "destructive"}
                       size="sm"
                       className="h-7 text-xs gap-1"
@@ -394,6 +432,7 @@ const Admin = () => {
                   change_plan: { label: "Alterou plano", color: "text-primary" },
                   promote_admin: { label: "Promoveu admin", color: "text-accent" },
                   demote_admin: { label: "Removeu admin", color: "text-muted-foreground" },
+                  reset_password: { label: "Redefiniu senha", color: "text-orange-500" },
                 };
                 const info = actionLabels[log.action] || { label: log.action, color: "text-foreground" };
 
@@ -497,6 +536,35 @@ const Admin = () => {
             </Button>
             <Button onClick={handleToggleAdmin} disabled={!!actionLoading}>
               {adminDialog.makeAdmin ? "Promover" : "Remover"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={passwordDialog.open} onOpenChange={(open) => !open && setPasswordDialog({ open: false, user: null, password: "" })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Redefinir senha</DialogTitle>
+            <DialogDescription>
+              Defina uma nova senha para "{passwordDialog.user?.display_name || passwordDialog.user?.email}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              type="password"
+              placeholder="Nova senha (mín. 6 caracteres)"
+              value={passwordDialog.password}
+              onChange={(e) => setPasswordDialog((p) => ({ ...p, password: e.target.value }))}
+              minLength={6}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPasswordDialog({ open: false, user: null, password: "" })}>
+              Cancelar
+            </Button>
+            <Button onClick={handleResetPassword} disabled={!!actionLoading || passwordDialog.password.length < 6}>
+              Redefinir senha
             </Button>
           </DialogFooter>
         </DialogContent>

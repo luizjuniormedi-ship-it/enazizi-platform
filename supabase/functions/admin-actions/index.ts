@@ -125,6 +125,16 @@ Deno.serve(async (req) => {
         return ok({ success: true, is_admin: make_admin });
       }
 
+      case "reset_password": {
+        const { target_user_id, new_password } = params;
+        if (!target_user_id || !new_password) throw new Error("target_user_id e new_password obrigatórios");
+        if (new_password.length < 6) throw new Error("A senha deve ter pelo menos 6 caracteres");
+        const { error: updateErr } = await supabaseAuth.auth.admin.updateUserById(target_user_id, { password: new_password });
+        if (updateErr) throw new Error(`Erro ao redefinir senha: ${updateErr.message}`);
+        await logAudit(supabaseAuth, user.id, "reset_password", target_user_id, {});
+        return ok({ success: true });
+      }
+
       case "get_stats": {
         const [{ count: totalUsers }, { count: blockedUsers }, { data: activeSubs }] = await Promise.all([
           supabaseAuth.from("profiles").select("id", { count: "exact", head: true }),
