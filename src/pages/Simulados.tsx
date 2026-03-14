@@ -4,24 +4,24 @@ import { Button } from "@/components/ui/button";
 
 const questions = [
   {
-    statement: "De acordo com a Constituição Federal, a Polícia Federal destina-se a:",
+    statement: "Paciente de 65 anos com dor torácica típica há 40 minutos e supradesnivelamento de ST em DII, DIII e aVF. Qual a conduta inicial prioritária?",
     options: [
-      "Exercer funções de polícia judiciária dos Estados",
-      "Apurar infrações penais contra a ordem política e social",
-      "Exercer a segurança pública municipal",
-      "Fiscalizar o trânsito em rodovias estaduais",
+      "Solicitar teste ergométrico imediato",
+      "Iniciar reperfusão (angioplastia primária quando disponível) e terapia anti-isquêmica",
+      "Alta com analgesia e retorno em 24 horas",
+      "Aguardar troponina seriada antes de qualquer conduta",
     ],
     correct: 1,
   },
   {
-    statement: "A prisão em flagrante pode ser realizada por:",
+    statement: "Lactente de 8 meses, febre alta, irritabilidade e fontanela abaulada. Qual exame deve ser considerado para confirmação diagnóstica de meningite, se não houver contraindicação?",
     options: [
-      "Apenas por autoridade policial",
-      "Apenas por agentes de segurança pública",
-      "Qualquer do povo",
-      "Apenas mediante mandado judicial",
+      "Ultrassom abdominal",
+      "Punção lombar com análise do líquor",
+      "Endoscopia digestiva alta",
+      "ECG de repouso",
     ],
-    correct: 2,
+    correct: 1,
   },
 ];
 
