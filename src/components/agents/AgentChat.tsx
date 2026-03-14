@@ -23,14 +23,22 @@ interface Upload {
   extracted_text: string | null;
 }
 
+interface QuickAction {
+  label: string;
+  prompt: string;
+  icon?: string;
+}
+
 interface AgentChatProps {
   title: string;
   subtitle: string;
   icon: React.ReactNode;
   welcomeMessage: string;
+  welcomeMessageWithUploads?: string;
   placeholder: string;
   functionName: string;
   onSaveMessage?: (content: string) => Promise<number>;
+  quickActions?: QuickAction[];
 }
 
 const AgentChat = ({ title, subtitle, icon, welcomeMessage, placeholder, functionName, onSaveMessage }: AgentChatProps) => {
