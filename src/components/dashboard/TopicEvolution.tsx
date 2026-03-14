@@ -130,6 +130,15 @@ const TopicEvolution = () => {
                     <Badge variant={getBadgeVariant(d.domain_score)} className="text-xs">
                       {Math.round(d.domain_score)}%
                     </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs gap-1"
+                      onClick={() => handleStudyTopic(s)}
+                    >
+                      <GraduationCap className="h-3.5 w-3.5" />
+                      Estudar
+                    </Button>
                   </div>
                 </div>
                 <Progress value={d.domain_score} className="h-2" />
