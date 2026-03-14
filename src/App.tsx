@@ -52,6 +52,7 @@ const App = () => (
               <Route index element={<Dashboard />} />
               <Route path="cronograma" element={<StudyPlan />} />
               <Route path="flashcards" element={<Flashcards />} />
+              <Route path="gerar-flashcards" element={<FlashcardGenerator />} />
               <Route path="simulados" element={<Simulados />} />
               <Route path="uploads" element={<Uploads />} />
               <Route path="agentes" element={<AgentsHub />} />

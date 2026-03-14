@@ -14,6 +14,7 @@ const navItems = [
   { to: "/dashboard/diagnostico", icon: Stethoscope, label: "🩺 Diagnóstico Inicial" },
   { to: "/dashboard/cronograma", icon: CalendarDays, label: "📅 Cronograma" },
   { to: "/dashboard/flashcards", icon: FlipVertical, label: "🃏 Flashcards" },
+  { to: "/dashboard/gerar-flashcards", icon: FlipVertical, label: "🃏 Gerador de Flashcards" },
   { to: "/dashboard/simulados", icon: FileText, label: "📝 Simulados" },
   { to: "/dashboard/simulado-completo", icon: Award, label: "🏆 Simulado Completo" },
   { to: "/dashboard/questoes", icon: HelpCircle, label: "❓ Gerador de Questões" },
