@@ -295,7 +295,7 @@ Responda APENAS com JSON: {"flashcards": [{"question": "...", "answer": "...", "
 
     // Generate questions for questions_bank
     try {
-      const questions = await generateQuestionsFromText(truncatedText, LOVABLE_API_KEY, detectedTopic);
+      const questions = await generateQuestionsFromText(truncatedText, "", detectedTopic);
 
       if (questions.length > 0) {
         const rows = questions.map((q) => ({

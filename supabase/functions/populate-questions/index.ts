@@ -171,8 +171,8 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+
 
     // Mode 1: Raw text input (for batch imports)
     if (body.text && body.source) {
