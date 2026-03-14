@@ -181,7 +181,7 @@ serve(async (req) => {
         body.text.slice(0, 80000),
         topic,
         body.source,
-        user.id,
+        userId,
         supabaseAdmin,
         LOVABLE_API_KEY,
       );
