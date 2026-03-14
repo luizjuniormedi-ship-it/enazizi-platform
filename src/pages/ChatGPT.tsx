@@ -79,7 +79,7 @@ const ChatGPT = () => {
 
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${FUNCTION_NAME}`;
 
-  // Load performance from DB
+  // Load performance + enazizi progress from DB
   useEffect(() => {
     if (!user) return;
     const loadPerformance = async () => {
@@ -97,6 +97,19 @@ const ChatGPT = () => {
           temas_fracos: (data.temas_fracos as string[]) || [],
           historico_estudo: (data.historico_estudo as StudyPerformance["historico_estudo"]) || [],
         });
+      }
+      // Load enazizi step
+      const { data: progress } = await supabase
+        .from("enazizi_progress")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (progress) {
+        setEnaziziStep(progress.estado_atual || 1);
+        if (progress.tema_atual && progress.estado_atual > 2) {
+          // Resume session
+          setCurrentTopic(progress.tema_atual);
+        }
       }
     };
     loadPerformance();
