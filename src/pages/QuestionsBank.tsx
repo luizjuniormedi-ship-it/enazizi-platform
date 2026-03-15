@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { Database, Play, Trash2, ChevronDown, ChevronUp, Search, BarChart3, Target, TrendingUp, GraduationCap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -38,6 +39,7 @@ function parseOptions(raw: Json | null): string[] {
 const QuestionsBank = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { addXp } = useGamification();
   const navigate = useNavigate();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -181,6 +183,9 @@ const QuestionsBank = () => {
       question_id: practiceQuestion.id,
       correct: isCorrect,
     });
+
+    // Award XP
+    await addXp(isCorrect ? XP_REWARDS.question_correct : XP_REWARDS.question_answered);
 
     // Log wrong answer to error_bank
     if (!isCorrect) {

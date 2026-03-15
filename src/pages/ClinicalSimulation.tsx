@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import {
   Activity, Loader2, Send, Stethoscope, Syringe, FileSearch,
   Clock, Heart, AlertTriangle, Award, ArrowRight, RotateCcw,
@@ -65,6 +66,7 @@ interface FinalEval {
 const ClinicalSimulation = () => {
   const { session } = useAuth();
   const { toast } = useToast();
+  const { addXp } = useGamification();
 
   const [phase, setPhase] = useState<Phase>("lobby");
   const [specialty, setSpecialty] = useState("Clínica Médica");
@@ -199,6 +201,8 @@ const ClinicalSimulation = () => {
       });
       setFinalEval(res);
       setPhase("result");
+      // Award XP for completing plantão
+      await addXp(XP_REWARDS.plantao_completed);
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
       setPhase("active");

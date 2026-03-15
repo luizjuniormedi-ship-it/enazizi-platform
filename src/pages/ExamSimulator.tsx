@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { FileText, Clock, Play, CheckCircle2, Loader2, ArrowRight, Award, AlertTriangle, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ const isMedicalQuestion = (q: { statement?: string; topic?: string; explanation?
 const ExamSimulator = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { addXp } = useGamification();
   const [phase, setPhase] = useState<Phase>("setup");
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [current, setCurrent] = useState(0);
@@ -197,6 +199,8 @@ const ExamSimulator = () => {
           });
         }
       }
+      // Award XP for completing simulado
+      await addXp(XP_REWARDS.simulado_completed);
     }
 
     setPhase("result");

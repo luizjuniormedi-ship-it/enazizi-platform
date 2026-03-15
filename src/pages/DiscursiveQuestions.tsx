@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import {
   PenLine, Loader2, Send, CheckCircle, Star, AlertTriangle,
   ChevronDown, History, BookOpen, Target, ArrowRight
@@ -50,6 +51,7 @@ interface HistoryItem {
 const DiscursiveQuestions = () => {
   const { session } = useAuth();
   const { toast } = useToast();
+  const { addXp } = useGamification();
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [specialty, setSpecialty] = useState("");
@@ -117,6 +119,8 @@ const DiscursiveQuestions = () => {
       const res = await callAPI({ action: "correct", attempt_id: attemptId, answer: answer.trim() });
       setCorrection(res.correction);
       setPhase("result");
+      // Award XP for discursive completion
+      await addXp(XP_REWARDS.discursive_completed);
     } catch (e) {
       toast({ title: "Erro na correção", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
       setPhase("answering");

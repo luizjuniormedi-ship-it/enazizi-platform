@@ -3,6 +3,7 @@ import AgentChat from "@/components/agents/AgentChat";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useCallback } from "react";
+import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 
 const quickActions = [
   { label: "🎯 Escolher tema", prompt: "Quero gerar flashcards clínicos. Me pergunte sobre qual tema/especialidade eu quero antes de começar.", icon: "🎯" },
@@ -55,6 +56,7 @@ function parseFlashcardsFromText(content: string): Array<{ question: string; ans
 
 const FlashcardGenerator = () => {
   const { user } = useAuth();
+  const { addXp } = useGamification();
 
   const handleSaveFlashcards = useCallback(async (content: string): Promise<number> => {
     if (!user) throw new Error("Usuário não autenticado");
@@ -72,8 +74,11 @@ const FlashcardGenerator = () => {
     const { error } = await supabase.from("flashcards").insert(rows);
     if (error) throw new Error("Erro ao salvar: " + error.message);
 
+    // Award XP for each flashcard created
+    await addXp(XP_REWARDS.flashcard_created * parsed.length);
+
     return parsed.length;
-  }, [user]);
+  }, [user, addXp]);
 
   return (
     <AgentChat
