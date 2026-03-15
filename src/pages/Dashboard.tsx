@@ -13,6 +13,7 @@ import TopicEvolution from "@/components/dashboard/TopicEvolution";
 import MotivationalGreeting from "@/components/dashboard/MotivationalGreeting";
 import WhatsNewPopup from "@/components/dashboard/WhatsNewPopup";
 import SystemGuidePopup from "@/components/dashboard/SystemGuidePopup";
+import SpecialtyBenchmark from "@/components/dashboard/SpecialtyBenchmark";
 
 interface PlanJson {
   weeklySchedule?: { day: string; tasks: { time: string; subject: string; duration: string; type?: string }[] }[];
