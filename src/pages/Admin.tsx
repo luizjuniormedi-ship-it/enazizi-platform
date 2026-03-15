@@ -712,7 +712,26 @@ const Admin = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Reset Password Dialog */}
+      {/* Toggle Professor Dialog */}
+      <Dialog open={professorDialog.open} onOpenChange={(open) => !open && setProfessorDialog({ open: false, user: null, makeProfessor: false })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{professorDialog.makeProfessor ? "Promover a Professor" : "Remover Professor"}</DialogTitle>
+            <DialogDescription>
+              {professorDialog.makeProfessor
+                ? `Deseja tornar "${professorDialog.user?.display_name || professorDialog.user?.email}" um professor? Ele poderá criar simulados e acompanhar alunos.`
+                : `Deseja remover o acesso de professor de "${professorDialog.user?.display_name || professorDialog.user?.email}"?`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProfessorDialog({ open: false, user: null, makeProfessor: false })}>Cancelar</Button>
+            <Button onClick={handleToggleProfessor} disabled={!!actionLoading}>
+              {professorDialog.makeProfessor ? "Promover" : "Remover"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={passwordDialog.open} onOpenChange={(open) => !open && setPasswordDialog({ open: false, user: null, password: "" })}>
         <DialogContent>
           <DialogHeader>
