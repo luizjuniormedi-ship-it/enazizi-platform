@@ -88,6 +88,7 @@ NÃO repita estados anteriores. NÃO pule para estados futuros. Avance apenas UM
         instructions,
         input,
         stream: true,
+        max_output_tokens: MAX_OUTPUT_TOKENS,
       }),
     });
 

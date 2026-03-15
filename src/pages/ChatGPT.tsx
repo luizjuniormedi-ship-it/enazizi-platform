@@ -241,11 +241,12 @@ const ChatGPT = () => {
     const state = location.state as { initialMessage?: string; fromErrorBank?: boolean } | null;
     if (state?.fromErrorBank && state?.initialMessage && !errorBankHandled.current && user) {
       errorBankHandled.current = true;
+      const initialMessage = ensureSequentialInitialMessage(state.initialMessage);
       setStudyStarted(true);
       setCurrentTopic("Revisão do Banco de Erros");
       // Small delay to ensure sendMessage is ready
       setTimeout(() => {
-        sendMessage(state.initialMessage!);
+        sendMessage(initialMessage);
       }, 500);
       // Clear location state to prevent re-trigger
       window.history.replaceState({}, document.title);
