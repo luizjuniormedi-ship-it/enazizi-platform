@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.admin-actions]
 verify_jwt = false
+
+[functions.populate-questions]
+verify_jwt = false
