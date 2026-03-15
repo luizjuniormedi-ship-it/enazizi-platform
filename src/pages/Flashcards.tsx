@@ -252,6 +252,17 @@ const Flashcards = () => {
           <Button variant={mode === "all" ? "default" : "outline"} size="sm" onClick={() => { setMode("all"); setIdx(0); setFlipped(false); }}>
             Todos ({allCards.length})
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportToPdf(
+              cards.map((c) => ({ title: c.question, content: c.answer, subtitle: c.topic || undefined })),
+              "Flashcards_ENAZIZI"
+            )}
+            disabled={cards.length === 0}
+          >
+            <Download className="h-4 w-4 mr-2" /> PDF
+          </Button>
         </div>
       </div>
 
