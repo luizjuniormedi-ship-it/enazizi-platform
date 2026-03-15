@@ -401,12 +401,11 @@ const Admin = () => {
               <div className="space-y-2">
                 {/* Header */}
                 <div className="hidden md:grid grid-cols-12 gap-3 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  <div className="col-span-3">Usuário</div>
+                  <div className="col-span-2">Usuário</div>
                   <div className="col-span-2">Email</div>
                   <div className="col-span-1">Plano</div>
-                  <div className="col-span-1">Papel</div>
                   <div className="col-span-1">Status</div>
-                  <div className="col-span-1">Cadastro</div>
+                  <div className="col-span-3">Evolução</div>
                   <div className="col-span-3 text-right">Ações</div>
                 </div>
 
@@ -414,6 +413,7 @@ const Admin = () => {
                   const plan = getUserPlan(u);
                   const isCurrentlyActioning = actionLoading === u.user_id;
                   const isPending = u.status === "pending";
+                  const evo = u.evolution;
 
                   return (
                     <div
@@ -424,7 +424,7 @@ const Admin = () => {
                         "bg-secondary/50 hover:bg-secondary/80"
                       }`}
                     >
-                      <div className="col-span-3 flex items-center gap-2">
+                      <div className="col-span-2 flex items-center gap-2">
                         <button
                           onClick={() => setUserDetailDialog({ open: true, user: u })}
                           className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0 hover:bg-primary/20 transition-colors"
@@ -447,17 +447,31 @@ const Admin = () => {
                         </Badge>
                       </div>
                       <div className="col-span-1 flex items-center">
-                        {u.roles.includes("admin") ? (
-                          <Badge className="text-xs bg-accent/20 text-accent border-0">Admin</Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">User</span>
-                        )}
-                      </div>
-                      <div className="col-span-1 flex items-center">
                         {getStatusBadge(u)}
                       </div>
-                      <div className="col-span-1 flex items-center text-xs text-muted-foreground">
-                        {new Date(u.created_at).toLocaleDateString("pt-BR")}
+                      <div className="col-span-3 flex items-center gap-2">
+                        {evo && (evo.totalQuestions > 0 || evo.recentAttempts > 0) ? (
+                          <div className="flex items-center gap-2 text-xs flex-wrap">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                              <Target className="h-3 w-3" /> {evo.avgScore}%
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
+                              <BookOpen className="h-3 w-3" /> {evo.totalQuestions}q
+                            </span>
+                            {evo.recentAttempts > 0 && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-green-500/10 text-green-600">
+                                <Activity className="h-3 w-3" /> {evo.recentAttempts} (7d)
+                              </span>
+                            )}
+                            {evo.specialties > 0 && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
+                                <Brain className="h-3 w-3" /> {evo.specialties}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Sem atividade</span>
+                        )}
                       </div>
                       <div className="col-span-3 flex items-center justify-end gap-1.5 flex-wrap">
                         {isPending ? (
