@@ -284,6 +284,7 @@ export type Database = {
           answer: string
           created_at: string
           id: string
+          is_global: boolean
           organization_id: string | null
           question: string
           topic: string | null
@@ -293,6 +294,7 @@ export type Database = {
           answer: string
           created_at?: string
           id?: string
+          is_global?: boolean
           organization_id?: string | null
           question: string
           topic?: string | null
@@ -302,6 +304,7 @@ export type Database = {
           answer?: string
           created_at?: string
           id?: string
+          is_global?: boolean
           organization_id?: string | null
           question?: string
           topic?: string | null
