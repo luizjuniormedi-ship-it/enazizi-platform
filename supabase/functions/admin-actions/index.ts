@@ -159,12 +159,26 @@ Deno.serve(async (req) => {
       }
 
       case "get_stats": {
-        const [{ count: totalUsers }, { count: blockedUsers }, { data: activeSubs }, { count: pendingUsers }] = await Promise.all([
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+        const [{ count: totalUsers }, { count: blockedUsers }, { data: activeSubs }, { count: pendingUsers }, { count: onlineUsers }, { data: onlineDetails }] = await Promise.all([
           supabaseAuth.from("profiles").select("id", { count: "exact", head: true }),
           supabaseAuth.from("profiles").select("id", { count: "exact", head: true }).eq("is_blocked", true),
           supabaseAuth.from("subscriptions").select("plans(name)").eq("status", "active"),
           supabaseAuth.from("profiles").select("id", { count: "exact", head: true }).eq("status", "pending"),
+          supabaseAuth.from("user_presence").select("user_id", { count: "exact", head: true }).gte("last_seen_at", fiveMinutesAgo),
+          supabaseAuth.from("user_presence").select("user_id, last_seen_at, current_page").gte("last_seen_at", fiveMinutesAgo),
         ]);
+
+        // Enrich online users with names
+        let onlineUsersData: any[] = [];
+        if (onlineDetails && onlineDetails.length > 0) {
+          const onlineIds = onlineDetails.map((o: any) => o.user_id);
+          const { data: onlineProfiles } = await supabaseAuth.from("profiles").select("user_id, display_name, email").in("user_id", onlineIds);
+          onlineUsersData = onlineDetails.map((o: any) => {
+            const profile = (onlineProfiles || []).find((p: any) => p.user_id === o.user_id);
+            return { ...o, display_name: profile?.display_name || "Sem nome", email: profile?.email || "" };
+          });
+        }
 
         const planCounts: Record<string, number> = {};
         (activeSubs || []).forEach((s: any) => {
@@ -172,7 +186,7 @@ Deno.serve(async (req) => {
           planCounts[name] = (planCounts[name] || 0) + 1;
         });
 
-        return ok({ totalUsers: totalUsers || 0, blockedUsers: blockedUsers || 0, activeSubs: activeSubs?.length || 0, pendingUsers: pendingUsers || 0, planCounts });
+        return ok({ totalUsers: totalUsers || 0, blockedUsers: blockedUsers || 0, activeSubs: activeSubs?.length || 0, pendingUsers: pendingUsers || 0, planCounts, onlineUsers: onlineUsers || 0, onlineUsersData });
       }
 
       case "get_user_tracking": {
