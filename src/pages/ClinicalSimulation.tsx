@@ -65,7 +65,7 @@ interface FinalEval {
 }
 
 const ClinicalSimulation = () => {
-  const { session } = useAuth();
+  const { session, user } = useAuth();
   const { toast } = useToast();
   const { addXp } = useGamification();
 

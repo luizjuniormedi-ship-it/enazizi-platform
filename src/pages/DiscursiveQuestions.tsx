@@ -50,7 +50,7 @@ interface HistoryItem {
 }
 
 const DiscursiveQuestions = () => {
-  const { session } = useAuth();
+  const { session, user } = useAuth();
   const { toast } = useToast();
   const { addXp } = useGamification();
 
