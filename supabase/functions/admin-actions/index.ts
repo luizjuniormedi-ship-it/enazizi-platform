@@ -191,7 +191,7 @@ Deno.serve(async (req) => {
           { data: diagnostics },
           { data: quota },
         ] = await Promise.all([
-          supabaseAuth.from("profiles").select("*").eq("user_id", target_user_id).single(),
+          supabaseAuth.from("profiles").select("*").eq("user_id", target_user_id).maybeSingle(),
           supabaseAuth.from("study_performance").select("*").eq("user_id", target_user_id).order("updated_at", { ascending: false }).limit(1),
           supabaseAuth.from("medical_domain_map").select("*").eq("user_id", target_user_id).order("domain_score", { ascending: false }),
           supabaseAuth.from("error_bank").select("id, tema, subtema, vezes_errado, created_at").eq("user_id", target_user_id).order("vezes_errado", { ascending: false }).limit(20),
