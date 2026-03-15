@@ -52,7 +52,7 @@ const MobileNav = () => {
             <span className="font-bold">ENAZIZI</span>
           </Link>
         </div>
-        <ScrollArea className="h-[calc(100vh-140px)]">
+        <ScrollArea className="h-[calc(100vh-200px)]">
           <nav className="px-3 py-2 space-y-1">
             {mobileNavItems.map((item) => (
               <Link
@@ -95,6 +95,9 @@ const MobileNav = () => {
             </div>
           </nav>
         </ScrollArea>
+        <div className="border-t border-sidebar-border flex-shrink-0">
+          <StudyTimer />
+        </div>
       </SheetContent>
     </Sheet>
   );
