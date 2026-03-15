@@ -40,15 +40,15 @@ const DashboardSidebar = () => {
   };
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 border-r border-sidebar-border bg-sidebar min-h-screen">
-      <div className="p-6">
+    <aside className="hidden lg:flex flex-col w-64 border-r border-sidebar-border bg-sidebar h-screen sticky top-0">
+      <div className="p-6 flex-shrink-0">
         <Link to="/" className="flex items-center gap-2">
           <img src={enazizi} alt="ENAZIZI" className="h-9 w-9 rounded-lg object-cover" />
           <span className="text-lg font-bold text-sidebar-foreground">ENAZIZI</span>
         </Link>
       </div>
 
-      <nav className="flex-1 px-3 space-y-1">
+      <nav className="flex-1 px-3 space-y-1 overflow-y-auto min-h-0">
         {navItems.map((item) => {
           const active = location.pathname === item.to;
           return (
