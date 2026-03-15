@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { Button } from "@/components/ui/button";
 import DashboardWarnings from "@/components/dashboard/DashboardWarnings";
 import TopicEvolution from "@/components/dashboard/TopicEvolution";
+import MotivationalGreeting from "@/components/dashboard/MotivationalGreeting";
 
 interface PlanJson {
   weeklySchedule?: { day: string; tasks: { time: string; subject: string; duration: string; type?: string }[] }[];
@@ -37,18 +38,27 @@ const Dashboard = () => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [weekFilter, setWeekFilter] = useState<4 | 8 | 12>(8);
+  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [questionsAnswered, setQuestionsAnswered] = useState(0);
+  const [accuracy, setAccuracy] = useState(0);
 
   useEffect(() => {
     if (!user) return;
 
     const load = async () => {
-      const [flashcardsRes, uploadsRes, tasksRes, plansRes, reviewsRes] = await Promise.all([
+      const [flashcardsRes, uploadsRes, tasksRes, plansRes, reviewsRes, profileRes, perfRes] = await Promise.all([
         supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("study_tasks").select("completed, created_at, task_json").eq("user_id", user.id),
         supabase.from("study_plans").select("plan_json").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("reviews").select("next_review, flashcard_id, flashcards(topic)").eq("user_id", user.id).gte("next_review", new Date().toISOString()).order("next_review", { ascending: true }).limit(5),
+        supabase.from("profiles").select("display_name").eq("user_id", user.id).maybeSingle(),
+        supabase.from("study_performance").select("questoes_respondidas, taxa_acerto").eq("user_id", user.id).maybeSingle(),
       ]);
+
+      setDisplayName(profileRes.data?.display_name || null);
+      setQuestionsAnswered(perfRes.data?.questoes_respondidas || 0);
+      setAccuracy(Number(perfRes.data?.taxa_acerto) || 0);
 
       const tasks = tasksRes.data || [];
       const completedTasks = tasks.filter((t: any) => t.completed).length;
@@ -189,21 +199,33 @@ const Dashboard = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <MotivationalGreeting
+          streak={stats.streak}
+          todayCompleted={stats.todayCompleted}
+          todayTotal={stats.todayTotal}
+          completedTasks={stats.completedTasks}
+          totalTasks={stats.totalTasks}
+          daysUntilExam={stats.daysUntilExam}
+          questionsAnswered={questionsAnswered}
+          accuracy={accuracy}
+          displayName={displayName}
+        />
+
+        <h1 className="text-2xl font-bold mt-5">Dashboard</h1>
         <p className="text-muted-foreground">
           {stats.daysUntilExam
             ? `${stats.daysUntilExam} dias até a prova • ${taskPercent}% das tarefas concluídas`
             : "Bem-vindo de volta! Aqui está seu progresso."}
-      </p>
+        </p>
 
-      <DashboardWarnings
-        todayCompleted={stats.todayCompleted}
-        todayTotal={stats.todayTotal}
-        completedTasks={stats.completedTasks}
-        totalTasks={stats.totalTasks}
-        streak={stats.streak}
-        daysUntilExam={stats.daysUntilExam}
-      />
+        <DashboardWarnings
+          todayCompleted={stats.todayCompleted}
+          todayTotal={stats.todayTotal}
+          completedTasks={stats.completedTasks}
+          totalTasks={stats.totalTasks}
+          streak={stats.streak}
+          daysUntilExam={stats.daysUntilExam}
+        />
       </div>
 
       {/* Stat Cards */}
