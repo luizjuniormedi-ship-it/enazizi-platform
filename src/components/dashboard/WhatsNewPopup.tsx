@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, CheckCircle2, Rocket } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const CURRENT_VERSION = "2.4.0";
+const CURRENT_VERSION = "3.0.0";
 const STORAGE_KEY = "enazizi_last_seen_version";
 
 interface UpdateItem {
@@ -22,33 +22,63 @@ interface UpdateItem {
 const updates: UpdateItem[] = [
   {
     icon: "rocket",
-    title: "Banco de Questões Expandido (+96 questões)",
+    title: "PWA Completa — Instale no Celular",
     description:
-      "Novas questões de Cardiologia, Cirurgia, Pediatria, GO e Pneumologia baseadas nas últimas diretrizes clínicas.",
+      "O ENAZIZI agora funciona como app nativo! Instale direto do navegador no iOS e Android com suporte offline completo.",
   },
   {
     icon: "sparkles",
-    title: "Contador de Base Global no Dashboard",
+    title: "Modo Claro / Escuro",
     description:
-      "Agora você pode ver em tempo real quantos flashcards e questões globais estão disponíveis na plataforma.",
+      "Novo toggle de tema no dashboard. Alterne entre modo escuro e claro com persistência automática.",
   },
   {
     icon: "check",
-    title: "Painel Admin com Usuários Online",
+    title: "Exportação em PDF",
     description:
-      "Administradores agora visualizam quem está online e em qual página da plataforma.",
+      "Exporte seus flashcards e questões do banco em PDF formatado para estudar offline ou imprimir.",
+  },
+  {
+    icon: "rocket",
+    title: "Benchmark Comparativo por Especialidade",
+    description:
+      "Veja seu percentil anônimo em cada especialidade médica comparado com outros alunos da plataforma.",
   },
   {
     icon: "sparkles",
-    title: "Filtro por Tema nos Flashcards Globais",
+    title: "Conquistas & Ranking com Gamificação",
     description:
-      "Filtre flashcards da base global por especialidade para focar nos seus temas de maior necessidade.",
+      "Sistema de XP, streaks, níveis e ranking semanal para motivar seus estudos diários.",
+  },
+  {
+    icon: "check",
+    title: "Modo Plantão — Simulação Clínica",
+    description:
+      "Simule plantões médicos com casos clínicos interativos e tome decisões em tempo real.",
+  },
+  {
+    icon: "rocket",
+    title: "Questões Discursivas com Correção por IA",
+    description:
+      "Pratique questões discursivas e receba correção detalhada com nota e feedback da IA.",
+  },
+  {
+    icon: "check",
+    title: "Painel do Professor",
+    description:
+      "Professores podem criar simulados personalizados e acompanhar o desempenho dos alunos.",
+  },
+  {
+    icon: "sparkles",
+    title: "Mapa de Evolução por Domínio",
+    description:
+      "Visualize seu progresso em cada especialidade médica com scores detalhados e histórico.",
   },
   {
     icon: "rocket",
     title: "Melhorias de Performance e Estabilidade",
     description:
-      "Otimizações no carregamento do dashboard e correções de bugs reportados.",
+      "Service worker com cache inteligente, responsividade mobile aprimorada e fallback de IA otimizado.",
   },
 ];
 
