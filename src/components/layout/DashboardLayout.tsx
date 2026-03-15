@@ -1,7 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
 import DashboardSidebar from "./DashboardSidebar";
-import { Menu, LogOut, User, Shield } from "lucide-react";
+import { Menu, LogOut, User, Shield, Sun, Moon } from "lucide-react";
 import StudyTimer from "@/components/dashboard/StudyTimer";
 import enazizi from "@/assets/enazizi-mascot.png";
 import { useState } from "react";
@@ -9,6 +9,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTheme } from "@/hooks/useTheme";
 
 const mobileNavItems = [
   { to: "/dashboard", label: "📊 Dashboard" },
