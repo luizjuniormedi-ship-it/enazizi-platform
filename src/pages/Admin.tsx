@@ -286,13 +286,14 @@ const Admin = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           { label: "Usuários totais", value: stats?.totalUsers ?? "—", icon: Users },
+          { label: "Online agora", value: stats?.onlineUsers ?? 0, icon: Wifi, highlight: (stats?.onlineUsers || 0) > 0, highlightColor: "text-green-500" },
           { label: "Aguardando aprovação", value: pendingCount, icon: Clock, highlight: pendingCount > 0 },
           { label: "Ativos", value: activeCount, icon: CheckCircle },
           { label: "Bloqueados", value: blockedCount, icon: Ban },
           { label: "Assinaturas ativas", value: stats?.activeSubs ?? "—", icon: CreditCard },
         ].map((s) => (
-          <div key={s.label} className={`glass-card p-5 ${(s as any).highlight ? "ring-2 ring-amber-500/30" : ""}`}>
-            <s.icon className={`h-5 w-5 mb-3 ${(s as any).highlight ? "text-amber-500" : "text-primary"}`} />
+          <div key={s.label} className={`glass-card p-5 ${(s as any).highlight ? "ring-2 ring-primary/30" : ""}`}>
+            <s.icon className={`h-5 w-5 mb-3 ${(s as any).highlightColor || ((s as any).highlight ? "text-amber-500" : "text-primary")}`} />
             <div className="text-2xl font-bold">{s.value}</div>
             <div className="text-sm text-muted-foreground">{s.label}</div>
           </div>
