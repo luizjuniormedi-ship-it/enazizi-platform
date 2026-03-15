@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, CalendarDays, FlipVertical,
   FileText, Upload, MessageSquare, BarChart3, LogOut, Shield, User,
-  HelpCircle, BookOpen, Heart, Bot, Database, Zap, TrendingUp, Stethoscope, Award, Sparkles, AlertTriangle, Map, GraduationCap, PenLine, Activity
+  HelpCircle, BookOpen, Heart, Bot, Database, Zap, TrendingUp, Stethoscope, Award, Sparkles, AlertTriangle, Map, GraduationCap, PenLine, Activity, Trophy
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
@@ -31,6 +31,7 @@ const navItems = [
   { to: "/dashboard/discursivas", icon: PenLine, label: "✍️ Questões Discursivas" },
   { to: "/dashboard/plantao", icon: Activity, label: "🚨 Modo Plantão" },
   { to: "/dashboard/uploads", icon: Upload, label: "📤 Uploads" },
+  { to: "/dashboard/conquistas", icon: Trophy, label: "🏆 Conquistas & Ranking" },
   { to: "/dashboard/analytics", icon: BarChart3, label: "📊 Analytics" },
 ];
 

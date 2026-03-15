@@ -38,6 +38,7 @@ import ProfessorDashboard from "./pages/ProfessorDashboard";
 import StudentSimulados from "./pages/StudentSimulados";
 import DiscursiveQuestions from "./pages/DiscursiveQuestions";
 import ClinicalSimulation from "./pages/ClinicalSimulation";
+import Achievements from "./pages/Achievements";
 import NotFound from "./pages/NotFound";
 import Install from "./pages/Install";
 
@@ -78,6 +79,7 @@ const App = () => (
               <Route path="proficiencia" element={<StudentSimulados />} />
               <Route path="discursivas" element={<DiscursiveQuestions />} />
               <Route path="plantao" element={<ClinicalSimulation />} />
+              <Route path="conquistas" element={<Achievements />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="perfil" element={<Profile />} />
             </Route>

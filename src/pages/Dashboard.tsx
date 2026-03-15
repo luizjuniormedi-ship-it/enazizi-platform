@@ -1,4 +1,6 @@
 import { CalendarDays, FlipVertical, FileText, Upload, TrendingUp, Clock, BookOpen, CheckCircle2, Loader2, BarChart3, Flame, CalendarCheck, Globe, HelpCircle } from "lucide-react";
+import XpWidget from "@/components/gamification/XpWidget";
+import AchievementToast from "@/components/gamification/AchievementToast";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -221,6 +223,11 @@ const Dashboard = () => {
           accuracy={accuracy}
           displayName={displayName}
         />
+
+        <div className="mt-4 mb-2">
+          <XpWidget />
+        </div>
+        <AchievementToast />
 
         <h1 className="text-2xl font-bold mt-5">Dashboard</h1>
         <p className="text-muted-foreground">

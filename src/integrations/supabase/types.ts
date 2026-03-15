@@ -1042,6 +1042,69 @@ export type Database = {
           },
         ]
       }
+      user_achievements: {
+        Row: {
+          achievement_key: string
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_key: string
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_key?: string
+          id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_gamification: {
+        Row: {
+          created_at: string
+          current_streak: number
+          id: string
+          last_activity_date: string | null
+          level: number
+          longest_streak: number
+          updated_at: string
+          user_id: string
+          weekly_reset_at: string
+          weekly_xp: number
+          xp: number
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_activity_date?: string | null
+          level?: number
+          longest_streak?: number
+          updated_at?: string
+          user_id: string
+          weekly_reset_at?: string
+          weekly_xp?: number
+          xp?: number
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_activity_date?: string | null
+          level?: number
+          longest_streak?: number
+          updated_at?: string
+          user_id?: string
+          weekly_reset_at?: string
+          weekly_xp?: number
+          xp?: number
+        }
+        Relationships: []
+      }
       user_presence: {
         Row: {
           current_page: string | null
