@@ -300,16 +300,16 @@ const Admin = () => {
         ))}
       </div>
 
-      {/* Online Users Detail */}
-      {(stats?.onlineUsersData?.length || 0) > 0 && (
-        <div className="glass-card p-6">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Wifi className="h-5 w-5 text-green-500" />
-            Usuários online agora ({stats?.onlineUsers})
-          </h2>
+      <div className="glass-card p-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Wifi className="h-5 w-5 text-green-500" />
+          Usuários online agora
+          <Badge variant="outline" className="text-green-600 border-green-500/30 ml-1">{stats?.onlineUsers ?? 0}</Badge>
+        </h2>
+        {(stats?.onlineUsersData?.length || 0) > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {stats?.onlineUsersData?.map((ou) => {
-              const pageName = ou.current_page?.replace("/dashboard/", "")?.replace("/dashboard", "Dashboard") || "—";
+              const pageName = ou.current_page === "/dashboard" ? "Dashboard" : ou.current_page?.replace("/dashboard/", "") || "—";
               const seenAgo = Math.round((Date.now() - new Date(ou.last_seen_at).getTime()) / 60000);
               return (
                 <div key={ou.user_id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
@@ -329,8 +329,10 @@ const Admin = () => {
               );
             })}
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-sm text-muted-foreground">Nenhum usuário online no momento.</p>
+        )}
+      </div>
 
       {/* Plan distribution */}
       {stats?.planCounts && Object.keys(stats.planCounts).length > 0 && (
