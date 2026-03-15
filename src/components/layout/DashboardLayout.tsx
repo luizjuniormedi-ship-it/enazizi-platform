@@ -1,6 +1,8 @@
 import { Outlet } from "react-router-dom";
 import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
 import DashboardSidebar from "./DashboardSidebar";
+import GlobalSearch from "./GlobalSearch";
+import NotificationBell from "@/components/dashboard/NotificationBell";
 import { Menu, LogOut, User, Shield, Sun, Moon } from "lucide-react";
 import StudyTimer from "@/components/dashboard/StudyTimer";
 import enazizi from "@/assets/enazizi-mascot.png";
