@@ -77,6 +77,7 @@ const App = () => (
               <Route path="mapa-dominio" element={<MedicalDomainMap />} />
               <Route path="proficiencia" element={<StudentSimulados />} />
               <Route path="discursivas" element={<DiscursiveQuestions />} />
+              <Route path="plantao" element={<ClinicalSimulation />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="perfil" element={<Profile />} />
             </Route>
