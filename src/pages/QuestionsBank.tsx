@@ -39,6 +39,7 @@ function parseOptions(raw: Json | null): string[] {
 const QuestionsBank = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { addXp } = useGamification();
   const navigate = useNavigate();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
