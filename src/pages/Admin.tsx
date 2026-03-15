@@ -115,6 +115,17 @@ const Admin = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  const loadUserTracking = useCallback(async (u: AdminUser) => {
+    setTrackingDialog({ open: true, user: u, data: null, loading: true });
+    try {
+      const res = await callAdmin({ action: "get_user_tracking", target_user_id: u.user_id });
+      setTrackingDialog((prev) => ({ ...prev, data: res, loading: false }));
+    } catch (e) {
+      toast({ title: "Erro", description: "Erro ao carregar dados do usuário", variant: "destructive" });
+      setTrackingDialog((prev) => ({ ...prev, loading: false }));
+    }
+  }, [callAdmin, toast]);
+
   const handleApproveUser = async (u: AdminUser) => {
     setActionLoading(u.user_id);
     try {
