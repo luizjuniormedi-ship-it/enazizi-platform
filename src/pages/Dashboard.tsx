@@ -249,6 +249,37 @@ const Dashboard = () => {
         ))}
       </div>
 
+      {/* Global Knowledge Base Banner */}
+      {(globalFlashcards > 0 || globalQuestions > 0) && (
+        <div className="glass-card p-5 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Globe className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm">Base de Conhecimento Global</h3>
+              <p className="text-xs text-muted-foreground">Conteúdo colaborativo gerado por todos os usuários</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Link to="/dashboard/flashcards" className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary/80 transition-colors">
+              <FlipVertical className="h-4 w-4 text-primary flex-shrink-0" />
+              <div>
+                <div className="text-lg font-bold">{globalFlashcards}</div>
+                <div className="text-xs text-muted-foreground">Flashcards globais</div>
+              </div>
+            </Link>
+            <Link to="/dashboard/banco-questoes" className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary/80 transition-colors">
+              <HelpCircle className="h-4 w-4 text-primary flex-shrink-0" />
+              <div>
+                <div className="text-lg font-bold">{globalQuestions}</div>
+                <div className="text-xs text-muted-foreground">Questões globais</div>
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Daily Summary & Streak */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="glass-card p-5 flex items-center gap-4">
