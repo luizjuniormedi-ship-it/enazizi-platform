@@ -314,7 +314,14 @@ const ErrorBank = () => {
             </h2>
             <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
               {filteredErrors.map((e) => (
-                <Card key={e.id} className="group">
+                <Card
+                  key={e.id}
+                  className="group cursor-pointer hover:border-primary/40 hover:bg-secondary/30 transition-all"
+                  onClick={() => {
+                    const prompt = `[BANCO DE ERROS - REVISÃO DIRECIONADA]\n\nO aluno errou ${e.vezes_errado}x no tema "${e.tema}"${e.subtema ? ` (subtema: ${e.subtema})` : ""}.${e.conteudo ? `\n\nConteúdo da questão: ${e.conteudo}` : ""}${e.motivo_erro ? `\nMotivo do erro: ${e.motivo_erro}` : ""}${e.categoria_erro ? `\nCategoria: ${CATEGORIA_LABELS[e.categoria_erro] || e.categoria_erro}` : ""}\n\nFaça uma revisão completa deste ponto: 1) Explicação técnica 2) Tradução leiga 3) Aplicação clínica 4) Conduta correta baseada em protocolos 5) Pergunta de active recall para fixação.`;
+                    navigate("/dashboard/chatgpt", { state: { initialMessage: prompt, fromErrorBank: true } });
+                  }}
+                >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
@@ -341,15 +348,20 @@ const ErrorBank = () => {
                         {e.motivo_erro && (
                           <p className="text-xs text-muted-foreground mt-1">💡 {e.motivo_erro}</p>
                         )}
-                        <p className="text-[10px] text-muted-foreground mt-1">
-                          {new Date(e.created_at).toLocaleDateString("pt-BR")}
-                        </p>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-[10px] text-muted-foreground">
+                            {new Date(e.created_at).toLocaleDateString("pt-BR")}
+                          </p>
+                          <span className="text-[10px] text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            Revisar com Tutor IA <ArrowRight className="h-3 w-3" />
+                          </span>
+                        </div>
                       </div>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => deleteError(e.id)}
+                        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                        onClick={(ev) => { ev.stopPropagation(); deleteError(e.id); }}
                       >
                         <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                       </Button>
