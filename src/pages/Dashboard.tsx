@@ -1,4 +1,4 @@
-import { CalendarDays, FlipVertical, FileText, Upload, TrendingUp, Clock, BookOpen, CheckCircle2, Loader2, BarChart3, Flame, CalendarCheck } from "lucide-react";
+import { CalendarDays, FlipVertical, FileText, Upload, TrendingUp, Clock, BookOpen, CheckCircle2, Loader2, BarChart3, Flame, CalendarCheck, Globe, HelpCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
