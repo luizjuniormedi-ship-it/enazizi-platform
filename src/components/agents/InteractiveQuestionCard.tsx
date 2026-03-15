@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { CheckCircle2, XCircle, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { logErrorToBank } from "@/lib/errorBankLogger";
 
 export interface InteractiveQuestion {
   statement: string;
@@ -20,8 +22,26 @@ const LETTERS = ["A", "B", "C", "D", "E"];
 
 const InteractiveQuestionCard = ({ question, index }: Props) => {
   const [selected, setSelected] = useState<number | null>(null);
+  const { user } = useAuth();
   const answered = selected !== null;
   const isCorrect = selected === question.correctIndex;
+
+  const handleSelect = async (optionIndex: number) => {
+    setSelected(optionIndex);
+    const correct = optionIndex === question.correctIndex;
+    
+    // Log wrong answer to error_bank
+    if (!correct && user) {
+      await logErrorToBank({
+        userId: user.id,
+        tema: question.topic || "Geral",
+        tipoQuestao: "objetiva",
+        conteudo: question.statement?.slice(0, 500),
+        motivoErro: `Marcou "${LETTERS[optionIndex]}: ${question.options[optionIndex]}" — Correta: "${LETTERS[question.correctIndex]}: ${question.options[question.correctIndex]}"`,
+        categoriaErro: "conceito",
+      });
+    }
+  };
 
   return (
     <div className="rounded-xl border border-border bg-card p-4 space-y-3">
@@ -55,7 +75,7 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
             <button
               key={oi}
               disabled={answered}
-              onClick={() => setSelected(oi)}
+              onClick={() => handleSelect(oi)}
               className={cn(
                 "w-full text-left flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-sm transition-all",
                 style,
