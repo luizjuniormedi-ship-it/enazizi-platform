@@ -59,6 +59,7 @@ a) [alternativa] b) [alternativa] c) [alternativa] d) [alternativa] e) [alternat
 
 Regras:
 - SEMPRE em português brasileiro
+- OBRIGATÓRIO: No mínimo 70% das questões devem ser baseadas em CASOS CLÍNICOS com apresentação de paciente, história clínica, exame físico e/ou exames complementares. As demais podem ser teóricas diretas.
 - Gere questões originais com casos clínicos realistas
 - Varie a dificuldade conforme solicitado
 - IMPORTANTE: Quando o aluno fornecer material, gere questões BASEADAS nesse material
