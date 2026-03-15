@@ -117,14 +117,14 @@ const DashboardLayout = () => {
   const { theme, toggle: toggleTheme } = useTheme();
 
   return (
-  <div className="flex min-h-screen bg-background">
+  <div className="flex min-h-[100dvh] min-h-screen bg-background w-full overflow-hidden">
     <DashboardSidebar />
-    <div className="flex-1 flex flex-col min-w-0">
-      <header className="lg:hidden h-14 border-b border-border flex items-center px-4 gap-3 flex-shrink-0">
+    <div className="flex-1 flex flex-col min-w-0 w-full max-w-full">
+      <header className="lg:hidden h-14 border-b border-border flex items-center px-3 sm:px-4 gap-2 sm:gap-3 flex-shrink-0">
         <MobileNav />
-        <img src={enazizi} alt="ENAZIZI" className="h-6 w-6 rounded object-cover" />
-        <span className="font-bold text-sm">ENAZIZI</span>
-        <div className="ml-auto flex items-center gap-1">
+        <img src={enazizi} alt="ENAZIZI" className="h-6 w-6 rounded object-cover flex-shrink-0" />
+        <span className="font-bold text-sm truncate">ENAZIZI</span>
+        <div className="ml-auto flex items-center gap-1 flex-shrink-0">
           <GlobalSearch />
           <NotificationBell />
           <button
@@ -136,12 +136,12 @@ const DashboardLayout = () => {
           </button>
         </div>
       </header>
-      <main className="flex-1 p-3 sm:p-6 lg:p-8 overflow-auto relative">
-        <div className="pointer-events-none fixed inset-0 flex items-center justify-center z-0">
+      <main className="dashboard-main flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-x-hidden overflow-y-auto relative w-full">
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-0">
           <img
             src={enazizi}
             alt=""
-            className="w-[40vmin] h-[40vmin] object-contain opacity-[0.25] select-none"
+            className="w-[30vmin] h-[30vmin] sm:w-[40vmin] sm:h-[40vmin] object-contain opacity-[0.15] select-none"
             draggable={false}
           />
         </div>
@@ -158,7 +158,7 @@ const DashboardLayout = () => {
             <span className="hidden xl:inline">{theme === "dark" ? "Claro" : "Escuro"}</span>
           </button>
         </div>
-        <div className="relative z-10">
+        <div className="relative z-10 w-full max-w-full">
           <Outlet />
         </div>
       </main>
