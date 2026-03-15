@@ -191,7 +191,7 @@ Deno.serve(async (req) => {
           { data: diagnostics },
           { data: quota },
         ] = await Promise.all([
-          supabaseAuth.from("profiles").select("*").eq("user_id", target_user_id).single(),
+          supabaseAuth.from("profiles").select("*").eq("user_id", target_user_id).maybeSingle(),
           supabaseAuth.from("study_performance").select("*").eq("user_id", target_user_id).order("updated_at", { ascending: false }).limit(1),
           supabaseAuth.from("medical_domain_map").select("*").eq("user_id", target_user_id).order("domain_score", { ascending: false }),
           supabaseAuth.from("error_bank").select("id, tema, subtema, vezes_errado, created_at").eq("user_id", target_user_id).order("vezes_errado", { ascending: false }).limit(20),
@@ -200,7 +200,7 @@ Deno.serve(async (req) => {
           supabaseAuth.from("study_plans").select("id, plan_json, updated_at").eq("user_id", target_user_id).order("updated_at", { ascending: false }).limit(1),
           supabaseAuth.from("exam_sessions").select("id, title, score, total_questions, status, started_at, finished_at").eq("user_id", target_user_id).order("started_at", { ascending: false }).limit(10),
           supabaseAuth.from("diagnostic_results").select("*").eq("user_id", target_user_id).order("completed_at", { ascending: false }).limit(1),
-          supabaseAuth.from("user_quotas").select("*").eq("user_id", target_user_id).single(),
+          supabaseAuth.from("user_quotas").select("*").eq("user_id", target_user_id).maybeSingle(),
         ]);
 
         // Calculate stats from attempts
