@@ -55,7 +55,8 @@ Para cada questão, retorne APENAS um array JSON válido no formato:
 ]
 
 REGRAS:
-- Cada questão deve ter um caso clínico curto
+- OBRIGATÓRIO: No mínimo 70% das questões (${Math.ceil(count * 0.7)} de ${count}) devem ser baseadas em CASOS CLÍNICOS com apresentação de paciente, história, exame físico e/ou exames complementares
+- As demais (até 30%) podem ser questões teóricas diretas
 - 5 alternativas (A-E)
 - correct_index é o índice (0-4) da alternativa correta
 - Baseie-se em provas reais de residência (ENARE, USP, UNIFESP)
