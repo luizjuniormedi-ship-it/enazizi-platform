@@ -29,9 +29,8 @@ export function usePushNotifications() {
           reg.showNotification(title, {
             icon: "/pwa-icon-192.png",
             badge: "/pwa-icon-192.png",
-            vibrate: [100, 50, 100],
             ...options,
-          });
+          } as NotificationOptions);
         }).catch(() => {
           // Fallback to regular notification
           new Notification(title, { icon: "/pwa-icon-192.png", ...options });
