@@ -18,6 +18,7 @@ const mobileNavItems = [
   { to: "/dashboard/diagnostico", label: "🩺 Diagnóstico Inicial" },
   { to: "/dashboard/cronograma", label: "📅 Cronograma" },
   { to: "/dashboard/flashcards", label: "🃏 Flashcards" },
+  { to: "/dashboard/gerar-flashcards", label: "🃏 Gerador de Flashcards" },
   { to: "/dashboard/simulados", label: "📝 Simulados" },
   { to: "/dashboard/simulado-completo", label: "🏆 Simulado Completo" },
   { to: "/dashboard/questoes", label: "❓ Gerador de Questões" },
@@ -27,7 +28,11 @@ const mobileNavItems = [
   { to: "/dashboard/predictor", label: "📈 Previsão de Desempenho" },
   { to: "/dashboard/banco-erros", label: "🚨 Banco de Erros" },
   { to: "/dashboard/mapa-dominio", label: "🗺️ Mapa de Evolução" },
+  { to: "/dashboard/proficiencia", label: "🎓 Proficiência" },
+  { to: "/dashboard/discursivas", label: "✍️ Questões Discursivas" },
+  { to: "/dashboard/plantao", label: "🚨 Modo Plantão" },
   { to: "/dashboard/uploads", label: "📤 Uploads" },
+  { to: "/dashboard/conquistas", label: "🏆 Conquistas & Ranking" },
   { to: "/dashboard/analytics", label: "📊 Analytics" },
 ];
 
