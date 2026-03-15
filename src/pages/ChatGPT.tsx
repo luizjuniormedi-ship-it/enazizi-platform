@@ -52,6 +52,12 @@ const ENAZIZI_STEPS = [
 ];
 
 const FUNCTION_NAME = "chatgpt-agent";
+const ENAZIZI_SEQUENTIAL_APPENDIX = "IMPORTANTE: para não cortar a explicação, divida em tópicos e entregue em blocos atômicos sequenciais (2 a 3 seções por resposta), finalize cada bloco sem truncar frases e pergunte se pode continuar antes do próximo bloco.";
+
+const ensureSequentialInitialMessage = (message: string) => {
+  if (/blocos? curtos?|bloco at[oô]mico|2\s*a\s*3\s*se[cç][oõ]es/i.test(message)) return message;
+  return `${message}\n\n${ENAZIZI_SEQUENTIAL_APPENDIX}`;
+};
 
 const ChatGPT = () => {
   const { user } = useAuth();
