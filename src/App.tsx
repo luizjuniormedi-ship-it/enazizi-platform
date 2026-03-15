@@ -34,6 +34,7 @@ import ChatGPT from "./pages/ChatGPT";
 import ErrorBank from "./pages/ErrorBank";
 import MedicalDomainMap from "./pages/MedicalDomainMap";
 import DashboardLayout from "./components/layout/DashboardLayout";
+import ProfessorDashboard from "./pages/ProfessorDashboard";
 import NotFound from "./pages/NotFound";
 import Install from "./pages/Install";
 
