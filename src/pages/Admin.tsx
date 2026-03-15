@@ -37,12 +37,22 @@ interface AdminUser {
   quota: { questions_used: number; questions_limit: number } | null;
 }
 
+interface OnlineUser {
+  user_id: string;
+  display_name: string;
+  email: string;
+  current_page: string;
+  last_seen_at: string;
+}
+
 interface Stats {
   totalUsers: number;
   blockedUsers: number;
   activeSubs: number;
   pendingUsers: number;
   planCounts: Record<string, number>;
+  onlineUsers: number;
+  onlineUsersData: OnlineUser[];
 }
 
 const PLANS = ["Free", "Pro", "Premium", "Enterprise"];
