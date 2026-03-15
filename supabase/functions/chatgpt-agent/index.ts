@@ -6,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const MAX_OUTPUT_TOKENS = 16384;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -86,6 +88,7 @@ NÃO repita estados anteriores. NÃO pule para estados futuros. Avance apenas UM
         instructions,
         input,
         stream: true,
+        max_output_tokens: MAX_OUTPUT_TOKENS,
       }),
     });
 
