@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import enazizi from "@/assets/enazizi-mascot.png";
+import StudyTimer from "@/components/dashboard/StudyTimer";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
