@@ -588,6 +588,8 @@ const Admin = () => {
                   change_plan: { label: "Alterou plano", color: "text-primary" },
                   promote_admin: { label: "Promoveu admin", color: "text-accent" },
                   demote_admin: { label: "Removeu admin", color: "text-muted-foreground" },
+                  promote_professor: { label: "Promoveu professor", color: "text-emerald-500" },
+                  demote_professor: { label: "Removeu professor", color: "text-muted-foreground" },
                   reset_password: { label: "Redefiniu senha", color: "text-orange-500" },
                   approve_user: { label: "Aprovou", color: "text-green-600" },
                   reject_user: { label: "Rejeitou", color: "text-destructive" },
