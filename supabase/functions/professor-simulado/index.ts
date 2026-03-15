@@ -192,6 +192,74 @@ REGRAS:
         return ok({ students: students || [] });
       }
 
+      case "class_analytics": {
+        const { faculdade, periodo } = params;
+
+        // Get students matching filters
+        let sQuery = sb.from("profiles").select("user_id, display_name, email, faculdade, periodo").eq("status", "active");
+        if (faculdade) sQuery = sQuery.eq("faculdade", faculdade);
+        if (periodo) sQuery = sQuery.eq("periodo", periodo);
+        const { data: students } = await sQuery.order("display_name");
+        if (!students || students.length === 0) return ok({ students: [], weakTopics: [], topPerformers: [] });
+
+        const studentIds = students.map((s: any) => s.user_id);
+
+        // Get domain scores for all students
+        const { data: domains } = await sb.from("medical_domain_map")
+          .select("user_id, specialty, domain_score, questions_answered, correct_answers, errors_count")
+          .in("user_id", studentIds);
+
+        // Get error bank aggregates
+        const { data: errors } = await sb.from("error_bank")
+          .select("user_id, tema, vezes_errado")
+          .in("user_id", studentIds);
+
+        // Get study performance
+        const { data: perfData } = await sb.from("study_performance")
+          .select("user_id, questoes_respondidas, taxa_acerto")
+          .in("user_id", studentIds);
+
+        // Build per-student stats
+        const studentStats = students.map((s: any) => {
+          const sDomains = (domains || []).filter((d: any) => d.user_id === s.user_id);
+          const sErrors = (errors || []).filter((e: any) => e.user_id === s.user_id);
+          const sPerf = (perfData || []).find((p: any) => p.user_id === s.user_id);
+          const avgScore = sDomains.length > 0
+            ? Math.round(sDomains.reduce((sum: number, d: any) => sum + d.domain_score, 0) / sDomains.length)
+            : 0;
+          const totalErrors = sErrors.reduce((sum: number, e: any) => sum + e.vezes_errado, 0);
+
+          return {
+            user_id: s.user_id,
+            display_name: s.display_name || s.email,
+            faculdade: s.faculdade,
+            periodo: s.periodo,
+            avg_domain_score: avgScore,
+            questions_answered: sPerf?.questoes_respondidas || 0,
+            accuracy: sPerf?.taxa_acerto ? Math.round(sPerf.taxa_acerto * 100) : 0,
+            total_errors: totalErrors,
+            specialties_studied: sDomains.length,
+          };
+        });
+
+        // Weak topics across the class
+        const topicErrorMap: Record<string, number> = {};
+        (errors || []).forEach((e: any) => {
+          topicErrorMap[e.tema] = (topicErrorMap[e.tema] || 0) + e.vezes_errado;
+        });
+        const weakTopics = Object.entries(topicErrorMap)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(([topic, count]) => ({ topic, error_count: count }));
+
+        // Top performers
+        const topPerformers = [...studentStats]
+          .sort((a, b) => b.avg_domain_score - a.avg_domain_score)
+          .slice(0, 5);
+
+        return ok({ students: studentStats, weakTopics, topPerformers });
+      }
+
       default:
         return new Response(JSON.stringify({ error: `Ação desconhecida: ${action}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
