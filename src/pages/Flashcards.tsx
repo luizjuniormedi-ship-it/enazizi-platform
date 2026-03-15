@@ -256,10 +256,10 @@ const Flashcards = () => {
             variant="outline"
             size="sm"
             onClick={() => exportToPdf(
-              cards.map((c) => ({ title: c.question, content: c.answer, subtitle: c.topic || undefined })),
+              filteredCards.map((c) => ({ title: c.question, content: c.answer, subtitle: c.topic || undefined })),
               "Flashcards_ENAZIZI"
             )}
-            disabled={cards.length === 0}
+            disabled={filteredCards.length === 0}
           >
             <Download className="h-4 w-4 mr-2" /> PDF
           </Button>
