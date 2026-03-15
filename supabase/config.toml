@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.discursive-questions]
 verify_jwt = false
+
+[functions.benchmark-percentile]
+verify_jwt = false
