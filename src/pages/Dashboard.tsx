@@ -208,6 +208,7 @@ const Dashboard = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       <WhatsNewPopup />
+      <SystemGuidePopup />
       <div>
         <MotivationalGreeting
           streak={stats.streak}
