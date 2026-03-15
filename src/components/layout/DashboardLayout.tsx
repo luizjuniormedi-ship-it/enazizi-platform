@@ -107,6 +107,8 @@ const MobileNav = () => {
 
 const DashboardLayout = () => {
   usePresenceHeartbeat();
+  const { theme, toggle: toggleTheme } = useTheme();
+
   return (
   <div className="flex min-h-screen bg-background">
     <DashboardSidebar />
@@ -115,6 +117,15 @@ const DashboardLayout = () => {
         <MobileNav />
         <img src={enazizi} alt="ENAZIZI" className="h-6 w-6 rounded object-cover" />
         <span className="font-bold text-sm">ENAZIZI</span>
+        <div className="ml-auto">
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Alternar tema"
+          >
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+        </div>
       </header>
       <main className="flex-1 p-3 sm:p-6 lg:p-8 overflow-auto relative">
         <div className="pointer-events-none fixed inset-0 flex items-center justify-center z-0">
@@ -125,6 +136,15 @@ const DashboardLayout = () => {
             draggable={false}
           />
         </div>
+        {/* Desktop theme toggle - floating */}
+        <button
+          onClick={toggleTheme}
+          className="hidden lg:flex fixed top-4 right-4 z-50 items-center gap-2 px-3 py-2 rounded-lg bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-sm"
+          aria-label="Alternar tema"
+        >
+          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          <span className="hidden xl:inline">{theme === "dark" ? "Claro" : "Escuro"}</span>
+        </button>
         <div className="relative z-10">
           <Outlet />
         </div>
