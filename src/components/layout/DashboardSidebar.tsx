@@ -88,14 +88,17 @@ const DashboardSidebar = () => {
         </div>
       </nav>
 
-      <div className="p-3 border-t border-sidebar-border">
-        <button
-          onClick={handleSignOut}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-colors w-full"
-        >
-          <LogOut className="h-4 w-4" />
-          Sair
-        </button>
+      <div className="border-t border-sidebar-border pt-2">
+        <StudyTimer />
+        <div className="px-3 pb-3">
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-colors w-full"
+          >
+            <LogOut className="h-4 w-4" />
+            Sair
+          </button>
+        </div>
       </div>
     </aside>
   );
