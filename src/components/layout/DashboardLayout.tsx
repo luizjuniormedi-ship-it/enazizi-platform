@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import DashboardSidebar from "./DashboardSidebar";
 import { Menu, LogOut, User, Shield } from "lucide-react";
+import StudyTimer from "@/components/dashboard/StudyTimer";
 import enazizi from "@/assets/enazizi-mascot.png";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
