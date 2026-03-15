@@ -209,6 +209,21 @@ const Admin = () => {
     }
   };
 
+  const handleToggleProfessor = async () => {
+    if (!professorDialog.user) return;
+    setActionLoading(professorDialog.user.user_id);
+    try {
+      await callAdmin({ action: "toggle_professor", target_user_id: professorDialog.user.user_id, make_professor: professorDialog.makeProfessor });
+      toast({ title: professorDialog.makeProfessor ? "Professor promovido" : "Professor removido", description: `${professorDialog.user.display_name || professorDialog.user.email} ${professorDialog.makeProfessor ? "agora é professor" : "não é mais professor"}.` });
+      setProfessorDialog({ open: false, user: null, makeProfessor: false });
+      loadData();
+    } catch (e) {
+      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleResetPassword = async () => {
     if (!passwordDialog.user || !passwordDialog.password) return;
     if (passwordDialog.password.length < 6) {
