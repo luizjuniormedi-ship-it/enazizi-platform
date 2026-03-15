@@ -124,7 +124,9 @@ const DashboardLayout = () => {
         <MobileNav />
         <img src={enazizi} alt="ENAZIZI" className="h-6 w-6 rounded object-cover" />
         <span className="font-bold text-sm">ENAZIZI</span>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-1">
+          <GlobalSearch />
+          <NotificationBell />
           <button
             onClick={toggleTheme}
             className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
