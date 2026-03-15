@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { logErrorToBank } from "@/lib/errorBankLogger";
 import {
   GraduationCap, Clock, FileText, CheckCircle, ArrowRight, ArrowLeft,
   Loader2, Trophy, AlertTriangle, Play, RotateCcw
