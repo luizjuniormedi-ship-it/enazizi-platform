@@ -88,7 +88,7 @@ const DashboardSidebar = () => {
         </div>
       </nav>
 
-      <div className="border-t border-sidebar-border pt-2">
+      <div className="border-t border-sidebar-border pt-2 flex-shrink-0">
         <StudyTimer />
         <div className="px-3 pb-3">
           <button
