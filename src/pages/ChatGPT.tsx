@@ -398,6 +398,13 @@ const ChatGPT = () => {
     setActiveConversationId(null);
     setEnaziziStep(1);
     await saveEnaziziStep(1, null);
+
+    // Award XP for questions answered in session
+    if (sessionQuestions > 0) {
+      const xpGained = (sessionCorrect * XP_REWARDS.question_correct) + ((sessionQuestions - sessionCorrect) * XP_REWARDS.question_answered);
+      await addXp(xpGained);
+    }
+
     toast({ title: "Sessão finalizada!", description: `Dados salvos. ${sessionQuestions} questões nesta sessão.` });
   };
 
