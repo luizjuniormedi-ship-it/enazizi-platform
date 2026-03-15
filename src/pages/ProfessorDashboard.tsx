@@ -426,10 +426,31 @@ const ProfessorDashboard = () => {
             {/* Generation method */}
             <div className="space-y-3">
               <Label className="text-base font-semibold">Questões</Label>
+
+              {/* Mode toggle */}
+              <div className="flex gap-2">
+                <Button
+                  variant={questionMode === "ai" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setQuestionMode("ai")}
+                  className="gap-1.5 flex-1"
+                >
+                  <Sparkles className="h-3.5 w-3.5" /> Gerar com IA
+                </Button>
+                <Button
+                  variant={questionMode === "manual" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setQuestionMode("manual")}
+                  className="gap-1.5 flex-1"
+                >
+                  <PenLine className="h-3.5 w-3.5" /> Criar Manual
+                </Button>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label className="text-xs">Quantidade</Label>
-                  <Select value={questionCount} onValueChange={setQuestionCount}>
+                  <Label className="text-xs">Quantidade (IA)</Label>
+                  <Select value={questionCount} onValueChange={setQuestionCount} disabled={questionMode === "manual"}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {[5, 10, 15, 20, 30].map((n) => <SelectItem key={n} value={String(n)}>{n} questões</SelectItem>)}
@@ -447,23 +468,106 @@ const ProfessorDashboard = () => {
                 </div>
               </div>
 
-              <div className="flex gap-2">
-                <Button onClick={generateQuestionsAI} disabled={generating || selectedTopics.length === 0} className="gap-2 flex-1">
+              {questionMode === "ai" && (
+                <Button onClick={generateQuestionsAI} disabled={generating || selectedTopics.length === 0} className="gap-2 w-full">
                   {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  {generating ? "Gerando..." : "Gerar com IA"}
+                  {generating ? "Gerando..." : "Gerar Questões com IA"}
                 </Button>
-              </div>
+              )}
+
+              {/* Manual question form */}
+              {questionMode === "manual" && (
+                <div className="space-y-3 border border-border rounded-lg p-3 bg-muted/20">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Enunciado / Caso Clínico</Label>
+                    <Textarea
+                      value={manualStatement}
+                      onChange={(e) => setManualStatement(e.target.value)}
+                      placeholder="Paciente de 55 anos, hipertenso, apresenta dor precordial..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs">Alternativas</Label>
+                    {["A", "B", "C", "D", "E"].map((letter, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border ${
+                          manualCorrect === String(i) ? "bg-primary text-primary-foreground border-primary" : "border-border"
+                        }`}>
+                          {letter}
+                        </span>
+                        <Input
+                          value={manualOptions[i]}
+                          onChange={(e) => {
+                            const copy = [...manualOptions];
+                            copy[i] = e.target.value;
+                            setManualOptions(copy);
+                          }}
+                          placeholder={`Alternativa ${letter}`}
+                          className="flex-1 h-8 text-xs"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Gabarito (resposta correta)</Label>
+                      <Select value={manualCorrect} onValueChange={setManualCorrect}>
+                        <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {["A", "B", "C", "D", "E"].map((l, i) => (
+                            <SelectItem key={i} value={String(i)}>Alternativa {l}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Tema</Label>
+                      <Select value={manualTopic} onValueChange={setManualTopic}>
+                        <SelectTrigger className="h-8"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                        <SelectContent>
+                          {SPECIALTIES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={addManualQuestion}
+                    disabled={!manualStatement.trim() || manualOptions.filter((o) => o.trim()).length < 2}
+                    variant="secondary"
+                    className="w-full gap-1.5"
+                    size="sm"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Adicionar Questão
+                  </Button>
+                </div>
+              )}
             </div>
 
-            {/* Generated questions preview */}
-            {generatedQuestions.length > 0 && (
+            {/* Generated / manual questions preview */}
+            {(questionMode === "ai" ? generatedQuestions : manualQuestions).length > 0 && (
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-emerald-500">✅ {generatedQuestions.length} questões geradas</Label>
+                <Label className="text-sm font-medium text-primary">
+                  ✅ {(questionMode === "ai" ? generatedQuestions : manualQuestions).length} questão(ões) {questionMode === "ai" ? "geradas" : "criadas"}
+                </Label>
                 <div className="max-h-48 overflow-y-auto space-y-2">
-                  {generatedQuestions.map((q, i) => (
-                    <div key={i} className="bg-secondary/50 rounded-lg p-3 text-xs">
-                      <p className="font-medium mb-1">Q{i + 1}: {q.statement?.slice(0, 120)}...</p>
-                      <Badge variant="outline" className="text-[9px]">{q.topic}</Badge>
+                  {(questionMode === "ai" ? generatedQuestions : manualQuestions).map((q, i) => (
+                    <div key={i} className="bg-secondary/50 rounded-lg p-3 text-xs flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium mb-1">Q{i + 1}: {q.statement?.slice(0, 120)}...</p>
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="outline" className="text-[9px]">{q.topic}</Badge>
+                          <span className="text-muted-foreground">Gabarito: {String.fromCharCode(65 + q.correct_index)}</span>
+                        </div>
+                      </div>
+                      {questionMode === "manual" && (
+                        <button onClick={() => removeManualQuestion(i)} className="text-muted-foreground hover:text-destructive shrink-0">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -473,7 +577,11 @@ const ProfessorDashboard = () => {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }}>Cancelar</Button>
-            <Button onClick={createSimulado} disabled={creating || generatedQuestions.length === 0} className="gap-2">
+            <Button
+              onClick={createSimulado}
+              disabled={creating || (questionMode === "ai" ? generatedQuestions.length === 0 : manualQuestions.length === 0)}
+              className="gap-2"
+            >
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               {creating ? "Criando..." : "Criar e Atribuir"}
             </Button>
