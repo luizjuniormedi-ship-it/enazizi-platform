@@ -3,6 +3,7 @@ import AgentChat from "@/components/agents/AgentChat";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useCallback } from "react";
+import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 
 const quickActions = [
   { label: "🎯 Escolher tema", prompt: "Quero gerar flashcards clínicos. Me pergunte sobre qual tema/especialidade eu quero antes de começar.", icon: "🎯" },

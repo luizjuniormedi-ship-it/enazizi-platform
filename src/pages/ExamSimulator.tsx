@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { FileText, Clock, Play, CheckCircle2, Loader2, ArrowRight, Award, AlertTriangle, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";

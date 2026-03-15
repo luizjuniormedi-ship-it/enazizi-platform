@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import {
   PenLine, Loader2, Send, CheckCircle, Star, AlertTriangle,
   ChevronDown, History, BookOpen, Target, ArrowRight

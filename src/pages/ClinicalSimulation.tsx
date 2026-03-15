@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import {
   Activity, Loader2, Send, Stethoscope, Syringe, FileSearch,
   Clock, Heart, AlertTriangle, Award, ArrowRight, RotateCcw,
