@@ -38,6 +38,9 @@ const Dashboard = () => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [weekFilter, setWeekFilter] = useState<4 | 8 | 12>(8);
+  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [questionsAnswered, setQuestionsAnswered] = useState(0);
+  const [accuracy, setAccuracy] = useState(0);
 
   useEffect(() => {
     if (!user) return;
