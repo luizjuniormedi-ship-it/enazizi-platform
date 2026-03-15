@@ -224,6 +224,11 @@ const Dashboard = () => {
           displayName={displayName}
         />
 
+        <div className="mt-4 mb-2">
+          <XpWidget />
+        </div>
+        <AchievementToast />
+
         <h1 className="text-2xl font-bold mt-5">Dashboard</h1>
         <p className="text-muted-foreground">
           {stats.daysUntilExam
