@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AdminRoute from "@/components/auth/AdminRoute";
+import ProfessorRoute from "@/components/auth/ProfessorRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -33,6 +34,7 @@ import ChatGPT from "./pages/ChatGPT";
 import ErrorBank from "./pages/ErrorBank";
 import MedicalDomainMap from "./pages/MedicalDomainMap";
 import DashboardLayout from "./components/layout/DashboardLayout";
+import ProfessorDashboard from "./pages/ProfessorDashboard";
 import NotFound from "./pages/NotFound";
 import Install from "./pages/Install";
 
@@ -75,6 +77,9 @@ const App = () => (
             </Route>
             <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
               <Route index element={<Admin />} />
+            </Route>
+            <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
+              <Route index element={<ProfessorDashboard />} />
             </Route>
             <Route path="/install" element={<Install />} />
             <Route path="*" element={<NotFound />} />

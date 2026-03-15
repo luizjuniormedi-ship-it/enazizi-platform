@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Shield, Users, CreditCard, TrendingUp, Ban, CheckCircle, UserCog, Search, RefreshCw, ChevronDown, ShieldCheck, ShieldOff, ClipboardList, KeyRound, Bell, UserCheck, UserX, Clock, BarChart3, BookOpen, Target, AlertTriangle, Activity, Brain, Wifi } from "lucide-react";
+import { Shield, Users, CreditCard, TrendingUp, Ban, CheckCircle, UserCog, Search, RefreshCw, ChevronDown, ShieldCheck, ShieldOff, ClipboardList, KeyRound, Bell, UserCheck, UserX, Clock, BarChart3, BookOpen, Target, AlertTriangle, Activity, Brain, Wifi, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -71,6 +71,7 @@ const Admin = () => {
   const [planDialog, setPlanDialog] = useState<{ open: boolean; user: AdminUser | null; plan: string }>({ open: false, user: null, plan: "" });
   const [blockDialog, setBlockDialog] = useState<{ open: boolean; user: AdminUser | null; block: boolean }>({ open: false, user: null, block: false });
   const [adminDialog, setAdminDialog] = useState<{ open: boolean; user: AdminUser | null; makeAdmin: boolean }>({ open: false, user: null, makeAdmin: false });
+  const [professorDialog, setProfessorDialog] = useState<{ open: boolean; user: AdminUser | null; makeProfessor: boolean }>({ open: false, user: null, makeProfessor: false });
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [auditLoading, setAuditLoading] = useState(false);
@@ -200,6 +201,21 @@ const Admin = () => {
       await callAdmin({ action: "toggle_admin", target_user_id: adminDialog.user.user_id, make_admin: adminDialog.makeAdmin });
       toast({ title: adminDialog.makeAdmin ? "Admin promovido" : "Admin removido", description: `${adminDialog.user.display_name || adminDialog.user.email} ${adminDialog.makeAdmin ? "agora é administrador" : "não é mais administrador"}.` });
       setAdminDialog({ open: false, user: null, makeAdmin: false });
+      loadData();
+    } catch (e) {
+      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleToggleProfessor = async () => {
+    if (!professorDialog.user) return;
+    setActionLoading(professorDialog.user.user_id);
+    try {
+      await callAdmin({ action: "toggle_professor", target_user_id: professorDialog.user.user_id, make_professor: professorDialog.makeProfessor });
+      toast({ title: professorDialog.makeProfessor ? "Professor promovido" : "Professor removido", description: `${professorDialog.user.display_name || professorDialog.user.email} ${professorDialog.makeProfessor ? "agora é professor" : "não é mais professor"}.` });
+      setProfessorDialog({ open: false, user: null, makeProfessor: false });
       loadData();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
@@ -437,6 +453,8 @@ const Admin = () => {
                         >
                           {u.display_name || "Sem nome"}
                         </button>
+                        {u.roles.includes("professor") && <Badge className="text-[9px] bg-emerald-500/10 text-emerald-600 border-emerald-500/30">Prof.</Badge>}
+                        {u.roles.includes("admin") && <Badge className="text-[9px]">Admin</Badge>}
                       </div>
                       <div className="col-span-2 flex items-center text-sm text-muted-foreground truncate">
                         {u.email}
@@ -502,6 +520,11 @@ const Admin = () => {
                               {u.roles.includes("admin") ? "Remover Admin" : "Admin"}
                             </Button>
                             <Button variant="outline" size="sm" className="h-7 text-xs gap-1" disabled={isCurrentlyActioning}
+                              onClick={() => setProfessorDialog({ open: true, user: u, makeProfessor: !u.roles.includes("professor") })}>
+                              <GraduationCap className="h-3 w-3" />
+                              {u.roles.includes("professor") ? "Remover Prof." : "Professor"}
+                            </Button>
+                            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" disabled={isCurrentlyActioning}
                               onClick={() => setPlanDialog({ open: true, user: u, plan: getUserPlan(u) })}>
                               <CreditCard className="h-3 w-3" /> Plano
                             </Button>
@@ -565,6 +588,8 @@ const Admin = () => {
                   change_plan: { label: "Alterou plano", color: "text-primary" },
                   promote_admin: { label: "Promoveu admin", color: "text-accent" },
                   demote_admin: { label: "Removeu admin", color: "text-muted-foreground" },
+                  promote_professor: { label: "Promoveu professor", color: "text-emerald-500" },
+                  demote_professor: { label: "Removeu professor", color: "text-muted-foreground" },
                   reset_password: { label: "Redefiniu senha", color: "text-orange-500" },
                   approve_user: { label: "Aprovou", color: "text-green-600" },
                   reject_user: { label: "Rejeitou", color: "text-destructive" },
@@ -610,7 +635,7 @@ const Admin = () => {
                 <div><span className="text-muted-foreground">Data de cadastro:</span><br/>{new Date(userDetailDialog.user.created_at).toLocaleDateString("pt-BR")}</div>
                 <div><span className="text-muted-foreground">Status:</span><br/>{getStatusBadge(userDetailDialog.user)}</div>
                 <div><span className="text-muted-foreground">Plano:</span><br/>{getUserPlan(userDetailDialog.user)}</div>
-                <div><span className="text-muted-foreground">Papel:</span><br/>{userDetailDialog.user.roles.includes("admin") ? "Administrador" : "Usuário"}</div>
+                <div><span className="text-muted-foreground">Papel:</span><br/>{userDetailDialog.user.roles.includes("admin") ? "Administrador" : userDetailDialog.user.roles.includes("professor") ? "Professor" : "Usuário"}</div>
                 {userDetailDialog.user.approved_at && (
                   <div><span className="text-muted-foreground">Data da aprovação:</span><br/>{new Date(userDetailDialog.user.approved_at).toLocaleDateString("pt-BR")}</div>
                 )}
@@ -691,7 +716,26 @@ const Admin = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Reset Password Dialog */}
+      {/* Toggle Professor Dialog */}
+      <Dialog open={professorDialog.open} onOpenChange={(open) => !open && setProfessorDialog({ open: false, user: null, makeProfessor: false })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{professorDialog.makeProfessor ? "Promover a Professor" : "Remover Professor"}</DialogTitle>
+            <DialogDescription>
+              {professorDialog.makeProfessor
+                ? `Deseja tornar "${professorDialog.user?.display_name || professorDialog.user?.email}" um professor? Ele poderá criar simulados e acompanhar alunos.`
+                : `Deseja remover o acesso de professor de "${professorDialog.user?.display_name || professorDialog.user?.email}"?`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProfessorDialog({ open: false, user: null, makeProfessor: false })}>Cancelar</Button>
+            <Button onClick={handleToggleProfessor} disabled={!!actionLoading}>
+              {professorDialog.makeProfessor ? "Promover" : "Remover"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={passwordDialog.open} onOpenChange={(open) => !open && setPasswordDialog({ open: false, user: null, password: "" })}>
         <DialogContent>
           <DialogHeader>

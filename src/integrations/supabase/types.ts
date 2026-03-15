@@ -852,6 +852,101 @@ export type Database = {
           },
         ]
       }
+      teacher_simulado_results: {
+        Row: {
+          answers_json: Json | null
+          created_at: string
+          finished_at: string | null
+          id: string
+          score: number | null
+          simulado_id: string
+          started_at: string | null
+          status: string
+          student_id: string
+          total_questions: number
+        }
+        Insert: {
+          answers_json?: Json | null
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          score?: number | null
+          simulado_id: string
+          started_at?: string | null
+          status?: string
+          student_id: string
+          total_questions?: number
+        }
+        Update: {
+          answers_json?: Json | null
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          score?: number | null
+          simulado_id?: string
+          started_at?: string | null
+          status?: string
+          student_id?: string
+          total_questions?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_simulado_results_simulado_id_fkey"
+            columns: ["simulado_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_simulados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_simulados: {
+        Row: {
+          created_at: string
+          description: string | null
+          faculdade_filter: string | null
+          id: string
+          periodo_filter: number | null
+          professor_id: string
+          questions_json: Json
+          status: string
+          time_limit_minutes: number
+          title: string
+          topics: string[]
+          total_questions: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          faculdade_filter?: string | null
+          id?: string
+          periodo_filter?: number | null
+          professor_id: string
+          questions_json?: Json
+          status?: string
+          time_limit_minutes?: number
+          title?: string
+          topics?: string[]
+          total_questions?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          faculdade_filter?: string | null
+          id?: string
+          periodo_filter?: number | null
+          professor_id?: string
+          questions_json?: Json
+          status?: string
+          time_limit_minutes?: number
+          title?: string
+          topics?: string[]
+          total_questions?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       uploads: {
         Row: {
           category: string | null
@@ -997,7 +1092,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "professor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1125,7 +1220,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "professor"],
     },
   },
 } as const
