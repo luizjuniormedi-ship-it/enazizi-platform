@@ -45,14 +45,14 @@ const MobileNav = () => {
       <SheetTrigger asChild>
         <button className="lg:hidden p-2"><Menu className="h-6 w-6" /></button>
       </SheetTrigger>
-      <SheetContent side="left" className="bg-sidebar border-sidebar-border w-72 p-0">
-        <div className="p-6 border-b border-sidebar-border">
+      <SheetContent side="left" className="bg-sidebar border-sidebar-border w-72 p-0 flex flex-col">
+        <div className="p-6 border-b border-sidebar-border flex-shrink-0">
           <Link to="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
             <img src={enazizi} alt="ENAZIZI" className="h-7 w-7 rounded-lg object-cover" />
             <span className="font-bold">ENAZIZI</span>
           </Link>
         </div>
-        <ScrollArea className="h-[calc(100vh-200px)]">
+        <ScrollArea className="flex-1 min-h-0">
           <nav className="px-3 py-2 space-y-1">
             {mobileNavItems.map((item) => (
               <Link
