@@ -153,8 +153,7 @@ NÃO repita estados anteriores. NÃO pule para estados futuros. Avance apenas UM
             }
 
             if (event.type === "response.completed" || event.type === "response.done") {
-              emitDone();
-              return "done";
+              return "ok";
             }
 
             return "ok";
