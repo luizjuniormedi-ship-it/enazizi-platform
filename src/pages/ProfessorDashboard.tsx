@@ -177,6 +177,34 @@ const ProfessorDashboard = () => {
     setGeneratedQuestions([]);
     setPreviewStudents([]);
     setSelectedBankQuestions([]);
+    setQuestionMode("ai");
+    setManualStatement("");
+    setManualOptions(["", "", "", "", ""]);
+    setManualCorrect("0");
+    setManualTopic("");
+    setManualQuestions([]);
+  };
+
+  const addManualQuestion = () => {
+    if (!manualStatement.trim()) return;
+    const filledOptions = manualOptions.filter((o) => o.trim());
+    if (filledOptions.length < 2) return;
+
+    setManualQuestions((prev) => [...prev, {
+      statement: manualStatement.trim(),
+      options: manualOptions.map((o, i) => `${String.fromCharCode(65 + i)}) ${o.trim()}`).filter((_, i) => manualOptions[i].trim()),
+      correct_index: parseInt(manualCorrect),
+      topic: manualTopic || selectedTopics[0] || "Geral",
+      explanation: "",
+    }]);
+    setManualStatement("");
+    setManualOptions(["", "", "", "", ""]);
+    setManualCorrect("0");
+    setManualTopic("");
+  };
+
+  const removeManualQuestion = (idx: number) => {
+    setManualQuestions((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const toggleTopic = (topic: string) => {
