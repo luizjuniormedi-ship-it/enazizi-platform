@@ -133,6 +133,48 @@ export type Database = {
         }
         Relationships: []
       }
+      discursive_attempts: {
+        Row: {
+          ai_correction: Json | null
+          created_at: string
+          finished_at: string | null
+          id: string
+          max_score: number | null
+          question_text: string
+          score: number | null
+          specialty: string
+          status: string
+          student_answer: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_correction?: Json | null
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          max_score?: number | null
+          question_text: string
+          score?: number | null
+          specialty: string
+          status?: string
+          student_answer?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_correction?: Json | null
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          max_score?: number | null
+          question_text?: string
+          score?: number | null
+          specialty?: string
+          status?: string
+          student_answer?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       enazizi_progress: {
         Row: {
           created_at: string
