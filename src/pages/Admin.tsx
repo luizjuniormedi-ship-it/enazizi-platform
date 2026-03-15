@@ -283,7 +283,7 @@ const Admin = () => {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {[
           { label: "Usuários totais", value: stats?.totalUsers ?? "—", icon: Users },
           { label: "Online agora", value: stats?.onlineUsers ?? 0, icon: Wifi, highlight: (stats?.onlineUsers || 0) > 0, highlightColor: "text-green-500" },
