@@ -213,6 +213,7 @@ const Dashboard = () => {
     <div className="space-y-8 animate-fade-in">
       <WhatsNewPopup />
       <SystemGuidePopup />
+      <OnboardingTour />
       <div>
         <MotivationalGreeting
           streak={stats.streak}
