@@ -1,15 +1,25 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Brain, Mail, Lock, User } from "lucide-react";
+import { Brain, Mail, Lock, User, GraduationCap, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+const FACULDADES = [
+  "UNIG",
+  "Estácio",
+  "Outra",
+];
 
 const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [periodo, setPeriodo] = useState("");
+  const [faculdade, setFaculdade] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { signUp } = useAuth();
@@ -17,12 +27,28 @@ const Register = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!periodo || !faculdade) {
+      toast({ title: "Preencha todos os campos", description: "Período e faculdade são obrigatórios.", variant: "destructive" });
+      return;
+    }
     setLoading(true);
     const { error } = await signUp(email, password, name);
     setLoading(false);
     if (error) {
       toast({ title: "Erro ao criar conta", description: error.message, variant: "destructive" });
     } else {
+      // Update profile with periodo and faculdade after signup
+      // The profile is created by the handle_new_user trigger, so we update it
+      // We need to wait a moment for the trigger to fire
+      setTimeout(async () => {
+        const { data: { user: newUser } } = await supabase.auth.getUser();
+        if (newUser) {
+          await supabase.from("profiles").update({
+            periodo: parseInt(periodo),
+            faculdade,
+          }).eq("user_id", newUser.id);
+        }
+      }, 1000);
       toast({ title: "Conta criada!", description: "Verifique seu email para confirmar o cadastro." });
       navigate("/login");
     }
@@ -64,6 +90,42 @@ const Register = () => {
               <Input type="password" placeholder="Mínimo 6 caracteres" className="pl-10 bg-secondary border-border" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-1.5">
+                <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
+                Período
+              </label>
+              <Select value={periodo} onValueChange={setPeriodo}>
+                <SelectTrigger className="bg-secondary border-border">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((p) => (
+                    <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-1.5">
+                <Building className="h-3.5 w-3.5 text-muted-foreground" />
+                Faculdade
+              </label>
+              <Select value={faculdade} onValueChange={setFaculdade}>
+                <SelectTrigger className="bg-secondary border-border">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FACULDADES.map((f) => (
+                    <SelectItem key={f} value={f}>{f}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <Button type="submit" className="w-full glow" disabled={loading}>
             {loading ? "Criando conta..." : "Criar conta"}
           </Button>

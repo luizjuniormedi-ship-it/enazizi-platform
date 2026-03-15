@@ -1,12 +1,19 @@
 import { useState, useEffect, useRef } from "react";
-import { User, Camera, Loader2, Save } from "lucide-react";
+import { User, Camera, Loader2, Save, GraduationCap, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+const FACULDADES = [
+  "UNIG",
+  "Estácio",
+  "Outra",
+];
 
 const Profile = () => {
   const { user } = useAuth();
@@ -15,6 +22,8 @@ const Profile = () => {
 
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [periodo, setPeriodo] = useState("");
+  const [faculdade, setFaculdade] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -24,13 +33,15 @@ const Profile = () => {
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, email")
+        .select("display_name, avatar_url, email, periodo, faculdade")
         .eq("user_id", user.id)
         .maybeSingle();
 
       if (data) {
         setDisplayName(data.display_name || "");
         setAvatarUrl(data.avatar_url);
+        setPeriodo(data.periodo ? String(data.periodo) : "");
+        setFaculdade(data.faculdade || "");
       }
       setLoading(false);
     };
@@ -55,7 +66,6 @@ const Profile = () => {
       const ext = file.name.split(".").pop();
       const path = `${user.id}/avatar.${ext}`;
 
-      // Remove old avatar if exists
       await supabase.storage.from("avatars").remove([path]);
 
       const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
@@ -96,7 +106,11 @@ const Profile = () => {
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ display_name: trimmed })
+        .update({
+          display_name: trimmed,
+          periodo: periodo ? parseInt(periodo) : null,
+          faculdade: faculdade || null,
+        })
         .eq("user_id", user.id);
       if (error) throw error;
       toast({ title: "Perfil atualizado!" });
@@ -174,6 +188,41 @@ const Profile = () => {
           <Label>E-mail</Label>
           <Input value={user?.email || ""} disabled className="opacity-60" />
           <p className="text-xs text-muted-foreground">O e-mail não pode ser alterado.</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">
+              <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
+              Período
+            </Label>
+            <Select value={periodo} onValueChange={setPeriodo}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((p) => (
+                  <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">
+              <Building className="h-3.5 w-3.5 text-muted-foreground" />
+              Faculdade
+            </Label>
+            <Select value={faculdade} onValueChange={setFaculdade}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {FACULDADES.map((f) => (
+                  <SelectItem key={f} value={f}>{f}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <Button onClick={handleSave} disabled={saving} className="w-full">
