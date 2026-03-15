@@ -1,17 +1,20 @@
-import { useState, useEffect, useCallback } from "react";
-import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays, Send, CheckCircle, XCircle, GraduationCap } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays, Send, CheckCircle, XCircle, GraduationCap, Filter } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 interface Flashcard {
   id: string;
   question: string;
   answer: string;
   topic: string | null;
+  is_global?: boolean;
+  user_id?: string;
 }
 
 interface Review {
@@ -34,25 +37,35 @@ const Flashcards = () => {
   const [userAnswer, setUserAnswer] = useState("");
   const [answerSubmitted, setAnswerSubmitted] = useState(false);
   const [mode, setMode] = useState<"due" | "all">("due");
+  const [selectedTopics, setSelectedTopics] = useState<Set<string>>(new Set());
+  const [showTopicFilter, setShowTopicFilter] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
     if (!user) return;
-    const [cardsRes, reviewsRes] = await Promise.all([
-      supabase.from("flashcards").select("id, question, answer, topic").eq("user_id", user.id).order("created_at", { ascending: false }),
+
+    // Fetch own cards + global cards in parallel
+    const [ownRes, globalRes, reviewsRes] = await Promise.all([
+      supabase.from("flashcards").select("id, question, answer, topic, is_global, user_id").eq("user_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("flashcards").select("id, question, answer, topic, is_global, user_id").eq("is_global", true).neq("user_id", user.id).order("created_at", { ascending: false }).limit(500),
       supabase.from("reviews").select("id, flashcard_id, interval_days, next_review").eq("user_id", user.id),
     ]);
 
-    const cards = cardsRes.data || [];
-    setAllCards(cards);
+    // Merge and deduplicate
+    const ownCards = ownRes.data || [];
+    const globalCards = globalRes.data || [];
+    const ownIds = new Set(ownCards.map(c => c.id));
+    const merged = [...ownCards, ...globalCards.filter(c => !ownIds.has(c.id))];
+
+    setAllCards(merged);
 
     const reviewMap = new Map<string, Review>();
     (reviewsRes.data || []).forEach((r) => reviewMap.set(r.flashcard_id, r));
     setReviews(reviewMap);
 
     const now = new Date().toISOString();
-    const due = cards.filter((c) => {
+    const due = merged.filter((c) => {
       const review = reviewMap.get(c.id);
       return !review || review.next_review <= now;
     });
@@ -62,8 +75,32 @@ const Flashcards = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const currentCards = mode === "due" ? dueCards : allCards;
-  const card = currentCards[idx];
+  // Extract unique topics
+  const availableTopics = useMemo(() => {
+    const topics = new Set<string>();
+    allCards.forEach(c => { if (c.topic) topics.add(c.topic); });
+    return Array.from(topics).sort();
+  }, [allCards]);
+
+  const toggleTopic = (topic: string) => {
+    setSelectedTopics(prev => {
+      const next = new Set(prev);
+      if (next.has(topic)) next.delete(topic); else next.add(topic);
+      return next;
+    });
+    setIdx(0);
+    setFlipped(false);
+    setUserAnswer("");
+    setAnswerSubmitted(false);
+  };
+
+  const filteredCards = useMemo(() => {
+    const base = mode === "due" ? dueCards : allCards;
+    if (selectedTopics.size === 0) return base;
+    return base.filter(c => c.topic && selectedTopics.has(c.topic));
+  }, [mode, dueCards, allCards, selectedTopics]);
+
+  const card = filteredCards[idx];
 
   const handleSubmitAnswer = () => {
     if (!userAnswer.trim()) return;
@@ -76,7 +113,6 @@ const Flashcards = () => {
     const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, "").trim();
     const userNorm = normalize(userAnswer);
     const answerNorm = normalize(card.answer);
-    // Check if user answer contains key words from the correct answer (at least 40% match)
     const answerWords = answerNorm.split(/\s+/).filter(w => w.length > 3);
     if (answerWords.length === 0) return userNorm === answerNorm;
     const matchCount = answerWords.filter(w => userNorm.includes(w)).length;
@@ -136,7 +172,7 @@ const Flashcards = () => {
       setDueCards(newDue);
       setIdx(Math.min(idx, Math.max(0, newDue.length - 1)));
     } else {
-      setIdx(Math.min(idx + 1, currentCards.length - 1));
+      setIdx(Math.min(idx + 1, filteredCards.length - 1));
     }
     setFlipped(false);
     setUserAnswer("");
@@ -151,7 +187,7 @@ const Flashcards = () => {
     await supabase.from("flashcards").delete().eq("id", card.id);
     setAllCards((prev) => prev.filter((c) => c.id !== card.id));
     setDueCards((prev) => prev.filter((c) => c.id !== card.id));
-    setIdx(Math.min(idx, Math.max(0, currentCards.length - 2)));
+    setIdx(Math.min(idx, Math.max(0, filteredCards.length - 2)));
     setFlipped(false);
     setUserAnswer("");
     setAnswerSubmitted(false);
@@ -187,8 +223,8 @@ const Flashcards = () => {
   const reviewedCount = allCards.length - dueCards.length;
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <FlipVertical className="h-6 w-6 text-primary" />
@@ -199,6 +235,15 @@ const Flashcards = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowTopicFilter(!showTopicFilter)}
+            className={selectedTopics.size > 0 ? "border-primary text-primary" : ""}
+          >
+            <Filter className="h-4 w-4 mr-2" />
+            Temas {selectedTopics.size > 0 && `(${selectedTopics.size})`}
+          </Button>
           <Button variant={mode === "due" ? "default" : "outline"} size="sm" onClick={() => { setMode("due"); setIdx(0); setFlipped(false); }}>
             <Brain className="h-4 w-4 mr-2" />
             Revisão ({dueCards.length})
@@ -208,6 +253,35 @@ const Flashcards = () => {
           </Button>
         </div>
       </div>
+
+      {/* Topic filter */}
+      {showTopicFilter && (
+        <div className="glass-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold">Filtrar por especialidade</h3>
+            {selectedTopics.size > 0 && (
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setSelectedTopics(new Set()); setIdx(0); }}>
+                Limpar filtros
+              </Button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {availableTopics.map(topic => (
+              <Badge
+                key={topic}
+                variant={selectedTopics.has(topic) ? "default" : "outline"}
+                className="cursor-pointer hover:bg-primary/20 transition-colors"
+                onClick={() => toggleTopic(topic)}
+              >
+                {topic}
+                <span className="ml-1 text-xs opacity-70">
+                  ({allCards.filter(c => c.topic === topic).length})
+                </span>
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Stats bar */}
       <div className="grid grid-cols-5 gap-2">
@@ -222,21 +296,30 @@ const Flashcards = () => {
         })}
       </div>
 
-      {currentCards.length === 0 ? (
+      {filteredCards.length === 0 ? (
         <div className="glass-card p-12 text-center">
           <CalendarDays className="h-12 w-12 text-primary/30 mx-auto mb-4" />
-          <p className="text-lg font-medium mb-2">Tudo em dia! 🎉</p>
-          <p className="text-sm text-muted-foreground">Nenhum flashcard para revisar agora. Volte mais tarde.</p>
+          <p className="text-lg font-medium mb-2">
+            {selectedTopics.size > 0 ? "Nenhum flashcard neste tema" : "Tudo em dia! 🎉"}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {selectedTopics.size > 0 ? "Selecione outros temas ou limpe o filtro." : "Nenhum flashcard para revisar agora. Volte mais tarde."}
+          </p>
         </div>
       ) : (
         <>
           <div className="flex items-center justify-center">
             <div className="glass-card w-full max-w-2xl min-h-[320px] p-8 flex flex-col items-center justify-center text-center relative group transition-all">
-              <div className="absolute top-4 left-4 text-xs text-primary/70 font-medium px-2 py-1 rounded-md bg-primary/10">
-                {card.topic || "Geral"}
+              <div className="absolute top-4 left-4 flex items-center gap-2">
+                <span className="text-xs text-primary/70 font-medium px-2 py-1 rounded-md bg-primary/10">
+                  {card.topic || "Geral"}
+                </span>
+                {card.is_global && card.user_id !== user?.id && (
+                  <span className="text-xs text-muted-foreground px-2 py-1 rounded-md bg-muted">🌐 Global</span>
+                )}
               </div>
               <div className="absolute top-4 right-4 text-xs text-muted-foreground">
-                {idx + 1}/{currentCards.length}
+                {idx + 1}/{filteredCards.length}
               </div>
               {reviews.get(card.id) && (
                 <div className="absolute bottom-4 left-4 text-xs text-muted-foreground flex items-center gap-1">
@@ -294,7 +377,7 @@ const Flashcards = () => {
               <Button variant="ghost" size="sm" onClick={() => { setFlipped(true); setAnswerSubmitted(false); }} className="text-muted-foreground text-xs">
                 Pular
               </Button>
-              <Button variant="outline" size="icon" onClick={() => { setIdx(Math.min(currentCards.length - 1, idx + 1)); setFlipped(false); setUserAnswer(""); setAnswerSubmitted(false); }} disabled={idx === currentCards.length - 1}>
+              <Button variant="outline" size="icon" onClick={() => { setIdx(Math.min(filteredCards.length - 1, idx + 1)); setFlipped(false); setUserAnswer(""); setAnswerSubmitted(false); }} disabled={idx === filteredCards.length - 1}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -312,9 +395,11 @@ const Flashcards = () => {
               <Button className="bg-success hover:bg-success/90 min-w-[100px]" onClick={() => handleReview("easy")}>
                 Fácil
               </Button>
-              <Button variant="ghost" size="icon" title="Remover" onClick={handleDelete}>
-                <X className="h-4 w-4" />
-              </Button>
+              {card.user_id === user?.id && (
+                <Button variant="ghost" size="icon" title="Remover" onClick={handleDelete}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
               {answerSubmitted && !isAnswerCorrect() && card.topic && (
                 <Button
                   variant="outline"
