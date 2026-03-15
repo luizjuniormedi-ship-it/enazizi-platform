@@ -343,6 +343,7 @@ const ProfessorDashboard = () => {
           ))}
         </div>
       )}
+      </TabsContent>
 
       {/* Create Simulado Dialog */}
       <Dialog open={showCreate} onOpenChange={(open) => { if (!open) { setShowCreate(false); resetForm(); } else setShowCreate(true); }}>
