@@ -48,7 +48,7 @@ const Dashboard = () => {
     if (!user) return;
 
     const load = async () => {
-      const [flashcardsRes, uploadsRes, tasksRes, plansRes, reviewsRes, profileRes, perfRes] = await Promise.all([
+      const [flashcardsRes, uploadsRes, tasksRes, plansRes, reviewsRes, profileRes, perfRes, globalFlashRes, globalQuestRes] = await Promise.all([
         supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("study_tasks").select("completed, created_at, task_json").eq("user_id", user.id),
@@ -56,6 +56,8 @@ const Dashboard = () => {
         supabase.from("reviews").select("next_review, flashcard_id, flashcards(topic)").eq("user_id", user.id).gte("next_review", new Date().toISOString()).order("next_review", { ascending: true }).limit(5),
         supabase.from("profiles").select("display_name").eq("user_id", user.id).maybeSingle(),
         supabase.from("study_performance").select("questoes_respondidas, taxa_acerto").eq("user_id", user.id).maybeSingle(),
+        supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("is_global", true),
+        supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("is_global", true),
       ]);
 
       setDisplayName(profileRes.data?.display_name || null);
