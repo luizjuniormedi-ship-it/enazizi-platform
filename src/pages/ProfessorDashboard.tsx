@@ -90,8 +90,8 @@ const ProfessorDashboard = () => {
     try {
       const res = await callAPI({
         action: "get_students",
-        faculdade: faculdadeFilter || undefined,
-        periodo: periodoFilter ? parseInt(periodoFilter) : undefined,
+      faculdade: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : undefined,
+      periodo: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : undefined,
       });
       setPreviewStudents(res.students || []);
     } catch {
@@ -131,8 +131,8 @@ const ProfessorDashboard = () => {
         title,
         description,
         topics: selectedTopics,
-        faculdade_filter: faculdadeFilter || null,
-        periodo_filter: periodoFilter ? parseInt(periodoFilter) : null,
+        faculdade_filter: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : null,
+        periodo_filter: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : null,
         total_questions: questions.length,
         time_limit_minutes: parseInt(timeLimit),
         questions_json: questions,
