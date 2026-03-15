@@ -284,7 +284,7 @@ Responda APENAS com JSON: {"flashcards": [{"question": "...", "answer": "...", "
 
         if (finalFlashcards.length > 0) {
           await supabase.from("flashcards").insert(
-            finalFlashcards.map((fc) => ({ user_id: userId, question: fc.question, answer: fc.answer, topic: fc.topic }))
+            finalFlashcards.map((fc) => ({ user_id: userId, question: fc.question, answer: fc.answer, topic: fc.topic, is_global: true }))
           );
           flashcardsCount = finalFlashcards.length;
         }
