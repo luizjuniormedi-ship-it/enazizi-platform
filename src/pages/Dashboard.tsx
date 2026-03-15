@@ -1,4 +1,4 @@
-import { CalendarDays, FlipVertical, FileText, Upload, TrendingUp, Clock, BookOpen, CheckCircle2, Loader2, BarChart3, Flame, CalendarCheck } from "lucide-react";
+import { CalendarDays, FlipVertical, FileText, Upload, TrendingUp, Clock, BookOpen, CheckCircle2, Loader2, BarChart3, Flame, CalendarCheck, Globe, HelpCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,12 +41,14 @@ const Dashboard = () => {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [questionsAnswered, setQuestionsAnswered] = useState(0);
   const [accuracy, setAccuracy] = useState(0);
+  const [globalFlashcards, setGlobalFlashcards] = useState(0);
+  const [globalQuestions, setGlobalQuestions] = useState(0);
 
   useEffect(() => {
     if (!user) return;
 
     const load = async () => {
-      const [flashcardsRes, uploadsRes, tasksRes, plansRes, reviewsRes, profileRes, perfRes] = await Promise.all([
+      const [flashcardsRes, uploadsRes, tasksRes, plansRes, reviewsRes, profileRes, perfRes, globalFlashRes, globalQuestRes] = await Promise.all([
         supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("study_tasks").select("completed, created_at, task_json").eq("user_id", user.id),
@@ -54,10 +56,15 @@ const Dashboard = () => {
         supabase.from("reviews").select("next_review, flashcard_id, flashcards(topic)").eq("user_id", user.id).gte("next_review", new Date().toISOString()).order("next_review", { ascending: true }).limit(5),
         supabase.from("profiles").select("display_name").eq("user_id", user.id).maybeSingle(),
         supabase.from("study_performance").select("questoes_respondidas, taxa_acerto").eq("user_id", user.id).maybeSingle(),
+        supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("is_global", true),
+        supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("is_global", true),
       ]);
 
       setDisplayName(profileRes.data?.display_name || null);
       setQuestionsAnswered(perfRes.data?.questoes_respondidas || 0);
+      setAccuracy(Number(perfRes.data?.taxa_acerto) || 0);
+      setGlobalFlashcards(globalFlashRes.count || 0);
+      setGlobalQuestions(globalQuestRes.count || 0);
       setAccuracy(Number(perfRes.data?.taxa_acerto) || 0);
 
       const tasks = tasksRes.data || [];
@@ -241,6 +248,37 @@ const Dashboard = () => {
           </Link>
         ))}
       </div>
+
+      {/* Global Knowledge Base Banner */}
+      {(globalFlashcards > 0 || globalQuestions > 0) && (
+        <div className="glass-card p-5 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Globe className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm">Base de Conhecimento Global</h3>
+              <p className="text-xs text-muted-foreground">Conteúdo colaborativo gerado por todos os usuários</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Link to="/dashboard/flashcards" className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary/80 transition-colors">
+              <FlipVertical className="h-4 w-4 text-primary flex-shrink-0" />
+              <div>
+                <div className="text-lg font-bold">{globalFlashcards}</div>
+                <div className="text-xs text-muted-foreground">Flashcards globais</div>
+              </div>
+            </Link>
+            <Link to="/dashboard/banco-questoes" className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary/80 transition-colors">
+              <HelpCircle className="h-4 w-4 text-primary flex-shrink-0" />
+              <div>
+                <div className="text-lg font-bold">{globalQuestions}</div>
+                <div className="text-xs text-muted-foreground">Questões globais</div>
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Daily Summary & Streak */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
