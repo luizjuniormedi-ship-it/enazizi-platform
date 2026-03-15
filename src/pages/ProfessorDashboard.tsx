@@ -230,7 +230,13 @@ const ProfessorDashboard = () => {
         </Button>
       </div>
 
-      {/* Stats */}
+      <Tabs defaultValue="simulados">
+        <TabsList>
+          <TabsTrigger value="simulados">📝 Simulados</TabsTrigger>
+          <TabsTrigger value="analytics">📊 Análise da Turma</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="simulados" className="space-y-4 mt-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
