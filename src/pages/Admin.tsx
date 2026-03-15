@@ -453,6 +453,8 @@ const Admin = () => {
                         >
                           {u.display_name || "Sem nome"}
                         </button>
+                        {u.roles.includes("professor") && <Badge className="text-[9px] bg-emerald-500/10 text-emerald-600 border-emerald-500/30">Prof.</Badge>}
+                        {u.roles.includes("admin") && <Badge className="text-[9px]">Admin</Badge>}
                       </div>
                       <div className="col-span-2 flex items-center text-sm text-muted-foreground truncate">
                         {u.email}
