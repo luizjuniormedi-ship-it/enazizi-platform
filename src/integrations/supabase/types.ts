@@ -899,6 +899,24 @@ export type Database = {
           },
         ]
       }
+      user_presence: {
+        Row: {
+          current_page: string | null
+          last_seen_at: string
+          user_id: string
+        }
+        Insert: {
+          current_page?: string | null
+          last_seen_at?: string
+          user_id: string
+        }
+        Update: {
+          current_page?: string | null
+          last_seen_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_quotas: {
         Row: {
           created_at: string
