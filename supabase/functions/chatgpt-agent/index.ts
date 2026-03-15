@@ -118,40 +118,81 @@ NÃO repita estados anteriores. NÃO pule para estados futuros. Avance apenas UM
     const stream = new ReadableStream({
       async start(controller) {
         let buffer = "";
+        let doneSent = false;
+
+        const emitDone = () => {
+          if (doneSent) return;
+          doneSent = true;
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        };
+
+        const processLine = (rawLine: string): "ok" | "done" | "incomplete" => {
+          let line = rawLine;
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ") || line.trim() === "") return "ok";
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") {
+            emitDone();
+            return "done";
+          }
+
+          try {
+            const event = JSON.parse(jsonStr);
+
+            if (event.type === "response.output_text.delta" && typeof event.delta === "string" && event.delta.length > 0) {
+              const chatChunk = { choices: [{ delta: { content: event.delta } }] };
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(chatChunk)}\n\n`));
+              return "ok";
+            }
+
+            if (event.type === "response.output_text.done" && typeof event.text === "string" && event.text.length > 0) {
+              const chatChunk = { choices: [{ delta: { content: event.text } }] };
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(chatChunk)}\n\n`));
+              return "ok";
+            }
+
+            if (event.type === "response.completed" || event.type === "response.done") {
+              return "ok";
+            }
+
+            return "ok";
+          } catch {
+            return "incomplete";
+          }
+        };
+
         try {
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
+
             buffer += decoder.decode(value, { stream: true });
 
-            let newlineIdx;
+            let newlineIdx: number;
             while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
-              let line = buffer.slice(0, newlineIdx);
+              const rawLine = buffer.slice(0, newlineIdx);
               buffer = buffer.slice(newlineIdx + 1);
-              if (line.endsWith("\r")) line = line.slice(0, -1);
-              if (!line.startsWith("data: ") || line.trim() === "") continue;
 
-              const jsonStr = line.slice(6).trim();
-              if (jsonStr === "[DONE]") {
-                controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-                continue;
-              }
-
-              try {
-                const event = JSON.parse(jsonStr);
-                if (event.type === "response.output_text.delta" && event.delta) {
-                  const chatChunk = { choices: [{ delta: { content: event.delta } }] };
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(chatChunk)}\n\n`));
-                } else if (event.type === "response.completed" || event.type === "response.done") {
-                  controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-                }
-              } catch {
-                buffer = line + "\n" + buffer;
+              const result = processLine(rawLine);
+              if (result === "incomplete") {
+                buffer = rawLine + "\n" + buffer;
                 break;
               }
             }
           }
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+
+          // Flush any remaining decoded bytes + leftover last line without trailing newline
+          buffer += decoder.decode();
+          if (buffer.trim().length > 0) {
+            const leftovers = buffer.split("\n");
+            for (const rawLine of leftovers) {
+              if (!rawLine) continue;
+              processLine(rawLine);
+            }
+          }
+
+          emitDone();
           controller.close();
         } catch (e) {
           console.error("Stream transform error:", e);
