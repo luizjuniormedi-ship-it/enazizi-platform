@@ -446,6 +446,9 @@ const Dashboard = () => {
       {/* Topic Evolution */}
       <TopicEvolution />
 
+      {/* Benchmark Comparativo */}
+      <SpecialtyBenchmark />
+
       {/* Subjects */}
       {stats.subjects.length > 0 && (
         <div className="glass-card p-5">
