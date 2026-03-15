@@ -175,6 +175,57 @@ Deno.serve(async (req) => {
         return ok({ totalUsers: totalUsers || 0, blockedUsers: blockedUsers || 0, activeSubs: activeSubs?.length || 0, pendingUsers: pendingUsers || 0, planCounts });
       }
 
+      case "get_user_tracking": {
+        const { target_user_id } = params;
+        if (!target_user_id) throw new Error("target_user_id obrigatório");
+
+        const [
+          { data: profile },
+          { data: performance },
+          { data: domainMap },
+          { data: errorBank },
+          { data: attempts },
+          { data: flashcards },
+          { data: studyPlans },
+          { data: examSessions },
+          { data: diagnostics },
+          { data: quota },
+        ] = await Promise.all([
+          supabaseAuth.from("profiles").select("*").eq("user_id", target_user_id).single(),
+          supabaseAuth.from("study_performance").select("*").eq("user_id", target_user_id).order("updated_at", { ascending: false }).limit(1),
+          supabaseAuth.from("medical_domain_map").select("*").eq("user_id", target_user_id).order("domain_score", { ascending: false }),
+          supabaseAuth.from("error_bank").select("id, tema, subtema, vezes_errado, created_at").eq("user_id", target_user_id).order("vezes_errado", { ascending: false }).limit(20),
+          supabaseAuth.from("practice_attempts").select("id, correct, created_at").eq("user_id", target_user_id).order("created_at", { ascending: false }).limit(200),
+          supabaseAuth.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", target_user_id),
+          supabaseAuth.from("study_plans").select("id, plan_json, updated_at").eq("user_id", target_user_id).order("updated_at", { ascending: false }).limit(1),
+          supabaseAuth.from("exam_sessions").select("id, title, score, total_questions, status, started_at, finished_at").eq("user_id", target_user_id).order("started_at", { ascending: false }).limit(10),
+          supabaseAuth.from("diagnostic_results").select("*").eq("user_id", target_user_id).order("completed_at", { ascending: false }).limit(1),
+          supabaseAuth.from("user_quotas").select("*").eq("user_id", target_user_id).single(),
+        ]);
+
+        // Calculate stats from attempts
+        const totalAttempts = (attempts || []).length;
+        const correctAttempts = (attempts || []).filter((a: any) => a.correct).length;
+        const accuracy = totalAttempts > 0 ? Math.round((correctAttempts / totalAttempts) * 100) : 0;
+
+        // Recent activity (last 7 days)
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        const recentAttempts = (attempts || []).filter((a: any) => a.created_at >= sevenDaysAgo).length;
+
+        return ok({
+          profile,
+          performance: performance?.[0] || null,
+          domainMap: domainMap || [],
+          errorBank: errorBank || [],
+          stats: { totalAttempts, correctAttempts, accuracy, recentAttempts },
+          flashcardsCount: flashcards || 0,
+          latestPlan: studyPlans?.[0] || null,
+          examSessions: examSessions || [],
+          diagnostic: diagnostics?.[0] || null,
+          quota: quota || null,
+        });
+      }
+
       case "get_audit_log": {
         const { limit = 50 } = params;
         const { data: logs } = await supabaseAuth
