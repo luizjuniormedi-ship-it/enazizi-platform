@@ -14,6 +14,7 @@ import MotivationalGreeting from "@/components/dashboard/MotivationalGreeting";
 import WhatsNewPopup from "@/components/dashboard/WhatsNewPopup";
 import SystemGuidePopup from "@/components/dashboard/SystemGuidePopup";
 import SpecialtyBenchmark from "@/components/dashboard/SpecialtyBenchmark";
+import OnboardingTour from "@/components/dashboard/OnboardingTour";
 
 interface PlanJson {
   weeklySchedule?: { day: string; tasks: { time: string; subject: string; duration: string; type?: string }[] }[];
@@ -212,6 +213,7 @@ const Dashboard = () => {
     <div className="space-y-8 animate-fade-in">
       <WhatsNewPopup />
       <SystemGuidePopup />
+      <OnboardingTour />
       <div>
         <MotivationalGreeting
           streak={stats.streak}
