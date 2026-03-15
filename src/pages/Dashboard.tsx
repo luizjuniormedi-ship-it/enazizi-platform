@@ -199,21 +199,33 @@ const Dashboard = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <MotivationalGreeting
+          streak={stats.streak}
+          todayCompleted={stats.todayCompleted}
+          todayTotal={stats.todayTotal}
+          completedTasks={stats.completedTasks}
+          totalTasks={stats.totalTasks}
+          daysUntilExam={stats.daysUntilExam}
+          questionsAnswered={questionsAnswered}
+          accuracy={accuracy}
+          displayName={displayName}
+        />
+
+        <h1 className="text-2xl font-bold mt-5">Dashboard</h1>
         <p className="text-muted-foreground">
           {stats.daysUntilExam
             ? `${stats.daysUntilExam} dias até a prova • ${taskPercent}% das tarefas concluídas`
             : "Bem-vindo de volta! Aqui está seu progresso."}
-      </p>
+        </p>
 
-      <DashboardWarnings
-        todayCompleted={stats.todayCompleted}
-        todayTotal={stats.todayTotal}
-        completedTasks={stats.completedTasks}
-        totalTasks={stats.totalTasks}
-        streak={stats.streak}
-        daysUntilExam={stats.daysUntilExam}
-      />
+        <DashboardWarnings
+          todayCompleted={stats.todayCompleted}
+          todayTotal={stats.todayTotal}
+          completedTasks={stats.completedTasks}
+          totalTasks={stats.totalTasks}
+          streak={stats.streak}
+          daysUntilExam={stats.daysUntilExam}
+        />
       </div>
 
       {/* Stat Cards */}
