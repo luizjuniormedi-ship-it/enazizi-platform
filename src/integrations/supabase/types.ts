@@ -1195,6 +1195,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      student_has_simulado_result: {
+        Args: { _simulado_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "professor"
