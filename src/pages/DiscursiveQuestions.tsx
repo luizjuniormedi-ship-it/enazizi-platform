@@ -122,6 +122,22 @@ const DiscursiveQuestions = () => {
       setPhase("result");
       // Award XP for discursive completion
       await addXp(XP_REWARDS.discursive_completed);
+      
+      // Log to error_bank if score < 70%
+      if (user && res.correction && res.correction.total_score < (res.correction.max_score * 0.7)) {
+        const weaknesses = res.correction.weaknesses || [];
+        await logErrorToBank({
+          userId: user.id,
+          tema: specialty,
+          tipoQuestao: "discursiva",
+          conteudo: question?.slice(0, 500) || clinicalCase?.slice(0, 500),
+          motivoErro: weaknesses.length > 0 
+            ? `Pontos fracos: ${weaknesses.join("; ")}` 
+            : `Nota ${res.correction.total_score}/${res.correction.max_score}`,
+          categoriaErro: "conceito",
+          dificuldade: difficulty === "avançado" ? 5 : difficulty === "intermediário" ? 3 : 1,
+        });
+      }
     } catch (e) {
       toast({ title: "Erro na correção", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
       setPhase("answering");
