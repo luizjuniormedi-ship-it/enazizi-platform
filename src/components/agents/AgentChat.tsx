@@ -39,6 +39,7 @@ interface AgentChatProps {
   functionName: string;
   onSaveMessage?: (content: string) => Promise<number>;
   quickActions?: QuickAction[];
+  renderAssistantMessage?: (content: string) => React.ReactNode;
 }
 
 const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions }: AgentChatProps) => {
