@@ -67,6 +67,8 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -76,6 +78,13 @@
 
   code, pre {
     font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Prevent pull-to-refresh on mobile in standalone mode */
+  @media (display-mode: standalone) {
+    html {
+      overscroll-behavior-y: contain;
+    }
   }
 }
 
