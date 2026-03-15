@@ -10,6 +10,7 @@ import DashboardWarnings from "@/components/dashboard/DashboardWarnings";
 import TopicEvolution from "@/components/dashboard/TopicEvolution";
 import MotivationalGreeting from "@/components/dashboard/MotivationalGreeting";
 import WhatsNewPopup from "@/components/dashboard/WhatsNewPopup";
+import SystemGuidePopup from "@/components/dashboard/SystemGuidePopup";
 
 interface PlanJson {
   weeklySchedule?: { day: string; tasks: { time: string; subject: string; duration: string; type?: string }[] }[];
@@ -207,6 +208,7 @@ const Dashboard = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       <WhatsNewPopup />
+      <SystemGuidePopup />
       <div>
         <MotivationalGreeting
           streak={stats.streak}
