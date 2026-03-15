@@ -127,7 +127,7 @@ const ProfessorDashboard = () => {
   };
 
   const createSimulado = async () => {
-    const questions = useAI ? generatedQuestions : bankQuestions.filter((q) => selectedBankQuestions.includes(q.id));
+    const questions = questionMode === "manual" ? manualQuestions : (useAI ? generatedQuestions : bankQuestions.filter((q) => selectedBankQuestions.includes(q.id)));
     if (questions.length === 0) {
       toast({ title: "Sem questões", description: "Gere ou selecione questões primeiro.", variant: "destructive" });
       return;
