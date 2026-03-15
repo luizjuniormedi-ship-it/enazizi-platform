@@ -56,6 +56,7 @@ function parseFlashcardsFromText(content: string): Array<{ question: string; ans
 
 const FlashcardGenerator = () => {
   const { user } = useAuth();
+  const { addXp } = useGamification();
 
   const handleSaveFlashcards = useCallback(async (content: string): Promise<number> => {
     if (!user) throw new Error("Usuário não autenticado");
