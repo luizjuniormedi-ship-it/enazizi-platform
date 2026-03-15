@@ -35,6 +35,7 @@ import ErrorBank from "./pages/ErrorBank";
 import MedicalDomainMap from "./pages/MedicalDomainMap";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import ProfessorDashboard from "./pages/ProfessorDashboard";
+import StudentSimulados from "./pages/StudentSimulados";
 import NotFound from "./pages/NotFound";
 import Install from "./pages/Install";
 
