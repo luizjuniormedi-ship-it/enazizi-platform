@@ -78,6 +78,9 @@ const App = () => (
             <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
               <Route index element={<Admin />} />
             </Route>
+            <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
+              <Route index element={<ProfessorDashboard />} />
+            </Route>
             <Route path="/install" element={<Install />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
