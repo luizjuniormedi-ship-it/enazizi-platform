@@ -1,0 +1,110 @@
+import { useState } from "react";
+import { CheckCircle2, XCircle, BookOpen } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export interface InteractiveQuestion {
+  statement: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+  topic?: string;
+  reference?: string;
+}
+
+interface Props {
+  question: InteractiveQuestion;
+  index: number;
+}
+
+const LETTERS = ["A", "B", "C", "D", "E"];
+
+const InteractiveQuestionCard = ({ question, index }: Props) => {
+  const [selected, setSelected] = useState<number | null>(null);
+  const answered = selected !== null;
+  const isCorrect = selected === question.correctIndex;
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+      {/* Topic badge */}
+      {question.topic && (
+        <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+          {question.topic}
+        </span>
+      )}
+
+      {/* Question number + statement */}
+      <p className="text-sm font-medium leading-relaxed">
+        <span className="text-primary font-bold mr-1.5">Questão {index + 1}.</span>
+        {question.statement}
+      </p>
+
+      {/* Options */}
+      <div className="space-y-2">
+        {question.options.map((opt, oi) => {
+          const isThis = selected === oi;
+          const isRight = oi === question.correctIndex;
+
+          let style = "border-border bg-secondary/50 hover:bg-secondary cursor-pointer";
+          if (answered) {
+            if (isRight) style = "border-green-500/60 bg-green-500/10 text-green-700 dark:text-green-400";
+            else if (isThis && !isRight) style = "border-red-500/60 bg-red-500/10 text-red-700 dark:text-red-400";
+            else style = "border-border bg-muted/30 opacity-60";
+          }
+
+          return (
+            <button
+              key={oi}
+              disabled={answered}
+              onClick={() => setSelected(oi)}
+              className={cn(
+                "w-full text-left flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-sm transition-all",
+                style,
+              )}
+            >
+              <span className={cn(
+                "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border",
+                answered && isRight
+                  ? "border-green-500 bg-green-500 text-white"
+                  : answered && isThis && !isRight
+                    ? "border-red-500 bg-red-500 text-white"
+                    : "border-current opacity-70",
+              )}>
+                {answered && isRight ? <CheckCircle2 className="h-4 w-4" /> : answered && isThis && !isRight ? <XCircle className="h-4 w-4" /> : LETTERS[oi]}
+              </span>
+              <span className="pt-0.5 leading-relaxed">{opt}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Feedback after answering */}
+      {answered && (
+        <div className={cn(
+          "rounded-lg p-3 text-sm space-y-2 animate-fade-in",
+          isCorrect ? "bg-green-500/10 border border-green-500/30" : "bg-red-500/10 border border-red-500/30",
+        )}>
+          <div className="flex items-center gap-2 font-semibold">
+            {isCorrect ? (
+              <><CheckCircle2 className="h-4 w-4 text-green-500" /> Você acertou! 🎉</>
+            ) : (
+              <><XCircle className="h-4 w-4 text-red-500" /> Resposta incorreta. A correta é <span className="text-primary">{LETTERS[question.correctIndex]}</span>.</>
+            )}
+          </div>
+          {question.explanation && (
+            <div className="text-muted-foreground leading-relaxed">
+              <span className="font-medium text-foreground flex items-center gap-1 mb-1">
+                <BookOpen className="h-3.5 w-3.5" /> Explicação:
+              </span>
+              {question.explanation}
+            </div>
+          )}
+          {question.reference && (
+            <p className="text-xs text-muted-foreground italic">📚 {question.reference}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default InteractiveQuestionCard;

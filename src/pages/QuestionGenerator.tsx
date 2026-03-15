@@ -1,5 +1,6 @@
 import { HelpCircle } from "lucide-react";
 import AgentChat from "@/components/agents/AgentChat";
+import InteractiveQuestionRenderer from "@/components/agents/InteractiveQuestionRenderer";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
@@ -37,6 +38,10 @@ const QuestionGenerator = () => {
     return parsed.length;
   }, [user]);
 
+  const renderInteractive = useCallback((content: string) => (
+    <InteractiveQuestionRenderer content={content} />
+  ), []);
+
   return (
     <AgentChat
       title="Gerador de Questões"
@@ -48,6 +53,7 @@ const QuestionGenerator = () => {
       functionName="question-generator"
       onSaveMessage={handleSaveQuestions}
       quickActions={quickActions}
+      renderAssistantMessage={renderInteractive}
     />
   );
 };
