@@ -37,6 +37,7 @@ import DashboardLayout from "./components/layout/DashboardLayout";
 import ProfessorDashboard from "./pages/ProfessorDashboard";
 import StudentSimulados from "./pages/StudentSimulados";
 import DiscursiveQuestions from "./pages/DiscursiveQuestions";
+import ClinicalSimulation from "./pages/ClinicalSimulation";
 import NotFound from "./pages/NotFound";
 import Install from "./pages/Install";
 
