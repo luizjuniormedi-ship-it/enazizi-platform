@@ -112,12 +112,15 @@ const Analytics = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <BarChart3 className="h-6 w-6 text-primary" />
-          Analytics
-        </h1>
-        <p className="text-muted-foreground">Seu desempenho real baseado nos dados da plataforma.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <BarChart3 className="h-6 w-6 text-primary" />
+            Analytics
+          </h1>
+          <p className="text-muted-foreground">Seu desempenho real baseado nos dados da plataforma.</p>
+        </div>
+        <PerformanceReport />
       </div>
 
       {/* Stats Cards */}
