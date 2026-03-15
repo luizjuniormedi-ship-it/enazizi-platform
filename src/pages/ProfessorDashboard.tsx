@@ -42,6 +42,14 @@ const ProfessorDashboard = () => {
   const [timeLimit, setTimeLimit] = useState("60");
   const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([]);
   const [useAI, setUseAI] = useState(true);
+  const [questionMode, setQuestionMode] = useState<"ai" | "manual">("ai");
+
+  // Manual question form
+  const [manualStatement, setManualStatement] = useState("");
+  const [manualOptions, setManualOptions] = useState(["", "", "", "", ""]);
+  const [manualCorrect, setManualCorrect] = useState("0");
+  const [manualTopic, setManualTopic] = useState("");
+  const [manualQuestions, setManualQuestions] = useState<any[]>([]);
 
   // Bank questions
   const [bankQuestions, setBankQuestions] = useState<any[]>([]);
