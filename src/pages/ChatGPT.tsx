@@ -62,6 +62,7 @@ const ensureSequentialInitialMessage = (message: string) => {
 
 const ChatGPT = () => {
   const { user } = useAuth();
+  const { addXp } = useGamification();
   const location = useLocation();
   const [topic, setTopic] = useState("");
   const [studyStarted, setStudyStarted] = useState(false);
