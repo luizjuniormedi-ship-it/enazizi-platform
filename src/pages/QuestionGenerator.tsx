@@ -38,6 +38,10 @@ const QuestionGenerator = () => {
     return parsed.length;
   }, [user]);
 
+  const renderInteractive = useCallback((content: string) => (
+    <InteractiveQuestionRenderer content={content} />
+  ), []);
+
   return (
     <AgentChat
       title="Gerador de Questões"
@@ -49,6 +53,7 @@ const QuestionGenerator = () => {
       functionName="question-generator"
       onSaveMessage={handleSaveQuestions}
       quickActions={quickActions}
+      renderAssistantMessage={renderInteractive}
     />
   );
 };
