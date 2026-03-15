@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import {
   Activity, Loader2, Send, Stethoscope, Syringe, FileSearch,
@@ -64,7 +65,7 @@ interface FinalEval {
 }
 
 const ClinicalSimulation = () => {
-  const { session } = useAuth();
+  const { session, user } = useAuth();
   const { toast } = useToast();
   const { addXp } = useGamification();
 
@@ -203,6 +204,22 @@ const ClinicalSimulation = () => {
       setPhase("result");
       // Award XP for completing plantão
       await addXp(XP_REWARDS.plantao_completed);
+
+      // Log to error_bank if score < 70
+      if (user && res.final_score < 70) {
+        const weakAreas = res.weak_areas || res.areas_to_improve || [];
+        await logErrorToBank({
+          userId: user.id,
+          tema: specialty,
+          tipoQuestao: "simulado",
+          conteudo: `Modo Plantão - ${specialty} (${difficulty})`,
+          motivoErro: weakAreas.length > 0
+            ? `Áreas fracas: ${Array.isArray(weakAreas) ? weakAreas.join("; ") : weakAreas}`
+            : `Nota ${res.final_score}/100 - Conceito ${res.grade}`,
+          categoriaErro: "conduta",
+          dificuldade: difficulty === "avançado" ? 5 : difficulty === "intermediário" ? 3 : 1,
+        });
+      }
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
       setPhase("active");

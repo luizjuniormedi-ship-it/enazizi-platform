@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { logErrorToBank } from "@/lib/errorBankLogger";
 import {
   GraduationCap, Clock, FileText, CheckCircle, ArrowRight, ArrowLeft,
   Loader2, Trophy, AlertTriangle, Play, RotateCcw
@@ -178,6 +179,21 @@ const StudentSimulados = () => {
     const score = questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0;
 
     try {
+      // Log wrong answers to error_bank
+      for (const d of details) {
+        if (!d.is_correct && d.selected !== null) {
+          const q = questions[d.question_index];
+          await logErrorToBank({
+            userId: user!.id,
+            tema: q.topic || "Geral",
+            tipoQuestao: "simulado",
+            conteudo: q.statement?.slice(0, 500) || "",
+            motivoErro: `Marcou "${q.options?.[d.selected]}" — Correta: "${q.options?.[d.correct_index]}"`,
+            categoriaErro: "conceito",
+          });
+        }
+      }
+
       await supabase
         .from("teacher_simulado_results")
         .update({
