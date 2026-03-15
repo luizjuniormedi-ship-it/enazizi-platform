@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { logErrorToBank } from "@/lib/errorBankLogger";
 import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays, Send, CheckCircle, XCircle, GraduationCap, Filter, Download } from "lucide-react";
 import { exportToPdf } from "@/lib/exportPdf";
 import { useNavigate } from "react-router-dom";
@@ -156,15 +157,14 @@ const Flashcards = () => {
 
     // Log error to error_bank if wrong
     if (quality === "again" && card.topic) {
-      await supabase.from("error_bank").upsert({
-        user_id: user.id,
+      await logErrorToBank({
+        userId: user.id,
         tema: card.topic || "Flashcard",
-        tipo_questao: "flashcard",
+        tipoQuestao: "flashcard",
         conteudo: card.question,
-        motivo_erro: `Resposta do aluno: "${userAnswer}" — Resposta correta: "${card.answer}"`,
-        categoria_erro: "conceito",
-        vezes_errado: 1,
-      }, { onConflict: "user_id,tema,conteudo" }).select();
+        motivoErro: `Resposta do aluno: "${userAnswer}" — Resposta correta: "${card.answer}"`,
+        categoriaErro: "conceito",
+      });
     }
 
     // Remove from due list
