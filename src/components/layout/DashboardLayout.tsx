@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
 import DashboardSidebar from "./DashboardSidebar";
 import { Menu, LogOut, User, Shield } from "lucide-react";
 import StudyTimer from "@/components/dashboard/StudyTimer";
@@ -103,7 +104,9 @@ const MobileNav = () => {
   );
 };
 
-const DashboardLayout = () => (
+const DashboardLayout = () => {
+  usePresenceHeartbeat();
+  return (
   <div className="flex min-h-screen bg-background">
     <DashboardSidebar />
     <div className="flex-1 flex flex-col min-w-0">
@@ -127,6 +130,7 @@ const DashboardLayout = () => (
       </main>
     </div>
   </div>
-);
+  );
+};
 
 export default DashboardLayout;

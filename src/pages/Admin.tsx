@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Shield, Users, CreditCard, TrendingUp, Ban, CheckCircle, UserCog, Search, RefreshCw, ChevronDown, ShieldCheck, ShieldOff, ClipboardList, KeyRound, Bell, UserCheck, UserX, Clock, BarChart3, BookOpen, Target, AlertTriangle, Activity, Brain } from "lucide-react";
+import { Shield, Users, CreditCard, TrendingUp, Ban, CheckCircle, UserCog, Search, RefreshCw, ChevronDown, ShieldCheck, ShieldOff, ClipboardList, KeyRound, Bell, UserCheck, UserX, Clock, BarChart3, BookOpen, Target, AlertTriangle, Activity, Brain, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -37,12 +37,22 @@ interface AdminUser {
   quota: { questions_used: number; questions_limit: number } | null;
 }
 
+interface OnlineUser {
+  user_id: string;
+  display_name: string;
+  email: string;
+  current_page: string;
+  last_seen_at: string;
+}
+
 interface Stats {
   totalUsers: number;
   blockedUsers: number;
   activeSubs: number;
   pendingUsers: number;
   planCounts: Record<string, number>;
+  onlineUsers: number;
+  onlineUsersData: OnlineUser[];
 }
 
 const PLANS = ["Free", "Pro", "Premium", "Enterprise"];
@@ -276,18 +286,51 @@ const Admin = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           { label: "Usuários totais", value: stats?.totalUsers ?? "—", icon: Users },
+          { label: "Online agora", value: stats?.onlineUsers ?? 0, icon: Wifi, highlight: (stats?.onlineUsers || 0) > 0, highlightColor: "text-green-500" },
           { label: "Aguardando aprovação", value: pendingCount, icon: Clock, highlight: pendingCount > 0 },
           { label: "Ativos", value: activeCount, icon: CheckCircle },
           { label: "Bloqueados", value: blockedCount, icon: Ban },
           { label: "Assinaturas ativas", value: stats?.activeSubs ?? "—", icon: CreditCard },
         ].map((s) => (
-          <div key={s.label} className={`glass-card p-5 ${(s as any).highlight ? "ring-2 ring-amber-500/30" : ""}`}>
-            <s.icon className={`h-5 w-5 mb-3 ${(s as any).highlight ? "text-amber-500" : "text-primary"}`} />
+          <div key={s.label} className={`glass-card p-5 ${(s as any).highlight ? "ring-2 ring-primary/30" : ""}`}>
+            <s.icon className={`h-5 w-5 mb-3 ${(s as any).highlightColor || ((s as any).highlight ? "text-amber-500" : "text-primary")}`} />
             <div className="text-2xl font-bold">{s.value}</div>
             <div className="text-sm text-muted-foreground">{s.label}</div>
           </div>
         ))}
       </div>
+
+      {/* Online Users Detail */}
+      {(stats?.onlineUsersData?.length || 0) > 0 && (
+        <div className="glass-card p-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Wifi className="h-5 w-5 text-green-500" />
+            Usuários online agora ({stats?.onlineUsers})
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {stats?.onlineUsersData?.map((ou) => {
+              const pageName = ou.current_page?.replace("/dashboard/", "")?.replace("/dashboard", "Dashboard") || "—";
+              const seenAgo = Math.round((Date.now() - new Date(ou.last_seen_at).getTime()) / 60000);
+              return (
+                <div key={ou.user_id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+                  <div className="relative">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                      {(ou.display_name || "?")[0].toUpperCase()}
+                    </div>
+                    <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{ou.display_name || ou.email}</div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      📍 {pageName} • {seenAgo < 1 ? "agora" : `${seenAgo}min atrás`}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Plan distribution */}
       {stats?.planCounts && Object.keys(stats.planCounts).length > 0 && (
