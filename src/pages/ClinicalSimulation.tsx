@@ -66,6 +66,7 @@ interface FinalEval {
 const ClinicalSimulation = () => {
   const { session } = useAuth();
   const { toast } = useToast();
+  const { addXp } = useGamification();
 
   const [phase, setPhase] = useState<Phase>("lobby");
   const [specialty, setSpecialty] = useState("Clínica Médica");
