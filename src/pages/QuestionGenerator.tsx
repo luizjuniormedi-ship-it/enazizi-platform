@@ -1,5 +1,6 @@
 import { HelpCircle } from "lucide-react";
 import AgentChat from "@/components/agents/AgentChat";
+import InteractiveQuestionRenderer from "@/components/agents/InteractiveQuestionRenderer";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
