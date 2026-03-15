@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Shield, Users, CreditCard, TrendingUp, Ban, CheckCircle, UserCog, Search, RefreshCw, ChevronDown, ShieldCheck, ShieldOff, ClipboardList, KeyRound, Bell, UserCheck, UserX, Clock, BarChart3, BookOpen, Target, AlertTriangle, Activity, Brain } from "lucide-react";
+import { Shield, Users, CreditCard, TrendingUp, Ban, CheckCircle, UserCog, Search, RefreshCw, ChevronDown, ShieldCheck, ShieldOff, ClipboardList, KeyRound, Bell, UserCheck, UserX, Clock, BarChart3, BookOpen, Target, AlertTriangle, Activity, Brain, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
