@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.professor-simulado]
 verify_jwt = false
+
+[functions.discursive-questions]
+verify_jwt = false

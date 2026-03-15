@@ -36,6 +36,7 @@ import MedicalDomainMap from "./pages/MedicalDomainMap";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import ProfessorDashboard from "./pages/ProfessorDashboard";
 import StudentSimulados from "./pages/StudentSimulados";
+import DiscursiveQuestions from "./pages/DiscursiveQuestions";
 import NotFound from "./pages/NotFound";
 import Install from "./pages/Install";
 
@@ -74,6 +75,7 @@ const App = () => (
               <Route path="banco-erros" element={<ErrorBank />} />
               <Route path="mapa-dominio" element={<MedicalDomainMap />} />
               <Route path="proficiencia" element={<StudentSimulados />} />
+              <Route path="discursivas" element={<DiscursiveQuestions />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="perfil" element={<Profile />} />
             </Route>

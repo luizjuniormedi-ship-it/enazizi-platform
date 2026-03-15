@@ -1,0 +1,188 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { aiFetch } from "../_shared/ai-fetch.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const sb = createClient(supabaseUrl, serviceRoleKey);
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await sb.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Token inválido" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const { action, ...params } = await req.json();
+    const ok = (data: unknown) => new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    switch (action) {
+      case "generate": {
+        const { specialty, difficulty = "intermediário" } = params;
+        if (!specialty) throw new Error("Especialidade obrigatória");
+
+        const prompt = `Gere UMA questão discursiva de residência médica sobre ${specialty}, nível ${difficulty}.
+
+A questão DEVE conter:
+- Um caso clínico detalhado (história, exame físico, exames complementares quando pertinente)
+- Uma pergunta aberta que exija raciocínio clínico completo
+
+REGRAS:
+- Baseie-se em provas reais de residência (ENARE, USP, UNIFESP)
+- O caso deve ser realista e desafiador
+- A pergunta deve exigir: diagnóstico, diagnósticos diferenciais, conduta e/ou justificativa
+
+Retorne APENAS um JSON válido:
+{
+  "case": "Texto completo do caso clínico",
+  "question": "A pergunta discursiva",
+  "expected_topics": ["tópico 1 esperado na resposta", "tópico 2", "tópico 3"],
+  "grading_criteria": [
+    {"criterion": "Diagnóstico correto", "max_points": 3},
+    {"criterion": "Diagnósticos diferenciais pertinentes", "max_points": 2},
+    {"criterion": "Conduta adequada", "max_points": 3},
+    {"criterion": "Justificativa e raciocínio clínico", "max_points": 2}
+  ]
+}`;
+
+        const response = await aiFetch({
+          messages: [{ role: "user", content: prompt }],
+          model: "google/gemini-2.5-flash",
+        });
+
+        if (!response.ok) throw new Error("Erro ao gerar questão");
+
+        const aiData = await response.json();
+        const content = aiData.choices?.[0]?.message?.content || "";
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("Erro ao processar questão gerada");
+
+        const questionData = JSON.parse(jsonMatch[0]);
+
+        // Save to DB
+        const fullText = `${questionData.case}\n\n${questionData.question}`;
+        const { data: attempt, error: insertErr } = await sb.from("discursive_attempts").insert({
+          user_id: user.id,
+          specialty,
+          question_text: fullText,
+          ai_correction: { grading_criteria: questionData.grading_criteria, expected_topics: questionData.expected_topics },
+          status: "pending",
+          max_score: 10,
+        }).select("id").single();
+
+        if (insertErr) throw new Error(insertErr.message);
+
+        return ok({ id: attempt.id, case: questionData.case, question: questionData.question, grading_criteria: questionData.grading_criteria });
+      }
+
+      case "correct": {
+        const { attempt_id, answer } = params;
+        if (!attempt_id || !answer) throw new Error("attempt_id e answer obrigatórios");
+
+        // Fetch the attempt
+        const { data: attempt, error: fetchErr } = await sb
+          .from("discursive_attempts")
+          .select("*")
+          .eq("id", attempt_id)
+          .eq("user_id", user.id)
+          .single();
+
+        if (fetchErr || !attempt) throw new Error("Tentativa não encontrada");
+
+        const criteria = (attempt.ai_correction as any)?.grading_criteria || [];
+        const expectedTopics = (attempt.ai_correction as any)?.expected_topics || [];
+
+        const prompt = `Você é um examinador de prova de Residência Médica. Corrija a resposta discursiva abaixo com rigor e critérios de banca.
+
+QUESTÃO:
+${attempt.question_text}
+
+RESPOSTA DO ALUNO:
+${answer}
+
+TÓPICOS ESPERADOS NA RESPOSTA:
+${expectedTopics.join(", ")}
+
+CRITÉRIOS DE AVALIAÇÃO (total 10 pontos):
+${criteria.map((c: any) => `- ${c.criterion}: até ${c.max_points} pontos`).join("\n")}
+
+INSTRUÇÕES:
+1. Avalie cada critério separadamente
+2. Seja justo mas rigoroso como uma banca real
+3. Destaque acertos e erros específicos
+4. Forneça a resposta modelo completa
+
+Retorne APENAS um JSON válido:
+{
+  "total_score": 7.5,
+  "max_score": 10,
+  "criteria_scores": [
+    {"criterion": "Diagnóstico correto", "score": 2.5, "max": 3, "feedback": "Comentário específico"},
+    {"criterion": "Diagnósticos diferenciais", "score": 1.5, "max": 2, "feedback": "Comentário"},
+    {"criterion": "Conduta adequada", "score": 2, "max": 3, "feedback": "Comentário"},
+    {"criterion": "Justificativa", "score": 1.5, "max": 2, "feedback": "Comentário"}
+  ],
+  "strengths": ["Ponto forte 1", "Ponto forte 2"],
+  "weaknesses": ["Ponto fraco 1", "Ponto fraco 2"],
+  "model_answer": "A resposta completa e ideal para esta questão é...",
+  "overall_feedback": "Feedback geral sobre o desempenho"
+}`;
+
+        const response = await aiFetch({
+          messages: [{ role: "user", content: prompt }],
+          model: "google/gemini-2.5-flash",
+        });
+
+        if (!response.ok) throw new Error("Erro ao corrigir resposta");
+
+        const aiData = await response.json();
+        const content = aiData.choices?.[0]?.message?.content || "";
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("Erro ao processar correção");
+
+        const correction = JSON.parse(jsonMatch[0]);
+
+        // Update attempt
+        await sb.from("discursive_attempts").update({
+          student_answer: answer,
+          ai_correction: { ...attempt.ai_correction, correction },
+          score: correction.total_score,
+          status: "corrected",
+          finished_at: new Date().toISOString(),
+        }).eq("id", attempt_id);
+
+        return ok({ correction });
+      }
+
+      case "history": {
+        const { data: attempts } = await sb
+          .from("discursive_attempts")
+          .select("id, specialty, score, max_score, status, created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        return ok({ attempts: attempts || [] });
+      }
+
+      default:
+        return new Response(JSON.stringify({ error: `Ação desconhecida: ${action}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+  } catch (e) {
+    console.error("discursive-questions error:", e);
+    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+});
