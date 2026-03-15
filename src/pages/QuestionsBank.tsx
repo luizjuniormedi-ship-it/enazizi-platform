@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
-import { Database, Play, Trash2, ChevronDown, ChevronUp, Search, BarChart3, Target, TrendingUp, GraduationCap } from "lucide-react";
+import { Database, Play, Trash2, ChevronDown, ChevronUp, Search, BarChart3, Target, TrendingUp, GraduationCap, Download } from "lucide-react";
+import { exportToPdf } from "@/lib/exportPdf";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -315,9 +316,25 @@ const QuestionsBank = () => {
             {questions.length} questão(ões) salva(s) no total
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={() => setShowStats(!showStats)} className="gap-1.5">
             <BarChart3 className="h-4 w-4" /> Estatísticas
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportToPdf(
+              filtered.map((q, i) => ({
+                title: q.statement,
+                content: q.options.map((o: string, j: number) => `${String.fromCharCode(65 + j)}) ${o}${j === q.correct_index ? " ✓" : ""}`).join("\n") + (q.explanation ? `\n\nExplicação: ${q.explanation}` : ""),
+                subtitle: q.topic || undefined,
+              })),
+              "Banco_Questoes_ENAZIZI"
+            )}
+            disabled={filtered.length === 0}
+            className="gap-1.5"
+          >
+            <Download className="h-4 w-4" /> PDF
           </Button>
           <Button onClick={startPractice} disabled={filtered.length === 0} className="gap-2">
             <Play className="h-4 w-4" /> Praticar ({filtered.length})

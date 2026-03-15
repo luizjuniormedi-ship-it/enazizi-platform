@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays, Send, CheckCircle, XCircle, GraduationCap, Filter } from "lucide-react";
+import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays, Send, CheckCircle, XCircle, GraduationCap, Filter, Download } from "lucide-react";
+import { exportToPdf } from "@/lib/exportPdf";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -250,6 +251,17 @@ const Flashcards = () => {
           </Button>
           <Button variant={mode === "all" ? "default" : "outline"} size="sm" onClick={() => { setMode("all"); setIdx(0); setFlipped(false); }}>
             Todos ({allCards.length})
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportToPdf(
+              filteredCards.map((c) => ({ title: c.question, content: c.answer, subtitle: c.topic || undefined })),
+              "Flashcards_ENAZIZI"
+            )}
+            disabled={filteredCards.length === 0}
+          >
+            <Download className="h-4 w-4 mr-2" /> PDF
           </Button>
         </div>
       </div>
