@@ -46,13 +46,19 @@ const Dashboard = () => {
     if (!user) return;
 
     const load = async () => {
-      const [flashcardsRes, uploadsRes, tasksRes, plansRes, reviewsRes] = await Promise.all([
+      const [flashcardsRes, uploadsRes, tasksRes, plansRes, reviewsRes, profileRes, perfRes] = await Promise.all([
         supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("study_tasks").select("completed, created_at, task_json").eq("user_id", user.id),
         supabase.from("study_plans").select("plan_json").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("reviews").select("next_review, flashcard_id, flashcards(topic)").eq("user_id", user.id).gte("next_review", new Date().toISOString()).order("next_review", { ascending: true }).limit(5),
+        supabase.from("profiles").select("display_name").eq("user_id", user.id).maybeSingle(),
+        supabase.from("study_performance").select("questoes_respondidas, taxa_acerto").eq("user_id", user.id).maybeSingle(),
       ]);
+
+      setDisplayName(profileRes.data?.display_name || null);
+      setQuestionsAnswered(perfRes.data?.questoes_respondidas || 0);
+      setAccuracy(Number(perfRes.data?.taxa_acerto) || 0);
 
       const tasks = tasksRes.data || [];
       const completedTasks = tasks.filter((t: any) => t.completed).length;
