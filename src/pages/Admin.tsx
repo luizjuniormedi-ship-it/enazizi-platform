@@ -648,6 +648,149 @@ const Admin = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* User Tracking Dialog */}
+      <Dialog open={trackingDialog.open} onOpenChange={(open) => !open && setTrackingDialog({ open: false, user: null, data: null, loading: false })}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Acompanhamento — {trackingDialog.user?.display_name || trackingDialog.user?.email}
+            </DialogTitle>
+            <DialogDescription>Visão detalhada do progresso de estudo deste usuário.</DialogDescription>
+          </DialogHeader>
+
+          {trackingDialog.loading ? (
+            <div className="flex justify-center py-12">
+              <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : trackingDialog.data ? (
+            <div className="space-y-5 py-2">
+              {/* Quick stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: "Questões respondidas", value: trackingDialog.data.stats?.totalAttempts ?? 0, icon: BookOpen },
+                  { label: "Taxa de acerto", value: `${trackingDialog.data.stats?.accuracy ?? 0}%`, icon: Target },
+                  { label: "Últimos 7 dias", value: trackingDialog.data.stats?.recentAttempts ?? 0, icon: Activity },
+                  { label: "Erros catalogados", value: trackingDialog.data.errorBank?.length ?? 0, icon: AlertTriangle },
+                ].map((s) => (
+                  <div key={s.label} className="rounded-lg border bg-card p-3 text-center">
+                    <s.icon className="h-4 w-4 mx-auto mb-1 text-primary" />
+                    <div className="text-lg font-bold">{s.value}</div>
+                    <div className="text-[11px] text-muted-foreground">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Quota usage */}
+              {trackingDialog.data.quota && (
+                <div className="rounded-lg border bg-card p-4">
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5"><CreditCard className="h-4 w-4" /> Uso de Cota</h3>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>Questões: {trackingDialog.data.quota.questions_used} / {trackingDialog.data.quota.questions_limit}</span>
+                    <span className="text-muted-foreground">{Math.round((trackingDialog.data.quota.questions_used / Math.max(trackingDialog.data.quota.questions_limit, 1)) * 100)}%</span>
+                  </div>
+                  <Progress value={(trackingDialog.data.quota.questions_used / Math.max(trackingDialog.data.quota.questions_limit, 1)) * 100} className="h-2" />
+                </div>
+              )}
+
+              {/* Domain map */}
+              {trackingDialog.data.domainMap?.length > 0 && (
+                <div className="rounded-lg border bg-card p-4">
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5"><Brain className="h-4 w-4" /> Domínio por Especialidade</h3>
+                  <div className="space-y-2.5">
+                    {trackingDialog.data.domainMap.slice(0, 10).map((d: any) => (
+                      <div key={d.id}>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="font-medium">{d.specialty}</span>
+                          <span className="text-muted-foreground">{Math.round(d.domain_score)}% • {d.questions_answered} questões</span>
+                        </div>
+                        <Progress value={d.domain_score} className={`h-1.5 ${d.domain_score < 50 ? "[&>div]:bg-destructive" : d.domain_score < 70 ? "[&>div]:bg-amber-500" : ""}`} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Exam sessions */}
+              {trackingDialog.data.examSessions?.length > 0 && (
+                <div className="rounded-lg border bg-card p-4">
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5"><ClipboardList className="h-4 w-4" /> Últimos Simulados</h3>
+                  <div className="space-y-2">
+                    {trackingDialog.data.examSessions.map((e: any) => (
+                      <div key={e.id} className="flex items-center justify-between text-sm px-3 py-2 rounded bg-secondary/50">
+                        <div>
+                          <span className="font-medium">{e.title}</span>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {new Date(e.started_at).toLocaleDateString("pt-BR")}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {e.score != null && (
+                            <Badge variant={e.score >= 70 ? "default" : "destructive"} className="text-xs">
+                              {Math.round(e.score)}%
+                            </Badge>
+                          )}
+                          <Badge variant="secondary" className="text-xs">
+                            {e.status === "finished" ? "Finalizado" : "Em andamento"}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Top errors */}
+              {trackingDialog.data.errorBank?.length > 0 && (
+                <div className="rounded-lg border bg-card p-4">
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5"><AlertTriangle className="h-4 w-4" /> Principais Erros</h3>
+                  <div className="space-y-1.5">
+                    {trackingDialog.data.errorBank.slice(0, 8).map((e: any) => (
+                      <div key={e.id} className="flex items-center justify-between text-sm px-3 py-1.5 rounded bg-secondary/50">
+                        <span>{e.tema}{e.subtema ? ` → ${e.subtema}` : ""}</span>
+                        <Badge variant="destructive" className="text-xs">{e.vezes_errado}x</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Diagnostic */}
+              {trackingDialog.data.diagnostic && (
+                <div className="rounded-lg border bg-card p-4">
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5"><TrendingUp className="h-4 w-4" /> Diagnóstico Inicial</h3>
+                  <div className="flex items-center gap-4 text-sm">
+                    <span>Nota: <strong>{trackingDialog.data.diagnostic.score}/{trackingDialog.data.diagnostic.total_questions}</strong></span>
+                    <span className="text-muted-foreground">({Math.round((trackingDialog.data.diagnostic.score / Math.max(trackingDialog.data.diagnostic.total_questions, 1)) * 100)}%)</span>
+                    <span className="text-xs text-muted-foreground">em {new Date(trackingDialog.data.diagnostic.completed_at).toLocaleDateString("pt-BR")}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Profile info */}
+              {trackingDialog.data.profile && (
+                <div className="rounded-lg border bg-card p-4">
+                  <h3 className="text-sm font-semibold mb-2">Informações do Perfil</h3>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {trackingDialog.data.profile.target_specialty && (
+                      <div><span className="text-muted-foreground">Especialidade alvo:</span> {trackingDialog.data.profile.target_specialty}</div>
+                    )}
+                    {trackingDialog.data.profile.exam_date && (
+                      <div><span className="text-muted-foreground">Data da prova:</span> {new Date(trackingDialog.data.profile.exam_date).toLocaleDateString("pt-BR")}</div>
+                    )}
+                    {trackingDialog.data.profile.daily_study_hours && (
+                      <div><span className="text-muted-foreground">Horas/dia:</span> {trackingDialog.data.profile.daily_study_hours}h</div>
+                    )}
+                    <div><span className="text-muted-foreground">Diagnóstico:</span> {trackingDialog.data.profile.has_completed_diagnostic ? "✅ Completo" : "❌ Pendente"}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground py-8">Nenhum dado encontrado.</p>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
