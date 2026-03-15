@@ -241,8 +241,8 @@ serve(async (req) => {
     else if (fn.includes("nefro")) detectedTopic = "Nefrologia";
     else if (fn.includes("infecto")) detectedTopic = "Infectologia";
 
-    const isGlobal = upload.is_global || false;
-    const isBancoQuestoes = (upload.category || "").includes("banco-questoes") || fn.includes("questoes") || fn.includes("questao");
+    // All uploads enrich the global knowledge base
+    const isGlobal = true;
 
     let flashcardsCount = 0;
     let questionsCount = 0;
