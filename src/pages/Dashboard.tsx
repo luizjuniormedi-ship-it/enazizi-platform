@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { Button } from "@/components/ui/button";
 import DashboardWarnings from "@/components/dashboard/DashboardWarnings";
 import TopicEvolution from "@/components/dashboard/TopicEvolution";
+import MotivationalGreeting from "@/components/dashboard/MotivationalGreeting";
 
 interface PlanJson {
   weeklySchedule?: { day: string; tasks: { time: string; subject: string; duration: string; type?: string }[] }[];
