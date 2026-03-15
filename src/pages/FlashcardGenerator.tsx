@@ -74,8 +74,11 @@ const FlashcardGenerator = () => {
     const { error } = await supabase.from("flashcards").insert(rows);
     if (error) throw new Error("Erro ao salvar: " + error.message);
 
+    // Award XP for each flashcard created
+    await addXp(XP_REWARDS.flashcard_created * parsed.length);
+
     return parsed.length;
-  }, [user]);
+  }, [user, addXp]);
 
   return (
     <AgentChat

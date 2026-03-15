@@ -201,6 +201,8 @@ const ClinicalSimulation = () => {
       });
       setFinalEval(res);
       setPhase("result");
+      // Award XP for completing plantão
+      await addXp(XP_REWARDS.plantao_completed);
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
       setPhase("active");

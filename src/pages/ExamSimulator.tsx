@@ -199,6 +199,8 @@ const ExamSimulator = () => {
           });
         }
       }
+      // Award XP for completing simulado
+      await addXp(XP_REWARDS.simulado_completed);
     }
 
     setPhase("result");

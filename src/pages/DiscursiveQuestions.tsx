@@ -119,6 +119,8 @@ const DiscursiveQuestions = () => {
       const res = await callAPI({ action: "correct", attempt_id: attemptId, answer: answer.trim() });
       setCorrection(res.correction);
       setPhase("result");
+      // Award XP for discursive completion
+      await addXp(XP_REWARDS.discursive_completed);
     } catch (e) {
       toast({ title: "Erro na correção", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
       setPhase("answering");

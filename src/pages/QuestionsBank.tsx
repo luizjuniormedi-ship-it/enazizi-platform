@@ -184,6 +184,9 @@ const QuestionsBank = () => {
       correct: isCorrect,
     });
 
+    // Award XP
+    await addXp(isCorrect ? XP_REWARDS.question_correct : XP_REWARDS.question_answered);
+
     // Log wrong answer to error_bank
     if (!isCorrect) {
       await logErrorToBank({
