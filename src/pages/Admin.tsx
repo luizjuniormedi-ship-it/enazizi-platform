@@ -457,6 +457,13 @@ const Admin = () => {
                               {u.is_blocked ? <CheckCircle className="h-3 w-3" /> : <Ban className="h-3 w-3" />}
                               {u.is_blocked ? "Desbloquear" : "Bloquear"}
                             </Button>
+                            <Button
+                              variant="outline"
+                              size="sm" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10"
+                              disabled={isCurrentlyActioning}
+                              onClick={() => loadUserTracking(u)}>
+                              <BarChart3 className="h-3 w-3" /> Acompanhar
+                            </Button>
                           </>
                         )}
                       </div>
