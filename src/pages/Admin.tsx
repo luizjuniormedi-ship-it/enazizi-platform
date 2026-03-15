@@ -518,6 +518,11 @@ const Admin = () => {
                               {u.roles.includes("admin") ? "Remover Admin" : "Admin"}
                             </Button>
                             <Button variant="outline" size="sm" className="h-7 text-xs gap-1" disabled={isCurrentlyActioning}
+                              onClick={() => setProfessorDialog({ open: true, user: u, makeProfessor: !u.roles.includes("professor") })}>
+                              <GraduationCap className="h-3 w-3" />
+                              {u.roles.includes("professor") ? "Remover Prof." : "Professor"}
+                            </Button>
+                            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" disabled={isCurrentlyActioning}
                               onClick={() => setPlanDialog({ open: true, user: u, plan: getUserPlan(u) })}>
                               <CreditCard className="h-3 w-3" /> Plano
                             </Button>
