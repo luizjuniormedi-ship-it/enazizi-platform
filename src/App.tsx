@@ -34,6 +34,7 @@ import ErrorBank from "./pages/ErrorBank";
 import MedicalDomainMap from "./pages/MedicalDomainMap";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import NotFound from "./pages/NotFound";
+import Install from "./pages/Install";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +76,7 @@ const App = () => (
             <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
               <Route index element={<Admin />} />
             </Route>
+            <Route path="/install" element={<Install />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
