@@ -28,6 +28,7 @@ const navItems = [
   { to: "/dashboard/banco-erros", icon: AlertTriangle, label: "🚨 Banco de Erros" },
   { to: "/dashboard/mapa-dominio", icon: Map, label: "🗺️ Mapa de Evolução" },
   { to: "/dashboard/proficiencia", icon: GraduationCap, label: "🎓 Proficiência" },
+  { to: "/dashboard/discursivas", icon: PenLine, label: "✍️ Questões Discursivas" },
   { to: "/dashboard/uploads", icon: Upload, label: "📤 Uploads" },
   { to: "/dashboard/analytics", icon: BarChart3, label: "📊 Analytics" },
 ];
