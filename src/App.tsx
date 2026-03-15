@@ -79,6 +79,7 @@ const App = () => (
               <Route path="proficiencia" element={<StudentSimulados />} />
               <Route path="discursivas" element={<DiscursiveQuestions />} />
               <Route path="plantao" element={<ClinicalSimulation />} />
+              <Route path="conquistas" element={<Achievements />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="perfil" element={<Profile />} />
             </Route>

@@ -31,6 +31,7 @@ const navItems = [
   { to: "/dashboard/discursivas", icon: PenLine, label: "✍️ Questões Discursivas" },
   { to: "/dashboard/plantao", icon: Activity, label: "🚨 Modo Plantão" },
   { to: "/dashboard/uploads", icon: Upload, label: "📤 Uploads" },
+  { to: "/dashboard/conquistas", icon: Trophy, label: "🏆 Conquistas & Ranking" },
   { to: "/dashboard/analytics", icon: BarChart3, label: "📊 Analytics" },
 ];
 
