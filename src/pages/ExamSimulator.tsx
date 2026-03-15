@@ -29,6 +29,7 @@ const isMedicalQuestion = (q: { statement?: string; topic?: string; explanation?
 const ExamSimulator = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { addXp } = useGamification();
   const [phase, setPhase] = useState<Phase>("setup");
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [current, setCurrent] = useState(0);
