@@ -75,6 +75,7 @@ const App = () => (
               <Route path="banco-erros" element={<ErrorBank />} />
               <Route path="mapa-dominio" element={<MedicalDomainMap />} />
               <Route path="proficiencia" element={<StudentSimulados />} />
+              <Route path="discursivas" element={<DiscursiveQuestions />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="perfil" element={<Profile />} />
             </Route>
