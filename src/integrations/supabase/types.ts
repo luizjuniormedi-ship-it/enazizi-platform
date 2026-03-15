@@ -488,10 +488,12 @@ export type Database = {
           display_name: string | null
           email: string | null
           exam_date: string | null
+          faculdade: string | null
           has_completed_diagnostic: boolean | null
           id: string
           is_blocked: boolean
           organization_id: string | null
+          periodo: number | null
           status: string
           target_specialty: string | null
           updated_at: string
@@ -506,10 +508,12 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           exam_date?: string | null
+          faculdade?: string | null
           has_completed_diagnostic?: boolean | null
           id?: string
           is_blocked?: boolean
           organization_id?: string | null
+          periodo?: number | null
           status?: string
           target_specialty?: string | null
           updated_at?: string
@@ -524,10 +528,12 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           exam_date?: string | null
+          faculdade?: string | null
           has_completed_diagnostic?: boolean | null
           id?: string
           is_blocked?: boolean
           organization_id?: string | null
+          periodo?: number | null
           status?: string
           target_specialty?: string | null
           updated_at?: string
