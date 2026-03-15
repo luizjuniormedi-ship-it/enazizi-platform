@@ -63,6 +63,9 @@ const Dashboard = () => {
       setDisplayName(profileRes.data?.display_name || null);
       setQuestionsAnswered(perfRes.data?.questoes_respondidas || 0);
       setAccuracy(Number(perfRes.data?.taxa_acerto) || 0);
+      setGlobalFlashcards(globalFlashRes.count || 0);
+      setGlobalQuestions(globalQuestRes.count || 0);
+      setAccuracy(Number(perfRes.data?.taxa_acerto) || 0);
 
       const tasks = tasksRes.data || [];
       const completedTasks = tasks.filter((t: any) => t.completed).length;
