@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import DashboardSidebar from "./DashboardSidebar";
 import { Menu, LogOut, User, Shield } from "lucide-react";
+import StudyTimer from "@/components/dashboard/StudyTimer";
 import enazizi from "@/assets/enazizi-mascot.png";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -51,7 +52,7 @@ const MobileNav = () => {
             <span className="font-bold">ENAZIZI</span>
           </Link>
         </div>
-        <ScrollArea className="h-[calc(100vh-140px)]">
+        <ScrollArea className="h-[calc(100vh-200px)]">
           <nav className="px-3 py-2 space-y-1">
             {mobileNavItems.map((item) => (
               <Link
@@ -94,6 +95,9 @@ const MobileNav = () => {
             </div>
           </nav>
         </ScrollArea>
+        <div className="border-t border-sidebar-border flex-shrink-0">
+          <StudyTimer />
+        </div>
       </SheetContent>
     </Sheet>
   );
