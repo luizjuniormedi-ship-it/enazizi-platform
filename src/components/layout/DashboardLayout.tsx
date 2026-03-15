@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
 import DashboardSidebar from "./DashboardSidebar";
 import { Menu, LogOut, User, Shield } from "lucide-react";
 import StudyTimer from "@/components/dashboard/StudyTimer";
