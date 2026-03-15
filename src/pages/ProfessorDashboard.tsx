@@ -90,8 +90,8 @@ const ProfessorDashboard = () => {
     try {
       const res = await callAPI({
         action: "get_students",
-        faculdade: faculdadeFilter || undefined,
-        periodo: periodoFilter ? parseInt(periodoFilter) : undefined,
+      faculdade: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : undefined,
+      periodo: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : undefined,
       });
       setPreviewStudents(res.students || []);
     } catch {
