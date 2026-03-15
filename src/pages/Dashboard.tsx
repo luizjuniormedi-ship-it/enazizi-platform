@@ -41,6 +41,8 @@ const Dashboard = () => {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [questionsAnswered, setQuestionsAnswered] = useState(0);
   const [accuracy, setAccuracy] = useState(0);
+  const [globalFlashcards, setGlobalFlashcards] = useState(0);
+  const [globalQuestions, setGlobalQuestions] = useState(0);
 
   useEffect(() => {
     if (!user) return;
