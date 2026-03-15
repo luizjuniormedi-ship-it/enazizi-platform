@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import ClassAnalytics from "@/components/professor/ClassAnalytics";
 
 const SPECIALTIES = [
   "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia", "Nefrologia",
@@ -229,7 +230,13 @@ const ProfessorDashboard = () => {
         </Button>
       </div>
 
-      {/* Stats */}
+      <Tabs defaultValue="simulados">
+        <TabsList>
+          <TabsTrigger value="simulados">📝 Simulados</TabsTrigger>
+          <TabsTrigger value="analytics">📊 Análise da Turma</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="simulados" className="space-y-4 mt-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
@@ -336,6 +343,7 @@ const ProfessorDashboard = () => {
           ))}
         </div>
       )}
+      </TabsContent>
 
       {/* Create Simulado Dialog */}
       <Dialog open={showCreate} onOpenChange={(open) => { if (!open) { setShowCreate(false); resetForm(); } else setShowCreate(true); }}>
@@ -659,6 +667,11 @@ const ProfessorDashboard = () => {
           )}
         </DialogContent>
       </Dialog>
+
+        <TabsContent value="analytics" className="mt-4">
+          <ClassAnalytics />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { BarChart3, TrendingUp, Target, Clock, BookOpen, CheckCircle2, Loader2, HelpCircle, Stethoscope, Award } from "lucide-react";
+import PerformanceReport from "@/components/dashboard/PerformanceReport";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from "recharts";
@@ -111,12 +112,15 @@ const Analytics = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <BarChart3 className="h-6 w-6 text-primary" />
-          Analytics
-        </h1>
-        <p className="text-muted-foreground">Seu desempenho real baseado nos dados da plataforma.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <BarChart3 className="h-6 w-6 text-primary" />
+            Analytics
+          </h1>
+          <p className="text-muted-foreground">Seu desempenho real baseado nos dados da plataforma.</p>
+        </div>
+        <PerformanceReport />
       </div>
 
       {/* Stats Cards */}
