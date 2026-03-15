@@ -51,6 +51,7 @@ interface HistoryItem {
 const DiscursiveQuestions = () => {
   const { session } = useAuth();
   const { toast } = useToast();
+  const { addXp } = useGamification();
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [specialty, setSpecialty] = useState("");
