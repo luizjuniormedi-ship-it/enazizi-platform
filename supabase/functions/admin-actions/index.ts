@@ -164,6 +164,19 @@ Deno.serve(async (req) => {
         return ok({ success: true, is_admin: make_admin });
       }
 
+      case "toggle_professor": {
+        const { target_user_id, make_professor } = params;
+        if (!target_user_id) throw new Error("target_user_id obrigatório");
+
+        if (make_professor) {
+          await supabaseAuth.from("user_roles").upsert({ user_id: target_user_id, role: "professor" }, { onConflict: "user_id,role" });
+        } else {
+          await supabaseAuth.from("user_roles").delete().eq("user_id", target_user_id).eq("role", "professor");
+        }
+        await logAudit(supabaseAuth, user.id, make_professor ? "promote_professor" : "demote_professor", target_user_id, { make_professor });
+        return ok({ success: true, is_professor: make_professor });
+      }
+
       case "reset_password": {
         const { target_user_id, new_password } = params;
         if (!target_user_id || !new_password) throw new Error("target_user_id e new_password obrigatórios");
