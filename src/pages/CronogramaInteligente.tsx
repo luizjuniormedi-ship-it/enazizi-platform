@@ -92,7 +92,7 @@ export interface TemaComputado extends TemaEstudado {
   diasSemRevisar: number;
 }
 
-export type TabCronograma = "visao" | "hoje" | "novo" | "temas" | "criticos" | "historico" | "graficos" | "config";
+export type TabCronograma = "visao" | "hoje" | "novo" | "temas" | "criticos" | "historico" | "graficos" | "config" | "plano";
 
 /* ======================== CONSTANTS ======================== */
 
