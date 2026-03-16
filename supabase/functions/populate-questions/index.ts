@@ -35,6 +35,7 @@ async function processTextToQuestions(
   userId: string,
   supabaseAdmin: any,
   uploadId?: string,
+  existingJson?: Record<string, any>,
 ): Promise<number> {
   const chunkSize = 15000;
   const chunks: string[] = [];
@@ -43,6 +44,7 @@ async function processTextToQuestions(
   }
 
   const chunksToProcess = chunks.slice(0, 4);
+  const baseJson = existingJson || {};
 
   // Update progress if uploadId provided
   const updateProgress = async (chunksDone: number, questionsFound: number) => {
@@ -50,11 +52,12 @@ async function processTextToQuestions(
     const progress = Math.round(20 + (chunksDone / chunksToProcess.length) * 70);
     await supabaseAdmin.from("uploads").update({
       extracted_json: {
+        ...baseJson,
         step: "populating_questions",
         progress,
         chunks_total: chunksToProcess.length,
         chunks_done: chunksDone,
-        questions_count: questionsFound,
+        questions_count: (baseJson.questions_count || 0) + questionsFound,
         main_topic: topic,
       },
     }).eq("id", uploadId);
@@ -178,12 +181,13 @@ async function populateInBackground(
     else if (fn.includes("neuro")) topic = "Neurologia";
     else if (fn.includes("pneumo")) topic = "Pneumologia";
 
-    const totalQuestions = await processTextToQuestions(fullText, topic, `upload:${upload.filename}`, userId, supabaseAdmin, uploadId);
+    const existingJson = (upload.extracted_json || {}) as Record<string, any>;
+    const totalQuestions = await processTextToQuestions(fullText, topic, `upload:${upload.filename}`, userId, supabaseAdmin, uploadId, existingJson);
 
     await supabaseAdmin.from("uploads").update({
       extracted_json: {
-        ...(upload.extracted_json || {}),
-        questions_count: totalQuestions,
+        ...existingJson,
+        questions_count: (existingJson.questions_count || 0) + totalQuestions,
         main_topic: topic,
         repopulated_at: new Date().toISOString(),
         step: "done",
