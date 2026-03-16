@@ -841,6 +841,66 @@ export type Database = {
           },
         ]
       }
+      simulation_history: {
+        Row: {
+          correct_diagnosis: string | null
+          created_at: string
+          differential_diagnosis: Json | null
+          difficulty: string
+          evaluation: Json | null
+          final_score: number
+          grade: string
+          id: string
+          ideal_approach: string | null
+          ideal_prescription: string | null
+          improvements: Json | null
+          specialty: string
+          strengths: Json | null
+          student_got_diagnosis: boolean
+          time_total_minutes: number
+          user_id: string
+          xp_earned: number
+        }
+        Insert: {
+          correct_diagnosis?: string | null
+          created_at?: string
+          differential_diagnosis?: Json | null
+          difficulty?: string
+          evaluation?: Json | null
+          final_score?: number
+          grade?: string
+          id?: string
+          ideal_approach?: string | null
+          ideal_prescription?: string | null
+          improvements?: Json | null
+          specialty: string
+          strengths?: Json | null
+          student_got_diagnosis?: boolean
+          time_total_minutes?: number
+          user_id: string
+          xp_earned?: number
+        }
+        Update: {
+          correct_diagnosis?: string | null
+          created_at?: string
+          differential_diagnosis?: Json | null
+          difficulty?: string
+          evaluation?: Json | null
+          final_score?: number
+          grade?: string
+          id?: string
+          ideal_approach?: string | null
+          ideal_prescription?: string | null
+          improvements?: Json | null
+          specialty?: string
+          strengths?: Json | null
+          student_got_diagnosis?: boolean
+          time_total_minutes?: number
+          user_id?: string
+          xp_earned?: number
+        }
+        Relationships: []
+      }
       study_performance: {
         Row: {
           created_at: string
