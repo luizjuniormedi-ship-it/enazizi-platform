@@ -15,6 +15,8 @@ import WhatsNewPopup from "@/components/dashboard/WhatsNewPopup";
 import SystemGuidePopup from "@/components/dashboard/SystemGuidePopup";
 import SpecialtyBenchmark from "@/components/dashboard/SpecialtyBenchmark";
 import OnboardingTour from "@/components/dashboard/OnboardingTour";
+import WeeklyProgressCard from "@/components/dashboard/WeeklyProgressCard";
+import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 
 interface PlanJson {
   weeklySchedule?: { day: string; tasks: { time: string; subject: string; duration: string; type?: string }[] }[];
