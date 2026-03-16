@@ -19,6 +19,7 @@ const mobileNavItems = [
   { to: "/dashboard/plano-dia", label: "⚡ Plano do Dia" },
   { to: "/dashboard/diagnostico", label: "🩺 Diagnóstico Inicial" },
   { to: "/dashboard/cronograma", label: "📅 Cronograma" },
+  { to: "/dashboard/plano-estudos", label: "📚 Plano de Estudos" },
   { to: "/dashboard/flashcards", label: "🃏 Flashcards" },
   { to: "/dashboard/gerar-flashcards", label: "🃏 Gerador de Flashcards" },
   { to: "/dashboard/simulados", label: "📝 Simulados" },
