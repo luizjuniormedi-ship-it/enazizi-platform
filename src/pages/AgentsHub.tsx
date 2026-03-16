@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { HelpCircle, BookOpen, Heart, ArrowRight, Zap, TrendingUp, Stethoscope, Sparkles, PenTool, Users, Activity, FlipVertical } from "lucide-react";
+import { HelpCircle, BookOpen, Heart, ArrowRight, Sparkles, Activity, FlipVertical } from "lucide-react";
 
 const agents = [
   {
@@ -36,24 +36,6 @@ const agents = [
     bgColor: "bg-emerald-500/10",
   },
   {
-    to: "/dashboard/revisor",
-    icon: PenTool,
-    title: "✍️ Revisor de Redação Médica",
-    description: "Correção de respostas discursivas com nota, feedback detalhado e resposta modelo. Treino com questões geradas por IA.",
-    color: "text-indigo-400",
-    bgColor: "bg-indigo-500/10",
-    isNew: true,
-  },
-  {
-    to: "/dashboard/entrevista",
-    icon: Users,
-    title: "🎤 Simulador de Entrevista",
-    description: "Simula entrevistas, arguições orais e estações OSCE de residência médica com avaliação por competências.",
-    color: "text-pink-400",
-    bgColor: "bg-pink-500/10",
-    isNew: true,
-  },
-  {
     to: "/dashboard/plantao",
     icon: Activity,
     title: "🚨 Modo Plantão",
@@ -69,32 +51,7 @@ const agents = [
     color: "text-rose-400",
     bgColor: "bg-rose-500/10",
   },
-  {
-    to: "/dashboard/plano-dia",
-    icon: Zap,
-    title: "⚡ Otimizador de Estudo",
-    description: "IA decide o que estudar hoje baseado em erros, SRS e proximidade da prova. Use para saber O QUE estudar.",
-    color: "text-amber-400",
-    bgColor: "bg-amber-500/10",
-  },
-  {
-    to: "/dashboard/predictor",
-    icon: TrendingUp,
-    title: "📈 Previsão de Desempenho",
-    description: "Calcula probabilidade de aprovação, nota estimada e tendência de evolução. Use para saber ONDE você está.",
-    color: "text-violet-400",
-    bgColor: "bg-violet-500/10",
-  },
-  {
-    to: "/dashboard/diagnostico",
-    icon: Stethoscope,
-    title: "🩺 Diagnóstico Inicial",
-    description: "Simulado diagnóstico para calcular seu nível atual e gerar plano adaptativo. Use NO INÍCIO para descobrir seus pontos fracos.",
-    color: "text-cyan-400",
-    bgColor: "bg-cyan-500/10",
-  },
 ];
-
 const AgentsHub = () => (
   <div className="space-y-6 animate-fade-in">
     <div>
