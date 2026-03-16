@@ -25,7 +25,9 @@ const QUICK_ACTIONS = [
   { label: "Anamnese", icon: MessageCircle, prompt: "Quais são seus sintomas? Quando começou?" },
   { label: "Exame Físico", icon: Stethoscope, prompt: "Realizar exame físico completo do paciente" },
   { label: "Exames Lab", icon: FileSearch, prompt: "Solicitar hemograma, bioquímica, coagulograma" },
+  { label: "Imagem", icon: FileSearch, prompt: "Solicitar exames de imagem: radiografia, tomografia, ultrassonografia ou ressonância conforme indicação clínica" },
   { label: "Prescrever", icon: Syringe, prompt: "Prescrever medicação para o paciente" },
+  { label: "Diagnóstico", icon: Target, prompt: "Com base nos achados clínicos e exames, meu diagnóstico é:" },
 ];
 
 type Phase = "lobby" | "active" | "finishing" | "result";
