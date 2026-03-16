@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { User, Search, Loader2, BarChart3, AlertTriangle, BookOpen, Target, TrendingUp, Clock } from "lucide-react";
+import { User, Search, Loader2, BarChart3, AlertTriangle, BookOpen, Target, TrendingUp, Clock, CheckCircle2, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -145,14 +145,29 @@ const StudentTracker = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Student list */}
         <div className="space-y-1 max-h-[60vh] overflow-y-auto">
+          {students.length > 0 && (
+            <p className="text-[11px] text-muted-foreground px-1 pb-1">
+              Clique em um aluno para selecionar individualmente (fica marcado à direita).
+            </p>
+          )}
+
           {students.length === 0 && !loading && (
             <Card>
               <CardContent className="p-8 text-center">
                 <User className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">Clique em "Buscar Alunos" para listar.</p>
+                <p className="text-sm text-muted-foreground">Nenhum aluno encontrado para os filtros selecionados.</p>
               </CardContent>
             </Card>
           )}
+
+          {students.length > 0 && filteredStudents.length === 0 && (
+            <Card>
+              <CardContent className="p-5 text-center">
+                <p className="text-sm text-muted-foreground">Nenhum aluno corresponde ao filtro por nome.</p>
+              </CardContent>
+            </Card>
+          )}
+
           {filteredStudents.map((s) => (
             <button
               key={s.user_id}
@@ -163,10 +178,22 @@ const StudentTracker = () => {
                   : "border-border hover:border-primary/30 hover:bg-muted/30"
               }`}
             >
-              <p className="font-medium text-sm truncate">{s.display_name || s.email}</p>
-              <p className="text-[11px] text-muted-foreground">
-                {s.faculdade || "Sem faculdade"}{s.periodo ? ` • ${s.periodo}º período` : ""}
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-medium text-sm truncate">{s.display_name || s.email}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {s.faculdade || "Sem faculdade"}{s.periodo ? ` • ${s.periodo}º período` : ""}
+                  </p>
+                </div>
+
+                <div className="shrink-0 mt-0.5" aria-hidden>
+                  {selectedStudent === s.user_id ? (
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Circle className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+              </div>
             </button>
           ))}
         </div>
