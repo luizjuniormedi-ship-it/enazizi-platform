@@ -203,7 +203,55 @@ const ClinicalSimulation = () => {
     };
   }, [phase, countdown > 0]);
 
-  const callAPI = useCallback(async (body: Record<string, unknown>) => {
+  // Fetch history on mount
+  const fetchHistory = useCallback(async () => {
+    if (!user) return;
+    setHistoryLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("simulation_history")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      setHistory(data || []);
+    } catch (e) {
+      console.error("Error fetching history:", e);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
+
+  const saveSimulationToHistory = async (evalData: FinalEval) => {
+    if (!user) return;
+    try {
+      await supabase.from("simulation_history").insert({
+        user_id: user.id,
+        specialty,
+        difficulty,
+        final_score: evalData.final_score,
+        grade: evalData.grade,
+        correct_diagnosis: evalData.correct_diagnosis,
+        student_got_diagnosis: evalData.student_got_diagnosis,
+        time_total_minutes: evalData.time_total_minutes,
+        evaluation: evalData.evaluation as any,
+        differential_diagnosis: (evalData.differential_diagnosis || []) as any,
+        strengths: evalData.strengths as any,
+        improvements: evalData.improvements as any,
+        ideal_approach: evalData.ideal_approach,
+        ideal_prescription: evalData.ideal_prescription || null,
+        xp_earned: evalData.xp_earned,
+      });
+    } catch (e) {
+      console.error("Error saving simulation:", e);
+    }
+  };
+
     const resp = await fetch(API_URL, {
       method: "POST",
       headers: {
