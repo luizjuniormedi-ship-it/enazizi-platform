@@ -280,7 +280,8 @@ const Uploads = () => {
           <div className="space-y-3">
             {files.map((f) => {
               const isProcessing = f.status === "processing";
-              const isPopulating = f.extracted_json?.step === "populating_questions" && f.extracted_json?.step !== "done";
+              const ejson = f.extracted_json as Record<string, any> | null;
+              const isPopulating = ejson?.step === "populating_questions" && ejson?.step !== "done";
 
               return (
                 <div key={f.id} className="glass-card p-4">
@@ -292,7 +293,7 @@ const Uploads = () => {
                       <div className="text-sm font-medium truncate">{f.filename}</div>
                       <div className="text-xs text-muted-foreground">
                         {f.file_type} • {f.status === "processed"
-                          ? `✅ ${f.extracted_json?.flashcards_count || 0} flashcards${f.extracted_json?.questions_count ? ` • ${f.extracted_json.questions_count} questões` : ""}`
+                          ? `✅ ${ejson?.flashcards_count || 0} flashcards${ejson?.questions_count ? ` • ${ejson.questions_count} questões` : ""}`
                           : isProcessing ? "⏳ Processando..." : f.status}
                         {" • "}{new Date(f.created_at).toLocaleDateString("pt-BR")}
                       </div>
