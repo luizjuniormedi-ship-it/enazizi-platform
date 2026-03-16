@@ -463,6 +463,7 @@ const ClinicalSimulation = () => {
       setFinalEval(res);
       setPhase("result");
       await addXp(XP_REWARDS.plantao_completed);
+      await saveSimulationToHistory(res);
 
       if (user && res.final_score < 70) {
         const weakAreas = res.weak_areas || res.areas_to_improve || [];
