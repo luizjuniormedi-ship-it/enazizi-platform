@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import ClassAnalytics from "@/components/professor/ClassAnalytics";
+import StudentTracker from "@/components/professor/StudentTracker";
 
 const SPECIALTIES = [
   "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia", "Nefrologia",
@@ -233,6 +234,7 @@ const ProfessorDashboard = () => {
       <Tabs defaultValue="simulados">
         <TabsList>
           <TabsTrigger value="simulados">📝 Simulados</TabsTrigger>
+          <TabsTrigger value="alunos">👤 Aluno Individual</TabsTrigger>
           <TabsTrigger value="analytics">📊 Análise da Turma</TabsTrigger>
         </TabsList>
 
@@ -667,6 +669,10 @@ const ProfessorDashboard = () => {
           )}
         </DialogContent>
       </Dialog>
+
+        <TabsContent value="alunos" className="mt-4">
+          <StudentTracker />
+        </TabsContent>
 
         <TabsContent value="analytics" className="mt-4">
           <ClassAnalytics />

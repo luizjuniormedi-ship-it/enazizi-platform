@@ -260,6 +260,74 @@ REGRAS:
         return ok({ students: studentStats, weakTopics, topPerformers });
       }
 
+      case "student_detail": {
+        const { student_id } = params;
+        if (!student_id) throw new Error("student_id obrigatório");
+
+        // Profile
+        const { data: profile } = await sb.from("profiles")
+          .select("user_id, display_name, email, faculdade, periodo")
+          .eq("user_id", student_id).single();
+        if (!profile) throw new Error("Aluno não encontrado");
+
+        // Domain scores
+        const { data: domains } = await sb.from("medical_domain_map")
+          .select("specialty, domain_score, questions_answered, correct_answers, errors_count")
+          .eq("user_id", student_id);
+
+        // Error bank
+        const { data: errors } = await sb.from("error_bank")
+          .select("tema, vezes_errado, categoria_erro")
+          .eq("user_id", student_id)
+          .order("vezes_errado", { ascending: false })
+          .limit(15);
+
+        // Study performance
+        const { data: perf } = await sb.from("study_performance")
+          .select("questoes_respondidas, taxa_acerto")
+          .eq("user_id", student_id).maybeSingle();
+
+        // Gamification
+        const { data: gam } = await sb.from("user_gamification")
+          .select("xp, level, current_streak")
+          .eq("user_id", student_id).maybeSingle();
+
+        // Simulado results
+        const { data: simResults } = await sb.from("teacher_simulado_results")
+          .select("simulado_id, score, status, finished_at")
+          .eq("student_id", student_id)
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        // Enrich with simulado titles
+        const simIds = (simResults || []).map((r: any) => r.simulado_id);
+        let simTitles: Record<string, string> = {};
+        if (simIds.length > 0) {
+          const { data: sims } = await sb.from("teacher_simulados").select("id, title").in("id", simIds);
+          for (const s of (sims || [])) simTitles[s.id] = s.title;
+        }
+
+        // Quotas
+        const { data: quotas } = await sb.from("user_quotas")
+          .select("questions_used, questions_limit")
+          .eq("user_id", student_id).maybeSingle();
+
+        return ok({
+          profile,
+          domain_scores: domains || [],
+          error_topics: errors || [],
+          study_performance: perf ? { questoes_respondidas: perf.questoes_respondidas, taxa_acerto: Math.round((perf.taxa_acerto || 0) * 100) } : null,
+          gamification: gam || null,
+          simulado_results: (simResults || []).map((r: any) => ({
+            title: simTitles[r.simulado_id] || "Simulado",
+            score: r.score != null ? Math.round(r.score) : null,
+            status: r.status,
+            finished_at: r.finished_at,
+          })),
+          quotas: quotas || null,
+        });
+      }
+
       default:
         return new Response(JSON.stringify({ error: `Ação desconhecida: ${action}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
