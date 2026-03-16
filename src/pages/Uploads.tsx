@@ -211,12 +211,14 @@ const Uploads = () => {
   };
 
   const renderProgress = (f: UploadRecord) => {
-    const json = f.extracted_json;
+    const json = f.extracted_json as Record<string, any> | null;
     if (!json || f.status !== "processing") return null;
 
-    const step = json.step as string;
-    const progress = json.progress as number || 0;
+    const step = (json.step as string) || "";
+    const progress = (json.progress as number) || 0;
     const label = STEP_LABELS[step] || step || "Processando...";
+    const fc = (json.flashcards_count as number) || 0;
+    const qc = (json.questions_count as number) || 0;
 
     return (
       <div className="w-full mt-2 space-y-1">
@@ -225,10 +227,10 @@ const Uploads = () => {
           <span>{progress}%</span>
         </div>
         <Progress value={progress} className="h-1.5" />
-        {json.flashcards_count > 0 && (
+        {fc > 0 && (
           <span className="text-xs text-muted-foreground">
-            {json.flashcards_count} flashcards
-            {json.questions_count > 0 && ` • ${json.questions_count} questões`}
+            {fc} flashcards
+            {qc > 0 && ` • ${qc} questões`}
           </span>
         )}
       </div>
