@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, CheckCircle2, Rocket } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const CURRENT_VERSION = "3.1.0";
+const CURRENT_VERSION = "3.2.0";
 const STORAGE_KEY = "enazizi_last_seen_version";
 
 interface UpdateItem {
@@ -22,63 +22,57 @@ interface UpdateItem {
 const updates: UpdateItem[] = [
   {
     icon: "rocket",
-    title: "Cronograma Inteligente Unificado",
+    title: "Plantão Clínico — Dermatologia & Angiologia",
     description:
-      "Repetição espaçada adaptativa + Plano de Estudos até a prova integrados em um único módulo. Upload de edital, revisões extras automáticas e recursos vinculados (questões e flashcards) durante a revisão.",
+      "Novas especialidades no Modo Plantão: simule casos de Dermatologia (psoríase, dermatites, melanoma) e Angiologia (TVP, DAP, varizes) com avaliação completa.",
   },
   {
     icon: "sparkles",
-    title: "Recursos na Revisão Ativa",
+    title: "Gerador de Questões Anti-Repetição",
     description:
-      "Ao iniciar uma revisão, o sistema busca automaticamente questões e flashcards relacionados ao tema para praticar antes de registrar o desempenho.",
+      "O gerador agora analisa o histórico da conversa e nunca repete questões. Catálogo expandido com 20+ especialidades e centenas de subtemas para máxima variedade.",
+  },
+  {
+    icon: "rocket",
+    title: "Painel do Professor — Seleção Individual de Alunos",
+    description:
+      "Ao criar simulados, o professor pode selecionar ou desmarcar alunos individualmente com checkboxes, além de filtrar por faculdade e período.",
+  },
+  {
+    icon: "check",
+    title: "Aba Aluno Individual no Painel Professor",
+    description:
+      "Nova aba para visualizar detalhes individuais de cada aluno: maestria por especialidade, erros frequentes, streak, simulados realizados e uso de cota.",
+  },
+  {
+    icon: "sparkles",
+    title: "Cronograma Inteligente Unificado",
+    description:
+      "Repetição espaçada adaptativa + Plano de Estudos até a prova integrados em um único módulo com revisões extras automáticas.",
   },
   {
     icon: "rocket",
     title: "PWA Completa — Instale no Celular",
     description:
-      "O ENAZIZI agora funciona como app nativo! Instale direto do navegador no iOS e Android com suporte offline completo.",
-  },
-  {
-    icon: "sparkles",
-    title: "Modo Claro / Escuro",
-    description:
-      "Novo toggle de tema no dashboard. Alterne entre modo escuro e claro com persistência automática.",
-  },
-  {
-    icon: "check",
-    title: "Exportação em PDF",
-    description:
-      "Exporte seus flashcards e questões do banco em PDF formatado para estudar offline ou imprimir.",
-  },
-  {
-    icon: "rocket",
-    title: "Benchmark Comparativo por Especialidade",
-    description:
-      "Veja seu percentil anônimo em cada especialidade médica comparado com outros alunos da plataforma.",
-  },
-  {
-    icon: "sparkles",
-    title: "Conquistas & Ranking com Gamificação",
-    description:
-      "Sistema de XP, streaks, níveis e ranking semanal para motivar seus estudos diários.",
+      "O ENAZIZI funciona como app nativo! Instale direto do navegador no iOS e Android com suporte offline.",
   },
   {
     icon: "check",
     title: "Modo Plantão — Simulação Clínica",
     description:
-      "Simule plantões médicos com casos clínicos interativos e tome decisões em tempo real.",
+      "Simule plantões médicos com 15 especialidades, cronômetro, ajuda do preceptor e avaliação pedagógica completa.",
   },
   {
-    icon: "rocket",
-    title: "Questões Discursivas com Correção por IA",
+    icon: "sparkles",
+    title: "Conquistas, XP & Ranking Semanal",
     description:
-      "Pratique questões discursivas e receba correção detalhada com nota e feedback da IA.",
+      "Sistema de gamificação com XP, streaks, níveis e ranking para motivar seus estudos diários.",
   },
   {
     icon: "check",
-    title: "Painel do Professor",
+    title: "Questões Discursivas com Correção por IA",
     description:
-      "Professores podem criar simulados personalizados e acompanhar o desempenho dos alunos.",
+      "Pratique questões discursivas e receba correção detalhada com nota e feedback da IA.",
   },
 ];
 
