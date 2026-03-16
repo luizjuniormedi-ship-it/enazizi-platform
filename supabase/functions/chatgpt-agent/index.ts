@@ -1,11 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import ENAZIZI_PROMPT from "../_shared/enazizi-prompt.ts";
-import { aiFetch } from "../_shared/ai-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const OPENAI_API = "https://api.openai.com/v1/chat/completions";
+const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -69,15 +71,53 @@ NÃO repita estados anteriores. NÃO pule para estados futuros. Avance apenas UM
       instructions += `\n--- FIM DO BANCO DE ERROS ---`;
     }
 
-    const response = await aiFetch({
-      model: "google/gemini-2.5-pro",
-      messages: [{ role: "system", content: instructions }, ...messages],
-      stream: true,
+    const allMessages = [{ role: "system", content: instructions }, ...messages];
+    const body = JSON.stringify({ model: "gpt-4o", messages: allMessages, stream: true, max_tokens: 16384 });
+
+    // 1) Try OpenAI first
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (OPENAI_API_KEY) {
+      const response = await fetch(OPENAI_API, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+        body,
+      });
+
+      if (response.ok) {
+        return new Response(response.body, {
+          headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+        });
+      }
+
+      console.log(`OpenAI returned ${response.status}, falling back to Lovable AI...`);
+      // Only fallback on rate/credit issues
+      if (response.status !== 429 && response.status !== 402) {
+        const t = await response.text();
+        console.error("OpenAI error:", response.status, t);
+        return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // 2) Fallback to Lovable AI Gateway
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      return new Response(JSON.stringify({ error: "Nenhuma chave de IA configurada." }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const fallbackBody = JSON.stringify({ model: "google/gemini-2.5-pro", messages: allMessages, stream: true, max_tokens: 16384 });
+    const response = await fetch(LOVABLE_GATEWAY, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      body: fallbackBody,
     });
 
     if (!response.ok) {
       const t = await response.text();
-      console.error("AI error:", response.status, t);
+      console.error("Lovable AI error:", response.status, t);
 
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Limite de requisições atingido. Tente novamente em alguns segundos." }), {
@@ -89,7 +129,7 @@ NÃO repita estados anteriores. NÃO pule para estados futuros. Avance apenas UM
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      return new Response(JSON.stringify({ error: "Erro no serviço ChatGPT" }), {
+      return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
