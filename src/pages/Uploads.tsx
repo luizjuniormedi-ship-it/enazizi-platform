@@ -94,15 +94,16 @@ const Uploads = () => {
         // Check if any finished
         const stillProcessing = new Set<string>();
         for (const f of data) {
-          const step = f.extracted_json?.step;
+          const json = f.extracted_json as Record<string, any> | null;
+          const step = json?.step;
           if (f.status === "processing" && step !== "done" && step !== "error") {
             stillProcessing.add(f.id);
           } else if (step === "done") {
-            const qc = f.extracted_json?.questions_count || 0;
-            const fc = f.extracted_json?.flashcards_count || 0;
+            const qc = json?.questions_count || 0;
+            const fc = json?.flashcards_count || 0;
             toast({ title: "Processamento concluído!", description: `${fc} flashcards e ${qc} questões geradas de ${f.filename}` });
           } else if (step === "error") {
-            toast({ title: "Erro no processamento", description: f.extracted_json?.error || "Erro desconhecido", variant: "destructive" });
+            toast({ title: "Erro no processamento", description: (json?.error as string) || "Erro desconhecido", variant: "destructive" });
           }
         }
         setPollingIds(stillProcessing);
