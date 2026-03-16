@@ -59,10 +59,10 @@ describe("Agent Pages render correctly", () => {
   it("QuestionGenerator shows quick action buttons with difficulty levels", async () => {
     const QuestionGenerator = (await import("@/pages/QuestionGenerator")).default;
     render(<MemoryRouter><QuestionGenerator /></MemoryRouter>);
-    expect(screen.getByText(/5 questões fáceis/)).toBeInTheDocument();
-    expect(screen.getByText(/10 questões médias/)).toBeInTheDocument();
-    expect(screen.getByText(/5 questões difíceis/)).toBeInTheDocument();
-    expect(screen.getByText(/Mix completo/)).toBeInTheDocument();
+    expect(screen.getByText(/Escolher tema/)).toBeInTheDocument();
+    expect(screen.getByText(/Cardiologia/)).toBeInTheDocument();
+    expect(screen.getByText(/Pediatria/)).toBeInTheDocument();
+    expect(screen.getByText(/Cirurgia/)).toBeInTheDocument();
   });
 
   it("ContentSummarizer renders with correct branding", async () => {
