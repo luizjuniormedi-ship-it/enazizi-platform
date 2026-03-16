@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { X, ChevronRight, ChevronLeft, Sparkles, BookOpen, Brain, FileText, Trophy, Stethoscope, BarChart3, Zap, MessageSquare, Upload } from "lucide-react";
+import { X, ChevronRight, ChevronLeft, Sparkles, BookOpen, Brain, FileText, Trophy, Stethoscope, BarChart3, Zap, MessageSquare, Upload, CalendarDays, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
@@ -40,6 +40,13 @@ const steps: Step[] = [
     description: "Receba um plano de estudos personalizado para hoje baseado no seu cronograma, temas fracos e progresso.",
     tip: "Acesse todos os dias para manter a consistência nos estudos!",
     route: "/dashboard/plano-dia",
+  },
+  {
+    icon: <CalendarDays className="h-8 w-8 text-primary" />,
+    title: "📅 Cronograma Inteligente",
+    description: "Motor de repetição espaçada adaptativo que agenda revisões automáticas (D1, D3, D7, D15, D30) e extras baseadas na sua taxa de erro. Inclui o Plano de Estudos com upload de edital e contagem regressiva até a prova.",
+    tip: "Registre temas e o sistema cria revisões automaticamente. Use a aba 'Plano de Estudos' para gerar um cronograma semanal com IA!",
+    route: "/dashboard/cronograma",
   },
   {
     icon: <Brain className="h-8 w-8 text-primary" />,
