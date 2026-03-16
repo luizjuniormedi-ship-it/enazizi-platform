@@ -452,6 +452,7 @@ const ClinicalSimulation = () => {
     if (countdown <= 120) return "text-red-500 animate-pulse";
     if (countdown <= 300) return "text-amber-500";
     return "text-primary";
+  };
 
   const getStatusColor = (status: string) => {
     const map: Record<string, string> = {
