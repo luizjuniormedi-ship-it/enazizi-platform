@@ -10,8 +10,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, userContext } = await req.json();
+    const body = await req.json();
+    const { messages, userContext, stream: clientStream, difficulty } = body;
 
+    // Default to streaming unless client explicitly sets stream=false
+    const useStream = clientStream !== false;
 
     let systemPrompt = `Você é um gerador de questões que segue obrigatoriamente o PROTOCOLO ENAZIZI, especializado em provas de Residência Médica no Brasil (ENARE, USP, UNIFESP, Santa Casa, UERJ, SUS-SP, AMRIGS).
 
@@ -115,13 +118,24 @@ REGRAS DE ESPAÇAMENTO:
 • Usar títulos numerados, listas curtas e setas → para causa/efeito
 • As respostas devem parecer material de aula estruturado, com espaçamento visual claro entre blocos`;
 
+    // Add difficulty instruction
+    if (difficulty) {
+      const diffMap: Record<string, string> = {
+        facil: "Gere questões de nível FÁCIL: conceitos básicos, diagnósticos clássicos, apresentações típicas. Ideal para alunos iniciantes.",
+        intermediario: "Gere questões de nível INTERMEDIÁRIO: diagnósticos diferenciais, condutas terapêuticas, interpretação de exames. Padrão ENARE.",
+        dificil: "Gere questões de nível DIFÍCIL: casos complexos com múltiplas comorbidades, diagnósticos raros, condutas avançadas baseadas em guidelines. Nível de prova difícil como USP/UNIFESP.",
+        misto: "Mescle questões: 30% fáceis, 50% intermediárias, 20% difíceis.",
+      };
+      systemPrompt += `\n\n=== NÍVEL DE DIFICULDADE ===\n${diffMap[difficulty] || diffMap.intermediario}`;
+    }
+
     if (userContext) {
       systemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
     }
 
     const response = await aiFetch({
       messages: [{ role: "system", content: systemPrompt }, ...messages],
-      stream: true,
+      stream: useStream,
     });
 
     if (!response.ok) {
@@ -132,9 +146,17 @@ REGRAS DE ESPAÇAMENTO:
       });
     }
 
-    return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-    });
+    if (useStream) {
+      return new Response(response.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+    } else {
+      // Non-streaming: return full JSON response
+      const json = await response.json();
+      return new Response(JSON.stringify(json), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
   } catch (e) {
     console.error("question-generator error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }), {
