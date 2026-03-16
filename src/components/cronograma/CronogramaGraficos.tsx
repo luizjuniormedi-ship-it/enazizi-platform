@@ -1,4 +1,4 @@
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import type { TemaEstudado, Revisao, Desempenho } from "@/pages/CronogramaInteligente";
 
 interface Props {
@@ -10,20 +10,21 @@ interface Props {
 const COLORS = ["hsl(var(--primary))", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16", "#f97316", "#6366f1", "#14b8a6"];
 
 const CronogramaGraficos = ({ temas, revisoes, desempenhos }: Props) => {
-  // Accuracy by specialty
-  const specMap: Record<string, { total: number; acertos: number }> = {};
+  // Error rate by specialty
+  const specMap: Record<string, { total: number; erros: number }> = {};
   desempenhos.forEach((d) => {
     const tema = temas.find(t => t.id === d.tema_id);
     if (!tema) return;
     const spec = tema.especialidade;
-    if (!specMap[spec]) specMap[spec] = { total: 0, acertos: 0 };
+    if (!specMap[spec]) specMap[spec] = { total: 0, erros: 0 };
     specMap[spec].total += d.questoes_feitas;
-    specMap[spec].acertos += d.questoes_feitas - d.questoes_erradas;
+    specMap[spec].erros += d.questoes_erradas;
   });
-  const acertoData = Object.entries(specMap).map(([name, v]) => ({
+  const erroData = Object.entries(specMap).map(([name, v]) => ({
     name: name.length > 12 ? name.slice(0, 12) + "…" : name,
-    taxa: v.total > 0 ? Math.round((v.acertos / v.total) * 100) : 0,
-  })).sort((a, b) => b.taxa - a.taxa);
+    erro: v.total > 0 ? Math.round((v.erros / v.total) * 100) : 0,
+    acerto: v.total > 0 ? Math.round(((v.total - v.erros) / v.total) * 100) : 0,
+  })).sort((a, b) => b.erro - a.erro);
 
   // Reviews done vs pending
   const done = revisoes.filter(r => r.status === "concluida").length;
@@ -38,13 +39,14 @@ const CronogramaGraficos = ({ temas, revisoes, desempenhos }: Props) => {
   temas.forEach(t => { specCount[t.especialidade] = (specCount[t.especialidade] || 0) + 1; });
   const specData = Object.entries(specCount).map(([name, count]) => ({ name: name.length > 12 ? name.slice(0, 12) + "…" : name, count })).sort((a, b) => b.count - a.count);
 
-  // Performance over time
+  // Error rate evolution over time
   const timeData = desempenhos
     .slice(0, 20)
     .reverse()
     .map((d, i) => ({
       idx: i + 1,
-      taxa: d.taxa_acerto,
+      erro: d.questoes_feitas > 0 ? Math.round((d.questoes_erradas / d.questoes_feitas) * 100) : 0,
+      acerto: d.taxa_acerto,
     }));
 
   if (temas.length === 0) {
@@ -57,17 +59,18 @@ const CronogramaGraficos = ({ temas, revisoes, desempenhos }: Props) => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {/* Accuracy by Specialty */}
-      {acertoData.length > 0 && (
+      {/* Error rate by Specialty */}
+      {erroData.length > 0 && (
         <div className="glass-card p-5">
-          <h3 className="font-semibold text-sm mb-3">📊 Taxa de Acerto por Especialidade</h3>
+          <h3 className="font-semibold text-sm mb-3">📉 Taxa de Erro por Especialidade</h3>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={acertoData}>
+            <BarChart data={erroData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
               <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} domain={[0, 100]} />
               <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-              <Bar dataKey="taxa" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Taxa (%)" />
+              <Bar dataKey="erro" fill="#ef4444" radius={[4, 4, 0, 0]} name="Erro (%)" />
+              <Bar dataKey="acerto" fill="#10b981" radius={[4, 4, 0, 0]} name="Acerto (%)" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -104,18 +107,19 @@ const CronogramaGraficos = ({ temas, revisoes, desempenhos }: Props) => {
         </div>
       )}
 
-      {/* Performance evolution */}
+      {/* Error evolution over time */}
       {timeData.length > 0 && (
         <div className="glass-card p-5">
-          <h3 className="font-semibold text-sm mb-3">📈 Evolução do Desempenho</h3>
+          <h3 className="font-semibold text-sm mb-3">📈 Evolução: Erro vs Acerto</h3>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={timeData}>
+            <LineChart data={timeData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="idx" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} label={{ value: "Sessão", position: "insideBottom", offset: -5, fontSize: 10 }} />
               <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} domain={[0, 100]} />
               <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-              <Bar dataKey="taxa" fill="#10b981" radius={[4, 4, 0, 0]} name="Taxa (%)" />
-            </BarChart>
+              <Line type="monotone" dataKey="erro" stroke="#ef4444" strokeWidth={2} name="Erro (%)" dot={{ r: 3 }} />
+              <Line type="monotone" dataKey="acerto" stroke="#10b981" strokeWidth={2} name="Acerto (%)" dot={{ r: 3 }} />
+            </LineChart>
           </ResponsiveContainer>
         </div>
       )}
