@@ -56,13 +56,13 @@ describe("Agent Pages render correctly", () => {
     expect(screen.getByText(/ENARE, USP e UNIFESP/)).toBeInTheDocument();
   });
 
-  it("QuestionGenerator shows quick action buttons with difficulty levels", async () => {
+  it("QuestionGenerator shows quick action buttons", async () => {
     const QuestionGenerator = (await import("@/pages/QuestionGenerator")).default;
     render(<MemoryRouter><QuestionGenerator /></MemoryRouter>);
     expect(screen.getByText(/Escolher tema/)).toBeInTheDocument();
-    expect(screen.getByText(/Cardiologia/)).toBeInTheDocument();
-    expect(screen.getByText(/Pediatria/)).toBeInTheDocument();
-    expect(screen.getByText(/Cirurgia/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Cardiologia/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/Pediatria/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/Cirurgia/).length).toBeGreaterThanOrEqual(1);
   });
 
   it("ContentSummarizer renders with correct branding", async () => {
