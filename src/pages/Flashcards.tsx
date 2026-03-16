@@ -305,8 +305,11 @@ const Flashcards = () => {
             <Brain className="h-4 w-4 mr-2" />
             Revisão ({dueCards.length})
           </Button>
-          <Button variant={mode === "all" ? "default" : "outline"} size="sm" onClick={() => { setMode("all"); setIdx(0); setFlipped(false); }}>
+          <Button variant={mode === "all" ? "default" : "outline"} size="sm" onClick={() => { setMode("all"); setIdx(0); setFlipped(false); setSprintActive(false); setSprintFinished(false); }}>
             Todos ({allCards.length})
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={startSprint}>
+            <Zap className="h-4 w-4" /> Sprint
           </Button>
           <Button
             variant="outline"
