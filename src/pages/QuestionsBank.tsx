@@ -336,6 +336,16 @@ const QuestionsBank = () => {
           >
             <Download className="h-4 w-4" /> PDF
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => navigate("/dashboard/question-generator", {
+              state: { initialTopic: topicFilter !== "all" ? topicFilter : undefined },
+            })}
+          >
+            <HelpCircle className="h-4 w-4" /> Gerar mais
+          </Button>
           <Button onClick={startPractice} disabled={filtered.length === 0} className="gap-2">
             <Play className="h-4 w-4" /> Praticar ({filtered.length})
           </Button>
