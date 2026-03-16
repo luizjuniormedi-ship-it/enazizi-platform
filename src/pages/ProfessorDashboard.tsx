@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import ClassAnalytics from "@/components/professor/ClassAnalytics";
+import StudentTracker from "@/components/professor/StudentTracker";
 
 const SPECIALTIES = [
   "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia", "Nefrologia",
