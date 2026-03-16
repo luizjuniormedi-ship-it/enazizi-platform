@@ -52,7 +52,8 @@ const Uploads = () => {
       // Detect which uploads are still processing
       const processing = new Set<string>();
       for (const f of data) {
-        if (f.status === "processing" || f.extracted_json?.step === "populating_questions") {
+        const json = f.extracted_json as Record<string, any> | null;
+        if (f.status === "processing" || (json?.step === "populating_questions" && json?.step !== "done")) {
           processing.add(f.id);
         }
       }
