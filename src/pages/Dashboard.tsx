@@ -448,6 +448,9 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Weekly Progress */}
+      <WeeklyProgressCard />
+
       {/* Topic Evolution */}
       <TopicEvolution />
 
