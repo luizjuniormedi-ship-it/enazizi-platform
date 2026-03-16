@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { HelpCircle, BookOpen, Heart, ArrowRight, Zap, TrendingUp, Stethoscope, Sparkles } from "lucide-react";
+import { HelpCircle, BookOpen, Heart, ArrowRight, Zap, TrendingUp, Stethoscope, Sparkles, PenTool, Users, Activity, FlipVertical } from "lucide-react";
 
 const agents = [
   {
@@ -20,12 +20,46 @@ const agents = [
     bgColor: "bg-orange-500/10",
   },
   {
+    to: "/dashboard/gerar-flashcards",
+    icon: FlipVertical,
+    title: "🃏 Gerador de Flashcards",
+    description: "Flashcards clínicos com casos, diagnósticos e condutas. Salvos automaticamente no seu banco para revisão espaçada.",
+    color: "text-sky-400",
+    bgColor: "bg-sky-500/10",
+  },
+  {
     to: "/dashboard/resumos",
     icon: BookOpen,
     title: "📖 Resumidor de Conteúdo",
     description: "Cria resumos estruturados com tabelas comparativas, mnemônicos e pegadinhas de prova. Use para REVISAR rapidamente um tema.",
     color: "text-emerald-400",
     bgColor: "bg-emerald-500/10",
+  },
+  {
+    to: "/dashboard/revisor",
+    icon: PenTool,
+    title: "✍️ Revisor de Redação Médica",
+    description: "Correção de respostas discursivas com nota, feedback detalhado e resposta modelo. Treino com questões geradas por IA.",
+    color: "text-indigo-400",
+    bgColor: "bg-indigo-500/10",
+    isNew: true,
+  },
+  {
+    to: "/dashboard/entrevista",
+    icon: Users,
+    title: "🎤 Simulador de Entrevista",
+    description: "Simula entrevistas, arguições orais e estações OSCE de residência médica com avaliação por competências.",
+    color: "text-pink-400",
+    bgColor: "bg-pink-500/10",
+    isNew: true,
+  },
+  {
+    to: "/dashboard/plantao",
+    icon: Activity,
+    title: "🚨 Modo Plantão",
+    description: "Simulação interativa de atendimento clínico. Atenda pacientes virtuais, tome decisões e receba avaliação em tempo real.",
+    color: "text-red-400",
+    bgColor: "bg-red-500/10",
   },
   {
     to: "/dashboard/coach",
@@ -73,10 +107,15 @@ const AgentsHub = () => (
         <Link
           key={a.to}
           to={a.to}
-          className={`glass-card p-6 hover:border-primary/30 transition-all group flex flex-col justify-between ${
+          className={`glass-card p-6 hover:border-primary/30 transition-all group flex flex-col justify-between relative ${
             (a as any).highlight ? "ring-1 ring-primary/30 border-primary/20" : ""
           }`}
         >
+          {(a as any).isNew && (
+            <span className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary text-primary-foreground">
+              NOVO
+            </span>
+          )}
           <div>
             <div className={`h-12 w-12 rounded-xl ${a.bgColor} flex items-center justify-center mb-4`}>
               <a.icon className={`h-6 w-6 ${a.color}`} />

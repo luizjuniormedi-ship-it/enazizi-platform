@@ -39,6 +39,8 @@ import StudentSimulados from "./pages/StudentSimulados";
 import DiscursiveQuestions from "./pages/DiscursiveQuestions";
 import ClinicalSimulation from "./pages/ClinicalSimulation";
 import Achievements from "./pages/Achievements";
+import MedicalReviewer from "./pages/MedicalReviewer";
+import InterviewSimulator from "./pages/InterviewSimulator";
 import NotFound from "./pages/NotFound";
 import Install from "./pages/Install";
 
@@ -79,6 +81,8 @@ const App = () => (
               <Route path="proficiencia" element={<StudentSimulados />} />
               <Route path="discursivas" element={<DiscursiveQuestions />} />
               <Route path="plantao" element={<ClinicalSimulation />} />
+              <Route path="revisor" element={<MedicalReviewer />} />
+              <Route path="entrevista" element={<InterviewSimulator />} />
               <Route path="conquistas" element={<Achievements />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="perfil" element={<Profile />} />
