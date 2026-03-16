@@ -61,8 +61,43 @@ Critérios de score_delta:
 - Conduta potencialmente perigosa: -2
 - Diagnóstico correto com justificativa: +3
 
+### Ajuda do Preceptor
+Quando action="hint", você age como PRECEPTOR/PROFESSOR orientador:
+- NÃO revele o diagnóstico diretamente
+- Analise o que o aluno já fez (anamnese, exames, condutas)
+- Dê dicas de RACIOCÍNIO CLÍNICO: "Que sistema você acha que está mais comprometido?", "Você já pensou em descartar X?", "Que exame te ajudaria a diferenciar A de B?"
+- Sugira próximos passos metodológicos sem entregar a resposta
+- Use linguagem pedagógica e encorajadora
+
+Responda em JSON:
+{
+  "response": "texto da orientação do preceptor",
+  "response_type": "preceptor_hint",
+  "clinical_reasoning_tips": ["dica1", "dica2", "dica3"],
+  "suggested_next_steps": ["próximo passo sugerido 1", "próximo passo sugerido 2"],
+  "score_delta": 0
+}
+
+### Parecer de Especialista
+Quando action="specialist", o aluno está solicitando interconsulta/parecer de um especialista.
+- Aja como o médico ESPECIALISTA da área solicitada
+- Dê um parecer técnico e objetivo sobre o caso
+- Inclua recomendações específicas da especialidade
+- Se a especialidade solicitada for irrelevante para o caso, indique isso educadamente e sugira a especialidade mais adequada
+- Use linguagem técnica apropriada de especialista para especialista
+
+Responda em JSON:
+{
+  "response": "texto do parecer do especialista",
+  "response_type": "specialist_opinion",
+  "specialist": "nome da especialidade",
+  "recommendations": ["recomendação1", "recomendação2"],
+  "relevance": "alta/média/baixa",
+  "score_delta": pontuação (-1 se irrelevante, +1 se adequado, +2 se excelente escolha)
+}
+
 ### Finalização
-Quando action="finish", avalie o desempenho completo:
+Quando action="finish", avalie o desempenho completo com avaliação DETALHADA em 7 categorias:
 {
   "final_score": 0-100,
   "grade": "A/B/C/D/F",
@@ -70,14 +105,18 @@ Quando action="finish", avalie o desempenho completo:
   "student_got_diagnosis": true/false,
   "time_total_minutes": minutos totais,
   "evaluation": {
-    "anamnesis": { "score": 0-25, "feedback": "..." },
-    "physical_exam": { "score": 0-25, "feedback": "..." },
-    "complementary_exams": { "score": 0-25, "feedback": "..." },
-    "management": { "score": 0-25, "feedback": "..." }
+    "anamnesis": { "score": 0-15, "feedback": "avaliação detalhada da anamnese realizada" },
+    "physical_exam": { "score": 0-15, "feedback": "avaliação do exame físico" },
+    "complementary_exams": { "score": 0-15, "feedback": "avaliação dos exames solicitados" },
+    "diagnosis": { "score": 0-15, "feedback": "avaliação da hipótese diagnóstica e diagnósticos diferenciais" },
+    "prescription": { "score": 0-15, "feedback": "avaliação da prescrição: medicamentos, doses, vias, posologia. Se não prescreveu, indicar o que deveria ter prescrito" },
+    "management": { "score": 0-15, "feedback": "avaliação da conduta geral: internação vs alta, leito adequado, monitorização, dieta, cuidados" },
+    "referral": { "score": 0-10, "feedback": "avaliação dos pedidos de parecer/encaminhamento: solicitou as especialidades corretas? O momento foi adequado?" }
   },
   "strengths": ["..."],
   "improvements": ["..."],
-  "ideal_approach": "texto descrevendo a abordagem ideal para o caso",
+  "ideal_approach": "texto descrevendo a abordagem ideal para o caso, incluindo prescrição modelo e conduta completa",
+  "ideal_prescription": "prescrição modelo completa com medicamentos, doses, vias e intervalos",
   "xp_earned": 10-100
 }
 
@@ -86,7 +125,8 @@ Quando action="finish", avalie o desempenho completo:
 - Sinais vitais devem ser coerentes com o quadro
 - Resultados de exames devem ser realistas e coerentes
 - Se o aluno fizer algo perigoso, o paciente deve reagir (piora dos sinais vitais)
-- Mantenha consistência ao longo de toda a simulação`;
+- Mantenha consistência ao longo de toda a simulação
+- Na avaliação final, seja RIGOROSO e EDUCATIVO: o objetivo é ensinar medicina`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -106,7 +146,7 @@ serve(async (req) => {
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user) throw new Error("Não autenticado");
 
-    const { action, specialty, difficulty, message, conversation_history } = await req.json();
+    const { action, specialty, difficulty, message, conversation_history, specialist_area } = await req.json();
 
     let messages: Array<{ role: string; content: string }> = [
       { role: "system", content: SYSTEM_PROMPT },
@@ -118,7 +158,6 @@ serve(async (req) => {
         content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}. Dificuldade: ${difficulty || "intermediário"}. Responda APENAS em JSON válido.`,
       });
     } else if (action === "interact") {
-      // Add conversation history
       if (conversation_history && Array.isArray(conversation_history)) {
         messages.push(...conversation_history);
       }
@@ -126,13 +165,29 @@ serve(async (req) => {
         role: "user",
         content: `action="interact". Mensagem do médico plantonista: "${message}". Responda APENAS em JSON válido.`,
       });
+    } else if (action === "hint") {
+      if (conversation_history && Array.isArray(conversation_history)) {
+        messages.push(...conversation_history);
+      }
+      messages.push({
+        role: "user",
+        content: `action="hint". O aluno está pedindo ajuda do preceptor. Analise tudo que ele já fez neste atendimento e dê orientações de raciocínio clínico SEM revelar o diagnóstico. Responda APENAS em JSON válido.`,
+      });
+    } else if (action === "specialist") {
+      if (conversation_history && Array.isArray(conversation_history)) {
+        messages.push(...conversation_history);
+      }
+      messages.push({
+        role: "user",
+        content: `action="specialist". O plantonista está solicitando parecer/interconsulta da especialidade: "${specialist_area || "não especificada"}". Responda como o médico especialista dessa área, dando parecer técnico sobre o caso. Responda APENAS em JSON válido.`,
+      });
     } else if (action === "finish") {
       if (conversation_history && Array.isArray(conversation_history)) {
         messages.push(...conversation_history);
       }
       messages.push({
         role: "user",
-        content: `action="finish". O aluno decidiu encerrar o atendimento. Avalie o desempenho completo com base em toda a interação. Responda APENAS em JSON válido.`,
+        content: `action="finish". O aluno decidiu encerrar o atendimento. Avalie o desempenho completo com base em toda a interação, incluindo avaliação de prescrição, conduta, diagnóstico e parecer/encaminhamento. Use as 7 categorias de avaliação. Responda APENAS em JSON válido.`,
       });
     } else {
       throw new Error("action inválida");
@@ -152,7 +207,6 @@ serve(async (req) => {
     const aiData = await aiResp.json();
     const raw = aiData.choices?.[0]?.message?.content || "";
 
-    // Parse JSON from response (handle markdown code blocks)
     let parsed;
     try {
       const jsonStr = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();

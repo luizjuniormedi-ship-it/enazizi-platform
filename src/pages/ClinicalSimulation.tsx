@@ -5,7 +5,7 @@ import {
   Activity, Loader2, Send, Stethoscope, Syringe, FileSearch,
   Clock, Heart, AlertTriangle, Award, ArrowRight, RotateCcw,
   MessageCircle, Thermometer, Zap, Star, CheckCircle, XCircle,
-  Trophy, Target
+  Trophy, Target, HelpCircle, Users, ClipboardCheck, ShieldAlert
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +14,9 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
+} from "@/components/ui/dialog";
 
 const SPECIALTIES = [
   "Clínica Médica", "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia",
@@ -48,23 +51,44 @@ interface ChatMessage {
   timestamp: number;
 }
 
+interface EvalCategory {
+  score: number;
+  feedback: string;
+}
+
 interface FinalEval {
   final_score: number;
   grade: string;
   correct_diagnosis: string;
   student_got_diagnosis: boolean;
   time_total_minutes: number;
-  evaluation: {
-    anamnesis: { score: number; feedback: string };
-    physical_exam: { score: number; feedback: string };
-    complementary_exams: { score: number; feedback: string };
-    management: { score: number; feedback: string };
-  };
+  evaluation: Record<string, EvalCategory>;
   strengths: string[];
   improvements: string[];
   ideal_approach: string;
+  ideal_prescription?: string;
   xp_earned: number;
 }
+
+const EVAL_LABELS: Record<string, string> = {
+  anamnesis: "Anamnese",
+  physical_exam: "Exame Físico",
+  complementary_exams: "Exames Complementares",
+  diagnosis: "Diagnóstico",
+  prescription: "Prescrição",
+  management: "Conduta",
+  referral: "Parecer/Encaminhamento",
+};
+
+const EVAL_MAX_SCORES: Record<string, number> = {
+  anamnesis: 15,
+  physical_exam: 15,
+  complementary_exams: 15,
+  diagnosis: 15,
+  prescription: 15,
+  management: 15,
+  referral: 10,
+};
 
 const ClinicalSimulation = () => {
   const { session, user } = useAuth();
@@ -87,6 +111,10 @@ const ClinicalSimulation = () => {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: string; content: string }>>([]);
   const [finalEval, setFinalEval] = useState<FinalEval | null>(null);
+
+  // Specialist dialog
+  const [specialistDialogOpen, setSpecialistDialogOpen] = useState(false);
+  const [specialistArea, setSpecialistArea] = useState("");
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -133,7 +161,6 @@ const ClinicalSimulation = () => {
 
       setMessages([simMsg]);
 
-      // Store hidden data in conversation history for AI context
       const startHistory = [
         { role: "assistant", content: JSON.stringify(res) },
       ];
@@ -194,6 +221,107 @@ const ClinicalSimulation = () => {
     }
   };
 
+  const requestPreceptorHint = async () => {
+    if (loading) return;
+    setLoading(true);
+
+    const doctorMsg: ChatMessage = {
+      role: "doctor",
+      content: "🆘 Solicitando ajuda do preceptor...",
+      timestamp: Date.now(),
+    };
+    setMessages((prev) => [...prev, doctorMsg]);
+
+    try {
+      const res = await callAPI({
+        action: "hint",
+        conversation_history: conversationHistory,
+      });
+
+      let content = res.response || "";
+      if (res.clinical_reasoning_tips?.length) {
+        content += "\n\n💡 **Dicas de raciocínio clínico:**\n" + res.clinical_reasoning_tips.map((t: string, i: number) => `${i + 1}. ${t}`).join("\n");
+      }
+      if (res.suggested_next_steps?.length) {
+        content += "\n\n➡️ **Próximos passos sugeridos:**\n" + res.suggested_next_steps.map((s: string) => `• ${s}`).join("\n");
+      }
+
+      const simMsg: ChatMessage = {
+        role: "simulation",
+        content,
+        type: "preceptor_hint",
+        scoreDelta: res.score_delta || 0,
+        timestamp: Date.now(),
+      };
+
+      setMessages((prev) => [...prev, simMsg]);
+      setConversationHistory([
+        ...conversationHistory,
+        { role: "user", content: "Solicito ajuda do preceptor" },
+        { role: "assistant", content: JSON.stringify(res) },
+      ]);
+    } catch (e) {
+      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const requestSpecialistOpinion = async () => {
+    if (loading || !specialistArea.trim()) return;
+    setSpecialistDialogOpen(false);
+    setLoading(true);
+
+    const doctorMsg: ChatMessage = {
+      role: "doctor",
+      content: `📋 Solicitando parecer de ${specialistArea}...`,
+      timestamp: Date.now(),
+    };
+    setMessages((prev) => [...prev, doctorMsg]);
+
+    try {
+      const res = await callAPI({
+        action: "specialist",
+        specialist_area: specialistArea,
+        conversation_history: conversationHistory,
+      });
+
+      let content = `**Parecer - ${res.specialist || specialistArea}**\n\n${res.response || ""}`;
+      if (res.recommendations?.length) {
+        content += "\n\n📌 **Recomendações:**\n" + res.recommendations.map((r: string) => `• ${r}`).join("\n");
+      }
+      if (res.relevance) {
+        const relevanceMap: Record<string, string> = {
+          alta: "✅ Parecer altamente relevante",
+          média: "⚠️ Parecer de relevância moderada",
+          baixa: "❌ Especialidade pouco relevante para este caso",
+        };
+        content += `\n\n${relevanceMap[res.relevance] || ""}`;
+      }
+
+      const simMsg: ChatMessage = {
+        role: "simulation",
+        content,
+        type: "specialist_opinion",
+        scoreDelta: res.score_delta || 0,
+        timestamp: Date.now(),
+      };
+
+      setMessages((prev) => [...prev, simMsg]);
+      setScore((prev) => Math.max(0, Math.min(100, prev + (res.score_delta || 0))));
+      setConversationHistory([
+        ...conversationHistory,
+        { role: "user", content: `Solicito parecer de ${specialistArea}` },
+        { role: "assistant", content: JSON.stringify(res) },
+      ]);
+      setSpecialistArea("");
+    } catch (e) {
+      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const finishSimulation = async () => {
     setLoading(true);
     setPhase("finishing");
@@ -204,10 +332,8 @@ const ClinicalSimulation = () => {
       });
       setFinalEval(res);
       setPhase("result");
-      // Award XP for completing plantão
       await addXp(XP_REWARDS.plantao_completed);
 
-      // Log to error_bank if score < 70
       if (user && res.final_score < 70) {
         const weakAreas = res.weak_areas || res.areas_to_improve || [];
         await logErrorToBank({
@@ -268,6 +394,8 @@ const ClinicalSimulation = () => {
       imaging: FileSearch,
       prescription: Syringe,
       diagnosis_attempt: Target,
+      preceptor_hint: HelpCircle,
+      specialist_opinion: Users,
     };
     return map[type || ""] || Activity;
   };
@@ -426,13 +554,19 @@ const ClinicalSimulation = () => {
                         className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
                           msg.role === "doctor"
                             ? "bg-primary text-primary-foreground rounded-br-md"
+                            : msg.type === "preceptor_hint"
+                            ? "bg-amber-500/10 border-2 border-amber-500/30 rounded-bl-md"
+                            : msg.type === "specialist_opinion"
+                            ? "bg-blue-500/10 border-2 border-blue-500/30 rounded-bl-md"
                             : "bg-muted/50 border border-border/50 rounded-bl-md"
                         }`}
                       >
                         {msg.role === "simulation" && msg.type && (
                           <div className="flex items-center gap-1.5 mb-1.5">
                             <TypeIcon className="h-3.5 w-3.5 opacity-60" />
-                            <span className="text-xs opacity-60 capitalize">{msg.type?.replace("_", " ")}</span>
+                            <span className="text-xs opacity-60 capitalize">
+                              {msg.type === "preceptor_hint" ? "Preceptor" : msg.type === "specialist_opinion" ? "Parecer Especialista" : msg.type?.replace("_", " ")}
+                            </span>
                             {msg.scoreDelta !== undefined && msg.scoreDelta !== 0 && (
                               <Badge
                                 variant={msg.scoreDelta > 0 ? "default" : "destructive"}
@@ -469,22 +603,59 @@ const ClinicalSimulation = () => {
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Quick actions */}
+              {/* Quick actions + new buttons */}
               {phase === "active" && (
-                <div className="border-t border-border/50 p-2 flex gap-1.5 overflow-x-auto">
-                  {QUICK_ACTIONS.map((qa) => (
+                <div className="border-t border-border/50 p-2 space-y-1.5">
+                  {/* Standard clinical actions */}
+                  <div className="flex gap-1.5 overflow-x-auto">
+                    {QUICK_ACTIONS.map((qa) => (
+                      <Button
+                        key={qa.label}
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs shrink-0 gap-1.5 h-8"
+                        disabled={loading}
+                        onClick={() => sendMessage(qa.prompt)}
+                      >
+                        <qa.icon className="h-3.5 w-3.5" />
+                        {qa.label}
+                      </Button>
+                    ))}
+                  </div>
+                  {/* Pedagogical + finish actions */}
+                  <div className="flex gap-1.5 overflow-x-auto border-t border-border/30 pt-1.5">
                     <Button
-                      key={qa.label}
-                      variant="ghost"
+                      variant="outline"
+                      size="sm"
+                      className="text-xs shrink-0 gap-1.5 h-8 border-amber-500/50 text-amber-600 hover:bg-amber-500/10"
+                      disabled={loading}
+                      onClick={requestPreceptorHint}
+                    >
+                      <HelpCircle className="h-3.5 w-3.5" />
+                      Ajuda do Preceptor
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs shrink-0 gap-1.5 h-8 border-blue-500/50 text-blue-600 hover:bg-blue-500/10"
+                      disabled={loading}
+                      onClick={() => setSpecialistDialogOpen(true)}
+                    >
+                      <Users className="h-3.5 w-3.5" />
+                      Parecer de Especialista
+                    </Button>
+                    <div className="flex-1" />
+                    <Button
+                      variant="destructive"
                       size="sm"
                       className="text-xs shrink-0 gap-1.5 h-8"
                       disabled={loading}
-                      onClick={() => sendMessage(qa.prompt)}
+                      onClick={finishSimulation}
                     >
-                      <qa.icon className="h-3.5 w-3.5" />
-                      {qa.label}
+                      <ClipboardCheck className="h-3.5 w-3.5" />
+                      Encerrar Plantão
                     </Button>
-                  ))}
+                  </div>
                 </div>
               )}
 
@@ -509,6 +680,45 @@ const ClinicalSimulation = () => {
           </Card>
         </div>
       )}
+
+      {/* Specialist Dialog */}
+      <Dialog open={specialistDialogOpen} onOpenChange={setSpecialistDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-blue-500" />
+              Solicitar Parecer de Especialista
+            </DialogTitle>
+            <DialogDescription>
+              Escolha a especialidade para a interconsulta. A IA responderá como o médico especialista.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <select
+              value={specialistArea}
+              onChange={(e) => setSpecialistArea(e.target.value)}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Selecione a especialidade...</option>
+              {SPECIALTIES.filter((s) => s !== specialty).map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+              <option value="Dermatologia">Dermatologia</option>
+              <option value="Hematologia">Hematologia</option>
+              <option value="Endocrinologia">Endocrinologia</option>
+              <option value="Reumatologia">Reumatologia</option>
+              <option value="Urologia">Urologia</option>
+            </select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSpecialistDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={requestSpecialistOpinion} disabled={!specialistArea.trim()} className="gap-1.5">
+              <Users className="h-4 w-4" />
+              Solicitar Parecer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* RESULT */}
       {phase === "result" && finalEval && (
@@ -580,32 +790,43 @@ const ClinicalSimulation = () => {
             </CardContent>
           </Card>
 
-          {/* Category scores */}
+          {/* Category scores - dynamic */}
           <Card>
             <CardContent className="p-5 space-y-4">
               <h4 className="text-sm font-semibold">📊 Avaliação por Categoria</h4>
               {Object.entries(finalEval.evaluation).map(([key, val]) => {
-                const labels: Record<string, string> = {
-                  anamnesis: "Anamnese",
-                  physical_exam: "Exame Físico",
-                  complementary_exams: "Exames Complementares",
-                  management: "Conduta",
-                };
+                const maxScore = EVAL_MAX_SCORES[key] || 25;
+                const goodThreshold = maxScore * 0.7;
+                const midThreshold = maxScore * 0.5;
                 return (
                   <div key={key} className="space-y-1.5">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">{labels[key] || key}</span>
-                      <span className={`font-bold ${val.score >= 18 ? "text-green-500" : val.score >= 12 ? "text-amber-500" : "text-red-500"}`}>
-                        {val.score}/25
+                      <span className="font-medium">{EVAL_LABELS[key] || key}</span>
+                      <span className={`font-bold ${val.score >= goodThreshold ? "text-green-500" : val.score >= midThreshold ? "text-amber-500" : "text-red-500"}`}>
+                        {val.score}/{maxScore}
                       </span>
                     </div>
-                    <Progress value={(val.score / 25) * 100} className="h-1.5" />
+                    <Progress value={(val.score / maxScore) * 100} className="h-1.5" />
                     <p className="text-xs text-muted-foreground">{val.feedback}</p>
                   </div>
                 );
               })}
             </CardContent>
           </Card>
+
+          {/* Ideal Prescription */}
+          {finalEval.ideal_prescription && (
+            <Card className="border border-blue-500/30">
+              <CardContent className="p-5 space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-1.5">
+                  <Syringe className="h-4 w-4 text-blue-500" /> Prescrição Modelo
+                </h4>
+                <p className="text-sm leading-relaxed text-muted-foreground bg-blue-500/5 rounded-lg p-4 border border-blue-500/20 whitespace-pre-wrap font-mono">
+                  {finalEval.ideal_prescription}
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Strengths & Improvements */}
           <div className="grid grid-cols-2 gap-3">
