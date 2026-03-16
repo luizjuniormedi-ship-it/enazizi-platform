@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
-import { FileText, Clock, Play, CheckCircle2, Loader2, ArrowRight, Award, AlertTriangle, BarChart3 } from "lucide-react";
+import { FileText, Clock, Play, CheckCircle2, Loader2, ArrowRight, Award, AlertTriangle, BarChart3, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
