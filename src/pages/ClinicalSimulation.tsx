@@ -6,7 +6,7 @@ import {
   Activity, Loader2, Send, Stethoscope, Syringe, FileSearch,
   Clock, Heart, AlertTriangle, Award, ArrowRight, RotateCcw,
   MessageCircle, Thermometer, Zap, Star, CheckCircle, XCircle,
-  Trophy, Target, HelpCircle, Users, ClipboardCheck, ShieldAlert
+  Trophy, Target, HelpCircle, Users, ClipboardCheck, ShieldAlert, History, Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
