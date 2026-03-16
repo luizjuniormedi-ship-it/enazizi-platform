@@ -76,7 +76,7 @@ describe("AgentsHub Page", () => {
       </MemoryRouter>
     );
     const links = screen.getAllByText("Acessar");
-    expect(links.length).toBe(11);
+    expect(links.length).toBe(6);
   });
 
   it("displays residência médica subtitle", async () => {

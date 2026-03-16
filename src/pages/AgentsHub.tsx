@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { HelpCircle, BookOpen, Heart, ArrowRight, Zap, TrendingUp, Stethoscope, Sparkles, PenTool, Users, Activity, FlipVertical } from "lucide-react";
+import { HelpCircle, BookOpen, Heart, ArrowRight, Sparkles, Activity, FlipVertical } from "lucide-react";
 
 const agents = [
   {
