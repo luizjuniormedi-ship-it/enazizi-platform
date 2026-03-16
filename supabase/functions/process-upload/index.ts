@@ -261,7 +261,7 @@ Cada flashcard: question, answer, topic.
 Gere 5-15 flashcards relevantes.
 Responda APENAS com JSON: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}`
           },
-          { role: "user", content: `Gere flashcards:\n\n${truncatedText.slice(0, 15000)}` }
+          { role: "user", content: `Gere flashcards:\n\n${truncatedText.slice(0, 10000)}` }
         ],
       });
 
