@@ -13,7 +13,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Flashcards from "./pages/Flashcards";
 import FlashcardGenerator from "./pages/FlashcardGenerator";
-import StudyPlan from "./pages/StudyPlan";
+import CronogramaInteligente from "./pages/CronogramaInteligente";
 import Simulados from "./pages/Simulados";
 import Uploads from "./pages/Uploads";
 
@@ -59,7 +59,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
               <Route index element={<Dashboard />} />
-              <Route path="cronograma" element={<StudyPlan />} />
+              <Route path="cronograma" element={<CronogramaInteligente />} />
               <Route path="flashcards" element={<Flashcards />} />
               <Route path="gerar-flashcards" element={<FlashcardGenerator />} />
               <Route path="simulados" element={<Simulados />} />

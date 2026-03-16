@@ -103,6 +103,57 @@ export type Database = {
           },
         ]
       }
+      desempenho_questoes: {
+        Row: {
+          created_at: string
+          data_registro: string
+          id: string
+          questoes_erradas: number
+          questoes_feitas: number
+          revisao_id: string | null
+          taxa_acerto: number
+          tema_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_registro?: string
+          id?: string
+          questoes_erradas?: number
+          questoes_feitas?: number
+          revisao_id?: string | null
+          taxa_acerto?: number
+          tema_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_registro?: string
+          id?: string
+          questoes_erradas?: number
+          questoes_feitas?: number
+          revisao_id?: string | null
+          taxa_acerto?: number
+          tema_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "desempenho_questoes_revisao_id_fkey"
+            columns: ["revisao_id"]
+            isOneToOne: false
+            referencedRelation: "revisoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "desempenho_questoes_tema_id_fkey"
+            columns: ["tema_id"]
+            isOneToOne: false
+            referencedRelation: "temas_estudados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       diagnostic_results: {
         Row: {
           completed_at: string
@@ -692,6 +743,47 @@ export type Database = {
           },
         ]
       }
+      revisoes: {
+        Row: {
+          concluida_em: string | null
+          created_at: string
+          data_revisao: string
+          id: string
+          status: string
+          tema_id: string
+          tipo_revisao: string
+          user_id: string
+        }
+        Insert: {
+          concluida_em?: string | null
+          created_at?: string
+          data_revisao: string
+          id?: string
+          status?: string
+          tema_id: string
+          tipo_revisao: string
+          user_id: string
+        }
+        Update: {
+          concluida_em?: string | null
+          created_at?: string
+          data_revisao?: string
+          id?: string
+          status?: string
+          tema_id?: string
+          tipo_revisao?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revisoes_tema_id_fkey"
+            columns: ["tema_id"]
+            isOneToOne: false
+            referencedRelation: "temas_estudados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       study_performance: {
         Row: {
           created_at: string
@@ -986,6 +1078,42 @@ export type Database = {
           topics?: string[]
           total_questions?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      temas_estudados: {
+        Row: {
+          created_at: string
+          data_estudo: string
+          especialidade: string
+          fonte: string | null
+          id: string
+          observacoes: string | null
+          tema: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_estudo?: string
+          especialidade: string
+          fonte?: string | null
+          id?: string
+          observacoes?: string | null
+          tema: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_estudo?: string
+          especialidade?: string
+          fonte?: string | null
+          id?: string
+          observacoes?: string | null
+          tema?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
