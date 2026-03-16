@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { User, Search, Loader2, BarChart3, AlertTriangle, BookOpen, Target, TrendingUp, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,6 +70,11 @@ const StudentTracker = () => {
       setLoading(false);
     }
   }, [session, callAPI, faculdade, periodo, toast]);
+
+  // Auto-load students on mount and when filters change
+  useEffect(() => {
+    loadStudents();
+  }, [loadStudents]);
 
   const loadStudentDetail = useCallback(async (userId: string) => {
     if (!session) return;
