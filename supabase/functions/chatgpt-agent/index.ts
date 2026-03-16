@@ -1,20 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import ENAZIZI_PROMPT from "../_shared/enazizi-prompt.ts";
+import { aiFetch } from "../_shared/ai-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MAX_OUTPUT_TOKENS = 16384;
-
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { messages, userContext, enazizi_progress, error_bank } = await req.json();
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not configured");
 
     let instructions = ENAZIZI_PROMPT;
 
@@ -72,38 +69,24 @@ NÃO repita estados anteriores. NÃO pule para estados futuros. Avance apenas UM
       instructions += `\n--- FIM DO BANCO DE ERROS ---`;
     }
 
-    const input = messages.map((m: { role: string; content: string }) => ({
-      role: m.role,
-      content: m.content,
-    }));
-
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-5.4",
-        instructions,
-        input,
-        stream: true,
-        max_output_tokens: MAX_OUTPUT_TOKENS,
-      }),
+    const response = await aiFetch({
+      model: "google/gemini-2.5-pro",
+      messages: [{ role: "system", content: instructions }, ...messages],
+      stream: true,
     });
 
     if (!response.ok) {
       const t = await response.text();
-      console.error("OpenAI Responses API error:", response.status, t);
+      console.error("AI error:", response.status, t);
 
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Limite de requisições atingido. Tente novamente em alguns segundos." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 401) {
-        return new Response(JSON.stringify({ error: "Erro de autenticação com a API OpenAI." }), {
-          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "Créditos de IA esgotados. Adicione créditos para continuar." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       return new Response(JSON.stringify({ error: "Erro no serviço ChatGPT" }), {
@@ -111,97 +94,7 @@ NÃO repita estados anteriores. NÃO pule para estados futuros. Avance apenas UM
       });
     }
 
-    const reader = response.body!.getReader();
-    const decoder = new TextDecoder();
-    const encoder = new TextEncoder();
-
-    const stream = new ReadableStream({
-      async start(controller) {
-        let buffer = "";
-        let doneSent = false;
-
-        const emitDone = () => {
-          if (doneSent) return;
-          doneSent = true;
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-        };
-
-        const processLine = (rawLine: string): "ok" | "done" | "incomplete" => {
-          let line = rawLine;
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line.startsWith("data: ") || line.trim() === "") return "ok";
-
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") {
-            emitDone();
-            return "done";
-          }
-
-          try {
-            const event = JSON.parse(jsonStr);
-
-            if (event.type === "response.output_text.delta" && typeof event.delta === "string" && event.delta.length > 0) {
-              const chatChunk = { choices: [{ delta: { content: event.delta } }] };
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify(chatChunk)}\n\n`));
-              return "ok";
-            }
-
-            if (event.type === "response.output_text.done" && typeof event.text === "string" && event.text.length > 0) {
-              const chatChunk = { choices: [{ delta: { content: event.text } }] };
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify(chatChunk)}\n\n`));
-              return "ok";
-            }
-
-            if (event.type === "response.completed" || event.type === "response.done") {
-              return "ok";
-            }
-
-            return "ok";
-          } catch {
-            return "incomplete";
-          }
-        };
-
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-
-            let newlineIdx: number;
-            while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
-              const rawLine = buffer.slice(0, newlineIdx);
-              buffer = buffer.slice(newlineIdx + 1);
-
-              const result = processLine(rawLine);
-              if (result === "incomplete") {
-                buffer = rawLine + "\n" + buffer;
-                break;
-              }
-            }
-          }
-
-          // Flush any remaining decoded bytes + leftover last line without trailing newline
-          buffer += decoder.decode();
-          if (buffer.trim().length > 0) {
-            const leftovers = buffer.split("\n");
-            for (const rawLine of leftovers) {
-              if (!rawLine) continue;
-              processLine(rawLine);
-            }
-          }
-
-          emitDone();
-          controller.close();
-        } catch (e) {
-          console.error("Stream transform error:", e);
-          controller.error(e);
-        }
-      },
-    });
-
-    return new Response(stream, {
+    return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
