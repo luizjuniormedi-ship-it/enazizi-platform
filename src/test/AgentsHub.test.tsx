@@ -60,14 +60,17 @@ describe("AgentsHub Page", () => {
       </MemoryRouter>
     );
     expect(screen.getByText("Agentes IA")).toBeInTheDocument();
-    expect(screen.getByText("ENAZIZI — Sessão de Estudo")).toBeInTheDocument();
-    expect(screen.getByText("MentorMed")).toBeInTheDocument();
-    expect(screen.getByText("Gerador de Questões")).toBeInTheDocument();
-    expect(screen.getByText("Resumidor de Conteúdo")).toBeInTheDocument();
-    expect(screen.getByText("Coach Motivacional")).toBeInTheDocument();
-    expect(screen.getByText("Otimizador de Estudo")).toBeInTheDocument();
-    expect(screen.getByText("Previsão de Desempenho")).toBeInTheDocument();
-    expect(screen.getByText("Diagnóstico Inicial")).toBeInTheDocument();
+    expect(screen.getByText(/Tutor IA/)).toBeInTheDocument();
+    expect(screen.getByText(/Gerador de Questões/)).toBeInTheDocument();
+    expect(screen.getByText(/Gerador de Flashcards/)).toBeInTheDocument();
+    expect(screen.getByText(/Resumidor de Conteúdo/)).toBeInTheDocument();
+    expect(screen.getByText(/Revisor de Redação Médica/)).toBeInTheDocument();
+    expect(screen.getByText(/Simulador de Entrevista/)).toBeInTheDocument();
+    expect(screen.getByText(/Modo Plantão/)).toBeInTheDocument();
+    expect(screen.getByText(/Coach Motivacional/)).toBeInTheDocument();
+    expect(screen.getByText(/Otimizador de Estudo/)).toBeInTheDocument();
+    expect(screen.getByText(/Previsão de Desempenho/)).toBeInTheDocument();
+    expect(screen.getByText(/Diagnóstico Inicial/)).toBeInTheDocument();
   });
 
   it("has correct number of agents (8)", async () => {
