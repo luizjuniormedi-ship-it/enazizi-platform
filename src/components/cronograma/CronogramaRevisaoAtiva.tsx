@@ -1,20 +1,36 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, CheckCircle2, Send, Brain, Stethoscope, AlertTriangle } from "lucide-react";
-import type { Revisao, TemaEstudado, Desempenho } from "@/pages/CronogramaInteligente";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, CheckCircle2, Send, Brain, Stethoscope, AlertTriangle, Clock, TrendingUp, ShieldAlert } from "lucide-react";
+import type { Revisao, TemaEstudado, Desempenho, TemaComputado } from "@/pages/CronogramaInteligente";
 
 interface Props {
   revisao: Revisao & { tema: TemaEstudado };
+  temaComputado: TemaComputado | null;
   desempenhos: Desempenho[];
-  onComplete: (revisao: Revisao, questoesFeitas: number, questoesErradas: number) => void;
+  onComplete: (revisao: Revisao, questoesFeitas: number, questoesErradas: number, tempoGasto: number, nivelConfianca: string, observacoes: string) => void;
   onBack: () => void;
 }
 
-const CronogramaRevisaoAtiva = ({ revisao, desempenhos, onComplete, onBack }: Props) => {
+const CONFIANCA = [
+  { value: "nao_sei", label: "😰 Não sei" },
+  { value: "parcial", label: "🤔 Sei parcialmente" },
+  { value: "sei_bem", label: "😊 Sei bem" },
+];
+
+const RISCO_COLORS: Record<string, string> = {
+  baixo: "text-emerald-500", moderado: "text-amber-500", alto: "text-orange-500", critico: "text-destructive",
+};
+
+const CronogramaRevisaoAtiva = ({ revisao, temaComputado, desempenhos, onComplete, onBack }: Props) => {
   const [questoesFeitas, setQuestoesFeitas] = useState("");
   const [questoesErradas, setQuestoesErradas] = useState("");
+  const [tempoGasto, setTempoGasto] = useState("");
+  const [nivelConfianca, setNivelConfianca] = useState("parcial");
+  const [observacoes, setObservacoes] = useState("");
   const [step, setStep] = useState<"review" | "questions">("review");
 
   const feitas = parseInt(questoesFeitas) || 0;
@@ -22,23 +38,12 @@ const CronogramaRevisaoAtiva = ({ revisao, desempenhos, onComplete, onBack }: Pr
   const acertos = feitas - erradas;
   const taxaAcerto = feitas > 0 ? Math.round((acertos / feitas) * 100) : 0;
   const taxaErro = feitas > 0 ? Math.round((erradas / feitas) * 100) : 0;
-
-  // Previous performance
-  const totalFeitasAnt = desempenhos.reduce((s, d) => s + d.questoes_feitas, 0);
-  const totalErradasAnt = desempenhos.reduce((s, d) => s + d.questoes_erradas, 0);
-  const taxaErroAnterior = totalFeitasAnt > 0 ? Math.round((totalErradasAnt / totalFeitasAnt) * 100) : null;
-
-  const getScheduleImpact = () => {
-    if (taxaErro > 60) return "⚠️ Cronograma será recalculado para modo AGRESSIVO (D1, D2, D4, D7)";
-    if (taxaErro > 40) return "📌 Revisões extras D2 e D5 serão adicionadas";
-    if (taxaErro > 20) return "📌 Revisão extra D5 será adicionada";
-    return "✅ Cronograma mantido sem alterações";
-  };
+  const tc = temaComputado;
 
   return (
     <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
       <Button variant="ghost" size="sm" onClick={onBack}>
-        <ArrowLeft className="h-4 w-4 mr-1" /> Voltar ao cronograma
+        <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
       </Button>
 
       <div className="glass-card p-6 border-primary/20">
@@ -46,19 +51,44 @@ const CronogramaRevisaoAtiva = ({ revisao, desempenhos, onComplete, onBack }: Pr
           <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
             <Brain className="h-6 w-6 text-primary" />
           </div>
-          <div>
-            <Badge variant="outline" className="mb-1">{revisao.tipo_revisao}</Badge>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="outline">{revisao.tipo_revisao}</Badge>
+              {tc && <Badge variant={tc.prioridade === "urgente" ? "destructive" : "secondary"} className="text-[10px]">{tc.prioridade}</Badge>}
+              {tc && <span className={`text-[10px] font-medium ${RISCO_COLORS[tc.risco]}`}>Risco: {tc.risco}</span>}
+            </div>
             <h2 className="text-xl font-bold">{revisao.tema.tema}</h2>
             <p className="text-sm text-muted-foreground">{revisao.tema.especialidade}</p>
           </div>
         </div>
 
-        {/* Previous performance summary */}
-        {taxaErroAnterior !== null && (
-          <div className="rounded-lg bg-secondary/50 p-3 mb-4">
-            <p className="text-xs font-medium text-muted-foreground">
-              📊 Desempenho anterior: {totalFeitasAnt} questões, {totalErradasAnt} erros ({taxaErroAnterior}% erro)
-            </p>
+        {/* Performance summary */}
+        {tc && tc.totalQuestoes > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+            <div className="rounded-lg bg-secondary/50 p-2 text-center">
+              <div className="text-sm font-bold">{tc.totalQuestoes}</div>
+              <div className="text-[9px] text-muted-foreground">Total questões</div>
+            </div>
+            <div className="rounded-lg bg-secondary/50 p-2 text-center">
+              <div className="text-sm font-bold text-destructive">{tc.taxaErro}%</div>
+              <div className="text-[9px] text-muted-foreground">Taxa erro</div>
+            </div>
+            <div className="rounded-lg bg-secondary/50 p-2 text-center">
+              <div className="text-sm font-bold">{tc.revisoesFeitas}</div>
+              <div className="text-[9px] text-muted-foreground">Revisões feitas</div>
+            </div>
+            <div className="rounded-lg bg-secondary/50 p-2 text-center">
+              <div className="text-sm font-bold">{tc.diasSemRevisar}d</div>
+              <div className="text-[9px] text-muted-foreground">Sem revisar</div>
+            </div>
+          </div>
+        )}
+
+        {/* Last errors */}
+        {desempenhos.length > 0 && desempenhos[0].observacoes && (
+          <div className="rounded-lg bg-destructive/5 p-3 mb-4 border border-destructive/10">
+            <p className="text-xs font-medium text-destructive mb-1">⚠️ Últimas dificuldades:</p>
+            <p className="text-sm text-muted-foreground">{desempenhos[0].observacoes}</p>
           </div>
         )}
 
@@ -69,12 +99,12 @@ const CronogramaRevisaoAtiva = ({ revisao, desempenhos, onComplete, onBack }: Pr
                 <Stethoscope className="h-4 w-4 text-primary" />
                 Roteiro de Revisão
               </h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>✅ Revise os conceitos principais do tema</li>
-                <li>✅ Relembre a fisiopatologia e mecanismos-chave</li>
-                <li>✅ Repasse diagnóstico diferencial</li>
-                <li>✅ Confira a conduta e tratamento atual</li>
-                <li>✅ Revise armadilhas comuns de prova</li>
+              <ul className="space-y-1.5 text-sm text-muted-foreground">
+                <li>✅ Conceitos principais e definições</li>
+                <li>✅ Fisiopatologia e mecanismos</li>
+                <li>✅ Diagnóstico diferencial</li>
+                <li>✅ Conduta e tratamento atual</li>
+                <li>✅ Armadilhas comuns de prova</li>
               </ul>
               {revisao.tema.observacoes && (
                 <div className="mt-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
@@ -84,79 +114,99 @@ const CronogramaRevisaoAtiva = ({ revisao, desempenhos, onComplete, onBack }: Pr
               )}
             </div>
 
+            {/* Integration suggestions */}
+            {tc && (tc.risco === "alto" || tc.risco === "critico") && (
+              <div className="rounded-lg bg-primary/5 p-3 border border-primary/10">
+                <p className="text-xs font-semibold text-primary mb-1">💡 Sugestões para este tema:</p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• Revisar com Tutor IA focado nas suas falhas</li>
+                  <li>• Gerar flashcards automáticos do tema</li>
+                  <li>• Praticar questões direcionadas no banco</li>
+                </ul>
+              </div>
+            )}
+
             <Button className="w-full" onClick={() => setStep("questions")}>
-              <CheckCircle2 className="h-4 w-4 mr-2" /> Revisão feita → Registrar questões
+              <CheckCircle2 className="h-4 w-4 mr-2" /> Revisão feita → Registrar desempenho
             </Button>
           </div>
         )}
 
         {step === "questions" && (
           <div className="space-y-4">
-            <h3 className="font-semibold text-sm">Registrar desempenho nas questões</h3>
-            <p className="text-xs text-muted-foreground">
-              Registre questões feitas manualmente ou importadas de simulados/bancos externos.
-            </p>
-            <div className="grid grid-cols-2 gap-4">
+            <h3 className="font-semibold text-sm">Registrar desempenho</h3>
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm text-muted-foreground mb-1 block">Questões realizadas</label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={questoesFeitas}
-                  onChange={(e) => setQuestoesFeitas(e.target.value)}
-                  placeholder="Ex: 20"
-                />
+                <label className="text-[11px] text-muted-foreground mb-1 block">Questões realizadas *</label>
+                <Input type="number" min="0" value={questoesFeitas} onChange={(e) => setQuestoesFeitas(e.target.value)} placeholder="Ex: 20" />
               </div>
               <div>
-                <label className="text-sm text-muted-foreground mb-1 block">Questões erradas</label>
-                <Input
-                  type="number"
-                  min="0"
-                  max={questoesFeitas}
-                  value={questoesErradas}
-                  onChange={(e) => setQuestoesErradas(e.target.value)}
-                  placeholder="Ex: 8"
-                />
+                <label className="text-[11px] text-muted-foreground mb-1 block">Questões erradas *</label>
+                <Input type="number" min="0" max={questoesFeitas} value={questoesErradas} onChange={(e) => setQuestoesErradas(e.target.value)} placeholder="Ex: 8" />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] text-muted-foreground mb-1 block">Tempo gasto (min)</label>
+                <Input type="number" min="0" value={tempoGasto} onChange={(e) => setTempoGasto(e.target.value)} placeholder="Ex: 30" />
+              </div>
+              <div>
+                <label className="text-[11px] text-muted-foreground mb-1 block">Como se sentiu?</label>
+                <Select value={nivelConfianca} onValueChange={setNivelConfianca}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CONFIANCA.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             {feitas > 0 && (
-              <div className="space-y-3">
-                <div className="rounded-lg bg-secondary/50 p-4">
-                  <div className="grid grid-cols-4 gap-3 text-center">
+              <div className="space-y-2">
+                <div className="rounded-lg bg-secondary/50 p-3">
+                  <div className="grid grid-cols-4 gap-2 text-center">
                     <div>
-                      <div className="text-lg font-bold text-emerald-500">{acertos}</div>
-                      <div className="text-[10px] text-muted-foreground">Acertos</div>
+                      <div className="text-base font-bold text-emerald-500">{acertos}</div>
+                      <div className="text-[9px] text-muted-foreground">Acertos</div>
                     </div>
                     <div>
-                      <div className="text-lg font-bold text-destructive">{erradas}</div>
-                      <div className="text-[10px] text-muted-foreground">Erros</div>
+                      <div className="text-base font-bold text-destructive">{erradas}</div>
+                      <div className="text-[9px] text-muted-foreground">Erros</div>
                     </div>
                     <div>
-                      <div className={`text-lg font-bold ${taxaAcerto >= 80 ? "text-emerald-500" : taxaAcerto >= 60 ? "text-amber-500" : "text-destructive"}`}>
-                        {taxaAcerto}%
-                      </div>
-                      <div className="text-[10px] text-muted-foreground">Acerto</div>
+                      <div className={`text-base font-bold ${taxaAcerto >= 80 ? "text-emerald-500" : taxaAcerto >= 60 ? "text-amber-500" : "text-destructive"}`}>{taxaAcerto}%</div>
+                      <div className="text-[9px] text-muted-foreground">Acerto</div>
                     </div>
                     <div>
-                      <div className={`text-lg font-bold ${taxaErro > 40 ? "text-destructive" : taxaErro > 20 ? "text-amber-500" : "text-emerald-500"}`}>
-                        {taxaErro}%
-                      </div>
-                      <div className="text-[10px] text-muted-foreground">Erro</div>
+                      <div className={`text-base font-bold ${taxaErro > 40 ? "text-destructive" : taxaErro > 20 ? "text-amber-500" : "text-emerald-500"}`}>{taxaErro}%</div>
+                      <div className="text-[9px] text-muted-foreground">Erro</div>
                     </div>
                   </div>
                 </div>
-                <div className={`text-xs font-medium flex items-center gap-1 p-2 rounded-lg ${
-                  taxaErro > 40 ? "bg-destructive/10 text-destructive" : taxaErro > 20 ? "bg-amber-500/10 text-amber-500" : "bg-emerald-500/10 text-emerald-500"
-                }`}>
-                  {taxaErro > 20 && <AlertTriangle className="h-3 w-3" />}
-                  {getScheduleImpact()}
-                </div>
+                {taxaErro > 20 && (
+                  <div className={`text-xs font-medium flex items-center gap-1 p-2 rounded-lg ${taxaErro > 40 ? "bg-destructive/10 text-destructive" : "bg-amber-500/10 text-amber-500"}`}>
+                    <AlertTriangle className="h-3 w-3" />
+                    {taxaErro > 60 ? "Cronograma agressivo será aplicado" : taxaErro > 40 ? "Revisões D2 e D5 serão adicionadas" : "Revisão D5 será adicionada"}
+                  </div>
+                )}
+                {nivelConfianca === "nao_sei" && (
+                  <div className="text-xs font-medium flex items-center gap-1 p-2 rounded-lg bg-primary/10 text-primary">
+                    <Clock className="h-3 w-3" />
+                    Próxima revisão será antecipada automaticamente
+                  </div>
+                )}
               </div>
             )}
+
+            <div>
+              <label className="text-[11px] text-muted-foreground mb-1 block">Dificuldades / Observações</label>
+              <Textarea value={observacoes} onChange={(e) => setObservacoes(e.target.value)} placeholder="O que errou? Onde teve dúvida?" rows={2} />
+            </div>
+
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep("review")}>Voltar</Button>
-              <Button onClick={() => onComplete(revisao, feitas, erradas)} disabled={feitas === 0} className="flex-1">
-                <Send className="h-4 w-4 mr-2" /> Concluir e Recalcular Cronograma
+              <Button onClick={() => onComplete(revisao, feitas, erradas, parseInt(tempoGasto) || 0, nivelConfianca, observacoes)} disabled={feitas === 0} className="flex-1">
+                <Send className="h-4 w-4 mr-2" /> Concluir e Recalcular
               </Button>
             </div>
           </div>
