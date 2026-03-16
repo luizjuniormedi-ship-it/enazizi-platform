@@ -520,6 +520,20 @@ const StudentSimulados = () => {
                       <p className="text-destructive">Sua resposta: {q?.options?.[d.selected] || "Não respondida"}</p>
                       <p className="text-emerald-600">Correta: {q?.options?.[d.correct_index]}</p>
                       {q?.explanation && <p className="text-muted-foreground mt-1 italic">{q.explanation}</p>}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-1 gap-1 text-primary h-7 px-2"
+                        onClick={() => {
+                          const msg = `Errei esta questão de ${d.topic || "Geral"}:\n\n"${q?.statement?.slice(0, 400)}"\n\nMarquei: "${q?.options?.[d.selected] || "Não respondida"}"\nCorreta: "${q?.options?.[d.correct_index]}"\n\nExplique detalhadamente por que a alternativa correta é a certa e por que a minha está errada.`;
+                          navigate("/dashboard/chatgpt", {
+                            state: { fromSimulado: true, initialMessage: msg }
+                          });
+                        }}
+                      >
+                        <Sparkles className="h-3 w-3" />
+                        Estudar com Tutor IA
+                      </Button>
                     </div>
                   )}
                   {d.is_correct && q?.explanation && (
