@@ -441,7 +441,18 @@ const ClinicalSimulation = () => {
     return map[color] || "🟡 Amarelo";
   };
 
-  const getStatusColor = (status: string) => {
+  const formatCountdown = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
+
+  const getTimerColor = () => {
+    if (timerExpired || countdown === 0) return "text-red-500";
+    if (countdown <= 120) return "text-red-500 animate-pulse";
+    if (countdown <= 300) return "text-amber-500";
+    return "text-primary";
+  };
     const map: Record<string, string> = {
       estável: "text-green-500",
       instável: "text-amber-500",
