@@ -497,7 +497,38 @@ const CronogramaInteligente = () => {
       )}
 
       {tab === "plano" && (
-        <StudyPlanContent />
+        <StudyPlanContent
+          onSubjectsGenerated={async (subjects: string[]) => {
+            if (!user) return;
+            const today = new Date().toISOString().split("T")[0];
+            const existingNames = temas.map(t => t.tema.toLowerCase());
+            const newSubjects = subjects.filter(s => !existingNames.includes(s.toLowerCase()));
+            if (newSubjects.length === 0) return;
+
+            let registeredCount = 0;
+            for (const subject of newSubjects) {
+              const especialidade = (await import("@/lib/mapTopicToSpecialty")).mapTopicToSpecialty(subject) || "Medicina Preventiva";
+              const { data, error } = await supabase.from("temas_estudados").insert({
+                user_id: user.id, tema: subject, especialidade,
+                data_estudo: today, fonte: "plano_estudos", dificuldade: "medio",
+                observacoes: "Registrado automaticamente pelo Plano de Estudos", status: "ativo",
+              } as any).select().single();
+              if (error || !data) continue;
+              const temaId = (data as any).id;
+              const reviews = generateReviewsByError(today, 0);
+              const reviewRows = reviews.map(r => ({
+                user_id: user.id, tema_id: temaId, tipo_revisao: r.tipo,
+                data_revisao: r.data, status: "pendente", prioridade: 50, risco_esquecimento: "baixo",
+              }));
+              await supabase.from("revisoes").insert(reviewRows as any);
+              registeredCount++;
+            }
+            if (registeredCount > 0) {
+              toast({ title: "📅 Temas vinculados ao Cronograma!", description: `${registeredCount} matérias registradas com revisões automáticas.` });
+              loadData();
+            }
+          }}
+        />
       )}
     </div>
   );
