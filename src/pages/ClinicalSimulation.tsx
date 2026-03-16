@@ -567,6 +567,7 @@ const ClinicalSimulation = () => {
 
       {/* LOBBY */}
       {phase === "lobby" && (
+        <div className="space-y-4">
         <Card>
           <CardContent className="p-6 space-y-6">
             <div className="text-center space-y-3">
