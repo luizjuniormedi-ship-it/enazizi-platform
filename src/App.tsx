@@ -39,6 +39,8 @@ import StudentSimulados from "./pages/StudentSimulados";
 import DiscursiveQuestions from "./pages/DiscursiveQuestions";
 import ClinicalSimulation from "./pages/ClinicalSimulation";
 import Achievements from "./pages/Achievements";
+import MedicalReviewer from "./pages/MedicalReviewer";
+import InterviewSimulator from "./pages/InterviewSimulator";
 import NotFound from "./pages/NotFound";
 import Install from "./pages/Install";
 
