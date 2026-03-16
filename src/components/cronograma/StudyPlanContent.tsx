@@ -38,7 +38,11 @@ interface PlanJson {
   };
 }
 
-const StudyPlanContent = () => {
+interface StudyPlanContentProps {
+  onSubjectsGenerated?: (subjects: string[]) => Promise<void>;
+}
+
+const StudyPlanContent = ({ onSubjectsGenerated }: StudyPlanContentProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
