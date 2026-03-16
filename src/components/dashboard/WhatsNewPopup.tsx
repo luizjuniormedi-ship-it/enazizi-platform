@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, CheckCircle2, Rocket } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const CURRENT_VERSION = "3.0.0";
+const CURRENT_VERSION = "3.1.0";
 const STORAGE_KEY = "enazizi_last_seen_version";
 
 interface UpdateItem {
@@ -20,6 +20,18 @@ interface UpdateItem {
 }
 
 const updates: UpdateItem[] = [
+  {
+    icon: "rocket",
+    title: "Cronograma Inteligente Unificado",
+    description:
+      "Repetição espaçada adaptativa + Plano de Estudos até a prova integrados em um único módulo. Upload de edital, revisões extras automáticas e recursos vinculados (questões e flashcards) durante a revisão.",
+  },
+  {
+    icon: "sparkles",
+    title: "Recursos na Revisão Ativa",
+    description:
+      "Ao iniciar uma revisão, o sistema busca automaticamente questões e flashcards relacionados ao tema para praticar antes de registrar o desempenho.",
+  },
   {
     icon: "rocket",
     title: "PWA Completa — Instale no Celular",
@@ -67,18 +79,6 @@ const updates: UpdateItem[] = [
     title: "Painel do Professor",
     description:
       "Professores podem criar simulados personalizados e acompanhar o desempenho dos alunos.",
-  },
-  {
-    icon: "sparkles",
-    title: "Mapa de Evolução por Domínio",
-    description:
-      "Visualize seu progresso em cada especialidade médica com scores detalhados e histórico.",
-  },
-  {
-    icon: "rocket",
-    title: "Melhorias de Performance e Estabilidade",
-    description:
-      "Service worker com cache inteligente, responsividade mobile aprimorada e fallback de IA otimizado.",
   },
 ];
 

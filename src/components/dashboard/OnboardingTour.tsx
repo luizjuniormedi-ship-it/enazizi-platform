@@ -42,6 +42,13 @@ const steps: Step[] = [
     route: "/dashboard/plano-dia",
   },
   {
+    icon: <CalendarDays className="h-8 w-8 text-primary" />,
+    title: "📅 Cronograma Inteligente",
+    description: "Motor de repetição espaçada adaptativo que agenda revisões automáticas (D1, D3, D7, D15, D30) e extras baseadas na sua taxa de erro. Inclui o Plano de Estudos com upload de edital e contagem regressiva até a prova.",
+    tip: "Registre temas e o sistema cria revisões automaticamente. Use a aba 'Plano de Estudos' para gerar um cronograma semanal com IA!",
+    route: "/dashboard/cronograma",
+  },
+  {
     icon: <Brain className="h-8 w-8 text-primary" />,
     title: "🃏 Flashcards com Repetição Espaçada",
     description: "Estude com flashcards que usam algoritmo de repetição espaçada. Gerados automaticamente a partir dos seus PDFs ou criados manualmente.",
