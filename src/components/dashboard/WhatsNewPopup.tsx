@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, CheckCircle2, Rocket } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const CURRENT_VERSION = "3.2.0";
+const CURRENT_VERSION = "3.3.0";
 const STORAGE_KEY = "enazizi_last_seen_version";
 
 interface UpdateItem {
@@ -22,60 +22,47 @@ interface UpdateItem {
 const updates: UpdateItem[] = [
   {
     icon: "rocket",
-    title: "Plantão Clínico — Dermatologia & Angiologia",
+    title: "Dificuldade nos Simulados",
     description:
-      "Novas especialidades no Modo Plantão: simule casos de Dermatologia (psoríase, dermatites, melanoma) e Angiologia (TVP, DAP, varizes) com avaliação completa.",
+      "Escolha entre Fácil, Intermediário, Difícil ou Misto ao criar simulados. A IA adapta a complexidade dos casos clínicos ao nível selecionado.",
   },
   {
     icon: "sparkles",
-    title: "Gerador de Questões Anti-Repetição",
+    title: "Cronômetro Configurável nos Simulados",
     description:
-      "O gerador agora analisa o histórico da conversa e nunca repete questões. Catálogo expandido com 20+ especialidades e centenas de subtemas para máxima variedade.",
+      "Defina tempo por questão (30s a 5min) com contagem regressiva visual. Alerta vermelho nos últimos 60 segundos e auto-submit ao zerar.",
   },
   {
     icon: "rocket",
-    title: "Painel do Professor — Seleção Individual de Alunos",
+    title: "Modo Sprint — Flashcards Cronometrados",
     description:
-      "Ao criar simulados, o professor pode selecionar ou desmarcar alunos individualmente com checkboxes, além de filtrar por faculdade e período.",
-  },
-  {
-    icon: "check",
-    title: "Aba Aluno Individual no Painel Professor",
-    description:
-      "Nova aba para visualizar detalhes individuais de cada aluno: maestria por especialidade, erros frequentes, streak, simulados realizados e uso de cota.",
+      "Revise flashcards contra o relógio! Escolha quantidade e tempo, receba estatísticas detalhadas (acertos, erros, pulados) ao final.",
   },
   {
     icon: "sparkles",
-    title: "Cronograma Inteligente Unificado",
+    title: "Quick Actions Expandidos",
     description:
-      "Repetição espaçada adaptativa + Plano de Estudos até a prova integrados em um único módulo com revisões extras automáticas.",
+      "Gerador de Questões e Flashcards agora cobrem 20+ especialidades: GO, Emergência, Preventiva, Endócrino, Reumato, Psiquiatria, Hematologia e mais.",
+  },
+  {
+    icon: "check",
+    title: "XP nas Questões Interativas",
+    description:
+      "Responda questões no chat dos agentes e ganhe XP automaticamente! Acertos valem +15 XP, tentativas +5 XP. Erros são salvos no Caderno de Erros.",
+  },
+  {
+    icon: "check",
+    title: "Simulados Salvos com Relatório por Área",
+    description:
+      "Todas as sessões de simulado são salvas com gráfico de desempenho por especialidade e caderno de erros detalhado para revisão.",
   },
   {
     icon: "rocket",
-    title: "PWA Completa — Instale no Celular",
+    title: "Exam Simulator Aprimorado",
     description:
-      "O ENAZIZI funciona como app nativo! Instale direto do navegador no iOS e Android com suporte offline.",
-  },
-  {
-    icon: "check",
-    title: "Modo Plantão — Simulação Clínica",
-    description:
-      "Simule plantões médicos com 15 especialidades, cronômetro, ajuda do preceptor e avaliação pedagógica completa.",
-  },
-  {
-    icon: "sparkles",
-    title: "Conquistas, XP & Ranking Semanal",
-    description:
-      "Sistema de gamificação com XP, streaks, níveis e ranking para motivar seus estudos diários.",
-  },
-  {
-    icon: "check",
-    title: "Questões Discursivas com Correção por IA",
-    description:
-      "Pratique questões discursivas e receba correção detalhada com nota e feedback da IA.",
+      "Pool de até 1000 questões do banco, filtro por dificuldade e botão 'Estudar com Tutor IA' para cada erro no relatório final.",
   },
 ];
-
 const iconMap = {
   sparkles: Sparkles,
   check: CheckCircle2,
