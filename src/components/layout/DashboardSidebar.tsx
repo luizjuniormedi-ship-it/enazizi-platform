@@ -15,7 +15,7 @@ const navItems = [
   { to: "/dashboard/chatgpt", icon: Sparkles, label: "🤖 Tutor IA (Principal)" },
   { to: "/dashboard/plano-dia", icon: Zap, label: "⚡ Plano do Dia" },
   { to: "/dashboard/diagnostico", icon: Stethoscope, label: "🩺 Diagnóstico Inicial" },
-  { to: "/dashboard/cronograma", icon: CalendarDays, label: "📅 Cronograma" },
+  { to: "/dashboard/cronograma", icon: CalendarDays, label: "📅 Cronograma de Revisão" },
   { to: "/dashboard/flashcards", icon: FlipVertical, label: "🃏 Flashcards" },
   { to: "/dashboard/gerar-flashcards", icon: FlipVertical, label: "🃏 Gerador de Flashcards" },
   { to: "/dashboard/simulados", icon: FileText, label: "📝 Simulados" },
