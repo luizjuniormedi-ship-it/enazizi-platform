@@ -198,6 +198,7 @@ const ProfessorDashboard = () => {
     setGeneratedQuestions([]);
     setPreviewStudents([]);
     setSelectedBankQuestions([]);
+    setSelectedStudentIds([]);
     setQuestionMode("ai");
     setManualStatement("");
     setManualOptions(["", "", "", "", ""]);
