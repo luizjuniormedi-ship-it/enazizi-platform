@@ -223,8 +223,20 @@ const Flashcards = () => {
       });
     }
 
-    // Remove from due list
-    if (mode === "due") {
+    // Track sprint stats
+    if (sprintActive) {
+      if (quality === "again") {
+        setSprintStats(prev => ({ ...prev, wrong: prev.wrong + 1 }));
+      } else {
+        setSprintStats(prev => ({ ...prev, correct: prev.correct + 1 }));
+      }
+      // Move to next or end sprint
+      if (idx + 1 >= Math.min(sprintConfig.cardCount, filteredCards.length)) {
+        endSprint();
+      } else {
+        setIdx(idx + 1);
+      }
+    } else if (mode === "due") {
       const newDue = dueCards.filter((c) => c.id !== card.id);
       setDueCards(newDue);
       setIdx(Math.min(idx, Math.max(0, newDue.length - 1)));
