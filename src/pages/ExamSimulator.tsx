@@ -87,17 +87,39 @@ const ExamSimulator = () => {
         .filter(isMedicalQuestion);
 
       // If not enough, generate more via AI
+      // Filter by selected areas
+      if (examConfig.areas.length > 0 && examConfig.areas.length < ALL_AREAS.length) {
+        examQuestions = examQuestions.filter(q =>
+          examConfig.areas.some(a => q.topic.toLowerCase().includes(a.toLowerCase()))
+        );
+      }
+
       if (examQuestions.length < examConfig.questionCount) {
         const needed = examConfig.questionCount - examQuestions.length;
-        const res = await supabase.functions.invoke("question-generator", {
-          body: {
-            messages: [{ role: "user", content: `Gere ${needed} questões EXCLUSIVAMENTE médicas para simulado de residência médica. Áreas: ${examConfig.areas.join(", ")}. Retorne JSON array: [{"statement":"...", "options":["a","b","c","d","e"], "correct_index": 0, "topic":"Área", "explanation":"..."}]` }],
-          },
-        });
+        const { data: { session: authSession } } = await supabase.auth.getSession();
+        const accessToken = authSession?.access_token;
 
-        if (!res.error && res.data) {
-          const content = typeof res.data === "string" ? res.data : JSON.stringify(res.data);
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({
+              stream: false,
+              difficulty: examConfig.difficulty,
+              messages: [{ role: "user", content: `Gere ${needed} questões EXCLUSIVAMENTE médicas para simulado de residência médica. Áreas: ${examConfig.areas.join(", ")}. Retorne JSON array puro sem markdown: [{"statement":"...", "options":["a","b","c","d","e"], "correct_index": 0, "topic":"Área", "explanation":"..."}]` }],
+            }),
+          }
+        );
+
+        if (res.ok) {
           try {
+            const json = await res.json();
+            const content = json.choices?.[0]?.message?.content || JSON.stringify(json);
             const match = content.match(/\[[\s\S]*\]/);
             if (match) {
               const parsed = JSON.parse(match[0]);
@@ -116,7 +138,7 @@ const ExamSimulator = () => {
               examQuestions = [...examQuestions, ...extra];
             }
           } catch {
-            // ignore parse errors and continue with existing medical bank questions
+            // ignore parse errors
           }
         }
       }
