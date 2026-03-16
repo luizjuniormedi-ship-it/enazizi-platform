@@ -11,32 +11,19 @@ vi.mock("@/hooks/useAuth", () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
+const createChainMock = () => {
+  const chain: any = {};
+  const methods = ["select", "eq", "not", "order", "limit", "maybeSingle", "insert", "delete", "update", "gte", "single"];
+  for (const m of methods) {
+    chain[m] = vi.fn(() => chain);
+  }
+  chain.then = (resolve: any) => resolve({ data: null, error: null });
+  return chain;
+};
+
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          order: () => ({
-            limit: () => ({
-              maybeSingle: () => Promise.resolve({ data: null }),
-            }),
-          }),
-          not: () => ({
-            order: () => ({
-              limit: () => Promise.resolve({ data: [] }),
-            }),
-          }),
-          gte: () => ({
-            order: () => ({
-              limit: () => Promise.resolve({ data: [] }),
-            }),
-          }),
-        }),
-        count: "exact",
-        head: true,
-      }),
-      insert: () => Promise.resolve({ data: null, error: null }),
-    }),
+    from: () => createChainMock(),
     auth: {
       getSession: () => Promise.resolve({ data: { session: null }, error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
