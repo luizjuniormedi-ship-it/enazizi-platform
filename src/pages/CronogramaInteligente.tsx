@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -12,6 +12,7 @@ import CronogramaTemasCriticos from "@/components/cronograma/CronogramaTemasCrit
 import CronogramaHistorico from "@/components/cronograma/CronogramaHistorico";
 import CronogramaConfiguracoes from "@/components/cronograma/CronogramaConfiguracoes";
 import CronogramaGraficos from "@/components/cronograma/CronogramaGraficos";
+import StudyPlanContent from "@/components/cronograma/StudyPlanContent";
 
 /* ======================== TYPES ======================== */
 
@@ -92,7 +93,7 @@ export interface TemaComputado extends TemaEstudado {
   diasSemRevisar: number;
 }
 
-export type TabCronograma = "visao" | "hoje" | "novo" | "temas" | "criticos" | "historico" | "graficos" | "config";
+export type TabCronograma = "visao" | "hoje" | "novo" | "temas" | "criticos" | "historico" | "graficos" | "config" | "plano";
 
 /* ======================== CONSTANTS ======================== */
 
@@ -493,6 +494,10 @@ const CronogramaInteligente = () => {
 
       {tab === "config" && (
         <CronogramaConfiguracoes config={config} onSave={handleSaveConfig} />
+      )}
+
+      {tab === "plano" && (
+        <StudyPlanContent />
       )}
     </div>
   );
