@@ -35,6 +35,7 @@ async function processTextToQuestions(
   userId: string,
   supabaseAdmin: any,
   uploadId?: string,
+  existingJson?: Record<string, any>,
 ): Promise<number> {
   const chunkSize = 15000;
   const chunks: string[] = [];
@@ -43,6 +44,7 @@ async function processTextToQuestions(
   }
 
   const chunksToProcess = chunks.slice(0, 4);
+  const baseJson = existingJson || {};
 
   // Update progress if uploadId provided
   const updateProgress = async (chunksDone: number, questionsFound: number) => {
@@ -50,11 +52,12 @@ async function processTextToQuestions(
     const progress = Math.round(20 + (chunksDone / chunksToProcess.length) * 70);
     await supabaseAdmin.from("uploads").update({
       extracted_json: {
+        ...baseJson,
         step: "populating_questions",
         progress,
         chunks_total: chunksToProcess.length,
         chunks_done: chunksDone,
-        questions_count: questionsFound,
+        questions_count: (baseJson.questions_count || 0) + questionsFound,
         main_topic: topic,
       },
     }).eq("id", uploadId);
