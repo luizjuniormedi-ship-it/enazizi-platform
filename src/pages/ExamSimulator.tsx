@@ -400,6 +400,19 @@ const ExamSimulator = () => {
                     {" • "}Correta: <span className="text-green-500 font-medium">{String.fromCharCode(65 + q.correct_index)}</span>
                   </p>
                   {q.explanation && <p className="text-xs text-muted-foreground mt-2">{q.explanation}</p>}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 mt-2 text-xs"
+                    onClick={() => navigate("/dashboard/chatgpt", {
+                      state: {
+                        initialMessage: `Errei uma questão sobre "${q.topic}". O enunciado era: "${q.statement.slice(0, 200)}". A resposta correta era "${q.options[q.correct_index]}". Me explique este tema seguindo o protocolo ENAZIZI.`,
+                        fromErrorBank: true,
+                      },
+                    })}
+                  >
+                    <GraduationCap className="h-3.5 w-3.5" /> Estudar com Tutor IA
+                  </Button>
                 </div>
               ))}
             </div>
