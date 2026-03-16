@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, CheckCircle2, Send, Brain, Stethoscope, AlertTriangle, Clock, TrendingUp, ShieldAlert } from "lucide-react";
+import CronogramaRecursosRevisao from "./CronogramaRecursosRevisao";
 import type { Revisao, TemaEstudado, Desempenho, TemaComputado } from "@/pages/CronogramaInteligente";
 
 interface Props {
