@@ -231,7 +231,14 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
 
       if (!resp.ok) {
         const errData = await resp.json().catch(() => ({}));
-        toast({ title: "Erro", description: errData.error || "Erro ao conectar com o agente IA", variant: "destructive" });
+        const errorMessages: Record<number, string> = {
+          429: "Limite de requisições atingido. Aguarde alguns segundos e tente novamente.",
+          402: "Créditos de IA esgotados. Adicione créditos no seu workspace para continuar.",
+          401: "Sessão expirada. Faça login novamente.",
+          500: "Erro interno do servidor. Tente novamente.",
+        };
+        const description = errData.error || errorMessages[resp.status] || "Erro ao conectar com o agente IA";
+        toast({ title: "Erro", description, variant: "destructive" });
         setIsLoading(false);
         return;
       }
