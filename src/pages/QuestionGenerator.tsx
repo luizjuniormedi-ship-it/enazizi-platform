@@ -8,9 +8,11 @@ import { useCallback } from "react";
 
 const quickActions = [
   { label: "📝 Escolher tema e quantidade", prompt: "Quero gerar questões. Me pergunte sobre qual tema/especialidade e quantas questões eu quero antes de começar.", icon: "🎯" },
-  { label: "🫀 Cardiologia (10)", prompt: "Gere 10 questões de Cardiologia nível intermediário. Formato ENARE com casos clínicos.", icon: "🟢" },
-  { label: "🧒 Pediatria (10)", prompt: "Gere 10 questões de Pediatria nível intermediário. Formato ENARE com casos clínicos.", icon: "🟡" },
-  { label: "🔪 Cirurgia (10)", prompt: "Gere 10 questões de Cirurgia nível intermediário. Formato ENARE com casos clínicos.", icon: "🔴" },
+  { label: "🫀 Cardiologia (10)", prompt: "Gere 10 questões ORIGINAIS de Cardiologia nível intermediário. Varie os subtemas: IAM, IC, arritmias, valvopatias, HAS, endocardite, pericardite. Formato ENARE com casos clínicos variados.", icon: "🟢" },
+  { label: "🧒 Pediatria (10)", prompt: "Gere 10 questões ORIGINAIS de Pediatria nível intermediário. Varie os subtemas: bronquiolite, convulsão febril, desidratação, vacinação, icterícia neonatal, pneumonia infantil. Formato ENARE com casos clínicos variados.", icon: "🟡" },
+  { label: "🔪 Cirurgia (10)", prompt: "Gere 10 questões ORIGINAIS de Cirurgia nível intermediário. Varie os subtemas: abdome agudo, politrauma, hérnias, apendicite, colecistite, obstrução intestinal. Formato ENARE com casos clínicos variados.", icon: "🔴" },
+  { label: "🧠 Neurologia (10)", prompt: "Gere 10 questões ORIGINAIS de Neurologia nível intermediário. Varie os subtemas: AVC, epilepsia, meningite, cefaleia, Guillain-Barré, esclerose múltipla. Formato ENARE com casos clínicos variados.", icon: "🔵" },
+  { label: "🦠 Infectologia (10)", prompt: "Gere 10 questões ORIGINAIS de Infectologia nível intermediário. Varie os subtemas: HIV, sepse, dengue, tuberculose, sífilis, hepatites virais, meningite bacteriana. Formato ENARE com casos clínicos variados.", icon: "🟠" },
 ];
 
 const QuestionGenerator = () => {
