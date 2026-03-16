@@ -103,38 +103,89 @@ export type Database = {
           },
         ]
       }
+      cronograma_config: {
+        Row: {
+          created_at: string | null
+          dias_revisao: Json | null
+          id: string
+          max_revisoes_dia: number | null
+          meta_questoes_dia: number | null
+          meta_revisoes_semana: number | null
+          mostrar_concluidos: boolean | null
+          pesos_algoritmo: Json | null
+          revisoes_extras_ativas: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          dias_revisao?: Json | null
+          id?: string
+          max_revisoes_dia?: number | null
+          meta_questoes_dia?: number | null
+          meta_revisoes_semana?: number | null
+          mostrar_concluidos?: boolean | null
+          pesos_algoritmo?: Json | null
+          revisoes_extras_ativas?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          dias_revisao?: Json | null
+          id?: string
+          max_revisoes_dia?: number | null
+          meta_questoes_dia?: number | null
+          meta_revisoes_semana?: number | null
+          mostrar_concluidos?: boolean | null
+          pesos_algoritmo?: Json | null
+          revisoes_extras_ativas?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       desempenho_questoes: {
         Row: {
           created_at: string
           data_registro: string
           id: string
+          nivel_confianca: string | null
+          observacoes: string | null
           questoes_erradas: number
           questoes_feitas: number
           revisao_id: string | null
           taxa_acerto: number
           tema_id: string
+          tempo_gasto: number | null
           user_id: string
         }
         Insert: {
           created_at?: string
           data_registro?: string
           id?: string
+          nivel_confianca?: string | null
+          observacoes?: string | null
           questoes_erradas?: number
           questoes_feitas?: number
           revisao_id?: string | null
           taxa_acerto?: number
           tema_id: string
+          tempo_gasto?: number | null
           user_id: string
         }
         Update: {
           created_at?: string
           data_registro?: string
           id?: string
+          nivel_confianca?: string | null
+          observacoes?: string | null
           questoes_erradas?: number
           questoes_feitas?: number
           revisao_id?: string | null
           taxa_acerto?: number
           tema_id?: string
+          tempo_gasto?: number | null
           user_id?: string
         }
         Relationships: [
@@ -749,6 +800,8 @@ export type Database = {
           created_at: string
           data_revisao: string
           id: string
+          prioridade: number | null
+          risco_esquecimento: string | null
           status: string
           tema_id: string
           tipo_revisao: string
@@ -759,6 +812,8 @@ export type Database = {
           created_at?: string
           data_revisao: string
           id?: string
+          prioridade?: number | null
+          risco_esquecimento?: string | null
           status?: string
           tema_id: string
           tipo_revisao: string
@@ -769,6 +824,8 @@ export type Database = {
           created_at?: string
           data_revisao?: string
           id?: string
+          prioridade?: number | null
+          risco_esquecimento?: string | null
           status?: string
           tema_id?: string
           tipo_revisao?: string
@@ -1085,10 +1142,13 @@ export type Database = {
         Row: {
           created_at: string
           data_estudo: string
+          dificuldade: string | null
           especialidade: string
           fonte: string | null
           id: string
           observacoes: string | null
+          status: string | null
+          subtopico: string | null
           tema: string
           updated_at: string
           user_id: string
@@ -1096,10 +1156,13 @@ export type Database = {
         Insert: {
           created_at?: string
           data_estudo?: string
+          dificuldade?: string | null
           especialidade: string
           fonte?: string | null
           id?: string
           observacoes?: string | null
+          status?: string | null
+          subtopico?: string | null
           tema: string
           updated_at?: string
           user_id: string
@@ -1107,10 +1170,13 @@ export type Database = {
         Update: {
           created_at?: string
           data_estudo?: string
+          dificuldade?: string | null
           especialidade?: string
           fonte?: string | null
           id?: string
           observacoes?: string | null
+          status?: string | null
+          subtopico?: string | null
           tema?: string
           updated_at?: string
           user_id?: string
