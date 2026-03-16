@@ -56,6 +56,7 @@ const ProfessorDashboard = () => {
   // Bank questions
   const [bankQuestions, setBankQuestions] = useState<any[]>([]);
   const [selectedBankQuestions, setSelectedBankQuestions] = useState<string[]>([]);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
 
   // Results dialog
   const [resultsDialog, setResultsDialog] = useState<{ open: boolean; simulado: any; results: any[]; loading: boolean }>({ open: false, simulado: null, results: [], loading: false });
