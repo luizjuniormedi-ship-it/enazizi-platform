@@ -15,6 +15,8 @@ import WhatsNewPopup from "@/components/dashboard/WhatsNewPopup";
 import SystemGuidePopup from "@/components/dashboard/SystemGuidePopup";
 import SpecialtyBenchmark from "@/components/dashboard/SpecialtyBenchmark";
 import OnboardingTour from "@/components/dashboard/OnboardingTour";
+import WeeklyProgressCard from "@/components/dashboard/WeeklyProgressCard";
+import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 
 interface PlanJson {
   weeklySchedule?: { day: string; tasks: { time: string; subject: string; duration: string; type?: string }[] }[];
@@ -41,6 +43,7 @@ interface Stats {
 
 const Dashboard = () => {
   const { user } = useAuth();
+  useRevisionNotifier();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [weekFilter, setWeekFilter] = useState<4 | 8 | 12>(8);
@@ -444,6 +447,9 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Weekly Progress */}
+      <WeeklyProgressCard />
 
       {/* Topic Evolution */}
       <TopicEvolution />
