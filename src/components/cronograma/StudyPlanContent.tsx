@@ -188,6 +188,9 @@ const StudyPlanContent = ({ onSubjectsGenerated }: StudyPlanContentProps) => {
       setTips(plan.tips || "");
       setShowConfig(false);
       toast({ title: "Cronograma gerado!", description: "Você pode editar os blocos manualmente." });
+      if (onSubjectsGenerated && plan.subjects && plan.subjects.length > 0) {
+        await onSubjectsGenerated(plan.subjects);
+      }
     } catch (err: any) {
       toast({ title: "Erro ao gerar cronograma", description: err.message, variant: "destructive" });
     } finally {
