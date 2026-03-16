@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import {
   GraduationCap, Clock, FileText, CheckCircle, ArrowRight, ArrowLeft,
-  Loader2, Trophy, AlertTriangle, Play, RotateCcw
+  Loader2, Trophy, AlertTriangle, Play, RotateCcw, BrainCircuit, Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,6 +45,7 @@ type Phase = "list" | "quiz" | "result";
 const StudentSimulados = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [assigned, setAssigned] = useState<AssignedSimulado[]>([]);
   const [loading, setLoading] = useState(true);
@@ -518,6 +520,20 @@ const StudentSimulados = () => {
                       <p className="text-destructive">Sua resposta: {q?.options?.[d.selected] || "Não respondida"}</p>
                       <p className="text-emerald-600">Correta: {q?.options?.[d.correct_index]}</p>
                       {q?.explanation && <p className="text-muted-foreground mt-1 italic">{q.explanation}</p>}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-1 gap-1 text-primary h-7 px-2"
+                        onClick={() => {
+                          const msg = `Errei esta questão de ${d.topic || "Geral"}:\n\n"${q?.statement?.slice(0, 400)}"\n\nMarquei: "${q?.options?.[d.selected] || "Não respondida"}"\nCorreta: "${q?.options?.[d.correct_index]}"\n\nExplique detalhadamente por que a alternativa correta é a certa e por que a minha está errada.`;
+                          navigate("/dashboard/chatgpt", {
+                            state: { fromSimulado: true, initialMessage: msg }
+                          });
+                        }}
+                      >
+                        <Sparkles className="h-3 w-3" />
+                        Estudar com Tutor IA
+                      </Button>
                     </div>
                   )}
                   {d.is_correct && q?.explanation && (
@@ -529,8 +545,35 @@ const StudentSimulados = () => {
           </CardContent>
         </Card>
 
-        <div className="flex justify-center">
-          <Button onClick={backToList} className="gap-2">
+        <div className="flex flex-col items-center gap-3">
+          {details.some(d => !d.is_correct) && (
+            <Button
+              onClick={() => {
+                const errors = details
+                  .filter(d => !d.is_correct)
+                  .map((d, idx) => {
+                    const q = questions[d.question_index];
+                    return {
+                      topic: d.topic || "Geral",
+                      statement: q?.statement?.slice(0, 300) || "",
+                      selectedAnswer: q?.options?.[d.selected] || "Não respondida",
+                      correctAnswer: q?.options?.[d.correct_index] || "",
+                    };
+                  });
+                const topics = [...new Set(errors.map(e => e.topic))];
+                const msg = `Acabei de fazer o simulado "${current.simulado.title}" e errei ${errors.length} questão(ões). Os temas foram: ${topics.join(", ")}.\n\n${errors.map((e, i) => `❌ Q${i+1} (${e.topic}): ${e.statement.slice(0, 150)}...\nMarquei: "${e.selectedAnswer}" — Correta: "${e.correctAnswer}"`).join("\n\n")}\n\nMe ajude a revisar cada erro com explicações detalhadas.`;
+                navigate("/dashboard/chatgpt", {
+                  state: { fromSimulado: true, initialMessage: msg }
+                });
+              }}
+              className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
+              size="lg"
+            >
+              <BrainCircuit className="h-5 w-5" />
+              Revisar Erros com Tutor IA
+            </Button>
+          )}
+          <Button onClick={backToList} variant="outline" className="gap-2">
             <RotateCcw className="h-4 w-4" /> Voltar aos Simulados
           </Button>
         </div>

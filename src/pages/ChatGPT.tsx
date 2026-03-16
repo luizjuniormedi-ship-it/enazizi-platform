@@ -240,17 +240,25 @@ const ChatGPT = () => {
   // Handle navigation from ErrorBank with initialMessage
   const errorBankHandled = useRef(false);
   useEffect(() => {
-    const state = location.state as { initialMessage?: string; fromErrorBank?: boolean } | null;
+    const state = location.state as { initialMessage?: string; fromErrorBank?: boolean; fromSimulado?: boolean } | null;
     if (state?.fromErrorBank && state?.initialMessage && !errorBankHandled.current && user) {
       errorBankHandled.current = true;
       const initialMessage = ensureSequentialInitialMessage(state.initialMessage);
       setStudyStarted(true);
       setCurrentTopic("Revisão do Banco de Erros");
-      // Small delay to ensure sendMessage is ready
       setTimeout(() => {
         sendMessage(initialMessage);
       }, 500);
-      // Clear location state to prevent re-trigger
+      window.history.replaceState({}, document.title);
+    }
+    if (state?.fromSimulado && state?.initialMessage && !errorBankHandled.current && user) {
+      errorBankHandled.current = true;
+      const initialMessage = ensureSequentialInitialMessage(state.initialMessage);
+      setStudyStarted(true);
+      setCurrentTopic("Revisão de Simulado — Proficiência");
+      setTimeout(() => {
+        sendMessage(initialMessage);
+      }, 500);
       window.history.replaceState({}, document.title);
     }
   }, [user, location.state]);
