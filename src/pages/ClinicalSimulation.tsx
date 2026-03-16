@@ -136,6 +136,59 @@ const ClinicalSimulation = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Countdown timer effect
+  useEffect(() => {
+    if (phase === "active" && countdown > 0) {
+      countdownRef.current = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(countdownRef.current!);
+            setTimerExpired(true);
+            toast({
+              title: "⏰ Tempo esgotado!",
+              description: "O tempo do plantão acabou! Encerre o atendimento agora.",
+              variant: "destructive",
+            });
+            // Play alert sound
+            try {
+              const ctx = new AudioContext();
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.frequency.value = 880;
+              gain.gain.value = 0.3;
+              osc.start();
+              osc.stop(ctx.currentTime + 0.5);
+            } catch {}
+            return 0;
+          }
+          // Warning at 2 min remaining
+          if (prev === 121) {
+            toast({
+              title: "⚠️ 2 minutos restantes!",
+              description: "Finalize seu atendimento rapidamente.",
+            });
+          }
+          // Warning at 5 min remaining
+          if (prev === 301) {
+            toast({
+              title: "⏱️ 5 minutos restantes",
+              description: "Considere fechar seu diagnóstico e prescrição.",
+            });
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => {
+        if (countdownRef.current) clearInterval(countdownRef.current);
+      };
+    }
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [phase, countdown > 0]);
+
   const callAPI = useCallback(async (body: Record<string, unknown>) => {
     const resp = await fetch(API_URL, {
       method: "POST",
