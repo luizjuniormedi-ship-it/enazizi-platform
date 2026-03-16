@@ -545,13 +545,38 @@ const ClinicalSimulation = () => {
             </CardContent>
           </Card>
 
-          {/* Correct diagnosis */}
-          <Card>
-            <CardContent className="p-4">
-              <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-                <Target className="h-4 w-4 text-primary" /> Diagnóstico Correto
+          {/* Correct diagnosis with detailed correction */}
+          <Card className="border-2 border-primary/30">
+            <CardContent className="p-5 space-y-3">
+              <h4 className="text-base font-bold flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary" /> Correção Diagnóstica
               </h4>
-              <p className="text-sm font-medium text-primary">{finalEval.correct_diagnosis}</p>
+              <div className="space-y-2">
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
+                  <CheckCircle className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-primary uppercase">Diagnóstico Correto</p>
+                    <p className="text-sm font-bold">{finalEval.correct_diagnosis}</p>
+                  </div>
+                </div>
+                <div className={`flex items-start gap-2 p-3 rounded-lg ${finalEval.student_got_diagnosis ? "bg-green-500/10 border border-green-500/20" : "bg-red-500/10 border border-red-500/20"}`}>
+                  {finalEval.student_got_diagnosis ? (
+                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                  )}
+                  <div>
+                    <p className={`text-xs font-semibold uppercase ${finalEval.student_got_diagnosis ? "text-green-500" : "text-red-500"}`}>
+                      Seu Diagnóstico
+                    </p>
+                    <p className="text-sm font-medium">
+                      {finalEval.student_got_diagnosis
+                        ? "✅ Você acertou o diagnóstico!"
+                        : "❌ Você não chegou ao diagnóstico correto. Revise a abordagem ideal abaixo."}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
