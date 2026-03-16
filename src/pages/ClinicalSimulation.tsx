@@ -33,6 +33,12 @@ const QUICK_ACTIONS = [
   { label: "Diagnóstico", icon: Target, prompt: "Com base nos achados clínicos e exames, meu diagnóstico é:" },
 ];
 
+const DIFFICULTY_TIMER: Record<string, number> = {
+  "básico": 30 * 60,       // 30 min
+  "intermediário": 20 * 60, // 20 min
+  "avançado": 15 * 60,      // 15 min
+};
+
 type Phase = "lobby" | "active" | "finishing" | "result";
 
 interface Vitals {
