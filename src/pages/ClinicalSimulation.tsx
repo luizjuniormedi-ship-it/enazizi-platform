@@ -118,6 +118,11 @@ const ClinicalSimulation = () => {
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: string; content: string }>>([]);
   const [finalEval, setFinalEval] = useState<FinalEval | null>(null);
 
+  // Countdown timer
+  const [countdown, setCountdown] = useState(0);
+  const [timerExpired, setTimerExpired] = useState(false);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Specialist dialog
   const [specialistDialogOpen, setSpecialistDialogOpen] = useState(false);
   const [specialistArea, setSpecialistArea] = useState("");
