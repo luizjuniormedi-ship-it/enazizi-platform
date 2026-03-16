@@ -35,7 +35,7 @@ const ExamSimulator = () => {
   const [current, setCurrent] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [timeLeft, setTimeLeft] = useState(0);
-  const [examConfig, setExamConfig] = useState({ questionCount: 50, timeMinutes: 120, areas: ["Clínica Médica", "Cirurgia", "Pediatria", "GO", "Preventiva"] });
+  const [examConfig, setExamConfig] = useState({ questionCount: 50, timeMinutes: 120, areas: ["Clínica Médica", "Cirurgia", "Pediatria", "GO", "Preventiva"], difficulty: "intermediario" });
   const [sessionId, setSessionId] = useState<string | null>(null);
   const timerRef = useRef<NodeJS.Timeout>();
 
