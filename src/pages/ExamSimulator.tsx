@@ -304,6 +304,7 @@ const ExamSimulator = () => {
             </div>
           </div>
 
+          <div>
             <label className="text-sm font-semibold mb-2 block">Número de questões</label>
             <div className="flex gap-2">
               {[25, 50, 100].map(n => (
