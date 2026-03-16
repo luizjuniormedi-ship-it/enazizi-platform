@@ -670,6 +670,10 @@ const ProfessorDashboard = () => {
         </DialogContent>
       </Dialog>
 
+        <TabsContent value="alunos" className="mt-4">
+          <StudentTracker />
+        </TabsContent>
+
         <TabsContent value="analytics" className="mt-4">
           <ClassAnalytics />
         </TabsContent>
