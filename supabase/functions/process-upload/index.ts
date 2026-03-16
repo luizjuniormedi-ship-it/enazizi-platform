@@ -40,70 +40,72 @@ async function generateQuestionsFromText(
 ): Promise<Array<{ statement: string; options: string[]; correct_index: number; explanation: string; topic: string }>> {
   const allQuestions: Array<{ statement: string; options: string[]; correct_index: number; explanation: string; topic: string }> = [];
 
-  // Process in chunks of ~8000 chars to get more questions
-  const chunkSize = 8000;
+  const chunkSize = 12000;
   const chunks: string[] = [];
   for (let i = 0; i < text.length; i += chunkSize) {
     chunks.push(text.slice(i, i + chunkSize));
   }
 
-  // Process up to 5 chunks to avoid timeout
-  const chunksToProcess = chunks.slice(0, 5);
+  const chunksToProcess = chunks.slice(0, 3);
 
-  for (const chunk of chunksToProcess) {
-    try {
-      const response = await aiFetch({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: `Extraia questões de múltipla escolha do texto fornecido. Se o texto já contiver questões formatadas, converta-as para o formato JSON. Se for conteúdo teórico, gere questões baseadas no conteúdo.
+  const processChunk = async (chunk: string) => {
+    const response = await aiFetch({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        {
+          role: "system",
+          content: `Extraia questões de múltipla escolha do texto fornecido. Se o texto já contiver questões formatadas, converta-as para o formato JSON. Se for conteúdo teórico, gere questões baseadas no conteúdo.
 
 IMPORTANTE: Gere o MÁXIMO de questões possível (10-20 por chunk).
 Formato JSON PURO (sem markdown): 
 {"questions": [{"statement": "enunciado completo com caso clínico", "options": ["A", "B", "C", "D", "E"], "correct_index": 0, "explanation": "explicação detalhada", "topic": "especialidade médica"}]}
 
 Se não encontrar questões válidas, retorne {"questions": []}`
-          },
-          { role: "user", content: `Tema principal: ${topic}\n\nTexto:\n${chunk}` }
-        ],
-      });
+        },
+        { role: "user", content: `Tema principal: ${topic}\n\nTexto:\n${chunk}` }
+      ],
+    });
 
-      if (!response.ok) continue;
+    if (!response.ok) return [];
 
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content || "";
-      
-      try {
-        const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          const questions = parsed.questions || [];
-          for (const q of questions) {
-            if (
-              q.statement && 
-              Array.isArray(q.options) && 
-              q.options.length >= 4 &&
-              typeof q.correct_index === "number" &&
-              !NON_MEDICAL_CONTENT_REGEX.test(q.statement)
-            ) {
-              allQuestions.push({
-                statement: String(q.statement).trim(),
-                options: q.options.map(String),
-                correct_index: q.correct_index,
-                explanation: String(q.explanation || "").trim(),
-                topic: String(q.topic || topic).trim(),
-              });
-            }
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || "";
+    const chunkQuestions: typeof allQuestions = [];
+    
+    try {
+      const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        const questions = parsed.questions || [];
+        for (const q of questions) {
+          if (
+            q.statement && 
+            Array.isArray(q.options) && 
+            q.options.length >= 4 &&
+            typeof q.correct_index === "number" &&
+            !NON_MEDICAL_CONTENT_REGEX.test(q.statement)
+          ) {
+            chunkQuestions.push({
+              statement: String(q.statement).trim(),
+              options: q.options.map(String),
+              correct_index: q.correct_index,
+              explanation: String(q.explanation || "").trim(),
+              topic: String(q.topic || topic).trim(),
+            });
           }
         }
-      } catch {
-        // Skip unparseable chunks
       }
-    } catch {
-      // Skip failed chunks
-    }
+    } catch {}
+    return chunkQuestions;
+  };
+
+  const results = await Promise.allSettled(
+    chunksToProcess.map((chunk) => processChunk(chunk))
+  );
+
+  for (const r of results) {
+    if (r.status === "fulfilled") allQuestions.push(...r.value);
   }
 
   return allQuestions;
