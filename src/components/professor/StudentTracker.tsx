@@ -71,6 +71,11 @@ const StudentTracker = () => {
     }
   }, [session, callAPI, faculdade, periodo, toast]);
 
+  // Auto-load students on mount and when filters change
+  useEffect(() => {
+    loadStudents();
+  }, [loadStudents]);
+
   const loadStudentDetail = useCallback(async (userId: string) => {
     if (!session) return;
     setLoadingDetail(true);
