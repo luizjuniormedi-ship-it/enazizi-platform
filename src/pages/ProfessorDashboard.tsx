@@ -419,15 +419,39 @@ const ProfessorDashboard = () => {
                 <Users className="h-3.5 w-3.5" /> {previewLoading ? "Buscando..." : "Ver alunos que receberão"}
               </Button>
               {previewStudents.length > 0 && (
-                <div className="bg-secondary/50 rounded-lg p-3">
-                  <p className="text-xs font-medium mb-2">{previewStudents.length} aluno(s) encontrado(s):</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {previewStudents.slice(0, 20).map((s: any) => (
-                      <Badge key={s.user_id} variant="outline" className="text-[10px]">
-                        {s.display_name || s.email}{s.periodo ? ` • ${s.periodo}º` : ""}
-                      </Badge>
-                    ))}
-                    {previewStudents.length > 20 && <Badge variant="secondary" className="text-[10px]">+{previewStudents.length - 20} mais</Badge>}
+                <div className="bg-secondary/50 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium">{selectedStudentIds.length}/{previewStudents.length} aluno(s) selecionado(s)</p>
+                    <button
+                      onClick={toggleAllStudents}
+                      className="text-[11px] text-primary hover:underline font-medium"
+                    >
+                      {selectedStudentIds.length === previewStudents.length ? "Desmarcar todos" : "Selecionar todos"}
+                    </button>
+                  </div>
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {previewStudents.map((s: any) => {
+                      const isSelected = selectedStudentIds.includes(s.user_id);
+                      return (
+                        <button
+                          key={s.user_id}
+                          onClick={() => toggleStudentSelection(s.user_id)}
+                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-xs transition-colors ${
+                            isSelected
+                              ? "bg-primary/10 border border-primary/30"
+                              : "bg-background/50 border border-border hover:border-primary/20"
+                          }`}
+                        >
+                          {isSelected ? (
+                            <CheckSquare className="h-3.5 w-3.5 text-primary shrink-0" />
+                          ) : (
+                            <Square className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          )}
+                          <span className="truncate font-medium">{s.display_name || s.email}</span>
+                          {s.periodo && <span className="text-muted-foreground ml-auto shrink-0">{s.periodo}º</span>}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
