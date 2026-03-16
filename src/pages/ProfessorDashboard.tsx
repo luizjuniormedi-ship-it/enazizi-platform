@@ -101,14 +101,32 @@ const ProfessorDashboard = () => {
     try {
       const res = await callAPI({
         action: "get_students",
-      faculdade: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : undefined,
-      periodo: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : undefined,
+        faculdade: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : undefined,
+        periodo: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : undefined,
       });
-      setPreviewStudents(res.students || []);
+      const students = res.students || [];
+      setPreviewStudents(students);
+      // Auto-select all students
+      setSelectedStudentIds(students.map((s: any) => s.user_id));
     } catch {
       setPreviewStudents([]);
+      setSelectedStudentIds([]);
     } finally {
       setPreviewLoading(false);
+    }
+  };
+
+  const toggleStudentSelection = (userId: string) => {
+    setSelectedStudentIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  };
+
+  const toggleAllStudents = () => {
+    if (selectedStudentIds.length === previewStudents.length) {
+      setSelectedStudentIds([]);
+    } else {
+      setSelectedStudentIds(previewStudents.map((s: any) => s.user_id));
     }
   };
 
