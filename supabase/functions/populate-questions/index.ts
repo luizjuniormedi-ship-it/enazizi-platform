@@ -181,12 +181,13 @@ async function populateInBackground(
     else if (fn.includes("neuro")) topic = "Neurologia";
     else if (fn.includes("pneumo")) topic = "Pneumologia";
 
-    const totalQuestions = await processTextToQuestions(fullText, topic, `upload:${upload.filename}`, userId, supabaseAdmin, uploadId);
+    const existingJson = (upload.extracted_json || {}) as Record<string, any>;
+    const totalQuestions = await processTextToQuestions(fullText, topic, `upload:${upload.filename}`, userId, supabaseAdmin, uploadId, existingJson);
 
     await supabaseAdmin.from("uploads").update({
       extracted_json: {
-        ...(upload.extracted_json || {}),
-        questions_count: totalQuestions,
+        ...existingJson,
+        questions_count: (existingJson.questions_count || 0) + totalQuestions,
         main_topic: topic,
         repopulated_at: new Date().toISOString(),
         step: "done",
