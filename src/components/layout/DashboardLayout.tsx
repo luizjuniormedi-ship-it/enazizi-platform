@@ -3,15 +3,19 @@ import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
 import DashboardSidebar from "./DashboardSidebar";
 import GlobalSearch from "./GlobalSearch";
 import NotificationBell from "@/components/dashboard/NotificationBell";
-import { Menu, LogOut, User, Shield, Sun, Moon } from "lucide-react";
+import { Menu, LogOut, User, Shield, GraduationCap, Sun, Moon } from "lucide-react";
 import StudyTimer from "@/components/dashboard/StudyTimer";
 import enazizi from "@/assets/enazizi-mascot.png";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTheme } from "@/hooks/useTheme";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 const mobileNavItems = [
   { to: "/dashboard", label: "📊 Dashboard" },
@@ -42,6 +46,8 @@ const MobileNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { isAdmin } = useAdminCheck();
+  const { isProfessor } = useProfessorCheck();
   const [open, setOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -55,6 +61,10 @@ const MobileNav = () => {
         <button className="lg:hidden p-2"><Menu className="h-6 w-6" /></button>
       </SheetTrigger>
       <SheetContent side="left" className="bg-sidebar border-sidebar-border w-72 p-0 flex flex-col">
+        <VisuallyHidden>
+          <SheetTitle>Menu de navegação</SheetTitle>
+          <SheetDescription>Navegação principal do ENAZIZI</SheetDescription>
+        </VisuallyHidden>
         <div className="p-6 border-b border-sidebar-border flex-shrink-0">
           <Link to="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
             <img src={enazizi} alt="ENAZIZI" className="h-7 w-7 rounded-lg object-cover" />
@@ -86,14 +96,30 @@ const MobileNav = () => {
                 <User className="h-4 w-4" />
                 Meu Perfil
               </Link>
-              <Link
-                to="/admin"
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70"
-              >
-                <Shield className="h-4 w-4" />
-                Admin
-              </Link>
+              {(isProfessor || isAdmin) && (
+                <Link
+                  to="/professor"
+                  onClick={() => setOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    location.pathname === "/professor" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70"
+                  }`}
+                >
+                  <GraduationCap className="h-4 w-4" />
+                  Painel Professor
+                </Link>
+              )}
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  onClick={() => setOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    location.pathname === "/admin" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70"
+                  }`}
+                >
+                  <Shield className="h-4 w-4" />
+                  Admin
+                </Link>
+              )}
               <button
                 onClick={handleSignOut}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-colors w-full"
