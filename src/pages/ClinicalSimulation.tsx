@@ -62,6 +62,13 @@ interface EvalCategory {
   feedback: string;
 }
 
+interface DifferentialDiagnosis {
+  diagnosis: string;
+  reasoning: string;
+  how_to_rule_out: string;
+  student_considered: boolean;
+}
+
 interface FinalEval {
   final_score: number;
   grade: string;
@@ -69,6 +76,7 @@ interface FinalEval {
   student_got_diagnosis: boolean;
   time_total_minutes: number;
   evaluation: Record<string, EvalCategory>;
+  differential_diagnosis?: DifferentialDiagnosis[];
   strengths: string[];
   improvements: string[];
   ideal_approach: string;
