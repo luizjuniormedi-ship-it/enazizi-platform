@@ -33,6 +33,12 @@ const QUICK_ACTIONS = [
   { label: "Diagnóstico", icon: Target, prompt: "Com base nos achados clínicos e exames, meu diagnóstico é:" },
 ];
 
+const DIFFICULTY_TIMER: Record<string, number> = {
+  "básico": 30 * 60,       // 30 min
+  "intermediário": 20 * 60, // 20 min
+  "avançado": 15 * 60,      // 15 min
+};
+
 type Phase = "lobby" | "active" | "finishing" | "result";
 
 interface Vitals {
@@ -112,6 +118,11 @@ const ClinicalSimulation = () => {
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: string; content: string }>>([]);
   const [finalEval, setFinalEval] = useState<FinalEval | null>(null);
 
+  // Countdown timer
+  const [countdown, setCountdown] = useState(0);
+  const [timerExpired, setTimerExpired] = useState(false);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Specialist dialog
   const [specialistDialogOpen, setSpecialistDialogOpen] = useState(false);
   const [specialistArea, setSpecialistArea] = useState("");
@@ -124,6 +135,59 @@ const ClinicalSimulation = () => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (phase === "active" && countdown > 0) {
+      countdownRef.current = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(countdownRef.current!);
+            setTimerExpired(true);
+            toast({
+              title: "⏰ Tempo esgotado!",
+              description: "O tempo do plantão acabou! Encerre o atendimento agora.",
+              variant: "destructive",
+            });
+            // Play alert sound
+            try {
+              const ctx = new AudioContext();
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.frequency.value = 880;
+              gain.gain.value = 0.3;
+              osc.start();
+              osc.stop(ctx.currentTime + 0.5);
+            } catch {}
+            return 0;
+          }
+          // Warning at 2 min remaining
+          if (prev === 121) {
+            toast({
+              title: "⚠️ 2 minutos restantes!",
+              description: "Finalize seu atendimento rapidamente.",
+            });
+          }
+          // Warning at 5 min remaining
+          if (prev === 301) {
+            toast({
+              title: "⏱️ 5 minutos restantes",
+              description: "Considere fechar seu diagnóstico e prescrição.",
+            });
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => {
+        if (countdownRef.current) clearInterval(countdownRef.current);
+      };
+    }
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [phase, countdown > 0]);
 
   const callAPI = useCallback(async (body: Record<string, unknown>) => {
     const resp = await fetch(API_URL, {
@@ -149,6 +213,9 @@ const ClinicalSimulation = () => {
       setTriageColor(res.triage_color || "amarelo");
       setPatientStatus("estável");
       setScore(50);
+      setTimeElapsed(0);
+      setTimerExpired(false);
+      setCountdown(DIFFICULTY_TIMER[difficulty] || 20 * 60);
       setTimeElapsed(0);
 
       const patientMsg = res.patient_presentation;
@@ -364,11 +431,27 @@ const ClinicalSimulation = () => {
     setTimeElapsed(0);
     setFinalEval(null);
     setVitals(null);
+    setCountdown(0);
+    setTimerExpired(false);
+    if (countdownRef.current) clearInterval(countdownRef.current);
   };
 
   const getTriageEmoji = (color: string) => {
     const map: Record<string, string> = { vermelho: "🔴 Vermelho", amarelo: "🟡 Amarelo", verde: "🟢 Verde" };
     return map[color] || "🟡 Amarelo";
+  };
+
+  const formatCountdown = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
+
+  const getTimerColor = () => {
+    if (timerExpired || countdown === 0) return "text-red-500";
+    if (countdown <= 120) return "text-red-500 animate-pulse";
+    if (countdown <= 300) return "text-amber-500";
+    return "text-primary";
   };
 
   const getStatusColor = (status: string) => {
@@ -495,12 +578,14 @@ const ClinicalSimulation = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className={timerExpired ? "border-red-500/50 bg-red-500/5" : countdown <= 120 ? "border-amber-500/50" : ""}>
               <CardContent className="p-3 flex items-center gap-2">
-                <Clock className="h-4 w-4 text-primary" />
+                <Clock className={`h-4 w-4 ${getTimerColor()}`} />
                 <div>
-                  <p className="text-xs text-muted-foreground">Tempo</p>
-                  <p className="text-sm font-bold">{timeElapsed} min</p>
+                  <p className="text-xs text-muted-foreground">{timerExpired ? "Tempo Esgotado!" : "Tempo Restante"}</p>
+                  <p className={`text-sm font-bold font-mono ${getTimerColor()}`}>
+                    {timerExpired ? "00:00" : formatCountdown(countdown)}
+                  </p>
                 </div>
               </CardContent>
             </Card>
