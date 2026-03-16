@@ -367,7 +367,54 @@ const Flashcards = () => {
         })}
       </div>
 
-      {filteredCards.length === 0 ? (
+      {/* Sprint finished screen */}
+      {sprintFinished && (
+        <div className="glass-card p-8 text-center space-y-4 animate-fade-in">
+          <Award className="h-12 w-12 text-primary mx-auto" />
+          <h2 className="text-xl font-bold">Sprint Concluído!</h2>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="p-3 rounded-lg bg-green-500/10">
+              <div className="text-2xl font-bold text-green-500">{sprintStats.correct}</div>
+              <div className="text-xs text-muted-foreground">Acertos</div>
+            </div>
+            <div className="p-3 rounded-lg bg-destructive/10">
+              <div className="text-2xl font-bold text-destructive">{sprintStats.wrong}</div>
+              <div className="text-xs text-muted-foreground">Erros</div>
+            </div>
+            <div className="p-3 rounded-lg bg-muted">
+              <div className="text-2xl font-bold text-muted-foreground">{sprintStats.skipped}</div>
+              <div className="text-xs text-muted-foreground">Pulados</div>
+            </div>
+          </div>
+          {(sprintStats.correct + sprintStats.wrong) > 0 && (
+            <p className="text-sm text-muted-foreground">
+              Taxa de acerto: {Math.round((sprintStats.correct / (sprintStats.correct + sprintStats.wrong)) * 100)}%
+            </p>
+          )}
+          <div className="flex gap-2 justify-center">
+            <Button onClick={startSprint}>Novo Sprint</Button>
+            <Button variant="outline" onClick={() => { setMode("due"); setSprintFinished(false); setIdx(0); }}>Voltar</Button>
+          </div>
+        </div>
+      )}
+
+      {/* Sprint timer */}
+      {sprintActive && (
+        <div className="flex items-center justify-between glass-card p-3">
+          <span className="text-sm font-semibold flex items-center gap-2">
+            <Zap className="h-4 w-4 text-primary" /> Modo Sprint
+          </span>
+          <span className={`font-mono font-bold ${sprintTimeLeft < 30 ? "text-destructive animate-pulse" : "text-muted-foreground"}`}>
+            <Clock className="h-4 w-4 inline mr-1" />{formatTime(sprintTimeLeft)}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            ✅ {sprintStats.correct} ❌ {sprintStats.wrong}
+          </span>
+          <Button variant="outline" size="sm" onClick={endSprint}>Encerrar</Button>
+        </div>
+      )}
+
+      {!sprintFinished && filteredCards.length === 0 ? (
         <div className="glass-card p-12 text-center">
           <CalendarDays className="h-12 w-12 text-primary/30 mx-auto mb-4" />
           <p className="text-lg font-medium mb-2">
