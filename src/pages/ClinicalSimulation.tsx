@@ -62,6 +62,13 @@ interface EvalCategory {
   feedback: string;
 }
 
+interface DifferentialDiagnosis {
+  diagnosis: string;
+  reasoning: string;
+  how_to_rule_out: string;
+  student_considered: boolean;
+}
+
 interface FinalEval {
   final_score: number;
   grade: string;
@@ -69,6 +76,7 @@ interface FinalEval {
   student_got_diagnosis: boolean;
   time_total_minutes: number;
   evaluation: Record<string, EvalCategory>;
+  differential_diagnosis?: DifferentialDiagnosis[];
   strengths: string[];
   improvements: string[];
   ideal_approach: string;
@@ -874,6 +882,53 @@ const ClinicalSimulation = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Differential Diagnosis */}
+          {finalEval.differential_diagnosis && finalEval.differential_diagnosis.length > 0 && (
+            <Card className="border border-purple-500/30">
+              <CardContent className="p-5 space-y-4">
+                <h4 className="text-base font-bold flex items-center gap-2">
+                  <ShieldAlert className="h-5 w-5 text-purple-500" /> Diagnósticos Diferenciais
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  Diagnósticos que deveriam ser considerados neste caso. Verde = você considerou, cinza = não considerado.
+                </p>
+                <div className="space-y-3">
+                  {finalEval.differential_diagnosis.map((dd, i) => (
+                    <div
+                      key={i}
+                      className={`p-3 rounded-lg border ${
+                        dd.student_considered
+                          ? "bg-green-500/5 border-green-500/30"
+                          : "bg-muted/30 border-border/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1.5">
+                        {dd.student_considered ? (
+                          <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-muted-foreground shrink-0" />
+                        )}
+                        <span className="text-sm font-bold">{dd.diagnosis}</span>
+                        <Badge
+                          variant={dd.student_considered ? "default" : "outline"}
+                          className={`text-[10px] ml-auto ${dd.student_considered ? "bg-green-500/20 text-green-600" : ""}`}
+                        >
+                          {dd.student_considered ? "Considerado" : "Não considerado"}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground ml-6 mb-1">
+                        <span className="font-semibold">Por que considerar:</span> {dd.reasoning}
+                      </p>
+                      <p className="text-xs text-muted-foreground ml-6">
+                        <span className="font-semibold">Como descartar:</span> {dd.how_to_rule_out}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Category scores - dynamic */}
           <Card>

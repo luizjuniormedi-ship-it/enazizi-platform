@@ -97,7 +97,8 @@ Responda em JSON:
 }
 
 ### Finalização
-Quando action="finish", avalie o desempenho completo com avaliação DETALHADA em 7 categorias:
+Quando action="finish", avalie o desempenho completo com avaliação DETALHADA em 7 categorias.
+Inclua também uma análise de DIAGNÓSTICOS DIFERENCIAIS: liste 3-5 diagnósticos diferenciais relevantes para o caso, indicando se o aluno os considerou durante o atendimento.
 {
   "final_score": 0-100,
   "grade": "A/B/C/D/F",
@@ -113,6 +114,14 @@ Quando action="finish", avalie o desempenho completo com avaliação DETALHADA e
     "management": { "score": 0-15, "feedback": "avaliação da conduta geral: internação vs alta, leito adequado, monitorização, dieta, cuidados" },
     "referral": { "score": 0-10, "feedback": "avaliação dos pedidos de parecer/encaminhamento: solicitou as especialidades corretas? O momento foi adequado?" }
   },
+  "differential_diagnosis": [
+    {
+      "diagnosis": "nome do diagnóstico diferencial",
+      "reasoning": "por que esse diagnóstico entra no diferencial deste caso (sinais/sintomas compatíveis)",
+      "how_to_rule_out": "exame ou achado clínico chave que descarta esse diagnóstico",
+      "student_considered": true/false (se o aluno mencionou ou descartou esse diagnóstico durante o atendimento)
+    }
+  ],
   "strengths": ["..."],
   "improvements": ["..."],
   "ideal_approach": "texto descrevendo a abordagem ideal para o caso, incluindo prescrição modelo e conduta completa",
