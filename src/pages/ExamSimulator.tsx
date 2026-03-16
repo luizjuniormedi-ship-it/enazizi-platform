@@ -70,7 +70,7 @@ const ExamSimulator = () => {
         .from("questions_bank")
         .select("id, statement, options, correct_index, topic, explanation")
         .or(`user_id.eq.${user!.id},is_global.eq.true`)
-        .limit(examConfig.questionCount * 2);
+        .limit(1000);
 
       if (bankError) throw bankError;
 
