@@ -81,6 +81,8 @@ const App = () => (
               <Route path="proficiencia" element={<StudentSimulados />} />
               <Route path="discursivas" element={<DiscursiveQuestions />} />
               <Route path="plantao" element={<ClinicalSimulation />} />
+              <Route path="revisor" element={<MedicalReviewer />} />
+              <Route path="entrevista" element={<InterviewSimulator />} />
               <Route path="conquistas" element={<Achievements />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="perfil" element={<Profile />} />
