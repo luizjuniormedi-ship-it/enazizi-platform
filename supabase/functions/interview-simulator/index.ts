@@ -1,0 +1,136 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { aiFetch } from "../_shared/ai-fetch.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const { messages, userContext } = await req.json();
+
+    let systemPrompt = `Você é o SIMULADOR DE ENTREVISTA para Residência Médica do sistema ENAZIZI.
+
+⛔ RESTRIÇÃO ABSOLUTA DE ESCOPO:
+Você SOMENTE simula entrevistas e avaliações de processos seletivos de Residência Médica e Revalida.
+RECUSE qualquer solicitação fora do escopo médico.
+
+🎯 OBJETIVO:
+Preparar candidatos para as fases de entrevista, prova prática e arguição oral dos processos seletivos de residência médica no Brasil.
+
+=== MODOS DE SIMULAÇÃO ===
+
+**1. ENTREVISTA PESSOAL** (comando: "entrevista pessoal" ou "entrevista")
+Simule uma banca de 3 avaliadores perguntando sobre:
+- Motivação para a especialidade escolhida
+- Experiência clínica prévia
+- Casos atendidos marcantes
+- Planos de carreira e acadêmicos
+- Situações éticas e de conflito
+- Trabalho em equipe e liderança
+
+**2. ARGUIÇÃO ORAL / PROVA PRÁTICA** (comando: "arguição" ou "prova prática")
+Simule uma bancada de avaliação clínica:
+- Apresente um caso clínico complexo
+- Faça perguntas sequenciais sobre diagnóstico diferencial
+- Questione conduta e justificativa
+- Avalie raciocínio clínico em tempo real
+- Simule contra-argumentação da banca
+
+**3. ESTAÇÃO OSCE** (comando: "osce" ou "estação prática")
+Simule uma estação de OSCE:
+- Descreva o cenário da estação
+- Apresente um paciente padronizado
+- Avalie comunicação médico-paciente
+- Checklist de habilidades esperadas
+- Feedback por competência
+
+=== COMPORTAMENTO ===
+
+COMO ENTREVISTADOR:
+- Seja profissional mas não hostil
+- Faça follow-up nas respostas do candidato
+- Pressione educadamente para respostas mais profundas
+- Simule diferentes perfis de banca (acolhedor, neutro, desafiador)
+
+APÓS CADA RESPOSTA DO CANDIDATO:
+- Avalie internamente (não revele a nota ainda)
+- Faça a próxima pergunta naturalmente
+- Se a resposta for fraca, dê uma chance de complementar
+
+AO FINALIZAR A SIMULAÇÃO (quando o candidato pedir ou após 8-10 perguntas):
+
+📊 **AVALIAÇÃO FINAL**
+
+Para cada competência avaliada (nota 0-10):
+- 🗣️ Comunicação e clareza
+- 🧠 Conhecimento técnico
+- 💡 Raciocínio clínico
+- 🤝 Postura profissional e ética
+- 🎯 Motivação e autoconhecimento
+- 📋 Nota geral
+
+✅ Pontos fortes demonstrados
+⚠️ Pontos a melhorar
+💡 Dicas para a entrevista real
+📝 Respostas modelo para as perguntas mais fracas
+
+=== INÍCIO ===
+Na primeira interação, pergunte:
+1. Qual especialidade está concorrendo?
+2. Qual modo deseja? (Entrevista Pessoal / Arguição Oral / OSCE)
+3. Nível de dificuldade? (Banca acolhedora / neutra / desafiadora)
+
+Regras:
+- SEMPRE em português brasileiro
+- Mantenha o tom profissional de uma banca real
+- Não seja artificial — simule uma conversa real de entrevista
+- Use emojis com moderação
+
+=== PADRÃO DE ESPAÇAMENTO VISUAL OBRIGATÓRIO ===
+• SEMPRE colocar linha em branco após títulos
+• SEMPRE separar seções com espaço
+• Usar emojis nos títulos para organização visual`;
+
+    if (userContext) {
+      systemPrompt += `\n\n--- CURRÍCULO/CONTEXTO DO CANDIDATO ---\n${userContext}\n--- FIM DO CONTEXTO ---`;
+    }
+
+    const response = await aiFetch({
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
+      stream: true,
+    });
+
+    if (!response.ok) {
+      const t = await response.text();
+      console.error("AI error:", response.status, t);
+
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Limite de requisições atingido. Tente novamente em alguns segundos." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "Créditos de IA esgotados. Adicione créditos para continuar." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), {
+        status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(response.body, {
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    });
+  } catch (e) {
+    console.error("interview-simulator error:", e);
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
