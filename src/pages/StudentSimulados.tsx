@@ -531,8 +531,35 @@ const StudentSimulados = () => {
           </CardContent>
         </Card>
 
-        <div className="flex justify-center">
-          <Button onClick={backToList} className="gap-2">
+        <div className="flex flex-col items-center gap-3">
+          {details.some(d => !d.is_correct) && (
+            <Button
+              onClick={() => {
+                const errors = details
+                  .filter(d => !d.is_correct)
+                  .map((d, idx) => {
+                    const q = questions[d.question_index];
+                    return {
+                      topic: d.topic || "Geral",
+                      statement: q?.statement?.slice(0, 300) || "",
+                      selectedAnswer: q?.options?.[d.selected] || "Não respondida",
+                      correctAnswer: q?.options?.[d.correct_index] || "",
+                    };
+                  });
+                const topics = [...new Set(errors.map(e => e.topic))];
+                const msg = `Acabei de fazer o simulado "${current.simulado.title}" e errei ${errors.length} questão(ões). Os temas foram: ${topics.join(", ")}.\n\n${errors.map((e, i) => `❌ Q${i+1} (${e.topic}): ${e.statement.slice(0, 150)}...\nMarquei: "${e.selectedAnswer}" — Correta: "${e.correctAnswer}"`).join("\n\n")}\n\nMe ajude a revisar cada erro com explicações detalhadas.`;
+                navigate("/dashboard/chatgpt", {
+                  state: { fromSimulado: true, initialMessage: msg }
+                });
+              }}
+              className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
+              size="lg"
+            >
+              <BrainCircuit className="h-5 w-5" />
+              Revisar Erros com Tutor IA
+            </Button>
+          )}
+          <Button onClick={backToList} variant="outline" className="gap-2">
             <RotateCcw className="h-4 w-4" /> Voltar aos Simulados
           </Button>
         </div>
