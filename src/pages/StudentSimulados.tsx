@@ -45,6 +45,7 @@ type Phase = "list" | "quiz" | "result";
 const StudentSimulados = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [assigned, setAssigned] = useState<AssignedSimulado[]>([]);
   const [loading, setLoading] = useState(true);
