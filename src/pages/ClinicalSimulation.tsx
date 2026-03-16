@@ -693,6 +693,7 @@ const ClinicalSimulation = () => {
             )}
           </CardContent>
         </Card>
+        </div>
       )}
 
       {/* History detail dialog */}
