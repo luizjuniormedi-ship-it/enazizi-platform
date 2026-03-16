@@ -3,15 +3,19 @@ import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
 import DashboardSidebar from "./DashboardSidebar";
 import GlobalSearch from "./GlobalSearch";
 import NotificationBell from "@/components/dashboard/NotificationBell";
-import { Menu, LogOut, User, Shield, Sun, Moon } from "lucide-react";
+import { Menu, LogOut, User, Shield, GraduationCap, Sun, Moon } from "lucide-react";
 import StudyTimer from "@/components/dashboard/StudyTimer";
 import enazizi from "@/assets/enazizi-mascot.png";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTheme } from "@/hooks/useTheme";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 const mobileNavItems = [
   { to: "/dashboard", label: "📊 Dashboard" },
