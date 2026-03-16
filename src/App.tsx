@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import Flashcards from "./pages/Flashcards";
 import FlashcardGenerator from "./pages/FlashcardGenerator";
 import CronogramaInteligente from "./pages/CronogramaInteligente";
+import StudyPlan from "./pages/StudyPlan";
 import Simulados from "./pages/Simulados";
 import Uploads from "./pages/Uploads";
 
