@@ -11,32 +11,19 @@ vi.mock("@/hooks/useAuth", () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
+const createChainMock = () => {
+  const chain: any = {};
+  const methods = ["select", "eq", "not", "order", "limit", "maybeSingle", "insert", "delete", "update", "gte", "single"];
+  for (const m of methods) {
+    chain[m] = vi.fn(() => chain);
+  }
+  chain.then = (resolve: any) => resolve({ data: null, error: null });
+  return chain;
+};
+
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          order: () => ({
-            limit: () => ({
-              maybeSingle: () => Promise.resolve({ data: null }),
-            }),
-          }),
-          not: () => ({
-            order: () => ({
-              limit: () => Promise.resolve({ data: [] }),
-            }),
-          }),
-          gte: () => ({
-            order: () => ({
-              limit: () => Promise.resolve({ data: [] }),
-            }),
-          }),
-        }),
-        count: "exact",
-        head: true,
-      }),
-      insert: () => Promise.resolve({ data: null, error: null }),
-    }),
+    from: () => createChainMock(),
     auth: {
       getSession: () => Promise.resolve({ data: { session: null }, error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
@@ -55,14 +42,14 @@ describe("DashboardSidebar", () => {
     expect(screen.getByText("ENAZIZI")).toBeInTheDocument();
   });
 
-  it("renders study session link as priority item", async () => {
+  it("renders tutor IA link as priority item", async () => {
     const DashboardSidebar = (await import("@/components/layout/DashboardSidebar")).default;
     render(
       <MemoryRouter>
         <DashboardSidebar />
       </MemoryRouter>
     );
-    expect(screen.getByText("📚 Estudar (ENAZIZI)")).toBeInTheDocument();
+    expect(screen.getByText("🤖 Tutor IA (Principal)")).toBeInTheDocument();
   });
 
   it("renders all navigation items", async () => {
@@ -73,11 +60,10 @@ describe("DashboardSidebar", () => {
       </MemoryRouter>
     );
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
-    expect(screen.getByText("Flashcards")).toBeInTheDocument();
-    expect(screen.getByText("Simulados")).toBeInTheDocument();
-    expect(screen.getByText("Uploads")).toBeInTheDocument();
-    expect(screen.getByText("Agentes IA")).toBeInTheDocument();
-    expect(screen.getByText("Analytics")).toBeInTheDocument();
+    expect(screen.getByText("🃏 Flashcards")).toBeInTheDocument();
+    expect(screen.getByText("📝 Simulados")).toBeInTheDocument();
+    expect(screen.getByText("📤 Uploads")).toBeInTheDocument();
+    expect(screen.getByText("📊 Analytics")).toBeInTheDocument();
     expect(screen.getByText("Meu Perfil")).toBeInTheDocument();
     expect(screen.getByText("Sair")).toBeInTheDocument();
   });
