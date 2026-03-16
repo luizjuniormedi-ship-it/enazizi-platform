@@ -498,6 +498,7 @@ const ClinicalSimulation = () => {
     setCountdown(0);
     setTimerExpired(false);
     if (countdownRef.current) clearInterval(countdownRef.current);
+    fetchHistory();
   };
 
   const getTriageEmoji = (color: string) => {
