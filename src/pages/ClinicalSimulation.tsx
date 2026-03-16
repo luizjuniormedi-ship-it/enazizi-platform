@@ -22,7 +22,7 @@ import {
 const SPECIALTIES = [
   "Clínica Médica", "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia",
   "Nefrologia", "Infectologia", "Pediatria", "Cirurgia", "Ginecologia e Obstetrícia",
-  "Ortopedia", "Psiquiatria", "Emergência",
+  "Ortopedia", "Psiquiatria", "Emergência", "Dermatologia", "Angiologia",
 ];
 
 const QUICK_ACTIONS = [
