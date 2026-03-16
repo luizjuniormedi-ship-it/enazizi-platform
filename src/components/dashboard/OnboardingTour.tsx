@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { X, ChevronRight, ChevronLeft, Sparkles, BookOpen, Brain, FileText, Trophy, Stethoscope, BarChart3, Zap, MessageSquare, Upload } from "lucide-react";
+import { X, ChevronRight, ChevronLeft, Sparkles, BookOpen, Brain, FileText, Trophy, Stethoscope, BarChart3, Zap, MessageSquare, Upload, CalendarDays, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
