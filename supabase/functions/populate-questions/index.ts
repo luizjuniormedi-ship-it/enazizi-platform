@@ -35,21 +35,21 @@ async function processTextToQuestions(
   userId: string,
   supabaseAdmin: any,
 ): Promise<number> {
-  const chunkSize = 10000;
+  const chunkSize = 15000;
   const chunks: string[] = [];
   for (let i = 0; i < fullText.length; i += chunkSize) {
     chunks.push(fullText.slice(i, i + chunkSize));
   }
 
-  let totalQuestions = 0;
-  for (const chunk of chunks.slice(0, 10)) {
-    try {
-      const response = await aiFetch({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: `Extraia TODAS as questões de múltipla escolha do texto. Se encontrar questões já formatadas, converta para JSON preservando EXATAMENTE o enunciado e alternativas originais. Se for texto teórico, gere questões baseadas no conteúdo.
+  const chunksToProcess = chunks.slice(0, 4);
+  
+  const processChunk = async (chunk: string): Promise<number> => {
+    const response = await aiFetch({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        {
+          role: "system",
+          content: `Extraia TODAS as questões de múltipla escolha do texto. Se encontrar questões já formatadas, converta para JSON preservando EXATAMENTE o enunciado e alternativas originais. Se for texto teórico, gere questões baseadas no conteúdo.
 
 GERE O MÁXIMO POSSÍVEL (10-30 por bloco).
 
@@ -57,66 +57,73 @@ IMPORTANTE: Para questões que já existem no texto com gabarito/comentário, us
 
 Formato JSON PURO: {"questions": [{"statement": "enunciado completo", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "explanation": "explicação detalhada do raciocínio clínico", "topic": "especialidade médica"}]}
 Se não encontrar questões, retorne {"questions": []}`
-          },
-          { role: "user", content: `Tema: ${topic}\n\n${chunk}` }
-        ],
-      });
+        },
+        { role: "user", content: `Tema: ${topic}\n\n${chunk}` }
+      ],
+    });
 
-      console.log("AI response status:", response.status);
-      if (!response.ok) {
-        const errText = await response.text();
-        console.error("AI error:", errText);
-        continue;
-      }
+    console.log("AI response status:", response.status);
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("AI error:", errText);
+      return 0;
+    }
 
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content || "";
-      console.log("AI content length:", content.length, "preview:", content.slice(0, 200));
-      const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-      
-      let parsed: any = null;
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || "";
+    console.log("AI content length:", content.length, "preview:", content.slice(0, 200));
+    const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+    
+    let parsed: any = null;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
       try {
-        parsed = JSON.parse(cleaned);
+        const jsonMatch = cleaned.match(/\{"questions"\s*:\s*\[[\s\S]*?\]\s*\}/);
+        if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
       } catch {
         try {
-          const jsonMatch = cleaned.match(/\{"questions"\s*:\s*\[[\s\S]*?\]\s*\}/);
-          if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
+          const arrMatch = cleaned.match(/\[[\s\S]*\]/);
+          if (arrMatch) parsed = { questions: JSON.parse(arrMatch[0]) };
         } catch {
-          try {
-            const arrMatch = cleaned.match(/\[[\s\S]*\]/);
-            if (arrMatch) parsed = { questions: JSON.parse(arrMatch[0]) };
-          } catch {
-            console.error("JSON parse failed, cleaned:", cleaned.slice(0, 300));
-            continue;
-          }
+          console.error("JSON parse failed, cleaned:", cleaned.slice(0, 300));
+          return 0;
         }
       }
-
-      if (!parsed) { console.log("No parsed result"); continue; }
-
-      const questions = (parsed.questions || []).filter((q: any) =>
-        q.statement && Array.isArray(q.options) && q.options.length >= 2 && typeof q.correct_index === "number"
-      );
-
-      if (questions.length > 0) {
-        const rows = questions.map((q: any) => ({
-          user_id: userId,
-          statement: String(q.statement).trim(),
-          options: q.options.map(String),
-          correct_index: q.correct_index,
-          explanation: String(q.explanation || "").trim(),
-          topic: String(q.topic || topic).trim(),
-          source: source,
-          is_global: true,
-        }));
-
-        const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
-        if (!error) totalQuestions += rows.length;
-        else console.error("Insert error:", error);
-      }
-    } catch (e) {
-      console.error("Chunk error:", e);
     }
+
+    if (!parsed) { console.log("No parsed result"); return 0; }
+
+    const questions = (parsed.questions || []).filter((q: any) =>
+      q.statement && Array.isArray(q.options) && q.options.length >= 2 && typeof q.correct_index === "number"
+    );
+
+    if (questions.length > 0) {
+      const rows = questions.map((q: any) => ({
+        user_id: userId,
+        statement: String(q.statement).trim(),
+        options: q.options.map(String),
+        correct_index: q.correct_index,
+        explanation: String(q.explanation || "").trim(),
+        topic: String(q.topic || topic).trim(),
+        source: source,
+        is_global: true,
+      }));
+
+      const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
+      if (!error) return rows.length;
+      else { console.error("Insert error:", error); return 0; }
+    }
+    return 0;
+  };
+
+  const results = await Promise.allSettled(
+    chunksToProcess.map((chunk) => processChunk(chunk))
+  );
+
+  let totalQuestions = 0;
+  for (const r of results) {
+    if (r.status === "fulfilled") totalQuestions += r.value;
   }
 
   return totalQuestions;
