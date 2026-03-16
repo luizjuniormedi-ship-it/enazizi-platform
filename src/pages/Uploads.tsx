@@ -1,6 +1,7 @@
 import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useRef, useEffect } from "react";
+import { Progress } from "@/components/ui/progress";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -17,27 +18,100 @@ interface UploadRecord {
   is_global?: boolean;
 }
 
+const STEP_LABELS: Record<string, string> = {
+  starting: "Iniciando...",
+  downloading: "Baixando arquivo...",
+  extracting_text: "Extraindo texto do PDF...",
+  validating: "Validando conteúdo médico...",
+  generating_flashcards: "Gerando flashcards com IA...",
+  generating_questions: "Gerando questões com IA...",
+  populating_questions: "Populando banco de questões...",
+  done: "Concluído!",
+  error: "Erro no processamento",
+};
+
 const Uploads = () => {
   const [files, setFiles] = useState<UploadRecord[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [processing, setProcessing] = useState<string | null>(null);
-  const [populating, setPopulating] = useState<string | null>(null);
+  const [pollingIds, setPollingIds] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const { isAdmin } = useAdminCheck();
 
-  const fetchUploads = async () => {
+  const fetchUploads = useCallback(async () => {
     if (!user) return;
     const { data, error } = await supabase
       .from("uploads")
       .select("id, filename, file_type, category, status, created_at, extracted_json, is_global")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
-    if (!error && data) setFiles(data);
-  };
+    if (!error && data) {
+      setFiles(data);
+      // Detect which uploads are still processing
+      const processing = new Set<string>();
+      for (const f of data) {
+        if (f.status === "processing" || f.extracted_json?.step === "populating_questions") {
+          processing.add(f.id);
+        }
+      }
+      setPollingIds(processing);
+    }
+  }, [user]);
 
-  useEffect(() => { fetchUploads(); }, [user]);
+  useEffect(() => { fetchUploads(); }, [fetchUploads]);
+
+  // Polling for in-progress uploads
+  useEffect(() => {
+    if (pollingIds.size === 0) {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+      return;
+    }
+
+    // Poll every 3 seconds
+    pollingRef.current = setInterval(async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("uploads")
+        .select("id, filename, file_type, category, status, created_at, extracted_json, is_global")
+        .in("id", Array.from(pollingIds));
+
+      if (data) {
+        setFiles((prev) => {
+          const updated = [...prev];
+          for (const fresh of data) {
+            const idx = updated.findIndex((f) => f.id === fresh.id);
+            if (idx >= 0) updated[idx] = fresh;
+          }
+          return updated;
+        });
+
+        // Check if any finished
+        const stillProcessing = new Set<string>();
+        for (const f of data) {
+          const step = f.extracted_json?.step;
+          if (f.status === "processing" && step !== "done" && step !== "error") {
+            stillProcessing.add(f.id);
+          } else if (step === "done") {
+            const qc = f.extracted_json?.questions_count || 0;
+            const fc = f.extracted_json?.flashcards_count || 0;
+            toast({ title: "Processamento concluído!", description: `${fc} flashcards e ${qc} questões geradas de ${f.filename}` });
+          } else if (step === "error") {
+            toast({ title: "Erro no processamento", description: f.extracted_json?.error || "Erro desconhecido", variant: "destructive" });
+          }
+        }
+        setPollingIds(stillProcessing);
+      }
+    }, 3000);
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [pollingIds, user, toast]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -75,35 +149,29 @@ const Uploads = () => {
 
       if (dbError) throw dbError;
 
-      toast({ title: "Upload concluído!", description: "Processando com IA..." });
+      toast({ title: "Upload concluído!", description: "Processando em background com IA..." });
       await fetchUploads();
 
-      // Process with AI
-      setProcessing(uploadRecord.id);
+      // Trigger background processing
       const { data: session } = await supabase.auth.getSession();
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-upload`, {
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-upload`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session?.session?.access_token}`,
         },
         body: JSON.stringify({ uploadId: uploadRecord.id }),
-      });
+      }).catch(console.error); // Fire and forget — we'll poll
 
-      const result = await resp.json();
-      if (!resp.ok) {
-        toast({ title: "Erro no processamento", description: result.error, variant: "destructive" });
-      } else {
-        toast({ title: "Processado!", description: result.message });
-      }
-
+      // Start polling for this upload
+      setPollingIds((prev) => new Set(prev).add(uploadRecord.id));
       await fetchUploads();
+
     } catch (err: any) {
       console.error(err);
       toast({ title: "Erro no upload", description: err.message, variant: "destructive" });
     } finally {
       setUploading(false);
-      setProcessing(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -117,19 +185,17 @@ const Uploads = () => {
   };
 
   const handlePopulateQuestions = async (upload: UploadRecord) => {
-    setPopulating(upload.id);
     try {
       const res = await supabase.functions.invoke("populate-questions", {
         body: { uploadId: upload.id },
       });
       if (res.error) throw res.error;
-      const data = res.data as any;
-      toast({ title: "Questões geradas!", description: data.message || `${data.questions_count} questões adicionadas ao banco.` });
+      toast({ title: "Geração iniciada!", description: "Acompanhe o progresso abaixo." });
+      // Start polling
+      setPollingIds((prev) => new Set(prev).add(upload.id));
       fetchUploads();
     } catch (err: any) {
       toast({ title: "Erro ao popular questões", description: err.message, variant: "destructive" });
-    } finally {
-      setPopulating(null);
     }
   };
 
@@ -140,6 +206,31 @@ const Uploads = () => {
       case "error": return <AlertCircle className="h-4 w-4 text-destructive" />;
       default: return <FileText className="h-4 w-4 text-muted-foreground" />;
     }
+  };
+
+  const renderProgress = (f: UploadRecord) => {
+    const json = f.extracted_json;
+    if (!json || f.status !== "processing") return null;
+
+    const step = json.step as string;
+    const progress = json.progress as number || 0;
+    const label = STEP_LABELS[step] || step || "Processando...";
+
+    return (
+      <div className="w-full mt-2 space-y-1">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{label}</span>
+          <span>{progress}%</span>
+        </div>
+        <Progress value={progress} className="h-1.5" />
+        {json.flashcards_count > 0 && (
+          <span className="text-xs text-muted-foreground">
+            {json.flashcards_count} flashcards
+            {json.questions_count > 0 && ` • ${json.questions_count} questões`}
+          </span>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -167,8 +258,8 @@ const Uploads = () => {
         {uploading ? (
           <>
             <Loader2 className="h-12 w-12 text-primary mx-auto mb-4 animate-spin" />
-            <p className="text-lg font-medium mb-1">Enviando e processando...</p>
-            <p className="text-sm text-muted-foreground">Gerando flashcards e questões com IA</p>
+            <p className="text-lg font-medium mb-1">Enviando arquivo...</p>
+            <p className="text-sm text-muted-foreground">O processamento acontecerá em background</p>
           </>
         ) : (
           <>
@@ -183,37 +274,46 @@ const Uploads = () => {
         <div>
           <h2 className="text-lg font-semibold mb-4">Arquivos enviados</h2>
           <div className="space-y-3">
-            {files.map((f) => (
-              <div key={f.id} className="glass-card p-4 flex items-center gap-4">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  {processing === f.id ? <Loader2 className="h-5 w-5 text-primary animate-spin" /> : statusIcon(f.status)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{f.filename}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {f.file_type} • {f.status === "processed"
-                      ? `✅ ${f.extracted_json?.flashcards_count || 0} flashcards${f.extracted_json?.questions_count ? ` • ${f.extracted_json.questions_count} questões` : ""}`
-                      : f.status}
-                    {" • "}{new Date(f.created_at).toLocaleDateString("pt-BR")}
+            {files.map((f) => {
+              const isProcessing = f.status === "processing";
+              const isPopulating = f.extracted_json?.step === "populating_questions" && f.extracted_json?.step !== "done";
+
+              return (
+                <div key={f.id} className="glass-card p-4">
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      {statusIcon(f.status)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{f.filename}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {f.file_type} • {f.status === "processed"
+                          ? `✅ ${f.extracted_json?.flashcards_count || 0} flashcards${f.extracted_json?.questions_count ? ` • ${f.extracted_json.questions_count} questões` : ""}`
+                          : isProcessing ? "⏳ Processando..." : f.status}
+                        {" • "}{new Date(f.created_at).toLocaleDateString("pt-BR")}
+                      </div>
+                    </div>
+                    {isAdmin && f.status === "processed" && !isPopulating && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-xs"
+                        onClick={() => handlePopulateQuestions(f)}
+                      >
+                        <Database className="h-3 w-3" />
+                        Gerar Questões
+                      </Button>
+                    )}
+                    {!isProcessing && (
+                      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDelete(f)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
+                  {renderProgress(f)}
                 </div>
-                {isAdmin && f.status === "processed" && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 text-xs"
-                    disabled={populating === f.id}
-                    onClick={() => handlePopulateQuestions(f)}
-                  >
-                    {populating === f.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Database className="h-3 w-3" />}
-                    {populating === f.id ? "Gerando..." : "Gerar Questões"}
-                  </Button>
-                )}
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDelete(f)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
