@@ -43,6 +43,7 @@ interface Stats {
 
 const Dashboard = () => {
   const { user } = useAuth();
+  useRevisionNotifier();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [weekFilter, setWeekFilter] = useState<4 | 8 | 12>(8);
