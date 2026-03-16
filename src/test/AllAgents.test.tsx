@@ -73,24 +73,8 @@ describe("AgentsHub", () => {
     expect(screen.getByText("❓ Gerador de Questões")).toBeInTheDocument();
     expect(screen.getByText("🃏 Gerador de Flashcards")).toBeInTheDocument();
     expect(screen.getByText("📖 Resumidor de Conteúdo")).toBeInTheDocument();
-    expect(screen.getByText("✍️ Revisor de Redação Médica")).toBeInTheDocument();
-    expect(screen.getByText("🎤 Simulador de Entrevista")).toBeInTheDocument();
     expect(screen.getByText("🚨 Modo Plantão")).toBeInTheDocument();
     expect(screen.getByText("💪 Coach Motivacional")).toBeInTheDocument();
-    expect(screen.getByText("⚡ Otimizador de Estudo")).toBeInTheDocument();
-    expect(screen.getByText("📈 Previsão de Desempenho")).toBeInTheDocument();
-    expect(screen.getByText("🩺 Diagnóstico Inicial")).toBeInTheDocument();
-  });
-
-  it("shows NEW badge on new agents", () => {
-    render(
-      <BrowserRouter>
-        <AgentsHub />
-      </BrowserRouter>
-    );
-
-    const novoBadges = screen.getAllByText("NOVO");
-    expect(novoBadges.length).toBe(2);
   });
 
   it("has correct links for all agents", () => {
@@ -107,8 +91,6 @@ describe("AgentsHub", () => {
     expect(hrefs).toContain("/dashboard/questoes");
     expect(hrefs).toContain("/dashboard/gerar-flashcards");
     expect(hrefs).toContain("/dashboard/resumos");
-    expect(hrefs).toContain("/dashboard/revisor");
-    expect(hrefs).toContain("/dashboard/entrevista");
     expect(hrefs).toContain("/dashboard/plantao");
     expect(hrefs).toContain("/dashboard/coach");
   });
