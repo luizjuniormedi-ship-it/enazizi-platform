@@ -576,12 +576,14 @@ const ClinicalSimulation = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className={timerExpired ? "border-red-500/50 bg-red-500/5" : countdown <= 120 ? "border-amber-500/50" : ""}>
               <CardContent className="p-3 flex items-center gap-2">
-                <Clock className="h-4 w-4 text-primary" />
+                <Clock className={`h-4 w-4 ${getTimerColor()}`} />
                 <div>
-                  <p className="text-xs text-muted-foreground">Tempo</p>
-                  <p className="text-sm font-bold">{timeElapsed} min</p>
+                  <p className="text-xs text-muted-foreground">{timerExpired ? "Tempo Esgotado!" : "Tempo Restante"}</p>
+                  <p className={`text-sm font-bold font-mono ${getTimerColor()}`}>
+                    {timerExpired ? "00:00" : formatCountdown(countdown)}
+                  </p>
                 </div>
               </CardContent>
             </Card>
