@@ -495,6 +495,10 @@ const CronogramaInteligente = () => {
       {tab === "config" && (
         <CronogramaConfiguracoes config={config} onSave={handleSaveConfig} />
       )}
+
+      {tab === "plano" && (
+        <StudyPlanContent />
+      )}
     </div>
   );
 };

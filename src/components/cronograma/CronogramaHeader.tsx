@@ -17,6 +17,7 @@ const TABS: { key: TabCronograma; label: string }[] = [
   { key: "novo", label: "➕ Novo Tema" },
   { key: "temas", label: "📚 Temas" },
   { key: "criticos", label: "⚠️ Críticos" },
+  { key: "plano", label: "📋 Plano de Estudos" },
   { key: "historico", label: "📜 Histórico" },
   { key: "graficos", label: "📈 Gráficos" },
   { key: "config", label: "⚙️ Config" },
