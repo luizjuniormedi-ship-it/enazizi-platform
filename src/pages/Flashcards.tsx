@@ -38,11 +38,67 @@ const Flashcards = () => {
   const [flipped, setFlipped] = useState(false);
   const [userAnswer, setUserAnswer] = useState("");
   const [answerSubmitted, setAnswerSubmitted] = useState(false);
-  const [mode, setMode] = useState<"due" | "all">("due");
+  const [mode, setMode] = useState<"due" | "all" | "sprint">("due");
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(new Set());
   const [showTopicFilter, setShowTopicFilter] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Sprint mode state
+  const [sprintConfig, setSprintConfig] = useState({ cardCount: 10, timeMinutes: 5 });
+  const [sprintActive, setSprintActive] = useState(false);
+  const [sprintTimeLeft, setSprintTimeLeft] = useState(0);
+  const [sprintStats, setSprintStats] = useState({ correct: 0, wrong: 0, skipped: 0 });
+  const [sprintFinished, setSprintFinished] = useState(false);
+  const sprintTimerRef = useRef<NodeJS.Timeout>();
+  const sprintStartRef = useRef<Date>();
+
+  // Sprint timer
+  useEffect(() => {
+    if (!sprintActive || sprintTimeLeft <= 0) return;
+    sprintTimerRef.current = setInterval(() => {
+      setSprintTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(sprintTimerRef.current);
+          setSprintActive(false);
+          setSprintFinished(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(sprintTimerRef.current);
+  }, [sprintActive]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  };
+
+  const startSprint = () => {
+    const cards = filteredCards.slice(0, sprintConfig.cardCount);
+    if (cards.length === 0) {
+      toast({ title: "Nenhum flashcard disponível para sprint", variant: "destructive" });
+      return;
+    }
+    setIdx(0);
+    setFlipped(false);
+    setUserAnswer("");
+    setAnswerSubmitted(false);
+    setSprintStats({ correct: 0, wrong: 0, skipped: 0 });
+    setSprintTimeLeft(sprintConfig.timeMinutes * 60);
+    setSprintActive(true);
+    setSprintFinished(false);
+    sprintStartRef.current = new Date();
+    setMode("sprint");
+  };
+
+  const endSprint = () => {
+    clearInterval(sprintTimerRef.current);
+    setSprintActive(false);
+    setSprintFinished(true);
+  };
 
   const fetchData = useCallback(async () => {
     if (!user) return;
