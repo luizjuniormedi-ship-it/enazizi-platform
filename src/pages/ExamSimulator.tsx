@@ -282,7 +282,28 @@ const ExamSimulator = () => {
             </div>
           </div>
 
+          {/* Difficulty */}
           <div>
+            <label className="text-sm font-semibold mb-2 block">Nível de dificuldade</label>
+            <div className="flex gap-2 flex-wrap">
+              {[
+                { value: "facil", label: "Fácil" },
+                { value: "intermediario", label: "Intermediário" },
+                { value: "dificil", label: "Difícil" },
+                { value: "misto", label: "Misto" },
+              ].map(d => (
+                <Button
+                  key={d.value}
+                  variant={examConfig.difficulty === d.value ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setExamConfig(p => ({ ...p, difficulty: d.value }))}
+                >
+                  {d.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
             <label className="text-sm font-semibold mb-2 block">Número de questões</label>
             <div className="flex gap-2">
               {[25, 50, 100].map(n => (
