@@ -22,16 +22,13 @@ const mockErrorData: any[] = [];
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: (table: string) => {
-      const chain = {
-        select: () => chain,
-        eq: () => chain,
-        then: (resolve: any) => {
-          if (table === "medical_domain_map") {
-            return Promise.resolve({ data: mockDomainData, error: null }).then(resolve);
-          }
-          return Promise.resolve({ data: mockErrorData, error: null }).then(resolve);
-        },
-      };
+      const data = table === "medical_domain_map" ? mockDomainData : mockErrorData;
+      const chain: any = {};
+      const methods = ["select", "eq", "not", "order", "limit", "gte"];
+      for (const m of methods) {
+        chain[m] = vi.fn(() => chain);
+      }
+      chain.then = (resolve: any) => resolve({ data, error: null });
       return chain;
     },
   },
