@@ -115,17 +115,8 @@ const CronogramaRevisaoAtiva = ({ revisao, temaComputado, desempenhos, onComplet
               )}
             </div>
 
-            {/* Integration suggestions */}
-            {tc && (tc.risco === "alto" || tc.risco === "critico") && (
-              <div className="rounded-lg bg-primary/5 p-3 border border-primary/10">
-                <p className="text-xs font-semibold text-primary mb-1">💡 Sugestões para este tema:</p>
-                <ul className="text-xs text-muted-foreground space-y-1">
-                  <li>• Revisar com Tutor IA focado nas suas falhas</li>
-                  <li>• Gerar flashcards automáticos do tema</li>
-                  <li>• Praticar questões direcionadas no banco</li>
-                </ul>
-              </div>
-            )}
+            {/* Integrated resources: questions, flashcards, simulados */}
+            <CronogramaRecursosRevisao tema={revisao.tema.tema} especialidade={revisao.tema.especialidade} />
 
             <Button className="w-full" onClick={() => setStep("questions")}>
               <CheckCircle2 className="h-4 w-4 mr-2" /> Revisão feita → Registrar desempenho
