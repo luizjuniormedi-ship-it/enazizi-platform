@@ -10,16 +10,20 @@ const quickActions = [
   { label: "🫀 Cardiologia (10)", prompt: "Gere 10 flashcards clínicos de Cardiologia com casos clínicos variados, cobrindo IAM, IC, arritmias e valvopatias.", icon: "🫀" },
   { label: "🧒 Pediatria (10)", prompt: "Gere 10 flashcards clínicos de Pediatria com casos clínicos variados, cobrindo reanimação neonatal, bronquiolite, meningite e desidratação.", icon: "🧒" },
   { label: "🔪 Cirurgia (10)", prompt: "Gere 10 flashcards clínicos de Cirurgia com casos clínicos variados, cobrindo abdome agudo, trauma e hérnias.", icon: "🔪" },
+  { label: "🤰 GO (10)", prompt: "Gere 10 flashcards clínicos de Ginecologia e Obstetrícia com casos clínicos variados, cobrindo pré-eclâmpsia, DMG, SOP e endometriose.", icon: "🩷" },
+  { label: "🧠 Neurologia (10)", prompt: "Gere 10 flashcards clínicos de Neurologia com casos clínicos variados, cobrindo AVC, epilepsia, meningite e Guillain-Barré.", icon: "🧠" },
+  { label: "🦠 Infectologia (10)", prompt: "Gere 10 flashcards clínicos de Infectologia com casos clínicos variados, cobrindo HIV, sepse, tuberculose e hepatites virais.", icon: "🦠" },
+  { label: "💊 Endocrinologia (10)", prompt: "Gere 10 flashcards clínicos de Endocrinologia com casos clínicos variados, cobrindo DM, hipotireoidismo, Cushing e CAD.", icon: "💊" },
+  { label: "🛡️ Preventiva (10)", prompt: "Gere 10 flashcards clínicos de Medicina Preventiva com casos variados, cobrindo rastreamento, vacinação, epidemiologia e SUS.", icon: "🛡️" },
+  { label: "⚡ 20 Mistas", prompt: "Gere 20 flashcards clínicos mistos cobrindo Clínica Médica, Cirurgia, Pediatria, GO e Preventiva. Varie os subtemas.", icon: "⚡" },
 ];
 
 function parseFlashcardsFromText(content: string): Array<{ question: string; answer: string; topic: string }> {
   const flashcards: Array<{ question: string; answer: string; topic: string }> = [];
 
-  // Split by flashcard markers
   const blocks = content.split(/\*\*FLASHCARD\s+\d+/i).filter(b => b.trim());
 
   for (const block of blocks) {
-    // Extract case + question as the "question" side
     const caseMatch = block.match(/(?:CASO\s+CL[ÍI]NICO[:\s]*\*?\*?)\s*([\s\S]*?)(?=\*?\*?❓|\*?\*?\s*PERGUNTA)/i);
     const questionMatch = block.match(/(?:PERGUNTA[:\s]*\*?\*?)\s*([\s\S]*?)(?=\*?\*?✅|\*?\*?\s*RESPOSTA)/i);
     const answerMatch = block.match(/(?:RESPOSTA[:\s]*\*?\*?)\s*([\s\S]*?)(?=\*?\*?🧠|\*?\*?\s*EXPLICA[ÇC][ÃA]O)/i);
@@ -34,17 +38,11 @@ function parseFlashcardsFromText(content: string): Array<{ question: string; ans
 
     if (!questionText || !answerText) continue;
 
-    // Build full question (case + question)
-    const fullQuestion = caseText
-      ? `${caseText}\n\n${questionText}`
-      : questionText;
-
-    // Build full answer (answer + explanation + ponto de prova)
+    const fullQuestion = caseText ? `${caseText}\n\n${questionText}` : questionText;
     let fullAnswer = answerText;
     if (explanation) fullAnswer += `\n\n🧠 ${explanation}`;
     if (prova) fullAnswer += `\n\n📌 ${prova}`;
 
-    // Try to extract topic from the block header
     const topicMatch = block.match(/(?:—|[-–])\s*(\w[\w\s/]*)/);
     const topic = topicMatch?.[1]?.trim() || "Medicina";
 
@@ -74,7 +72,6 @@ const FlashcardGenerator = () => {
     const { error } = await supabase.from("flashcards").insert(rows);
     if (error) throw new Error("Erro ao salvar: " + error.message);
 
-    // Award XP for each flashcard created
     await addXp(XP_REWARDS.flashcard_created * parsed.length);
 
     return parsed.length;

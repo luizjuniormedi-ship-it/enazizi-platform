@@ -13,6 +13,15 @@ const quickActions = [
   { label: "🔪 Cirurgia (10)", prompt: "Gere 10 questões ORIGINAIS de Cirurgia nível intermediário. Varie os subtemas: abdome agudo, politrauma, hérnias, apendicite, colecistite, obstrução intestinal. Formato ENARE com casos clínicos variados.", icon: "🔴" },
   { label: "🧠 Neurologia (10)", prompt: "Gere 10 questões ORIGINAIS de Neurologia nível intermediário. Varie os subtemas: AVC, epilepsia, meningite, cefaleia, Guillain-Barré, esclerose múltipla. Formato ENARE com casos clínicos variados.", icon: "🔵" },
   { label: "🦠 Infectologia (10)", prompt: "Gere 10 questões ORIGINAIS de Infectologia nível intermediário. Varie os subtemas: HIV, sepse, dengue, tuberculose, sífilis, hepatites virais, meningite bacteriana. Formato ENARE com casos clínicos variados.", icon: "🟠" },
+  { label: "🤰 GO (10)", prompt: "Gere 10 questões ORIGINAIS de Ginecologia e Obstetrícia nível intermediário. Varie os subtemas: pré-eclâmpsia, DMG, placenta prévia, SOP, endometriose, câncer de colo uterino. Formato ENARE com casos clínicos variados.", icon: "🩷" },
+  { label: "🏥 Emergência (10)", prompt: "Gere 10 questões ORIGINAIS de Medicina de Emergência nível intermediário. Varie os subtemas: PCR, choque, intoxicações, politrauma ATLS, crise hipertensiva, anafilaxia. Formato ENARE com casos clínicos variados.", icon: "🚑" },
+  { label: "🛡️ Preventiva (10)", prompt: "Gere 10 questões ORIGINAIS de Medicina Preventiva nível intermediário. Varie os subtemas: rastreamento, vacinação, epidemiologia, bioestatística, SUS, APS. Formato ENARE com casos clínicos variados.", icon: "🟤" },
+  { label: "💊 Endocrinologia (10)", prompt: "Gere 10 questões ORIGINAIS de Endocrinologia nível intermediário. Varie os subtemas: DM1/DM2, hipotireoidismo, hipertireoidismo, Cushing, Addison, CAD. Formato ENARE com casos clínicos variados.", icon: "💜" },
+  { label: "🦴 Reumatologia (10)", prompt: "Gere 10 questões ORIGINAIS de Reumatologia nível intermediário. Varie os subtemas: LES, artrite reumatoide, gota, febre reumática, vasculites, esclerose sistêmica. Formato ENARE com casos clínicos variados.", icon: "🦴" },
+  { label: "🧠 Psiquiatria (10)", prompt: "Gere 10 questões ORIGINAIS de Psiquiatria nível intermediário. Varie os subtemas: depressão, esquizofrenia, transtorno bipolar, ansiedade, dependência química, emergências psiquiátricas. Formato ENARE com casos clínicos variados.", icon: "🧩" },
+  { label: "🩸 Hematologia (10)", prompt: "Gere 10 questões ORIGINAIS de Hematologia nível intermediário. Varie os subtemas: anemia ferropriva, anemia falciforme, leucemias, linfomas, PTI, CIVD. Formato ENARE com casos clínicos variados.", icon: "🩸" },
+  { label: "🔥 5 Questões Difíceis", prompt: "Gere 5 questões DIFÍCEIS de múltipla escolha sobre qualquer área da Medicina para residência. Nível alto com casos clínicos complexos, diagnósticos diferenciais e condutas avançadas.", icon: "🔥" },
+  { label: "⚡ 20 Questões Mistas", prompt: "Gere 20 questões ORIGINAIS mistas cobrindo: Clínica Médica, Cirurgia, Pediatria, GO e Preventiva. Nível intermediário a difícil. Formato ENARE com casos clínicos variados.", icon: "⚡" },
 ];
 
 const QuestionGenerator = () => {

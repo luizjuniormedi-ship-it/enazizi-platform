@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
-import { FileText, Clock, Play, CheckCircle2, Loader2, ArrowRight, Award, AlertTriangle, BarChart3 } from "lucide-react";
+import { FileText, Clock, Play, CheckCircle2, Loader2, ArrowRight, Award, AlertTriangle, BarChart3, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,12 +31,13 @@ const ExamSimulator = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { addXp } = useGamification();
+  const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase>("setup");
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [current, setCurrent] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [timeLeft, setTimeLeft] = useState(0);
-  const [examConfig, setExamConfig] = useState({ questionCount: 50, timeMinutes: 120, areas: ["Clínica Médica", "Cirurgia", "Pediatria", "GO", "Preventiva"] });
+  const [examConfig, setExamConfig] = useState({ questionCount: 50, timeMinutes: 120, areas: ["Clínica Médica", "Cirurgia", "Pediatria", "GO", "Preventiva"], difficulty: "intermediario" });
   const [sessionId, setSessionId] = useState<string | null>(null);
   const timerRef = useRef<NodeJS.Timeout>();
 
@@ -70,7 +72,7 @@ const ExamSimulator = () => {
         .from("questions_bank")
         .select("id, statement, options, correct_index, topic, explanation")
         .or(`user_id.eq.${user!.id},is_global.eq.true`)
-        .limit(examConfig.questionCount * 2);
+        .limit(1000);
 
       if (bankError) throw bankError;
 
@@ -87,17 +89,39 @@ const ExamSimulator = () => {
         .filter(isMedicalQuestion);
 
       // If not enough, generate more via AI
+      // Filter by selected areas
+      if (examConfig.areas.length > 0 && examConfig.areas.length < ALL_AREAS.length) {
+        examQuestions = examQuestions.filter(q =>
+          examConfig.areas.some(a => q.topic.toLowerCase().includes(a.toLowerCase()))
+        );
+      }
+
       if (examQuestions.length < examConfig.questionCount) {
         const needed = examConfig.questionCount - examQuestions.length;
-        const res = await supabase.functions.invoke("question-generator", {
-          body: {
-            messages: [{ role: "user", content: `Gere ${needed} questões EXCLUSIVAMENTE médicas para simulado de residência médica. Áreas: ${examConfig.areas.join(", ")}. Retorne JSON array: [{"statement":"...", "options":["a","b","c","d","e"], "correct_index": 0, "topic":"Área", "explanation":"..."}]` }],
-          },
-        });
+        const { data: { session: authSession } } = await supabase.auth.getSession();
+        const accessToken = authSession?.access_token;
 
-        if (!res.error && res.data) {
-          const content = typeof res.data === "string" ? res.data : JSON.stringify(res.data);
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({
+              stream: false,
+              difficulty: examConfig.difficulty,
+              messages: [{ role: "user", content: `Gere ${needed} questões EXCLUSIVAMENTE médicas para simulado de residência médica. Áreas: ${examConfig.areas.join(", ")}. Retorne JSON array puro sem markdown: [{"statement":"...", "options":["a","b","c","d","e"], "correct_index": 0, "topic":"Área", "explanation":"..."}]` }],
+            }),
+          }
+        );
+
+        if (res.ok) {
           try {
+            const json = await res.json();
+            const content = json.choices?.[0]?.message?.content || JSON.stringify(json);
             const match = content.match(/\[[\s\S]*\]/);
             if (match) {
               const parsed = JSON.parse(match[0]);
@@ -116,7 +140,7 @@ const ExamSimulator = () => {
               examQuestions = [...examQuestions, ...extra];
             }
           } catch {
-            // ignore parse errors and continue with existing medical bank questions
+            // ignore parse errors
           }
         }
       }
@@ -260,6 +284,28 @@ const ExamSimulator = () => {
             </div>
           </div>
 
+          {/* Difficulty */}
+          <div>
+            <label className="text-sm font-semibold mb-2 block">Nível de dificuldade</label>
+            <div className="flex gap-2 flex-wrap">
+              {[
+                { value: "facil", label: "Fácil" },
+                { value: "intermediario", label: "Intermediário" },
+                { value: "dificil", label: "Difícil" },
+                { value: "misto", label: "Misto" },
+              ].map(d => (
+                <Button
+                  key={d.value}
+                  variant={examConfig.difficulty === d.value ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setExamConfig(p => ({ ...p, difficulty: d.value }))}
+                >
+                  {d.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label className="text-sm font-semibold mb-2 block">Número de questões</label>
             <div className="flex gap-2">
@@ -355,6 +401,19 @@ const ExamSimulator = () => {
                     {" • "}Correta: <span className="text-green-500 font-medium">{String.fromCharCode(65 + q.correct_index)}</span>
                   </p>
                   {q.explanation && <p className="text-xs text-muted-foreground mt-2">{q.explanation}</p>}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 mt-2 text-xs"
+                    onClick={() => navigate("/dashboard/chatgpt", {
+                      state: {
+                        initialMessage: `Errei uma questão sobre "${q.topic}". O enunciado era: "${q.statement.slice(0, 200)}". A resposta correta era "${q.options[q.correct_index]}". Me explique este tema seguindo o protocolo ENAZIZI.`,
+                        fromErrorBank: true,
+                      },
+                    })}
+                  >
+                    <GraduationCap className="h-3.5 w-3.5" /> Estudar com Tutor IA
+                  </Button>
                 </div>
               ))}
             </div>

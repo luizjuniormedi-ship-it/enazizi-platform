@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { CheckCircle2, XCircle, BookOpen } from "lucide-react";
+import { CheckCircle2, XCircle, BookOpen, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { logErrorToBank } from "@/lib/errorBankLogger";
+import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 export interface InteractiveQuestion {
   statement: string;
@@ -23,15 +26,22 @@ const LETTERS = ["A", "B", "C", "D", "E"];
 const InteractiveQuestionCard = ({ question, index }: Props) => {
   const [selected, setSelected] = useState<number | null>(null);
   const { user } = useAuth();
+  const { addXp } = useGamification();
+  const navigate = useNavigate();
   const answered = selected !== null;
   const isCorrect = selected === question.correctIndex;
 
   const handleSelect = async (optionIndex: number) => {
     setSelected(optionIndex);
     const correct = optionIndex === question.correctIndex;
-    
+
+    if (!user) return;
+
+    // Award XP
+    await addXp(correct ? XP_REWARDS.question_correct : XP_REWARDS.question_answered);
+
     // Log wrong answer to error_bank
-    if (!correct && user) {
+    if (!correct) {
       await logErrorToBank({
         userId: user.id,
         tema: question.topic || "Geral",
@@ -41,6 +51,15 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
         categoriaErro: "conceito",
       });
     }
+  };
+
+  const handleStudyWithTutor = () => {
+    navigate("/dashboard/chatgpt", {
+      state: {
+        initialMessage: `Errei uma questão sobre "${question.topic || "Medicina"}". O enunciado era: "${question.statement.slice(0, 200)}". A resposta correta era "${LETTERS[question.correctIndex]}: ${question.options[question.correctIndex]}". Me explique este tema seguindo o protocolo ENAZIZI.`,
+        fromErrorBank: true,
+      },
+    });
   };
 
   return (
@@ -120,6 +139,17 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
           )}
           {question.reference && (
             <p className="text-xs text-muted-foreground italic">📚 {question.reference}</p>
+          )}
+          {!isCorrect && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 mt-1 text-xs"
+              onClick={handleStudyWithTutor}
+            >
+              <GraduationCap className="h-3.5 w-3.5" />
+              Estudar com Tutor IA
+            </Button>
           )}
         </div>
       )}

@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { logErrorToBank } from "@/lib/errorBankLogger";
-import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays, Send, CheckCircle, XCircle, GraduationCap, Filter, Download } from "lucide-react";
+import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays, Send, CheckCircle, XCircle, GraduationCap, Filter, Download, Zap, Clock, Award } from "lucide-react";
 import { exportToPdf } from "@/lib/exportPdf";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -38,11 +38,67 @@ const Flashcards = () => {
   const [flipped, setFlipped] = useState(false);
   const [userAnswer, setUserAnswer] = useState("");
   const [answerSubmitted, setAnswerSubmitted] = useState(false);
-  const [mode, setMode] = useState<"due" | "all">("due");
+  const [mode, setMode] = useState<"due" | "all" | "sprint">("due");
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(new Set());
   const [showTopicFilter, setShowTopicFilter] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Sprint mode state
+  const [sprintConfig, setSprintConfig] = useState({ cardCount: 10, timeMinutes: 5 });
+  const [sprintActive, setSprintActive] = useState(false);
+  const [sprintTimeLeft, setSprintTimeLeft] = useState(0);
+  const [sprintStats, setSprintStats] = useState({ correct: 0, wrong: 0, skipped: 0 });
+  const [sprintFinished, setSprintFinished] = useState(false);
+  const sprintTimerRef = useRef<NodeJS.Timeout>();
+  const sprintStartRef = useRef<Date>();
+
+  // Sprint timer
+  useEffect(() => {
+    if (!sprintActive || sprintTimeLeft <= 0) return;
+    sprintTimerRef.current = setInterval(() => {
+      setSprintTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(sprintTimerRef.current);
+          setSprintActive(false);
+          setSprintFinished(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(sprintTimerRef.current);
+  }, [sprintActive]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  };
+
+  const startSprint = () => {
+    const cards = filteredCards.slice(0, sprintConfig.cardCount);
+    if (cards.length === 0) {
+      toast({ title: "Nenhum flashcard disponível para sprint", variant: "destructive" });
+      return;
+    }
+    setIdx(0);
+    setFlipped(false);
+    setUserAnswer("");
+    setAnswerSubmitted(false);
+    setSprintStats({ correct: 0, wrong: 0, skipped: 0 });
+    setSprintTimeLeft(sprintConfig.timeMinutes * 60);
+    setSprintActive(true);
+    setSprintFinished(false);
+    sprintStartRef.current = new Date();
+    setMode("sprint");
+  };
+
+  const endSprint = () => {
+    clearInterval(sprintTimerRef.current);
+    setSprintActive(false);
+    setSprintFinished(true);
+  };
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -167,8 +223,20 @@ const Flashcards = () => {
       });
     }
 
-    // Remove from due list
-    if (mode === "due") {
+    // Track sprint stats
+    if (sprintActive) {
+      if (quality === "again") {
+        setSprintStats(prev => ({ ...prev, wrong: prev.wrong + 1 }));
+      } else {
+        setSprintStats(prev => ({ ...prev, correct: prev.correct + 1 }));
+      }
+      // Move to next or end sprint
+      if (idx + 1 >= Math.min(sprintConfig.cardCount, filteredCards.length)) {
+        endSprint();
+      } else {
+        setIdx(idx + 1);
+      }
+    } else if (mode === "due") {
       const newDue = dueCards.filter((c) => c.id !== card.id);
       setDueCards(newDue);
       setIdx(Math.min(idx, Math.max(0, newDue.length - 1)));
@@ -249,8 +317,11 @@ const Flashcards = () => {
             <Brain className="h-4 w-4 mr-2" />
             Revisão ({dueCards.length})
           </Button>
-          <Button variant={mode === "all" ? "default" : "outline"} size="sm" onClick={() => { setMode("all"); setIdx(0); setFlipped(false); }}>
+          <Button variant={mode === "all" ? "default" : "outline"} size="sm" onClick={() => { setMode("all"); setIdx(0); setFlipped(false); setSprintActive(false); setSprintFinished(false); }}>
             Todos ({allCards.length})
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={startSprint}>
+            <Zap className="h-4 w-4" /> Sprint
           </Button>
           <Button
             variant="outline"
@@ -308,7 +379,54 @@ const Flashcards = () => {
         })}
       </div>
 
-      {filteredCards.length === 0 ? (
+      {/* Sprint finished screen */}
+      {sprintFinished && (
+        <div className="glass-card p-8 text-center space-y-4 animate-fade-in">
+          <Award className="h-12 w-12 text-primary mx-auto" />
+          <h2 className="text-xl font-bold">Sprint Concluído!</h2>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="p-3 rounded-lg bg-green-500/10">
+              <div className="text-2xl font-bold text-green-500">{sprintStats.correct}</div>
+              <div className="text-xs text-muted-foreground">Acertos</div>
+            </div>
+            <div className="p-3 rounded-lg bg-destructive/10">
+              <div className="text-2xl font-bold text-destructive">{sprintStats.wrong}</div>
+              <div className="text-xs text-muted-foreground">Erros</div>
+            </div>
+            <div className="p-3 rounded-lg bg-muted">
+              <div className="text-2xl font-bold text-muted-foreground">{sprintStats.skipped}</div>
+              <div className="text-xs text-muted-foreground">Pulados</div>
+            </div>
+          </div>
+          {(sprintStats.correct + sprintStats.wrong) > 0 && (
+            <p className="text-sm text-muted-foreground">
+              Taxa de acerto: {Math.round((sprintStats.correct / (sprintStats.correct + sprintStats.wrong)) * 100)}%
+            </p>
+          )}
+          <div className="flex gap-2 justify-center">
+            <Button onClick={startSprint}>Novo Sprint</Button>
+            <Button variant="outline" onClick={() => { setMode("due"); setSprintFinished(false); setIdx(0); }}>Voltar</Button>
+          </div>
+        </div>
+      )}
+
+      {/* Sprint timer */}
+      {sprintActive && (
+        <div className="flex items-center justify-between glass-card p-3">
+          <span className="text-sm font-semibold flex items-center gap-2">
+            <Zap className="h-4 w-4 text-primary" /> Modo Sprint
+          </span>
+          <span className={`font-mono font-bold ${sprintTimeLeft < 30 ? "text-destructive animate-pulse" : "text-muted-foreground"}`}>
+            <Clock className="h-4 w-4 inline mr-1" />{formatTime(sprintTimeLeft)}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            ✅ {sprintStats.correct} ❌ {sprintStats.wrong}
+          </span>
+          <Button variant="outline" size="sm" onClick={endSprint}>Encerrar</Button>
+        </div>
+      )}
+
+      {!sprintFinished && filteredCards.length === 0 ? (
         <div className="glass-card p-12 text-center">
           <CalendarDays className="h-12 w-12 text-primary/30 mx-auto mb-4" />
           <p className="text-lg font-medium mb-2">

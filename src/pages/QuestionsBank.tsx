@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
-import { Database, Play, Trash2, ChevronDown, ChevronUp, Search, BarChart3, Target, TrendingUp, GraduationCap, Download } from "lucide-react";
+import { Database, Play, Trash2, ChevronDown, ChevronUp, Search, BarChart3, Target, TrendingUp, GraduationCap, Download, HelpCircle, Zap } from "lucide-react";
 import { exportToPdf } from "@/lib/exportPdf";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -335,6 +335,16 @@ const QuestionsBank = () => {
             className="gap-1.5"
           >
             <Download className="h-4 w-4" /> PDF
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => navigate("/dashboard/question-generator", {
+              state: { initialTopic: topicFilter !== "all" ? topicFilter : undefined },
+            })}
+          >
+            <HelpCircle className="h-4 w-4" /> Gerar mais
           </Button>
           <Button onClick={startPractice} disabled={filtered.length === 0} className="gap-2">
             <Play className="h-4 w-4" /> Praticar ({filtered.length})
