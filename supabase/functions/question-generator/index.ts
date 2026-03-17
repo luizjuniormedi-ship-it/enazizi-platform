@@ -173,15 +173,31 @@ REGRAS DE ESPAÇAMENTO:
       systemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
     }
 
-    const response = await aiFetch({
-      messages: [{ role: "system", content: systemPrompt }, ...messages],
-      stream: useStream,
-    });
+    let response: Response;
+    try {
+      response = await aiFetch({
+        messages: [{ role: "system", content: systemPrompt }, ...messages],
+        stream: useStream,
+      });
+    } catch (aiErr) {
+      console.error("question-generator aiFetch error:", aiErr);
+      const msg = aiErr instanceof Error ? aiErr.message : "Serviço de IA indisponível";
+      return new Response(JSON.stringify({ error: msg }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!response.ok) {
       const t = await response.text();
-      console.error("AI error:", response.status, t);
-      return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), {
+      console.error("AI response error:", response.status, t.slice(0, 300));
+      
+      const userMsg = response.status === 402
+        ? "Créditos de IA esgotados. Tente novamente mais tarde."
+        : response.status === 429
+        ? "Muitas requisições. Aguarde um momento e tente novamente."
+        : "Erro no serviço de IA. Tente novamente em alguns minutos.";
+      
+      return new Response(JSON.stringify({ error: userMsg }), {
         status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -191,7 +207,6 @@ REGRAS DE ESPAÇAMENTO:
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     } else {
-      // Non-streaming: return full JSON response
       const json = await response.json();
       return new Response(JSON.stringify(json), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
