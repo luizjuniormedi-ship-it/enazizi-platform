@@ -25,7 +25,7 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
     model,
     messages,
     max_tokens: 16384,
-    temperature: 0.7,
+    temperature: 0.85,
   });
 
   // Try OpenAI first (gpt-4o) for higher quality
@@ -81,9 +81,9 @@ async function generateENAMEDContent(
   const prompt = `Você é um elaborador de questões de ELITE das provas ENAMED, REVALIDA INEP, USP, UNIFESP, UNICAMP e ENARE.
 
 GERE EXATAMENTE:
-- 30 questões de múltipla escolha no padrão ENAMED/REVALIDA
-- 20 flashcards
-- 10 casos clínicos estruturados
+- 10 questões de múltipla escolha no padrão ENAMED/REVALIDA
+- 8 flashcards
+- 5 casos clínicos estruturados
 
 ESPECIALIDADE: ${specialty}
 TEMAS OBRIGATÓRIOS: ${selectedTopics.join(", ")}
@@ -119,6 +119,16 @@ CADA QUESTÃO DEVE OBRIGATORIAMENTE:
    - Incluir apresentações ATÍPICAS (ex: IAM sem dor em diabético, apendicite no idoso)
    - Priorizar doenças tropicais/negligenciadas quando pertinente
    - 40% intermediário, 40% difícil, 20% expert
+
+5. **ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA)**:
+   - NUNCA repita nome, idade, sexo ou perfil de paciente entre questões
+   - Cada questão DEVE ter um paciente COMPLETAMENTE DIFERENTE
+   - Variar: nomes regionais brasileiros, idades de 0 a 95 anos, profissões diversas
+   - Alternar cenários: PS, enfermaria, UTI, UBS, SAMU, ambulatório, domicílio
+   - Variar comorbidades de base: DM, HAS, IRC, HIV, tabagismo, etilismo, gestante
+   - Variar queixa principal e tempo de evolução (horas, dias, semanas, meses)
+   - Incluir pacientes: idosos frágeis, gestantes, crianças, imunossuprimidos, trabalhadores rurais
+   - PROIBIDO: dois pacientes com mesmo perfil demográfico no mesmo bloco
 
 === PADRÃO DOS FLASHCARDS ===
 - Pergunta direta sobre conceito-chave para residência
