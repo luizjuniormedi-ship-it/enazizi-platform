@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Shield, Users, CreditCard, TrendingUp, Ban, CheckCircle, UserCog, Search, RefreshCw, ChevronDown, ShieldCheck, ShieldOff, ClipboardList, KeyRound, Bell, UserCheck, UserX, Clock, BarChart3, BookOpen, Target, AlertTriangle, Activity, Brain, Wifi, GraduationCap } from "lucide-react";
+import { Shield, Users, CreditCard, TrendingUp, Ban, CheckCircle, UserCog, Search, RefreshCw, ChevronDown, ShieldCheck, ShieldOff, ClipboardList, KeyRound, Bell, UserCheck, UserX, Clock, BarChart3, BookOpen, Target, AlertTriangle, Activity, Brain, Wifi, GraduationCap, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -78,6 +78,7 @@ const Admin = () => {
   const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; user: AdminUser | null; password: string }>({ open: false, user: null, password: "" });
   const [userDetailDialog, setUserDetailDialog] = useState<{ open: boolean; user: AdminUser | null }>({ open: false, user: null });
   const [trackingDialog, setTrackingDialog] = useState<{ open: boolean; user: AdminUser | null; data: any; loading: boolean }>({ open: false, user: null, data: null, loading: false });
+  const [logoutDialog, setLogoutDialog] = useState<{ open: boolean; user: AdminUser | null }>({ open: false, user: null });
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-actions`;
 
@@ -542,6 +543,13 @@ const Admin = () => {
                             </Button>
                             <Button
                               variant="outline"
+                              size="sm" className="h-7 text-xs gap-1 border-orange-500/30 text-orange-600 hover:bg-orange-500/10"
+                              disabled={isCurrentlyActioning || u.user_id === session?.user?.id}
+                              onClick={() => setLogoutDialog({ open: true, user: u })}>
+                              <LogOut className="h-3 w-3" /> Desconectar
+                            </Button>
+                            <Button
+                              variant="outline"
                               size="sm" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10"
                               disabled={isCurrentlyActioning}
                               onClick={() => loadUserTracking(u)}>
@@ -593,6 +601,7 @@ const Admin = () => {
                   reset_password: { label: "Redefiniu senha", color: "text-orange-500" },
                   approve_user: { label: "Aprovou", color: "text-green-600" },
                   reject_user: { label: "Rejeitou", color: "text-destructive" },
+                  force_logout: { label: "Desconectou", color: "text-orange-500" },
                 };
                 const info = actionLabels[log.action] || { label: log.action, color: "text-foreground" };
                 return (
@@ -668,7 +677,39 @@ const Admin = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Change Plan Dialog */}
+      {/* Force Logout Dialog */}
+      <Dialog open={logoutDialog.open} onOpenChange={(open) => !open && setLogoutDialog({ open: false, user: null })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Desconectar usuário</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja encerrar todas as sessões ativas de "{logoutDialog.user?.display_name || logoutDialog.user?.email}"? O usuário precisará fazer login novamente.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLogoutDialog({ open: false, user: null })}>Cancelar</Button>
+            <Button
+              className="gap-1.5"
+              disabled={!!actionLoading}
+              onClick={async () => {
+                if (!logoutDialog.user) return;
+                setActionLoading(logoutDialog.user.user_id);
+                try {
+                  await callAdmin({ action: "force_logout", target_user_id: logoutDialog.user.user_id });
+                  toast({ title: "Sessão encerrada", description: `Todas as sessões de ${logoutDialog.user.display_name || logoutDialog.user.email} foram encerradas.` });
+                  setLogoutDialog({ open: false, user: null });
+                } catch (e) {
+                  toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao desconectar", variant: "destructive" });
+                } finally {
+                  setActionLoading(null);
+                }
+              }}
+            >
+              <LogOut className="h-4 w-4" /> Desconectar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={planDialog.open} onOpenChange={(open) => !open && setPlanDialog({ open: false, user: null, plan: "" })}>
         <DialogContent>
           <DialogHeader>
