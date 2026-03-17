@@ -62,6 +62,10 @@ serve(async (req) => {
 
 ⛔ RESTRIÇÃO ABSOLUTA DE ESCOPO:
 Você só pode montar planos de estudo de MEDICINA, SAÚDE e CIÊNCIAS BIOMÉDICAS.
+
+ÁREAS MÉDICAS VÁLIDAS (incluem, mas não se limitam a):
+Farmacologia, Semiologia Médica, Anatomia, Fisiologia, Histologia, Bioquímica, Patologia, Microbiologia, Imunologia, Parasitologia, Genética Médica, Embriologia, Epidemiologia, Bioestatística, Saúde Pública, Medicina Preventiva, Clínica Médica, Cirurgia, Pediatria, Ginecologia e Obstetrícia, Cardiologia, Neurologia, Infectologia, Endocrinologia, Reumatologia, Psiquiatria, Hematologia, Nefrologia, Pneumologia, Gastroenterologia, Dermatologia, Ortopedia, Urologia, Oftalmologia, Otorrinolaringologia, Medicina de Emergência, Medicina Intensiva, Radiologia, Medicina Legal, Ética Médica.
+
 Se identificar tema não médico, responda com JSON de erro sem gerar plano.
 
 Dados do aluno:
@@ -85,7 +89,7 @@ Gere um cronograma semanal de estudos otimizado para residência médica. Retorn
 }
 
 Regras:
-- As matérias principais são: Clínica Médica, Cirurgia, Pediatria, Ginecologia e Obstetrícia, Medicina Preventiva/Saúde Coletiva
+- As matérias principais são: Clínica Médica, Cirurgia, Pediatria, Ginecologia e Obstetrícia, Medicina Preventiva/Saúde Coletiva, Farmacologia, Semiologia, Anatomia, e demais ciências básicas médicas
 - NUNCA incluir Direito, Engenharia, Informática ou qualquer área não médica
 - Distribua as matérias proporcionalmente ao peso nas provas (Clínica Médica geralmente tem maior peso)
 - Inclua revisões, resolução de questões e simulados

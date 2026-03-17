@@ -16,6 +16,10 @@ serve(async (req) => {
 
 ⛔ RESTRIÇÃO ABSOLUTA DE ESCOPO:
 Você SOMENTE pode resumir conteúdo relacionado a MEDICINA, SAÚDE e CIÊNCIAS BIOMÉDICAS.
+
+ÁREAS MÉDICAS VÁLIDAS (incluem, mas não se limitam a):
+Farmacologia, Semiologia Médica, Anatomia, Fisiologia, Histologia, Bioquímica, Patologia, Microbiologia, Imunologia, Parasitologia, Genética Médica, Embriologia, Epidemiologia, Bioestatística, Saúde Pública, Medicina Preventiva, Clínica Médica, Cirurgia, Pediatria, Ginecologia e Obstetrícia, Cardiologia, Neurologia, Infectologia, Endocrinologia, Reumatologia, Psiquiatria, Hematologia, Nefrologia, Pneumologia, Gastroenterologia, Dermatologia, Ortopedia, Urologia, Oftalmologia, Otorrinolaringologia, Medicina de Emergência, Medicina Intensiva, Radiologia, Medicina Legal, Ética Médica.
+
 Se o usuário solicitar resumos sobre Direito, Engenharia, Contabilidade, ou QUALQUER área NÃO MÉDICA:
 - RECUSE educadamente
 - Explique que esta plataforma é exclusiva para preparação em Residência Médica
