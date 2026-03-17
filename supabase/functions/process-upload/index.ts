@@ -17,7 +17,12 @@ async function extractPdfText(fileData: Blob): Promise<string> {
   const document = await getDocument({ data, useSystemFonts: true }).promise;
   const totalPages = Math.min(document.numPages, MAX_PDF_PAGES_TO_PARSE);
   const pages: string[] = [];
+  let collectedChars = 0;
+  const maxCharsToCollect = 40000;
+
   for (let i = 1; i <= totalPages; i++) {
+    if (collectedChars >= maxCharsToCollect) break;
+
     const page = await document.getPage(i);
     const textContent = await page.getTextContent();
     const text = textContent.items
@@ -25,9 +30,14 @@ async function extractPdfText(fileData: Blob): Promise<string> {
       .join(" ")
       .replace(/\s+/g, " ")
       .trim();
-    if (text) pages.push(text);
+
+    if (text) {
+      pages.push(text);
+      collectedChars += text.length;
+    }
   }
-  return pages.join("\n\n");
+
+  return pages.join("\n\n").slice(0, maxCharsToCollect);
 }
 
 async function extractDocxText(fileData: Blob): Promise<string> {

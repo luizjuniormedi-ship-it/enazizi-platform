@@ -223,10 +223,11 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
         // Fire auto-prompt as soon as extracted_text is available (don't wait for full processing)
         if (status.extracted_text && autoPromptAfterUpload && !autoPromptFiredRef.current) {
           autoPromptFiredRef.current = true;
-          
+          clearInterval(pollInterval);
+
           // Build direct context from the just-extracted text (don't rely on state)
           const directContext = `\n\n📄 ${status.filename || file.name} (material):\n${status.extracted_text.slice(0, 15000)}`;
-          
+
           const newUpload: Upload = {
             id: uploadRow.id,
             filename: status.filename,
@@ -238,7 +239,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
             return [newUpload, ...prev];
           });
           setSelectedUploadIds(prev => new Set(prev).add(uploadRow.id));
-          
+
           const prompt = autoPromptAfterUpload.replace("{filename}", file.name);
           setIsUploading(false);
           isUploadingRef.current = false;
@@ -250,6 +251,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
             // Pass extracted text directly as context to avoid stale state
             handleSend(prompt, directContext);
           }, 300);
+          return;
         }
 
         if (status.status === "processed" || status.status === "error") {
@@ -282,7 +284,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
         }
       }, 3000);
 
-      // Safety timeout after 2 minutes
+      // Safety timeout after 5 minutes
       setTimeout(() => {
         clearInterval(pollInterval);
         if (isUploadingRef.current) {
@@ -292,7 +294,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
           setUploadStep("");
           toast({ title: "Timeout", description: "O processamento demorou demais. Verifique na página de Uploads.", variant: "destructive" });
         }
-      }, 120000);
+      }, 300000);
 
     } catch (err) {
       console.error("Upload error:", err);
