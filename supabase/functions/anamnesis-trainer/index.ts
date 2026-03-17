@@ -105,7 +105,8 @@ Responda em JSON:
 }
 
 ## FINALIZAÇÃO (action="finish")
-Avalie o desempenho COMPLETO da anamnese.
+Avalie o desempenho COMPLETO da anamnese E do raciocínio clínico do aluno.
+O aluno fornecerá sua hipótese diagnóstica, diagnósticos diferenciais e conduta proposta.
 
 Responda em JSON:
 {
@@ -115,21 +116,27 @@ Responda em JSON:
   "evaluation": {
     "identification": { "score": 0-10, "covered": true/false, "feedback": "..." },
     "chief_complaint": { "score": 0-10, "covered": true/false, "feedback": "..." },
-    "hda": { "score": 0-20, "covered": true/false, "feedback": "detalhes sobre cronologia, caracterização, fatores" },
-    "past_medical": { "score": 0-10, "covered": true/false, "feedback": "..." },
-    "medications": { "score": 0-10, "covered": true/false, "feedback": "..." },
-    "allergies": { "score": 0-10, "covered": true/false, "feedback": "..." },
-    "family_history": { "score": 0-10, "covered": true/false, "feedback": "..." },
-    "social_history": { "score": 0-10, "covered": true/false, "feedback": "..." },
-    "review_of_systems": { "score": 0-10, "covered": true/false, "feedback": "..." },
-    "gynecological": { "score": 0-10, "covered": true/false, "feedback": "... (N/A se paciente masculino)" },
-    "communication": { "score": 0-10, "feedback": "avaliação da empatia, rapport e técnica de entrevista" }
+    "hda": { "score": 0-15, "covered": true/false, "feedback": "detalhes sobre cronologia, caracterização, fatores" },
+    "past_medical": { "score": 0-5, "covered": true/false, "feedback": "..." },
+    "medications": { "score": 0-5, "covered": true/false, "feedback": "..." },
+    "allergies": { "score": 0-5, "covered": true/false, "feedback": "..." },
+    "family_history": { "score": 0-5, "covered": true/false, "feedback": "..." },
+    "social_history": { "score": 0-5, "covered": true/false, "feedback": "..." },
+    "review_of_systems": { "score": 0-5, "covered": true/false, "feedback": "..." },
+    "gynecological": { "score": 0-5, "covered": true/false, "feedback": "... (N/A se paciente masculino)" },
+    "communication": { "score": 0-5, "feedback": "avaliação da empatia, rapport e técnica de entrevista" },
+    "hypothesis": { "score": 0-15, "correct": true/false, "feedback": "avaliação da hipótese diagnóstica principal" },
+    "differentials": { "score": 0-10, "relevant_count": número, "feedback": "avaliação dos diagnósticos diferenciais" },
+    "conduct": { "score": 0-10, "appropriate": true/false, "feedback": "avaliação da conduta proposta" }
   },
   "categories_summary": {
     "covered": ["categorias que o aluno cobriu"],
     "missed": ["categorias que o aluno NÃO perguntou"],
     "partially_covered": ["categorias abordadas superficialmente"]
   },
+  "correct_diagnosis": "o diagnóstico correto do caso",
+  "ideal_conduct": "a conduta ideal completa (exames, tratamento, orientações, encaminhamentos)",
+  "diagnostic_reasoning": "explicação do raciocínio clínico correto, conectando achados da anamnese ao diagnóstico",
   "ideal_anamnesis": "texto COMPLETO da anamnese ideal para este caso, no formato acadêmico de prontuário",
   "clinical_reasoning": "que diagnósticos poderiam ser levantados com uma anamnese completa",
   "strengths": ["pontos fortes da entrevista"],
@@ -142,8 +149,8 @@ Responda em JSON:
 - SEMPRE em português brasileiro coloquial como paciente
 - SEMPRE em JSON válido nas respostas
 - Seja RIGOROSO na avaliação: anamnese incompleta = nota baixa
-- A HDA vale mais pontos pois é a parte mais importante da anamnese`;
-
+- A HDA vale mais pontos pois é a parte mais importante da anamnese
+- A pontuação total: ~60pts anamnese + ~40pts diagnóstico/conduta = 100pts`;
 function ok(data: unknown) {
   return new Response(JSON.stringify(data), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
