@@ -253,13 +253,19 @@ Lembre-se: NUNCA repita pacientes anteriores. Varie todos os parâmetros demogr�
     }
 
     if (action === "finish") {
+      const { hypothesis, differentials, proposed_conduct } = await req.json().catch(() => ({}));
+      
+      const diagnosisContext = hypothesis 
+        ? `\n\n--- RACIOCÍNIO CLÍNICO DO ALUNO ---\nHipótese Diagnóstica Principal: ${hypothesis || "Não informada"}\nDiagnósticos Diferenciais: ${differentials || "Não informados"}\nConduta Proposta: ${proposed_conduct || "Não informada"}`
+        : "";
+
       const contextMessages = [
         { role: "system", content: SYSTEM_PROMPT },
         ...(conversationHistory || []).map((m: any) => ({
           role: m.role === "doctor" ? "user" : "assistant",
           content: m.content,
         })),
-        { role: "user", content: `action="finish"\nAvalie o desempenho COMPLETO da anamnese realizada pelo aluno. Seja rigoroso e educativo.` },
+        { role: "user", content: `action="finish"\nAvalie o desempenho COMPLETO da anamnese E do raciocínio clínico do aluno. Seja rigoroso e educativo.${diagnosisContext}` },
       ];
 
       const response = await aiFetch({
