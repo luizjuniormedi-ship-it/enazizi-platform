@@ -231,6 +231,13 @@ const ClinicalSimulation = () => {
     fetchHistory();
   }, [fetchHistory]);
 
+  // Auto-start if teacher_case_id is in URL
+  useEffect(() => {
+    if (teacherCaseId && phase === "lobby" && !loading) {
+      startSimulation();
+    }
+  }, [teacherCaseId]);
+
   const saveSimulationToHistory = async (evalData: FinalEval) => {
     if (!user) return;
     try {
