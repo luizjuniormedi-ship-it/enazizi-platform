@@ -155,6 +155,8 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     }
 
     setIsUploading(true);
+    isUploadingRef.current = true;
+    autoPromptFiredRef.current = false;
     setUploadProgress(5);
     setUploadStep("Enviando arquivo...");
 
