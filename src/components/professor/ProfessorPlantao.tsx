@@ -56,6 +56,7 @@ const ProfessorPlantao = () => {
   const [creating, setCreating] = useState(false);
 
   // Form
+  const [createMode, setCreateMode] = useState<"ia" | "manual">("ia");
   const [specialty, setSpecialty] = useState("Clínica Médica");
   const [difficulty, setDifficulty] = useState("intermediário");
   const [title, setTitle] = useState("");
@@ -63,6 +64,15 @@ const ProfessorPlantao = () => {
   const [faculdadeFilter, setFaculdadeFilter] = useState("");
   const [periodoFilter, setPeriodoFilter] = useState("");
   const [generatedCase, setGeneratedCase] = useState<any>(null);
+
+  // Manual form
+  const [manualPresentation, setManualPresentation] = useState("");
+  const [manualVitals, setManualVitals] = useState({ PA: "", FC: "", FR: "", Temp: "", SpO2: "" });
+  const [manualScenario, setManualScenario] = useState("Pronto-Socorro");
+  const [manualTriageColor, setManualTriageColor] = useState("amarelo");
+  const [manualDiagnosis, setManualDiagnosis] = useState("");
+  const [manualFindings, setManualFindings] = useState<string[]>([""]);
+  const [manualDifficultyScore, setManualDifficultyScore] = useState(3);
 
   // Students
   const [previewStudents, setPreviewStudents] = useState<any[]>([]);
