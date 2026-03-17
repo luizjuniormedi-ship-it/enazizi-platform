@@ -120,6 +120,16 @@ CADA QUESTÃO DEVE OBRIGATORIAMENTE:
    - Priorizar doenças tropicais/negligenciadas quando pertinente
    - 40% intermediário, 40% difícil, 20% expert
 
+5. **ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA)**:
+   - NUNCA repita nome, idade, sexo ou perfil de paciente entre questões
+   - Cada questão DEVE ter um paciente COMPLETAMENTE DIFERENTE
+   - Variar: nomes regionais brasileiros, idades de 0 a 95 anos, profissões diversas
+   - Alternar cenários: PS, enfermaria, UTI, UBS, SAMU, ambulatório, domicílio
+   - Variar comorbidades de base: DM, HAS, IRC, HIV, tabagismo, etilismo, gestante
+   - Variar queixa principal e tempo de evolução (horas, dias, semanas, meses)
+   - Incluir pacientes: idosos frágeis, gestantes, crianças, imunossuprimidos, trabalhadores rurais
+   - PROIBIDO: dois pacientes com mesmo perfil demográfico no mesmo bloco
+
 === PADRÃO DOS FLASHCARDS ===
 - Pergunta direta sobre conceito-chave para residência
 - Resposta concisa mas completa, citando conduta, critérios diagnósticos e fonte
