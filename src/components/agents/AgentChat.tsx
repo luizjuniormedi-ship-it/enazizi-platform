@@ -31,6 +31,12 @@ interface QuickAction {
   icon?: string;
 }
 
+interface LinkToAgent {
+  label: string;
+  path: string;
+  stateKey: string;
+}
+
 interface AgentChatProps {
   title: string;
   subtitle: string;
@@ -44,6 +50,7 @@ interface AgentChatProps {
   renderAssistantMessage?: (content: string) => React.ReactNode;
   showUploadButton?: boolean;
   autoPromptAfterUpload?: string;
+  linkToAgent?: LinkToAgent;
 }
 
 const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions, renderAssistantMessage, showUploadButton, autoPromptAfterUpload }: AgentChatProps) => {
