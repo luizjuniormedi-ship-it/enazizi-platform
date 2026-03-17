@@ -142,8 +142,8 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     e.target.value = "";
 
     const ext = file.name.split(".").pop()?.toLowerCase();
-    if (!["pdf", "txt"].includes(ext || "")) {
-      toast({ title: "Formato inválido", description: "Apenas PDF e TXT são suportados.", variant: "destructive" });
+    if (!["pdf", "txt", "docx"].includes(ext || "")) {
+      toast({ title: "Formato inválido", description: "Apenas PDF, TXT e DOCX são suportados.", variant: "destructive" });
       return;
     }
     if (file.size > 20 * 1024 * 1024) {
