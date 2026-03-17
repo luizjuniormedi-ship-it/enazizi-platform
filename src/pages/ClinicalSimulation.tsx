@@ -614,7 +614,7 @@ const ClinicalSimulation = () => {
   return (
     <div className={`animate-fade-in ${isFullscreen ? "fixed inset-0 z-[60] bg-background overflow-auto flex flex-col" : "max-w-6xl mx-auto space-y-4"}`}>
       {/* Header */}
-      <div className={`flex items-center justify-between ${isFullscreen ? "px-4 py-2 border-b border-border bg-background/95 backdrop-blur-sm shrink-0" : "mb-4"}`}>
+      <div className={`flex items-center justify-between ${isFullscreen ? "px-4 py-2 border-b border-border bg-background/95 backdrop-blur-sm shrink-0" : "mb-4 lg:pr-[320px]"}`}>
         <div className="flex items-center gap-2 min-w-0">
           <Activity className="h-5 w-5 text-destructive shrink-0" />
           <h1 className="text-lg font-bold truncate">Modo Plantão</h1>
