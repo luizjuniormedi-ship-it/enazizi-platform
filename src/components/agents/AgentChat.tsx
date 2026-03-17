@@ -42,6 +42,7 @@ interface AgentChatProps {
   quickActions?: QuickAction[];
   renderAssistantMessage?: (content: string) => React.ReactNode;
   showUploadButton?: boolean;
+  autoPromptAfterUpload?: string;
 }
 
 const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions, renderAssistantMessage, showUploadButton }: AgentChatProps) => {
