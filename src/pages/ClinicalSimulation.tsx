@@ -7,7 +7,7 @@ import {
   Activity, Loader2, Send, Stethoscope, Syringe, FileSearch,
   Clock, Heart, AlertTriangle, Award, ArrowRight, RotateCcw,
   MessageCircle, Thermometer, Zap, Star, CheckCircle, XCircle,
-  Trophy, Target, HelpCircle, Users, ClipboardCheck, ShieldAlert, History, Eye
+  Trophy, Target, HelpCircle, Users, ClipboardCheck, ShieldAlert, History, Eye, Maximize2, Minimize2
 } from "lucide-react";
 import VitalsChart, { parseVitalsToSnapshot } from "@/components/plantao/VitalsChart";
 import ExamsPanel from "@/components/plantao/ExamsPanel";
