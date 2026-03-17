@@ -22,6 +22,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { ALL_MODULES } from "@/hooks/useModuleAccess";
 
 interface AdminUser {
   user_id: string;
