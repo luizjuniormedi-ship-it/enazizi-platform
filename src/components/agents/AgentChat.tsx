@@ -339,7 +339,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
 
     if (convId) {
       await supabase.from("chat_messages").insert({
-        conversation_id: convId, user_id: user.id, role: "user", content: input,
+        conversation_id: convId, user_id: user.id, role: "user", content: text,
       });
       await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
     }
