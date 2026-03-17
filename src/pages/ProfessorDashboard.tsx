@@ -39,6 +39,7 @@ const ProfessorDashboard = () => {
   const [title, setTitle] = useState("Simulado");
   const [description, setDescription] = useState("");
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [subtopics, setSubtopics] = useState<Record<string, string>>({});
   const [faculdadeFilter, setFaculdadeFilter] = useState("");
   const [periodoFilter, setPeriodoFilter] = useState("");
   const [questionCount, setQuestionCount] = useState("10");
@@ -138,7 +139,11 @@ const ProfessorDashboard = () => {
     }
     setGenerating(true);
     try {
-      const res = await callAPI({ action: "generate_questions", topics: selectedTopics, count: parseInt(questionCount) });
+      const topicsWithSubs = selectedTopics.map((t) => {
+        const subs = subtopics[t]?.trim();
+        return subs ? `${t} (${subs})` : t;
+      });
+      const res = await callAPI({ action: "generate_questions", topics: topicsWithSubs, count: parseInt(questionCount) });
       setGeneratedQuestions(res.questions || []);
       toast({ title: "Questões geradas!", description: `${res.questions?.length || 0} questões criadas pela IA.` });
     } catch (e) {
@@ -192,7 +197,7 @@ const ProfessorDashboard = () => {
     setTitle("Simulado");
     setDescription("");
     setSelectedTopics([]);
-    setFaculdadeFilter("");
+    setSubtopics({});
     setPeriodoFilter("");
     setQuestionCount("10");
     setTimeLimit("60");
@@ -459,13 +464,18 @@ const ProfessorDashboard = () => {
             </div>
 
             {/* Topics */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label className="text-base font-semibold">Temas ({selectedTopics.length} selecionados)</Label>
               <div className="flex flex-wrap gap-1.5">
                 {SPECIALTIES.map((topic) => (
                   <button
                     key={topic}
-                    onClick={() => toggleTopic(topic)}
+                    onClick={() => {
+                      toggleTopic(topic);
+                      if (selectedTopics.includes(topic)) {
+                        setSubtopics((prev) => { const next = { ...prev }; delete next[topic]; return next; });
+                      }
+                    }}
                     className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                       selectedTopics.includes(topic)
                         ? "bg-primary text-primary-foreground border-primary"
@@ -476,6 +486,26 @@ const ProfessorDashboard = () => {
                   </button>
                 ))}
               </div>
+
+              {/* Subtopics for selected topics */}
+              {selectedTopics.length > 0 && (
+                <div className="space-y-2 bg-secondary/30 rounded-lg p-3">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Subtemas específicos (opcional) — ex: IAM, TEP, Pré-eclâmpsia
+                  </p>
+                  {selectedTopics.map((topic) => (
+                    <div key={topic} className="flex items-center gap-2">
+                      <Badge variant="outline" className="shrink-0 text-[10px]">{topic}</Badge>
+                      <Input
+                        value={subtopics[topic] || ""}
+                        onChange={(e) => setSubtopics((prev) => ({ ...prev, [topic]: e.target.value }))}
+                        placeholder={`Subtemas de ${topic} (separados por vírgula)`}
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Generation method */}
