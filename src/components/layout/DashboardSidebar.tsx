@@ -6,6 +6,7 @@ import {
   ChevronDown, MessageCircle
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import enazizi from "@/assets/enazizi-mascot.png";
