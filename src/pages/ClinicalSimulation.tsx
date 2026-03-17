@@ -9,6 +9,9 @@ import {
   MessageCircle, Thermometer, Zap, Star, CheckCircle, XCircle,
   Trophy, Target, HelpCircle, Users, ClipboardCheck, ShieldAlert, History, Eye
 } from "lucide-react";
+import VitalsChart, { parseVitalsToSnapshot } from "@/components/plantao/VitalsChart";
+import ExamsPanel from "@/components/plantao/ExamsPanel";
+import PrescriptionDialog from "@/components/plantao/PrescriptionDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
