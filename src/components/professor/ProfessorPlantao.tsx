@@ -145,8 +145,23 @@ const ProfessorPlantao = () => {
     }
   };
 
+  const buildManualCase = () => {
+    return {
+      patient_presentation: manualPresentation,
+      vitals: manualVitals,
+      setting: manualScenario,
+      triage_color: manualTriageColor,
+      hidden_diagnosis: manualDiagnosis,
+      key_findings: manualFindings.filter(f => f.trim()),
+      difficulty_score: manualDifficultyScore,
+    };
+  };
+
+  const canSubmitManual = manualPresentation.trim().length > 10 && manualDiagnosis.trim().length > 2;
+
   const createCase = async () => {
-    if (!generatedCase) return;
+    const caseData = createMode === "manual" ? buildManualCase() : generatedCase;
+    if (!caseData) return;
     setCreating(true);
     try {
       const res = await callAPI({
@@ -155,7 +170,7 @@ const ProfessorPlantao = () => {
         specialty,
         difficulty,
         time_limit_minutes: parseInt(timeLimit),
-        case_prompt: generatedCase,
+        case_prompt: caseData,
         faculdade_filter: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : null,
         periodo_filter: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : null,
         student_ids: selectedStudentIds.length > 0 ? selectedStudentIds : undefined,
