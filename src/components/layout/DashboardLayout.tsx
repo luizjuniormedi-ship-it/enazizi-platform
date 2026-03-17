@@ -3,7 +3,7 @@ import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
 import DashboardSidebar from "./DashboardSidebar";
 import GlobalSearch from "./GlobalSearch";
 import NotificationBell from "@/components/dashboard/NotificationBell";
-import { Menu, LogOut, User, Shield, GraduationCap, Sun, Moon } from "lucide-react";
+import { Menu, LogOut, User, Shield, GraduationCap, Sun, Moon, ChevronDown } from "lucide-react";
 import StudyTimer from "@/components/dashboard/StudyTimer";
 import enazizi from "@/assets/enazizi-mascot.png";
 import { useState } from "react";
@@ -16,31 +16,101 @@ import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTheme } from "@/hooks/useTheme";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { cn } from "@/lib/utils";
 
-const mobileNavItems = [
-  { to: "/dashboard", label: "📊 Dashboard" },
-  { to: "/dashboard/chatgpt", label: "🤖 Tutor IA (Principal)" },
-  { to: "/dashboard/plano-dia", label: "⚡ Plano do Dia" },
-  { to: "/dashboard/diagnostico", label: "🩺 Diagnóstico Inicial" },
-  { to: "/dashboard/cronograma", label: "📅 Cronograma" },
-  { to: "/dashboard/flashcards", label: "🃏 Flashcards" },
-  { to: "/dashboard/gerar-flashcards", label: "🃏 Gerador de Flashcards" },
-  { to: "/dashboard/simulados", label: "📝 Simulados" },
-  { to: "/dashboard/simulado-completo", label: "🏆 Simulado Completo" },
-  { to: "/dashboard/questoes", label: "❓ Gerador de Questões" },
-  { to: "/dashboard/banco-questoes", label: "🗃️ Banco de Questões" },
-  { to: "/dashboard/resumos", label: "📖 Resumidor" },
-  { to: "/dashboard/coach", label: "💪 Coach Motivacional" },
-  { to: "/dashboard/predictor", label: "📈 Previsão de Desempenho" },
-  { to: "/dashboard/banco-erros", label: "🚨 Banco de Erros" },
-  { to: "/dashboard/mapa-dominio", label: "🗺️ Mapa de Evolução" },
-  { to: "/dashboard/proficiencia", label: "🎓 Proficiência" },
-  { to: "/dashboard/discursivas", label: "✍️ Questões Discursivas" },
-  { to: "/dashboard/plantao", label: "🚨 Modo Plantão" },
-  { to: "/dashboard/uploads", label: "📤 Uploads" },
-  { to: "/dashboard/conquistas", label: "🏆 Conquistas & Ranking" },
-  { to: "/dashboard/analytics", label: "📊 Analytics" },
+interface MobileNavGroup {
+  title: string;
+  items: { to: string; label: string }[];
+}
+
+const mobileNavGroups: MobileNavGroup[] = [
+  {
+    title: "Principal",
+    items: [
+      { to: "/dashboard", label: "📊 Dashboard" },
+      { to: "/dashboard/chatgpt", label: "🤖 Tutor IA" },
+      { to: "/dashboard/plano-dia", label: "⚡ Plano do Dia" },
+      { to: "/dashboard/diagnostico", label: "🩺 Diagnóstico" },
+    ],
+  },
+  {
+    title: "Estudo",
+    items: [
+      { to: "/dashboard/cronograma", label: "📅 Cronograma" },
+      { to: "/dashboard/flashcards", label: "🃏 Flashcards" },
+      { to: "/dashboard/gerar-flashcards", label: "🃏 Gerador Flashcards" },
+      { to: "/dashboard/resumos", label: "📖 Resumidor" },
+      { to: "/dashboard/uploads", label: "📤 Uploads" },
+    ],
+  },
+  {
+    title: "Avaliação",
+    items: [
+      { to: "/dashboard/simulados", label: "📝 Simulados" },
+      { to: "/dashboard/simulado-completo", label: "🏆 Simulado Completo" },
+      { to: "/dashboard/questoes", label: "❓ Gerador Questões" },
+      { to: "/dashboard/banco-questoes", label: "🗃️ Banco de Questões" },
+      { to: "/dashboard/discursivas", label: "✍️ Discursivas" },
+      { to: "/dashboard/plantao", label: "🚨 Modo Plantão" },
+    ],
+  },
+  {
+    title: "Progresso",
+    items: [
+      { to: "/dashboard/predictor", label: "📈 Previsão" },
+      { to: "/dashboard/banco-erros", label: "🚨 Banco de Erros" },
+      { to: "/dashboard/mapa-dominio", label: "🗺️ Mapa Evolução" },
+      { to: "/dashboard/proficiencia", label: "🎓 Proficiência" },
+      { to: "/dashboard/coach", label: "💪 Coach" },
+      { to: "/dashboard/conquistas", label: "🏆 Conquistas" },
+      { to: "/dashboard/analytics", label: "📊 Analytics" },
+    ],
+  },
 ];
+
+const MobileNavGroupSection = ({
+  group,
+  location,
+  setOpen,
+}: {
+  group: MobileNavGroup;
+  location: ReturnType<typeof useLocation>;
+  setOpen: (v: boolean) => void;
+}) => {
+  const hasActive = group.items.some((item) => location.pathname === item.to);
+  const [isOpen, setIsOpen] = useState(hasActive || group.title === "Principal");
+
+  return (
+    <div>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex items-center justify-between w-full px-3 py-2 text-xs font-semibold uppercase tracking-wider",
+          hasActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"
+        )}
+      >
+        {group.title}
+        <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen ? "" : "-rotate-90")} />
+      </button>
+      {isOpen &&
+        group.items.map((item) => (
+          <Link
+            key={item.to}
+            to={item.to}
+            onClick={() => setOpen(false)}
+            className={cn(
+              "block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+              location.pathname === item.to
+                ? "bg-sidebar-accent text-sidebar-primary"
+                : "text-sidebar-foreground/70"
+            )}
+          >
+            {item.label}
+          </Link>
+        ))}
+    </div>
+  );
+};
 
 const MobileNav = () => {
   const location = useLocation();
@@ -72,26 +142,18 @@ const MobileNav = () => {
           </Link>
         </div>
         <ScrollArea className="flex-1 min-h-0">
-          <nav className="px-3 py-2 space-y-1">
-            {mobileNavItems.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                onClick={() => setOpen(false)}
-                className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  location.pathname === item.to ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70"
-                }`}
-              >
-                {item.label}
-              </Link>
+          <nav className="px-3 py-2 space-y-2">
+            {mobileNavGroups.map((group) => (
+              <MobileNavGroupSection key={group.title} group={group} location={location} setOpen={setOpen} />
             ))}
             <div className="pt-3 mt-3 border-t border-sidebar-border space-y-1">
               <Link
                 to="/dashboard/perfil"
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                   location.pathname === "/dashboard/perfil" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70"
-                }`}
+                )}
               >
                 <User className="h-4 w-4" />
                 Meu Perfil
@@ -100,9 +162,10 @@ const MobileNav = () => {
                 <Link
                   to="/professor"
                   onClick={() => setOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                     location.pathname === "/professor" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70"
-                  }`}
+                  )}
                 >
                   <GraduationCap className="h-4 w-4" />
                   Painel Professor
@@ -112,9 +175,10 @@ const MobileNav = () => {
                 <Link
                   to="/admin"
                   onClick={() => setOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                     location.pathname === "/admin" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70"
-                  }`}
+                  )}
                 >
                   <Shield className="h-4 w-4" />
                   Admin
