@@ -603,7 +603,7 @@ const ClinicalSimulation = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4 animate-fade-in">
+    <div className="max-w-6xl mx-auto space-y-4 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
