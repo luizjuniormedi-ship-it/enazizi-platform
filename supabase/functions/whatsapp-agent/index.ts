@@ -180,6 +180,7 @@ A mensagem DEVE:
                 { role: "user", content: prompt },
               ],
               max_tokens: 512,
+              temperature: 0.95,
             }),
           });
 
