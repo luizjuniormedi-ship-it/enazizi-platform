@@ -470,7 +470,7 @@ const Admin = () => {
                   return (
                     <div
                       key={u.user_id}
-                      className={`grid grid-cols-1 md:grid-cols-12 gap-3 px-4 py-3 rounded-lg transition-colors ${
+                      className={`grid grid-cols-1 md:grid-cols-14 gap-3 px-4 py-3 rounded-lg transition-colors ${
                         isPending ? "bg-amber-500/5 border border-amber-500/20" :
                         u.is_blocked || u.status === "disabled" ? "bg-destructive/5 border border-destructive/20" :
                         "bg-secondary/50 hover:bg-secondary/80"
