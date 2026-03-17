@@ -264,6 +264,10 @@ const ChatGPT = () => {
     }
     if (state?.fromSummary && !summaryHandled.current && user) {
       summaryHandled.current = true;
+      // Pre-select shared uploads from the Resumidor
+      if (state.sharedUploadIds && state.sharedUploadIds.length > 0) {
+        setSelectedUploadIds(new Set(state.sharedUploadIds));
+      }
       const summaryText = state.fromSummary.slice(0, 10000);
       const prompt = ensureSequentialInitialMessage(
         `Com base neste resumo, continue a explicação aprofundada seguindo o Protocolo ENAZIZI. Aprofunde os pontos mais importantes, faça perguntas de active recall e proponha questões clínicas:\n\n${summaryText}`
