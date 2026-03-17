@@ -151,6 +151,7 @@ const ClinicalSimulation = () => {
 
   // Exam results panel
   const [examResults, setExamResults] = useState<Array<{ type: "lab" | "imaging"; content: string; timestamp: number }>>([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // History
   const [history, setHistory] = useState<any[]>([]);
