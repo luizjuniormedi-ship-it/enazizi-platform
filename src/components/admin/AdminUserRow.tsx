@@ -140,6 +140,10 @@ const AdminUserRow = ({
               onClick={() => onOpenLogout(u)}>
               <LogOut className="h-3 w-3" /> Desconectar
             </Button>
+            <Button variant="outline" size="sm" className="h-7 text-xs gap-1 border-sky-500/30 text-sky-600 hover:bg-sky-500/10"
+              disabled={isCurrentlyActioning} onClick={() => onOpenDetail(u)}>
+              <Eye className="h-3 w-3" /> Cadastro
+            </Button>
             <Button variant="outline" size="sm" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10"
               disabled={isCurrentlyActioning} onClick={() => onOpenTracking(u)}>
               <BarChart3 className="h-3 w-3" /> Acompanhar
