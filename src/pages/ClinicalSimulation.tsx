@@ -971,7 +971,7 @@ const ClinicalSimulation = () => {
                 <div className="border-t border-border/50 p-2 space-y-1.5">
                   {/* Standard clinical actions */}
                   <div className="flex gap-1.5 overflow-x-auto">
-                    {QUICK_ACTIONS.map((qa) => (
+                    {QUICK_ACTIONS.filter((qa) => qa.label !== "Prescrever").map((qa) => (
                       <Button
                         key={qa.label}
                         variant="ghost"
@@ -984,6 +984,16 @@ const ClinicalSimulation = () => {
                         {qa.label}
                       </Button>
                     ))}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs shrink-0 gap-1.5 h-8"
+                      disabled={loading}
+                      onClick={() => setPrescriptionDialogOpen(true)}
+                    >
+                      <Syringe className="h-3.5 w-3.5" />
+                      Prescrever
+                    </Button>
                   </div>
                   {/* Pedagogical + finish actions */}
                   <div className="flex gap-1.5 overflow-x-auto border-t border-border/30 pt-1.5">
