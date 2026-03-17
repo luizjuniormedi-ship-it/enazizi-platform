@@ -69,22 +69,6 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const pendingAutoPromptRef = useRef<string | null>(null);
   const { toast } = useToast();
 
-  // Auto-send prompt after upload finishes  
-  useEffect(() => {
-    if (!isUploading && pendingAutoPromptRef.current && !isLoading && user) {
-      const prompt = pendingAutoPromptRef.current;
-      pendingAutoPromptRef.current = null;
-      // Set input and trigger send on next tick
-      setInput(prompt);
-      requestAnimationFrame(() => {
-        setInput(""); // Clear it since we'll add it to messages directly
-        // Manually invoke the send flow
-        const fakeEvent = prompt;
-        handleSendWithPrompt(fakeEvent);
-      });
-    }
-  }, [isUploading]);
-
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`;
 
   // Load user uploads
