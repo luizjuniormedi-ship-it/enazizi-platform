@@ -507,7 +507,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
       <input
         type="file"
         ref={fileInputRef}
-        accept=".pdf,.txt"
+        accept=".pdf,.txt,.docx"
         className="hidden"
         onChange={handleFileUpload}
       />
