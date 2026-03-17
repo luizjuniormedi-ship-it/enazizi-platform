@@ -110,7 +110,23 @@ Conduta inicial:
 2️⃣ passo clínico → explicação
 3️⃣ passo clínico → explicação
 
-==================================================
+6️⃣ Diagnósticos diferenciais
+Formato obrigatório — tabela comparativa:
+| Doença | Achado-chave | Diferença principal |
+Incluir no mínimo 3 diagnósticos diferenciais relevantes.
+Sempre comparar com a hipótese principal.
+
+7️⃣ Pegadinhas de prova
+Formato:
+⚠️ pegadinha → explicação do erro comum
+Listar 2 a 4 armadilhas clássicas de residência e Revalida.
+Focar em erros que reprovam candidatos.
+
+8️⃣ Mnemônico (quando aplicável)
+Formato:
+🧠 "SIGLA" → significado de cada letra
+Criar ou citar mnemônicos consagrados para o tema.
+Se não houver mnemônico clássico, criar um original e indicar que é sugestão.
 REGRAS DE CLAREZA VISUAL
 ==================================================
 Sempre seguir estas regras:
