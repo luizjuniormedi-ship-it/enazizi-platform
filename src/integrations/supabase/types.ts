@@ -103,6 +103,66 @@ export type Database = {
           },
         ]
       }
+      clinical_cases: {
+        Row: {
+          clinical_history: string
+          correct_diagnosis: string
+          created_at: string | null
+          differential_diagnoses: Json | null
+          difficulty: number | null
+          explanation: string | null
+          id: string
+          imaging: string | null
+          is_global: boolean | null
+          lab_results: Json | null
+          physical_exam: string | null
+          source: string | null
+          specialty: string
+          title: string
+          treatment: string | null
+          user_id: string
+          vitals: Json | null
+        }
+        Insert: {
+          clinical_history: string
+          correct_diagnosis: string
+          created_at?: string | null
+          differential_diagnoses?: Json | null
+          difficulty?: number | null
+          explanation?: string | null
+          id?: string
+          imaging?: string | null
+          is_global?: boolean | null
+          lab_results?: Json | null
+          physical_exam?: string | null
+          source?: string | null
+          specialty: string
+          title: string
+          treatment?: string | null
+          user_id: string
+          vitals?: Json | null
+        }
+        Update: {
+          clinical_history?: string
+          correct_diagnosis?: string
+          created_at?: string | null
+          differential_diagnoses?: Json | null
+          difficulty?: number | null
+          explanation?: string | null
+          id?: string
+          imaging?: string | null
+          is_global?: boolean | null
+          lab_results?: Json | null
+          physical_exam?: string | null
+          source?: string | null
+          specialty?: string
+          title?: string
+          treatment?: string | null
+          user_id?: string
+          vitals?: Json | null
+        }
+        Relationships: []
+      }
       cronograma_config: {
         Row: {
           created_at: string | null

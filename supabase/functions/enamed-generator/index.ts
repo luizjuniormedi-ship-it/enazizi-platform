@@ -1,11 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { aiFetch } from "../_shared/ai-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const OPENAI_API = "https://api.openai.com/v1/chat/completions";
+const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 const ENAMED_THEMES = [
   { specialty: "Clínica Médica", topics: ["IAM e SCA", "Insuficiência Cardíaca", "DPOC e Asma", "Pneumonia Comunitária", "TEP", "AVC Isquêmico e Hemorrágico", "Diabetes Mellitus", "Cetoacidose Diabética", "Hipotireoidismo e Hipertireoidismo", "Sepse e Choque Séptico", "Insuficiência Renal Aguda", "Doença Renal Crônica", "Distúrbios Hidroeletrolíticos", "Cirrose e Hepatopatias", "Anemia Falciforme", "Lúpus Eritematoso Sistêmico", "Artrite Reumatoide", "Meningite Bacteriana", "HIV/AIDS", "Tuberculose Pulmonar e Extrapulmonar"] },
@@ -15,23 +17,78 @@ const ENAMED_THEMES = [
   { specialty: "Medicina Preventiva e Saúde Coletiva", topics: ["Princípios do SUS", "Atenção Primária e ESF", "Vigilância Epidemiológica", "Doenças de Notificação Compulsória", "Epidemiologia Descritiva e Analítica", "Estudos Epidemiológicos (Coorte, Caso-Controle)", "Indicadores de Saúde", "Bioestatística (Sensibilidade, Especificidade, VPP, VPN)", "Rastreamento Populacional", "Política Nacional de Humanização", "NASF e CAPS", "Determinantes Sociais da Saúde", "Saúde do Trabalhador", "Ética Médica e Bioética"] },
 ];
 
-async function generateENAMEDQuestions(
+async function callAI(messages: Array<{ role: string; content: string }>): Promise<string> {
+  const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
+  const buildBody = (model: string) => JSON.stringify({
+    model,
+    messages,
+    max_tokens: 16384,
+    temperature: 0.7,
+  });
+
+  // Try OpenAI first (gpt-4o) for higher quality
+  if (OPENAI_API_KEY) {
+    try {
+      const res = await fetch(OPENAI_API, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+        body: buildBody("gpt-4o"),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.choices?.[0]?.message?.content || "";
+      }
+      const errText = await res.text();
+      console.warn(`OpenAI ${res.status}: ${errText.slice(0, 200)}`);
+      if (res.status !== 429 && res.status !== 402) {
+        throw new Error(`OpenAI error ${res.status}`);
+      }
+      // 429/402 → fall through to Lovable
+    } catch (e) {
+      console.warn("OpenAI failed, trying Lovable Gateway:", e);
+    }
+  }
+
+  // Fallback: Lovable AI Gateway
+  if (LOVABLE_API_KEY) {
+    const res = await fetch(LOVABLE_GATEWAY, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      body: buildBody("google/gemini-2.5-flash"),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.choices?.[0]?.message?.content || "";
+    }
+    const errText = await res.text();
+    throw new Error(`Lovable Gateway ${res.status}: ${errText.slice(0, 200)}`);
+  }
+
+  throw new Error("No AI API key available");
+}
+
+async function generateENAMEDContent(
   specialty: string,
   topics: string[],
   userId: string,
   supabaseAdmin: any,
   source: string,
-): Promise<{ questions: number; flashcards: number }> {
+): Promise<{ questions: number; flashcards: number; cases: number }> {
   const selectedTopics = topics.sort(() => Math.random() - 0.5).slice(0, 6);
 
   const prompt = `Você é um elaborador de questões de ELITE das provas ENAMED, REVALIDA INEP, USP, UNIFESP, UNICAMP e ENARE.
 
-GERE EXATAMENTE 30 questões de múltipla escolha no padrão ENAMED/REVALIDA e 20 flashcards.
+GERE EXATAMENTE:
+- 30 questões de múltipla escolha no padrão ENAMED/REVALIDA
+- 20 flashcards
+- 10 casos clínicos estruturados
 
 ESPECIALIDADE: ${specialty}
 TEMAS OBRIGATÓRIOS: ${selectedTopics.join(", ")}
 
-=== PADRÃO DE EXCELÊNCIA PARA CASOS CLÍNICOS ===
+=== PADRÃO DE EXCELÊNCIA PARA QUESTÕES ===
 
 CADA QUESTÃO DEVE OBRIGATORIAMENTE:
 
@@ -63,36 +120,43 @@ CADA QUESTÃO DEVE OBRIGATORIAMENTE:
    - Priorizar doenças tropicais/negligenciadas quando pertinente
    - 40% intermediário, 40% difícil, 20% expert
 
-PADRÃO DOS FLASHCARDS:
+=== PADRÃO DOS FLASHCARDS ===
 - Pergunta direta sobre conceito-chave para residência
 - Resposta concisa mas completa, citando conduta, critérios diagnósticos e fonte
+
+=== PADRÃO DOS CASOS CLÍNICOS ESTRUTURADOS ===
+
+Cada caso deve conter:
+- Título descritivo do caso
+- História clínica completa (identificação, QP, HDA, antecedentes, hábitos, medicações)
+- Sinais vitais como objeto (PA, FC, FR, Temp, SpO2)
+- Exame físico detalhado
+- Exames laboratoriais com valores numéricos
+- Exames de imagem quando pertinente
+- Diagnóstico correto
+- Diagnósticos diferenciais (lista)
+- Conduta terapêutica
+- Explicação do raciocínio clínico
 
 FORMATO JSON PURO (sem markdown):
 {
   "questions": [
-    {"statement":"Caso clínico completo com sinais vitais e exames...","options":["A) ...","B) ...","C) ...","D) ..."],"correct_index":0,"explanation":"Raciocínio clínico + análise de cada alternativa + diretriz...","topic":"${specialty}","difficulty":3}
+    {"statement":"Caso clínico completo...","options":["A) ...","B) ...","C) ...","D) ..."],"correct_index":0,"explanation":"Raciocínio clínico...","topic":"${specialty}","difficulty":3}
   ],
   "flashcards": [
-    {"question":"Pergunta?","answer":"Resposta completa com fonte.","topic":"${specialty}"}
+    {"question":"Pergunta?","answer":"Resposta completa.","topic":"${specialty}"}
+  ],
+  "clinical_cases": [
+    {"title":"Título do caso","clinical_history":"História completa...","vitals":{"PA":"120/80","FC":"88","FR":"18","Temp":"36.5","SpO2":"97%"},"physical_exam":"Achados do exame físico...","lab_results":[{"exam":"Hemoglobina","value":"12.5 g/dL","reference":"12-16 g/dL"}],"imaging":"Descrição de imagem se aplicável","correct_diagnosis":"Diagnóstico correto","differential_diagnoses":["Diferencial 1","Diferencial 2"],"treatment":"Conduta terapêutica completa","explanation":"Raciocínio clínico detalhado","difficulty":3}
   ]
 }`;
 
   try {
-    const response = await aiFetch({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        { role: "system", content: "Responda EXCLUSIVAMENTE com JSON válido. Sem markdown, sem comentários." },
-        { role: "user", content: prompt },
-      ],
-    });
+    const content = await callAI([
+      { role: "system", content: "Responda EXCLUSIVAMENTE com JSON válido. Sem markdown, sem comentários." },
+      { role: "user", content: prompt },
+    ]);
 
-    if (!response.ok) {
-      console.error(`AI error for ${specialty}:`, response.status);
-      return { questions: 0, flashcards: 0 };
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
     const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
 
     let parsed: any = null;
@@ -100,12 +164,12 @@ FORMATO JSON PURO (sem markdown):
       const m = cleaned.match(/\{[\s\S]*"questions"[\s\S]*\}/);
       if (m) try { parsed = JSON.parse(m[0]); } catch {}
     }
-    if (!parsed) return { questions: 0, flashcards: 0 };
+    if (!parsed) return { questions: 0, flashcards: 0, cases: 0 };
 
+    // Insert questions
     const questions = (parsed.questions || []).filter((q: any) =>
       q.statement && Array.isArray(q.options) && q.options.length >= 2 && typeof q.correct_index === "number"
     );
-
     let qCount = 0;
     if (questions.length > 0) {
       const rows = questions.map((q: any) => ({
@@ -124,6 +188,7 @@ FORMATO JSON PURO (sem markdown):
       else console.error("Insert Q error:", error);
     }
 
+    // Insert flashcards
     const flashcards = (parsed.flashcards || []).filter((f: any) => f.question && f.answer);
     let fCount = 0;
     if (flashcards.length > 0) {
@@ -139,10 +204,36 @@ FORMATO JSON PURO (sem markdown):
       else console.error("Insert F error:", error);
     }
 
-    return { questions: qCount, flashcards: fCount };
+    // Insert clinical cases
+    const clinicalCases = (parsed.clinical_cases || []).filter((c: any) => c.title && c.clinical_history && c.correct_diagnosis);
+    let cCount = 0;
+    if (clinicalCases.length > 0) {
+      const cRows = clinicalCases.map((c: any) => ({
+        user_id: userId,
+        specialty,
+        title: String(c.title).trim(),
+        clinical_history: String(c.clinical_history).trim(),
+        vitals: c.vitals || {},
+        physical_exam: String(c.physical_exam || "").trim(),
+        lab_results: Array.isArray(c.lab_results) ? c.lab_results : [],
+        imaging: c.imaging ? String(c.imaging).trim() : null,
+        correct_diagnosis: String(c.correct_diagnosis).trim(),
+        differential_diagnoses: Array.isArray(c.differential_diagnoses) ? c.differential_diagnoses : [],
+        treatment: c.treatment ? String(c.treatment).trim() : null,
+        explanation: c.explanation ? String(c.explanation).trim() : null,
+        difficulty: c.difficulty || 3,
+        source,
+        is_global: true,
+      }));
+      const { error } = await supabaseAdmin.from("clinical_cases").insert(cRows);
+      if (!error) cCount = cRows.length;
+      else console.error("Insert C error:", error);
+    }
+
+    return { questions: qCount, flashcards: fCount, cases: cCount };
   } catch (e) {
     console.error(`Error ${specialty}:`, e);
-    return { questions: 0, flashcards: 0 };
+    return { questions: 0, flashcards: 0, cases: 0 };
   }
 }
 
@@ -155,38 +246,41 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Get admin user
     const { data: adminRole } = await supabaseAdmin
       .from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
     const userId = adminRole?.user_id || "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023";
 
     const body = await req.json().catch(() => ({}));
     const rounds = body.rounds || 1;
-    const source = body.source || "enamed-revalida-ai";
+    const source = body.source || "enamed-revalida-openai";
 
-    let totalQ = 0, totalF = 0;
+    let totalQ = 0, totalF = 0, totalC = 0;
     const processed: string[] = [];
 
     for (let r = 0; r < rounds; r++) {
       for (const theme of ENAMED_THEMES) {
         console.log(`[R${r + 1}] Generating ${theme.specialty}...`);
-        const result = await generateENAMEDQuestions(theme.specialty, theme.topics, userId, supabaseAdmin, source);
+        const result = await generateENAMEDContent(theme.specialty, theme.topics, userId, supabaseAdmin, source);
         totalQ += result.questions;
         totalF += result.flashcards;
-        processed.push(`${theme.specialty}: ${result.questions}Q, ${result.flashcards}F`);
-        console.log(`${theme.specialty}: ${result.questions}Q, ${result.flashcards}F`);
+        totalC += result.cases;
+        processed.push(`${theme.specialty}: ${result.questions}Q, ${result.flashcards}F, ${result.cases}C`);
+        console.log(`${theme.specialty}: ${result.questions}Q, ${result.flashcards}F, ${result.cases}C`);
       }
     }
 
     const { count: qTotal } = await supabaseAdmin.from("questions_bank").select("*", { count: "exact", head: true }).eq("is_global", true);
     const { count: fTotal } = await supabaseAdmin.from("flashcards").select("*", { count: "exact", head: true }).eq("is_global", true);
+    const { count: cTotal } = await supabaseAdmin.from("clinical_cases").select("*", { count: "exact", head: true }).eq("is_global", true);
 
     return new Response(JSON.stringify({
-      message: `Geradas ${totalQ} questões ENAMED/REVALIDA e ${totalF} flashcards`,
+      message: `Geradas ${totalQ} questões, ${totalF} flashcards e ${totalC} casos clínicos`,
       questions_added: totalQ,
       flashcards_added: totalF,
+      clinical_cases_added: totalC,
       total_questions: qTotal,
       total_flashcards: fTotal,
+      total_clinical_cases: cTotal,
       details: processed,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
