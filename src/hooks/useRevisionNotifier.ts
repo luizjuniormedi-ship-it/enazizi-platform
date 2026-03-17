@@ -2,20 +2,27 @@ import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 /**
  * Checks for pending reviews and streak risk on mount,
- * then shows toast notifications once per session.
+ * then shows toast + browser notifications once per session.
  */
 export function useRevisionNotifier() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { permission, sendNotification, requestPermission } = usePushNotifications();
   const hasNotified = useRef(false);
 
   useEffect(() => {
     if (!user || hasNotified.current) return;
 
     const check = async () => {
+      // Request notification permission on first visit (non-blocking)
+      if (permission === "default") {
+        requestPermission();
+      }
+
       const today = new Date().toISOString().slice(0, 10);
 
       const [pendingRes, gamifRes] = await Promise.all([
@@ -41,6 +48,12 @@ export function useRevisionNotifier() {
           description: "Revise agora para manter o conhecimento fresco.",
           duration: 8000,
         });
+
+        // Browser notification
+        sendNotification(`📚 ${pendingCount} revisão(ões) pendente(s)!`, {
+          body: "Revise agora para manter o conhecimento fresco.",
+          tag: "revision-pending",
+        });
       }
 
       // Streak risk: last activity was yesterday and no activity today yet
@@ -59,14 +72,18 @@ export function useRevisionNotifier() {
                 description: "Complete uma atividade hoje para não perder sua sequência.",
                 duration: 10000,
               });
-            }, 3000); // delay to not overlap with revision toast
+
+              sendNotification(`🔥 Streak de ${gamif.current_streak} dias em risco!`, {
+                body: "Complete uma atividade hoje para não perder sua sequência.",
+                tag: "streak-risk",
+              });
+            }, 3000);
           }
         }
       }
     };
 
-    // Small delay to avoid blocking initial render
     const timer = setTimeout(check, 2000);
     return () => clearTimeout(timer);
-  }, [user, toast]);
+  }, [user, toast, permission, sendNotification, requestPermission]);
 }

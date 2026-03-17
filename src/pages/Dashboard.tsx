@@ -16,6 +16,8 @@ import SystemGuidePopup from "@/components/dashboard/SystemGuidePopup";
 import SpecialtyBenchmark from "@/components/dashboard/SpecialtyBenchmark";
 import OnboardingTour from "@/components/dashboard/OnboardingTour";
 import WeeklyProgressCard from "@/components/dashboard/WeeklyProgressCard";
+import PerformanceReport from "@/components/dashboard/PerformanceReport";
+import MiniLeaderboard from "@/components/dashboard/MiniLeaderboard";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 
 interface PlanJson {
@@ -246,12 +248,17 @@ const Dashboard = () => {
         </div>
         <AchievementToast />
 
-        <h1 className="text-2xl font-bold mt-5">Dashboard</h1>
-        <p className="text-muted-foreground">
-          {stats.daysUntilExam
-            ? `${stats.daysUntilExam} dias até a prova • ${taskPercent}% das tarefas concluídas`
-            : "Bem-vindo de volta! Aqui está seu progresso."}
-        </p>
+        <div className="flex items-center justify-between mt-5">
+          <div>
+            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground">
+              {stats.daysUntilExam
+                ? `${stats.daysUntilExam} dias até a prova • ${taskPercent}% das tarefas concluídas`
+                : "Bem-vindo de volta! Aqui está seu progresso."}
+            </p>
+          </div>
+          <PerformanceReport />
+        </div>
 
         <DashboardWarnings
           todayCompleted={stats.todayCompleted}
@@ -520,8 +527,11 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Weekly Progress */}
-      <WeeklyProgressCard />
+      {/* Weekly Progress & Leaderboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <WeeklyProgressCard />
+        <MiniLeaderboard />
+      </div>
 
       {/* Topic Evolution */}
       <TopicEvolution />
