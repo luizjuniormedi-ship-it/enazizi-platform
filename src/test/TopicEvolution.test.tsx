@@ -105,7 +105,8 @@ describe("TopicEvolution", () => {
     await waitFor(() => {
       expect(screen.getByText("Domínio geral:")).toBeInTheDocument();
     });
-    expect(screen.getByText("10%")).toBeInTheDocument();
+    // (100+90) / 22 specialties = ~9%
+    expect(screen.getByText("9%")).toBeInTheDocument();
   });
 
   it("has link to full domain map", async () => {
