@@ -438,6 +438,9 @@ const Admin = () => {
             <TabsTrigger value="blocked" className="gap-1.5">
               Bloqueados <Badge variant="secondary" className="text-xs ml-1">{blockedCount}</Badge>
             </TabsTrigger>
+            <TabsTrigger value="whatsapp" className="gap-1.5">
+              <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeTab}>
