@@ -311,12 +311,12 @@ const ProfessorPlantao = () => {
       <Dialog open={showCreate} onOpenChange={(open) => { if (!open) { setShowCreate(false); resetForm(); } else setShowCreate(true); }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Activity className="h-5 w-5 text-red-500" /> Criar Caso de Plantão</DialogTitle>
-            <DialogDescription>Gere um caso clínico via IA e atribua aos alunos.</DialogDescription>
+            <DialogTitle className="flex items-center gap-2"><Activity className="h-5 w-5 text-destructive" /> Criar Caso de Plantão</DialogTitle>
+            <DialogDescription>Crie um caso clínico via IA ou manualmente.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-5">
-            {/* Config */}
+            {/* Common Config */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2 col-span-2">
                 <Label>Título (opcional)</Label>
@@ -348,38 +348,151 @@ const ProfessorPlantao = () => {
               </div>
             </div>
 
-            {/* Generate */}
-            <Button onClick={generateCase} disabled={generating} className="w-full gap-2">
-              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              {generating ? "Gerando caso..." : "🤖 Gerar Caso via IA"}
-            </Button>
+            {/* Mode Tabs */}
+            <Tabs value={createMode} onValueChange={(v) => setCreateMode(v as "ia" | "manual")}>
+              <TabsList className="w-full">
+                <TabsTrigger value="ia" className="flex-1 gap-2"><Sparkles className="h-4 w-4" /> Gerar via IA</TabsTrigger>
+                <TabsTrigger value="manual" className="flex-1 gap-2"><PenLine className="h-4 w-4" /> Criar Manual</TabsTrigger>
+              </TabsList>
 
-            {/* Preview */}
-            {generatedCase && (
-              <Card className="border-primary/30">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-semibold flex items-center gap-1.5">
-                      <Stethoscope className="h-4 w-4 text-primary" /> Preview do Caso
-                    </h4>
-                    <Badge variant="outline" className="text-xs">{generatedCase.triage_color}</Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{generatedCase.patient_presentation}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {generatedCase.vitals && Object.entries(generatedCase.vitals).map(([k, v]) => (
-                      <Badge key={k} variant="outline" className="text-xs font-mono">{k}: {v as string}</Badge>
+              {/* IA Tab */}
+              <TabsContent value="ia" className="space-y-4 mt-4">
+                <Button onClick={generateCase} disabled={generating} className="w-full gap-2">
+                  {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {generating ? "Gerando caso..." : "🤖 Gerar Caso via IA"}
+                </Button>
+
+                {generatedCase && (
+                  <Card className="border-primary/30">
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-semibold flex items-center gap-1.5">
+                          <Stethoscope className="h-4 w-4 text-primary" /> Preview do Caso
+                        </h4>
+                        <Badge variant="outline" className="text-xs">{generatedCase.triage_color}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{generatedCase.patient_presentation}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {generatedCase.vitals && Object.entries(generatedCase.vitals).map(([k, v]) => (
+                          <Badge key={k} variant="outline" className="text-xs font-mono">{k}: {v as string}</Badge>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">📍 {generatedCase.setting}</p>
+                      <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20">
+                        <p className="text-xs font-semibold text-amber-600">🔒 Diagnóstico (oculto ao aluno): {generatedCase.hidden_diagnosis}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+
+              {/* Manual Tab */}
+              <TabsContent value="manual" className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <Label>Apresentação do Paciente <span className="text-destructive">*</span></Label>
+                  <Textarea
+                    value={manualPresentation}
+                    onChange={(e) => setManualPresentation(e.target.value)}
+                    placeholder='Ex: "Doutor, estou com uma dor forte no peito há 2 horas, parece que está apertando..."'
+                    className="min-h-[80px]"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Queixa em 1ª pessoa do paciente.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Sinais Vitais</Label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {(["PA", "FC", "FR", "Temp", "SpO2"] as const).map((key) => (
+                      <div key={key} className="space-y-1">
+                        <span className="text-[11px] font-medium text-muted-foreground">{key}</span>
+                        <Input
+                          value={manualVitals[key]}
+                          onChange={(e) => setManualVitals(prev => ({ ...prev, [key]: e.target.value }))}
+                          placeholder={key === "PA" ? "120/80" : key === "FC" ? "88" : key === "FR" ? "18" : key === "Temp" ? "37.2" : "97%"}
+                          className="h-8 text-xs"
+                        />
+                      </div>
                     ))}
                   </div>
-                  <p className="text-xs text-muted-foreground">📍 {generatedCase.setting}</p>
-                  <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20">
-                    <p className="text-xs font-semibold text-amber-600">🔒 Diagnóstico (oculto ao aluno): {generatedCase.hidden_diagnosis}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                </div>
 
-            {/* Student selection */}
-            {generatedCase && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Cenário</Label>
+                    <Select value={manualScenario} onValueChange={setManualScenario}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {SCENARIOS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Cor de Triagem</Label>
+                    <Select value={manualTriageColor} onValueChange={setManualTriageColor}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {TRIAGE_COLORS.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Diagnóstico Correto <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={manualDiagnosis}
+                    onChange={(e) => setManualDiagnosis(e.target.value)}
+                    placeholder="Ex: Infarto Agudo do Miocárdio com supra de ST"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Oculto ao aluno — usado para avaliação.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Achados-chave (até 5)</Label>
+                  {manualFindings.map((f, i) => (
+                    <div key={i} className="flex gap-2">
+                      <Input
+                        value={f}
+                        onChange={(e) => {
+                          const updated = [...manualFindings];
+                          updated[i] = e.target.value;
+                          setManualFindings(updated);
+                        }}
+                        placeholder={`Achado ${i + 1}`}
+                        className="h-8 text-sm"
+                      />
+                      {manualFindings.length > 1 && (
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0" onClick={() => setManualFindings(prev => prev.filter((_, j) => j !== i))}>
+                          <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  {manualFindings.length < 5 && (
+                    <Button variant="outline" size="sm" className="text-xs" onClick={() => setManualFindings(prev => [...prev, ""])}>
+                      + Adicionar achado
+                    </Button>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Dificuldade do Caso: <span className="font-bold">{manualDifficultyScore}/5</span></Label>
+                  <Slider
+                    value={[manualDifficultyScore]}
+                    onValueChange={(v) => setManualDifficultyScore(v[0])}
+                    min={1}
+                    max={5}
+                    step={1}
+                  />
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
+                    <span>Fácil</span><span>Difícil</span>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            {/* Student selection — show when case is ready */}
+            {(generatedCase || (createMode === "manual" && canSubmitManual)) && (
               <div className="space-y-3">
                 <Label className="font-semibold">Atribuir a Alunos</Label>
                 <div className="grid grid-cols-2 gap-3">
@@ -437,7 +550,17 @@ const ProfessorPlantao = () => {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }}>Cancelar</Button>
-            <Button onClick={createCase} disabled={!generatedCase || creating} className="gap-2">
+            <Button
+              onClick={createCase}
+              disabled={(createMode === "ia" ? !generatedCase : !canSubmitManual) || creating}
+              className="gap-2"
+            >
+              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+              {creating ? "Criando..." : "Criar e Atribuir"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
               {creating ? "Criando..." : "Criar e Atribuir"}
             </Button>
