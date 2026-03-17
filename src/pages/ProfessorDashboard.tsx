@@ -260,6 +260,7 @@ const ProfessorDashboard = () => {
       <Tabs defaultValue="simulados">
         <TabsList>
           <TabsTrigger value="simulados">📝 Simulados</TabsTrigger>
+          <TabsTrigger value="plantao">🏥 Casos Plantão</TabsTrigger>
           <TabsTrigger value="alunos">👤 Aluno Individual</TabsTrigger>
           <TabsTrigger value="analytics">📊 Análise da Turma</TabsTrigger>
         </TabsList>
