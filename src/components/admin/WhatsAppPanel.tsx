@@ -80,6 +80,9 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
     toast({ title: "Copiado!", description: "Mensagem copiada para a área de transferência." });
   };
 
+  // Random delay between 8-15 seconds to avoid WhatsApp blocking
+  const randomDelay = () => 8000 + Math.floor(Math.random() * 7000);
+
   const handleSequentialDispatch = async () => {
     if (dispatching) {
       abortRef.current = true;
@@ -97,7 +100,10 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
       setDispatchIndex(i);
       handleSend(unsent[i]);
       if (i < unsent.length - 1) {
-        await new Promise((r) => setTimeout(r, 3000));
+        const delay = randomDelay();
+        setCurrentDelay(delay);
+        await new Promise((r) => setTimeout(r, delay));
+        setCurrentDelay(0);
       }
     }
     setDispatching(false);
