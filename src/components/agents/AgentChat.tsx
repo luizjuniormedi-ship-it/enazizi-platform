@@ -226,6 +226,11 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
             setAvailableUploads(prev => [newUpload, ...prev]);
             setSelectedUploadIds(prev => new Set(prev).add(uploadRow.id));
             toast({ title: "✅ Material processado!", description: `${status.filename} está pronto para uso como contexto.` });
+
+            // Auto-send summary prompt after upload
+            if (autoPromptAfterUpload) {
+              pendingAutoPromptRef.current = autoPromptAfterUpload.replace("{filename}", file.name);
+            }
           } else {
             toast({ title: "Erro", description: "Falha ao processar o arquivo.", variant: "destructive" });
           }
