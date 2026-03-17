@@ -46,10 +46,10 @@ describe("TopicEvolution", () => {
     expect(screen.getByText("0%")).toBeInTheDocument();
   });
 
-  it("shows all 19 specialties as not studied when no domain data", async () => {
+  it("shows all 22 specialties as not studied when no domain data", async () => {
     renderComponent();
     await waitFor(() => {
-      expect(screen.getByText(/Tópicos ainda não estudados \(19\)/)).toBeInTheDocument();
+      expect(screen.getByText(/Tópicos ainda não estudados \(22\)/)).toBeInTheDocument();
     });
     expect(screen.getByText("Cardiologia")).toBeInTheDocument();
     expect(screen.getByText("Cirurgia")).toBeInTheDocument();
