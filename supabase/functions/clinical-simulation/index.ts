@@ -211,7 +211,7 @@ serve(async (req) => {
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user) throw new Error("Não autenticado");
 
-    const { action, specialty, difficulty, message, conversation_history, specialist_area, teacher_case_id } = await req.json();
+    const { action, specialty, difficulty, message, conversation_history, specialist_area, teacher_case_id, triage_color: requestedTriageColor } = await req.json();
 
     let messages: Array<{ role: string; content: string }> = [
       { role: "system", content: SYSTEM_PROMPT },
@@ -248,10 +248,9 @@ serve(async (req) => {
       }
 
       // Determine triage color: use provided value or pick randomly
-      const requestedTriage = (await req.clone().json()).triage_color;
       const triageOptions = ["vermelho", "laranja", "amarelo", "verde"];
-      const triage = requestedTriage && triageOptions.includes(requestedTriage)
-        ? requestedTriage
+      const triage = requestedTriageColor && triageOptions.includes(requestedTriageColor)
+        ? requestedTriageColor
         : triageOptions[Math.floor(Math.random() * triageOptions.length)];
 
       messages.push({
