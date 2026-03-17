@@ -42,9 +42,10 @@ interface AgentChatProps {
   quickActions?: QuickAction[];
   renderAssistantMessage?: (content: string) => React.ReactNode;
   showUploadButton?: boolean;
+  autoPromptAfterUpload?: string;
 }
 
-const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions, renderAssistantMessage, showUploadButton }: AgentChatProps) => {
+const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions, renderAssistantMessage, showUploadButton, autoPromptAfterUpload }: AgentChatProps) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([
     { role: "assistant", content: welcomeMessage },
@@ -225,6 +226,19 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
             setAvailableUploads(prev => [newUpload, ...prev]);
             setSelectedUploadIds(prev => new Set(prev).add(uploadRow.id));
             toast({ title: "✅ Material processado!", description: `${status.filename} está pronto para uso como contexto.` });
+
+            // Auto-send summary prompt after upload
+            if (autoPromptAfterUpload) {
+              const prompt = autoPromptAfterUpload.replace("{filename}", file.name);
+              setTimeout(() => {
+                setIsUploading(false);
+                setUploadProgress(0);
+                setUploadStep("");
+                // Trigger auto-send after state settles
+                setTimeout(() => handleSend(prompt), 200);
+              }, 800);
+              return; // skip the default timeout below
+            }
           } else {
             toast({ title: "Erro", description: "Falha ao processar o arquivo.", variant: "destructive" });
           }
@@ -302,18 +316,20 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading || !user) return;
+  const handleSend = async (overridePrompt?: string) => {
+    const text = overridePrompt || input.trim();
+    if (!text || isLoading || !user) return;
 
-    const userMsg: Msg = { role: "user", content: input };
+    const userMsg: Msg = { role: "user", content: text };
     const allMessages = [...messages, userMsg];
     setMessages(allMessages);
-    setInput("");
+    if (!overridePrompt) setInput("");
+    else setInput("");
     setIsLoading(true);
 
     let convId = activeConversationId;
     if (!convId) {
-      const convTitle = input.slice(0, 60);
+      const convTitle = text.slice(0, 60);
       const { data: newConv } = await supabase
         .from("chat_conversations")
         .insert({ user_id: user.id, agent_type: functionName, title: convTitle })
@@ -330,7 +346,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
 
     if (convId) {
       await supabase.from("chat_messages").insert({
-        conversation_id: convId, user_id: user.id, role: "user", content: input,
+        conversation_id: convId, user_id: user.id, role: "user", content: text,
       });
       await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
     }
@@ -717,7 +733,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           disabled={isLoading}
         />
-        <Button onClick={handleSend} size="icon" className="glow flex-shrink-0" disabled={isLoading}>
+        <Button onClick={() => handleSend()} size="icon" className="glow flex-shrink-0" disabled={isLoading}>
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </Button>
       </div>

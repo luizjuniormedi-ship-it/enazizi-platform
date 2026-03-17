@@ -19,6 +19,7 @@ const ContentSummarizer = () => (
     functionName="content-summarizer"
     quickActions={quickActions}
     showUploadButton
+    autoPromptAfterUpload="Faça um resumo completo e estruturado do material '{filename}' com pontos de prova, mnemônicos e tabelas comparativas."
   />
 );
 
