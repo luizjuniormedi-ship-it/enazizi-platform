@@ -126,6 +126,136 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
+  const handleOnboardingSave = async () => {
+    if (!user) return;
+    const trimmedName = formName.trim();
+    const cleanPhone = formPhone.replace(/\D/g, "");
+    if (!trimmedName || !cleanPhone || cleanPhone.length < 10 || !formPeriodo || !formFaculdade) {
+      toast({ title: "Preencha todos os campos corretamente", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          display_name: trimmedName,
+          phone: cleanPhone,
+          periodo: parseInt(formPeriodo),
+          faculdade: formFaculdade,
+        })
+        .eq("user_id", user.id);
+      if (error) throw error;
+      setProfileIncomplete(false);
+      toast({ title: "Cadastro completo! 🎉" });
+    } catch (err: any) {
+      toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (profileStatus === "active" && profileIncomplete) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="w-full max-w-md space-y-6 animate-fade-in">
+          <div className="text-center space-y-2">
+            <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+              <User className="h-8 w-8 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold">Complete seu cadastro</h1>
+            <p className="text-muted-foreground text-sm">
+              Para acessar a plataforma, preencha todas as informações abaixo.
+            </p>
+          </div>
+
+          <div className="rounded-xl border bg-card p-6 space-y-4 shadow-sm">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5 text-muted-foreground" />
+                Nome completo
+              </Label>
+              <Input
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                placeholder="Seu nome completo"
+                maxLength={100}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                WhatsApp
+              </Label>
+              <Input
+                value={formPhone}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                  let formatted = digits;
+                  if (digits.length > 2) formatted = `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+                  if (digits.length > 7) formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+                  setFormPhone(formatted);
+                }}
+                placeholder="(21) 99999-9999"
+                maxLength={16}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
+                  Período
+                </Label>
+                <Select value={formPeriodo} onValueChange={setFormPeriodo}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map((p) => (
+                      <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Building className="h-3.5 w-3.5 text-muted-foreground" />
+                  Faculdade
+                </Label>
+                <Select value={formFaculdade} onValueChange={setFormFaculdade}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FACULDADES.map((f) => (
+                      <SelectItem key={f} value={f}>{f}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Button onClick={handleOnboardingSave} disabled={saving} className="w-full mt-2">
+              {saving ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Salvando...</>
+              ) : (
+                <><Save className="h-4 w-4 mr-2" /> Salvar e acessar</>
+              )}
+            </Button>
+          </div>
+
+          <div className="text-center">
+            <Button variant="ghost" size="sm" onClick={() => signOut()} className="gap-2 text-muted-foreground">
+              <LogOut className="h-4 w-4" /> Sair
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return <>{children}</>;
 };
 
