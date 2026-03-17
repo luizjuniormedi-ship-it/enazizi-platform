@@ -193,13 +193,42 @@ serve(async (req) => {
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user) throw new Error("Não autenticado");
 
-    const { action, specialty, difficulty, message, conversation_history, specialist_area } = await req.json();
+    const { action, specialty, difficulty, message, conversation_history, specialist_area, teacher_case_id } = await req.json();
 
     let messages: Array<{ role: string; content: string }> = [
       { role: "system", content: SYSTEM_PROMPT },
     ];
 
     if (action === "start") {
+      // If teacher_case_id provided, load the pre-created case
+      if (teacher_case_id) {
+        const supabaseService = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+
+        const { data: teacherCase, error: caseErr } = await supabaseService
+          .from("teacher_clinical_cases")
+          .select("case_prompt, specialty, difficulty")
+          .eq("id", teacher_case_id)
+          .single();
+
+        if (caseErr || !teacherCase) throw new Error("Caso clínico não encontrado");
+
+        // Update result status to in_progress
+        await supabaseService
+          .from("teacher_clinical_case_results")
+          .update({ status: "in_progress", started_at: new Date().toISOString() })
+          .eq("case_id", teacher_case_id)
+          .eq("student_id", user.id)
+          .eq("status", "pending");
+
+        // Return the pre-created case directly
+        return new Response(JSON.stringify(teacherCase.case_prompt), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       messages.push({
         role: "user",
         content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}. Dificuldade: ${difficulty || "intermediário"}. Responda APENAS em JSON válido.`,
