@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Activity, Plus, Loader2, Eye, Users, CheckCircle, Clock,
   Sparkles, FileText, BarChart3, Trophy, XCircle, Target,
-  Stethoscope, AlertTriangle, Award, Syringe, ShieldAlert
+  Stethoscope, AlertTriangle, Award, Syringe, ShieldAlert, PenLine, Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,19 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { CheckSquare, Square } from "lucide-react";
+
+const SCENARIOS = ["Pronto-Socorro", "UTI", "Enfermaria", "UBS"];
+const TRIAGE_COLORS = [
+  { value: "vermelho", label: "🔴 Vermelho (Emergência)" },
+  { value: "amarelo", label: "🟡 Amarelo (Urgência)" },
+  { value: "verde", label: "🟢 Verde (Pouco Urgente)" },
+];
 
 const SPECIALTIES = [
   "Clínica Médica", "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia",
