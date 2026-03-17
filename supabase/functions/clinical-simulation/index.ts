@@ -248,10 +248,9 @@ serve(async (req) => {
       }
 
       // Determine triage color: use provided value or pick randomly
-      const requestedTriage = (await req.clone().json()).triage_color;
       const triageOptions = ["vermelho", "laranja", "amarelo", "verde"];
-      const triage = requestedTriage && triageOptions.includes(requestedTriage)
-        ? requestedTriage
+      const triage = requestedTriageColor && triageOptions.includes(requestedTriageColor)
+        ? requestedTriageColor
         : triageOptions[Math.floor(Math.random() * triageOptions.length)];
 
       messages.push({
