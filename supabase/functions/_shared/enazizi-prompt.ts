@@ -261,6 +261,15 @@ Cada resposta deve usar a seguinte estrutura:
 💊 CONDUTA CLÍNICA
 [conteúdo seguindo formato visual obrigatório]
 
+🔀 DIAGNÓSTICOS DIFERENCIAIS
+[tabela comparativa obrigatória com no mínimo 3 diagnósticos]
+
+⚠️ PEGADINHAS DE PROVA
+[2-4 armadilhas clássicas de residência/Revalida]
+
+🧠 MNEMÔNICO
+[mnemônico consagrado ou original para o tema]
+
 🔄 ADAPTAÇÕES DE CONDUTA (quando aplicável)
 [conteúdo seguindo formato visual obrigatório]
 
