@@ -1,4 +1,4 @@
-import { CalendarDays, FlipVertical, FileText, Upload, TrendingUp, Clock, BookOpen, CheckCircle2, Loader2, BarChart3, Flame, CalendarCheck, Globe, HelpCircle } from "lucide-react";
+import { CalendarDays, FlipVertical, FileText, Upload, TrendingUp, Clock, BookOpen, CheckCircle2, Loader2, BarChart3, Flame, CalendarCheck, Globe, HelpCircle, AlertTriangle, Target, Stethoscope, Award } from "lucide-react";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
 import { Link } from "react-router-dom";
@@ -41,40 +41,79 @@ interface Stats {
   todayTotal: number;
 }
 
+interface RealMetrics {
+  questionsAnswered: number;
+  accuracy: number;
+  errorsCount: number;
+  pendingRevisoes: number;
+  simuladosCompleted: number;
+  discursivasCompleted: number;
+  gamificationStreak: number;
+  gamificationXp: number;
+  gamificationLevel: number;
+  globalFlashcards: number;
+  globalQuestions: number;
+}
+
 const Dashboard = () => {
   const { user } = useAuth();
   useRevisionNotifier();
   const [stats, setStats] = useState<Stats | null>(null);
+  const [metrics, setMetrics] = useState<RealMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [weekFilter, setWeekFilter] = useState<4 | 8 | 12>(8);
   const [displayName, setDisplayName] = useState<string | null>(null);
-  const [questionsAnswered, setQuestionsAnswered] = useState(0);
-  const [accuracy, setAccuracy] = useState(0);
-  const [globalFlashcards, setGlobalFlashcards] = useState(0);
-  const [globalQuestions, setGlobalQuestions] = useState(0);
 
   useEffect(() => {
     if (!user) return;
 
     const load = async () => {
-      const [flashcardsRes, uploadsRes, tasksRes, plansRes, reviewsRes, profileRes, perfRes, globalFlashRes, globalQuestRes] = await Promise.all([
+      // Batch all queries in parallel
+      const [
+        flashcardsRes, uploadsRes, tasksRes, plansRes, reviewsRes, profileRes,
+        practiceRes, errorBankRes, pendingRevisoesRes, simuladosRes, discursivasRes,
+        gamificationRes, globalFlashRes, globalQuestRes,
+      ] = await Promise.all([
         supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("study_tasks").select("completed, created_at, task_json").eq("user_id", user.id),
         supabase.from("study_plans").select("plan_json").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("reviews").select("next_review, flashcard_id, flashcards(topic)").eq("user_id", user.id).gte("next_review", new Date().toISOString()).order("next_review", { ascending: true }).limit(5),
         supabase.from("profiles").select("display_name").eq("user_id", user.id).maybeSingle(),
-        supabase.from("study_performance").select("questoes_respondidas, taxa_acerto").eq("user_id", user.id).maybeSingle(),
+        // Real metrics
+        supabase.from("practice_attempts").select("correct").eq("user_id", user.id),
+        supabase.from("error_bank").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("revisoes").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "pendente"),
+        supabase.from("exam_sessions").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "completed"),
+        supabase.from("discursive_attempts").select("id", { count: "exact", head: true }).eq("user_id", user.id).not("finished_at", "is", null),
+        supabase.from("user_gamification").select("current_streak, xp, level").eq("user_id", user.id).maybeSingle(),
         supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("is_global", true),
         supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("is_global", true),
       ]);
 
       setDisplayName(profileRes.data?.display_name || null);
-      setQuestionsAnswered(perfRes.data?.questoes_respondidas || 0);
-      setAccuracy(Number(perfRes.data?.taxa_acerto) || 0);
-      setGlobalFlashcards(globalFlashRes.count || 0);
-      setGlobalQuestions(globalQuestRes.count || 0);
-      setAccuracy(Number(perfRes.data?.taxa_acerto) || 0);
+
+      // Calculate real accuracy from practice_attempts
+      const attempts = practiceRes.data || [];
+      const questionsAnswered = attempts.length;
+      const correctCount = attempts.filter((a: any) => a.correct).length;
+      const accuracy = questionsAnswered > 0 ? Math.round((correctCount / questionsAnswered) * 100) : 0;
+
+      const gamData = gamificationRes.data;
+
+      setMetrics({
+        questionsAnswered,
+        accuracy,
+        errorsCount: errorBankRes.count || 0,
+        pendingRevisoes: pendingRevisoesRes.count || 0,
+        simuladosCompleted: simuladosRes.count || 0,
+        discursivasCompleted: discursivasRes.count || 0,
+        gamificationStreak: gamData?.current_streak || 0,
+        gamificationXp: gamData?.xp || 0,
+        gamificationLevel: gamData?.level || 1,
+        globalFlashcards: globalFlashRes.count || 0,
+        globalQuestions: globalQuestRes.count || 0,
+      });
 
       const tasks = tasksRes.data || [];
       const completedTasks = tasks.filter((t: any) => t.completed).length;
@@ -138,29 +177,8 @@ const Dashboard = () => {
       });
       const todayCompleted = completedToday.length;
 
-      // Streak calculation
-      const completedDates = new Set(
-        tasks.filter((t: any) => t.completed).map((t: any) => {
-          const d = new Date(t.created_at);
-          return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-        })
-      );
-      let streak = 0;
-      const checkDate = new Date();
-      // If no tasks today yet, start from yesterday
-      const todayKey = `${checkDate.getFullYear()}-${checkDate.getMonth()}-${checkDate.getDate()}`;
-      if (!completedDates.has(todayKey)) {
-        checkDate.setDate(checkDate.getDate() - 1);
-      }
-      while (true) {
-        const key = `${checkDate.getFullYear()}-${checkDate.getMonth()}-${checkDate.getDate()}`;
-        if (completedDates.has(key)) {
-          streak++;
-          checkDate.setDate(checkDate.getDate() - 1);
-        } else {
-          break;
-        }
-      }
+      // Use gamification streak if available, otherwise calculate from tasks
+      const streak = gamData?.current_streak || 0;
 
       setStats({
         flashcards: flashcardsRes.count || 0,
@@ -191,7 +209,7 @@ const Dashboard = () => {
     );
   }
 
-  if (!stats) return null;
+  if (!stats || !metrics) return null;
 
   const taskPercent = stats.totalTasks > 0 ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0;
 
@@ -204,13 +222,6 @@ const Dashboard = () => {
     if (diff === 1) return "Amanhã";
     return `${diff} dias`;
   };
-
-  const statCards = [
-    { label: "Flashcards", value: String(stats.flashcards), icon: FlipVertical, color: "text-primary", to: "/dashboard/flashcards" },
-    { label: "Tarefas concluídas", value: `${stats.completedTasks}/${stats.totalTasks}`, icon: CheckCircle2, color: "text-accent", to: "/dashboard/cronograma" },
-    { label: "Uploads", value: String(stats.uploads), icon: Upload, color: "text-green-500", to: "/dashboard/uploads" },
-    { label: "Horas/semana", value: `${stats.totalStudyHours}h`, icon: Clock, color: "text-orange-500", to: "/dashboard/cronograma" },
-  ];
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -225,8 +236,8 @@ const Dashboard = () => {
           completedTasks={stats.completedTasks}
           totalTasks={stats.totalTasks}
           daysUntilExam={stats.daysUntilExam}
-          questionsAnswered={questionsAnswered}
-          accuracy={accuracy}
+          questionsAnswered={metrics.questionsAnswered}
+          accuracy={metrics.accuracy}
           displayName={displayName}
         />
 
@@ -252,22 +263,78 @@ const Dashboard = () => {
         />
       </div>
 
-      {/* Stat Cards */}
+      {/* Real Metrics Cards — Primary KPIs */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <Link to="/dashboard/banco-questoes" className="glass-card p-4 hover:border-primary/30 transition-all group text-center">
+          <Target className="h-5 w-5 text-primary mx-auto mb-2" />
+          <div className="text-2xl font-bold">{metrics.questionsAnswered}</div>
+          <div className="text-xs text-muted-foreground">Questões respondidas</div>
+        </Link>
+        <Link to="/dashboard/banco-questoes" className="glass-card p-4 hover:border-primary/30 transition-all group text-center">
+          <CheckCircle2 className={`h-5 w-5 mx-auto mb-2 ${metrics.accuracy >= 70 ? "text-green-500" : metrics.accuracy >= 50 ? "text-yellow-500" : "text-red-500"}`} />
+          <div className="text-2xl font-bold">{metrics.accuracy}%</div>
+          <div className="text-xs text-muted-foreground">Taxa de acerto</div>
+        </Link>
+        <Link to="/dashboard/conquistas" className="glass-card p-4 hover:border-primary/30 transition-all group text-center">
+          <Flame className={`h-5 w-5 mx-auto mb-2 ${stats.streak > 0 ? "text-orange-500" : "text-muted-foreground"}`} />
+          <div className="text-2xl font-bold">{stats.streak}</div>
+          <div className="text-xs text-muted-foreground">Dias de streak</div>
+        </Link>
+        <Link to="/dashboard/cronograma" className="glass-card p-4 hover:border-primary/30 transition-all group text-center">
+          <CalendarDays className={`h-5 w-5 mx-auto mb-2 ${metrics.pendingRevisoes > 0 ? "text-yellow-500" : "text-green-500"}`} />
+          <div className="text-2xl font-bold">{metrics.pendingRevisoes}</div>
+          <div className="text-xs text-muted-foreground">Revisões pendentes</div>
+        </Link>
+        <Link to="/dashboard/banco-erros" className="glass-card p-4 hover:border-primary/30 transition-all group text-center">
+          <AlertTriangle className={`h-5 w-5 mx-auto mb-2 ${metrics.errorsCount > 0 ? "text-red-500" : "text-green-500"}`} />
+          <div className="text-2xl font-bold">{metrics.errorsCount}</div>
+          <div className="text-xs text-muted-foreground">Erros registrados</div>
+        </Link>
+        <Link to="/dashboard/simulado-completo" className="glass-card p-4 hover:border-primary/30 transition-all group text-center">
+          <Award className="h-5 w-5 text-primary mx-auto mb-2" />
+          <div className="text-2xl font-bold">{metrics.simuladosCompleted}</div>
+          <div className="text-xs text-muted-foreground">Simulados feitos</div>
+        </Link>
+      </div>
+
+      {/* Secondary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((s) => (
-          <Link key={s.label} to={s.to} className="glass-card p-5 hover:border-primary/30 transition-all group">
-            <div className="flex items-center justify-between mb-3">
-              <s.icon className={`h-5 w-5 ${s.color}`} />
-              <TrendingUp className="h-4 w-4 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-            <div className="text-2xl font-bold">{s.value}</div>
-            <div className="text-sm text-muted-foreground">{s.label}</div>
-          </Link>
-        ))}
+        <Link to="/dashboard/flashcards" className="glass-card p-5 hover:border-primary/30 transition-all group">
+          <div className="flex items-center justify-between mb-3">
+            <FlipVertical className="h-5 w-5 text-primary" />
+            <TrendingUp className="h-4 w-4 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <div className="text-2xl font-bold">{stats.flashcards}</div>
+          <div className="text-sm text-muted-foreground">Flashcards</div>
+        </Link>
+        <Link to="/dashboard/cronograma" className="glass-card p-5 hover:border-primary/30 transition-all group">
+          <div className="flex items-center justify-between mb-3">
+            <CheckCircle2 className="h-5 w-5 text-accent" />
+            <TrendingUp className="h-4 w-4 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <div className="text-2xl font-bold">{stats.completedTasks}/{stats.totalTasks}</div>
+          <div className="text-sm text-muted-foreground">Tarefas concluídas</div>
+        </Link>
+        <Link to="/dashboard/uploads" className="glass-card p-5 hover:border-primary/30 transition-all group">
+          <div className="flex items-center justify-between mb-3">
+            <Upload className="h-5 w-5 text-green-500" />
+            <TrendingUp className="h-4 w-4 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <div className="text-2xl font-bold">{stats.uploads}</div>
+          <div className="text-sm text-muted-foreground">Uploads</div>
+        </Link>
+        <Link to="/dashboard/discursivas" className="glass-card p-5 hover:border-primary/30 transition-all group">
+          <div className="flex items-center justify-between mb-3">
+            <Stethoscope className="h-5 w-5 text-purple-500" />
+            <TrendingUp className="h-4 w-4 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <div className="text-2xl font-bold">{metrics.discursivasCompleted}</div>
+          <div className="text-sm text-muted-foreground">Discursivas feitas</div>
+        </Link>
       </div>
 
       {/* Global Knowledge Base Banner */}
-      {(globalFlashcards > 0 || globalQuestions > 0) && (
+      {(metrics.globalFlashcards > 0 || metrics.globalQuestions > 0) && (
         <div className="glass-card p-5 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex items-center gap-3 mb-3">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -282,14 +349,14 @@ const Dashboard = () => {
             <Link to="/dashboard/flashcards" className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary/80 transition-colors">
               <FlipVertical className="h-4 w-4 text-primary flex-shrink-0" />
               <div>
-                <div className="text-lg font-bold">{globalFlashcards}</div>
+                <div className="text-lg font-bold">{metrics.globalFlashcards}</div>
                 <div className="text-xs text-muted-foreground">Flashcards globais</div>
               </div>
             </Link>
             <Link to="/dashboard/banco-questoes" className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary/80 transition-colors">
               <HelpCircle className="h-4 w-4 text-primary flex-shrink-0" />
               <div>
-                <div className="text-lg font-bold">{globalQuestions}</div>
+                <div className="text-lg font-bold">{metrics.globalQuestions}</div>
                 <div className="text-xs text-muted-foreground">Questões globais</div>
               </div>
             </Link>
@@ -404,6 +471,11 @@ const Dashboard = () => {
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <CalendarDays className="h-5 w-5 text-primary" />
             Próximas revisões
+            {metrics.pendingRevisoes > 0 && (
+              <span className="ml-auto text-xs bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 px-2 py-1 rounded-full font-medium">
+                {metrics.pendingRevisoes} pendente{metrics.pendingRevisoes !== 1 ? "s" : ""}
+              </span>
+            )}
           </h2>
           {stats.upcomingReviews.length > 0 ? (
             <div className="space-y-3">
