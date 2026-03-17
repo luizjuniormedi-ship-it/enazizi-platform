@@ -1,66 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
-import { Shield, Users, CreditCard, TrendingUp, Ban, CheckCircle, UserCog, Search, RefreshCw, ChevronDown, ShieldCheck, ShieldOff, ClipboardList, KeyRound, Bell, UserCheck, UserX, Clock, BarChart3, BookOpen, Target, AlertTriangle, Activity, Brain, Wifi, GraduationCap, LogOut, Lock, MessageSquare } from "lucide-react";
+import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
 import { ALL_MODULES } from "@/hooks/useModuleAccess";
 import WhatsAppPanel from "@/components/admin/WhatsAppPanel";
-
-interface AdminUser {
-  user_id: string;
-  display_name: string | null;
-  email: string | null;
-  is_blocked: boolean;
-  created_at: string;
-  status: string;
-  approved_by: string | null;
-  approved_at: string | null;
-  roles: string[];
-  last_seen_at: string | null;
-  subscription: { status: string; plan_id: string; plans: { name: string; price: number } | null } | null;
-  quota: { questions_used: number; questions_limit: number } | null;
-  evolution?: { avgScore: number; totalQuestions: number; specialties: number; recentAttempts: number; recentAccuracy: number };
-}
-
-interface OnlineUser {
-  user_id: string;
-  display_name: string;
-  email: string;
-  current_page: string;
-  last_seen_at: string;
-}
-
-interface Stats {
-  totalUsers: number;
-  blockedUsers: number;
-  activeSubs: number;
-  pendingUsers: number;
-  planCounts: Record<string, number>;
-  onlineUsers: number;
-  onlineUsersData: OnlineUser[];
-}
-
-const PLANS = ["Free", "Pro", "Premium", "Enterprise"];
+import AdminStatsCards from "@/components/admin/AdminStatsCards";
+import AdminOnlineUsers from "@/components/admin/AdminOnlineUsers";
+import AdminPlanDistribution from "@/components/admin/AdminPlanDistribution";
+import AdminAuditLog from "@/components/admin/AdminAuditLog";
+import AdminDialogs from "@/components/admin/AdminDialogs";
+import AdminUserRow from "@/components/admin/AdminUserRow";
+import type { AdminUser, Stats } from "@/components/admin/AdminTypes";
 
 const Admin = () => {
   const { session } = useAuth();
@@ -77,7 +31,6 @@ const Admin = () => {
   const [adminDialog, setAdminDialog] = useState<{ open: boolean; user: AdminUser | null; makeAdmin: boolean }>({ open: false, user: null, makeAdmin: false });
   const [professorDialog, setProfessorDialog] = useState<{ open: boolean; user: AdminUser | null; makeProfessor: boolean }>({ open: false, user: null, makeProfessor: false });
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
-  const [showAuditLog, setShowAuditLog] = useState(false);
   const [auditLoading, setAuditLoading] = useState(false);
   const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; user: AdminUser | null; password: string }>({ open: false, user: null, password: "" });
   const [userDetailDialog, setUserDetailDialog] = useState<{ open: boolean; user: AdminUser | null }>({ open: false, user: null });
@@ -90,10 +43,7 @@ const Admin = () => {
   const callAdmin = useCallback(async (body: Record<string, unknown>) => {
     const resp = await fetch(API_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session?.access_token}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
       body: JSON.stringify(body),
     });
     const data = await resp.json();
@@ -124,7 +74,7 @@ const Admin = () => {
     try {
       const res = await callAdmin({ action: "get_audit_log", limit: 50 });
       setAuditLogs(res.logs || []);
-    } catch (e) {
+    } catch {
       toast({ title: "Erro", description: "Erro ao carregar log de auditoria", variant: "destructive" });
     } finally {
       setAuditLoading(false);
@@ -133,12 +83,78 @@ const Admin = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Action handlers
+  const handleAction = useCallback(async (userId: string, fn: () => Promise<void>) => {
+    setActionLoading(userId);
+    try { await fn(); loadData(); } catch (e) {
+      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    } finally { setActionLoading(null); }
+  }, [loadData, toast]);
+
+  const handleApproveUser = (u: AdminUser) => handleAction(u.user_id, async () => {
+    await callAdmin({ action: "approve_user", target_user_id: u.user_id });
+    toast({ title: "Usuário aprovado!", description: `${u.display_name || u.email} agora pode acessar o sistema.` });
+  });
+
+  const handleRejectUser = (u: AdminUser) => handleAction(u.user_id, async () => {
+    await callAdmin({ action: "reject_user", target_user_id: u.user_id });
+    toast({ title: "Usuário rejeitado", description: `${u.display_name || u.email} foi rejeitado.` });
+  });
+
+  const handleBlock = async () => {
+    if (!blockDialog.user) return;
+    await handleAction(blockDialog.user.user_id, async () => {
+      await callAdmin({ action: "block_user", target_user_id: blockDialog.user!.user_id, blocked: blockDialog.block });
+      toast({ title: blockDialog.block ? "Usuário bloqueado" : "Usuário desbloqueado" });
+      setBlockDialog({ open: false, user: null, block: false });
+    });
+  };
+
+  const handleChangePlan = async () => {
+    if (!planDialog.user || !planDialog.plan) return;
+    await handleAction(planDialog.user.user_id, async () => {
+      await callAdmin({ action: "change_plan", target_user_id: planDialog.user!.user_id, plan_name: planDialog.plan });
+      toast({ title: "Plano alterado" });
+      setPlanDialog({ open: false, user: null, plan: "" });
+    });
+  };
+
+  const handleToggleAdmin = async () => {
+    if (!adminDialog.user) return;
+    await handleAction(adminDialog.user.user_id, async () => {
+      await callAdmin({ action: "toggle_admin", target_user_id: adminDialog.user!.user_id, make_admin: adminDialog.makeAdmin });
+      toast({ title: adminDialog.makeAdmin ? "Admin promovido" : "Admin removido" });
+      setAdminDialog({ open: false, user: null, makeAdmin: false });
+    });
+  };
+
+  const handleToggleProfessor = async () => {
+    if (!professorDialog.user) return;
+    await handleAction(professorDialog.user.user_id, async () => {
+      await callAdmin({ action: "toggle_professor", target_user_id: professorDialog.user!.user_id, make_professor: professorDialog.makeProfessor });
+      toast({ title: professorDialog.makeProfessor ? "Professor promovido" : "Professor removido" });
+      setProfessorDialog({ open: false, user: null, makeProfessor: false });
+    });
+  };
+
+  const handleResetPassword = async () => {
+    if (!passwordDialog.user || passwordDialog.password.length < 6) {
+      toast({ title: "Erro", description: "A senha deve ter pelo menos 6 caracteres.", variant: "destructive" });
+      return;
+    }
+    await handleAction(passwordDialog.user.user_id, async () => {
+      await callAdmin({ action: "reset_password", target_user_id: passwordDialog.user!.user_id, new_password: passwordDialog.password });
+      toast({ title: "Senha redefinida" });
+      setPasswordDialog({ open: false, user: null, password: "" });
+    });
+  };
+
   const loadUserTracking = useCallback(async (u: AdminUser) => {
     setTrackingDialog({ open: true, user: u, data: null, loading: true });
     try {
       const res = await callAdmin({ action: "get_user_tracking", target_user_id: u.user_id });
       setTrackingDialog((prev) => ({ ...prev, data: res, loading: false }));
-    } catch (e) {
+    } catch {
       toast({ title: "Erro", description: "Erro ao carregar dados do usuário", variant: "destructive" });
       setTrackingDialog((prev) => ({ ...prev, loading: false }));
     }
@@ -149,12 +165,10 @@ const Admin = () => {
     try {
       const res = await callAdmin({ action: "get_user_access", target_user_id: u.user_id });
       const mods: Record<string, boolean> = {};
-      ALL_MODULES.forEach(m => { mods[m.key] = true; }); // default all enabled
-      (res.modules || []).forEach((m: { module_key: string; enabled: boolean }) => {
-        mods[m.module_key] = m.enabled;
-      });
+      ALL_MODULES.forEach(m => { mods[m.key] = true; });
+      (res.modules || []).forEach((m: { module_key: string; enabled: boolean }) => { mods[m.module_key] = m.enabled; });
       setAccessDialog(prev => ({ ...prev, modules: mods, loading: false }));
-    } catch (e) {
+    } catch {
       toast({ title: "Erro", description: "Erro ao carregar acessos", variant: "destructive" });
       setAccessDialog(prev => ({ ...prev, loading: false }));
     }
@@ -166,7 +180,7 @@ const Admin = () => {
     try {
       const modules = ALL_MODULES.map(m => ({ module_key: m.key, enabled: accessDialog.modules[m.key] ?? true }));
       await callAdmin({ action: "set_user_access", target_user_id: accessDialog.user.user_id, modules });
-      toast({ title: "Acessos salvos", description: `Módulos de ${accessDialog.user.display_name || accessDialog.user.email} atualizados.` });
+      toast({ title: "Acessos salvos" });
       setAccessDialog({ open: false, user: null, modules: {}, loading: false, saving: false });
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao salvar", variant: "destructive" });
@@ -174,115 +188,11 @@ const Admin = () => {
     }
   };
 
-  const handleApproveUser = async (u: AdminUser) => {
-    setActionLoading(u.user_id);
-    try {
-      await callAdmin({ action: "approve_user", target_user_id: u.user_id });
-      toast({ title: "Usuário aprovado!", description: `${u.display_name || u.email} agora pode acessar o sistema.` });
-      loadData();
-    } catch (e) {
-      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleRejectUser = async (u: AdminUser) => {
-    setActionLoading(u.user_id);
-    try {
-      await callAdmin({ action: "reject_user", target_user_id: u.user_id });
-      toast({ title: "Usuário rejeitado", description: `${u.display_name || u.email} foi rejeitado.` });
-      loadData();
-    } catch (e) {
-      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleBlock = async () => {
-    if (!blockDialog.user) return;
-    setActionLoading(blockDialog.user.user_id);
-    try {
-      await callAdmin({ action: "block_user", target_user_id: blockDialog.user.user_id, blocked: blockDialog.block });
-      toast({ title: blockDialog.block ? "Usuário bloqueado" : "Usuário desbloqueado", description: `${blockDialog.user.display_name || blockDialog.user.email} foi ${blockDialog.block ? "bloqueado" : "desbloqueado"}.` });
-      setBlockDialog({ open: false, user: null, block: false });
-      loadData();
-    } catch (e) {
-      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleChangePlan = async () => {
-    if (!planDialog.user || !planDialog.plan) return;
-    setActionLoading(planDialog.user.user_id);
-    try {
-      await callAdmin({ action: "change_plan", target_user_id: planDialog.user.user_id, plan_name: planDialog.plan });
-      toast({ title: "Plano alterado", description: `${planDialog.user.display_name || planDialog.user.email} agora está no plano ${planDialog.plan}.` });
-      setPlanDialog({ open: false, user: null, plan: "" });
-      loadData();
-    } catch (e) {
-      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleToggleAdmin = async () => {
-    if (!adminDialog.user) return;
-    setActionLoading(adminDialog.user.user_id);
-    try {
-      await callAdmin({ action: "toggle_admin", target_user_id: adminDialog.user.user_id, make_admin: adminDialog.makeAdmin });
-      toast({ title: adminDialog.makeAdmin ? "Admin promovido" : "Admin removido", description: `${adminDialog.user.display_name || adminDialog.user.email} ${adminDialog.makeAdmin ? "agora é administrador" : "não é mais administrador"}.` });
-      setAdminDialog({ open: false, user: null, makeAdmin: false });
-      loadData();
-    } catch (e) {
-      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleToggleProfessor = async () => {
-    if (!professorDialog.user) return;
-    setActionLoading(professorDialog.user.user_id);
-    try {
-      await callAdmin({ action: "toggle_professor", target_user_id: professorDialog.user.user_id, make_professor: professorDialog.makeProfessor });
-      toast({ title: professorDialog.makeProfessor ? "Professor promovido" : "Professor removido", description: `${professorDialog.user.display_name || professorDialog.user.email} ${professorDialog.makeProfessor ? "agora é professor" : "não é mais professor"}.` });
-      setProfessorDialog({ open: false, user: null, makeProfessor: false });
-      loadData();
-    } catch (e) {
-      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleResetPassword = async () => {
-    if (!passwordDialog.user || !passwordDialog.password) return;
-    if (passwordDialog.password.length < 6) {
-      toast({ title: "Erro", description: "A senha deve ter pelo menos 6 caracteres.", variant: "destructive" });
-      return;
-    }
-    setActionLoading(passwordDialog.user.user_id);
-    try {
-      await callAdmin({ action: "reset_password", target_user_id: passwordDialog.user.user_id, new_password: passwordDialog.password });
-      toast({ title: "Senha redefinida", description: `Senha de ${passwordDialog.user.display_name || passwordDialog.user.email} redefinida.` });
-      setPasswordDialog({ open: false, user: null, password: "" });
-    } catch (e) {
-      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
+  // Computed values
   const filteredUsers = users.filter((u) => {
     const q = search.toLowerCase();
     const matchesSearch = (u.display_name || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q);
     if (!matchesSearch) return false;
-    
     switch (activeTab) {
       case "pending": return u.status === "pending";
       case "active": return u.status === "active" && !u.is_blocked;
@@ -308,11 +218,11 @@ const Admin = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Header */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Shield className="h-6 w-6 text-primary" />
-            Painel Admin
+            <Shield className="h-6 w-6 text-primary" /> Painel Admin
           </h1>
           <p className="text-muted-foreground">Gerencie usuários, aprovações, planos e assinaturas.</p>
         </div>
@@ -335,81 +245,9 @@ const Admin = () => {
         </div>
       )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        {[
-          { label: "Usuários totais", value: stats?.totalUsers ?? "—", icon: Users },
-          { label: "Online agora", value: stats?.onlineUsers ?? 0, icon: Wifi, highlight: (stats?.onlineUsers || 0) > 0, highlightColor: "text-green-500" },
-          { label: "Aguardando aprovação", value: pendingCount, icon: Clock, highlight: pendingCount > 0 },
-          { label: "Ativos", value: activeCount, icon: CheckCircle },
-          { label: "Bloqueados", value: blockedCount, icon: Ban },
-          { label: "Assinaturas ativas", value: stats?.activeSubs ?? "—", icon: CreditCard },
-        ].map((s) => (
-          <div key={s.label} className={`glass-card p-5 ${(s as any).highlight ? "ring-2 ring-primary/30" : ""}`}>
-            <s.icon className={`h-5 w-5 mb-3 ${(s as any).highlightColor || ((s as any).highlight ? "text-amber-500" : "text-primary")}`} />
-            <div className="text-2xl font-bold">{s.value}</div>
-            <div className="text-sm text-muted-foreground">{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="glass-card p-6">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Wifi className="h-5 w-5 text-green-500" />
-          Usuários online agora
-          <Badge variant="outline" className="text-green-600 border-green-500/30 ml-1">{stats?.onlineUsers ?? 0}</Badge>
-        </h2>
-        {(stats?.onlineUsersData?.length || 0) > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {stats?.onlineUsersData?.map((ou) => {
-              const pageName = ou.current_page === "/dashboard" ? "Dashboard" : ou.current_page?.replace("/dashboard/", "") || "—";
-              const seenAgo = Math.round((Date.now() - new Date(ou.last_seen_at).getTime()) / 60000);
-              return (
-                <div key={ou.user_id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
-                  <div className="relative">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                      {(ou.display_name || "?")[0].toUpperCase()}
-                    </div>
-                    <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{ou.display_name || ou.email}</div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      📍 {pageName} • {seenAgo < 1 ? "agora" : `${seenAgo}min atrás`}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">Nenhum usuário online no momento.</p>
-        )}
-      </div>
-
-      {/* Plan distribution */}
-      {stats?.planCounts && Object.keys(stats.planCounts).length > 0 && (
-        <div className="glass-card p-6">
-          <h2 className="text-lg font-semibold mb-4">Distribuição por plano</h2>
-          <div className="space-y-3">
-            {Object.entries(stats.planCounts).map(([plan, count]) => {
-              const total = stats.totalUsers || 1;
-              const pct = Math.round((count / total) * 100);
-              return (
-                <div key={plan}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>{plan}</span>
-                    <span className="text-muted-foreground">{count} ({pct}%)</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-secondary">
-                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      <AdminStatsCards stats={stats} pendingCount={pendingCount} activeCount={activeCount} blockedCount={blockedCount} />
+      <AdminOnlineUsers stats={stats} />
+      <AdminPlanDistribution stats={stats} />
 
       {/* Users with tabs */}
       <div className="glass-card p-6">
@@ -458,7 +296,6 @@ const Admin = () => {
               </p>
             ) : (
               <div className="space-y-2">
-                {/* Header */}
                 <div className="hidden md:grid grid-cols-14 gap-3 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   <div className="col-span-2">Usuário</div>
                   <div className="col-span-2">Email</div>
@@ -468,586 +305,69 @@ const Admin = () => {
                   <div className="col-span-3">Evolução</div>
                   <div className="col-span-4 text-right">Ações</div>
                 </div>
-
-                {filteredUsers.map((u) => {
-                  const plan = getUserPlan(u);
-                  const isCurrentlyActioning = actionLoading === u.user_id;
-                  const isPending = u.status === "pending";
-                  const evo = u.evolution;
-
-                  return (
-                    <div
-                      key={u.user_id}
-                      className={`grid grid-cols-1 md:grid-cols-14 gap-3 px-4 py-3 rounded-lg transition-colors ${
-                        isPending ? "bg-amber-500/5 border border-amber-500/20" :
-                        u.is_blocked || u.status === "disabled" ? "bg-destructive/5 border border-destructive/20" :
-                        "bg-secondary/50 hover:bg-secondary/80"
-                      }`}
-                    >
-                      <div className="col-span-2 flex items-center gap-2">
-                        <button
-                          onClick={() => setUserDetailDialog({ open: true, user: u })}
-                          className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0 hover:bg-primary/20 transition-colors"
-                        >
-                          {(u.display_name || u.email || "?")[0].toUpperCase()}
-                        </button>
-                        <button
-                          onClick={() => setUserDetailDialog({ open: true, user: u })}
-                          className="text-sm font-medium truncate hover:text-primary transition-colors"
-                        >
-                          {u.display_name || "Sem nome"}
-                        </button>
-                        {u.roles.includes("professor") && <Badge className="text-[9px] bg-emerald-500/10 text-emerald-600 border-emerald-500/30">Prof.</Badge>}
-                        {u.roles.includes("admin") && <Badge className="text-[9px]">Admin</Badge>}
-                      </div>
-                      <div className="col-span-2 flex items-center text-sm text-muted-foreground truncate">
-                        {u.email}
-                      </div>
-                      <div className="col-span-1 flex items-center">
-                        <Badge variant={plan === "Free" ? "secondary" : plan === "Enterprise" ? "default" : "outline"} className="text-xs">
-                          {plan}
-                        </Badge>
-                      </div>
-                      <div className="col-span-1 flex items-center">
-                        {getStatusBadge(u)}
-                      </div>
-                      <div className="col-span-1 flex items-center">
-                        {u.last_seen_at ? (
-                          <span className="text-xs text-muted-foreground" title={new Date(u.last_seen_at).toLocaleString("pt-BR")}>
-                            {(() => {
-                              const diff = Date.now() - new Date(u.last_seen_at).getTime();
-                              const mins = Math.floor(diff / 60000);
-                              if (mins < 5) return <span className="text-green-600 font-medium">Online</span>;
-                              if (mins < 60) return `${mins}min`;
-                              const hours = Math.floor(mins / 60);
-                              if (hours < 24) return `${hours}h`;
-                              const days = Math.floor(hours / 24);
-                              return `${days}d`;
-                            })()}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground italic">Nunca</span>
-                        )}
-                      </div>
-                      <div className="col-span-3 flex items-center gap-2">
-                        {evo && (evo.totalQuestions > 0 || evo.recentAttempts > 0) ? (
-                          <div className="flex items-center gap-2 text-xs flex-wrap">
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                              <Target className="h-3 w-3" /> {evo.avgScore}%
-                            </span>
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
-                              <BookOpen className="h-3 w-3" /> {evo.totalQuestions}q
-                            </span>
-                            {evo.recentAttempts > 0 && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-green-500/10 text-green-600">
-                                <Activity className="h-3 w-3" /> {evo.recentAttempts} (7d)
-                              </span>
-                            )}
-                            {evo.specialties > 0 && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
-                                <Brain className="h-3 w-3" /> {evo.specialties}
-                              </span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground italic">Sem atividade</span>
-                        )}
-                      </div>
-                      <div className="col-span-4 flex items-center justify-end gap-1.5 flex-wrap">
-                        {isPending ? (
-                          <>
-                            <Button
-                              size="sm"
-                              className="h-7 text-xs gap-1"
-                              disabled={isCurrentlyActioning}
-                              onClick={() => handleApproveUser(u)}
-                            >
-                              <UserCheck className="h-3 w-3" /> Aprovar
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              className="h-7 text-xs gap-1"
-                              disabled={isCurrentlyActioning}
-                              onClick={() => handleRejectUser(u)}
-                            >
-                              <UserX className="h-3 w-3" /> Rejeitar
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" disabled={isCurrentlyActioning}
-                              onClick={() => setAdminDialog({ open: true, user: u, makeAdmin: !u.roles.includes("admin") })}>
-                              {u.roles.includes("admin") ? <ShieldOff className="h-3 w-3" /> : <ShieldCheck className="h-3 w-3" />}
-                              {u.roles.includes("admin") ? "Remover Admin" : "Admin"}
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" disabled={isCurrentlyActioning}
-                              onClick={() => setProfessorDialog({ open: true, user: u, makeProfessor: !u.roles.includes("professor") })}>
-                              <GraduationCap className="h-3 w-3" />
-                              {u.roles.includes("professor") ? "Remover Prof." : "Professor"}
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" disabled={isCurrentlyActioning}
-                              onClick={() => setPlanDialog({ open: true, user: u, plan: getUserPlan(u) })}>
-                              <CreditCard className="h-3 w-3" /> Plano
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" disabled={isCurrentlyActioning}
-                              onClick={() => setPasswordDialog({ open: true, user: u, password: "" })}>
-                              <KeyRound className="h-3 w-3" /> Senha
-                            </Button>
-                            <Button
-                              variant={u.is_blocked ? "outline" : "destructive"}
-                              size="sm" className="h-7 text-xs gap-1"
-                              disabled={isCurrentlyActioning || u.roles.includes("admin")}
-                              onClick={() => setBlockDialog({ open: true, user: u, block: !u.is_blocked })}>
-                              {u.is_blocked ? <CheckCircle className="h-3 w-3" /> : <Ban className="h-3 w-3" />}
-                              {u.is_blocked ? "Desbloquear" : "Bloquear"}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm" className="h-7 text-xs gap-1 border-orange-500/30 text-orange-600 hover:bg-orange-500/10"
-                              disabled={isCurrentlyActioning || u.user_id === session?.user?.id}
-                              onClick={() => setLogoutDialog({ open: true, user: u })}>
-                              <LogOut className="h-3 w-3" /> Desconectar
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10"
-                              disabled={isCurrentlyActioning}
-                              onClick={() => loadUserTracking(u)}>
-                              <BarChart3 className="h-3 w-3" /> Acompanhar
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm" className="h-7 text-xs gap-1 border-violet-500/30 text-violet-600 hover:bg-violet-500/10"
-                              disabled={isCurrentlyActioning}
-                              onClick={() => loadUserAccess(u)}>
-                              <Lock className="h-3 w-3" /> Acessos
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                {filteredUsers.map((u) => (
+                  <AdminUserRow
+                    key={u.user_id}
+                    u={u}
+                    actionLoading={actionLoading}
+                    session={session}
+                    getStatusBadge={getStatusBadge}
+                    getUserPlan={getUserPlan}
+                    onApprove={handleApproveUser}
+                    onReject={handleRejectUser}
+                    onOpenDetail={(u) => setUserDetailDialog({ open: true, user: u })}
+                    onOpenAdmin={(u, makeAdmin) => setAdminDialog({ open: true, user: u, makeAdmin })}
+                    onOpenProfessor={(u, makeProfessor) => setProfessorDialog({ open: true, user: u, makeProfessor })}
+                    onOpenPlan={(u, plan) => setPlanDialog({ open: true, user: u, plan })}
+                    onOpenPassword={(u) => setPasswordDialog({ open: true, user: u, password: "" })}
+                    onOpenBlock={(u, block) => setBlockDialog({ open: true, user: u, block })}
+                    onOpenLogout={(u) => setLogoutDialog({ open: true, user: u })}
+                    onOpenTracking={loadUserTracking}
+                    onOpenAccess={loadUserAccess}
+                  />
+                ))}
               </div>
             )}
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* Audit Log */}
-      <div className="glass-card p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <ClipboardList className="h-5 w-5" /> Log de Auditoria
-          </h2>
-          <Button variant="outline" size="sm"
-            onClick={() => { setShowAuditLog(!showAuditLog); if (!showAuditLog && auditLogs.length === 0) loadAuditLog(); }}
-            className="gap-1.5">
-            {showAuditLog ? "Ocultar" : "Ver log"}
-          </Button>
-        </div>
+      <AdminAuditLog auditLogs={auditLogs} auditLoading={auditLoading} loadAuditLog={loadAuditLog} />
 
-        {showAuditLog && (
-          auditLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : auditLogs.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma ação registrada ainda.</p>
-          ) : (
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {auditLogs.map((log) => {
-                const actionLabels: Record<string, { label: string; color: string }> = {
-                  block_user: { label: "Bloqueou", color: "text-destructive" },
-                  unblock_user: { label: "Desbloqueou", color: "text-green-600" },
-                  change_plan: { label: "Alterou plano", color: "text-primary" },
-                  promote_admin: { label: "Promoveu admin", color: "text-accent" },
-                  demote_admin: { label: "Removeu admin", color: "text-muted-foreground" },
-                  promote_professor: { label: "Promoveu professor", color: "text-emerald-500" },
-                  demote_professor: { label: "Removeu professor", color: "text-muted-foreground" },
-                  reset_password: { label: "Redefiniu senha", color: "text-orange-500" },
-                  approve_user: { label: "Aprovou", color: "text-green-600" },
-                  reject_user: { label: "Rejeitou", color: "text-destructive" },
-                  force_logout: { label: "Desconectou", color: "text-orange-500" },
-                };
-                const info = actionLabels[log.action] || { label: log.action, color: "text-foreground" };
-                return (
-                  <div key={log.id} className="flex items-start gap-3 px-4 py-3 rounded-lg bg-secondary/50 text-sm">
-                    <div className="flex-1">
-                      <span className="font-medium">{log.admin_name}</span>
-                      <span className={`mx-1.5 font-semibold ${info.color}`}>{info.label}</span>
-                      {log.target_name && <span className="font-medium">{log.target_name}</span>}
-                      {log.details?.plan_name && <span className="text-muted-foreground"> → {log.details.plan_name}</span>}
-                    </div>
-                    <span className="text-xs text-muted-foreground flex-shrink-0">
-                      {new Date(log.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )
-        )}
-      </div>
-
-      {/* User Detail Dialog */}
-      <Dialog open={userDetailDialog.open} onOpenChange={(open) => !open && setUserDetailDialog({ open: false, user: null })}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Perfil do Usuário</DialogTitle>
-          </DialogHeader>
-          {userDetailDialog.user && (
-            <div className="space-y-3 py-2">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary">
-                  {(userDetailDialog.user.display_name || userDetailDialog.user.email || "?")[0].toUpperCase()}
-                </div>
-                <div>
-                  <p className="font-semibold">{userDetailDialog.user.display_name || "Sem nome"}</p>
-                  <p className="text-sm text-muted-foreground">{userDetailDialog.user.email}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><span className="text-muted-foreground">Data de cadastro:</span><br/>{new Date(userDetailDialog.user.created_at).toLocaleDateString("pt-BR")}</div>
-                <div><span className="text-muted-foreground">Status:</span><br/>{getStatusBadge(userDetailDialog.user)}</div>
-                <div><span className="text-muted-foreground">Plano:</span><br/>{getUserPlan(userDetailDialog.user)}</div>
-                <div><span className="text-muted-foreground">Papel:</span><br/>{userDetailDialog.user.roles.includes("admin") ? "Administrador" : userDetailDialog.user.roles.includes("professor") ? "Professor" : "Usuário"}</div>
-                {userDetailDialog.user.approved_at && (
-                  <div><span className="text-muted-foreground">Data da aprovação:</span><br/>{new Date(userDetailDialog.user.approved_at).toLocaleDateString("pt-BR")}</div>
-                )}
-                {userDetailDialog.user.approved_by && (
-                  <div><span className="text-muted-foreground">Aprovado por:</span><br/>{users.find(u => u.user_id === userDetailDialog.user!.approved_by)?.display_name || userDetailDialog.user.approved_by}</div>
-                )}
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Block/Unblock Dialog */}
-      <Dialog open={blockDialog.open} onOpenChange={(open) => !open && setBlockDialog({ open: false, user: null, block: false })}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{blockDialog.block ? "Bloquear usuário" : "Desbloquear usuário"}</DialogTitle>
-            <DialogDescription>
-              {blockDialog.block
-                ? `Tem certeza que deseja bloquear "${blockDialog.user?.display_name || blockDialog.user?.email}"?`
-                : `Deseja desbloquear "${blockDialog.user?.display_name || blockDialog.user?.email}"?`}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setBlockDialog({ open: false, user: null, block: false })}>Cancelar</Button>
-            <Button variant={blockDialog.block ? "destructive" : "default"} onClick={handleBlock} disabled={!!actionLoading}>
-              {blockDialog.block ? "Bloquear" : "Desbloquear"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Force Logout Dialog */}
-      <Dialog open={logoutDialog.open} onOpenChange={(open) => !open && setLogoutDialog({ open: false, user: null })}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Desconectar usuário</DialogTitle>
-            <DialogDescription>
-              Tem certeza que deseja encerrar todas as sessões ativas de "{logoutDialog.user?.display_name || logoutDialog.user?.email}"? O usuário precisará fazer login novamente.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setLogoutDialog({ open: false, user: null })}>Cancelar</Button>
-            <Button
-              className="gap-1.5"
-              disabled={!!actionLoading}
-              onClick={async () => {
-                if (!logoutDialog.user) return;
-                setActionLoading(logoutDialog.user.user_id);
-                try {
-                  await callAdmin({ action: "force_logout", target_user_id: logoutDialog.user.user_id });
-                  toast({ title: "Sessão encerrada", description: `Todas as sessões de ${logoutDialog.user.display_name || logoutDialog.user.email} foram encerradas.` });
-                  setLogoutDialog({ open: false, user: null });
-                } catch (e) {
-                  toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao desconectar", variant: "destructive" });
-                } finally {
-                  setActionLoading(null);
-                }
-              }}
-            >
-              <LogOut className="h-4 w-4" /> Desconectar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={planDialog.open} onOpenChange={(open) => !open && setPlanDialog({ open: false, user: null, plan: "" })}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Alterar plano</DialogTitle>
-            <DialogDescription>Alterar o plano de "{planDialog.user?.display_name || planDialog.user?.email}"</DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Select value={planDialog.plan} onValueChange={(v) => setPlanDialog((p) => ({ ...p, plan: v }))}>
-              <SelectTrigger><SelectValue placeholder="Selecione o plano" /></SelectTrigger>
-              <SelectContent>
-                {PLANS.map((p) => (<SelectItem key={p} value={p}>{p}</SelectItem>))}
-              </SelectContent>
-            </Select>
-            <div className="mt-3 text-xs text-muted-foreground">
-              {planDialog.plan === "Free" && "50 questões/mês • Gratuito"}
-              {planDialog.plan === "Pro" && "2.000 questões/mês • R$59,90"}
-              {planDialog.plan === "Premium" && "8.000 questões/mês • R$99,90"}
-              {planDialog.plan === "Enterprise" && "Ilimitado • R$299,90"}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPlanDialog({ open: false, user: null, plan: "" })}>Cancelar</Button>
-            <Button onClick={handleChangePlan} disabled={!!actionLoading || !planDialog.plan}>Confirmar alteração</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Toggle Admin Dialog */}
-      <Dialog open={adminDialog.open} onOpenChange={(open) => !open && setAdminDialog({ open: false, user: null, makeAdmin: false })}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{adminDialog.makeAdmin ? "Promover a Administrador" : "Remover Administrador"}</DialogTitle>
-            <DialogDescription>
-              {adminDialog.makeAdmin
-                ? `Deseja tornar "${adminDialog.user?.display_name || adminDialog.user?.email}" um administrador?`
-                : `Deseja remover o acesso admin de "${adminDialog.user?.display_name || adminDialog.user?.email}"?`}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAdminDialog({ open: false, user: null, makeAdmin: false })}>Cancelar</Button>
-            <Button onClick={handleToggleAdmin} disabled={!!actionLoading}>
-              {adminDialog.makeAdmin ? "Promover" : "Remover"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Toggle Professor Dialog */}
-      <Dialog open={professorDialog.open} onOpenChange={(open) => !open && setProfessorDialog({ open: false, user: null, makeProfessor: false })}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{professorDialog.makeProfessor ? "Promover a Professor" : "Remover Professor"}</DialogTitle>
-            <DialogDescription>
-              {professorDialog.makeProfessor
-                ? `Deseja tornar "${professorDialog.user?.display_name || professorDialog.user?.email}" um professor? Ele poderá criar simulados e acompanhar alunos.`
-                : `Deseja remover o acesso de professor de "${professorDialog.user?.display_name || professorDialog.user?.email}"?`}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setProfessorDialog({ open: false, user: null, makeProfessor: false })}>Cancelar</Button>
-            <Button onClick={handleToggleProfessor} disabled={!!actionLoading}>
-              {professorDialog.makeProfessor ? "Promover" : "Remover"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={passwordDialog.open} onOpenChange={(open) => !open && setPasswordDialog({ open: false, user: null, password: "" })}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Redefinir senha</DialogTitle>
-            <DialogDescription>Defina uma nova senha para "{passwordDialog.user?.display_name || passwordDialog.user?.email}"</DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Input type="password" placeholder="Nova senha (mín. 6 caracteres)" value={passwordDialog.password}
-              onChange={(e) => setPasswordDialog((p) => ({ ...p, password: e.target.value }))} minLength={6} />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPasswordDialog({ open: false, user: null, password: "" })}>Cancelar</Button>
-            <Button onClick={handleResetPassword} disabled={!!actionLoading || passwordDialog.password.length < 6}>Redefinir senha</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      {/* User Tracking Dialog */}
-      <Dialog open={trackingDialog.open} onOpenChange={(open) => !open && setTrackingDialog({ open: false, user: null, data: null, loading: false })}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              Acompanhamento — {trackingDialog.user?.display_name || trackingDialog.user?.email}
-            </DialogTitle>
-            <DialogDescription>Visão detalhada do progresso de estudo deste usuário.</DialogDescription>
-          </DialogHeader>
-
-          {trackingDialog.loading ? (
-            <div className="flex justify-center py-12">
-              <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : trackingDialog.data ? (
-            <div className="space-y-5 py-2">
-              {/* Quick stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                  { label: "Questões respondidas", value: trackingDialog.data.stats?.totalAttempts ?? 0, icon: BookOpen },
-                  { label: "Taxa de acerto", value: `${trackingDialog.data.stats?.accuracy ?? 0}%`, icon: Target },
-                  { label: "Últimos 7 dias", value: trackingDialog.data.stats?.recentAttempts ?? 0, icon: Activity },
-                  { label: "Erros catalogados", value: trackingDialog.data.errorBank?.length ?? 0, icon: AlertTriangle },
-                ].map((s) => (
-                  <div key={s.label} className="rounded-lg border bg-card p-3 text-center">
-                    <s.icon className="h-4 w-4 mx-auto mb-1 text-primary" />
-                    <div className="text-lg font-bold">{s.value}</div>
-                    <div className="text-[11px] text-muted-foreground">{s.label}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Quota usage */}
-              {trackingDialog.data.quota && (
-                <div className="rounded-lg border bg-card p-4">
-                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5"><CreditCard className="h-4 w-4" /> Uso de Cota</h3>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Questões: {trackingDialog.data.quota.questions_used} / {trackingDialog.data.quota.questions_limit}</span>
-                    <span className="text-muted-foreground">{Math.round((trackingDialog.data.quota.questions_used / Math.max(trackingDialog.data.quota.questions_limit, 1)) * 100)}%</span>
-                  </div>
-                  <Progress value={(trackingDialog.data.quota.questions_used / Math.max(trackingDialog.data.quota.questions_limit, 1)) * 100} className="h-2" />
-                </div>
-              )}
-
-              {/* Domain map */}
-              {trackingDialog.data.domainMap?.length > 0 && (
-                <div className="rounded-lg border bg-card p-4">
-                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5"><Brain className="h-4 w-4" /> Domínio por Especialidade</h3>
-                  <div className="space-y-2.5">
-                    {trackingDialog.data.domainMap.slice(0, 10).map((d: any) => (
-                      <div key={d.id}>
-                        <div className="flex justify-between text-xs mb-1">
-                          <span className="font-medium">{d.specialty}</span>
-                          <span className="text-muted-foreground">{Math.round(d.domain_score)}% • {d.questions_answered} questões</span>
-                        </div>
-                        <Progress value={d.domain_score} className={`h-1.5 ${d.domain_score < 50 ? "[&>div]:bg-destructive" : d.domain_score < 70 ? "[&>div]:bg-amber-500" : ""}`} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Exam sessions */}
-              {trackingDialog.data.examSessions?.length > 0 && (
-                <div className="rounded-lg border bg-card p-4">
-                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5"><ClipboardList className="h-4 w-4" /> Últimos Simulados</h3>
-                  <div className="space-y-2">
-                    {trackingDialog.data.examSessions.map((e: any) => (
-                      <div key={e.id} className="flex items-center justify-between text-sm px-3 py-2 rounded bg-secondary/50">
-                        <div>
-                          <span className="font-medium">{e.title}</span>
-                          <span className="text-xs text-muted-foreground ml-2">
-                            {new Date(e.started_at).toLocaleDateString("pt-BR")}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {e.score != null && (
-                            <Badge variant={e.score >= 70 ? "default" : "destructive"} className="text-xs">
-                              {Math.round(e.score)}%
-                            </Badge>
-                          )}
-                          <Badge variant="secondary" className="text-xs">
-                            {e.status === "finished" ? "Finalizado" : "Em andamento"}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Top errors */}
-              {trackingDialog.data.errorBank?.length > 0 && (
-                <div className="rounded-lg border bg-card p-4">
-                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5"><AlertTriangle className="h-4 w-4" /> Principais Erros</h3>
-                  <div className="space-y-1.5">
-                    {trackingDialog.data.errorBank.slice(0, 8).map((e: any) => (
-                      <div key={e.id} className="flex items-center justify-between text-sm px-3 py-1.5 rounded bg-secondary/50">
-                        <span>{e.tema}{e.subtema ? ` → ${e.subtema}` : ""}</span>
-                        <Badge variant="destructive" className="text-xs">{e.vezes_errado}x</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Diagnostic */}
-              {trackingDialog.data.diagnostic && (
-                <div className="rounded-lg border bg-card p-4">
-                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5"><TrendingUp className="h-4 w-4" /> Diagnóstico Inicial</h3>
-                  <div className="flex items-center gap-4 text-sm">
-                    <span>Nota: <strong>{trackingDialog.data.diagnostic.score}/{trackingDialog.data.diagnostic.total_questions}</strong></span>
-                    <span className="text-muted-foreground">({Math.round((trackingDialog.data.diagnostic.score / Math.max(trackingDialog.data.diagnostic.total_questions, 1)) * 100)}%)</span>
-                    <span className="text-xs text-muted-foreground">em {new Date(trackingDialog.data.diagnostic.completed_at).toLocaleDateString("pt-BR")}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Profile info */}
-              {trackingDialog.data.profile && (
-                <div className="rounded-lg border bg-card p-4">
-                  <h3 className="text-sm font-semibold mb-2">Informações do Perfil</h3>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    {trackingDialog.data.profile.target_specialty && (
-                      <div><span className="text-muted-foreground">Especialidade alvo:</span> {trackingDialog.data.profile.target_specialty}</div>
-                    )}
-                    {trackingDialog.data.profile.exam_date && (
-                      <div><span className="text-muted-foreground">Data da prova:</span> {new Date(trackingDialog.data.profile.exam_date).toLocaleDateString("pt-BR")}</div>
-                    )}
-                    {trackingDialog.data.profile.daily_study_hours && (
-                      <div><span className="text-muted-foreground">Horas/dia:</span> {trackingDialog.data.profile.daily_study_hours}h</div>
-                    )}
-                    <div><span className="text-muted-foreground">Diagnóstico:</span> {trackingDialog.data.profile.has_completed_diagnostic ? "✅ Completo" : "❌ Pendente"}</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <p className="text-center text-muted-foreground py-8">Nenhum dado encontrado.</p>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Module Access Dialog */}
-      <Dialog open={accessDialog.open} onOpenChange={(open) => !open && setAccessDialog({ open: false, user: null, modules: {}, loading: false, saving: false })}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Lock className="h-5 w-5 text-primary" />
-              Controle de Acessos — {accessDialog.user?.display_name || accessDialog.user?.email}
-            </DialogTitle>
-            <DialogDescription>Ative ou desative módulos para este usuário.</DialogDescription>
-          </DialogHeader>
-
-          {accessDialog.loading ? (
-            <div className="flex justify-center py-12">
-              <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : (
-            <div className="space-y-2 py-2">
-              {ALL_MODULES.map((mod) => (
-                <div key={mod.key} className="flex items-center justify-between px-3 py-2 rounded-lg bg-secondary/50">
-                  <span className="text-sm font-medium">{mod.label}</span>
-                  <Switch
-                    checked={accessDialog.modules[mod.key] ?? true}
-                    disabled={mod.key === "dashboard"}
-                    onCheckedChange={(checked) =>
-                      setAccessDialog(prev => ({
-                        ...prev,
-                        modules: { ...prev.modules, [mod.key]: checked }
-                      }))
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAccessDialog({ open: false, user: null, modules: {}, loading: false, saving: false })}>Cancelar</Button>
-            <Button onClick={handleSaveAccess} disabled={accessDialog.loading || accessDialog.saving}>
-              {accessDialog.saving ? "Salvando..." : "Salvar acessos"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AdminDialogs
+        users={users}
+        actionLoading={actionLoading}
+        getStatusBadge={getStatusBadge}
+        getUserPlan={getUserPlan}
+        callAdmin={callAdmin}
+        toast={toast}
+        session={session}
+        userDetailDialog={userDetailDialog}
+        setUserDetailDialog={setUserDetailDialog}
+        blockDialog={blockDialog}
+        setBlockDialog={setBlockDialog}
+        handleBlock={handleBlock}
+        logoutDialog={logoutDialog}
+        setLogoutDialog={setLogoutDialog}
+        setActionLoading={setActionLoading}
+        planDialog={planDialog}
+        setPlanDialog={setPlanDialog}
+        handleChangePlan={handleChangePlan}
+        adminDialog={adminDialog}
+        setAdminDialog={setAdminDialog}
+        handleToggleAdmin={handleToggleAdmin}
+        professorDialog={professorDialog}
+        setProfessorDialog={setProfessorDialog}
+        handleToggleProfessor={handleToggleProfessor}
+        passwordDialog={passwordDialog}
+        setPasswordDialog={setPasswordDialog}
+        handleResetPassword={handleResetPassword}
+        trackingDialog={trackingDialog}
+        setTrackingDialog={setTrackingDialog}
+        accessDialog={accessDialog}
+        setAccessDialog={setAccessDialog}
+        handleSaveAccess={handleSaveAccess}
+      />
     </div>
   );
 };
