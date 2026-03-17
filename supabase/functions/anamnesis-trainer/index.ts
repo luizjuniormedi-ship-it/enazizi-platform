@@ -168,7 +168,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { action, specialty, difficulty, messages, conversationHistory } = await req.json();
+    const { action, specialty, difficulty, messages, conversationHistory, hypothesis, differentials, proposed_conduct } = await req.json();
 
     if (action === "start") {
       const prompt = `action="start"
