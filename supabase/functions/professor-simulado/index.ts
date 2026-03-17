@@ -343,6 +343,166 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
         });
       }
 
+      // ========== CLINICAL CASES (Plantão) ==========
+
+      case "generate_clinical_case": {
+        const { specialty = "Clínica Médica", difficulty = "intermediário" } = params;
+
+        const CLINICAL_PROMPT = `Você é o simulador de PLANTÃO MÉDICO. Gere um caso clínico de pronto-socorro/plantão com:
+- Queixa principal do paciente (em 1ª pessoa, como paciente falaria)
+- Sinais vitais básicos
+- Cenário do atendimento (PS, enfermaria, UTI)
+- NÃO revele o diagnóstico ao aluno
+
+Especialidade: ${specialty}
+Dificuldade: ${difficulty}
+
+Responda APENAS em JSON válido:
+{
+  "patient_presentation": "texto da apresentação do paciente em 1ª pessoa",
+  "vitals": { "PA": "...", "FC": "...", "FR": "...", "Temp": "...", "SpO2": "..." },
+  "setting": "Pronto-Socorro / UTI / Enfermaria",
+  "triage_color": "vermelho/amarelo/verde",
+  "hidden_diagnosis": "diagnóstico correto (NÃO mostrar ao aluno)",
+  "hidden_key_findings": ["achado1", "achado2", "achado3"],
+  "difficulty_score": 1-5
+}
+
+REGRAS:
+- Seja realista e variado
+- Inclua doenças tropicais, emergências, apresentações atípicas
+- Use diretrizes médicas atualizadas (2024-2026)
+- Variar faixa etária, sexo, comorbidades, cenário`;
+
+        const response = await aiFetch({
+          messages: [{ role: "user", content: CLINICAL_PROMPT }],
+          model: "google/gemini-2.5-flash",
+        });
+
+        if (!response.ok) {
+          const t = await response.text();
+          console.error("AI error:", t);
+          throw new Error("Erro ao gerar caso clínico");
+        }
+
+        const aiData = await response.json();
+        const content = aiData.choices?.[0]?.message?.content || "";
+        const jsonStr = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+        const caseData = JSON.parse(jsonStr);
+
+        return ok({ case_data: caseData, specialty, difficulty });
+      }
+
+      case "create_clinical_case": {
+        const { title, specialty, difficulty, time_limit_minutes, case_prompt, faculdade_filter, periodo_filter, student_ids } = params;
+
+        if (!case_prompt || !specialty) throw new Error("Dados do caso são obrigatórios");
+
+        const { data: clinicalCase, error } = await sb.from("teacher_clinical_cases").insert({
+          professor_id: user.id,
+          title: title || `Plantão - ${specialty}`,
+          specialty,
+          difficulty: difficulty || "intermediário",
+          time_limit_minutes: time_limit_minutes || 20,
+          case_prompt,
+          faculdade_filter: faculdade_filter || null,
+          periodo_filter: periodo_filter || null,
+          status: "published",
+        }).select("id").single();
+
+        if (error) throw new Error(error.message);
+
+        // Find students and create pending results
+        let studentIds: string[] = student_ids || [];
+
+        if (studentIds.length === 0) {
+          let studentQuery = sb.from("profiles").select("user_id").eq("status", "active");
+          if (faculdade_filter) studentQuery = studentQuery.eq("faculdade", faculdade_filter);
+          if (periodo_filter) studentQuery = studentQuery.eq("periodo", periodo_filter);
+          const { data: students } = await studentQuery;
+          studentIds = (students || []).map((s: any) => s.user_id);
+        }
+
+        if (studentIds.length > 0) {
+          const results = studentIds.map((sid: string) => ({
+            case_id: clinicalCase.id,
+            student_id: sid,
+            status: "pending",
+          }));
+          await sb.from("teacher_clinical_case_results").insert(results);
+        }
+
+        return ok({ success: true, case_id: clinicalCase.id, students_assigned: studentIds.length });
+      }
+
+      case "list_clinical_cases": {
+        const { data: cases } = await sb
+          .from("teacher_clinical_cases")
+          .select("*")
+          .eq("professor_id", user.id)
+          .order("created_at", { ascending: false });
+
+        const caseIds = (cases || []).map((c: any) => c.id);
+        let resultsByCaseId: Record<string, { total: number; completed: number; avgScore: number }> = {};
+
+        if (caseIds.length > 0) {
+          const { data: results } = await sb
+            .from("teacher_clinical_case_results")
+            .select("case_id, status, final_score")
+            .in("case_id", caseIds);
+
+          for (const r of (results || [])) {
+            if (!resultsByCaseId[r.case_id]) resultsByCaseId[r.case_id] = { total: 0, completed: 0, avgScore: 0 };
+            resultsByCaseId[r.case_id].total++;
+            if (r.status === "completed") {
+              resultsByCaseId[r.case_id].completed++;
+              resultsByCaseId[r.case_id].avgScore += (r.final_score || 0);
+            }
+          }
+
+          for (const key of Object.keys(resultsByCaseId)) {
+            const d = resultsByCaseId[key];
+            if (d.completed > 0) d.avgScore = Math.round(d.avgScore / d.completed);
+          }
+        }
+
+        return ok({
+          cases: (cases || []).map((c: any) => ({
+            ...c,
+            results_summary: resultsByCaseId[c.id] || { total: 0, completed: 0, avgScore: 0 },
+          })),
+        });
+      }
+
+      case "get_clinical_case_results": {
+        const { case_id } = params;
+        if (!case_id) throw new Error("case_id obrigatório");
+
+        const { data: results } = await sb
+          .from("teacher_clinical_case_results")
+          .select("*")
+          .eq("case_id", case_id)
+          .order("final_score", { ascending: false });
+
+        const studentIds = (results || []).map((r: any) => r.student_id);
+        const { data: profiles } = await sb.from("profiles")
+          .select("user_id, display_name, email, faculdade, periodo")
+          .in("user_id", studentIds);
+
+        const enriched = (results || []).map((r: any) => {
+          const p = (profiles || []).find((p: any) => p.user_id === r.student_id);
+          return {
+            ...r,
+            student_name: p?.display_name || "Sem nome",
+            student_email: p?.email || "",
+            faculdade: p?.faculdade,
+            periodo: p?.periodo,
+          };
+        });
+
+        return ok({ results: enriched });
+      }
+
       default:
         return new Response(JSON.stringify({ error: `Ação desconhecida: ${action}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }

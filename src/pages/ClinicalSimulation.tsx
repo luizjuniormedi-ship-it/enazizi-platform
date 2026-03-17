@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
@@ -110,6 +111,8 @@ const ClinicalSimulation = () => {
   const { session, user } = useAuth();
   const { toast } = useToast();
   const { addXp } = useGamification();
+  const [searchParams] = useSearchParams();
+  const teacherCaseId = searchParams.get("teacher_case_id");
 
   const [phase, setPhase] = useState<Phase>("lobby");
   const [specialty, setSpecialty] = useState("Clínica Médica");
@@ -228,6 +231,13 @@ const ClinicalSimulation = () => {
     fetchHistory();
   }, [fetchHistory]);
 
+  // Auto-start if teacher_case_id is in URL
+  useEffect(() => {
+    if (teacherCaseId && phase === "lobby" && !loading) {
+      startSimulation();
+    }
+  }, [teacherCaseId]);
+
   const saveSimulationToHistory = async (evalData: FinalEval) => {
     if (!user) return;
     try {
@@ -270,7 +280,12 @@ const ClinicalSimulation = () => {
   const startSimulation = async () => {
     setLoading(true);
     try {
-      const res = await callAPI({ action: "start", specialty, difficulty });
+      const res = await callAPI({
+        action: "start",
+        specialty,
+        difficulty,
+        ...(teacherCaseId ? { teacher_case_id: teacherCaseId } : {}),
+      });
 
       setVitals(res.vitals);
       setSetting(res.setting || "Pronto-Socorro");
@@ -460,6 +475,7 @@ const ClinicalSimulation = () => {
       const res = await callAPI({
         action: "finish",
         conversation_history: conversationHistory,
+        ...(teacherCaseId ? { teacher_case_id: teacherCaseId } : {}),
       });
       setFinalEval(res);
       setPhase("result");
