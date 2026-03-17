@@ -561,12 +561,7 @@ const ProfessorPlantao = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-              {creating ? "Criando..." : "Criar e Atribuir"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
 
       {/* Results Dialog */}
       <Dialog open={resultsDialog.open} onOpenChange={(open) => { if (!open) { setResultsDialog({ open: false, caseData: null, results: [], loading: false }); setSelectedResult(null); } }}>
