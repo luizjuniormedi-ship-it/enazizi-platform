@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.benchmark-percentile]
 verify_jwt = false
+
+[functions.enamed-generator]
+verify_jwt = false

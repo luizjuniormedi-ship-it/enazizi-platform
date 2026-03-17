@@ -253,12 +253,17 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const rounds = body.rounds || 1;
     const source = body.source || "enamed-revalida-openai";
+    const specialtyFilter = body.specialty || null; // Process single specialty to avoid timeout
+
+    const themes = specialtyFilter
+      ? ENAMED_THEMES.filter(t => t.specialty.toLowerCase().includes(specialtyFilter.toLowerCase()))
+      : ENAMED_THEMES;
 
     let totalQ = 0, totalF = 0, totalC = 0;
     const processed: string[] = [];
 
     for (let r = 0; r < rounds; r++) {
-      for (const theme of ENAMED_THEMES) {
+      for (const theme of themes) {
         console.log(`[R${r + 1}] Generating ${theme.specialty}...`);
         const result = await generateENAMEDContent(theme.specialty, theme.topics, userId, supabaseAdmin, source);
         totalQ += result.questions;
