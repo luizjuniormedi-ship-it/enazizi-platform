@@ -121,10 +121,10 @@ REGRAS DE ESPAÇAMENTO:
     // Add difficulty instruction
     if (difficulty) {
       const diffMap: Record<string, string> = {
-        facil: "Gere questões de nível FÁCIL: conceitos básicos, diagnósticos clássicos, apresentações típicas. Ideal para alunos iniciantes.",
-        intermediario: "Gere questões de nível INTERMEDIÁRIO: diagnósticos diferenciais, condutas terapêuticas, interpretação de exames. Padrão ENARE.",
-        dificil: "Gere questões de nível DIFÍCIL: casos complexos com múltiplas comorbidades, diagnósticos raros, condutas avançadas baseadas em guidelines. Nível de prova difícil como USP/UNIFESP.",
-        misto: "Mescle questões: 30% fáceis, 50% intermediárias, 20% difíceis.",
+        facil: "Gere questões de nível BÁSICO: apresentações TÍPICAS com diagnóstico clássico. Paciente jovem, sem comorbidades, quadro textbook. Ainda assim, INCLUA caso clínico com sinais vitais e exame físico.",
+        intermediario: "Gere questões de nível INTERMEDIÁRIO (padrão ENARE): diagnósticos diferenciais reais, pacientes com comorbidades que modificam apresentação, necessidade de interpretar exames laboratoriais e de imagem. Cada caso deve exigir raciocínio em pelo menos 2 etapas.",
+        dificil: "Gere questões de nível AVANÇADO (padrão USP/UNIFESP): apresentações ATÍPICAS de doenças comuns, múltiplas comorbidades interagindo, diagnósticos raros mas cobrados em prova, dilemas de conduta. Exija raciocínio em múltiplas etapas e conhecimento de guidelines atualizados (2024-2026). Inclua pegadinhas inteligentes baseadas em nuances clínicas.",
+        misto: "Mescle questões: 40% intermediárias (padrão ENARE), 40% avançadas (padrão USP/UNIFESP), 20% expert (dilemas terapêuticos complexos, contraindicações, complicações raras).",
       };
       systemPrompt += `\n\n=== NÍVEL DE DIFICULDADE ===\n${diffMap[difficulty] || diffMap.intermediario}`;
     }

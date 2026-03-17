@@ -24,32 +24,56 @@ async function generateENAMEDQuestions(
 ): Promise<{ questions: number; flashcards: number }> {
   const selectedTopics = topics.sort(() => Math.random() - 0.5).slice(0, 6);
 
-  const prompt = `Você é um elaborador de questões oficial das provas ENAMED e REVALIDA INEP.
+  const prompt = `Você é um elaborador de questões de ELITE das provas ENAMED, REVALIDA INEP, USP, UNIFESP, UNICAMP e ENARE.
 
 GERE EXATAMENTE 30 questões de múltipla escolha no padrão ENAMED/REVALIDA e 20 flashcards.
 
 ESPECIALIDADE: ${specialty}
 TEMAS OBRIGATÓRIOS: ${selectedTopics.join(", ")}
 
-PADRÃO ENAMED/REVALIDA:
-- Caso clínico detalhado com anamnese, exame físico e exames complementares relevantes
-- Linguagem formal médica brasileira
-- Alternativas plausíveis que testem raciocínio clínico (não memorização pura)
-- Dificuldade compatível com provas nacionais de residência
-- Incluir dados de sinais vitais, resultados laboratoriais e de imagem quando pertinente
-- Explicação com referência a diretrizes brasileiras (MS, SBC, SBP, FEBRASGO)
+=== PADRÃO DE EXCELÊNCIA PARA CASOS CLÍNICOS ===
+
+CADA QUESTÃO DEVE OBRIGATORIAMENTE:
+
+1. **CASO CLÍNICO COMPLETO** (mínimo 80% das questões):
+   - Nome fictício, idade EXATA, sexo, profissão quando relevante
+   - Queixa principal com TEMPO DE EVOLUÇÃO preciso
+   - Antecedentes: comorbidades + medicações em uso (nome, dose)
+   - Hábitos: tabagismo (maços/ano), etilismo, drogas
+   - Sinais vitais COMPLETOS: PA, FC, FR, Temp, SpO2
+   - Exame físico com achados POSITIVOS e NEGATIVOS relevantes
+   - Exames laboratoriais com VALORES NUMÉRICOS reais e unidades
+   - Laudos de imagem descritivos quando pertinente
+
+2. **ALTERNATIVAS DE ALTO NÍVEL**:
+   - Todas devem ser clinicamente PLAUSÍVEIS (nenhuma absurda)
+   - Distratores baseados em diagnósticos diferenciais LEGÍTIMOS
+   - Uma alternativa "quase correta" que testa nuance clínica
+   - Extensão similar entre alternativas
+
+3. **EXPLICAÇÃO COMPLETA**:
+   - Raciocínio clínico passo a passo
+   - Por que cada alternativa está certa ou errada
+   - Conduta terapêutica atualizada (guidelines 2024-2026)
+   - Referência a diretrizes brasileiras (MS, SBC, SBP, FEBRASGO, Sepsis-3)
+
+4. **VARIAÇÃO OBRIGATÓRIA**:
+   - Alternar faixas etárias, sexo, comorbidades, cenários (PS, UTI, UBS, SAMU)
+   - Incluir apresentações ATÍPICAS (ex: IAM sem dor em diabético, apendicite no idoso)
+   - Priorizar doenças tropicais/negligenciadas quando pertinente
+   - 40% intermediário, 40% difícil, 20% expert
 
 PADRÃO DOS FLASHCARDS:
 - Pergunta direta sobre conceito-chave para residência
-- Resposta concisa mas completa, citando conduta e critérios diagnósticos
+- Resposta concisa mas completa, citando conduta, critérios diagnósticos e fonte
 
 FORMATO JSON PURO (sem markdown):
 {
   "questions": [
-    {"statement":"Caso clínico...","options":["A) ...","B) ...","C) ...","D) ..."],"correct_index":0,"explanation":"Explicação com base em diretriz...","topic":"${specialty}","difficulty":3}
+    {"statement":"Caso clínico completo com sinais vitais e exames...","options":["A) ...","B) ...","C) ...","D) ..."],"correct_index":0,"explanation":"Raciocínio clínico + análise de cada alternativa + diretriz...","topic":"${specialty}","difficulty":3}
   ],
   "flashcards": [
-    {"question":"Pergunta?","answer":"Resposta completa.","topic":"${specialty}"}
+    {"question":"Pergunta?","answer":"Resposta completa com fonte.","topic":"${specialty}"}
   ]
 }`;
 

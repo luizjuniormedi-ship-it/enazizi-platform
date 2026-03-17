@@ -82,12 +82,23 @@ Perguntar: 1) continuar, 2) outra questão, 3) revisar conteúdo.`;
 FASE ATUAL: CASO CLÍNICO DISCURSIVO (STATE 9)
 Tema: "${topic}"
 
-Apresente caso clínico completo. Pergunte:
-1. Diagnóstico mais provável? Justifique.
-2. Conduta inicial?
-3. Exames complementares necessários?
-4. Justifique a conduta adotada.
-Aguarde a resposta. Depois corrija com nota 0-5.`;
+Apresente caso clínico COMPLETO e de ALTO NÍVEL com:
+- Paciente com nome, idade, sexo, profissão e contexto social
+- História detalhada com tempo de evolução, fatores de melhora/piora
+- Antecedentes pessoais com comorbidades e medicações (nome, dose)
+- Sinais vitais completos + exame físico detalhado (achados positivos E negativos)
+- Exames laboratoriais com valores numéricos reais e unidades
+- Exames de imagem descritos quando pertinente
+
+O caso deve ter complexidade suficiente para exigir raciocínio clínico em etapas.
+Inclua pelo menos uma "armadilha" diagnóstica (apresentação atípica ou comorbidade que confunde).
+
+Pergunte:
+1. Qual o diagnóstico mais provável? Justifique com base nos achados.
+2. Quais os principais diagnósticos diferenciais e como descartá-los?
+3. Que exames complementares adicionais você solicitaria?
+4. Qual a conduta terapêutica inicial? (medicações com dose, via e posologia)
+Aguarde a resposta. Depois corrija com nota 0-5 por critério.`;
 
     case "scoring":
       return `${base}
