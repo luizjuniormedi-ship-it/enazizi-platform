@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { HelpCircle, BookOpen, Heart, ArrowRight, Sparkles, Activity, FlipVertical } from "lucide-react";
+import { HelpCircle, BookOpen, Heart, ArrowRight, Sparkles, Activity, FlipVertical, MessageCircle } from "lucide-react";
 
 const agents = [
   {
@@ -42,6 +42,15 @@ const agents = [
     description: "Simulação interativa de atendimento clínico. Atenda pacientes virtuais, tome decisões e receba avaliação em tempo real.",
     color: "text-red-400",
     bgColor: "bg-red-500/10",
+  },
+  {
+    to: "/dashboard/anamnese",
+    icon: MessageCircle,
+    title: "🩺 Treino de Anamnese",
+    description: "Pratique entrevista clínica com pacientes simulados. A IA só responde ao que você perguntar — treine sua técnica semiológica.",
+    color: "text-teal-400",
+    bgColor: "bg-teal-500/10",
+    isNew: true,
   },
   {
     to: "/dashboard/coach",

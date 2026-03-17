@@ -42,6 +42,7 @@ import Achievements from "./pages/Achievements";
 import MedicalReviewer from "./pages/MedicalReviewer";
 import InterviewSimulator from "./pages/InterviewSimulator";
 import NotFound from "./pages/NotFound";
+import AnamnesisTrainer from "./pages/AnamnesisTrainer";
 import Install from "./pages/Install";
 
 const queryClient = new QueryClient();
@@ -84,6 +85,7 @@ const App = () => (
               <Route path="revisor" element={<MedicalReviewer />} />
               <Route path="entrevista" element={<InterviewSimulator />} />
               <Route path="conquistas" element={<Achievements />} />
+              <Route path="anamnese" element={<AnamnesisTrainer />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="perfil" element={<Profile />} />
             </Route>
