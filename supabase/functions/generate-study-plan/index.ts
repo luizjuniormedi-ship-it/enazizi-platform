@@ -89,7 +89,7 @@ Gere um cronograma semanal de estudos otimizado para residência médica. Retorn
 }
 
 Regras:
-- As matérias principais são: Clínica Médica, Cirurgia, Pediatria, Ginecologia e Obstetrícia, Medicina Preventiva/Saúde Coletiva
+- As matérias principais são: Clínica Médica, Cirurgia, Pediatria, Ginecologia e Obstetrícia, Medicina Preventiva/Saúde Coletiva, Farmacologia, Semiologia, Anatomia, e demais ciências básicas médicas
 - NUNCA incluir Direito, Engenharia, Informática ou qualquer área não médica
 - Distribua as matérias proporcionalmente ao peso nas provas (Clínica Médica geralmente tem maior peso)
 - Inclua revisões, resolução de questões e simulados
