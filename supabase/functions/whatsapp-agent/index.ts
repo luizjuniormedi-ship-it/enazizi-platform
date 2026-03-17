@@ -110,12 +110,31 @@ serve(async (req) => {
             }).join("\n")
           : "Nenhuma revisão pendente hoje.";
 
-        const prompt = `Gere uma mensagem de WhatsApp curta e motivacional (máximo 500 caracteres) para um aluno de medicina. 
-Use emojis com moderação. Seja direto e encorajador. NÃO use markdown.
+        // Determine mood like the dashboard MotivationalGreeting
+        const streak = gamification.current_streak || 0;
+        let mood = "meh";
+        if (streak >= 5 && revisoes.length <= 3) mood = "champion";
+        else if (streak >= 2) mood = "good";
+        else if (streak === 0) mood = "slacking";
+        if (revisoes.length > 5 && urgentes.length > 2) mood = "danger";
+
+        const moodInstructions: Record<string, string> = {
+          champion: "O aluno tá mandando bem! Elogie o streak e a dedicação com humor médico. Tom: orgulhoso e engraçado. Exemplos de abertura: '🏆 Tá voando, hein?', '🔥 Sequência de X dias!', '👑 Nesse ritmo, a banca vai pensar que vazou a prova.'",
+          good: "O aluno tá indo bem mas pode melhorar. Tom: encorajador e positivo. Exemplos de abertura: '😊 Bom te ver por aqui!', '📚 Tá no caminho certo!', '💡 Dica: quem estuda todo dia não surta na véspera.'",
+          meh: "O aluno tá morno, precisa de um empurrão. Tom: provocativo mas amigável. Exemplos de abertura: '🤷 Bora estudar ou vai ficar só olhando?', '☕ Pega um café e bora!', '🎬 Fim do intervalo!'",
+          slacking: "O aluno NÃO está estudando! Sequência zerou! Tom: bronca divertida mas firme. COMECE com uma dessas frases (adapte): '😤 Cadê você?! A sequência zerou!', '🦥 Tá querendo passar na prova ou virar especialista em procrastinação?', '🚨 Sua sequência de estudos morreu. Causa mortis: abandono.', '😬 Sem estudar? Amanhã você vai se arrepender.', '📉 Seu progresso tá mais parado que fila do SUS.'",
+          danger: "URGENTE! Muitas revisões atrasadas e urgentes. Tom: alarmante mas motivador. Exemplos de abertura: '🚨 ALERTA!', '⏳ Cada hora conta!', '🔴 MODO EMERGÊNCIA!'",
+        };
+
+        const prompt = `Gere uma mensagem de WhatsApp curta e motivacional (máximo 500 caracteres) para um aluno de medicina.
+Use emojis com moderação. Seja direto e encorajador. NÃO use markdown. NÃO use asteriscos.
+
+IMPORTANTE - TOM DA MENSAGEM:
+${moodInstructions[mood]}
 
 Dados do aluno:
 - Nome: ${profile.display_name || "Aluno"}
-- Streak: ${gamification.current_streak} dias seguidos
+- Streak: ${streak} dias seguidos
 - Nível: ${gamification.level}
 - XP total: ${gamification.xp}
 
@@ -124,12 +143,12 @@ ${revisoesText}
 
 ${app_url ? `Link do app: ${app_url}` : ""}
 
-A mensagem deve:
-1. Saudar pelo primeiro nome
-2. Mencionar as revisões do dia (quantidade e temas urgentes)
-3. Motivar baseado no streak/progresso
-4. Se houver revisões urgentes, enfatizar a importância
-5. Terminar com encorajamento`;
+A mensagem DEVE:
+1. COMEÇAR com uma frase motivacional/bronca no estilo descrito acima (saudando pelo primeiro nome)
+2. Mencionar as revisões do dia (quantidade e temas urgentes se houver)
+3. Motivar ou cobrar baseado no progresso/streak
+4. Se o aluno não estuda (streak 0), dar uma bronca engraçada mas firme
+5. Terminar com encorajamento ou link do app`;
 
         try {
           const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
