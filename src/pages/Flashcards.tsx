@@ -43,6 +43,7 @@ const Flashcards = () => {
   const [showTopicFilter, setShowTopicFilter] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Sprint mode state
   const [sprintConfig, setSprintConfig] = useState({ cardCount: 10, timeMinutes: 5 });
