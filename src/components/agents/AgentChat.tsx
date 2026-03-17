@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Save, Upload } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Save, Upload, GraduationCap } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,12 @@ interface QuickAction {
   icon?: string;
 }
 
+interface LinkToAgent {
+  label: string;
+  path: string;
+  stateKey: string;
+}
+
 interface AgentChatProps {
   title: string;
   subtitle: string;
@@ -43,9 +50,11 @@ interface AgentChatProps {
   renderAssistantMessage?: (content: string) => React.ReactNode;
   showUploadButton?: boolean;
   autoPromptAfterUpload?: string;
+  linkToAgent?: LinkToAgent;
 }
 
-const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions, renderAssistantMessage, showUploadButton, autoPromptAfterUpload }: AgentChatProps) => {
+const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions, renderAssistantMessage, showUploadButton, autoPromptAfterUpload, linkToAgent }: AgentChatProps) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([
     { role: "assistant", content: welcomeMessage },
@@ -719,6 +728,22 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
                     ) : (
                       <><Save className="h-3.5 w-3.5" /> Salvar questões</>
                     )}
+                  </Button>
+                </div>
+              )}
+              {msg.role === "assistant" && linkToAgent && i > 0 && !isLoading && (
+                <div className={`mt-2 pt-2 ${!onSaveMessage ? "border-t border-border/50" : ""}`}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs gap-1.5"
+                    onClick={() => {
+                      const truncated = msg.content.slice(0, 10000);
+                      navigate(linkToAgent.path, { state: { [linkToAgent.stateKey]: truncated } });
+                    }}
+                  >
+                    <GraduationCap className="h-3.5 w-3.5" />
+                    {linkToAgent.label}
                   </Button>
                 </div>
               )}

@@ -239,8 +239,9 @@ const ChatGPT = () => {
 
   // Handle navigation from ErrorBank with initialMessage
   const errorBankHandled = useRef(false);
+  const summaryHandled = useRef(false);
   useEffect(() => {
-    const state = location.state as { initialMessage?: string; fromErrorBank?: boolean; fromSimulado?: boolean } | null;
+    const state = location.state as { initialMessage?: string; fromErrorBank?: boolean; fromSimulado?: boolean; fromSummary?: string } | null;
     if (state?.fromErrorBank && state?.initialMessage && !errorBankHandled.current && user) {
       errorBankHandled.current = true;
       const initialMessage = ensureSequentialInitialMessage(state.initialMessage);
@@ -258,6 +259,19 @@ const ChatGPT = () => {
       setCurrentTopic("Revisão de Simulado — Proficiência");
       setTimeout(() => {
         sendMessage(initialMessage);
+      }, 500);
+      window.history.replaceState({}, document.title);
+    }
+    if (state?.fromSummary && !summaryHandled.current && user) {
+      summaryHandled.current = true;
+      const summaryText = state.fromSummary.slice(0, 10000);
+      const prompt = ensureSequentialInitialMessage(
+        `Com base neste resumo, continue a explicação aprofundada seguindo o Protocolo ENAZIZI. Aprofunde os pontos mais importantes, faça perguntas de active recall e proponha questões clínicas:\n\n${summaryText}`
+      );
+      setStudyStarted(true);
+      setCurrentTopic("Aprofundamento de Resumo");
+      setTimeout(() => {
+        sendMessage(prompt);
       }, 500);
       window.history.replaceState({}, document.title);
     }

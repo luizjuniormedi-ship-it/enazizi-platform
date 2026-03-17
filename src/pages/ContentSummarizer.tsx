@@ -20,6 +20,11 @@ const ContentSummarizer = () => (
     quickActions={quickActions}
     showUploadButton
     autoPromptAfterUpload="Faça um resumo completo e estruturado do material '{filename}' com pontos de prova, mnemônicos e tabelas comparativas."
+    linkToAgent={{
+      label: "Pedir explicação ao Tutor",
+      path: "/dashboard/chatgpt",
+      stateKey: "fromSummary",
+    }}
   />
 );
 
