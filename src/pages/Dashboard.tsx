@@ -248,12 +248,17 @@ const Dashboard = () => {
         </div>
         <AchievementToast />
 
-        <h1 className="text-2xl font-bold mt-5">Dashboard</h1>
-        <p className="text-muted-foreground">
-          {stats.daysUntilExam
-            ? `${stats.daysUntilExam} dias até a prova • ${taskPercent}% das tarefas concluídas`
-            : "Bem-vindo de volta! Aqui está seu progresso."}
-        </p>
+        <div className="flex items-center justify-between mt-5">
+          <div>
+            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground">
+              {stats.daysUntilExam
+                ? `${stats.daysUntilExam} dias até a prova • ${taskPercent}% das tarefas concluídas`
+                : "Bem-vindo de volta! Aqui está seu progresso."}
+            </p>
+          </div>
+          <PerformanceReport />
+        </div>
 
         <DashboardWarnings
           todayCompleted={stats.todayCompleted}
