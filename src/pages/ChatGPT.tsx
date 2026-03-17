@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useLocation } from "react-router-dom";
 import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap, LogOut, AlertTriangle, Maximize2, Minimize2 } from "lucide-react";
@@ -771,8 +772,8 @@ const ChatGPT = () => {
 
   const recentHistory = performance.historico_estudo.slice(-5).reverse();
 
-  return (
-    <div className={`flex flex-col animate-fade-in min-w-0 ${isFullscreen ? "fixed inset-0 z-50 bg-background p-2 sm:p-4" : "h-[calc(100vh-7rem)] sm:h-[calc(100vh-4rem)]"}`}>
+  const content = (
+    <div className={`flex flex-col animate-fade-in min-w-0 ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-[calc(100vh-7rem)] sm:h-[calc(100vh-4rem)]"}`}>
       {/* Header */}
       <div className="mb-2 sm:mb-4 flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
@@ -1158,6 +1159,9 @@ const ChatGPT = () => {
       )}
     </div>
   );
+
+  if (isFullscreen) return createPortal(content, document.body);
+  return content;
 };
 
 export default ChatGPT;

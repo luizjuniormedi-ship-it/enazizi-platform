@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays, Send, CheckCircle, XCircle, GraduationCap, Filter, Download, Zap, Clock, Award, Maximize2, Minimize2 } from "lucide-react";
 import { exportToPdf } from "@/lib/exportPdf";
@@ -292,8 +293,8 @@ const Flashcards = () => {
 
   const reviewedCount = allCards.length - dueCards.length;
 
-  return (
-    <div className={`animate-fade-in ${isFullscreen ? "fixed inset-0 z-50 bg-background p-2 sm:p-4 overflow-auto" : "space-y-6"}`}>
+  const content = (
+    <div className={`animate-fade-in ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4 overflow-auto" : "space-y-6"}`}>
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -557,6 +558,9 @@ const Flashcards = () => {
       )}
     </div>
   );
+
+  if (isFullscreen) return createPortal(content, document.body);
+  return content;
 };
 
 export default Flashcards;
