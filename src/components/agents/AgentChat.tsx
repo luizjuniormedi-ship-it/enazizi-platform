@@ -230,7 +230,15 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
 
             // Auto-send summary prompt after upload
             if (autoPromptAfterUpload) {
-              pendingAutoPromptRef.current = autoPromptAfterUpload.replace("{filename}", file.name);
+              const prompt = autoPromptAfterUpload.replace("{filename}", file.name);
+              setTimeout(() => {
+                setIsUploading(false);
+                setUploadProgress(0);
+                setUploadStep("");
+                // Trigger auto-send after state settles
+                setTimeout(() => handleSend(prompt), 200);
+              }, 800);
+              return; // skip the default timeout below
             }
           } else {
             toast({ title: "Erro", description: "Falha ao processar o arquivo.", variant: "destructive" });
