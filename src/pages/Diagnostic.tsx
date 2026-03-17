@@ -41,16 +41,32 @@ const Diagnostic = () => {
     try {
       // Generate 25 questions (5 per area) via question generator
       const allQuestions: DiagQuestion[] = [];
+      const scenarioVariations: Record<string, string> = {
+        "Clínica Médica": "Varie os cenários: inclua casos em UBS, enfermaria, UTI e ambulatório. Pacientes de diferentes faixas etárias (20-90 anos), sexos e comorbidades (DM, HAS, IRC, DPOC, hepatopatia). Use apresentações clínicas distintas: emergência hipertensiva, descompensação de ICC, pneumonia comunitária, cetoacidose diabética, TEP.",
+        "Cirurgia": "Varie os cenários: inclua casos em pronto-socorro, centro cirúrgico e enfermaria. Pacientes de diferentes idades e perfis. Aborde: abdome agudo (apendicite, colecistite, obstrução), trauma (Focused Assessment), hérnias, pré/pós-operatório, complicações cirúrgicas.",
+        "Pediatria": "Varie os cenários: inclua neonatos, lactentes, pré-escolares e adolescentes. Aborde: bronquiolite, pneumonia na infância, desidratação/diarreia, convulsão febril, meningite, crescimento e desenvolvimento, vacinação, maus-tratos.",
+        "Ginecologia e Obstetrícia": "Varie os cenários: gestantes em diferentes trimestres, puérperas e pacientes ginecológicas. Aborde: pré-eclâmpsia, diabetes gestacional, sangramento de 1º trimestre, trabalho de parto, rastreio de câncer cervical, endometriose, SOP.",
+        "Medicina Preventiva": "Varie os cenários: atenção primária, vigilância epidemiológica, saúde coletiva. Aborde: rastreamentos (câncer mama/colo/colorretal), vacinação do adulto, indicadores de saúde, estudos epidemiológicos (coorte, caso-controle), SUS e políticas de saúde.",
+      };
+
       for (const area of AREAS) {
+        const variation = scenarioVariations[area] || "";
         const res = await supabase.functions.invoke("question-generator", {
           body: {
-            messages: [{ role: "user", content: `Gere 5 questões de múltipla escolha de ${area} para simulado diagnóstico de residência médica. Nível intermediário. Formato: caso clínico curto + 5 alternativas.` }],
+            messages: [{ role: "user", content: `Gere 5 questões de múltipla escolha de ${area} para simulado diagnóstico de residência médica. Nível intermediário.
+
+REGRAS DE DIVERSIDADE OBRIGATÓRIAS:
+- ${variation}
+- Cada questão DEVE ter um caso clínico ÚNICO com paciente diferente (idade, sexo, história e queixa principal diferentes)
+- PROIBIDO repetir o mesmo cenário ou estrutura narrativa entre questões
+- Varie o tipo de pergunta: diagnóstico, conduta, exame complementar, fisiopatologia
+- Formato: caso clínico curto + 5 alternativas (A-E)
+- Retorne JSON array: [{"statement":"...", "options":["A) ...","B) ...","C) ...","D) ...","E) ..."], "correct_index": 0, "topic":"${area}", "explanation":"..."}]
+- Retorne APENAS o JSON, sem texto adicional` }],
           },
         });
         if (res.error) throw res.error;
-        // Parse from stream or direct response
         const content = typeof res.data === "string" ? res.data : res.data?.choices?.[0]?.message?.content || "";
-        // Basic parser for questions
         const parsed = parseQuestions(content, area);
         allQuestions.push(...parsed.slice(0, 5));
       }
