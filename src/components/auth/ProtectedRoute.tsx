@@ -3,25 +3,58 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, Clock } from "lucide-react";
+import { LogOut, Clock, Save, Loader2, GraduationCap, Building, Phone, User } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+
+const FACULDADES = ["UNIG", "Estácio", "Outra"];
+
+interface ProfileData {
+  is_blocked: boolean;
+  status: string;
+  display_name: string | null;
+  phone: string | null;
+  periodo: number | null;
+  faculdade: string | null;
+}
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, signOut } = useAuth();
+  const { toast } = useToast();
   const [profileStatus, setProfileStatus] = useState<string | null>(null);
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [checkingProfile, setCheckingProfile] = useState(true);
+
+  // Onboarding form state
+  const [formName, setFormName] = useState("");
+  const [formPhone, setFormPhone] = useState("");
+  const [formPeriodo, setFormPeriodo] = useState("");
+  const [formFaculdade, setFormFaculdade] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!user) { setCheckingProfile(false); return; }
     const check = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("is_blocked, status")
+        .select("is_blocked, status, display_name, phone, periodo, faculdade")
         .eq("user_id", user.id)
         .maybeSingle();
       if (data?.is_blocked) {
         setProfileStatus("blocked");
       } else {
         setProfileStatus(data?.status || "pending");
+      }
+      // Check if profile is incomplete
+      const incomplete = !data?.phone || !data?.periodo || !data?.faculdade || !data?.display_name;
+      setProfileIncomplete(incomplete);
+      if (incomplete) {
+        setFormName(data?.display_name || "");
+        setFormPhone(data?.phone || "");
+        setFormPeriodo(data?.periodo ? String(data.periodo) : "");
+        setFormFaculdade(data?.faculdade || "");
       }
       setCheckingProfile(false);
     };
