@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Save } from "lucide-react";
+import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Save, Upload } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -40,9 +41,10 @@ interface AgentChatProps {
   onSaveMessage?: (content: string) => Promise<number>;
   quickActions?: QuickAction[];
   renderAssistantMessage?: (content: string) => React.ReactNode;
+  showUploadButton?: boolean;
 }
 
-const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions, renderAssistantMessage }: AgentChatProps) => {
+const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions, renderAssistantMessage, showUploadButton }: AgentChatProps) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([
     { role: "assistant", content: welcomeMessage },
@@ -58,7 +60,11 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const [showUploads, setShowUploads] = useState(false);
   const [savingMsgIdx, setSavingMsgIdx] = useState<number | null>(null);
   const [savedMsgIdxs, setSavedMsgIdxs] = useState<Set<number>>(new Set());
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStep, setUploadStep] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`;
@@ -127,6 +133,122 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
       setSelectedUploadIds(new Set());
     } else {
       setSelectedUploadIds(new Set(availableUploads.map((u) => u.id)));
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    e.target.value = "";
+
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (!["pdf", "txt"].includes(ext || "")) {
+      toast({ title: "Formato inválido", description: "Apenas PDF e TXT são suportados.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ title: "Arquivo muito grande", description: "Máximo de 20MB.", variant: "destructive" });
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(5);
+    setUploadStep("Enviando arquivo...");
+
+    try {
+      const storagePath = `${user.id}/${Date.now()}_${file.name}`;
+      const { error: storageError } = await supabase.storage.from("user-uploads").upload(storagePath, file);
+      if (storageError) throw storageError;
+
+      setUploadProgress(20);
+      setUploadStep("Registrando...");
+
+      const { data: uploadRow, error: insertError } = await supabase.from("uploads").insert({
+        user_id: user.id,
+        filename: file.name,
+        file_type: ext || "pdf",
+        storage_path: storagePath,
+        status: "pending",
+        is_global: false,
+      }).select("id").single();
+      if (insertError || !uploadRow) throw insertError || new Error("Falha ao registrar upload");
+
+      setUploadProgress(30);
+      setUploadStep("Processando...");
+
+      const { data: { session } } = await supabase.auth.getSession();
+      await supabase.functions.invoke("process-upload", {
+        body: { uploadId: uploadRow.id },
+      });
+
+      // Poll for completion
+      const pollInterval = setInterval(async () => {
+        const { data: status } = await supabase
+          .from("uploads")
+          .select("status, extracted_text, extracted_json, filename, category")
+          .eq("id", uploadRow.id)
+          .single();
+
+        if (!status) return;
+
+        const json = status.extracted_json as Record<string, any> | null;
+        const progress = json?.progress || 30;
+        const step = json?.step || "processing";
+
+        const stepLabels: Record<string, string> = {
+          downloading: "Baixando arquivo...",
+          extracting_text: "Extraindo texto...",
+          validating: "Validando conteúdo...",
+          generating_flashcards: "Gerando flashcards...",
+          generating_questions: "Gerando questões...",
+          done: "Concluído!",
+          error: "Erro no processamento",
+        };
+
+        setUploadProgress(Math.min(progress, 95));
+        setUploadStep(stepLabels[step] || "Processando...");
+
+        if (status.status === "processed" || status.status === "error") {
+          clearInterval(pollInterval);
+          setUploadProgress(100);
+
+          if (status.status === "processed" && status.extracted_text) {
+            const newUpload: Upload = {
+              id: uploadRow.id,
+              filename: status.filename,
+              category: status.category,
+              extracted_text: status.extracted_text,
+            };
+            setAvailableUploads(prev => [newUpload, ...prev]);
+            setSelectedUploadIds(prev => new Set(prev).add(uploadRow.id));
+            toast({ title: "✅ Material processado!", description: `${status.filename} está pronto para uso como contexto.` });
+          } else {
+            toast({ title: "Erro", description: "Falha ao processar o arquivo.", variant: "destructive" });
+          }
+
+          setTimeout(() => {
+            setIsUploading(false);
+            setUploadProgress(0);
+            setUploadStep("");
+          }, 1000);
+        }
+      }, 3000);
+
+      // Safety timeout after 3 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (isUploading) {
+          setIsUploading(false);
+          toast({ title: "Timeout", description: "O processamento demorou demais. Verifique na página de Uploads.", variant: "destructive" });
+        }
+      }, 180000);
+
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast({ title: "Erro no upload", description: err instanceof Error ? err.message : "Falha ao enviar arquivo.", variant: "destructive" });
+      setIsUploading(false);
+      setUploadProgress(0);
+      setUploadStep("");
     }
   };
 
@@ -381,18 +503,39 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
         </div>
       </div>
 
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept=".pdf,.txt"
+        className="hidden"
+        onChange={handleFileUpload}
+      />
+
+      {/* Upload progress indicator */}
+      {isUploading && (
+        <div className="mb-3 px-3 py-2.5 rounded-lg bg-primary/10 border border-primary/20">
+          <div className="flex items-center gap-2 text-xs font-medium text-primary mb-1.5">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <span>{uploadStep}</span>
+          </div>
+          <Progress value={uploadProgress} className="h-1.5" />
+        </div>
+      )}
+
       {/* Context indicator */}
       <div className="mb-3">
-        <button
-          onClick={() => totalUploads > 0 && setShowUploads(!showUploads)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors w-full ${
-            totalUploads > 0
-              ? selectedCount > 0
-                ? "bg-primary/10 text-primary hover:bg-primary/15"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-              : "bg-muted text-muted-foreground"
-          }`}
-        >
+        <div className="flex gap-2">
+          <button
+            onClick={() => totalUploads > 0 && setShowUploads(!showUploads)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors flex-1 ${
+              totalUploads > 0
+                ? selectedCount > 0
+                  ? "bg-primary/10 text-primary hover:bg-primary/15"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+                : "bg-muted text-muted-foreground"
+            }`}
+          >
           <FileText className="h-3.5 w-3.5 flex-shrink-0" />
           {totalUploads === 0 ? (
             <span>Nenhum material disponível — faça upload para enriquecer as respostas</span>
@@ -402,7 +545,20 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
               <ChevronDown className={`h-3.5 w-3.5 ml-auto transition-transform ${showUploads ? "rotate-180" : ""}`} />
             </>
           )}
-        </button>
+          </button>
+          {showUploadButton && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 px-3 gap-1.5 text-xs flex-shrink-0"
+              disabled={isUploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{isUploading ? "Enviando..." : "Enviar"}</span>
+            </Button>
+          )}
+        </div>
 
         {showUploads && totalUploads > 0 && (
           <div className="glass-card p-3 mt-2 max-h-40 overflow-y-auto space-y-1">
