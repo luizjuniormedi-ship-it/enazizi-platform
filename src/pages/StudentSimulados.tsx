@@ -52,6 +52,10 @@ const StudentSimulados = () => {
   const [loading, setLoading] = useState(true);
   const [phase, setPhase] = useState<Phase>("list");
 
+  // Clinical cases (Plantão)
+  const [clinicalCases, setClinicalCases] = useState<any[]>([]);
+  const [clinicalLoading, setClinicalLoading] = useState(true);
+
   // Quiz state
   const [current, setCurrent] = useState<AssignedSimulado | null>(null);
   const [questionIndex, setQuestionIndex] = useState(0);
