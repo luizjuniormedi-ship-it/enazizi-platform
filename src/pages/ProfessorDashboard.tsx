@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import ClassAnalytics from "@/components/professor/ClassAnalytics";
+import ProfessorPlantao from "@/components/professor/ProfessorPlantao";
 import StudentTracker from "@/components/professor/StudentTracker";
 
 const SPECIALTIES = [
