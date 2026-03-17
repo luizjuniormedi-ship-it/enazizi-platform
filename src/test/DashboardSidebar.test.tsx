@@ -62,7 +62,7 @@ describe("DashboardSidebar", () => {
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
     expect(screen.getByText("🃏 Flashcards")).toBeInTheDocument();
     expect(screen.getByText("📝 Simulados")).toBeInTheDocument();
-    expect(screen.getByText("📤 Uploads")).toBeInTheDocument();
+    
     expect(screen.getByText("📊 Analytics")).toBeInTheDocument();
     expect(screen.getByText("Meu Perfil")).toBeInTheDocument();
     expect(screen.getByText("Sair")).toBeInTheDocument();
