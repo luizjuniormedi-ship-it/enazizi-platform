@@ -139,7 +139,7 @@ const WeeklyProgressCard = () => {
           </div>
           <div className="text-xl font-bold">{Math.round(data.accuracyThisWeek * 100)}%</div>
           <div className={`flex items-center gap-1 text-xs ${trendColor(accuracyDelta)}`}>
-            <TrendIcon delta={accuracyDelta} />
+            {renderTrendIcon(accuracyDelta)}
             {formatDelta(Math.round(accuracyDelta * 100), "%")}
           </div>
         </div>
