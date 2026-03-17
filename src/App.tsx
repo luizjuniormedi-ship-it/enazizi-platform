@@ -85,6 +85,7 @@ const App = () => (
               <Route path="revisor" element={<MedicalReviewer />} />
               <Route path="entrevista" element={<InterviewSimulator />} />
               <Route path="conquistas" element={<Achievements />} />
+              <Route path="anamnese" element={<AnamnesisTrainer />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="perfil" element={<Profile />} />
             </Route>

@@ -44,6 +44,15 @@ const agents = [
     bgColor: "bg-red-500/10",
   },
   {
+    to: "/dashboard/anamnese",
+    icon: MessageCircle,
+    title: "🩺 Treino de Anamnese",
+    description: "Pratique entrevista clínica com pacientes simulados. A IA só responde ao que você perguntar — treine sua técnica semiológica.",
+    color: "text-teal-400",
+    bgColor: "bg-teal-500/10",
+    isNew: true,
+  },
+  {
     to: "/dashboard/coach",
     icon: Heart,
     title: "💪 Coach Motivacional",
