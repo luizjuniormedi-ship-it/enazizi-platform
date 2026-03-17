@@ -197,6 +197,7 @@ const ProfessorPlantao = () => {
   };
 
   const resetForm = () => {
+    setCreateMode("ia");
     setSpecialty("Clínica Médica");
     setDifficulty("intermediário");
     setTitle("");
@@ -206,6 +207,13 @@ const ProfessorPlantao = () => {
     setGeneratedCase(null);
     setPreviewStudents([]);
     setSelectedStudentIds([]);
+    setManualPresentation("");
+    setManualVitals({ PA: "", FC: "", FR: "", Temp: "", SpO2: "" });
+    setManualScenario("Pronto-Socorro");
+    setManualTriageColor("amarelo");
+    setManualDiagnosis("");
+    setManualFindings([""]);
+    setManualDifficultyScore(3);
   };
 
   const totalAssigned = cases.reduce((s, c) => s + (c.results_summary?.total || 0), 0);
