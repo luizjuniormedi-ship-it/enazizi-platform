@@ -13,7 +13,7 @@ const SPECIALTIES = [
   "Cirurgia Geral", "Medicina Preventiva", "Nefrologia",
   "Infectologia", "Hematologia", "Reumatologia", "Dermatologia",
   "Ortopedia", "Urologia", "Psiquiatria", "Oftalmologia",
-  "Otorrinolaringologia", "Emergência", "Semiologia", "Anatomia",
+  "Otorrinolaringologia", "Emergência", "Semiologia", "Anatomia", "Farmacologia",
 ];
 
 const TOPICS_BY_SPECIALTY: Record<string, string[]> = {

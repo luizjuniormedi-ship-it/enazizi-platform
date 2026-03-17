@@ -163,6 +163,22 @@ const SPECIALTIES_WITH_TOPICS: Record<string, string[]> = {
     "SDRA (Síndrome do Desconforto Respiratório)", "Morte Encefálica",
     "Neurointensivismo", "Desmame Ventilatório", "Insuficiência Orgânica Múltipla",
   ],
+  "Farmacologia": [
+    "Farmacocinética (Absorção, Distribuição, Metabolismo, Excreção)",
+    "Farmacodinâmica e Receptores",
+    "Antibioticoterapia e Mecanismos de Resistência",
+    "Anti-hipertensivos e Vasodilatadores",
+    "Antiarrítmicos",
+    "Anticoagulantes e Antiplaquetários",
+    "AINEs e Corticoides",
+    "Analgésicos e Opioides",
+    "Psicofarmacologia (Antidepressivos, Antipsicóticos, Ansiolíticos)",
+    "Quimioterápicos e Imunossupressores",
+    "Farmacologia do Sistema Nervoso Autônomo",
+    "Interações Medicamentosas e Reações Adversas",
+    "Anti-diabéticos Orais e Insulinoterapia",
+    "Broncodilatadores e Anti-asmáticos",
+  ],
 };
 
 const SPECIALTIES = Object.keys(SPECIALTIES_WITH_TOPICS);

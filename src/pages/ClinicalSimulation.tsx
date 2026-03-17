@@ -23,7 +23,7 @@ const SPECIALTIES = [
   "Clínica Médica", "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia",
   "Nefrologia", "Infectologia", "Pediatria", "Cirurgia", "Ginecologia e Obstetrícia",
   "Ortopedia", "Psiquiatria", "Emergência", "Dermatologia", "Angiologia",
-  "Semiologia", "Anatomia",
+  "Semiologia", "Anatomia", "Farmacologia",
 ];
 
 const QUICK_ACTIONS = [
