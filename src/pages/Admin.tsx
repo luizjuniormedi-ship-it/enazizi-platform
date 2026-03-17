@@ -142,6 +142,36 @@ const Admin = () => {
     }
   }, [callAdmin, toast]);
 
+  const loadUserAccess = useCallback(async (u: AdminUser) => {
+    setAccessDialog({ open: true, user: u, modules: {}, loading: true, saving: false });
+    try {
+      const res = await callAdmin({ action: "get_user_access", target_user_id: u.user_id });
+      const mods: Record<string, boolean> = {};
+      ALL_MODULES.forEach(m => { mods[m.key] = true; }); // default all enabled
+      (res.modules || []).forEach((m: { module_key: string; enabled: boolean }) => {
+        mods[m.module_key] = m.enabled;
+      });
+      setAccessDialog(prev => ({ ...prev, modules: mods, loading: false }));
+    } catch (e) {
+      toast({ title: "Erro", description: "Erro ao carregar acessos", variant: "destructive" });
+      setAccessDialog(prev => ({ ...prev, loading: false }));
+    }
+  }, [callAdmin, toast]);
+
+  const handleSaveAccess = async () => {
+    if (!accessDialog.user) return;
+    setAccessDialog(prev => ({ ...prev, saving: true }));
+    try {
+      const modules = ALL_MODULES.map(m => ({ module_key: m.key, enabled: accessDialog.modules[m.key] ?? true }));
+      await callAdmin({ action: "set_user_access", target_user_id: accessDialog.user.user_id, modules });
+      toast({ title: "Acessos salvos", description: `Módulos de ${accessDialog.user.display_name || accessDialog.user.email} atualizados.` });
+      setAccessDialog({ open: false, user: null, modules: {}, loading: false, saving: false });
+    } catch (e) {
+      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao salvar", variant: "destructive" });
+      setAccessDialog(prev => ({ ...prev, saving: false }));
+    }
+  };
+
   const handleApproveUser = async (u: AdminUser) => {
     setActionLoading(u.user_id);
     try {
