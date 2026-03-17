@@ -32,9 +32,9 @@ const SPECIALTIES = [
 
 const QUICK_ACTIONS = [
   { label: "Anamnese", icon: MessageCircle, prompt: "Quais são seus sintomas? Quando começou?" },
-  { label: "Exame Físico", icon: Stethoscope, prompt: "Realizar exame físico completo do paciente" },
-  { label: "Exames Lab", icon: FileSearch, prompt: "Solicitar exames laboratoriais: hemograma completo, bioquímica (TGO, TGP, ureia, creatinina, glicose, eletrólitos), coagulograma (TAP, INR, TTPA). Forneça os resultados completos com valores e referências." },
-  { label: "Imagem", icon: FileSearch, prompt: "Solicitar exames de imagem conforme indicação clínica. Forneça os laudos completos com achados positivos e negativos." },
+  { label: "Exame Físico", icon: Stethoscope, prompt: "Gostaria de realizar exame físico do paciente." },
+  { label: "Exames Lab", icon: FileSearch, prompt: "Gostaria de solicitar exames laboratoriais." },
+  { label: "Imagem", icon: FileSearch, prompt: "Gostaria de solicitar exames de imagem." },
   { label: "Prescrever", icon: Syringe, prompt: "Prescrever medicação para o paciente" },
   { label: "Diagnóstico", icon: Target, prompt: "Com base nos achados clínicos e exames, meu diagnóstico é:" },
 ];
