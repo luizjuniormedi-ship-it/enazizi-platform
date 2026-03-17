@@ -549,6 +549,8 @@ const ClinicalSimulation = () => {
     setVitals(null);
     setCountdown(0);
     setTimerExpired(false);
+    setVitalsSnapshots([]);
+    setExamResults([]);
     if (countdownRef.current) clearInterval(countdownRef.current);
     fetchHistory();
   };
