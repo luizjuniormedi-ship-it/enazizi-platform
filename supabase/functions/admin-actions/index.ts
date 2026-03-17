@@ -63,19 +63,21 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case "list_users": {
-        const [{ data: profiles }, { data: roles }, { data: subs }, { data: quotas }, { data: domainMaps }, { data: attempts }] = await Promise.all([
+        const [{ data: profiles }, { data: roles }, { data: subs }, { data: quotas }, { data: domainMaps }, { data: attempts }, { data: presenceData }] = await Promise.all([
           supabaseAuth.from("profiles").select("user_id, display_name, email, is_blocked, created_at, avatar_url, organization_id, status, approved_by, approved_at").order("created_at", { ascending: false }),
           supabaseAuth.from("user_roles").select("user_id, role"),
           supabaseAuth.from("subscriptions").select("user_id, status, plan_id, plans(name, price)").eq("status", "active"),
           supabaseAuth.from("user_quotas").select("user_id, questions_used, questions_limit"),
           supabaseAuth.from("medical_domain_map").select("user_id, specialty, domain_score, questions_answered"),
           supabaseAuth.from("practice_attempts").select("user_id, correct, created_at"),
+          supabaseAuth.from("user_presence").select("user_id, last_seen_at"),
         ]);
 
         const users = (profiles || []).map((p) => {
           const userRoles = (roles || []).filter((r) => r.user_id === p.user_id).map((r) => r.role);
           const sub = (subs || []).find((s) => s.user_id === p.user_id);
           const quota = (quotas || []).find((q) => q.user_id === p.user_id);
+          const presence = (presenceData || []).find((pr: any) => pr.user_id === p.user_id);
           
           // Evolution summary
           const userDomains = (domainMaps || []).filter((d: any) => d.user_id === p.user_id);
@@ -90,7 +92,7 @@ Deno.serve(async (req) => {
           const correctRecent = userAttempts.filter((a: any) => a.created_at >= sevenDaysAgo && a.correct).length;
           const recentAccuracy = recentAttempts > 0 ? Math.round((correctRecent / recentAttempts) * 100) : 0;
           
-          return { ...p, roles: userRoles, subscription: sub || null, quota: quota || null, evolution: { avgScore, totalQuestions, specialties, recentAttempts, recentAccuracy } };
+          return { ...p, roles: userRoles, subscription: sub || null, quota: quota || null, last_seen_at: presence?.last_seen_at || null, evolution: { avgScore, totalQuestions, specialties, recentAttempts, recentAccuracy } };
         });
         return ok({ users });
       }

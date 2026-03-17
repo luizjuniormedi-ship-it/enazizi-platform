@@ -35,6 +35,7 @@ interface AdminUser {
   approved_by: string | null;
   approved_at: string | null;
   roles: string[];
+  last_seen_at: string | null;
   subscription: { status: string; plan_id: string; plans: { name: string; price: number } | null } | null;
   quota: { questions_used: number; questions_limit: number } | null;
   evolution?: { avgScore: number; totalQuestions: number; specialties: number; recentAttempts: number; recentAccuracy: number };
@@ -450,13 +451,14 @@ const Admin = () => {
             ) : (
               <div className="space-y-2">
                 {/* Header */}
-                <div className="hidden md:grid grid-cols-12 gap-3 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                <div className="hidden md:grid grid-cols-14 gap-3 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   <div className="col-span-2">Usuário</div>
                   <div className="col-span-2">Email</div>
                   <div className="col-span-1">Plano</div>
                   <div className="col-span-1">Status</div>
+                  <div className="col-span-1">Último acesso</div>
                   <div className="col-span-3">Evolução</div>
-                  <div className="col-span-3 text-right">Ações</div>
+                  <div className="col-span-4 text-right">Ações</div>
                 </div>
 
                 {filteredUsers.map((u) => {
@@ -468,7 +470,7 @@ const Admin = () => {
                   return (
                     <div
                       key={u.user_id}
-                      className={`grid grid-cols-1 md:grid-cols-12 gap-3 px-4 py-3 rounded-lg transition-colors ${
+                      className={`grid grid-cols-1 md:grid-cols-14 gap-3 px-4 py-3 rounded-lg transition-colors ${
                         isPending ? "bg-amber-500/5 border border-amber-500/20" :
                         u.is_blocked || u.status === "disabled" ? "bg-destructive/5 border border-destructive/20" :
                         "bg-secondary/50 hover:bg-secondary/80"
@@ -501,6 +503,24 @@ const Admin = () => {
                       <div className="col-span-1 flex items-center">
                         {getStatusBadge(u)}
                       </div>
+                      <div className="col-span-1 flex items-center">
+                        {u.last_seen_at ? (
+                          <span className="text-xs text-muted-foreground" title={new Date(u.last_seen_at).toLocaleString("pt-BR")}>
+                            {(() => {
+                              const diff = Date.now() - new Date(u.last_seen_at).getTime();
+                              const mins = Math.floor(diff / 60000);
+                              if (mins < 5) return <span className="text-green-600 font-medium">Online</span>;
+                              if (mins < 60) return `${mins}min`;
+                              const hours = Math.floor(mins / 60);
+                              if (hours < 24) return `${hours}h`;
+                              const days = Math.floor(hours / 24);
+                              return `${days}d`;
+                            })()}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Nunca</span>
+                        )}
+                      </div>
                       <div className="col-span-3 flex items-center gap-2">
                         {evo && (evo.totalQuestions > 0 || evo.recentAttempts > 0) ? (
                           <div className="flex items-center gap-2 text-xs flex-wrap">
@@ -525,7 +545,7 @@ const Admin = () => {
                           <span className="text-xs text-muted-foreground italic">Sem atividade</span>
                         )}
                       </div>
-                      <div className="col-span-3 flex items-center justify-end gap-1.5 flex-wrap">
+                      <div className="col-span-4 flex items-center justify-end gap-1.5 flex-wrap">
                         {isPending ? (
                           <>
                             <Button
