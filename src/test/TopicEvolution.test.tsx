@@ -46,10 +46,10 @@ describe("TopicEvolution", () => {
     expect(screen.getByText("0%")).toBeInTheDocument();
   });
 
-  it("shows all 19 specialties as not studied when no domain data", async () => {
+  it("shows all 22 specialties as not studied when no domain data", async () => {
     renderComponent();
     await waitFor(() => {
-      expect(screen.getByText(/Tópicos ainda não estudados \(19\)/)).toBeInTheDocument();
+      expect(screen.getByText(/Tópicos ainda não estudados \(22\)/)).toBeInTheDocument();
     });
     expect(screen.getByText("Cardiologia")).toBeInTheDocument();
     expect(screen.getByText("Cirurgia")).toBeInTheDocument();
@@ -67,7 +67,7 @@ describe("TopicEvolution", () => {
     expect(screen.getByText("30%")).toBeInTheDocument();
     expect(screen.getByText("2 erros")).toBeInTheDocument();
     expect(screen.getByText("4 erros")).toBeInTheDocument();
-    expect(screen.getByText(/Tópicos ainda não estudados \(17\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Tópicos ainda não estudados \(20\)/)).toBeInTheDocument();
   });
 
   it("shows top error topics from error_bank", async () => {
@@ -92,7 +92,7 @@ describe("TopicEvolution", () => {
     await waitFor(() => {
       expect(screen.getByText("2 estudadas")).toBeInTheDocument();
     });
-    expect(screen.getByText("17 pendentes")).toBeInTheDocument();
+    expect(screen.getByText("20 pendentes")).toBeInTheDocument();
     expect(screen.getByText("1 fracas")).toBeInTheDocument();
   });
 
@@ -105,7 +105,8 @@ describe("TopicEvolution", () => {
     await waitFor(() => {
       expect(screen.getByText("Domínio geral:")).toBeInTheDocument();
     });
-    expect(screen.getByText("10%")).toBeInTheDocument();
+    // (100+90) / 22 specialties = ~9%
+    expect(screen.getByText("9%")).toBeInTheDocument();
   });
 
   it("has link to full domain map", async () => {
