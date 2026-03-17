@@ -40,7 +40,7 @@ const mobileNavGroups: MobileNavGroup[] = [
       { to: "/dashboard/flashcards", label: "🃏 Flashcards" },
       { to: "/dashboard/gerar-flashcards", label: "🃏 Gerador Flashcards" },
       { to: "/dashboard/resumos", label: "📖 Resumidor" },
-      { to: "/dashboard/uploads", label: "📤 Uploads" },
+      
     ],
   },
   {
