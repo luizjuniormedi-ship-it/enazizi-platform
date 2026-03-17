@@ -9,6 +9,9 @@ import {
   MessageCircle, Thermometer, Zap, Star, CheckCircle, XCircle,
   Trophy, Target, HelpCircle, Users, ClipboardCheck, ShieldAlert, History, Eye
 } from "lucide-react";
+import VitalsChart, { parseVitalsToSnapshot } from "@/components/plantao/VitalsChart";
+import ExamsPanel from "@/components/plantao/ExamsPanel";
+import PrescriptionDialog from "@/components/plantao/PrescriptionDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -139,6 +142,15 @@ const ClinicalSimulation = () => {
   // Specialist dialog
   const [specialistDialogOpen, setSpecialistDialogOpen] = useState(false);
   const [specialistArea, setSpecialistArea] = useState("");
+
+  // Prescription dialog
+  const [prescriptionDialogOpen, setPrescriptionDialogOpen] = useState(false);
+
+  // Vitals snapshots for chart
+  const [vitalsSnapshots, setVitalsSnapshots] = useState<any[]>([]);
+
+  // Exam results panel
+  const [examResults, setExamResults] = useState<Array<{ type: "lab" | "imaging"; content: string; timestamp: number }>>([]);
 
   // History
   const [history, setHistory] = useState<any[]>([]);
@@ -295,7 +307,12 @@ const ClinicalSimulation = () => {
       setTimeElapsed(0);
       setTimerExpired(false);
       setCountdown(DIFFICULTY_TIMER[difficulty] || 20 * 60);
-      setTimeElapsed(0);
+      setExamResults([]);
+
+      // Initial vitals snapshot
+      if (res.vitals) {
+        setVitalsSnapshots([parseVitalsToSnapshot(res.vitals, 0)]);
+      }
 
       const patientMsg = res.patient_presentation;
       const simMsg: ChatMessage = {
@@ -352,8 +369,26 @@ const ClinicalSimulation = () => {
 
       setMessages((prev) => [...prev, simMsg]);
       setScore((prev) => Math.max(0, Math.min(100, prev + (res.score_delta || 0))));
-      setTimeElapsed(res.time_elapsed_minutes || timeElapsed + 5);
+      const newTimeElapsed = res.time_elapsed_minutes || timeElapsed + 5;
+      setTimeElapsed(newTimeElapsed);
       if (res.patient_status) setPatientStatus(res.patient_status);
+
+      // Track exam results for side panel
+      if (res.response_type === "lab_result" && res.response) {
+        setExamResults((prev) => [...prev, { type: "lab", content: res.response, timestamp: Date.now() }]);
+      }
+      if (res.response_type === "imaging" && res.response) {
+        setExamResults((prev) => [...prev, { type: "imaging", content: res.response, timestamp: Date.now() }]);
+      }
+
+      // Add vitals snapshot if vitals changed
+      if (res.vitals) {
+        setVitals(res.vitals);
+        setVitalsSnapshots((prev) => [...prev, parseVitalsToSnapshot(res.vitals, newTimeElapsed)]);
+      } else if (vitals && res.patient_status && res.patient_status !== patientStatus) {
+        // Status changed - add snapshot with current vitals
+        setVitalsSnapshots((prev) => [...prev, parseVitalsToSnapshot(vitals as any, newTimeElapsed)]);
+      }
 
       setConversationHistory([
         ...updatedHistory,
@@ -514,6 +549,8 @@ const ClinicalSimulation = () => {
     setVitals(null);
     setCountdown(0);
     setTimerExpired(false);
+    setVitalsSnapshots([]);
+    setExamResults([]);
     if (countdownRef.current) clearInterval(countdownRef.current);
     fetchHistory();
   };
@@ -566,7 +603,7 @@ const ClinicalSimulation = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4 animate-fade-in">
+    <div className="max-w-6xl mx-auto space-y-4 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -862,16 +899,8 @@ const ClinicalSimulation = () => {
             )}
           </div>
 
-          {/* Vitals detail */}
-          {vitals && (
-            <div className="flex gap-2 flex-wrap">
-              {Object.entries(vitals).map(([k, v]) => (
-                <Badge key={k} variant="outline" className="text-xs font-mono gap-1">
-                  {k}: {v}
-                </Badge>
-              ))}
-            </div>
-          )}
+          {/* Main layout: Chat + Side panels */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-3">
 
           {/* Chat area */}
           <Card className="overflow-hidden">
@@ -942,7 +971,7 @@ const ClinicalSimulation = () => {
                 <div className="border-t border-border/50 p-2 space-y-1.5">
                   {/* Standard clinical actions */}
                   <div className="flex gap-1.5 overflow-x-auto">
-                    {QUICK_ACTIONS.map((qa) => (
+                    {QUICK_ACTIONS.filter((qa) => qa.label !== "Prescrever").map((qa) => (
                       <Button
                         key={qa.label}
                         variant="ghost"
@@ -955,6 +984,16 @@ const ClinicalSimulation = () => {
                         {qa.label}
                       </Button>
                     ))}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs shrink-0 gap-1.5 h-8"
+                      disabled={loading}
+                      onClick={() => setPrescriptionDialogOpen(true)}
+                    >
+                      <Syringe className="h-3.5 w-3.5" />
+                      Prescrever
+                    </Button>
                   </div>
                   {/* Pedagogical + finish actions */}
                   <div className="flex gap-1.5 overflow-x-auto border-t border-border/30 pt-1.5">
@@ -1012,8 +1051,23 @@ const ClinicalSimulation = () => {
               )}
             </CardContent>
           </Card>
+
+            {/* Side panels */}
+            <div className="space-y-3 hidden lg:block">
+              <VitalsChart snapshots={vitalsSnapshots} />
+              <ExamsPanel exams={examResults} />
+            </div>
+          </div>
         </div>
       )}
+
+      {/* Prescription Dialog */}
+      <PrescriptionDialog
+        open={prescriptionDialogOpen}
+        onOpenChange={setPrescriptionDialogOpen}
+        onSubmit={(text) => sendMessage(text)}
+        disabled={loading}
+      />
 
       {/* Specialist Dialog */}
       <Dialog open={specialistDialogOpen} onOpenChange={setSpecialistDialogOpen}>
