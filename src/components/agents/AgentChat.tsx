@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Save, Upload, GraduationCap, Maximize2, Minimize2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";

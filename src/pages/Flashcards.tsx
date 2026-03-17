@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays, Send, CheckCircle, XCircle, GraduationCap, Filter, Download, Zap, Clock, Award, Maximize2, Minimize2 } from "lucide-react";
 import { exportToPdf } from "@/lib/exportPdf";

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import {
