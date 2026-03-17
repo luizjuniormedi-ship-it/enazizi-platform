@@ -677,7 +677,39 @@ const Admin = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Change Plan Dialog */}
+      {/* Force Logout Dialog */}
+      <Dialog open={logoutDialog.open} onOpenChange={(open) => !open && setLogoutDialog({ open: false, user: null })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Desconectar usuário</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja encerrar todas as sessões ativas de "{logoutDialog.user?.display_name || logoutDialog.user?.email}"? O usuário precisará fazer login novamente.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLogoutDialog({ open: false, user: null })}>Cancelar</Button>
+            <Button
+              className="gap-1.5"
+              disabled={!!actionLoading}
+              onClick={async () => {
+                if (!logoutDialog.user) return;
+                setActionLoading(logoutDialog.user.user_id);
+                try {
+                  await callAdmin({ action: "force_logout", target_user_id: logoutDialog.user.user_id });
+                  toast({ title: "Sessão encerrada", description: `Todas as sessões de ${logoutDialog.user.display_name || logoutDialog.user.email} foram encerradas.` });
+                  setLogoutDialog({ open: false, user: null });
+                } catch (e) {
+                  toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao desconectar", variant: "destructive" });
+                } finally {
+                  setActionLoading(null);
+                }
+              }}
+            >
+              <LogOut className="h-4 w-4" /> Desconectar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={planDialog.open} onOpenChange={(open) => !open && setPlanDialog({ open: false, user: null, plan: "" })}>
         <DialogContent>
           <DialogHeader>
