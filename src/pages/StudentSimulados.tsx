@@ -122,6 +122,30 @@ const StudentSimulados = () => {
     loadAssigned();
   }, [loadAssigned]);
 
+  // Load clinical cases
+  const loadClinicalCases = useCallback(async () => {
+    if (!user) return;
+    setClinicalLoading(true);
+    try {
+      const { data: results, error } = await supabase
+        .from("teacher_clinical_case_results")
+        .select("*, teacher_clinical_cases(*)")
+        .eq("student_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setClinicalCases(results || []);
+    } catch (e) {
+      console.error("Error loading clinical cases:", e);
+    } finally {
+      setClinicalLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadClinicalCases();
+  }, [loadClinicalCases]);
+
   // Timer
   useEffect(() => {
     if (phase !== "quiz" || timeLeft <= 0) return;
