@@ -1,4 +1,4 @@
-import { Ban, CheckCircle, ShieldCheck, ShieldOff, CreditCard, KeyRound, UserCheck, UserX, BarChart3, GraduationCap, LogOut, Lock, Target, BookOpen, Activity, Brain } from "lucide-react";
+import { Ban, CheckCircle, ShieldCheck, ShieldOff, CreditCard, KeyRound, UserCheck, UserX, BarChart3, GraduationCap, LogOut, Lock, Target, BookOpen, Activity, Brain, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { AdminUser } from "./AdminTypes";
