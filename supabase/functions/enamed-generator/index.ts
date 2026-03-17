@@ -81,9 +81,9 @@ async function generateENAMEDContent(
   const prompt = `Você é um elaborador de questões de ELITE das provas ENAMED, REVALIDA INEP, USP, UNIFESP, UNICAMP e ENARE.
 
 GERE EXATAMENTE:
-- 30 questões de múltipla escolha no padrão ENAMED/REVALIDA
-- 20 flashcards
-- 10 casos clínicos estruturados
+- 15 questões de múltipla escolha no padrão ENAMED/REVALIDA
+- 10 flashcards
+- 5 casos clínicos estruturados
 
 ESPECIALIDADE: ${specialty}
 TEMAS OBRIGATÓRIOS: ${selectedTopics.join(", ")}
