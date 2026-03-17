@@ -16,6 +16,8 @@ import SystemGuidePopup from "@/components/dashboard/SystemGuidePopup";
 import SpecialtyBenchmark from "@/components/dashboard/SpecialtyBenchmark";
 import OnboardingTour from "@/components/dashboard/OnboardingTour";
 import WeeklyProgressCard from "@/components/dashboard/WeeklyProgressCard";
+import PerformanceReport from "@/components/dashboard/PerformanceReport";
+import MiniLeaderboard from "@/components/dashboard/MiniLeaderboard";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 
 interface PlanJson {
