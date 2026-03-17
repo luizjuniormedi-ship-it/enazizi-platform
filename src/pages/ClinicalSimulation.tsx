@@ -901,7 +901,6 @@ const ClinicalSimulation = () => {
 
           {/* Main layout: Chat + Side panels */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-3">
-          )}
 
           {/* Chat area */}
           <Card className="overflow-hidden">
