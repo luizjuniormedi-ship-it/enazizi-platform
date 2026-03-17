@@ -292,6 +292,35 @@ serve(async (req) => {
       throw new Error("Resposta da IA inválida");
     }
 
+    // If this was a teacher case and action is "finish", save results
+    if (action === "finish" && teacher_case_id && parsed) {
+      try {
+        const supabaseService = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+
+        await supabaseService
+          .from("teacher_clinical_case_results")
+          .update({
+            status: "completed",
+            final_evaluation: parsed.evaluation || {},
+            final_score: parsed.final_score || 0,
+            grade: parsed.grade || "F",
+            correct_diagnosis: parsed.correct_diagnosis || null,
+            student_got_diagnosis: parsed.student_got_diagnosis || false,
+            time_total_minutes: parsed.time_total_minutes || 0,
+            xp_earned: parsed.xp_earned || 0,
+            conversation_history: conversation_history || [],
+            finished_at: new Date().toISOString(),
+          })
+          .eq("case_id", teacher_case_id)
+          .eq("student_id", user.id);
+      } catch (saveErr) {
+        console.error("Error saving teacher case result:", saveErr);
+      }
+    }
+
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
