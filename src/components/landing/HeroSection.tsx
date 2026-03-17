@@ -11,7 +11,7 @@ const HeroSection = () => {
         loop
         muted
         playsInline
-        className="absolute inset-0 w-full h-full object-cover opacity-40"
+        className="absolute inset-0 w-full h-full object-contain object-center opacity-40"
         src="/videos/enazizi_2.mp4"
       />
       <div className="absolute inset-0" style={{ background: "var(--gradient-hero)" }} />
