@@ -899,15 +899,8 @@ const ClinicalSimulation = () => {
             )}
           </div>
 
-          {/* Vitals detail */}
-          {vitals && (
-            <div className="flex gap-2 flex-wrap">
-              {Object.entries(vitals).map(([k, v]) => (
-                <Badge key={k} variant="outline" className="text-xs font-mono gap-1">
-                  {k}: {v}
-                </Badge>
-              ))}
-            </div>
+          {/* Main layout: Chat + Side panels */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-3">
           )}
 
           {/* Chat area */}
