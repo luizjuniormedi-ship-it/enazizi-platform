@@ -308,8 +308,11 @@ Deno.serve(async (req) => {
         const { target_user_id } = params;
         if (!target_user_id) throw new Error("target_user_id obrigatório");
         if (target_user_id === user.id) throw new Error("Você não pode desconectar a si mesmo.");
-        const { error: logoutErr } = await supabaseAuth.auth.admin.signOut(target_user_id, "global");
-        if (logoutErr) throw new Error(`Erro ao desconectar: ${logoutErr.message}`);
+        // Ban briefly to invalidate all sessions, then unban
+        const { error: banErr } = await supabaseAuth.auth.admin.updateUserById(target_user_id, { ban_duration: "1s" });
+        if (banErr) throw new Error(`Erro ao desconectar: ${banErr.message}`);
+        // Immediately unban so user can log in again
+        await supabaseAuth.auth.admin.updateUserById(target_user_id, { ban_duration: "none" });
         await logAudit(supabaseAuth, user.id, "force_logout", target_user_id, {});
         return ok({ success: true });
       }
