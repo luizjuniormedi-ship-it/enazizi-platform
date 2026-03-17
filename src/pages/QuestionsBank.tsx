@@ -340,7 +340,7 @@ const QuestionsBank = () => {
             variant="outline"
             size="sm"
             className="gap-1.5"
-            onClick={() => navigate("/dashboard/question-generator", {
+            onClick={() => navigate("/dashboard/questoes", {
               state: { initialTopic: topicFilter !== "all" ? topicFilter : undefined },
             })}
           >
