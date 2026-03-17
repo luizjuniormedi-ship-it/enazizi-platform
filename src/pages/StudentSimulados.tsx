@@ -389,7 +389,12 @@ const StudentSimulados = () => {
                 <CardContent className="p-12 text-center">
                   <Activity className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">Nenhum plantão atribuído</h3>
-                  <p className="text-sm text-muted-foreground">Quando seu professor criar um caso de plantão para você, ele aparecerá aqui.</p>
+                  <p className="text-sm text-muted-foreground mb-6">Quando seu professor criar um caso de plantão para você, ele aparecerá aqui.</p>
+                  <p className="text-xs text-muted-foreground mb-3">Enquanto isso, pratique por conta própria:</p>
+                  <Button variant="outline" onClick={() => navigate("/dashboard/anamnese")} className="gap-2">
+                    <MessageCircle className="h-4 w-4" />
+                    Treinar Anamnese
+                  </Button>
                 </CardContent>
               </Card>
             ) : (
