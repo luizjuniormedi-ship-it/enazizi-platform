@@ -322,7 +322,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
 
     let convId = activeConversationId;
     if (!convId) {
-      const convTitle = input.slice(0, 60);
+      const convTitle = text.slice(0, 60);
       const { data: newConv } = await supabase
         .from("chat_conversations")
         .insert({ user_id: user.id, agent_type: functionName, title: convTitle })
