@@ -241,7 +241,7 @@ const ChatGPT = () => {
   const errorBankHandled = useRef(false);
   const summaryHandled = useRef(false);
   useEffect(() => {
-    const state = location.state as { initialMessage?: string; fromErrorBank?: boolean; fromSimulado?: boolean; fromSummary?: string } | null;
+    const state = location.state as { initialMessage?: string; fromErrorBank?: boolean; fromSimulado?: boolean; fromSummary?: string; sharedUploadIds?: string[] } | null;
     if (state?.fromErrorBank && state?.initialMessage && !errorBankHandled.current && user) {
       errorBankHandled.current = true;
       const initialMessage = ensureSequentialInitialMessage(state.initialMessage);
