@@ -243,9 +243,16 @@ serve(async (req) => {
         });
       }
 
+      // Determine triage color: use provided value or pick randomly
+      const requestedTriage = (await req.clone().json()).triage_color;
+      const triageOptions = ["vermelho", "laranja", "amarelo", "verde"];
+      const triage = requestedTriage && triageOptions.includes(requestedTriage)
+        ? requestedTriage
+        : triageOptions[Math.floor(Math.random() * triageOptions.length)];
+
       messages.push({
         role: "user",
-        content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}. Dificuldade: ${difficulty || "intermediário"}. Responda APENAS em JSON válido.`,
+        content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}. Dificuldade: ${difficulty || "intermediário"}. Classificação de risco obrigatória: ${triage.toUpperCase()}. O campo triage_color DEVE ser "${triage}". Os sinais vitais e a gravidade do caso DEVEM ser coerentes com a classificação ${triage.toUpperCase()}. Responda APENAS em JSON válido.`,
       });
     } else if (action === "interact") {
       if (conversation_history && Array.isArray(conversation_history)) {
