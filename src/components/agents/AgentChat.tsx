@@ -560,6 +560,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
           )}
         </div>
 
+        {showUploads && totalUploads > 0 && (
           <div className="glass-card p-3 mt-2 max-h-40 overflow-y-auto space-y-1">
             <button
               onClick={toggleAll}
