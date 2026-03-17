@@ -49,7 +49,7 @@ describe("DashboardSidebar", () => {
         <DashboardSidebar />
       </MemoryRouter>
     );
-    expect(screen.getByText("🤖 Tutor IA (Principal)")).toBeInTheDocument();
+    expect(screen.getByText("🤖 Tutor IA")).toBeInTheDocument();
   });
 
   it("renders all navigation items", async () => {
