@@ -291,7 +291,18 @@ const StudentSimulados = () => {
             <CardContent className="p-12 text-center">
               <GraduationCap className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Nenhum simulado atribuído</h3>
-              <p className="text-sm text-muted-foreground">Quando seu professor criar um simulado para você, ele aparecerá aqui.</p>
+              <p className="text-sm text-muted-foreground mb-6">Quando seu professor criar um simulado para você, ele aparecerá aqui.</p>
+              <p className="text-xs text-muted-foreground mb-3">Enquanto isso, continue praticando:</p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Button variant="outline" onClick={() => navigate("/dashboard/chatgpt")} className="gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Praticar com Tutor IA
+                </Button>
+                <Button variant="outline" onClick={() => navigate("/dashboard/questoes")} className="gap-2">
+                  <HelpCircle className="h-4 w-4" />
+                  Gerar Questões
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ) : (
