@@ -157,8 +157,12 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
 
     try {
       const storagePath = `${user.id}/${Date.now()}_${file.name}`;
+      console.log("[AgentUpload] uploading to storage:", storagePath, "size:", file.size);
       const { error: storageError } = await supabase.storage.from("user-uploads").upload(storagePath, file);
-      if (storageError) throw storageError;
+      if (storageError) {
+        console.error("[AgentUpload] storage error:", storageError);
+        throw storageError;
+      }
 
       setUploadProgress(20);
       setUploadStep("Registrando...");
