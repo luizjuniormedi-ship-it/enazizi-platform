@@ -508,6 +508,7 @@ const AdminDialogs = ({
       </DialogContent>
     </Dialog>
   </>
-);
+  );
+};
 
 export default AdminDialogs;
