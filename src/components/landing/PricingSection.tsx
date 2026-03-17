@@ -5,28 +5,29 @@ import { Link } from "react-router-dom";
 const plans = [
   {
     name: "Free",
-    price: "R$ 0",
-    period: "/mês",
     desc: "Para conhecer a plataforma",
-    features: ["Cronograma básico", "5 flashcards/mês", "Acesso limitado ao mentor IA"],
+    features: ["Cronograma básico", "50 questões IA/mês", "Flashcards limitados", "Mentor IA básico"],
     cta: "Começar grátis",
     popular: false,
   },
   {
     name: "Pro",
-    price: "R$ 97",
-    period: "/mês",
     desc: "Para quem leva a sério",
-    features: ["Upload ilimitado", "Flashcards ilimitados", "Simulados personalizados", "Mentor IA completo", "Revisão espaçada", "Analytics de desempenho"],
+    features: ["Upload ilimitado", "2.000 questões IA/mês", "Simulados personalizados", "Mentor IA completo", "Revisão espaçada", "Analytics de desempenho"],
     cta: "Assinar Pro",
+    popular: false,
+  },
+  {
+    name: "Premium",
+    desc: "O plano mais completo",
+    features: ["Tudo do Pro", "8.000 questões IA/mês", "Simulação clínica", "Geração avançada de conteúdo", "Preditor de desempenho", "Suporte prioritário"],
+    cta: "Assinar Premium",
     popular: true,
   },
   {
     name: "Enterprise",
-    price: "R$ 297",
-    period: "/mês",
     desc: "Para organizações e cursinhos",
-    features: ["Tudo do Pro", "Painel Admin", "Multiusuários", "Analytics avançados", "API personalizada", "Suporte prioritário"],
+    features: ["Tudo do Premium", "Questões ilimitadas", "Painel Admin", "Dashboard professor", "Multiusuários", "Analytics institucional"],
     cta: "Falar com vendas",
     popular: false,
   },
@@ -38,12 +39,12 @@ const PricingSection = () => {
       <div className="container">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-bold mb-4">
-            Planos que <span className="gradient-text">cabem no seu bolso</span>
+            Conheça nossos <span className="gradient-text">planos</span>
           </h2>
           <p className="text-muted-foreground text-lg">Escolha o plano ideal para a sua preparação.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           {plans.map((plan) => (
             <div
               key={plan.name}
@@ -57,11 +58,7 @@ const PricingSection = () => {
                 </div>
               )}
               <h3 className="text-xl font-bold mb-1">{plan.name}</h3>
-              <p className="text-sm text-muted-foreground mb-4">{plan.desc}</p>
-              <div className="mb-6">
-                <span className="text-4xl font-black">{plan.price}</span>
-                <span className="text-muted-foreground">{plan.period}</span>
-              </div>
+              <p className="text-sm text-muted-foreground mb-6">{plan.desc}</p>
               <ul className="space-y-3 mb-8 flex-1">
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-center gap-2 text-sm">
