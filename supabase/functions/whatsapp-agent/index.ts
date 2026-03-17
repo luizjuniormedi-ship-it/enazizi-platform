@@ -10,7 +10,6 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Validate admin
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -33,7 +32,6 @@ serve(async (req) => {
     }
     const userId = claimsData.claims.sub as string;
 
-    // Check admin role
     const { data: roleData } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
     if (!roleData) {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -41,7 +39,6 @@ serve(async (req) => {
 
     const { app_url } = await req.json().catch(() => ({ app_url: "" }));
 
-    // Fetch all profiles with phone
     const { data: profiles, error: profilesError } = await supabaseAdmin
       .from("profiles")
       .select("user_id, display_name, phone")
@@ -58,9 +55,39 @@ serve(async (req) => {
     }
 
     const today = new Date().toISOString().split("T")[0];
-
-    // Fetch pending reviews for today for all users
     const userIds = profiles.map((p: any) => p.user_id);
+
+    // Fetch today's already-sent messages to avoid repetition
+    const { data: todayLogs } = await supabaseAdmin
+      .from("whatsapp_message_log")
+      .select("target_user_id, message_text")
+      .gte("sent_at", `${today}T00:00:00Z`)
+      .in("target_user_id", userIds);
+
+    const sentTodayByUser: Record<string, string[]> = {};
+    (todayLogs || []).forEach((log: any) => {
+      if (!sentTodayByUser[log.target_user_id]) sentTodayByUser[log.target_user_id] = [];
+      sentTodayByUser[log.target_user_id].push(log.message_text);
+    });
+
+    // Fetch last 7 days of messages per user for anti-repetition context
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentLogs } = await supabaseAdmin
+      .from("whatsapp_message_log")
+      .select("target_user_id, message_text")
+      .gte("sent_at", sevenDaysAgo)
+      .in("target_user_id", userIds)
+      .order("sent_at", { ascending: false })
+      .limit(500);
+
+    const recentMsgsByUser: Record<string, string[]> = {};
+    (recentLogs || []).forEach((log: any) => {
+      if (!recentMsgsByUser[log.target_user_id]) recentMsgsByUser[log.target_user_id] = [];
+      if (recentMsgsByUser[log.target_user_id].length < 5) {
+        recentMsgsByUser[log.target_user_id].push(log.message_text);
+      }
+    });
+
     const { data: allRevisoes } = await supabaseAdmin
       .from("revisoes")
       .select("user_id, tipo_revisao, risco_esquecimento, tema_id, temas_estudados(tema, especialidade)")
@@ -68,13 +95,11 @@ serve(async (req) => {
       .lte("data_revisao", today)
       .in("user_id", userIds);
 
-    // Fetch gamification data
     const { data: allGamification } = await supabaseAdmin
       .from("user_gamification")
       .select("user_id, current_streak, xp, level")
       .in("user_id", userIds);
 
-    // Group data by user
     const revisoesByUser: Record<string, any[]> = {};
     (allRevisoes || []).forEach((r: any) => {
       if (!revisoesByUser[r.user_id]) revisoesByUser[r.user_id] = [];
@@ -86,21 +111,20 @@ serve(async (req) => {
       gamificationByUser[g.user_id] = g;
     });
 
-    // Generate AI messages for each student
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const students: any[] = [];
 
-    // Process in batches of 5 to avoid rate limits
     for (let i = 0; i < profiles.length; i += 5) {
       const batch = profiles.slice(i, i + 5);
       const promises = batch.map(async (profile: any) => {
+        const alreadySentToday = (sentTodayByUser[profile.user_id] || []).length > 0;
         const revisoes = revisoesByUser[profile.user_id] || [];
         const gamification = gamificationByUser[profile.user_id] || { current_streak: 0, xp: 0, level: 1 };
-        
         const urgentes = revisoes.filter((r: any) => r.risco_esquecimento === "alto" || r.risco_esquecimento === "critico");
-        
+        const previousMessages = recentMsgsByUser[profile.user_id] || [];
+
         const revisoesText = revisoes.length > 0
           ? revisoes.map((r: any) => {
               const tema = r.temas_estudados?.tema || "Tema";
@@ -110,7 +134,6 @@ serve(async (req) => {
             }).join("\n")
           : "Nenhuma revisão pendente hoje.";
 
-        // Determine mood like the dashboard MotivationalGreeting
         const streak = gamification.current_streak || 0;
         let mood = "meh";
         if (streak >= 5 && revisoes.length <= 3) mood = "champion";
@@ -119,40 +142,37 @@ serve(async (req) => {
         if (revisoes.length > 5 && urgentes.length > 2) mood = "danger";
 
         const moodInstructions: Record<string, string> = {
-          champion: "O aluno tá mandando bem! Elogie o streak e a dedicação com humor médico. Tom: orgulhoso e engraçado.",
-          good: "O aluno tá indo bem mas pode melhorar. Tom: encorajador e positivo com pitadas de humor.",
-          meh: "O aluno tá morno, precisa de um empurrão. Tom: provocativo mas amigável e divertido.",
-          slacking: "O aluno NÃO está estudando! Sequência zerou! Tom: bronca divertida mas firme.",
-          danger: "URGENTE! Muitas revisões atrasadas e urgentes. Tom: alarmante mas motivador com humor negro médico.",
+          champion: "O aluno tá mandando bem! Elogie o streak com humor médico. Tom: orgulhoso e engraçado.",
+          good: "O aluno tá indo bem. Tom: encorajador e positivo com pitadas de humor.",
+          meh: "O aluno tá morno. Tom: provocativo mas amigável e divertido.",
+          slacking: "O aluno NÃO está estudando! Streak zerou! Tom: bronca divertida mas firme.",
+          danger: "URGENTE! Muitas revisões atrasadas. Tom: alarmante com humor negro médico.",
         };
 
         const randomSeed = Math.random().toString(36).substring(2, 10);
         const dayOfWeek = new Date().toLocaleDateString("pt-BR", { weekday: "long" });
         const hour = new Date().getHours();
 
+        // Build anti-repetition context from previous messages
+        const antiRepetitionBlock = previousMessages.length > 0
+          ? `\n🚫 MENSAGENS JÁ ENVIADAS NOS ÚLTIMOS 7 DIAS (NÃO REPITA NADA PARECIDO):\n${previousMessages.map((m, i) => `[${i + 1}] "${m.substring(0, 120)}..."`).join("\n")}\n`
+          : "";
+
         const prompt = `Gere uma mensagem de WhatsApp curta e motivacional (máximo 500 caracteres) para um aluno de medicina.
 Use emojis com moderação. Seja direto e encorajador. NÃO use markdown. NÃO use asteriscos.
 
-SEED ALEATÓRIA (use para variar): ${randomSeed}
-DIA: ${dayOfWeek} | HORA: ${hour}h
-
-⚠️ REGRA ABSOLUTA DE ORIGINALIDADE — NUNCA repita abertura, estrutura ou piada.
-Varie OBRIGATORIAMENTE entre estes estilos de humor (escolha UM aleatório):
-1. Trocadilho médico ("Sua sequência tá mais saudável que paciente de check-up!")
-2. Analogia de plantão ("Se suas revisões fossem pacientes, já teriam dado entrada na UTI")
-3. Referência pop/meme ("Ninguém: ... Suas revisões: SOCORRO")
-4. Ironia carinhosa ("Ah sim, deixar pra última hora sempre funciona né? 🙄")
-5. Narração épica ("Capítulo ${streak} da saga do(a) ${(profile.display_name || "Aluno").split(" ")[0]}")
-6. Comparação absurda ("Seu streak tá maior que fila de UPA em noite de chuva")
-7. Personificação ("Seus temas pendentes tão te olhando com cara de abandono")
-8. Coach de academia ("BORA! Dia de treinar o cérebro! 🧠💪")
+SEED: ${randomSeed} | DIA: ${dayOfWeek} | HORA: ${hour}h
+${antiRepetitionBlock}
+⚠️ REGRA ABSOLUTA DE ORIGINALIDADE — A mensagem DEVE ser completamente diferente de qualquer uma listada acima.
+Varie OBRIGATORIAMENTE entre estes estilos (escolha UM aleatório):
+1. Trocadilho médico  2. Analogia de plantão  3. Referência pop/meme
+4. Ironia carinhosa  5. Narração épica  6. Comparação absurda
+7. Personificação  8. Coach de academia
 
 TOM: ${moodInstructions[mood]}
 
 Dados do aluno:
-- Nome: ${profile.display_name || "Aluno"}
-- Streak: ${streak} dias seguidos
-- Nível: ${gamification.level} | XP: ${gamification.xp}
+- Nome: ${profile.display_name || "Aluno"} | Streak: ${streak} dias | Nível: ${gamification.level} | XP: ${gamification.xp}
 
 Revisões pendentes (${revisoes.length} total, ${urgentes.length} urgentes):
 ${revisoesText}
@@ -161,10 +181,10 @@ ${app_url ? `Link: ${app_url}` : ""}
 
 A mensagem DEVE:
 1. COMEÇAR saudando pelo primeiro nome com frase ENGRAÇADA e ÚNICA
-2. Incluir pelo menos UMA piada ou trocadilho médico
-3. Mencionar revisões do dia (quantidade e temas urgentes)
+2. Incluir pelo menos UMA piada ou trocadilho médico ORIGINAL
+3. Mencionar revisões do dia
 4. Se streak=0, bronca HILÁRIA mas firme
-5. Terminar com encorajamento divertido ou link do app`;
+5. Terminar com encorajamento ou link do app`;
 
         try {
           const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -176,7 +196,7 @@ A mensagem DEVE:
             body: JSON.stringify({
               model: "google/gemini-2.5-flash-lite",
               messages: [
-                { role: "system", content: "Você é um assistente HILÁRIO que gera mensagens de WhatsApp para alunos de medicina. Cada mensagem deve ser ÚNICA, ENGRAÇADA e MEMORÁVEL. Use humor brasileiro autêntico: trocadilhos médicos, referências a plantão, memes de internato, analogias com séries médicas. NUNCA repita a mesma piada ou estrutura. Mensagens curtas, diretas, com emojis moderados. Sem markdown. Sem asteriscos. Temperatura máxima de criatividade!" },
+                { role: "system", content: "Você é um assistente HILÁRIO que gera mensagens de WhatsApp para alunos de medicina. Cada mensagem deve ser ÚNICA, ENGRAÇADA e MEMORÁVEL. Use humor brasileiro autêntico. NUNCA repita piada, abertura ou estrutura de mensagens anteriores. Sem markdown. Sem asteriscos." },
                 { role: "user", content: prompt },
               ],
               max_tokens: 512,
@@ -186,16 +206,11 @@ A mensagem DEVE:
 
           if (!aiResp.ok) {
             console.error(`AI error for ${profile.user_id}:`, aiResp.status);
-            // Fallback message
             const firstName = (profile.display_name || "Aluno").split(" ")[0];
             return {
-              user_id: profile.user_id,
-              display_name: profile.display_name,
-              phone: profile.phone,
+              user_id: profile.user_id, display_name: profile.display_name, phone: profile.phone,
               message: `Olá ${firstName}! 📚 Você tem ${revisoes.length} revisão(ões) pendente(s) hoje${urgentes.length > 0 ? `, sendo ${urgentes.length} urgente(s)` : ""}. Não deixe acumular! 💪`,
-              revisoes_count: revisoes.length,
-              urgentes_count: urgentes.length,
-              ai_generated: false,
+              revisoes_count: revisoes.length, urgentes_count: urgentes.length, ai_generated: false, already_sent_today: alreadySentToday,
             };
           }
 
@@ -203,25 +218,17 @@ A mensagem DEVE:
           const message = aiData.choices?.[0]?.message?.content || "";
 
           return {
-            user_id: profile.user_id,
-            display_name: profile.display_name,
-            phone: profile.phone,
+            user_id: profile.user_id, display_name: profile.display_name, phone: profile.phone,
             message: message.trim(),
-            revisoes_count: revisoes.length,
-            urgentes_count: urgentes.length,
-            ai_generated: true,
+            revisoes_count: revisoes.length, urgentes_count: urgentes.length, ai_generated: true, already_sent_today: alreadySentToday,
           };
         } catch (err) {
           console.error(`Error generating message for ${profile.user_id}:`, err);
           const firstName = (profile.display_name || "Aluno").split(" ")[0];
           return {
-            user_id: profile.user_id,
-            display_name: profile.display_name,
-            phone: profile.phone,
+            user_id: profile.user_id, display_name: profile.display_name, phone: profile.phone,
             message: `Olá ${firstName}! 📚 Você tem ${revisoes.length} revisão(ões) pendente(s) hoje. Bons estudos! 💪`,
-            revisoes_count: revisoes.length,
-            urgentes_count: urgentes.length,
-            ai_generated: false,
+            revisoes_count: revisoes.length, urgentes_count: urgentes.length, ai_generated: false, already_sent_today: alreadySentToday,
           };
         }
       });
