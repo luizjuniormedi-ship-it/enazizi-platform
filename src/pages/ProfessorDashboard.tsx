@@ -20,7 +20,7 @@ const SPECIALTIES = [
   "Endocrinologia", "Infectologia", "Reumatologia", "Hematologia", "Dermatologia",
   "Pediatria", "Ginecologia e Obstetrícia", "Cirurgia", "Ortopedia", "Urologia",
   "Psiquiatria", "Medicina Preventiva", "Oftalmologia", "Otorrinolaringologia",
-  "Semiologia", "Anatomia",
+  "Semiologia", "Anatomia", "Farmacologia",
 ];
 
 const FACULDADES = ["UNIG", "Estácio", "Outra"];

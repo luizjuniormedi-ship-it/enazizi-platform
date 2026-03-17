@@ -235,7 +235,7 @@ const ExamSimulator = () => {
     "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia", "Gastroenterologia",
     "Nefrologia", "Infectologia", "Hematologia", "Reumatologia", "Dermatologia",
     "Urologia", "Ortopedia", "Psiquiatria", "Oftalmologia", "Otorrinolaringologia",
-    "Medicina de Emergência", "Terapia Intensiva", "Semiologia", "Anatomia",
+    "Medicina de Emergência", "Terapia Intensiva", "Semiologia", "Anatomia", "Farmacologia",
   ];
 
   const toggleArea = (area: string) => {
