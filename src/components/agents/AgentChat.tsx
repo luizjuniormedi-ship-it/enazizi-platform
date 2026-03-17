@@ -216,53 +216,74 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
         setUploadProgress(Math.min(progress, 95));
         setUploadStep(stepLabels[step] || "Processando...");
 
+        // Fire auto-prompt as soon as extracted_text is available (don't wait for full processing)
+        if (status.extracted_text && autoPromptAfterUpload && !autoPromptFiredRef.current) {
+          autoPromptFiredRef.current = true;
+          const newUpload: Upload = {
+            id: uploadRow.id,
+            filename: status.filename,
+            category: status.category,
+            extracted_text: status.extracted_text,
+          };
+          setAvailableUploads(prev => {
+            if (prev.some(u => u.id === uploadRow.id)) return prev;
+            return [newUpload, ...prev];
+          });
+          setSelectedUploadIds(prev => new Set(prev).add(uploadRow.id));
+          
+          const prompt = autoPromptAfterUpload.replace("{filename}", file.name);
+          setIsUploading(false);
+          isUploadingRef.current = false;
+          setUploadProgress(100);
+          setUploadStep("Concluído!");
+          setTimeout(() => {
+            setUploadProgress(0);
+            setUploadStep("");
+            handleSend(prompt);
+          }, 300);
+        }
+
         if (status.status === "processed" || status.status === "error") {
           clearInterval(pollInterval);
           setUploadProgress(100);
 
-          if (status.status === "processed" && status.extracted_text) {
+          if (status.status === "processed" && status.extracted_text && !autoPromptFiredRef.current) {
             const newUpload: Upload = {
               id: uploadRow.id,
               filename: status.filename,
               category: status.category,
               extracted_text: status.extracted_text,
             };
-            setAvailableUploads(prev => [newUpload, ...prev]);
+            setAvailableUploads(prev => {
+              if (prev.some(u => u.id === uploadRow.id)) return prev;
+              return [newUpload, ...prev];
+            });
             setSelectedUploadIds(prev => new Set(prev).add(uploadRow.id));
             toast({ title: "✅ Material processado!", description: `${status.filename} está pronto para uso como contexto.` });
-
-            // Auto-send summary prompt after upload
-            if (autoPromptAfterUpload) {
-              const prompt = autoPromptAfterUpload.replace("{filename}", file.name);
-              setTimeout(() => {
-                setIsUploading(false);
-                setUploadProgress(0);
-                setUploadStep("");
-                // Trigger auto-send after state settles
-                setTimeout(() => handleSend(prompt), 200);
-              }, 800);
-              return; // skip the default timeout below
-            }
-          } else {
+          } else if (status.status === "error") {
             toast({ title: "Erro", description: "Falha ao processar o arquivo.", variant: "destructive" });
           }
 
           setTimeout(() => {
             setIsUploading(false);
+            isUploadingRef.current = false;
             setUploadProgress(0);
             setUploadStep("");
           }, 1000);
         }
       }, 3000);
 
-      // Safety timeout after 3 minutes
+      // Safety timeout after 2 minutes
       setTimeout(() => {
         clearInterval(pollInterval);
-        if (isUploading) {
+        if (isUploadingRef.current) {
           setIsUploading(false);
+          isUploadingRef.current = false;
+          setUploadProgress(0);
+          setUploadStep("");
           toast({ title: "Timeout", description: "O processamento demorou demais. Verifique na página de Uploads.", variant: "destructive" });
         }
-      }, 180000);
+      }, 120000);
 
     } catch (err) {
       console.error("Upload error:", err);
