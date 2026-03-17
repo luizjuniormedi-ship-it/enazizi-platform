@@ -76,6 +76,7 @@ const StudySession = () => {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [phase, setPhase] = useState<Phase>("start");
   const [topic, setTopic] = useState("");
   const [topicInput, setTopicInput] = useState("");
