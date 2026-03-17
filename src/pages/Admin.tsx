@@ -443,7 +443,11 @@ const Admin = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value={activeTab}>
+          <TabsContent value="whatsapp">
+            <WhatsAppPanel session={session} />
+          </TabsContent>
+
+          <TabsContent value={activeTab === "whatsapp" ? "__none__" : activeTab}>
             {loading ? (
               <div className="flex justify-center py-12">
                 <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
