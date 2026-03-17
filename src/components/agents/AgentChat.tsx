@@ -136,6 +136,122 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    e.target.value = "";
+
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (!["pdf", "txt"].includes(ext || "")) {
+      toast({ title: "Formato inválido", description: "Apenas PDF e TXT são suportados.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ title: "Arquivo muito grande", description: "Máximo de 20MB.", variant: "destructive" });
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(5);
+    setUploadStep("Enviando arquivo...");
+
+    try {
+      const storagePath = `${user.id}/${Date.now()}_${file.name}`;
+      const { error: storageError } = await supabase.storage.from("user-uploads").upload(storagePath, file);
+      if (storageError) throw storageError;
+
+      setUploadProgress(20);
+      setUploadStep("Registrando...");
+
+      const { data: uploadRow, error: insertError } = await supabase.from("uploads").insert({
+        user_id: user.id,
+        filename: file.name,
+        file_type: ext || "pdf",
+        storage_path: storagePath,
+        status: "pending",
+        is_global: false,
+      }).select("id").single();
+      if (insertError || !uploadRow) throw insertError || new Error("Falha ao registrar upload");
+
+      setUploadProgress(30);
+      setUploadStep("Processando...");
+
+      const { data: { session } } = await supabase.auth.getSession();
+      await supabase.functions.invoke("process-upload", {
+        body: { uploadId: uploadRow.id },
+      });
+
+      // Poll for completion
+      const pollInterval = setInterval(async () => {
+        const { data: status } = await supabase
+          .from("uploads")
+          .select("status, extracted_text, extracted_json, filename, category")
+          .eq("id", uploadRow.id)
+          .single();
+
+        if (!status) return;
+
+        const json = status.extracted_json as Record<string, any> | null;
+        const progress = json?.progress || 30;
+        const step = json?.step || "processing";
+
+        const stepLabels: Record<string, string> = {
+          downloading: "Baixando arquivo...",
+          extracting_text: "Extraindo texto...",
+          validating: "Validando conteúdo...",
+          generating_flashcards: "Gerando flashcards...",
+          generating_questions: "Gerando questões...",
+          done: "Concluído!",
+          error: "Erro no processamento",
+        };
+
+        setUploadProgress(Math.min(progress, 95));
+        setUploadStep(stepLabels[step] || "Processando...");
+
+        if (status.status === "processed" || status.status === "error") {
+          clearInterval(pollInterval);
+          setUploadProgress(100);
+
+          if (status.status === "processed" && status.extracted_text) {
+            const newUpload: Upload = {
+              id: uploadRow.id,
+              filename: status.filename,
+              category: status.category,
+              extracted_text: status.extracted_text,
+            };
+            setAvailableUploads(prev => [newUpload, ...prev]);
+            setSelectedUploadIds(prev => new Set(prev).add(uploadRow.id));
+            toast({ title: "✅ Material processado!", description: `${status.filename} está pronto para uso como contexto.` });
+          } else {
+            toast({ title: "Erro", description: "Falha ao processar o arquivo.", variant: "destructive" });
+          }
+
+          setTimeout(() => {
+            setIsUploading(false);
+            setUploadProgress(0);
+            setUploadStep("");
+          }, 1000);
+        }
+      }, 3000);
+
+      // Safety timeout after 3 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (isUploading) {
+          setIsUploading(false);
+          toast({ title: "Timeout", description: "O processamento demorou demais. Verifique na página de Uploads.", variant: "destructive" });
+        }
+      }, 180000);
+
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast({ title: "Erro no upload", description: err instanceof Error ? err.message : "Falha ao enviar arquivo.", variant: "destructive" });
+      setIsUploading(false);
+      setUploadProgress(0);
+      setUploadStep("");
+    }
+  };
+
   // Load conversation list
   const loadConversations = useCallback(async () => {
     if (!user) return;
