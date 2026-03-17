@@ -43,6 +43,7 @@ const Profile = () => {
         setAvatarUrl(data.avatar_url);
         setPeriodo(data.periodo ? String(data.periodo) : "");
         setFaculdade(data.faculdade || "");
+        setPhone(data.phone || "");
       }
       setLoading(false);
     };
