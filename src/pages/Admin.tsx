@@ -35,6 +35,7 @@ interface AdminUser {
   approved_by: string | null;
   approved_at: string | null;
   roles: string[];
+  last_seen_at: string | null;
   subscription: { status: string; plan_id: string; plans: { name: string; price: number } | null } | null;
   quota: { questions_used: number; questions_limit: number } | null;
   evolution?: { avgScore: number; totalQuestions: number; specialties: number; recentAttempts: number; recentAccuracy: number };
