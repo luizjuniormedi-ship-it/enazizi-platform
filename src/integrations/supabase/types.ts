@@ -1163,6 +1163,113 @@ export type Database = {
           },
         ]
       }
+      teacher_clinical_case_results: {
+        Row: {
+          case_id: string
+          conversation_history: Json | null
+          correct_diagnosis: string | null
+          created_at: string
+          final_evaluation: Json | null
+          final_score: number | null
+          finished_at: string | null
+          grade: string | null
+          id: string
+          started_at: string | null
+          status: string
+          student_got_diagnosis: boolean | null
+          student_id: string
+          time_total_minutes: number | null
+          xp_earned: number | null
+        }
+        Insert: {
+          case_id: string
+          conversation_history?: Json | null
+          correct_diagnosis?: string | null
+          created_at?: string
+          final_evaluation?: Json | null
+          final_score?: number | null
+          finished_at?: string | null
+          grade?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          student_got_diagnosis?: boolean | null
+          student_id: string
+          time_total_minutes?: number | null
+          xp_earned?: number | null
+        }
+        Update: {
+          case_id?: string
+          conversation_history?: Json | null
+          correct_diagnosis?: string | null
+          created_at?: string
+          final_evaluation?: Json | null
+          final_score?: number | null
+          finished_at?: string | null
+          grade?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          student_got_diagnosis?: boolean | null
+          student_id?: string
+          time_total_minutes?: number | null
+          xp_earned?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_clinical_case_results_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_clinical_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_clinical_cases: {
+        Row: {
+          case_prompt: Json
+          created_at: string
+          difficulty: string
+          faculdade_filter: string | null
+          id: string
+          periodo_filter: number | null
+          professor_id: string
+          specialty: string
+          status: string
+          time_limit_minutes: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          case_prompt?: Json
+          created_at?: string
+          difficulty?: string
+          faculdade_filter?: string | null
+          id?: string
+          periodo_filter?: number | null
+          professor_id: string
+          specialty: string
+          status?: string
+          time_limit_minutes?: number
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          case_prompt?: Json
+          created_at?: string
+          difficulty?: string
+          faculdade_filter?: string | null
+          id?: string
+          periodo_filter?: number | null
+          professor_id?: string
+          specialty?: string
+          status?: string
+          time_limit_minutes?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       teacher_simulado_results: {
         Row: {
           answers_json: Json | null
@@ -1507,6 +1614,14 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      professor_owns_clinical_case: {
+        Args: { _case_id: string; _user_id: string }
+        Returns: boolean
+      }
+      student_has_clinical_case_result: {
+        Args: { _case_id: string; _user_id: string }
         Returns: boolean
       }
       student_has_simulado_result: {
