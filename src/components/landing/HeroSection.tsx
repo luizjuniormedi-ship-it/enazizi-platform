@@ -46,22 +46,6 @@ const HeroSection = () => {
           </Button>
         </div>
 
-        <div className="flex items-center justify-center gap-8 mt-16 text-muted-foreground animate-fade-in" style={{ animationDelay: "0.4s" }}>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-foreground">10k+</div>
-            <div className="text-sm">Alunos ativos</div>
-          </div>
-          <div className="w-px h-10 bg-border" />
-          <div className="text-center">
-            <div className="text-2xl font-bold text-foreground">50k+</div>
-            <div className="text-sm">Questões resolvidas</div>
-          </div>
-          <div className="w-px h-10 bg-border" />
-          <div className="text-center">
-            <div className="text-2xl font-bold text-foreground">95%</div>
-            <div className="text-sm">Aprovação</div>
-          </div>
-        </div>
       </div>
     </section>
   );
