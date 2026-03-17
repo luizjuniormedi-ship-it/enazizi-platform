@@ -30,6 +30,18 @@ async function extractPdfText(fileData: Blob): Promise<string> {
   return pages.join("\n\n");
 }
 
+async function extractDocxText(fileData: Blob): Promise<string> {
+  const { ZipReader, BlobReader, TextWriter } = await import("https://esm.sh/@zip.js/zip.js@2.7.34");
+  const zipReader = new ZipReader(new BlobReader(fileData));
+  const entries = await zipReader.getEntries();
+  const docEntry = entries.find((e: any) => e.filename === "word/document.xml");
+  if (!docEntry) return "";
+  const xml = await docEntry.getData!(new TextWriter());
+  await zipReader.close();
+  // Extract text content from XML tags
+  return xml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
 async function updateProgress(supabaseAdmin: any, uploadId: string, progress: Record<string, any>) {
   await supabaseAdmin.from("uploads").update({
     extracted_json: progress,
