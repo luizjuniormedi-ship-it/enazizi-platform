@@ -25,7 +25,7 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
     model,
     messages,
     max_tokens: 16384,
-    temperature: 0.7,
+    temperature: 0.85,
   });
 
   // Try OpenAI first (gpt-4o) for higher quality
