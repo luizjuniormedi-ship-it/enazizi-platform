@@ -1343,6 +1343,12 @@ const ClinicalSimulation = () => {
       </div>
     </div>
   );
+
+  if (isFullscreen) {
+    return createPortal(content, document.body);
+  }
+
+  return content;
 };
 
 export default ClinicalSimulation;
