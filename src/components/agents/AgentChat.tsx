@@ -503,18 +503,39 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
         </div>
       </div>
 
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept=".pdf,.txt"
+        className="hidden"
+        onChange={handleFileUpload}
+      />
+
+      {/* Upload progress indicator */}
+      {isUploading && (
+        <div className="mb-3 px-3 py-2.5 rounded-lg bg-primary/10 border border-primary/20">
+          <div className="flex items-center gap-2 text-xs font-medium text-primary mb-1.5">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <span>{uploadStep}</span>
+          </div>
+          <Progress value={uploadProgress} className="h-1.5" />
+        </div>
+      )}
+
       {/* Context indicator */}
       <div className="mb-3">
-        <button
-          onClick={() => totalUploads > 0 && setShowUploads(!showUploads)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors w-full ${
-            totalUploads > 0
-              ? selectedCount > 0
-                ? "bg-primary/10 text-primary hover:bg-primary/15"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-              : "bg-muted text-muted-foreground"
-          }`}
-        >
+        <div className="flex gap-2">
+          <button
+            onClick={() => totalUploads > 0 && setShowUploads(!showUploads)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors flex-1 ${
+              totalUploads > 0
+                ? selectedCount > 0
+                  ? "bg-primary/10 text-primary hover:bg-primary/15"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+                : "bg-muted text-muted-foreground"
+            }`}
+          >
           <FileText className="h-3.5 w-3.5 flex-shrink-0" />
           {totalUploads === 0 ? (
             <span>Nenhum material disponível — faça upload para enriquecer as respostas</span>
