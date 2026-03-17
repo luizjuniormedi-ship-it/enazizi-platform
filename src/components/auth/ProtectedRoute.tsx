@@ -11,14 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 
 const FACULDADES = ["UNIG", "Estácio", "Outra"];
 
-interface ProfileData {
-  is_blocked: boolean;
-  status: string;
-  display_name: string | null;
-  phone: string | null;
-  periodo: number | null;
-  faculdade: string | null;
-}
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, signOut } = useAuth();
