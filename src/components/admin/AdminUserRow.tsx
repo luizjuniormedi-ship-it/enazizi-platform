@@ -1,4 +1,4 @@
-import { Ban, CheckCircle, ShieldCheck, ShieldOff, CreditCard, KeyRound, UserCheck, UserX, BarChart3, GraduationCap, LogOut, Lock, Target, BookOpen, Activity, Brain } from "lucide-react";
+import { Ban, CheckCircle, ShieldCheck, ShieldOff, CreditCard, KeyRound, UserCheck, UserX, BarChart3, GraduationCap, LogOut, Lock, Target, BookOpen, Activity, Brain, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { AdminUser } from "./AdminTypes";
@@ -139,6 +139,10 @@ const AdminUserRow = ({
               disabled={isCurrentlyActioning || u.user_id === session?.user?.id}
               onClick={() => onOpenLogout(u)}>
               <LogOut className="h-3 w-3" /> Desconectar
+            </Button>
+            <Button variant="outline" size="sm" className="h-7 text-xs gap-1 border-sky-500/30 text-sky-600 hover:bg-sky-500/10"
+              disabled={isCurrentlyActioning} onClick={() => onOpenDetail(u)}>
+              <Eye className="h-3 w-3" /> Cadastro
             </Button>
             <Button variant="outline" size="sm" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10"
               disabled={isCurrentlyActioning} onClick={() => onOpenTracking(u)}>

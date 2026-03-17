@@ -1,4 +1,5 @@
-import { LogOut, BarChart3, Brain, ClipboardList, CreditCard, AlertTriangle, TrendingUp, BookOpen, Target, Activity, Lock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { LogOut, BarChart3, Brain, ClipboardList, CreditCard, AlertTriangle, TrendingUp, BookOpen, Target, Activity, Lock, Phone, GraduationCap, Calendar, Clock, Stethoscope, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ALL_MODULES } from "@/hooks/useModuleAccess";
+import { supabase } from "@/integrations/supabase/client";
 import type { AdminUser } from "./AdminTypes";
 import { PLANS } from "./AdminTypes";
 
@@ -65,16 +67,38 @@ const AdminDialogs = ({
   passwordDialog, setPasswordDialog, handleResetPassword,
   trackingDialog, setTrackingDialog,
   accessDialog, setAccessDialog, handleSaveAccess,
-}: AdminDialogsProps) => (
+}: AdminDialogsProps) => {
+  const [profileData, setProfileData] = useState<any>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  useEffect(() => {
+    if (userDetailDialog.open && userDetailDialog.user) {
+      setProfileLoading(true);
+      supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", userDetailDialog.user.user_id)
+        .single()
+        .then(({ data }) => {
+          setProfileData(data);
+          setProfileLoading(false);
+        });
+    } else {
+      setProfileData(null);
+    }
+  }, [userDetailDialog.open, userDetailDialog.user]);
+
+  return (
   <>
     {/* User Detail Dialog */}
     <Dialog open={userDetailDialog.open} onOpenChange={(open) => !open && setUserDetailDialog({ open: false, user: null })}>
-      <DialogContent>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Perfil do Usuário</DialogTitle>
+          <DialogTitle>Dados de Cadastro</DialogTitle>
+          <DialogDescription>Informações completas do perfil do usuário.</DialogDescription>
         </DialogHeader>
         {userDetailDialog.user && (
-          <div className="space-y-3 py-2">
+          <div className="space-y-4 py-2">
             <div className="flex items-center gap-3 mb-4">
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary">
                 {(userDetailDialog.user.display_name || userDetailDialog.user.email || "?")[0].toUpperCase()}
@@ -84,18 +108,80 @@ const AdminDialogs = ({
                 <p className="text-sm text-muted-foreground">{userDetailDialog.user.email}</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div><span className="text-muted-foreground">Data de cadastro:</span><br/>{new Date(userDetailDialog.user.created_at).toLocaleDateString("pt-BR")}</div>
-              <div><span className="text-muted-foreground">Status:</span><br/>{getStatusBadge(userDetailDialog.user)}</div>
-              <div><span className="text-muted-foreground">Plano:</span><br/>{getUserPlan(userDetailDialog.user)}</div>
-              <div><span className="text-muted-foreground">Papel:</span><br/>{userDetailDialog.user.roles.includes("admin") ? "Administrador" : userDetailDialog.user.roles.includes("professor") ? "Professor" : "Usuário"}</div>
-              {userDetailDialog.user.approved_at && (
-                <div><span className="text-muted-foreground">Data da aprovação:</span><br/>{new Date(userDetailDialog.user.approved_at).toLocaleDateString("pt-BR")}</div>
-              )}
-              {userDetailDialog.user.approved_by && (
-                <div><span className="text-muted-foreground">Aprovado por:</span><br/>{users.find(u => u.user_id === userDetailDialog.user!.approved_by)?.display_name || userDetailDialog.user.approved_by}</div>
-              )}
-            </div>
+
+            {profileLoading ? (
+              <div className="flex justify-center py-6">
+                <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div><span className="text-muted-foreground">Data de cadastro:</span><br/>{new Date(userDetailDialog.user.created_at).toLocaleDateString("pt-BR")}</div>
+                  <div><span className="text-muted-foreground">Status:</span><br/>{getStatusBadge(userDetailDialog.user)}</div>
+                  <div><span className="text-muted-foreground">Plano:</span><br/>{getUserPlan(userDetailDialog.user)}</div>
+                  <div><span className="text-muted-foreground">Papel:</span><br/>{userDetailDialog.user.roles.includes("admin") ? "Administrador" : userDetailDialog.user.roles.includes("professor") ? "Professor" : "Usuário"}</div>
+                  {userDetailDialog.user.approved_at && (
+                    <div><span className="text-muted-foreground">Data da aprovação:</span><br/>{new Date(userDetailDialog.user.approved_at).toLocaleDateString("pt-BR")}</div>
+                  )}
+                  {userDetailDialog.user.approved_by && (
+                    <div><span className="text-muted-foreground">Aprovado por:</span><br/>{users.find(u => u.user_id === userDetailDialog.user!.approved_by)?.display_name || userDetailDialog.user.approved_by}</div>
+                  )}
+                </div>
+
+                {profileData && (
+                  <div className="rounded-lg border bg-card p-4 space-y-3">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Dados Pessoais & Acadêmicos</h3>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex items-start gap-2">
+                        <Phone className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <div>
+                          <span className="text-muted-foreground text-xs">Telefone</span>
+                          <p className="font-medium">{profileData.phone || <span className="italic text-muted-foreground">Não informado</span>}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <div>
+                          <span className="text-muted-foreground text-xs">Faculdade</span>
+                          <p className="font-medium">{profileData.faculdade || <span className="italic text-muted-foreground">Não informado</span>}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <GraduationCap className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <div>
+                          <span className="text-muted-foreground text-xs">Período</span>
+                          <p className="font-medium">{profileData.periodo ? `${profileData.periodo}º período` : <span className="italic text-muted-foreground">Não informado</span>}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Stethoscope className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <div>
+                          <span className="text-muted-foreground text-xs">Especialidade alvo</span>
+                          <p className="font-medium">{profileData.target_specialty || <span className="italic text-muted-foreground">Não informado</span>}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <div>
+                          <span className="text-muted-foreground text-xs">Data da prova</span>
+                          <p className="font-medium">{profileData.exam_date ? new Date(profileData.exam_date).toLocaleDateString("pt-BR") : <span className="italic text-muted-foreground">Não informado</span>}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Clock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <div>
+                          <span className="text-muted-foreground text-xs">Horas diárias de estudo</span>
+                          <p className="font-medium">{profileData.daily_study_hours != null ? `${profileData.daily_study_hours}h` : <span className="italic text-muted-foreground">Não informado</span>}</p>
+                        </div>
+                      </div>
+                    </div>
+                    {profileData.has_completed_diagnostic && (
+                      <Badge variant="outline" className="text-xs text-green-600 border-green-600/30">✓ Diagnóstico concluído</Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </DialogContent>
@@ -422,6 +508,7 @@ const AdminDialogs = ({
       </DialogContent>
     </Dialog>
   </>
-);
+  );
+};
 
 export default AdminDialogs;
