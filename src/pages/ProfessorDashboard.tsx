@@ -538,7 +538,7 @@ const ProfessorDashboard = () => {
                   <Select value={questionCount} onValueChange={setQuestionCount} disabled={questionMode === "manual"}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {[5, 10, 15, 20, 30].map((n) => <SelectItem key={n} value={String(n)}>{n} questões</SelectItem>)}
+                      {[5, 10, 15, 20, 30, 40, 50, 60, 80, 100].map((n) => <SelectItem key={n} value={String(n)}>{n} questões</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
