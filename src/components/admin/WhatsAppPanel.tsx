@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { MessageSquare, Send, Copy, Loader2, RefreshCw, Phone, AlertTriangle, CheckCircle } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
+import { MessageSquare, Send, Copy, Loader2, RefreshCw, Phone, AlertTriangle, CheckCircle, PlayCircle, StopCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,6 +24,8 @@ interface WhatsAppPanelProps {
 
 const cleanPhone = (phone: string) => phone.replace(/\D/g, "");
 
+const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
   const { toast } = useToast();
   const [students, setStudents] = useState<Student[]>([]);
@@ -30,6 +33,14 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
   const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
   const [sentUsers, setSentUsers] = useState<Set<string>>(new Set());
   const [savingLog, setSavingLog] = useState<string | null>(null);
+
+  // Bulk send state
+  const [bulkSending, setBulkSending] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState(0);
+  const [bulkTotal, setBulkTotal] = useState(0);
+  const [bulkCurrentName, setBulkCurrentName] = useState("");
+  const [bulkCountdown, setBulkCountdown] = useState(0);
+  const cancelRef = useRef(false);
 
   const generateMessages = async () => {
     if (!session) return;
@@ -74,10 +85,8 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
     return `https://wa.me/${fullPhone}?text=${msg}`;
   };
 
-  const handleSend = async (s: Student) => {
-    setSavingLog(s.user_id);
+  const logAndSend = async (s: Student) => {
     try {
-      // Log the message in the database
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await supabase.from("whatsapp_message_log" as any).insert({
@@ -86,21 +95,68 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
           message_text: getMessage(s),
         } as any);
       }
-      // Open WhatsApp
-      window.open(getWhatsAppUrl(s), "_blank");
-      setSentUsers((prev) => new Set(prev).add(s.user_id));
-    } catch {
-      // Still open WhatsApp even if logging fails
-      window.open(getWhatsAppUrl(s), "_blank");
-      setSentUsers((prev) => new Set(prev).add(s.user_id));
-    } finally {
-      setSavingLog(null);
-    }
+    } catch { /* continue even if log fails */ }
+    window.open(getWhatsAppUrl(s), "_blank");
+    setSentUsers((prev) => new Set(prev).add(s.user_id));
+  };
+
+  const handleSend = async (s: Student) => {
+    setSavingLog(s.user_id);
+    await logAndSend(s);
+    setSavingLog(null);
   };
 
   const handleCopy = (s: Student) => {
     navigator.clipboard.writeText(getMessage(s));
     toast({ title: "Copiado!", description: "Mensagem copiada para a área de transferência." });
+  };
+
+  const handleBulkSend = useCallback(async () => {
+    const pending = students.filter((s) => !sentUsers.has(s.user_id) && !s.already_sent_today);
+    if (pending.length === 0) {
+      toast({ title: "Nenhum pendente", description: "Todos já foram enviados ou já receberam hoje." });
+      return;
+    }
+
+    cancelRef.current = false;
+    setBulkSending(true);
+    setBulkTotal(pending.length);
+    setBulkProgress(0);
+
+    for (let i = 0; i < pending.length; i++) {
+      if (cancelRef.current) break;
+
+      const s = pending[i];
+      setBulkCurrentName(s.display_name || "Aluno");
+      setBulkProgress(i + 1);
+
+      await logAndSend(s);
+
+      // Wait with countdown between sends (except last one)
+      if (i < pending.length - 1 && !cancelRef.current) {
+        const waitSec = Math.floor(Math.random() * 8) + 8; // 8-15s
+        for (let sec = waitSec; sec > 0; sec--) {
+          if (cancelRef.current) break;
+          setBulkCountdown(sec);
+          await delay(1000);
+        }
+        setBulkCountdown(0);
+      }
+    }
+
+    setBulkSending(false);
+    setBulkCurrentName("");
+    setBulkCountdown(0);
+
+    if (cancelRef.current) {
+      toast({ title: "Envio cancelado", description: `${bulkProgress} de ${pending.length} enviado(s).` });
+    } else {
+      toast({ title: "Envio concluído! ✅", description: `${pending.length} mensagem(ns) enviada(s).` });
+    }
+  }, [students, sentUsers, toast]);
+
+  const handleCancelBulk = () => {
+    cancelRef.current = true;
   };
 
   const sentCount = sentUsers.size;
@@ -115,10 +171,10 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
             Mensagens WhatsApp
           </h2>
           <p className="text-sm text-muted-foreground">
-            Gere mensagens únicas por IA e envie uma por vez. Cada aluno recebe no máximo 1 por dia.
+            Gere mensagens únicas por IA e envie todas com um clique. Cada aluno recebe no máximo 1 por dia.
           </p>
         </div>
-        <Button onClick={generateMessages} disabled={loading} className="gap-1.5">
+        <Button onClick={generateMessages} disabled={loading || bulkSending} className="gap-1.5">
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           Gerar mensagens do dia
         </Button>
@@ -126,15 +182,15 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
 
       {students.length > 0 && (
         <>
-          {/* Summary bar */}
-          <div className="flex items-center gap-4 p-4 rounded-lg bg-secondary/50">
+          {/* Summary bar + bulk send */}
+          <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-secondary/50">
             <div className="flex items-center gap-3 text-sm flex-wrap">
               <Badge variant="outline" className="gap-1">
                 <Phone className="h-3 w-3" /> {students.length} aluno(s)
               </Badge>
               {sentCount > 0 && (
                 <Badge variant="outline" className="gap-1 text-primary border-primary/30">
-                  <CheckCircle className="h-3 w-3" /> {sentCount} enviado(s) agora
+                  <CheckCircle className="h-3 w-3" /> {sentCount} enviado(s)
                 </Badge>
               )}
               {unsentCount > 0 && (
@@ -148,7 +204,36 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
                 </Badge>
               )}
             </div>
+
+            {!bulkSending ? (
+              <Button onClick={handleBulkSend} disabled={unsentCount === 0} className="gap-1.5">
+                <PlayCircle className="h-4 w-4" />
+                Enviar todos ({unsentCount})
+              </Button>
+            ) : (
+              <Button variant="destructive" onClick={handleCancelBulk} className="gap-1.5">
+                <StopCircle className="h-4 w-4" />
+                Cancelar envio
+              </Button>
+            )}
           </div>
+
+          {/* Bulk progress bar */}
+          {bulkSending && (
+            <div className="space-y-2 p-4 rounded-lg border border-primary/20 bg-primary/5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">
+                  📤 Enviando para {bulkCurrentName}... ({bulkProgress}/{bulkTotal})
+                </span>
+                {bulkCountdown > 0 && (
+                  <span className="text-muted-foreground text-xs">
+                    ⏳ Próximo em {bulkCountdown}s (anti-bloqueio)
+                  </span>
+                )}
+              </div>
+              <Progress value={(bulkProgress / bulkTotal) * 100} className="h-2" />
+            </div>
+          )}
 
           {/* Student list */}
           <div className="space-y-3">
@@ -212,7 +297,7 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
                     <Button
                       size="sm"
                       onClick={() => handleSend(s)}
-                      disabled={savingLog === s.user_id || (isAlreadySentToday && !isSent)}
+                      disabled={savingLog === s.user_id || (isAlreadySentToday && !isSent) || bulkSending}
                       className="gap-1.5"
                     >
                       {savingLog === s.user_id ? (
