@@ -3,7 +3,7 @@ import {
   LayoutDashboard, CalendarDays, FlipVertical,
   FileText, Upload, BarChart3, LogOut, Shield, User,
   HelpCircle, BookOpen, Heart, Database, Zap, TrendingUp, Stethoscope, Award, Sparkles, AlertTriangle, Map, GraduationCap, PenLine, Activity, Trophy,
-  ChevronDown
+  ChevronDown, MessageCircle
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
