@@ -111,6 +111,8 @@ const ClinicalSimulation = () => {
   const { session, user } = useAuth();
   const { toast } = useToast();
   const { addXp } = useGamification();
+  const [searchParams] = useSearchParams();
+  const teacherCaseId = searchParams.get("teacher_case_id");
 
   const [phase, setPhase] = useState<Phase>("lobby");
   const [specialty, setSpecialty] = useState("Clínica Médica");
