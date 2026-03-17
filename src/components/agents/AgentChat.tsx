@@ -559,6 +559,10 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
           <p className="text-xs sm:text-sm text-muted-foreground truncate">{subtitle}</p>
         </div>
         <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
+          <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            <span className="hidden sm:inline">{isFullscreen ? "Sair" : "Tela cheia"}</span>
+          </Button>
           <Button variant="outline" size="sm" onClick={startNewConversation} className="gap-1 h-8 px-2 sm:px-3 text-xs sm:text-sm">
             <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nova</span>
           </Button>
