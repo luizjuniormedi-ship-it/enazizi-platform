@@ -503,6 +503,24 @@ const Admin = () => {
                       <div className="col-span-1 flex items-center">
                         {getStatusBadge(u)}
                       </div>
+                      <div className="col-span-1 flex items-center">
+                        {u.last_seen_at ? (
+                          <span className="text-xs text-muted-foreground" title={new Date(u.last_seen_at).toLocaleString("pt-BR")}>
+                            {(() => {
+                              const diff = Date.now() - new Date(u.last_seen_at).getTime();
+                              const mins = Math.floor(diff / 60000);
+                              if (mins < 5) return <span className="text-green-600 font-medium">Online</span>;
+                              if (mins < 60) return `${mins}min`;
+                              const hours = Math.floor(mins / 60);
+                              if (hours < 24) return `${hours}h`;
+                              const days = Math.floor(hours / 24);
+                              return `${days}d`;
+                            })()}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Nunca</span>
+                        )}
+                      </div>
                       <div className="col-span-3 flex items-center gap-2">
                         {evo && (evo.totalQuestions > 0 || evo.recentAttempts > 0) ? (
                           <div className="flex items-center gap-2 text-xs flex-wrap">
