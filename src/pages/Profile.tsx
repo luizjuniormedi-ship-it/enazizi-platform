@@ -24,6 +24,7 @@ const Profile = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [periodo, setPeriodo] = useState("");
   const [faculdade, setFaculdade] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
