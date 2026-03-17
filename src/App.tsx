@@ -42,6 +42,7 @@ import Achievements from "./pages/Achievements";
 import MedicalReviewer from "./pages/MedicalReviewer";
 import InterviewSimulator from "./pages/InterviewSimulator";
 import NotFound from "./pages/NotFound";
+import AnamnesisTrainer from "./pages/AnamnesisTrainer";
 import Install from "./pages/Install";
 
 const queryClient = new QueryClient();
