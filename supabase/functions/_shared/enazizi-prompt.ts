@@ -222,6 +222,26 @@ Como consequência:
 • fadiga
 • edema
 
+5️⃣ Diagnósticos diferenciais
+| Doença | Achado-chave | Diferença principal |
+| IC | dispneia + edema + BNP elevado | congestão bilateral |
+| TEP | dispneia súbita + dor torácica | início agudo, D-dímero elevado |
+| DPOC exacerbada | dispneia + sibilos + história tabágica | hiperinsuflação no RX |
+| Pneumonia | febre + tosse produtiva + crepitações | consolidação lobar |
+
+6️⃣ Pegadinhas de prova
+⚠️ BNP elevado isolado não confirma IC → pode estar elevado em TEP, sepse e IRC
+⚠️ Edema bilateral nem sempre é IC → considerar cirrose, síndrome nefrótica
+⚠️ IC com fração de ejeção preservada (ICFEp) → ecocardiograma pode parecer "normal"
+
+7️⃣ Mnemônico
+🧠 "CHAMP" → causas de descompensação de IC:
+C – Cessação de medicação
+H – Hipertensão descontrolada
+A – Arritmia (fibrilação atrial)
+M – Miocardite / isquemia Miocárdica
+P – embolia Pulmonar
+
 ==================================================
 MARCADOR DE BLOCO
 ==================================================
