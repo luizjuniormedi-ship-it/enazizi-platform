@@ -731,6 +731,22 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
                   </Button>
                 </div>
               )}
+              {msg.role === "assistant" && linkToAgent && i > 0 && !isLoading && (
+                <div className={`mt-2 pt-2 ${!onSaveMessage ? "border-t border-border/50" : ""}`}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs gap-1.5"
+                    onClick={() => {
+                      const truncated = msg.content.slice(0, 10000);
+                      navigate(linkToAgent.path, { state: { [linkToAgent.stateKey]: truncated } });
+                    }}
+                  >
+                    <GraduationCap className="h-3.5 w-3.5" />
+                    {linkToAgent.label}
+                  </Button>
+                </div>
+              )}
             </div>
             {msg.role === "user" && (
               <div className="h-8 w-8 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0">
