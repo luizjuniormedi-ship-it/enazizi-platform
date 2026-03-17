@@ -309,13 +309,15 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading || !user) return;
+  const handleSend = async (overridePrompt?: string) => {
+    const text = overridePrompt || input.trim();
+    if (!text || isLoading || !user) return;
 
-    const userMsg: Msg = { role: "user", content: input };
+    const userMsg: Msg = { role: "user", content: text };
     const allMessages = [...messages, userMsg];
     setMessages(allMessages);
-    setInput("");
+    if (!overridePrompt) setInput("");
+    else setInput("");
     setIsLoading(true);
 
     let convId = activeConversationId;
