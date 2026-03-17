@@ -253,8 +253,6 @@ Lembre-se: NUNCA repita pacientes anteriores. Varie todos os parâmetros demogr�
     }
 
     if (action === "finish") {
-      const { hypothesis, differentials, proposed_conduct } = await req.json().catch(() => ({}));
-      
       const diagnosisContext = hypothesis 
         ? `\n\n--- RACIOCÍNIO CLÍNICO DO ALUNO ---\nHipótese Diagnóstica Principal: ${hypothesis || "Não informada"}\nDiagnósticos Diferenciais: ${differentials || "Não informados"}\nConduta Proposta: ${proposed_conduct || "Não informada"}`
         : "";
