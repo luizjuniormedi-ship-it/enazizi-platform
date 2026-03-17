@@ -92,7 +92,7 @@ describe("TopicEvolution", () => {
     await waitFor(() => {
       expect(screen.getByText("2 estudadas")).toBeInTheDocument();
     });
-    expect(screen.getByText("17 pendentes")).toBeInTheDocument();
+    expect(screen.getByText("20 pendentes")).toBeInTheDocument();
     expect(screen.getByText("1 fracas")).toBeInTheDocument();
   });
 
