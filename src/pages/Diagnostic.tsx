@@ -62,6 +62,13 @@ REGRAS DE DIVERSIDADE OBRIGATÓRIAS:
 - PROIBIDO repetir o mesmo cenário, estrutura narrativa ou perfil de paciente entre questões
 - Varie o tipo de pergunta: diagnóstico, conduta, exame complementar, fisiopatologia
 
+REGRA DE GABARITO - INTERCALAÇÃO OBRIGATÓRIA:
+- NUNCA repita a mesma letra de gabarito em questões consecutivas
+- Os correct_index das 5 questões devem usar pelo menos 3 letras diferentes (A=0, B=1, C=2, D=3, E=4)
+- Exemplo válido: [1, 3, 0, 4, 2] ou [2, 0, 3, 1, 4]
+- Exemplo PROIBIDO: [1, 1, 1, 0, 2] ou [0, 0, 3, 3, 1]
+- Distribua as respostas corretas de forma equilibrada entre A, B, C, D e E
+
 FORMATO DE SAÍDA OBRIGATÓRIO:
 Retorne APENAS um array JSON válido, sem nenhum texto antes ou depois:
 [

@@ -65,6 +65,7 @@ REGRAS:
 - correct_index é o índice (0-4) da alternativa correta
 - Baseie-se em provas reais de residência (ENARE, USP, UNIFESP)
 - Agrupe as questões por bloco temático no array (todas de um bloco juntas, depois o próximo bloco)
+- REGRA DE GABARITO: NUNCA repita a mesma letra de resposta correta em questões consecutivas. Distribua equilibradamente entre A(0), B(1), C(2), D(3) e E(4). Em cada bloco de 5 questões, use pelo menos 3 letras diferentes.
 - Retorne APENAS o JSON, sem texto adicional`;
 
         const response = await aiFetch({
