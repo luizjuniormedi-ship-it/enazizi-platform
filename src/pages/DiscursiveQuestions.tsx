@@ -3,7 +3,7 @@ import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import {
   PenLine, Loader2, Send, CheckCircle, Star, AlertTriangle,
-  ChevronDown, History, BookOpen, Target, ArrowRight
+  ChevronDown, History, BookOpen, Target, ArrowRight, Maximize2, Minimize2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,6 +53,7 @@ const DiscursiveQuestions = () => {
   const { session, user } = useAuth();
   const { toast } = useToast();
   const { addXp } = useGamification();
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [specialty, setSpecialty] = useState("");
@@ -177,9 +178,9 @@ const DiscursiveQuestions = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+    <div className={`animate-fade-in ${isFullscreen ? "fixed inset-0 z-50 bg-background p-2 sm:p-4 overflow-auto" : "max-w-3xl mx-auto space-y-6"}`}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <PenLine className="h-6 w-6 text-primary" />
@@ -188,6 +189,10 @@ const DiscursiveQuestions = () => {
           <p className="text-sm text-muted-foreground">Escreva sua resposta e receba correção detalhada por IA</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            <span className="hidden sm:inline">{isFullscreen ? "Sair" : "Tela cheia"}</span>
+          </Button>
           {phase !== "setup" && (
             <Button variant="outline" size="sm" onClick={reset}>Nova Questão</Button>
           )}

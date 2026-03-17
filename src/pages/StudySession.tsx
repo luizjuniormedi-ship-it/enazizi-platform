@@ -9,7 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   BookOpen, Brain, HelpCircle, MessageSquare, BarChart3,
   Send, Loader2, GraduationCap, Play, RotateCcw, Stethoscope,
-  FileText, AlertTriangle, TrendingUp, Target
+  FileText, AlertTriangle, TrendingUp, Target, Maximize2, Minimize2
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
@@ -76,6 +76,7 @@ const StudySession = () => {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [phase, setPhase] = useState<Phase>("start");
   const [topic, setTopic] = useState("");
   const [topicInput, setTopicInput] = useState("");
@@ -217,7 +218,7 @@ const StudySession = () => {
     ? Math.round((performance.correctAnswers / performance.totalQuestions) * 100) : 0;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] animate-fade-in">
+    <div className={`flex animate-fade-in ${isFullscreen ? "fixed inset-0 z-50 bg-background" : "h-[calc(100vh-4rem)]"}`}>
       {/* Left Sidebar — Performance Panel */}
       <aside className={`${sidebarOpen ? "w-72" : "w-0"} transition-all duration-300 overflow-hidden border-r border-border flex-shrink-0 bg-card/50`}>
         <div className="w-72 h-full overflow-y-auto p-4 space-y-4">
@@ -332,6 +333,9 @@ const StudySession = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
             {phase !== "start" && (
               <>
                 <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
