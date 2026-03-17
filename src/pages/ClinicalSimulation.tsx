@@ -565,8 +565,8 @@ const ClinicalSimulation = () => {
   };
 
   const getTriageEmoji = (color: string) => {
-    const map: Record<string, string> = { vermelho: "🔴 Vermelho", amarelo: "🟡 Amarelo", verde: "🟢 Verde" };
-    return map[color] || "🟡 Amarelo";
+    const map: Record<string, string> = { vermelho: "🔴 Vermelho (Emergência)", laranja: "🟠 Laranja (Muito Urgente)", amarelo: "🟡 Amarelo (Urgente)", verde: "🟢 Verde (Pouco Urgente)" };
+    return map[color] || color;
   };
 
   const formatCountdown = (secs: number) => {
