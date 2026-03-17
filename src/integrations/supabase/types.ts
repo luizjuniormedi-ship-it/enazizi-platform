@@ -41,6 +41,51 @@ export type Database = {
         }
         Relationships: []
       }
+      anamnesis_results: {
+        Row: {
+          categories_covered: Json
+          conversation_history: Json | null
+          created_at: string
+          difficulty: string
+          final_score: number | null
+          grade: string | null
+          id: string
+          ideal_anamnesis: string | null
+          specialty: string
+          time_total_minutes: number | null
+          user_id: string
+          xp_earned: number | null
+        }
+        Insert: {
+          categories_covered?: Json
+          conversation_history?: Json | null
+          created_at?: string
+          difficulty?: string
+          final_score?: number | null
+          grade?: string | null
+          id?: string
+          ideal_anamnesis?: string | null
+          specialty: string
+          time_total_minutes?: number | null
+          user_id: string
+          xp_earned?: number | null
+        }
+        Update: {
+          categories_covered?: Json
+          conversation_history?: Json | null
+          created_at?: string
+          difficulty?: string
+          final_score?: number | null
+          grade?: string | null
+          id?: string
+          ideal_anamnesis?: string | null
+          specialty?: string
+          time_total_minutes?: number | null
+          user_id?: string
+          xp_earned?: number | null
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           agent_type: string
