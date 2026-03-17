@@ -95,7 +95,7 @@ const WeeklyProgressCard = () => {
   const questionsDelta = data.questionsThisWeek - data.questionsLastWeek;
   const accuracyDelta = data.accuracyThisWeek - data.accuracyLastWeek;
 
-  const TrendIcon = ({ delta }: { delta: number }) => {
+  const renderTrendIcon = (delta: number) => {
     if (delta > 0) return <TrendingUp className="h-3.5 w-3.5 text-green-500" />;
     if (delta < 0) return <TrendingDown className="h-3.5 w-3.5 text-red-500" />;
     return <Minus className="h-3.5 w-3.5 text-muted-foreground" />;
