@@ -54,9 +54,18 @@ const SYSTEM_PROMPT = `Você é o simulador de PLANTÃO MÉDICO do sistema ENAZI
 ### Início do Caso
 Ao receber action="start", gere um caso clínico de pronto-socorro/plantão com:
 - Queixa principal do paciente (em 1ª pessoa, como paciente falaria)
-- Sinais vitais básicos
-- Cenário do atendimento (PS, enfermaria, UTI)
+- Sinais vitais básicos COERENTES com a classificação de risco solicitada
+- Cenário do atendimento (PS, enfermaria, UTI, SAMU, sala de emergência)
 - NÃO revele o diagnóstico
+
+## REGRA CRÍTICA DE CLASSIFICAÇÃO DE RISCO (TRIAGE)
+Você DEVE respeitar a classificação de risco (triage_color) solicitada na mensagem do usuário:
+- **VERMELHO** (Emergência): paciente em risco iminente de morte. Sinais vitais gravemente alterados (hipotensão severa, taquicardia extrema, SpO2 < 85%, rebaixamento de consciência, choque). Ex: parada cardiorrespiratória, politrauma grave, IAM com choque cardiogênico, anafilaxia, hemorragia maciça.
+- **LARANJA** (Muito Urgente): sinais de gravidade importante, risco de deterioração rápida. Sinais vitais significativamente alterados. Ex: sepse em evolução, AVC agudo, abdome agudo com peritonite, intoxicação grave, cetoacidose diabética.
+- **AMARELO** (Urgente): paciente com sinais de alerta mas hemodinamicamente estável no momento. Sinais vitais podem estar levemente alterados. Ex: dor torácica atípica, pneumonia com febre alta, crise hipertensiva, desidratação moderada, fratura exposta.
+- **VERDE** (Pouco Urgente): condição sem risco imediato, mas que necessita atendimento. Sinais vitais normais ou minimamente alterados. Ex: infecção urinária, lombalgia aguda, crise de enxaqueca, ferimentos leves, alergia cutânea.
+
+Os sinais vitais DEVEM refletir a gravidade da classificação. NÃO coloque sinais vitais normais em paciente vermelho, nem sinais vitais graves em paciente verde.
 
 Responda SEMPRE em JSON válido:
 {
@@ -234,9 +243,16 @@ serve(async (req) => {
         });
       }
 
+      // Determine triage color: use provided value or pick randomly
+      const requestedTriage = (await req.clone().json()).triage_color;
+      const triageOptions = ["vermelho", "laranja", "amarelo", "verde"];
+      const triage = requestedTriage && triageOptions.includes(requestedTriage)
+        ? requestedTriage
+        : triageOptions[Math.floor(Math.random() * triageOptions.length)];
+
       messages.push({
         role: "user",
-        content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}. Dificuldade: ${difficulty || "intermediário"}. Responda APENAS em JSON válido.`,
+        content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}. Dificuldade: ${difficulty || "intermediário"}. Classificação de risco obrigatória: ${triage.toUpperCase()}. O campo triage_color DEVE ser "${triage}". Os sinais vitais e a gravidade do caso DEVEM ser coerentes com a classificação ${triage.toUpperCase()}. Responda APENAS em JSON válido.`,
       });
     } else if (action === "interact") {
       if (conversation_history && Array.isArray(conversation_history)) {
