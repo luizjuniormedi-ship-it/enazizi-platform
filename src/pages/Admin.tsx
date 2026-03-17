@@ -588,6 +588,13 @@ const Admin = () => {
                               onClick={() => loadUserTracking(u)}>
                               <BarChart3 className="h-3 w-3" /> Acompanhar
                             </Button>
+                            <Button
+                              variant="outline"
+                              size="sm" className="h-7 text-xs gap-1 border-violet-500/30 text-violet-600 hover:bg-violet-500/10"
+                              disabled={isCurrentlyActioning}
+                              onClick={() => loadUserAccess(u)}>
+                              <Lock className="h-3 w-3" /> Acessos
+                            </Button>
                           </>
                         )}
                       </div>
