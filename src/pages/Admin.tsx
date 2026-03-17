@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { ALL_MODULES } from "@/hooks/useModuleAccess";
+import WhatsAppPanel from "@/components/admin/WhatsAppPanel";
 
 interface AdminUser {
   user_id: string;
