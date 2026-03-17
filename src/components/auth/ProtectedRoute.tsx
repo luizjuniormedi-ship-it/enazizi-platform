@@ -155,34 +155,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  const handleOnboardingSave = async () => {
-    if (!user) return;
-    const trimmedName = formName.trim();
-    const cleanPhone = formPhone.replace(/\D/g, "");
-    if (!trimmedName || !cleanPhone || cleanPhone.length < 10 || !formPeriodo || !formFaculdade) {
-      toast({ title: "Preencha todos os campos corretamente", variant: "destructive" });
-      return;
-    }
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          display_name: trimmedName,
-          phone: cleanPhone,
-          periodo: parseInt(formPeriodo),
-          faculdade: formFaculdade,
-        })
-        .eq("user_id", user.id);
-      if (error) throw error;
-      setProfileIncomplete(false);
-      toast({ title: "Cadastro completo! 🎉" });
-    } catch (err: any) {
-      toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
-    } finally {
-      setSaving(false);
-    }
-  };
 
   if (profileStatus === "active" && profileIncomplete) {
     return (
