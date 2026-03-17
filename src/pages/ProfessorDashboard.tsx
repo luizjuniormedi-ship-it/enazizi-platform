@@ -538,7 +538,7 @@ const ProfessorDashboard = () => {
                   <Select value={questionCount} onValueChange={setQuestionCount} disabled={questionMode === "manual"}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {[5, 10, 15, 20, 30].map((n) => <SelectItem key={n} value={String(n)}>{n} questões</SelectItem>)}
+                      {[5, 10, 15, 20, 30, 40, 50, 60, 80, 100].map((n) => <SelectItem key={n} value={String(n)}>{n} questões</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -633,31 +633,53 @@ const ProfessorDashboard = () => {
             </div>
 
             {/* Generated / manual questions preview */}
-            {(questionMode === "ai" ? generatedQuestions : manualQuestions).length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-primary">
-                  ✅ {(questionMode === "ai" ? generatedQuestions : manualQuestions).length} questão(ões) {questionMode === "ai" ? "geradas" : "criadas"}
-                </Label>
-                <div className="max-h-48 overflow-y-auto space-y-2">
-                  {(questionMode === "ai" ? generatedQuestions : manualQuestions).map((q, i) => (
-                    <div key={i} className="bg-secondary/50 rounded-lg p-3 text-xs flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium mb-1">Q{i + 1}: {q.statement?.slice(0, 120)}...</p>
-                        <div className="flex items-center gap-1.5">
-                          <Badge variant="outline" className="text-[9px]">{q.topic}</Badge>
-                          <span className="text-muted-foreground">Gabarito: {String.fromCharCode(65 + q.correct_index)}</span>
-                        </div>
+            {(questionMode === "ai" ? generatedQuestions : manualQuestions).length > 0 && (() => {
+              const allQs = questionMode === "ai" ? generatedQuestions : manualQuestions;
+              const grouped = allQs.reduce<Record<string, typeof allQs>>((acc, q) => {
+                const block = q.block || q.topic || "Geral";
+                if (!acc[block]) acc[block] = [];
+                acc[block].push(q);
+                return acc;
+              }, {});
+              const blocks = Object.entries(grouped);
+              return (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-primary">
+                    ✅ {allQs.length} questão(ões) {questionMode === "ai" ? "geradas" : "criadas"} {blocks.length > 1 ? `em ${blocks.length} blocos` : ""}
+                  </Label>
+                  <div className="max-h-64 overflow-y-auto space-y-2">
+                    {blocks.map(([block, questions]) => (
+                      <div key={block}>
+                        {blocks.length > 1 && (
+                          <div className="flex items-center gap-2 py-1.5 px-2 bg-primary/10 rounded-md mb-1.5">
+                            <span className="text-xs font-semibold text-primary">📋 Bloco: {block} — {questions.length} questão(ões)</span>
+                          </div>
+                        )}
+                        {questions.map((q, i) => {
+                          const globalIdx = allQs.indexOf(q);
+                          return (
+                            <div key={globalIdx} className="bg-secondary/50 rounded-lg p-3 text-xs flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium mb-1">Q{globalIdx + 1}: {q.statement?.slice(0, 120)}...</p>
+                                <div className="flex items-center gap-1.5">
+                                  <Badge variant="outline" className="text-[9px]">{q.topic || block}</Badge>
+                                  <span className="text-muted-foreground">Gabarito: {String.fromCharCode(65 + q.correct_index)}</span>
+                                </div>
+                              </div>
+                              {questionMode === "manual" && (
+                                <button onClick={() => removeManualQuestion(globalIdx)} className="text-muted-foreground hover:text-destructive shrink-0">
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                      {questionMode === "manual" && (
-                        <button onClick={() => removeManualQuestion(i)} className="text-muted-foreground hover:text-destructive shrink-0">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           <DialogFooter>

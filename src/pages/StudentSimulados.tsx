@@ -359,6 +359,13 @@ const StudentSimulados = () => {
 
         <Progress value={((questionIndex + 1) / questions.length) * 100} className="h-1.5" />
 
+        {/* Block indicator */}
+        {q?.block && (questionIndex === 0 || questions[questionIndex - 1]?.block !== q.block) && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-lg">
+            <span className="text-sm font-semibold text-primary">📋 Bloco: {q.block}</span>
+          </div>
+        )}
+
         {/* Question */}
         <Card>
           <CardContent className="p-6">
@@ -366,7 +373,10 @@ const StudentSimulados = () => {
               <Badge className="shrink-0 mt-0.5">{questionIndex + 1}</Badge>
               <div>
                 <p className="text-sm font-medium leading-relaxed">{q?.statement}</p>
-                {q?.topic && <Badge variant="outline" className="text-[10px] mt-2">{q.topic}</Badge>}
+                <div className="flex items-center gap-1.5 mt-2">
+                  {q?.block && <Badge variant="secondary" className="text-[10px]">{q.block}</Badge>}
+                  {q?.topic && q.topic !== q.block && <Badge variant="outline" className="text-[10px]">{q.topic}</Badge>}
+                </div>
               </div>
             </div>
 
