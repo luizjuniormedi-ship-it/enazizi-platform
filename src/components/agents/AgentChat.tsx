@@ -66,7 +66,28 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const [uploadStep, setUploadStep] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingAutoPromptRef = useRef<string | null>(null);
   const { toast } = useToast();
+
+  // Auto-send prompt after upload finishes
+  useEffect(() => {
+    if (!isUploading && pendingAutoPromptRef.current && !isLoading) {
+      const prompt = pendingAutoPromptRef.current;
+      pendingAutoPromptRef.current = null;
+      setInput(prompt);
+      // Delay to let state settle, then trigger send
+      setTimeout(() => {
+        setInput(prev => {
+          if (prev === prompt) {
+            // Programmatically trigger send
+            const sendBtn = document.querySelector('[data-agent-send]') as HTMLButtonElement;
+            sendBtn?.click();
+          }
+          return prev;
+        });
+      }, 300);
+    }
+  }, [isUploading, isLoading]);
 
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`;
 
