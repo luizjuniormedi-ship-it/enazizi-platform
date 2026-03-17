@@ -176,7 +176,7 @@ A mensagem DEVE:
             body: JSON.stringify({
               model: "google/gemini-2.5-flash-lite",
               messages: [
-                { role: "system", content: "Você é um assistente que gera mensagens de WhatsApp motivacionais para alunos de medicina. Mensagens curtas, diretas, com emojis moderados. Sem markdown." },
+                { role: "system", content: "Você é um assistente HILÁRIO que gera mensagens de WhatsApp para alunos de medicina. Cada mensagem deve ser ÚNICA, ENGRAÇADA e MEMORÁVEL. Use humor brasileiro autêntico: trocadilhos médicos, referências a plantão, memes de internato, analogias com séries médicas. NUNCA repita a mesma piada ou estrutura. Mensagens curtas, diretas, com emojis moderados. Sem markdown. Sem asteriscos. Temperatura máxima de criatividade!" },
                 { role: "user", content: prompt },
               ],
               max_tokens: 512,
