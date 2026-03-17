@@ -1,0 +1,71 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
+
+// All available module keys matching sidebar routes
+export const ALL_MODULES = [
+  { key: "dashboard", label: "Dashboard" },
+  { key: "chatgpt", label: "🤖 Tutor IA" },
+  { key: "plano-dia", label: "⚡ Plano do Dia" },
+  { key: "diagnostico", label: "🩺 Diagnóstico" },
+  { key: "cronograma", label: "📅 Cronograma" },
+  { key: "flashcards", label: "🃏 Flashcards" },
+  { key: "gerar-flashcards", label: "🃏 Gerador Flashcards" },
+  { key: "resumos", label: "📖 Resumidor" },
+  { key: "simulados", label: "📝 Simulados" },
+  { key: "simulado-completo", label: "🏆 Simulado Completo" },
+  { key: "questoes", label: "❓ Gerador Questões" },
+  { key: "banco-questoes", label: "🗃️ Banco de Questões" },
+  { key: "discursivas", label: "✍️ Discursivas" },
+  { key: "anamnese", label: "🩺 Anamnese" },
+  { key: "plantao", label: "🚨 Modo Plantão" },
+  { key: "predictor", label: "📈 Previsão" },
+  { key: "banco-erros", label: "🚨 Banco de Erros" },
+  { key: "mapa-dominio", label: "🗺️ Mapa Evolução" },
+  { key: "proficiencia", label: "🎓 Proficiência" },
+  { key: "coach", label: "💪 Coach" },
+  { key: "conquistas", label: "🏆 Conquistas" },
+  { key: "analytics", label: "📊 Analytics" },
+] as const;
+
+export type ModuleKey = typeof ALL_MODULES[number]["key"];
+
+export const useModuleAccess = () => {
+  const { user } = useAuth();
+  const [enabledModules, setEnabledModules] = useState<Set<string>>(new Set(ALL_MODULES.map(m => m.key)));
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      setEnabledModules(new Set(ALL_MODULES.map(m => m.key)));
+      setLoading(false);
+      return;
+    }
+
+    const load = async () => {
+      const { data, error } = await supabase
+        .from("user_module_access")
+        .select("module_key, enabled")
+        .eq("user_id", user.id);
+
+      if (error || !data || data.length === 0) {
+        // No records = all modules enabled (default)
+        setEnabledModules(new Set(ALL_MODULES.map(m => m.key)));
+      } else {
+        const enabled = new Set(
+          data.filter(d => d.enabled).map(d => d.module_key)
+        );
+        // Always keep dashboard enabled
+        enabled.add("dashboard");
+        setEnabledModules(enabled);
+      }
+      setLoading(false);
+    };
+
+    load();
+  }, [user]);
+
+  const isModuleEnabled = (key: string) => enabledModules.has(key);
+
+  return { enabledModules, isModuleEnabled, loading };
+};
