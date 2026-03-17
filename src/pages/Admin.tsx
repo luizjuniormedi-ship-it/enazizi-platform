@@ -976,6 +976,50 @@ const Admin = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Module Access Dialog */}
+      <Dialog open={accessDialog.open} onOpenChange={(open) => !open && setAccessDialog({ open: false, user: null, modules: {}, loading: false, saving: false })}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5 text-primary" />
+              Controle de Acessos — {accessDialog.user?.display_name || accessDialog.user?.email}
+            </DialogTitle>
+            <DialogDescription>Ative ou desative módulos para este usuário.</DialogDescription>
+          </DialogHeader>
+
+          {accessDialog.loading ? (
+            <div className="flex justify-center py-12">
+              <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="space-y-2 py-2">
+              {ALL_MODULES.map((mod) => (
+                <div key={mod.key} className="flex items-center justify-between px-3 py-2 rounded-lg bg-secondary/50">
+                  <span className="text-sm font-medium">{mod.label}</span>
+                  <Switch
+                    checked={accessDialog.modules[mod.key] ?? true}
+                    disabled={mod.key === "dashboard"}
+                    onCheckedChange={(checked) =>
+                      setAccessDialog(prev => ({
+                        ...prev,
+                        modules: { ...prev.modules, [mod.key]: checked }
+                      }))
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAccessDialog({ open: false, user: null, modules: {}, loading: false, saving: false })}>Cancelar</Button>
+            <Button onClick={handleSaveAccess} disabled={accessDialog.loading || accessDialog.saving}>
+              {accessDialog.saving ? "Salvando..." : "Salvar acessos"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
