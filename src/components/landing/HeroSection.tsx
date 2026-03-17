@@ -10,7 +10,6 @@ const HeroSection = () => {
 
   const toggleMute = () => {
     setIsMuted((prev) => !prev);
-    if (videoRef.current) videoRef.current.muted = !videoRef.current.muted;
   };
 
   return (
@@ -19,7 +18,7 @@ const HeroSection = () => {
         ref={videoRef}
         autoPlay
         loop
-        muted
+        muted={isMuted}
         playsInline
         className="absolute inset-0 w-full h-full object-contain object-center opacity-40"
         src="/videos/enazizi_2.mp4"
