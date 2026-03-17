@@ -30,6 +30,7 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
   const [dispatching, setDispatching] = useState(false);
   const [dispatchIndex, setDispatchIndex] = useState(0);
   const [sentUsers, setSentUsers] = useState<Set<string>>(new Set());
+  const [currentDelay, setCurrentDelay] = useState(0);
   const abortRef = useRef(false);
 
   const generateMessages = async () => {
@@ -80,6 +81,9 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
     toast({ title: "Copiado!", description: "Mensagem copiada para a área de transferência." });
   };
 
+  // Random delay between 8-15 seconds to avoid WhatsApp blocking
+  const randomDelay = () => 8000 + Math.floor(Math.random() * 7000);
+
   const handleSequentialDispatch = async () => {
     if (dispatching) {
       abortRef.current = true;
@@ -97,7 +101,10 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
       setDispatchIndex(i);
       handleSend(unsent[i]);
       if (i < unsent.length - 1) {
-        await new Promise((r) => setTimeout(r, 3000));
+        const delay = randomDelay();
+        setCurrentDelay(delay);
+        await new Promise((r) => setTimeout(r, delay));
+        setCurrentDelay(0);
       }
     }
     setDispatching(false);
@@ -146,7 +153,12 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
                 )}
               </div>
               {dispatching && (
-                <Progress value={((dispatchIndex + 1) / unsentCount) * 100} className="h-2" />
+                <div className="space-y-1">
+                  <Progress value={((dispatchIndex + 1) / unsentCount) * 100} className="h-2" />
+                  {currentDelay > 0 && (
+                    <p className="text-xs text-muted-foreground">⏳ Aguardando {Math.round(currentDelay / 1000)}s antes do próximo envio (anti-bloqueio)</p>
+                  )}
+                </div>
               )}
             </div>
             <Button
