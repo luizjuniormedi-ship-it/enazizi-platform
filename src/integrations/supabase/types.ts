@@ -743,6 +743,7 @@ export type Database = {
           is_blocked: boolean
           organization_id: string | null
           periodo: number | null
+          phone: string | null
           status: string
           target_specialty: string | null
           updated_at: string
@@ -763,6 +764,7 @@ export type Database = {
           is_blocked?: boolean
           organization_id?: string | null
           periodo?: number | null
+          phone?: string | null
           status?: string
           target_specialty?: string | null
           updated_at?: string
@@ -783,6 +785,7 @@ export type Database = {
           is_blocked?: boolean
           organization_id?: string | null
           periodo?: number | null
+          phone?: string | null
           status?: string
           target_specialty?: string | null
           updated_at?: string

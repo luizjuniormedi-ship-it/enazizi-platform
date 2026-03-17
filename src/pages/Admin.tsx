@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Shield, Users, CreditCard, TrendingUp, Ban, CheckCircle, UserCog, Search, RefreshCw, ChevronDown, ShieldCheck, ShieldOff, ClipboardList, KeyRound, Bell, UserCheck, UserX, Clock, BarChart3, BookOpen, Target, AlertTriangle, Activity, Brain, Wifi, GraduationCap, LogOut, Lock } from "lucide-react";
+import { Shield, Users, CreditCard, TrendingUp, Ban, CheckCircle, UserCog, Search, RefreshCw, ChevronDown, ShieldCheck, ShieldOff, ClipboardList, KeyRound, Bell, UserCheck, UserX, Clock, BarChart3, BookOpen, Target, AlertTriangle, Activity, Brain, Wifi, GraduationCap, LogOut, Lock, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { ALL_MODULES } from "@/hooks/useModuleAccess";
+import WhatsAppPanel from "@/components/admin/WhatsAppPanel";
 
 interface AdminUser {
   user_id: string;
@@ -437,9 +438,16 @@ const Admin = () => {
             <TabsTrigger value="blocked" className="gap-1.5">
               Bloqueados <Badge variant="secondary" className="text-xs ml-1">{blockedCount}</Badge>
             </TabsTrigger>
+            <TabsTrigger value="whatsapp" className="gap-1.5">
+              <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value={activeTab}>
+          <TabsContent value="whatsapp">
+            <WhatsAppPanel session={session} />
+          </TabsContent>
+
+          <TabsContent value={activeTab === "whatsapp" ? "__none__" : activeTab}>
             {loading ? (
               <div className="flex justify-center py-12">
                 <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />

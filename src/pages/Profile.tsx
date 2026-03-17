@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { User, Camera, Loader2, Save, GraduationCap, Building } from "lucide-react";
+import { User, Camera, Loader2, Save, GraduationCap, Building, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,7 @@ const Profile = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [periodo, setPeriodo] = useState("");
   const [faculdade, setFaculdade] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -33,7 +34,7 @@ const Profile = () => {
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, email, periodo, faculdade")
+        .select("display_name, avatar_url, email, periodo, faculdade, phone")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -42,6 +43,7 @@ const Profile = () => {
         setAvatarUrl(data.avatar_url);
         setPeriodo(data.periodo ? String(data.periodo) : "");
         setFaculdade(data.faculdade || "");
+        setPhone(data.phone || "");
       }
       setLoading(false);
     };
@@ -110,6 +112,7 @@ const Profile = () => {
           display_name: trimmed,
           periodo: periodo ? parseInt(periodo) : null,
           faculdade: faculdade || null,
+          phone: phone.replace(/\D/g, "") || null,
         })
         .eq("user_id", user.id);
       if (error) throw error;
@@ -223,6 +226,26 @@ const Profile = () => {
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="flex items-center gap-1.5">
+            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+            WhatsApp
+          </Label>
+          <Input
+            value={phone}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+              let formatted = digits;
+              if (digits.length > 2) formatted = `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+              if (digits.length > 7) formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+              setPhone(formatted);
+            }}
+            placeholder="(21) 99999-9999"
+            maxLength={16}
+          />
+          <p className="text-xs text-muted-foreground">Seu número para receber lembretes de estudo.</p>
         </div>
 
         <Button onClick={handleSave} disabled={saving} className="w-full">
