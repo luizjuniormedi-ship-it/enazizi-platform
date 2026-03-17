@@ -30,6 +30,7 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
   const [dispatching, setDispatching] = useState(false);
   const [dispatchIndex, setDispatchIndex] = useState(0);
   const [sentUsers, setSentUsers] = useState<Set<string>>(new Set());
+  const [currentDelay, setCurrentDelay] = useState(0);
   const abortRef = useRef(false);
 
   const generateMessages = async () => {
