@@ -543,6 +543,13 @@ const Admin = () => {
                             </Button>
                             <Button
                               variant="outline"
+                              size="sm" className="h-7 text-xs gap-1 border-orange-500/30 text-orange-600 hover:bg-orange-500/10"
+                              disabled={isCurrentlyActioning || u.user_id === session?.user?.id}
+                              onClick={() => setLogoutDialog({ open: true, user: u })}>
+                              <LogOut className="h-3 w-3" /> Desconectar
+                            </Button>
+                            <Button
+                              variant="outline"
                               size="sm" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10"
                               disabled={isCurrentlyActioning}
                               onClick={() => loadUserTracking(u)}>
