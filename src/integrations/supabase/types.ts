@@ -1679,6 +1679,33 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_message_log: {
+        Row: {
+          admin_user_id: string
+          created_at: string
+          id: string
+          message_text: string
+          sent_at: string
+          target_user_id: string
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          message_text: string
+          sent_at?: string
+          target_user_id: string
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          message_text?: string
+          sent_at?: string
+          target_user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
