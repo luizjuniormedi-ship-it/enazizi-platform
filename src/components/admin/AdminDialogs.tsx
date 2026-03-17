@@ -1,4 +1,5 @@
-import { LogOut, BarChart3, Brain, ClipboardList, CreditCard, AlertTriangle, TrendingUp, BookOpen, Target, Activity, Lock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { LogOut, BarChart3, Brain, ClipboardList, CreditCard, AlertTriangle, TrendingUp, BookOpen, Target, Activity, Lock, Phone, GraduationCap, Calendar, Clock, Stethoscope, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ALL_MODULES } from "@/hooks/useModuleAccess";
+import { supabase } from "@/integrations/supabase/client";
 import type { AdminUser } from "./AdminTypes";
 import { PLANS } from "./AdminTypes";
 
