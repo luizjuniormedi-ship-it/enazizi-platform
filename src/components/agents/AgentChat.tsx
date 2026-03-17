@@ -345,7 +345,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  const handleSend = async (overridePrompt?: string) => {
+  const handleSend = async (overridePrompt?: string, contextOverride?: string) => {
     const text = overridePrompt || input.trim();
     if (!text || isLoading || !user) return;
 
