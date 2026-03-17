@@ -9,7 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   BookOpen, Brain, HelpCircle, MessageSquare, BarChart3,
   Send, Loader2, GraduationCap, Play, RotateCcw, Stethoscope,
-  FileText, AlertTriangle, TrendingUp, Target
+  FileText, AlertTriangle, TrendingUp, Target, Maximize2, Minimize2
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
