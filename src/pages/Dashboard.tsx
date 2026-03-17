@@ -527,8 +527,11 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Weekly Progress */}
-      <WeeklyProgressCard />
+      {/* Weekly Progress & Leaderboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <WeeklyProgressCard />
+        <MiniLeaderboard />
+      </div>
 
       {/* Topic Evolution */}
       <TopicEvolution />
