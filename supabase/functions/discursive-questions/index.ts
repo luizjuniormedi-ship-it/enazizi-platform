@@ -45,6 +45,14 @@ REGRAS:
 - O caso deve ser realista e desafiador
 - A pergunta deve exigir: diagnóstico, diagnósticos diferenciais, conduta e/ou justificativa
 
+ANAMNESE ÚNICA (REGRA ABSOLUTA):
+- Cada caso DEVE ter um paciente COMPLETAMENTE DIFERENTE dos anteriores
+- Variar: nomes regionais brasileiros, idades de 0 a 95 anos, profissões diversas
+- Alternar cenários: PS, enfermaria, UTI, UBS, SAMU, ambulatório, domicílio
+- Variar comorbidades: DM, HAS, IRC, HIV, tabagismo, etilismo, gestante, imunossuprimido
+- Variar queixa principal e tempo de evolução (horas, dias, semanas, meses)
+- PROIBIDO: repetir perfil demográfico de paciente já usado anteriormente
+
 Retorne APENAS um JSON válido:
 {
   "case": "Texto completo do caso clínico",

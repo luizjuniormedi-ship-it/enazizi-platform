@@ -66,6 +66,15 @@ REGRAS:
 - Baseie-se em provas reais de residência (ENARE, USP, UNIFESP)
 - Agrupe as questões por bloco temático no array (todas de um bloco juntas, depois o próximo bloco)
 - REGRA DE GABARITO: NUNCA repita a mesma letra de resposta correta em questões consecutivas. Distribua equilibradamente entre A(0), B(1), C(2), D(3) e E(4). Em cada bloco de 5 questões, use pelo menos 3 letras diferentes.
+
+ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
+- NUNCA repita nome, idade, sexo ou perfil de paciente entre questões
+- Cada questão DEVE ter um paciente COMPLETAMENTE DIFERENTE
+- Variar: nomes regionais brasileiros, idades de 0 a 95 anos, profissões diversas
+- Alternar cenários: PS, enfermaria, UTI, UBS, SAMU, ambulatório, domicílio
+- Variar comorbidades: DM, HAS, IRC, HIV, tabagismo, etilismo, gestante
+- Variar queixa principal e tempo de evolução (horas, dias, semanas, meses)
+- PROIBIDO: dois pacientes com mesmo perfil demográfico no mesmo bloco
 - Retorne APENAS o JSON, sem texto adicional`;
 
         const response = await aiFetch({

@@ -65,6 +65,13 @@ O CASO DEVE OBRIGATORIAMENTE CONTER:
 - Alternativas TODAS plausíveis (nenhuma absurda), com distratores baseados em diagnósticos diferenciais legítimos
 - Priorize apresentações ATÍPICAS ou casos que exijam raciocínio em múltiplas etapas
 
+ANAMNESE ÚNICA (REGRA ABSOLUTA):
+- NUNCA repita perfil de paciente já usado em questões anteriores da sessão
+- Variar: nomes regionais brasileiros, idades de 0 a 95 anos, profissões diversas
+- Alternar cenários: PS, enfermaria, UTI, UBS, SAMU, ambulatório, domicílio
+- Variar comorbidades: DM, HAS, IRC, HIV, tabagismo, etilismo, gestante, imunossuprimido
+- PROIBIDO: repetir perfil demográfico de paciente já apresentado
+
 Diga: "Qual sua resposta? (A, B, C, D ou E)"`;
 
     case "discussion":

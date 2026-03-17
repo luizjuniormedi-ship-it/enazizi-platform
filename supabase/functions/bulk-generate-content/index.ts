@@ -58,6 +58,16 @@ REGRAS PARA QUESTÕES:
 - Varie a dificuldade: 40% fácil, 40% médio, 20% difícil
 - Distribua entre os temas fornecidos
 
+ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
+- NUNCA repita nome, idade, sexo ou perfil de paciente entre questões
+- Cada questão DEVE ter um paciente COMPLETAMENTE DIFERENTE
+- Variar: nomes regionais brasileiros, idades de 0 a 95 anos, profissões diversas
+- Alternar cenários: PS, enfermaria, UTI, UBS, SAMU, ambulatório, domicílio
+- Variar comorbidades de base: DM, HAS, IRC, HIV, tabagismo, etilismo, gestante
+- Variar queixa principal e tempo de evolução (horas, dias, semanas, meses)
+- Incluir pacientes: idosos frágeis, gestantes, crianças, imunossuprimidos, trabalhadores rurais
+- PROIBIDO: dois pacientes com mesmo perfil demográfico no mesmo bloco
+
 REGRAS PARA FLASHCARDS:
 - Baseados em conceitos-chave dos mesmos temas
 - Pergunta objetiva e resposta completa mas concisa

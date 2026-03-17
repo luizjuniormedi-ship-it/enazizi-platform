@@ -149,6 +149,16 @@ Regras:
 - Inclua apresentações ATÍPICAS de doenças comuns (ex: IAM em diabético sem dor, apendicite em idoso sem febre)
 - Mescle questões intermediárias (40%), difíceis (40%) e expert (20%) — priorizando nível alto
 
+=== ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA) ===
+- NUNCA repita nome, idade, sexo ou perfil de paciente entre questões
+- Cada questão DEVE ter um paciente COMPLETAMENTE DIFERENTE
+- Variar: nomes regionais brasileiros (nordestinos, sulistas, indígenas, etc.), idades de 0 a 95 anos, profissões diversas (agricultor, professor, caminhoneiro, pescador, pedreiro, enfermeira, etc.)
+- Alternar cenários: PS, enfermaria, UTI, UBS, SAMU, ambulatório, domicílio, maternidade, centro cirúrgico
+- Variar comorbidades de base: DM, HAS, IRC, HIV, tabagismo, etilismo, gestante, transplantado, uso de imunossupressores
+- Variar queixa principal e tempo de evolução (horas, dias, semanas, meses, anos)
+- Incluir pacientes: idosos frágeis, gestantes, crianças, neonatos, imunossuprimidos, trabalhadores rurais, população indígena, moradores de rua
+- PROIBIDO: dois pacientes com mesmo perfil demográfico no mesmo bloco
+
 === REGRA DE INTERCALAÇÃO DE GABARITO (OBRIGATÓRIA) ===
 - NUNCA repita a mesma letra de resposta correta em questões consecutivas
 - Em um bloco de 5 questões, use pelo menos 3 letras diferentes como gabarito
