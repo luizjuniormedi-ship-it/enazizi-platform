@@ -293,7 +293,7 @@ const Flashcards = () => {
   const reviewedCount = allCards.length - dueCards.length;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className={`animate-fade-in ${isFullscreen ? "fixed inset-0 z-50 bg-background p-2 sm:p-4 overflow-auto" : "space-y-6"}`}>
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -305,6 +305,10 @@ const Flashcards = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            <span className="hidden sm:inline">{isFullscreen ? "Sair" : "Tela cheia"}</span>
+          </Button>
           <Button
             variant="outline"
             size="sm"
