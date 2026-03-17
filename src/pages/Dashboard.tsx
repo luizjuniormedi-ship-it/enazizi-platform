@@ -86,7 +86,7 @@ const Dashboard = () => {
         supabase.from("practice_attempts").select("correct").eq("user_id", user.id),
         supabase.from("error_bank").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("revisoes").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "pendente"),
-        supabase.from("exam_sessions").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "completed"),
+        supabase.from("exam_sessions").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "finished"),
         supabase.from("discursive_attempts").select("id", { count: "exact", head: true }).eq("user_id", user.id).not("finished_at", "is", null),
         supabase.from("user_gamification").select("current_streak, xp, level").eq("user_id", user.id).maybeSingle(),
         supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("is_global", true),
