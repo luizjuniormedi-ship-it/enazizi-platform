@@ -739,7 +739,8 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
                     className="h-7 text-xs gap-1.5"
                     onClick={() => {
                       const truncated = msg.content.slice(0, 10000);
-                      navigate(linkToAgent.path, { state: { [linkToAgent.stateKey]: truncated } });
+                      const uploadIds = Array.from(selectedUploadIds);
+                      navigate(linkToAgent.path, { state: { [linkToAgent.stateKey]: truncated, sharedUploadIds: uploadIds } });
                     }}
                   >
                     <GraduationCap className="h-3.5 w-3.5" />
