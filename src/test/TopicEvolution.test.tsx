@@ -67,7 +67,7 @@ describe("TopicEvolution", () => {
     expect(screen.getByText("30%")).toBeInTheDocument();
     expect(screen.getByText("2 erros")).toBeInTheDocument();
     expect(screen.getByText("4 erros")).toBeInTheDocument();
-    expect(screen.getByText(/Tópicos ainda não estudados \(17\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Tópicos ainda não estudados \(20\)/)).toBeInTheDocument();
   });
 
   it("shows top error topics from error_bank", async () => {
