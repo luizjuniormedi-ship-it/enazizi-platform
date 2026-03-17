@@ -369,8 +369,26 @@ const ClinicalSimulation = () => {
 
       setMessages((prev) => [...prev, simMsg]);
       setScore((prev) => Math.max(0, Math.min(100, prev + (res.score_delta || 0))));
-      setTimeElapsed(res.time_elapsed_minutes || timeElapsed + 5);
+      const newTimeElapsed = res.time_elapsed_minutes || timeElapsed + 5;
+      setTimeElapsed(newTimeElapsed);
       if (res.patient_status) setPatientStatus(res.patient_status);
+
+      // Track exam results for side panel
+      if (res.response_type === "lab_result" && res.response) {
+        setExamResults((prev) => [...prev, { type: "lab", content: res.response, timestamp: Date.now() }]);
+      }
+      if (res.response_type === "imaging" && res.response) {
+        setExamResults((prev) => [...prev, { type: "imaging", content: res.response, timestamp: Date.now() }]);
+      }
+
+      // Add vitals snapshot if vitals changed
+      if (res.vitals) {
+        setVitals(res.vitals);
+        setVitalsSnapshots((prev) => [...prev, parseVitalsToSnapshot(res.vitals, newTimeElapsed)]);
+      } else if (vitals && res.patient_status && res.patient_status !== patientStatus) {
+        // Status changed - add snapshot with current vitals
+        setVitalsSnapshots((prev) => [...prev, parseVitalsToSnapshot(vitals as any, newTimeElapsed)]);
+      }
 
       setConversationHistory([
         ...updatedHistory,
