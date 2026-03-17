@@ -13,7 +13,7 @@ const SPECIALTIES = [
   "Cirurgia Geral", "Medicina Preventiva", "Nefrologia",
   "Infectologia", "Hematologia", "Reumatologia", "Dermatologia",
   "Ortopedia", "Urologia", "Psiquiatria", "Oftalmologia",
-  "Otorrinolaringologia", "Emergência",
+  "Otorrinolaringologia", "Emergência", "Semiologia", "Anatomia",
 ];
 
 const TOPICS_BY_SPECIALTY: Record<string, string[]> = {
@@ -37,6 +37,8 @@ const TOPICS_BY_SPECIALTY: Record<string, string[]> = {
   "Emergência": ["PCR e RCP", "Choque", "Intoxicações", "Anafilaxia", "Politrauma", "ATLS", "Queimaduras", "Afogamento", "Cetoacidose Diabética", "Crise Hipertensiva"],
   "Oftalmologia": ["Glaucoma", "Catarata", "Descolamento de Retina", "Retinopatia Diabética", "Conjuntivite", "Uveíte", "Trauma Ocular"],
   "Otorrinolaringologia": ["Otite", "Sinusite", "Amigdalite", "Perda Auditiva", "Vertigem", "Epistaxe", "Câncer de Laringe"],
+  "Semiologia": ["Anamnese", "Exame Físico Geral", "Semiologia Cardiovascular", "Semiologia Pulmonar", "Semiologia Abdominal", "Semiologia Neurológica", "Sinais Vitais", "Propedêutica Armada", "Semiologia Osteoarticular", "Semiologia Vascular", "Semiologia do Pescoço", "Sinais Semiológicos Clássicos"],
+  "Anatomia": ["Anatomia do Tórax", "Anatomia Abdominal", "Anatomia do Pescoço", "Neuroanatomia", "Anatomia do Membro Superior", "Anatomia do Membro Inferior", "Anatomia Pélvica", "Anatomia Vascular", "Anatomia Cardíaca", "Anatomia do Sistema Nervoso Periférico", "Anatomia Topográfica Cirúrgica"],
 };
 
 async function generateBatch(specialty: string, topics: string[], userId: string, supabaseAdmin: any): Promise<{ questions: number; flashcards: number }> {
