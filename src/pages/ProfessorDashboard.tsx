@@ -193,7 +193,7 @@ const ProfessorDashboard = () => {
     setTitle("Simulado");
     setDescription("");
     setSelectedTopics([]);
-    setFaculdadeFilter("");
+    setSubtopics({});
     setPeriodoFilter("");
     setQuestionCount("10");
     setTimeLimit("60");
