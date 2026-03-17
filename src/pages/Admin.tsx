@@ -545,7 +545,7 @@ const Admin = () => {
                           <span className="text-xs text-muted-foreground italic">Sem atividade</span>
                         )}
                       </div>
-                      <div className="col-span-3 flex items-center justify-end gap-1.5 flex-wrap">
+                      <div className="col-span-4 flex items-center justify-end gap-1.5 flex-wrap">
                         {isPending ? (
                           <>
                             <Button
