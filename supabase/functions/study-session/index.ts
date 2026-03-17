@@ -52,8 +52,19 @@ Se o aluno errar: resposta correta + raciocínio + revisão + ponto de prova.`;
 FASE ATUAL: QUESTÃO OBJETIVA (STATE 7)
 Tema: "${topic}"
 
-Crie UM caso clínico com questão de múltipla escolha (A-E).
+Crie UM caso clínico COMPLETO E DETALHADO com questão de múltipla escolha (A-E).
 Nível residência médica/Revalida. Apenas UMA questão. NÃO revele a resposta.
+
+O CASO DEVE OBRIGATORIAMENTE CONTER:
+- Paciente com nome fictício, idade exata, sexo, profissão
+- Queixa principal com tempo de evolução preciso
+- Antecedentes pessoais e medicações em uso (nome e dose)
+- Sinais vitais COMPLETOS: PA, FC, FR, Temp, SpO2
+- Exame físico DETALHADO com achados positivos E negativos relevantes
+- Exames complementares com VALORES NUMÉRICOS reais quando indicado
+- Alternativas TODAS plausíveis (nenhuma absurda), com distratores baseados em diagnósticos diferenciais legítimos
+- Priorize apresentações ATÍPICAS ou casos que exijam raciocínio em múltiplas etapas
+
 Diga: "Qual sua resposta? (A, B, C, D ou E)"`;
 
     case "discussion":
@@ -71,12 +82,23 @@ Perguntar: 1) continuar, 2) outra questão, 3) revisar conteúdo.`;
 FASE ATUAL: CASO CLÍNICO DISCURSIVO (STATE 9)
 Tema: "${topic}"
 
-Apresente caso clínico completo. Pergunte:
-1. Diagnóstico mais provável? Justifique.
-2. Conduta inicial?
-3. Exames complementares necessários?
-4. Justifique a conduta adotada.
-Aguarde a resposta. Depois corrija com nota 0-5.`;
+Apresente caso clínico COMPLETO e de ALTO NÍVEL com:
+- Paciente com nome, idade, sexo, profissão e contexto social
+- História detalhada com tempo de evolução, fatores de melhora/piora
+- Antecedentes pessoais com comorbidades e medicações (nome, dose)
+- Sinais vitais completos + exame físico detalhado (achados positivos E negativos)
+- Exames laboratoriais com valores numéricos reais e unidades
+- Exames de imagem descritos quando pertinente
+
+O caso deve ter complexidade suficiente para exigir raciocínio clínico em etapas.
+Inclua pelo menos uma "armadilha" diagnóstica (apresentação atípica ou comorbidade que confunde).
+
+Pergunte:
+1. Qual o diagnóstico mais provável? Justifique com base nos achados.
+2. Quais os principais diagnósticos diferenciais e como descartá-los?
+3. Que exames complementares adicionais você solicitaria?
+4. Qual a conduta terapêutica inicial? (medicações com dose, via e posologia)
+Aguarde a resposta. Depois corrija com nota 0-5 por critério.`;
 
     case "scoring":
       return `${base}
