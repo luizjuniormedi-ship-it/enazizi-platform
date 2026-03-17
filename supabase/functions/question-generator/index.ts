@@ -149,6 +149,14 @@ Regras:
 - Inclua apresentações ATÍPICAS de doenças comuns (ex: IAM em diabético sem dor, apendicite em idoso sem febre)
 - Mescle questões intermediárias (40%), difíceis (40%) e expert (20%) — priorizando nível alto
 
+=== REGRA DE INTERCALAÇÃO DE GABARITO (OBRIGATÓRIA) ===
+- NUNCA repita a mesma letra de resposta correta em questões consecutivas
+- Em um bloco de 5 questões, use pelo menos 3 letras diferentes como gabarito
+- Distribua as respostas corretas de forma equilibrada entre A, B, C, D e E
+- Exemplo válido: B, D, A, E, C (correct_index: 1, 3, 0, 4, 2)
+- Exemplo PROIBIDO: B, B, B, A, C (correct_index: 1, 1, 1, 0, 2)
+- Em blocos de 10 questões, cada letra deve aparecer aproximadamente 2 vezes
+
 === PADRÃO DE ESPAÇAMENTO VISUAL OBRIGATÓRIO ===
 Todas as respostas devem usar espaçamento visual organizado para facilitar leitura em celular.
 
