@@ -33,8 +33,8 @@ const SPECIALTIES = [
 const QUICK_ACTIONS = [
   { label: "Anamnese", icon: MessageCircle, prompt: "Quais são seus sintomas? Quando começou?" },
   { label: "Exame Físico", icon: Stethoscope, prompt: "Realizar exame físico completo do paciente" },
-  { label: "Exames Lab", icon: FileSearch, prompt: "Solicitar hemograma, bioquímica, coagulograma" },
-  { label: "Imagem", icon: FileSearch, prompt: "Solicitar exames de imagem: radiografia, tomografia, ultrassonografia ou ressonância conforme indicação clínica" },
+  { label: "Exames Lab", icon: FileSearch, prompt: "Solicitar exames laboratoriais: hemograma completo, bioquímica (TGO, TGP, ureia, creatinina, glicose, eletrólitos), coagulograma (TAP, INR, TTPA). Forneça os resultados completos com valores e referências." },
+  { label: "Imagem", icon: FileSearch, prompt: "Solicitar exames de imagem conforme indicação clínica. Forneça os laudos completos com achados positivos e negativos." },
   { label: "Prescrever", icon: Syringe, prompt: "Prescrever medicação para o paciente" },
   { label: "Diagnóstico", icon: Target, prompt: "Com base nos achados clínicos e exames, meu diagnóstico é:" },
 ];
@@ -373,11 +373,19 @@ const ClinicalSimulation = () => {
       setTimeElapsed(newTimeElapsed);
       if (res.patient_status) setPatientStatus(res.patient_status);
 
-      // Track exam results for side panel
-      if (res.response_type === "lab_result" && res.response) {
+      // Track exam results for side panel - detect by response_type or content patterns
+      const rt = (res.response_type || "").toLowerCase();
+      const responseText = (res.response || "").toLowerCase();
+      const isLabResult = rt === "lab_result" || rt === "lab_results" || rt === "lab" || 
+        (responseText.includes("g/dl") || responseText.includes("mg/dl") || responseText.includes("mm³") || 
+         responseText.includes("ref:") || responseText.includes("referência") || responseText.includes("hemograma") && responseText.includes("leucócitos"));
+      const isImagingResult = rt === "imaging" || rt === "imaging_result" || rt === "image" ||
+        (responseText.includes("laudo") && (responseText.includes("tomografia") || responseText.includes("radiografia") || responseText.includes("ultrassonografia") || responseText.includes("ressonância")));
+      
+      if (isLabResult && res.response) {
         setExamResults((prev) => [...prev, { type: "lab", content: res.response, timestamp: Date.now() }]);
       }
-      if (res.response_type === "imaging" && res.response) {
+      if (isImagingResult && res.response) {
         setExamResults((prev) => [...prev, { type: "imaging", content: res.response, timestamp: Date.now() }]);
       }
 
