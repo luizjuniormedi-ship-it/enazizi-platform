@@ -83,6 +83,8 @@ async function processInBackground(
       extractedText = await fileData.text();
     } else if (fileType === "pdf" || fileType === "application/pdf") {
       extractedText = await extractPdfText(fileData);
+    } else if (fileType === "docx" || fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+      extractedText = await extractDocxText(fileData);
     } else {
       await supabaseAdmin.from("uploads").update({ status: "error", extracted_json: { error: "Formato não suportado" } }).eq("id", uploadId);
       return;
