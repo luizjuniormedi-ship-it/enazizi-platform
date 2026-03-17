@@ -119,36 +119,52 @@ serve(async (req) => {
         if (revisoes.length > 5 && urgentes.length > 2) mood = "danger";
 
         const moodInstructions: Record<string, string> = {
-          champion: "O aluno tá mandando bem! Elogie o streak e a dedicação com humor médico. Tom: orgulhoso e engraçado. Exemplos de abertura: '🏆 Tá voando, hein?', '🔥 Sequência de X dias!', '👑 Nesse ritmo, a banca vai pensar que vazou a prova.'",
-          good: "O aluno tá indo bem mas pode melhorar. Tom: encorajador e positivo. Exemplos de abertura: '😊 Bom te ver por aqui!', '📚 Tá no caminho certo!', '💡 Dica: quem estuda todo dia não surta na véspera.'",
-          meh: "O aluno tá morno, precisa de um empurrão. Tom: provocativo mas amigável. Exemplos de abertura: '🤷 Bora estudar ou vai ficar só olhando?', '☕ Pega um café e bora!', '🎬 Fim do intervalo!'",
-          slacking: "O aluno NÃO está estudando! Sequência zerou! Tom: bronca divertida mas firme. COMECE com uma dessas frases (adapte): '😤 Cadê você?! A sequência zerou!', '🦥 Tá querendo passar na prova ou virar especialista em procrastinação?', '🚨 Sua sequência de estudos morreu. Causa mortis: abandono.', '😬 Sem estudar? Amanhã você vai se arrepender.', '📉 Seu progresso tá mais parado que fila do SUS.'",
-          danger: "URGENTE! Muitas revisões atrasadas e urgentes. Tom: alarmante mas motivador. Exemplos de abertura: '🚨 ALERTA!', '⏳ Cada hora conta!', '🔴 MODO EMERGÊNCIA!'",
+          champion: "O aluno tá mandando bem! Elogie o streak e a dedicação com humor médico. Tom: orgulhoso e engraçado.",
+          good: "O aluno tá indo bem mas pode melhorar. Tom: encorajador e positivo com pitadas de humor.",
+          meh: "O aluno tá morno, precisa de um empurrão. Tom: provocativo mas amigável e divertido.",
+          slacking: "O aluno NÃO está estudando! Sequência zerou! Tom: bronca divertida mas firme.",
+          danger: "URGENTE! Muitas revisões atrasadas e urgentes. Tom: alarmante mas motivador com humor negro médico.",
         };
+
+        const randomSeed = Math.random().toString(36).substring(2, 10);
+        const dayOfWeek = new Date().toLocaleDateString("pt-BR", { weekday: "long" });
+        const hour = new Date().getHours();
 
         const prompt = `Gere uma mensagem de WhatsApp curta e motivacional (máximo 500 caracteres) para um aluno de medicina.
 Use emojis com moderação. Seja direto e encorajador. NÃO use markdown. NÃO use asteriscos.
 
-IMPORTANTE - TOM DA MENSAGEM:
-${moodInstructions[mood]}
+SEED ALEATÓRIA (use para variar): ${randomSeed}
+DIA: ${dayOfWeek} | HORA: ${hour}h
+
+⚠️ REGRA ABSOLUTA DE ORIGINALIDADE — NUNCA repita abertura, estrutura ou piada.
+Varie OBRIGATORIAMENTE entre estes estilos de humor (escolha UM aleatório):
+1. Trocadilho médico ("Sua sequência tá mais saudável que paciente de check-up!")
+2. Analogia de plantão ("Se suas revisões fossem pacientes, já teriam dado entrada na UTI")
+3. Referência pop/meme ("Ninguém: ... Suas revisões: SOCORRO")
+4. Ironia carinhosa ("Ah sim, deixar pra última hora sempre funciona né? 🙄")
+5. Narração épica ("Capítulo ${streak} da saga do(a) ${(profile.display_name || "Aluno").split(" ")[0]}")
+6. Comparação absurda ("Seu streak tá maior que fila de UPA em noite de chuva")
+7. Personificação ("Seus temas pendentes tão te olhando com cara de abandono")
+8. Coach de academia ("BORA! Dia de treinar o cérebro! 🧠💪")
+
+TOM: ${moodInstructions[mood]}
 
 Dados do aluno:
 - Nome: ${profile.display_name || "Aluno"}
 - Streak: ${streak} dias seguidos
-- Nível: ${gamification.level}
-- XP total: ${gamification.xp}
+- Nível: ${gamification.level} | XP: ${gamification.xp}
 
-Revisões pendentes hoje (${revisoes.length} total, ${urgentes.length} urgentes):
+Revisões pendentes (${revisoes.length} total, ${urgentes.length} urgentes):
 ${revisoesText}
 
-${app_url ? `Link do app: ${app_url}` : ""}
+${app_url ? `Link: ${app_url}` : ""}
 
 A mensagem DEVE:
-1. COMEÇAR com uma frase motivacional/bronca no estilo descrito acima (saudando pelo primeiro nome)
-2. Mencionar as revisões do dia (quantidade e temas urgentes se houver)
-3. Motivar ou cobrar baseado no progresso/streak
-4. Se o aluno não estuda (streak 0), dar uma bronca engraçada mas firme
-5. Terminar com encorajamento ou link do app`;
+1. COMEÇAR saudando pelo primeiro nome com frase ENGRAÇADA e ÚNICA
+2. Incluir pelo menos UMA piada ou trocadilho médico
+3. Mencionar revisões do dia (quantidade e temas urgentes)
+4. Se streak=0, bronca HILÁRIA mas firme
+5. Terminar com encorajamento divertido ou link do app`;
 
         try {
           const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -160,10 +176,11 @@ A mensagem DEVE:
             body: JSON.stringify({
               model: "google/gemini-2.5-flash-lite",
               messages: [
-                { role: "system", content: "Você é um assistente que gera mensagens de WhatsApp motivacionais para alunos de medicina. Mensagens curtas, diretas, com emojis moderados. Sem markdown." },
+                { role: "system", content: "Você é um assistente HILÁRIO que gera mensagens de WhatsApp para alunos de medicina. Cada mensagem deve ser ÚNICA, ENGRAÇADA e MEMORÁVEL. Use humor brasileiro autêntico: trocadilhos médicos, referências a plantão, memes de internato, analogias com séries médicas. NUNCA repita a mesma piada ou estrutura. Mensagens curtas, diretas, com emojis moderados. Sem markdown. Sem asteriscos. Temperatura máxima de criatividade!" },
                 { role: "user", content: prompt },
               ],
               max_tokens: 512,
+              temperature: 0.95,
             }),
           });
 
