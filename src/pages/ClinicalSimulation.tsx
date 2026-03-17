@@ -468,6 +468,7 @@ const ClinicalSimulation = () => {
       const res = await callAPI({
         action: "finish",
         conversation_history: conversationHistory,
+        ...(teacherCaseId ? { teacher_case_id: teacherCaseId } : {}),
       });
       setFinalEval(res);
       setPhase("result");
