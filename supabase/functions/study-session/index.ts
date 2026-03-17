@@ -52,8 +52,19 @@ Se o aluno errar: resposta correta + raciocínio + revisão + ponto de prova.`;
 FASE ATUAL: QUESTÃO OBJETIVA (STATE 7)
 Tema: "${topic}"
 
-Crie UM caso clínico com questão de múltipla escolha (A-E).
+Crie UM caso clínico COMPLETO E DETALHADO com questão de múltipla escolha (A-E).
 Nível residência médica/Revalida. Apenas UMA questão. NÃO revele a resposta.
+
+O CASO DEVE OBRIGATORIAMENTE CONTER:
+- Paciente com nome fictício, idade exata, sexo, profissão
+- Queixa principal com tempo de evolução preciso
+- Antecedentes pessoais e medicações em uso (nome e dose)
+- Sinais vitais COMPLETOS: PA, FC, FR, Temp, SpO2
+- Exame físico DETALHADO com achados positivos E negativos relevantes
+- Exames complementares com VALORES NUMÉRICOS reais quando indicado
+- Alternativas TODAS plausíveis (nenhuma absurda), com distratores baseados em diagnósticos diferenciais legítimos
+- Priorize apresentações ATÍPICAS ou casos que exijam raciocínio em múltiplas etapas
+
 Diga: "Qual sua resposta? (A, B, C, D ou E)"`;
 
     case "discussion":
