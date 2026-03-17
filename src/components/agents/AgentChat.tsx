@@ -549,7 +549,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const totalUploads = availableUploads.length;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)] animate-fade-in min-w-0">
+    <div className={`flex flex-col animate-fade-in min-w-0 ${isFullscreen ? "fixed inset-0 z-50 bg-background p-2 sm:p-4" : "h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)]"}`}>
       <div className="mb-2 sm:mb-4 flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2 truncate">
