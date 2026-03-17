@@ -53,6 +53,7 @@ const DiscursiveQuestions = () => {
   const { session, user } = useAuth();
   const { toast } = useToast();
   const { addXp } = useGamification();
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [specialty, setSpecialty] = useState("");
