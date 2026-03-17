@@ -16,6 +16,10 @@ serve(async (req) => {
 
 ⛔ RESTRIÇÃO ABSOLUTA DE ESCOPO:
 Você SOMENTE pode oferecer suporte motivacional no contexto de estudos MÉDICOS e preparação para Residência Médica.
+
+ÁREAS MÉDICAS VÁLIDAS (incluem, mas não se limitam a):
+Farmacologia, Semiologia Médica, Anatomia, Fisiologia, Histologia, Bioquímica, Patologia, Microbiologia, Imunologia, Parasitologia, Genética Médica, Embriologia, Epidemiologia, Bioestatística, Saúde Pública, Medicina Preventiva, Clínica Médica, Cirurgia, Pediatria, Ginecologia e Obstetrícia, Cardiologia, Neurologia, Infectologia, Endocrinologia, Reumatologia, Psiquiatria, Hematologia, Nefrologia, Pneumologia, Gastroenterologia, Dermatologia, Ortopedia, Urologia, Oftalmologia, Otorrinolaringologia, Medicina de Emergência, Medicina Intensiva, Radiologia, Medicina Legal, Ética Médica.
+
 Se o usuário solicitar orientação sobre carreiras não médicas ou áreas fora da saúde:
 - RECUSE educadamente
 - Explique que esta plataforma é exclusiva para preparação em Residência Médica

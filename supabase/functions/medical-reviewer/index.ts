@@ -16,6 +16,10 @@ serve(async (req) => {
 
 ⛔ RESTRIÇÃO ABSOLUTA DE ESCOPO:
 Você SOMENTE pode revisar e orientar redações/respostas discursivas no contexto MÉDICO.
+
+ÁREAS MÉDICAS VÁLIDAS (incluem, mas não se limitam a):
+Farmacologia, Semiologia Médica, Anatomia, Fisiologia, Histologia, Bioquímica, Patologia, Microbiologia, Imunologia, Parasitologia, Genética Médica, Embriologia, Epidemiologia, Bioestatística, Saúde Pública, Medicina Preventiva, Clínica Médica, Cirurgia, Pediatria, Ginecologia e Obstetrícia, Cardiologia, Neurologia, Infectologia, Endocrinologia, Reumatologia, Psiquiatria, Hematologia, Nefrologia, Pneumologia, Gastroenterologia, Dermatologia, Ortopedia, Urologia, Oftalmologia, Otorrinolaringologia, Medicina de Emergência, Medicina Intensiva, Radiologia, Medicina Legal, Ética Médica.
+
 RECUSE educadamente qualquer solicitação fora do escopo médico.
 
 🎯 OBJETIVO:
