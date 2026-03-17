@@ -36,21 +36,27 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     if (options.tools) body.tools = options.tools;
     if (options.tool_choice) body.tool_choice = options.tool_choice;
 
-    const response = await fetch(LOVABLE_GATEWAY, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+    try {
+      const response = await fetch(LOVABLE_GATEWAY, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
 
-    // If not a credit/rate issue, return as-is
-    if (response.status !== 402 && response.status !== 429) {
-      return response;
+      // If not a credit/rate issue, return as-is
+      if (response.status !== 402 && response.status !== 429) {
+        return response;
+      }
+
+      // Consume body before falling back to avoid resource leak
+      const errorBody = await response.text();
+      console.warn(`Lovable AI returned ${response.status}, falling back to OpenAI. Body: ${errorBody.slice(0, 200)}`);
+    } catch (fetchErr) {
+      console.error("Lovable AI fetch failed:", fetchErr);
     }
-
-    console.log(`Lovable AI returned ${response.status}, falling back to OpenAI...`);
   }
 
   // Fallback to OpenAI
@@ -77,6 +83,12 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     },
     body: JSON.stringify(body),
   });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error(`OpenAI fallback also failed (${response.status}):`, errText.slice(0, 300));
+    throw new Error(`Serviço de IA indisponível (status ${response.status}). Tente novamente em alguns minutos.`);
+  }
 
   return response;
 }
