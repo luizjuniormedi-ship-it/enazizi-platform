@@ -545,9 +545,21 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
               <ChevronDown className={`h-3.5 w-3.5 ml-auto transition-transform ${showUploads ? "rotate-180" : ""}`} />
             </>
           )}
-        </button>
+          </button>
+          {showUploadButton && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 px-3 gap-1.5 text-xs flex-shrink-0"
+              disabled={isUploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{isUploading ? "Enviando..." : "Enviar"}</span>
+            </Button>
+          )}
+        </div>
 
-        {showUploads && totalUploads > 0 && (
           <div className="glass-card p-3 mt-2 max-h-40 overflow-y-auto space-y-1">
             <button
               onClick={toggleAll}
