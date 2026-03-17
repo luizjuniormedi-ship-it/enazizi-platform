@@ -558,6 +558,9 @@ const Flashcards = () => {
       )}
     </div>
   );
+
+  if (isFullscreen) return createPortal(content, document.body);
+  return content;
 };
 
 export default Flashcards;

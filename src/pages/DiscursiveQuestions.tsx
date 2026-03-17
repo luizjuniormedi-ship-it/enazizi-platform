@@ -464,6 +464,9 @@ const DiscursiveQuestions = () => {
       )}
     </div>
   );
+
+  if (isFullscreen) return createPortal(content, document.body);
+  return content;
 };
 
 export default DiscursiveQuestions;
