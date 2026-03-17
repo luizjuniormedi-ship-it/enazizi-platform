@@ -218,8 +218,8 @@ const StudySession = () => {
   const acuracyPercent = performance.totalQuestions > 0
     ? Math.round((performance.correctAnswers / performance.totalQuestions) * 100) : 0;
 
-  return (
-    <div className={`flex animate-fade-in ${isFullscreen ? "fixed inset-0 z-50 bg-background" : "h-[calc(100vh-4rem)]"}`}>
+  const content = (
+    <div className={`flex animate-fade-in ${isFullscreen ? "fixed inset-0 z-[100] bg-background" : "h-[calc(100vh-4rem)]"}`}>
       {/* Left Sidebar — Performance Panel */}
       <aside className={`${sidebarOpen ? "w-72" : "w-0"} transition-all duration-300 overflow-hidden border-r border-border flex-shrink-0 bg-card/50`}>
         <div className="w-72 h-full overflow-y-auto p-4 space-y-4">
