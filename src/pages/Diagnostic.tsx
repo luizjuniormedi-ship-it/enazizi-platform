@@ -89,10 +89,19 @@ NÃO inclua mini-revisão, NÃO inclua markdown, NÃO inclua texto explicativo. 
         // Fallback: generate all at once
         const res = await supabase.functions.invoke("question-generator", {
           body: {
-            messages: [{ role: "user", content: `Gere 25 questões de múltipla escolha para simulado diagnóstico de residência médica, 5 de cada área: ${AREAS.join(", ")}. Formato JSON array: [{"statement":"...", "options":["a","b","c","d","e"], "correct_index": 0, "topic":"Área", "explanation":"..."}]` }],
+            stream: false,
+            messages: [{ role: "user", content: `Gere 25 questões de múltipla escolha para simulado diagnóstico de residência médica, 5 de cada área: ${AREAS.join(", ")}. Cada questão com caso clínico ÚNICO e paciente diferente. Retorne APENAS JSON array: [{"statement":"...", "options":["A) ...","B) ...","C) ...","D) ...","E) ..."], "correct_index": 0, "topic":"Área", "explanation":"..."}]. NÃO inclua texto adicional.` }],
           },
         });
-        // Try to use whatever we got
+        if (!res.error) {
+          const raw2 = res.data;
+          let content2 = "";
+          if (typeof raw2 === "string") content2 = raw2;
+          else if (raw2?.choices?.[0]?.message?.content) content2 = raw2.choices[0].message.content;
+          else content2 = JSON.stringify(raw2);
+          const parsed2 = parseQuestions(content2, "Geral");
+          allQuestions.push(...parsed2);
+        }
       }
 
       setQuestions(allQuestions.length > 0 ? allQuestions : generateFallbackQuestions());
