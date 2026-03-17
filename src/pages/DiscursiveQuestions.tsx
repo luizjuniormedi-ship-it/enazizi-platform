@@ -178,8 +178,8 @@ const DiscursiveQuestions = () => {
     return "text-red-500";
   };
 
-  return (
-    <div className={`animate-fade-in ${isFullscreen ? "fixed inset-0 z-50 bg-background p-2 sm:p-4 overflow-auto" : "max-w-3xl mx-auto space-y-6"}`}>
+  const content = (
+    <div className={`animate-fade-in ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4 overflow-auto" : "max-w-3xl mx-auto space-y-6"}`}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
