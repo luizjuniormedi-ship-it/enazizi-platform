@@ -138,8 +138,12 @@ const ProfessorDashboard = () => {
       return;
     }
     setGenerating(true);
-    try {
-      const res = await callAPI({ action: "generate_questions", topics: selectedTopics, count: parseInt(questionCount) });
+      // Build topics with subtopics for AI
+      const topicsWithSubs = selectedTopics.map((t) => {
+        const subs = subtopics[t]?.trim();
+        return subs ? `${t} (${subs})` : t;
+      });
+      const res = await callAPI({ action: "generate_questions", topics: topicsWithSubs, count: parseInt(questionCount) });
       setGeneratedQuestions(res.questions || []);
       toast({ title: "Questões geradas!", description: `${res.questions?.length || 0} questões criadas pela IA.` });
     } catch (e) {
