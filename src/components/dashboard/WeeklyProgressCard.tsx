@@ -127,7 +127,7 @@ const WeeklyProgressCard = () => {
           </div>
           <div className="text-xl font-bold">{data.questionsThisWeek}</div>
           <div className={`flex items-center gap-1 text-xs ${trendColor(questionsDelta)}`}>
-            <TrendIcon delta={questionsDelta} />
+            {renderTrendIcon(questionsDelta)}
             {formatDelta(questionsDelta)}
           </div>
         </div>
