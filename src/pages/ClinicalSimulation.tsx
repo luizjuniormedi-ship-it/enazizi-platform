@@ -273,7 +273,12 @@ const ClinicalSimulation = () => {
   const startSimulation = async () => {
     setLoading(true);
     try {
-      const res = await callAPI({ action: "start", specialty, difficulty });
+      const res = await callAPI({
+        action: "start",
+        specialty,
+        difficulty,
+        ...(teacherCaseId ? { teacher_case_id: teacherCaseId } : {}),
+      });
 
       setVitals(res.vitals);
       setSetting(res.setting || "Pronto-Socorro");
