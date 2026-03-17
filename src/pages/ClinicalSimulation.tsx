@@ -1339,6 +1339,7 @@ const ClinicalSimulation = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
