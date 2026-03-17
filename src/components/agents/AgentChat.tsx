@@ -110,13 +110,17 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   }, [availableUploads, selectedUploadIds, hasShownUploadWelcome, welcomeMessageWithUploads, messages]);
 
   // Build context from selected uploads
-  const buildUserContext = useCallback(() => {
-    if (selectedUploadIds.size === 0) return "";
+  const buildUserContext = useCallback((extraContext?: string) => {
     let ctx = "";
+    // Add extra context first (e.g. from a just-uploaded file)
+    if (extraContext) {
+      ctx += extraContext;
+    }
+    if (selectedUploadIds.size === 0) return ctx.trim();
     for (const upload of availableUploads) {
       if (!selectedUploadIds.has(upload.id)) continue;
-      const snippet = upload.extracted_text?.slice(0, 2000) || "";
-      if (ctx.length + snippet.length > 8000) break;
+      const snippet = upload.extracted_text?.slice(0, 3000) || "";
+      if (ctx.length + snippet.length > 15000) break;
       ctx += `\n\n📄 ${upload.filename} (${upload.category || "material"}):\n${snippet}`;
     }
     return ctx.trim();
