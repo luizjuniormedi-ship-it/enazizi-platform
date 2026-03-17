@@ -612,28 +612,37 @@ const ClinicalSimulation = () => {
   };
 
   return (
-    <div className={`animate-fade-in ${isFullscreen ? "fixed inset-0 z-50 bg-background p-2 sm:p-4 overflow-auto" : "max-w-6xl mx-auto space-y-4"}`}>
+    <div className={`animate-fade-in ${isFullscreen ? "fixed inset-0 z-50 bg-background overflow-auto flex flex-col" : "max-w-6xl mx-auto space-y-4"}`}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Activity className="h-6 w-6 text-red-500" />
-            Modo Plantão
-          </h1>
-          <p className="text-sm text-muted-foreground">Simulação interativa de atendimento clínico</p>
+      <div className={`flex items-center justify-between ${isFullscreen ? "px-4 py-2 border-b border-border bg-background/95 backdrop-blur-sm shrink-0" : "mb-4"}`}>
+        <div className="flex items-center gap-2 min-w-0">
+          <Activity className="h-5 w-5 text-destructive shrink-0" />
+          <h1 className="text-lg font-bold truncate">Modo Plantão</h1>
+          {!isFullscreen && (
+            <p className="text-xs text-muted-foreground hidden md:block">Simulação interativa de atendimento clínico</p>
+          )}
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
+          >
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            <span className="hidden sm:inline">{isFullscreen ? "Sair" : "Tela cheia"}</span>
           </Button>
           {phase === "active" && (
-            <Button variant="destructive" size="sm" onClick={finishSimulation} disabled={loading}>
+            <Button variant="destructive" size="sm" className="h-8 text-xs gap-1.5" onClick={finishSimulation} disabled={loading}>
+              <ClipboardCheck className="h-3.5 w-3.5" />
               Encerrar Plantão
             </Button>
           )}
         </div>
       </div>
+
+      {/* Content wrapper for fullscreen scroll */}
+      <div className={isFullscreen ? "flex-1 overflow-auto p-2 sm:p-4" : ""}>
 
       {/* LOBBY */}
       {phase === "lobby" && (
@@ -1330,6 +1339,7 @@ const ClinicalSimulation = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
