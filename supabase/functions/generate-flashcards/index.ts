@@ -61,6 +61,14 @@ REGRAS:
 - SEMPRE em português brasileiro
 - Variar os tipos de flashcards dentro de cada bloco
 - Casos clínicos realistas baseados em provas de residência
+
+ANAMNESE ÚNICA POR FLASHCARD (REGRA ABSOLUTA):
+- NUNCA repita nome, idade, sexo ou perfil de paciente entre flashcards
+- Cada caso clínico DEVE ter um paciente COMPLETAMENTE DIFERENTE
+- Variar: nomes regionais brasileiros, idades de 0 a 95 anos, profissões diversas
+- Alternar cenários: PS, enfermaria, UTI, UBS, ambulatório, domicílio
+- Variar comorbidades: DM, HAS, IRC, HIV, tabagismo, etilismo, gestante
+- PROIBIDO: dois pacientes com mesmo perfil demográfico no mesmo bloco
 - Após cada bloco, perguntar:
   1️⃣ Continuar com mais flashcards do mesmo tema
   2️⃣ Mudar o tema
