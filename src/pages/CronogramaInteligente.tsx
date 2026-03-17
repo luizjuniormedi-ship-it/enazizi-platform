@@ -103,6 +103,7 @@ export const SPECIALTIES = [
   "Ginecologia e Obstetrícia", "Cirurgia", "Medicina Preventiva",
   "Hematologia", "Reumatologia", "Dermatologia", "Urologia",
   "Ortopedia", "Otorrinolaringologia", "Oftalmologia", "Psiquiatria",
+  "Semiologia", "Anatomia",
 ];
 
 export const REVIEW_DAYS: Record<string, number> = {

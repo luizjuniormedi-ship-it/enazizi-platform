@@ -18,7 +18,7 @@ const SPECIALTIES = [
   "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia", "Nefrologia",
   "Endocrinologia", "Infectologia", "Reumatologia", "Hematologia", "Dermatologia",
   "Pediatria", "Ginecologia e Obstetrícia", "Cirurgia", "Ortopedia", "Urologia",
-  "Psiquiatria", "Medicina Preventiva",
+  "Psiquiatria", "Medicina Preventiva", "Semiologia", "Anatomia",
 ];
 
 type Phase = "setup" | "answering" | "correcting" | "result" | "history";

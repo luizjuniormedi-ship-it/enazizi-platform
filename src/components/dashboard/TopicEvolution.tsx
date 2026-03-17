@@ -13,6 +13,7 @@ const SPECIALTIES = [
   "Reumatologia", "Pediatria", "Ginecologia e Obstetrícia", "Cirurgia",
   "Psiquiatria", "Dermatologia", "Oftalmologia", "Otorrinolaringologia",
   "Medicina Preventiva", "Medicina de Emergência", "Terapia Intensiva",
+  "Semiologia", "Anatomia",
 ];
 
 interface DomainEntry {
