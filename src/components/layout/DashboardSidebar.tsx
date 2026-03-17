@@ -149,14 +149,24 @@ const DashboardSidebar = () => {
       </div>
 
       <nav className="flex-1 px-3 space-y-3 overflow-y-auto min-h-0">
-        {navGroups.map((group) => (
-          <SidebarGroup
-            key={group.title}
-            group={group}
-            isOpen={openGroups[group.title] ?? true}
-            onToggle={() => toggleGroup(group.title)}
-          />
-        ))}
+        {navGroups.map((group) => {
+          const filteredGroup = {
+            ...group,
+            items: group.items.filter((item) => {
+              const moduleKey = item.to.replace("/dashboard/", "").replace("/dashboard", "dashboard");
+              return isModuleEnabled(moduleKey === "" ? "dashboard" : moduleKey);
+            }),
+          };
+          if (filteredGroup.items.length === 0) return null;
+          return (
+            <SidebarGroup
+              key={group.title}
+              group={filteredGroup}
+              isOpen={openGroups[group.title] ?? true}
+              onToggle={() => toggleGroup(group.title)}
+            />
+          );
+        })}
 
         <div className="pt-4 border-t border-sidebar-border mt-4 space-y-1">
           <Link
