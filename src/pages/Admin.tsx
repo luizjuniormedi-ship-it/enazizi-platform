@@ -78,6 +78,7 @@ const Admin = () => {
   const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; user: AdminUser | null; password: string }>({ open: false, user: null, password: "" });
   const [userDetailDialog, setUserDetailDialog] = useState<{ open: boolean; user: AdminUser | null }>({ open: false, user: null });
   const [trackingDialog, setTrackingDialog] = useState<{ open: boolean; user: AdminUser | null; data: any; loading: boolean }>({ open: false, user: null, data: null, loading: false });
+  const [logoutDialog, setLogoutDialog] = useState<{ open: boolean; user: AdminUser | null }>({ open: false, user: null });
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-actions`;
 
