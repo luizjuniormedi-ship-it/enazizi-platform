@@ -44,7 +44,7 @@ interface AgentChatProps {
   showUploadButton?: boolean;
 }
 
-const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions, renderAssistantMessage }: AgentChatProps) => {
+const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions, renderAssistantMessage, showUploadButton }: AgentChatProps) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([
     { role: "assistant", content: welcomeMessage },
@@ -60,7 +60,11 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const [showUploads, setShowUploads] = useState(false);
   const [savingMsgIdx, setSavingMsgIdx] = useState<number | null>(null);
   const [savedMsgIdxs, setSavedMsgIdxs] = useState<Set<number>>(new Set());
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStep, setUploadStep] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`;
