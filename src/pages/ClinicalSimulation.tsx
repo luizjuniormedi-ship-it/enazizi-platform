@@ -612,9 +612,9 @@ const ClinicalSimulation = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-4 animate-fade-in">
+    <div className={`animate-fade-in ${isFullscreen ? "fixed inset-0 z-50 bg-background p-2 sm:p-4 overflow-auto" : "max-w-6xl mx-auto space-y-4"}`}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Activity className="h-6 w-6 text-red-500" />
@@ -622,11 +622,17 @@ const ClinicalSimulation = () => {
           </h1>
           <p className="text-sm text-muted-foreground">Simulação interativa de atendimento clínico</p>
         </div>
-        {phase === "active" && (
-          <Button variant="destructive" size="sm" onClick={finishSimulation} disabled={loading}>
-            Encerrar Plantão
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            <span className="hidden sm:inline">{isFullscreen ? "Sair" : "Tela cheia"}</span>
           </Button>
-        )}
+          {phase === "active" && (
+            <Button variant="destructive" size="sm" onClick={finishSimulation} disabled={loading}>
+              Encerrar Plantão
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* LOBBY */}
