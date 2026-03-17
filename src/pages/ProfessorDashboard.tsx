@@ -138,7 +138,7 @@ const ProfessorDashboard = () => {
       return;
     }
     setGenerating(true);
-      // Build topics with subtopics for AI
+    try {
       const topicsWithSubs = selectedTopics.map((t) => {
         const subs = subtopics[t]?.trim();
         return subs ? `${t} (${subs})` : t;
