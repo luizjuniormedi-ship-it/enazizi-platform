@@ -726,7 +726,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           disabled={isLoading}
         />
-        <Button onClick={handleSend} size="icon" className="glow flex-shrink-0" disabled={isLoading}>
+        <Button onClick={() => handleSend()} size="icon" className="glow flex-shrink-0" disabled={isLoading}>
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </Button>
       </div>
