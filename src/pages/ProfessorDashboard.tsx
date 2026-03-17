@@ -39,6 +39,7 @@ const ProfessorDashboard = () => {
   const [title, setTitle] = useState("Simulado");
   const [description, setDescription] = useState("");
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [subtopics, setSubtopics] = useState<Record<string, string>>({});
   const [faculdadeFilter, setFaculdadeFilter] = useState("");
   const [periodoFilter, setPeriodoFilter] = useState("");
   const [questionCount, setQuestionCount] = useState("10");
