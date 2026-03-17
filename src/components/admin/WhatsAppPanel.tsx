@@ -153,7 +153,12 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
                 )}
               </div>
               {dispatching && (
-                <Progress value={((dispatchIndex + 1) / unsentCount) * 100} className="h-2" />
+                <div className="space-y-1">
+                  <Progress value={((dispatchIndex + 1) / unsentCount) * 100} className="h-2" />
+                  {currentDelay > 0 && (
+                    <p className="text-xs text-muted-foreground">⏳ Aguardando {Math.round(currentDelay / 1000)}s antes do próximo envio (anti-bloqueio)</p>
+                  )}
+                </div>
               )}
             </div>
             <Button
