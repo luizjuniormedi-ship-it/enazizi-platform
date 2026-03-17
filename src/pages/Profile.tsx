@@ -228,6 +228,26 @@ const Profile = () => {
           </div>
         </div>
 
+        <div className="space-y-2">
+          <Label className="flex items-center gap-1.5">
+            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+            WhatsApp
+          </Label>
+          <Input
+            value={phone}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+              let formatted = digits;
+              if (digits.length > 2) formatted = `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+              if (digits.length > 7) formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+              setPhone(formatted);
+            }}
+            placeholder="(21) 99999-9999"
+            maxLength={16}
+          />
+          <p className="text-xs text-muted-foreground">Seu número para receber lembretes de estudo.</p>
+        </div>
+
         <Button onClick={handleSave} disabled={saving} className="w-full">
           {saving ? (
             <>
