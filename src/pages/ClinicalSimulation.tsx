@@ -143,6 +143,15 @@ const ClinicalSimulation = () => {
   const [specialistDialogOpen, setSpecialistDialogOpen] = useState(false);
   const [specialistArea, setSpecialistArea] = useState("");
 
+  // Prescription dialog
+  const [prescriptionDialogOpen, setPrescriptionDialogOpen] = useState(false);
+
+  // Vitals snapshots for chart
+  const [vitalsSnapshots, setVitalsSnapshots] = useState<any[]>([]);
+
+  // Exam results panel
+  const [examResults, setExamResults] = useState<Array<{ type: "lab" | "imaging"; content: string; timestamp: number }>>([]);
+
   // History
   const [history, setHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
