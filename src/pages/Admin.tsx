@@ -451,13 +451,14 @@ const Admin = () => {
             ) : (
               <div className="space-y-2">
                 {/* Header */}
-                <div className="hidden md:grid grid-cols-12 gap-3 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                <div className="hidden md:grid grid-cols-14 gap-3 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   <div className="col-span-2">Usuário</div>
                   <div className="col-span-2">Email</div>
                   <div className="col-span-1">Plano</div>
                   <div className="col-span-1">Status</div>
+                  <div className="col-span-1">Último acesso</div>
                   <div className="col-span-3">Evolução</div>
-                  <div className="col-span-3 text-right">Ações</div>
+                  <div className="col-span-4 text-right">Ações</div>
                 </div>
 
                 {filteredUsers.map((u) => {
