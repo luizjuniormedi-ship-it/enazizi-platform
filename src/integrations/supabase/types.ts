@@ -1571,6 +1571,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_module_access: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          granted_by: string | null
+          id: string
+          module_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          granted_by?: string | null
+          id?: string
+          module_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          granted_by?: string | null
+          id?: string
+          module_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_presence: {
         Row: {
           current_page: string | null

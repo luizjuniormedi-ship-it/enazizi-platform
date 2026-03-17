@@ -304,6 +304,33 @@ Deno.serve(async (req) => {
         return ok({ logs: enriched });
       }
 
+      case "get_user_access": {
+        const { target_user_id } = params;
+        if (!target_user_id) throw new Error("target_user_id obrigatório");
+        const { data: modules } = await supabaseAuth
+          .from("user_module_access")
+          .select("module_key, enabled")
+          .eq("user_id", target_user_id);
+        return ok({ modules: modules || [] });
+      }
+
+      case "set_user_access": {
+        const { target_user_id, modules } = params;
+        if (!target_user_id || !modules) throw new Error("target_user_id e modules obrigatórios");
+        
+        // modules is an array of { module_key: string, enabled: boolean }
+        for (const mod of modules as { module_key: string; enabled: boolean }[]) {
+          await supabaseAuth
+            .from("user_module_access")
+            .upsert(
+              { user_id: target_user_id, module_key: mod.module_key, enabled: mod.enabled, granted_by: user.id },
+              { onConflict: "user_id,module_key" }
+            );
+        }
+        await logAudit(supabaseAuth, user.id, "set_user_access", target_user_id, { modules_count: (modules as any[]).length });
+        return ok({ success: true });
+      }
+
       case "force_logout": {
         const { target_user_id } = params;
         if (!target_user_id) throw new Error("target_user_id obrigatório");

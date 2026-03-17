@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Shield, Users, CreditCard, TrendingUp, Ban, CheckCircle, UserCog, Search, RefreshCw, ChevronDown, ShieldCheck, ShieldOff, ClipboardList, KeyRound, Bell, UserCheck, UserX, Clock, BarChart3, BookOpen, Target, AlertTriangle, Activity, Brain, Wifi, GraduationCap, LogOut } from "lucide-react";
+import { Shield, Users, CreditCard, TrendingUp, Ban, CheckCircle, UserCog, Search, RefreshCw, ChevronDown, ShieldCheck, ShieldOff, ClipboardList, KeyRound, Bell, UserCheck, UserX, Clock, BarChart3, BookOpen, Target, AlertTriangle, Activity, Brain, Wifi, GraduationCap, LogOut, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +22,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { ALL_MODULES } from "@/hooks/useModuleAccess";
 
 interface AdminUser {
   user_id: string;
@@ -79,6 +81,7 @@ const Admin = () => {
   const [userDetailDialog, setUserDetailDialog] = useState<{ open: boolean; user: AdminUser | null }>({ open: false, user: null });
   const [trackingDialog, setTrackingDialog] = useState<{ open: boolean; user: AdminUser | null; data: any; loading: boolean }>({ open: false, user: null, data: null, loading: false });
   const [logoutDialog, setLogoutDialog] = useState<{ open: boolean; user: AdminUser | null }>({ open: false, user: null });
+  const [accessDialog, setAccessDialog] = useState<{ open: boolean; user: AdminUser | null; modules: Record<string, boolean>; loading: boolean; saving: boolean }>({ open: false, user: null, modules: {}, loading: false, saving: false });
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-actions`;
 
@@ -138,6 +141,36 @@ const Admin = () => {
       setTrackingDialog((prev) => ({ ...prev, loading: false }));
     }
   }, [callAdmin, toast]);
+
+  const loadUserAccess = useCallback(async (u: AdminUser) => {
+    setAccessDialog({ open: true, user: u, modules: {}, loading: true, saving: false });
+    try {
+      const res = await callAdmin({ action: "get_user_access", target_user_id: u.user_id });
+      const mods: Record<string, boolean> = {};
+      ALL_MODULES.forEach(m => { mods[m.key] = true; }); // default all enabled
+      (res.modules || []).forEach((m: { module_key: string; enabled: boolean }) => {
+        mods[m.module_key] = m.enabled;
+      });
+      setAccessDialog(prev => ({ ...prev, modules: mods, loading: false }));
+    } catch (e) {
+      toast({ title: "Erro", description: "Erro ao carregar acessos", variant: "destructive" });
+      setAccessDialog(prev => ({ ...prev, loading: false }));
+    }
+  }, [callAdmin, toast]);
+
+  const handleSaveAccess = async () => {
+    if (!accessDialog.user) return;
+    setAccessDialog(prev => ({ ...prev, saving: true }));
+    try {
+      const modules = ALL_MODULES.map(m => ({ module_key: m.key, enabled: accessDialog.modules[m.key] ?? true }));
+      await callAdmin({ action: "set_user_access", target_user_id: accessDialog.user.user_id, modules });
+      toast({ title: "Acessos salvos", description: `Módulos de ${accessDialog.user.display_name || accessDialog.user.email} atualizados.` });
+      setAccessDialog({ open: false, user: null, modules: {}, loading: false, saving: false });
+    } catch (e) {
+      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao salvar", variant: "destructive" });
+      setAccessDialog(prev => ({ ...prev, saving: false }));
+    }
+  };
 
   const handleApproveUser = async (u: AdminUser) => {
     setActionLoading(u.user_id);
@@ -555,6 +588,13 @@ const Admin = () => {
                               onClick={() => loadUserTracking(u)}>
                               <BarChart3 className="h-3 w-3" /> Acompanhar
                             </Button>
+                            <Button
+                              variant="outline"
+                              size="sm" className="h-7 text-xs gap-1 border-violet-500/30 text-violet-600 hover:bg-violet-500/10"
+                              disabled={isCurrentlyActioning}
+                              onClick={() => loadUserAccess(u)}>
+                              <Lock className="h-3 w-3" /> Acessos
+                            </Button>
                           </>
                         )}
                       </div>
@@ -934,6 +974,50 @@ const Admin = () => {
           ) : (
             <p className="text-center text-muted-foreground py-8">Nenhum dado encontrado.</p>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Module Access Dialog */}
+      <Dialog open={accessDialog.open} onOpenChange={(open) => !open && setAccessDialog({ open: false, user: null, modules: {}, loading: false, saving: false })}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5 text-primary" />
+              Controle de Acessos — {accessDialog.user?.display_name || accessDialog.user?.email}
+            </DialogTitle>
+            <DialogDescription>Ative ou desative módulos para este usuário.</DialogDescription>
+          </DialogHeader>
+
+          {accessDialog.loading ? (
+            <div className="flex justify-center py-12">
+              <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="space-y-2 py-2">
+              {ALL_MODULES.map((mod) => (
+                <div key={mod.key} className="flex items-center justify-between px-3 py-2 rounded-lg bg-secondary/50">
+                  <span className="text-sm font-medium">{mod.label}</span>
+                  <Switch
+                    checked={accessDialog.modules[mod.key] ?? true}
+                    disabled={mod.key === "dashboard"}
+                    onCheckedChange={(checked) =>
+                      setAccessDialog(prev => ({
+                        ...prev,
+                        modules: { ...prev.modules, [mod.key]: checked }
+                      }))
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAccessDialog({ open: false, user: null, modules: {}, loading: false, saving: false })}>Cancelar</Button>
+            <Button onClick={handleSaveAccess} disabled={accessDialog.loading || accessDialog.saving}>
+              {accessDialog.saving ? "Salvando..." : "Salvar acessos"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
