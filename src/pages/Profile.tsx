@@ -34,7 +34,7 @@ const Profile = () => {
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, email, periodo, faculdade")
+        .select("display_name, avatar_url, email, periodo, faculdade, phone")
         .eq("user_id", user.id)
         .maybeSingle();
 
