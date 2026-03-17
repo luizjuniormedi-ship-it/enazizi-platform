@@ -304,6 +304,16 @@ Deno.serve(async (req) => {
         return ok({ logs: enriched });
       }
 
+      case "force_logout": {
+        const { target_user_id } = params;
+        if (!target_user_id) throw new Error("target_user_id obrigatório");
+        if (target_user_id === user.id) throw new Error("Você não pode desconectar a si mesmo.");
+        const { error: logoutErr } = await supabaseAuth.auth.admin.signOut(target_user_id, "global");
+        if (logoutErr) throw new Error(`Erro ao desconectar: ${logoutErr.message}`);
+        await logAudit(supabaseAuth, user.id, "force_logout", target_user_id, {});
+        return ok({ success: true });
+      }
+
       default:
         return new Response(JSON.stringify({ error: `Ação desconhecida: ${action}` }), {
           status: 400,

@@ -601,6 +601,7 @@ const Admin = () => {
                   reset_password: { label: "Redefiniu senha", color: "text-orange-500" },
                   approve_user: { label: "Aprovou", color: "text-green-600" },
                   reject_user: { label: "Rejeitou", color: "text-destructive" },
+                  force_logout: { label: "Desconectou", color: "text-orange-500" },
                 };
                 const info = actionLabels[log.action] || { label: log.action, color: "text-foreground" };
                 return (
