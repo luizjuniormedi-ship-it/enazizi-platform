@@ -51,6 +51,7 @@ const mobileNavGroups: MobileNavGroup[] = [
       { to: "/dashboard/questoes", label: "❓ Gerador Questões" },
       { to: "/dashboard/banco-questoes", label: "🗃️ Banco de Questões" },
       { to: "/dashboard/discursivas", label: "✍️ Discursivas" },
+      { to: "/dashboard/anamnese", label: "🩺 Anamnese" },
       { to: "/dashboard/plantao", label: "🚨 Modo Plantão" },
     ],
   },
