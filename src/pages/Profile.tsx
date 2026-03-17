@@ -112,6 +112,7 @@ const Profile = () => {
           display_name: trimmed,
           periodo: periodo ? parseInt(periodo) : null,
           faculdade: faculdade || null,
+          phone: phone.replace(/\D/g, "") || null,
         })
         .eq("user_id", user.id);
       if (error) throw error;
