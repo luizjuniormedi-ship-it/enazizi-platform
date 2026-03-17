@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import {
   GraduationCap, Clock, FileText, CheckCircle, ArrowRight, ArrowLeft,
-  Loader2, Trophy, AlertTriangle, Play, RotateCcw, BrainCircuit, Sparkles, Activity
+  Loader2, Trophy, AlertTriangle, Play, RotateCcw, BrainCircuit, Sparkles, Activity,
+  MessageCircle, HelpCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
