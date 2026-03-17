@@ -18,6 +18,7 @@ const ContentSummarizer = () => (
     placeholder="Ex: Resuma Insuficiência Cardíaca com diagnóstico diferencial..."
     functionName="content-summarizer"
     quickActions={quickActions}
+    showUploadButton
   />
 );
 
