@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { User, Camera, Loader2, Save, GraduationCap, Building } from "lucide-react";
+import { User, Camera, Loader2, Save, GraduationCap, Building, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
