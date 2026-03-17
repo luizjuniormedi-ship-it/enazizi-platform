@@ -307,7 +307,12 @@ const ClinicalSimulation = () => {
       setTimeElapsed(0);
       setTimerExpired(false);
       setCountdown(DIFFICULTY_TIMER[difficulty] || 20 * 60);
-      setTimeElapsed(0);
+      setExamResults([]);
+
+      // Initial vitals snapshot
+      if (res.vitals) {
+        setVitalsSnapshots([parseVitalsToSnapshot(res.vitals, 0)]);
+      }
 
       const patientMsg = res.patient_presentation;
       const simMsg: ChatMessage = {
