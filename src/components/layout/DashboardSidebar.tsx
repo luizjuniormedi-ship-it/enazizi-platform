@@ -119,6 +119,7 @@ const DashboardSidebar = () => {
   const { signOut } = useAuth();
   const { isAdmin } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
+  const { isModuleEnabled } = useModuleAccess();
 
   // All groups open by default; auto-open group with active route
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
