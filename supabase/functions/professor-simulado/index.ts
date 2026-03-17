@@ -41,16 +41,20 @@ serve(async (req) => {
         if (!topics || !topics.length) throw new Error("Selecione pelo menos um tema");
 
         const topicList = topics.join(", ");
+        const perTopic = Math.max(1, Math.floor(count / topics.length));
         const prompt = `Gere exatamente ${count} questões objetivas de múltipla escolha (A-E) para residência médica sobre: ${topicList}.
+
+${topics.length > 1 ? `ORGANIZAÇÃO POR BLOCOS: Distribua as questões proporcionalmente entre os temas (~${perTopic} por tema). Cada questão DEVE ter o campo "block" indicando o bloco temático ao qual pertence (ex: "Cardiologia", "Farmacologia").` : `Todas as questões pertencem ao bloco "${topics[0]}". Cada questão DEVE ter o campo "block" com o valor "${topics[0]}".`}
 
 Para cada questão, retorne APENAS um array JSON válido no formato:
 [
   {
+    "block": "Nome do bloco temático",
     "statement": "Texto do enunciado com caso clínico",
     "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
     "correct_index": 0,
     "explanation": "Explicação detalhada da resposta correta",
-    "topic": "Tema da questão"
+    "topic": "Tema/subtema específico da questão"
   }
 ]
 
@@ -60,6 +64,7 @@ REGRAS:
 - 5 alternativas (A-E)
 - correct_index é o índice (0-4) da alternativa correta
 - Baseie-se em provas reais de residência (ENARE, USP, UNIFESP)
+- Agrupe as questões por bloco temático no array (todas de um bloco juntas, depois o próximo bloco)
 - Retorne APENAS o JSON, sem texto adicional`;
 
         const response = await aiFetch({
