@@ -3,7 +3,7 @@ import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import {
   PenLine, Loader2, Send, CheckCircle, Star, AlertTriangle,
-  ChevronDown, History, BookOpen, Target, ArrowRight
+  ChevronDown, History, BookOpen, Target, ArrowRight, Maximize2, Minimize2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
