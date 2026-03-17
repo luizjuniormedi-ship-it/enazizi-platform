@@ -18,7 +18,7 @@ async function extractPdfText(fileData: Blob): Promise<string> {
   const totalPages = Math.min(document.numPages, MAX_PDF_PAGES_TO_PARSE);
   const pages: string[] = [];
   let collectedChars = 0;
-  const maxCharsToCollect = 50000;
+  const maxCharsToCollect = 40000;
 
   for (let i = 1; i <= totalPages; i++) {
     if (collectedChars >= maxCharsToCollect) break;
