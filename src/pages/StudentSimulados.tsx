@@ -263,16 +263,26 @@ const StudentSimulados = () => {
     const pending = assigned.filter((a) => a.result.status !== "completed");
     const completed = assigned.filter((a) => a.result.status === "completed");
 
+    const pendingClinical = clinicalCases.filter((c: any) => c.status !== "completed");
+    const completedClinical = clinicalCases.filter((c: any) => c.status === "completed");
+
     return (
       <div className="space-y-6 animate-fade-in">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <GraduationCap className="h-6 w-6 text-primary" />
-            Proficiência — Simulados do Professor
+            Proficiência
           </h1>
-          <p className="text-muted-foreground text-sm">Realize os simulados atribuídos pelo seu professor e acompanhe seu desempenho.</p>
+          <p className="text-muted-foreground text-sm">Simulados e plantões atribuídos pelo seu professor.</p>
         </div>
 
+        <Tabs defaultValue="simulados">
+          <TabsList>
+            <TabsTrigger value="simulados">📝 Simulados ({assigned.length})</TabsTrigger>
+            <TabsTrigger value="plantao">🏥 Plantões ({clinicalCases.length})</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="simulados" className="space-y-4 mt-4">
         {loading ? (
           <div className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div>
         ) : assigned.length === 0 ? (
@@ -285,7 +295,6 @@ const StudentSimulados = () => {
           </Card>
         ) : (
           <>
-            {/* Pending */}
             {pending.length > 0 && (
               <div className="space-y-3">
                 <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -320,7 +329,6 @@ const StudentSimulados = () => {
               </div>
             )}
 
-            {/* Completed */}
             {completed.length > 0 && (
               <div className="space-y-3">
                 <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -359,6 +367,97 @@ const StudentSimulados = () => {
             )}
           </>
         )}
+          </TabsContent>
+
+          <TabsContent value="plantao" className="space-y-4 mt-4">
+            {clinicalLoading ? (
+              <div className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div>
+            ) : clinicalCases.length === 0 ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <Activity className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Nenhum plantão atribuído</h3>
+                  <p className="text-sm text-muted-foreground">Quando seu professor criar um caso de plantão para você, ele aparecerá aqui.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {pendingClinical.length > 0 && (
+                  <div className="space-y-3">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-amber-500" />
+                      Plantões Pendentes ({pendingClinical.length})
+                    </h2>
+                    {pendingClinical.map((item: any) => {
+                      const caseInfo = item.teacher_clinical_cases;
+                      return (
+                        <Card key={item.id} className="border-red-500/30 hover:border-red-500/60 transition-colors">
+                          <CardContent className="p-4 flex items-center justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <Activity className="h-4 w-4 text-red-500" />
+                                <h3 className="font-semibold">{caseInfo?.title || "Caso Clínico"}</h3>
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
+                                <Badge variant="outline" className="text-[10px]">{caseInfo?.specialty}</Badge>
+                                <Badge variant="secondary" className="text-[10px] capitalize">{caseInfo?.difficulty}</Badge>
+                                <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{caseInfo?.time_limit_minutes || 20} min</span>
+                              </div>
+                            </div>
+                            <Button
+                              onClick={() => navigate(`/dashboard/plantao?teacher_case_id=${item.case_id}`)}
+                              className="gap-2 shrink-0 bg-red-600 hover:bg-red-700"
+                            >
+                              <Play className="h-4 w-4" />
+                              {item.status === "in_progress" ? "Continuar" : "Iniciar Plantão"}
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {completedClinical.length > 0 && (
+                  <div className="space-y-3">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5 text-emerald-500" />
+                      Plantões Concluídos ({completedClinical.length})
+                    </h2>
+                    {completedClinical.map((item: any) => {
+                      const caseInfo = item.teacher_clinical_cases;
+                      return (
+                        <Card key={item.id}>
+                          <CardContent className="p-4 flex items-center justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <Activity className="h-4 w-4 text-primary" />
+                                <h3 className="font-semibold">{caseInfo?.title || "Caso Clínico"}</h3>
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                                <Badge variant="outline" className="text-[10px]">{caseInfo?.specialty}</Badge>
+                                <span>{item.finished_at ? new Date(item.finished_at).toLocaleDateString("pt-BR") : ""}</span>
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className={`text-2xl font-bold ${
+                                (item.final_score || 0) >= 70 ? "text-emerald-500" :
+                                (item.final_score || 0) >= 50 ? "text-amber-500" : "text-destructive"
+                              }`}>
+                                {item.grade || "F"}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">{item.final_score || 0}/100 pts</p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     );
   }
