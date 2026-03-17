@@ -110,13 +110,17 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   }, [availableUploads, selectedUploadIds, hasShownUploadWelcome, welcomeMessageWithUploads, messages]);
 
   // Build context from selected uploads
-  const buildUserContext = useCallback(() => {
-    if (selectedUploadIds.size === 0) return "";
+  const buildUserContext = useCallback((extraContext?: string) => {
     let ctx = "";
+    // Add extra context first (e.g. from a just-uploaded file)
+    if (extraContext) {
+      ctx += extraContext;
+    }
+    if (selectedUploadIds.size === 0) return ctx.trim();
     for (const upload of availableUploads) {
       if (!selectedUploadIds.has(upload.id)) continue;
-      const snippet = upload.extracted_text?.slice(0, 2000) || "";
-      if (ctx.length + snippet.length > 8000) break;
+      const snippet = upload.extracted_text?.slice(0, 3000) || "";
+      if (ctx.length + snippet.length > 15000) break;
       ctx += `\n\n📄 ${upload.filename} (${upload.category || "material"}):\n${snippet}`;
     }
     return ctx.trim();
@@ -219,6 +223,10 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
         // Fire auto-prompt as soon as extracted_text is available (don't wait for full processing)
         if (status.extracted_text && autoPromptAfterUpload && !autoPromptFiredRef.current) {
           autoPromptFiredRef.current = true;
+          
+          // Build direct context from the just-extracted text (don't rely on state)
+          const directContext = `\n\n📄 ${status.filename || file.name} (material):\n${status.extracted_text.slice(0, 15000)}`;
+          
           const newUpload: Upload = {
             id: uploadRow.id,
             filename: status.filename,
@@ -239,7 +247,8 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
           setTimeout(() => {
             setUploadProgress(0);
             setUploadStep("");
-            handleSend(prompt);
+            // Pass extracted text directly as context to avoid stale state
+            handleSend(prompt, directContext);
           }, 300);
         }
 
@@ -341,7 +350,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  const handleSend = async (overridePrompt?: string) => {
+  const handleSend = async (overridePrompt?: string, contextOverride?: string) => {
     const text = overridePrompt || input.trim();
     if (!text || isLoading || !user) return;
 
@@ -377,7 +386,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     }
 
     let assistantSoFar = "";
-    const contextToSend = buildUserContext();
+    const contextToSend = contextOverride ? buildUserContext(contextOverride) : buildUserContext();
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
