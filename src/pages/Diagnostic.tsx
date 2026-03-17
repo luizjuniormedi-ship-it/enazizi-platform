@@ -53,20 +53,34 @@ const Diagnostic = () => {
         const variation = scenarioVariations[area] || "";
         const res = await supabase.functions.invoke("question-generator", {
           body: {
-            messages: [{ role: "user", content: `Gere 5 questões de múltipla escolha de ${area} para simulado diagnóstico de residência médica. Nível intermediário.
+            stream: false,
+            messages: [{ role: "user", content: `Gere EXATAMENTE 5 questões de múltipla escolha de ${area} para simulado diagnóstico de residência médica. Nível intermediário.
 
 REGRAS DE DIVERSIDADE OBRIGATÓRIAS:
 - ${variation}
-- Cada questão DEVE ter um caso clínico ÚNICO com paciente diferente (idade, sexo, história e queixa principal diferentes)
-- PROIBIDO repetir o mesmo cenário ou estrutura narrativa entre questões
+- Cada questão DEVE ter um caso clínico ÚNICO com paciente diferente (idade, sexo, história e queixa principal COMPLETAMENTE diferentes)
+- PROIBIDO repetir o mesmo cenário, estrutura narrativa ou perfil de paciente entre questões
 - Varie o tipo de pergunta: diagnóstico, conduta, exame complementar, fisiopatologia
-- Formato: caso clínico curto + 5 alternativas (A-E)
-- Retorne JSON array: [{"statement":"...", "options":["A) ...","B) ...","C) ...","D) ...","E) ..."], "correct_index": 0, "topic":"${area}", "explanation":"..."}]
-- Retorne APENAS o JSON, sem texto adicional` }],
+
+FORMATO DE SAÍDA OBRIGATÓRIO:
+Retorne APENAS um array JSON válido, sem nenhum texto antes ou depois:
+[
+  {"statement": "Caso clínico...", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "topic": "${area}", "explanation": "..."},
+  ...
+]
+NÃO inclua mini-revisão, NÃO inclua markdown, NÃO inclua texto explicativo. APENAS o JSON array.` }],
           },
         });
         if (res.error) throw res.error;
-        const content = typeof res.data === "string" ? res.data : res.data?.choices?.[0]?.message?.content || "";
+        const raw = res.data;
+        let content = "";
+        if (typeof raw === "string") {
+          content = raw;
+        } else if (raw?.choices?.[0]?.message?.content) {
+          content = raw.choices[0].message.content;
+        } else {
+          content = JSON.stringify(raw);
+        }
         const parsed = parseQuestions(content, area);
         allQuestions.push(...parsed.slice(0, 5));
       }
@@ -75,10 +89,19 @@ REGRAS DE DIVERSIDADE OBRIGATÓRIAS:
         // Fallback: generate all at once
         const res = await supabase.functions.invoke("question-generator", {
           body: {
-            messages: [{ role: "user", content: `Gere 25 questões de múltipla escolha para simulado diagnóstico de residência médica, 5 de cada área: ${AREAS.join(", ")}. Formato JSON array: [{"statement":"...", "options":["a","b","c","d","e"], "correct_index": 0, "topic":"Área", "explanation":"..."}]` }],
+            stream: false,
+            messages: [{ role: "user", content: `Gere 25 questões de múltipla escolha para simulado diagnóstico de residência médica, 5 de cada área: ${AREAS.join(", ")}. Cada questão com caso clínico ÚNICO e paciente diferente. Retorne APENAS JSON array: [{"statement":"...", "options":["A) ...","B) ...","C) ...","D) ...","E) ..."], "correct_index": 0, "topic":"Área", "explanation":"..."}]. NÃO inclua texto adicional.` }],
           },
         });
-        // Try to use whatever we got
+        if (!res.error) {
+          const raw2 = res.data;
+          let content2 = "";
+          if (typeof raw2 === "string") content2 = raw2;
+          else if (raw2?.choices?.[0]?.message?.content) content2 = raw2.choices[0].message.content;
+          else content2 = JSON.stringify(raw2);
+          const parsed2 = parseQuestions(content2, "Geral");
+          allQuestions.push(...parsed2);
+        }
       }
 
       setQuestions(allQuestions.length > 0 ? allQuestions : generateFallbackQuestions());
