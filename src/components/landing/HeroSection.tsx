@@ -1,12 +1,22 @@
+import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import heroBg from "@/assets/hero-bg.jpg";
 
 const HeroSection = () => {
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const toggleMute = () => {
+    setIsMuted((prev) => !prev);
+    if (videoRef.current) videoRef.current.muted = !videoRef.current.muted;
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
       <video
+        ref={videoRef}
         autoPlay
         loop
         muted
@@ -14,6 +24,13 @@ const HeroSection = () => {
         className="absolute inset-0 w-full h-full object-contain object-center opacity-40"
         src="/videos/enazizi_2.mp4"
       />
+      <button
+        onClick={toggleMute}
+        aria-label={isMuted ? "Ativar som" : "Desativar som"}
+        className="absolute bottom-6 right-6 z-20 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full p-3 text-white transition-colors"
+      >
+        {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+      </button>
       <div className="absolute inset-0" style={{ background: "var(--gradient-hero)" }} />
 
       <div className="container relative z-10 text-center py-20">
