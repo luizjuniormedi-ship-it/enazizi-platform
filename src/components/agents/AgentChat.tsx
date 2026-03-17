@@ -381,7 +381,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     }
 
     let assistantSoFar = "";
-    const contextToSend = buildUserContext();
+    const contextToSend = contextOverride ? buildUserContext(contextOverride) : buildUserContext();
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
