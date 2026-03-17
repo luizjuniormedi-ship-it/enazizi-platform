@@ -1051,8 +1051,23 @@ const ClinicalSimulation = () => {
               )}
             </CardContent>
           </Card>
+
+            {/* Side panels */}
+            <div className="space-y-3 hidden lg:block">
+              <VitalsChart snapshots={vitalsSnapshots} />
+              <ExamsPanel exams={examResults} />
+            </div>
+          </div>
         </div>
       )}
+
+      {/* Prescription Dialog */}
+      <PrescriptionDialog
+        open={prescriptionDialogOpen}
+        onOpenChange={setPrescriptionDialogOpen}
+        onSubmit={(text) => sendMessage(text)}
+        disabled={loading}
+      />
 
       {/* Specialist Dialog */}
       <Dialog open={specialistDialogOpen} onOpenChange={setSpecialistDialogOpen}>
