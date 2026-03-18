@@ -2,6 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
+import ProtectedRoute from "./ProtectedRoute";
 
 const ProfessorRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading: authLoading } = useAuth();
@@ -19,7 +20,7 @@ const ProfessorRoute = ({ children }: { children: React.ReactNode }) => {
   if (!user) return <Navigate to="/login" replace />;
   if (!isProfessor && !isAdmin) return <Navigate to="/dashboard" replace />;
 
-  return <>{children}</>;
+  return <ProtectedRoute>{children}</ProtectedRoute>;
 };
 
 export default ProfessorRoute;
