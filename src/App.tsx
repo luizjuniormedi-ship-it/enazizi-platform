@@ -101,6 +101,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        </MedicalTermProvider>
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>

@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.anamnesis-trainer]
 verify_jwt = false
+
+[functions.medical-term-lookup]
+verify_jwt = false
