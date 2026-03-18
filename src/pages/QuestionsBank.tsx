@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import MedicalTermHighlighter from "@/components/medical/MedicalTermHighlighter";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { Database, Play, Trash2, ChevronDown, ChevronUp, Search, BarChart3, Target, TrendingUp, GraduationCap, Download, HelpCircle, Zap } from "lucide-react";
@@ -241,7 +242,7 @@ const QuestionsBank = () => {
               {practiceQuestion.topic}
             </span>
           )}
-          <p className="text-base font-medium mb-6">{practiceQuestion.statement}</p>
+          <p className="text-base font-medium mb-6"><MedicalTermHighlighter text={practiceQuestion.statement} /></p>
 
           <div className="space-y-3">
             {practiceQuestion.options.map((opt, i) => (
@@ -269,7 +270,7 @@ const QuestionsBank = () => {
           {answered && practiceQuestion.explanation && (
             <div className="mt-4 p-4 rounded-lg bg-muted text-sm">
               <p className="font-medium mb-1">Explicação:</p>
-              <p className="text-muted-foreground">{practiceQuestion.explanation}</p>
+              <p className="text-muted-foreground"><MedicalTermHighlighter text={practiceQuestion.explanation} /></p>
             </div>
           )}
 
@@ -486,7 +487,7 @@ const QuestionsBank = () => {
                       {new Date(q.created_at).toLocaleDateString("pt-BR")}
                     </span>
                   </div>
-                  <p className="text-sm font-medium line-clamp-2">{q.statement}</p>
+                  <p className="text-sm font-medium line-clamp-2"><MedicalTermHighlighter text={q.statement} /></p>
                   <div className="flex gap-2 mt-2 flex-wrap">
                     {q.options.map((opt, i) => (
                       <span
