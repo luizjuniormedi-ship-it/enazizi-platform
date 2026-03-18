@@ -714,7 +714,27 @@ const ClinicalSimulation = () => {
               </div>
             </div>
 
-            <Button onClick={startSimulation} disabled={loading} className="w-full gap-2 bg-red-600 hover:bg-red-700 text-white">
+            {isPediatrics && (
+              <div className="animate-fade-in space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  👶 Faixa Etária Pediátrica
+                </label>
+                <select
+                  value={pediatricAge}
+                  onChange={(e) => setPediatricAge(e.target.value)}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                >
+                  {PEDIATRIC_AGE_RANGES.map(a => (
+                    <option key={a.key} value={a.key}>{a.label}</option>
+                  ))}
+                </select>
+                {pediatricAge !== "aleatorio" && (
+                  <p className="text-xs text-muted-foreground">
+                    📊 Valores de referência: {PEDIATRIC_AGE_RANGES.find(a => a.key === pediatricAge)?.vitalRef}
+                  </p>
+                )}
+              </div>
+            )}
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
               {loading ? "Preparando plantão..." : "🚨 Iniciar Plantão"}
             </Button>

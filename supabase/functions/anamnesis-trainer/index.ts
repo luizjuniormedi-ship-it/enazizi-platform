@@ -168,12 +168,40 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { action, specialty, difficulty, messages, conversationHistory, hypothesis, differentials, proposed_conduct } = await req.json();
+    const { action, specialty, difficulty, messages, conversationHistory, hypothesis, differentials, proposed_conduct, pediatric_age_range } = await req.json();
 
     if (action === "start") {
+      const isPediatrics = (specialty || "").toLowerCase().includes("pediatria");
+      const ageRangeMap: Record<string, string> = {
+        neonato: "Neonato (0-28 dias)",
+        lactente: "Lactente (1-24 meses)",
+        pre_escolar: "Pré-escolar (2-6 anos)",
+        escolar: "Escolar (7-12 anos)",
+        adolescente: "Adolescente (13-17 anos)",
+      };
+      const ageInstruction = isPediatrics && pediatric_age_range && ageRangeMap[pediatric_age_range]
+        ? `\nFaixa etária OBRIGATÓRIA: ${ageRangeMap[pediatric_age_range]}. O paciente DEVE estar nesta faixa etária.
+\nCATEGORIAS EXTRAS para avaliar (além das 10 padrão):
+11. gestational_history - História Gestacional (pré-natal, intercorrências na gravidez)
+12. birth_history - História Neonatal (tipo de parto, idade gestacional, peso ao nascer, Apgar, intercorrências)
+13. development - DNPM (marcos do desenvolvimento neuropsicomotor para a idade)
+14. vaccination - Vacinação (cartão de vacinas atualizado conforme PNI)
+15. feeding - Alimentação (aleitamento materno, introdução alimentar, dieta atual)
+\nO responsável (mãe, pai ou avó) está acompanhando a criança. Use linguagem de cuidador preocupado.`
+        : isPediatrics
+        ? `\nO paciente é PEDIÁTRICO (qualquer faixa etária de 0 a 17 anos).
+\nCATEGORIAS EXTRAS para avaliar:
+11. gestational_history - História Gestacional
+12. birth_history - História Neonatal
+13. development - DNPM
+14. vaccination - Vacinação
+15. feeding - Alimentação
+\nO responsável acompanha a criança.`
+        : "";
+
       const prompt = `action="start"
 Especialidade: ${specialty || "Clínica Médica"}
-Dificuldade: ${difficulty || "intermediário"}
+Dificuldade: ${difficulty || "intermediário"}${ageInstruction}
 
 Gere um paciente realista para treino de anamnese. Queixa vaga e coloquial. Dados ocultos completos.
 Lembre-se: NUNCA repita pacientes anteriores. Varie todos os parâmetros demográficos e clínicos.`;
