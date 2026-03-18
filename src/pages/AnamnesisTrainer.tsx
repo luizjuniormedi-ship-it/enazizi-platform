@@ -102,6 +102,12 @@ const AnamnesisTrainer = () => {
   const [phase, setPhase] = useState<Phase>("lobby");
   const [specialty, setSpecialty] = useState("Clínica Médica");
   const [difficulty, setDifficulty] = useState("intermediário");
+  const [pediatricAge, setPediatricAge] = useState("aleatorio");
+
+  const isPediatrics = specialty === "Pediatria";
+  const CATEGORIES = isPediatrics
+    ? [...BASE_CATEGORIES.filter(c => c.key !== "gynecological" && c.key !== "social_history"), ...PEDIATRIC_EXTRA_CATEGORIES]
+    : BASE_CATEGORIES;
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
