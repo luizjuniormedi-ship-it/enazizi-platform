@@ -17,6 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTheme } from "@/hooks/useTheme";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { cn } from "@/lib/utils";
+import ActiveVideoRoomPopup from "@/components/dashboard/ActiveVideoRoomPopup";
 
 interface MobileNavGroup {
   title: string;
