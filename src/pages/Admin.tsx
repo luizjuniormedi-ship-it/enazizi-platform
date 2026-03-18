@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ALL_MODULES } from "@/hooks/useModuleAccess";
 import WhatsAppPanel from "@/components/admin/WhatsAppPanel";
+import TelegramConfigPanel from "@/components/admin/TelegramConfigPanel";
 import AdminStatsCards from "@/components/admin/AdminStatsCards";
 import AdminOnlineUsers from "@/components/admin/AdminOnlineUsers";
 import AdminPlanDistribution from "@/components/admin/AdminPlanDistribution";
