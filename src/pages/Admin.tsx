@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare } from "lucide-react";
+import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
