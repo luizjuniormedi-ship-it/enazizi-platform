@@ -263,7 +263,7 @@ const Dashboard = () => {
           <PerformanceReport />
         </div>
 
-        <ActiveVideoRoomPopup />
+        
         <ActiveVideoRoomBanner />
 
         <DashboardWarnings
