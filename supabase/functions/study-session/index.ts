@@ -35,6 +35,13 @@ Tema: "${topic || "solicitado pelo aluno"}"
 
 ENSINE seguindo RIGOROSAMENTE o MARCADOR DE BLOCO.
 NUNCA faça perguntas nesta fase até o final do bloco (active recall).
+
+⛔ REGRA ANTI-REPETIÇÃO (PRIORIDADE MÁXIMA):
+- NUNCA repita o mesmo conceito/exemplo já apresentado em blocos anteriores da sessão
+- Cada bloco deve abordar um SUBTÓPICO DIFERENTE (diagnóstico, tratamento, fisiopatologia, epidemiologia, complicações)
+- ANTES de ensinar, liste mentalmente 10+ subtópicos do tema e distribua entre os blocos
+- Varie exemplos clínicos: NUNCA repita perfil de paciente (idade/sexo/cenário) em exemplos diferentes
+
 Ao final: "Quando estiver pronto, avance para o Active Recall!"`;
 
     case "active-recall":
@@ -45,7 +52,12 @@ Tema: "${topic}"
 Faça 5-7 perguntas CURTAS de recuperação ativa da memória.
 Apresente TODAS numeradas. O aluno responderá e você corrigirá.
 Foque em: mecanismos, diagnósticos, condutas, pontos de prova.
-Se o aluno errar: resposta correta + raciocínio + revisão + ponto de prova.`;
+Se o aluno errar: resposta correta + raciocínio + revisão + ponto de prova.
+
+⛔ REGRA ANTI-REPETIÇÃO (PRIORIDADE MÁXIMA):
+- Cada pergunta DEVE abordar um conceito DIFERENTE (nunca 2 perguntas sobre o mesmo mecanismo/conduta)
+- Distribua entre: fisiopatologia, diagnóstico, tratamento, complicações, epidemiologia, semiologia
+- VERIFICAÇÃO: antes de finalizar, confirme que nenhuma pergunta testa o mesmo conhecimento que outra`;
 
     case "questions":
       return `${base}
@@ -99,6 +111,12 @@ Apresente caso clínico COMPLETO e de ALTO NÍVEL com:
 
 O caso deve ter complexidade suficiente para exigir raciocínio clínico em etapas.
 Inclua pelo menos uma "armadilha" diagnóstica (apresentação atípica ou comorbidade que confunde).
+
+⛔ REGRA ANTI-REPETIÇÃO (PRIORIDADE MÁXIMA):
+- NUNCA repita perfil de paciente já usado em casos anteriores da sessão
+- Varie: nome, idade, sexo, profissão, cenário clínico, comorbidades
+- Aborde um SUBTÓPICO ou APRESENTAÇÃO CLÍNICA diferente dos casos anteriores
+- VERIFICAÇÃO: antes de finalizar, confirme que este caso NÃO repete conceitos já explorados
 
 Pergunte:
 1. Qual o diagnóstico mais provável? Justifique com base nos achados.

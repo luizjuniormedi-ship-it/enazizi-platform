@@ -138,6 +138,16 @@ CADA QUESTÃO DEVE OBRIGATORIAMENTE:
    - Incluir pacientes: idosos frágeis, gestantes, crianças, imunossuprimidos, trabalhadores rurais
    - PROIBIDO: dois pacientes com mesmo perfil demográfico no mesmo bloco
 
+6. **⛔ REGRA ANTI-REPETIÇÃO DE CONCEITO (PRIORIDADE MÁXIMA)**:
+   - NUNCA repita o mesmo conceito clínico/doença com o MESMO ENFOQUE em itens diferentes
+   - Cada questão/flashcard/caso deve abordar um SUBTÓPICO DIFERENTE (diagnóstico, tratamento, fisiopatologia, epidemiologia, complicações)
+   - ANTES de gerar, liste mentalmente 10+ subtópicos e distribua entre os itens
+   - VERIFICAÇÃO PRÉ-ENVIO OBRIGATÓRIA (4 checagens):
+     a) Alguma questão tem enunciado SIMILAR a outra? → Reescreva
+     b) Algum conceito aparece com o MESMO enfoque em 2+ itens? → Substitua
+     c) Algum perfil de paciente se repete? → Diversifique
+     d) Os itens cobrem pelo menos 5 subtópicos DIFERENTES? → Se não, redistribua
+
 === PADRÃO DOS FLASHCARDS ===
 - Pergunta direta sobre conceito-chave para residência
 - Resposta concisa mas completa, citando conduta, critérios diagnósticos e fonte
