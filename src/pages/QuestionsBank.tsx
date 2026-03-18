@@ -487,7 +487,7 @@ const QuestionsBank = () => {
                       {new Date(q.created_at).toLocaleDateString("pt-BR")}
                     </span>
                   </div>
-                  <p className="text-sm font-medium line-clamp-2">{q.statement}</p>
+                  <p className="text-sm font-medium line-clamp-2"><MedicalTermHighlighter text={q.statement} /></p>
                   <div className="flex gap-2 mt-2 flex-wrap">
                     {q.options.map((opt, i) => (
                       <span
