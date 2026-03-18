@@ -7,6 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const INVALID_CONTENT_REGEX = /(declara[cç][aã]o financeira|declara[cç][oõ]es de interesse|pagamento de qualquer esp[eé]cie|empresa farmac[eê]utica|ind[uú]stria farmac[eê]utica|honor[aá]rio|palestrante remunerado|conflito de interesse|relat[oó]rio de interesse)/i;
+
 const SPECIALTIES = [
   "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia",
   "Gastroenterologia", "Pediatria", "Ginecologia e Obstetrícia",
