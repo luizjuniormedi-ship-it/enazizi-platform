@@ -1,4 +1,5 @@
 import { useState } from "react";
+import MedicalTermHighlighter from "@/components/medical/MedicalTermHighlighter";
 import { CheckCircle2, XCircle, BookOpen, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -74,7 +75,7 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
       {/* Question number + statement */}
       <p className="text-sm font-medium leading-relaxed">
         <span className="text-primary font-bold mr-1.5">Questão {index + 1}.</span>
-        {question.statement}
+        <MedicalTermHighlighter text={question.statement} />
       </p>
 
       {/* Options */}
@@ -134,7 +135,7 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
               <span className="font-medium text-foreground flex items-center gap-1 mb-1">
                 <BookOpen className="h-3.5 w-3.5" /> Explicação:
               </span>
-              {question.explanation}
+              <MedicalTermHighlighter text={question.explanation} />
             </div>
           )}
           {question.reference && (
