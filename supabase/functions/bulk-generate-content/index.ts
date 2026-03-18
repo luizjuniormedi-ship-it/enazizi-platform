@@ -16,6 +16,7 @@ const SPECIALTIES = [
   "Infectologia", "Hematologia", "Reumatologia", "Dermatologia",
   "Ortopedia", "Urologia", "Psiquiatria", "Oftalmologia",
   "Otorrinolaringologia", "Emergência", "Semiologia", "Anatomia", "Farmacologia",
+  "Oncologia",
 ];
 
 const TOPICS_BY_SPECIALTY: Record<string, string[]> = {
@@ -42,6 +43,7 @@ const TOPICS_BY_SPECIALTY: Record<string, string[]> = {
   "Semiologia": ["Anamnese", "Exame Físico Geral", "Semiologia Cardiovascular", "Semiologia Pulmonar", "Semiologia Abdominal", "Semiologia Neurológica", "Sinais Vitais", "Propedêutica Armada", "Semiologia Osteoarticular", "Semiologia Vascular", "Semiologia do Pescoço", "Sinais Semiológicos Clássicos"],
   "Anatomia": ["Anatomia do Tórax", "Anatomia Abdominal", "Anatomia do Pescoço", "Neuroanatomia", "Anatomia do Membro Superior", "Anatomia do Membro Inferior", "Anatomia Pélvica", "Anatomia Vascular", "Anatomia Cardíaca", "Anatomia do Sistema Nervoso Periférico", "Anatomia Topográfica Cirúrgica"],
   "Farmacologia": ["Farmacocinética (ADME)", "Farmacodinâmica e Receptores", "Antibioticoterapia e Mecanismos de Resistência", "Anti-hipertensivos e Vasodilatadores", "Antiarrítmicos", "Anticoagulantes e Antiplaquetários", "AINEs e Corticoides", "Analgésicos e Opioides", "Psicofarmacologia", "Quimioterápicos e Imunossupressores", "Farmacologia do SNA", "Interações Medicamentosas", "Anti-diabéticos Orais e Insulinoterapia", "Broncodilatadores e Anti-asmáticos"],
+  "Oncologia": ["Câncer de Mama", "Câncer de Pulmão", "Câncer Colorretal", "Câncer de Próstata", "Câncer Gástrico", "Câncer de Colo Uterino", "Câncer de Pâncreas", "Melanoma", "Câncer de Tireoide", "Estadiamento TNM", "Síndromes Paraneoplásicas", "Marcadores Tumorais", "Quimioterapia e Toxicidade", "Imunoterapia e Terapia-Alvo", "Radioterapia", "Cuidados Paliativos", "Emergências Oncológicas", "Rastreamento Oncológico", "Tumores do SNC", "Câncer de Bexiga e Rim"],
 };
 
 async function generateBatch(specialty: string, topics: string[], userId: string, supabaseAdmin: any): Promise<{ questions: number; flashcards: number }> {

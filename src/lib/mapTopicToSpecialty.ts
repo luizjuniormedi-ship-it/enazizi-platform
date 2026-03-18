@@ -25,6 +25,7 @@ export function mapTopicToSpecialty(topic: string): string | null {
     [["emergência", "urgência", "pcr", "choque", "politrauma", "reanimação"], "Medicina de Emergência"],
     [["uti", "intensiva", "ventilação mecânica", "sedação", "choque séptico"], "Terapia Intensiva"],
     [["farmacolog", "farmacocinética", "farmacodinâmica", "posologia", "mecanismo de ação", "receptor", "agonista", "antagonista", "inibidor", "interação medicamentosa", "efeito adverso", "meia-vida", "dose-resposta"], "Farmacologia"],
+    [["oncolog", "câncer", "tumor", "neoplasia", "metástase", "quimioterapia", "radioterapia", "imunoterapia", "estadiamento", "tnm", "carcinoma", "sarcoma", "rastreamento oncológico", "cuidados paliativos", "marcador tumoral"], "Oncologia"],
   ];
   for (const [keywords, specialty] of map) {
     if (keywords.some((k) => t.includes(k))) return specialty;

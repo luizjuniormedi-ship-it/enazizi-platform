@@ -179,6 +179,28 @@ const SPECIALTIES_WITH_TOPICS: Record<string, string[]> = {
     "Anti-diabéticos Orais e Insulinoterapia",
     "Broncodilatadores e Anti-asmáticos",
   ],
+  "Oncologia": [
+    "Câncer de Mama (Rastreamento, Diagnóstico e Tratamento)",
+    "Câncer de Pulmão (CPNPC e CPPC)",
+    "Câncer Colorretal (Rastreamento e Estadiamento)",
+    "Câncer de Próstata",
+    "Câncer Gástrico e Esofágico",
+    "Câncer de Colo Uterino (HPV e Prevenção)",
+    "Câncer de Pâncreas e Via Biliar",
+    "Câncer de Tireoide",
+    "Câncer de Bexiga e Rim",
+    "Melanoma e Câncer de Pele",
+    "Tumores do Sistema Nervoso Central",
+    "Síndromes Paraneoplásicas",
+    "Estadiamento TNM e Classificação",
+    "Marcadores Tumorais (CEA, CA-125, PSA, AFP)",
+    "Quimioterapia (Princípios e Toxicidade)",
+    "Imunoterapia e Terapia-Alvo",
+    "Radioterapia (Indicações e Efeitos)",
+    "Cuidados Paliativos e Controle de Dor",
+    "Emergências Oncológicas (Neutropenia Febril, Compressão Medular, Lise Tumoral)",
+    "Rastreamento Oncológico (Diretrizes MS e INCA)",
+  ],
 };
 
 const SPECIALTIES = Object.keys(SPECIALTIES_WITH_TOPICS);

@@ -15,7 +15,8 @@ const quickActions = [
   { label: "🦠 Infectologia (10)", prompt: "Gere 10 flashcards clínicos de Infectologia com casos clínicos variados, cobrindo HIV, sepse, tuberculose e hepatites virais.", icon: "🦠" },
   { label: "💊 Endocrinologia (10)", prompt: "Gere 10 flashcards clínicos de Endocrinologia com casos clínicos variados, cobrindo DM, hipotireoidismo, Cushing e CAD.", icon: "💊" },
   { label: "🛡️ Preventiva (10)", prompt: "Gere 10 flashcards clínicos de Medicina Preventiva com casos variados, cobrindo rastreamento, vacinação, epidemiologia e SUS.", icon: "🛡️" },
-  { label: "⚡ 20 Mistas", prompt: "Gere 20 flashcards clínicos mistos cobrindo Clínica Médica, Cirurgia, Pediatria, GO e Preventiva. Varie os subtemas.", icon: "⚡" },
+  { label: "🎗️ Oncologia (10)", prompt: "Gere 10 flashcards clínicos de Oncologia com casos clínicos variados, cobrindo câncer de mama, pulmão, colorretal, estadiamento TNM, síndromes paraneoplásicas e emergências oncológicas.", icon: "🎗️" },
+  { label: "⚡ 20 Mistas", prompt: "Gere 20 flashcards clínicos mistos cobrindo Clínica Médica, Cirurgia, Pediatria, GO, Preventiva e Oncologia. Varie os subtemas.", icon: "⚡" },
 ];
 
 function parseFlashcardsFromText(content: string): Array<{ question: string; answer: string; topic: string }> {
