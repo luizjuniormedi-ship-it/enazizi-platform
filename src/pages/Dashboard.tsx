@@ -20,6 +20,7 @@ import PerformanceReport from "@/components/dashboard/PerformanceReport";
 import MiniLeaderboard from "@/components/dashboard/MiniLeaderboard";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import DailyPlanWidget from "@/components/dashboard/DailyPlanWidget";
+import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner";
 
 interface PlanJson {
   weeklySchedule?: { day: string; tasks: { time: string; subject: string; duration: string; type?: string }[] }[];
@@ -260,6 +261,8 @@ const Dashboard = () => {
           </div>
           <PerformanceReport />
         </div>
+
+        <ActiveVideoRoomBanner />
 
         <DashboardWarnings
           todayCompleted={stats.todayCompleted}

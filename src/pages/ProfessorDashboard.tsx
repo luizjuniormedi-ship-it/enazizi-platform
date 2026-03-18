@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { GraduationCap, Plus, Users, FileText, BarChart3, Loader2, Clock, CheckCircle, Send, Sparkles, Database, ChevronDown, ChevronUp, Eye, Trash2, PenLine, CheckSquare, Square } from "lucide-react";
+import { GraduationCap, Plus, Users, FileText, BarChart3, Loader2, Clock, CheckCircle, Send, Sparkles, Database, ChevronDown, ChevronUp, Eye, Trash2, PenLine, CheckSquare, Square, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import ClassAnalytics from "@/components/professor/ClassAnalytics";
 import ProfessorPlantao from "@/components/professor/ProfessorPlantao";
 import StudentTracker from "@/components/professor/StudentTracker";
+import VideoRoom from "@/components/professor/VideoRoom";
 
 const SPECIALTIES = [
   "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia", "Nefrologia",
@@ -262,6 +263,7 @@ const ProfessorDashboard = () => {
         <TabsList>
           <TabsTrigger value="simulados">📝 Simulados</TabsTrigger>
           <TabsTrigger value="plantao">🏥 Casos Plantão</TabsTrigger>
+          <TabsTrigger value="video" className="gap-1"><Video className="h-3.5 w-3.5" /> Sala de Aula</TabsTrigger>
           <TabsTrigger value="alunos">👤 Aluno Individual</TabsTrigger>
           <TabsTrigger value="analytics">📊 Análise da Turma</TabsTrigger>
         </TabsList>
@@ -771,6 +773,10 @@ const ProfessorDashboard = () => {
 
         <TabsContent value="plantao" className="mt-4">
           <ProfessorPlantao />
+        </TabsContent>
+
+        <TabsContent value="video" className="mt-4">
+          <VideoRoom />
         </TabsContent>
 
         <TabsContent value="alunos" className="mt-4">
