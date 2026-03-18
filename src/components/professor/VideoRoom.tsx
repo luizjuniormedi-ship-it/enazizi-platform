@@ -131,7 +131,7 @@ const VideoRoom = () => {
       const resp = await fetch(TELEGRAM_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ action, chat_id: chatId, title: roomTitle, group_link: telegramConfig?.telegram_group_link }),
+        body: JSON.stringify({ action, chat_id: chatId, title: roomTitle, group_link: telegramConfig?.telegram_group_link, meet_link: meetLink.trim() || undefined }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || "Erro Telegram");

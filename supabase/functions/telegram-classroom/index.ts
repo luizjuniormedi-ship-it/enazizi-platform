@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
 
     if (!role) throw new Error("Only professors can use this function");
 
-    const { action, chat_id, title, group_link } = await req.json();
+    const { action, chat_id, title, group_link, meet_link } = await req.json();
 
     if (!chat_id || !title) {
       throw new Error("chat_id and title are required");
@@ -52,8 +52,11 @@ Deno.serve(async (req) => {
 
     if (action === "start") {
       messageText = `📹 <b>Aula ao vivo: ${title}</b>\n\nO professor iniciou uma aula ao vivo!`;
+      if (meet_link) {
+        messageText += `\n\n🎥 <a href="${meet_link}">Entrar no Google Meet</a>`;
+      }
       if (group_link) {
-        messageText += `\n\n👉 <a href="${group_link}">Entrar no grupo</a>`;
+        messageText += `\n\n👉 <a href="${group_link}">Entrar no grupo Telegram</a>`;
       }
     } else if (action === "end") {
       messageText = `✅ <b>Aula encerrada: ${title}</b>\n\nA aula foi finalizada pelo professor.`;
