@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Video } from "lucide-react";
+import { Video, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ const ActiveVideoRoomPopup = () => {
   const [room, setRoom] = useState<any>(null);
   const [meetLink, setMeetLink] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [pulse, setPulse] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -60,6 +61,13 @@ const ActiveVideoRoomPopup = () => {
     return () => clearInterval(interval);
   }, [user]);
 
+  // Pulse animation toggle
+  useEffect(() => {
+    if (!open) return;
+    const interval = setInterval(() => setPulse((p) => !p), 1500);
+    return () => clearInterval(interval);
+  }, [open]);
+
   const handleDismiss = () => {
     if (room) sessionStorage.setItem(`popup_dismissed_${room.id}`, "1");
     setOpen(false);
@@ -72,26 +80,54 @@ const ActiveVideoRoomPopup = () => {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleDismiss(); }}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <div className="mx-auto mb-2 h-14 w-14 rounded-full bg-destructive/10 flex items-center justify-center">
-            <Video className="h-7 w-7 text-destructive animate-pulse" />
-          </div>
-          <DialogTitle className="text-center">📹 Aula ao Vivo!</DialogTitle>
-          <DialogDescription className="text-center">
-            O professor iniciou a aula <strong className="text-foreground">{room?.title}</strong>.
-            Clique abaixo para entrar no Google Meet.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
-          <Button variant="outline" onClick={handleDismiss} className="w-full sm:w-auto">
-            Depois
-          </Button>
+      <DialogContent className="sm:max-w-lg border-2 border-destructive/50 shadow-[0_0_40px_rgba(239,68,68,0.3)] overflow-hidden p-0">
+        {/* Animated top bar */}
+        <div className="h-2 w-full bg-gradient-to-r from-destructive via-warning to-destructive animate-pulse" />
+
+        <div className="p-6 pb-2">
+          <DialogHeader className="items-center gap-3">
+            <div
+              className={`mx-auto h-20 w-20 rounded-full flex items-center justify-center transition-all duration-500 ${
+                pulse
+                  ? "bg-destructive/20 scale-110 shadow-[0_0_30px_rgba(239,68,68,0.4)]"
+                  : "bg-destructive/10 scale-100 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
+              }`}
+            >
+              <Video className="h-10 w-10 text-destructive animate-pulse" />
+            </div>
+            <DialogTitle className="text-center text-2xl font-bold">
+              🔴 AULA AO VIVO!
+            </DialogTitle>
+            <DialogDescription className="text-center text-base leading-relaxed">
+              O professor iniciou a aula{" "}
+              <strong className="text-foreground text-lg">{room?.title}</strong>
+              <br />
+              <span className="text-destructive font-semibold mt-1 inline-block animate-pulse">
+                A aula está acontecendo AGORA!
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+
+        <DialogFooter className="flex-col gap-3 p-6 pt-2">
           {meetLink && (
-            <Button variant="destructive" onClick={handleJoin} className="w-full sm:w-auto gap-2">
-              <Video className="h-4 w-4" /> Entrar na Aula
+            <Button
+              variant="destructive"
+              onClick={handleJoin}
+              className="w-full h-14 text-lg font-bold gap-3 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Video className="h-6 w-6" />
+              Entrar na Aula Agora
+              <ExternalLink className="h-5 w-5" />
             </Button>
           )}
+          <Button
+            variant="ghost"
+            onClick={handleDismiss}
+            className="w-full text-muted-foreground text-sm"
+          >
+            Lembrar depois
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
