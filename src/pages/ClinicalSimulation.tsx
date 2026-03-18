@@ -31,6 +31,15 @@ const SPECIALTIES = [
   "Semiologia", "Anatomia", "Farmacologia",
 ];
 
+const PEDIATRIC_AGE_RANGES = [
+  { key: "neonato", label: "Neonato (0-28 dias)", vitalRef: "FC 120-160, FR 40-60, PA 60-80/30-45, Temp 36.5-37.5, SpO2 ≥95%" },
+  { key: "lactente", label: "Lactente (1-24 meses)", vitalRef: "FC 100-150, FR 25-40, PA 80-100/50-65, Temp 36.5-37.5, SpO2 ≥95%" },
+  { key: "pre_escolar", label: "Pré-escolar (2-6 anos)", vitalRef: "FC 80-120, FR 20-30, PA 85-110/50-70, Temp 36.5-37.5, SpO2 ≥95%" },
+  { key: "escolar", label: "Escolar (7-12 anos)", vitalRef: "FC 70-110, FR 18-25, PA 90-120/55-75, Temp 36.5-37.5, SpO2 ≥95%" },
+  { key: "adolescente", label: "Adolescente (13-17 anos)", vitalRef: "FC 60-100, FR 12-20, PA 100-130/60-80, Temp 36.5-37.5, SpO2 ≥95%" },
+  { key: "aleatorio", label: "Aleatório", vitalRef: "" },
+];
+
 const QUICK_ACTIONS = [
   { label: "Anamnese", icon: MessageCircle, prompt: "Quais são seus sintomas? Quando começou?" },
   { label: "Exame Físico", icon: Stethoscope, prompt: "Gostaria de realizar exame físico do paciente." },
