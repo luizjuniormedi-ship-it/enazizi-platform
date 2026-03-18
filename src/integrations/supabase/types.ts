@@ -1745,6 +1745,42 @@ export type Database = {
         }
         Relationships: []
       }
+      video_rooms: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          faculdade_filter: string | null
+          id: string
+          periodo_filter: number | null
+          professor_id: string
+          room_code: string
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          faculdade_filter?: string | null
+          id?: string
+          periodo_filter?: number | null
+          professor_id: string
+          room_code: string
+          status?: string
+          title?: string
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          faculdade_filter?: string | null
+          id?: string
+          periodo_filter?: number | null
+          professor_id?: string
+          room_code?: string
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
       whatsapp_message_log: {
         Row: {
           admin_user_id: string
