@@ -18,17 +18,23 @@ const OPTION_CLEAN_RE = /^\*{0,2}[a-eA-E][).]\*{0,2}\s*/i;
 export function parseQuestionsFromText(text: string): ParsedQuestion[] {
   const questions: ParsedQuestion[] = [];
 
-  // Try splitting by numbered questions first: "Questão 01", "Questão 1", etc.
-  let parts = text.split(/(?=\*{0,2}Questão\s+\d+\s*:?\s*\*{0,2})/gi).filter((b) => b.trim());
+  // Try splitting by --- separators first
+  let parts: string[];
+  if (text.includes("---")) {
+    parts = text.split(/---+/).filter((b) => b.trim());
+  } else {
+    // Try splitting by numbered questions: "Questão 01", "Questão 1", etc.
+    parts = text.split(/(?=\*{0,2}Questão\s+\d+\s*:?\s*\*{0,2})/gi).filter((b) => b.trim());
 
-  // If that yields only 1 block, try splitting by Tópico markers
-  if (parts.length <= 1) {
-    parts = text.split(/(?=\*{0,2}Tópico\s*:)/gi).filter((b) => b.trim());
-  }
+    // If that yields only 1 block, try splitting by Tópico markers
+    if (parts.length <= 1) {
+      parts = text.split(/(?=\*{0,2}Tópico\s*:)/gi).filter((b) => b.trim());
+    }
 
-  // If still 1 block, try splitting by standalone "Questão:" (without number)
-  if (parts.length <= 1) {
-    parts = text.split(/(?=\*{0,2}Questão\s*:\s*\*{0,2})/gi).filter((b) => b.trim());
+    // If still 1 block, try splitting by standalone "Questão:" (without number)
+    if (parts.length <= 1) {
+      parts = text.split(/(?=\*{0,2}Questão\s*:\s*\*{0,2})/gi).filter((b) => b.trim());
+    }
   }
 
   for (const part of parts) {

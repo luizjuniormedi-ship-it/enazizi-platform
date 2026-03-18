@@ -10,8 +10,13 @@ export function parseQuestionsFromMarkdown(text: string): { questions: Interacti
   const segments: Array<{ type: "text" | "question"; content?: string; question?: InteractiveQuestion }> = [];
   const questions: InteractiveQuestion[] = [];
 
-  // Split into question blocks by "Questão N" or "**Questão"
-  const parts = text.split(/(?=\*{0,2}Questão\s*\d*\s*[:.]\s*\*{0,2})/gi);
+  // Split by --- separators first, then by "Questão N" markers
+  let parts: string[];
+  if (text.includes("---")) {
+    parts = text.split(/---+/).filter(p => p.trim());
+  } else {
+    parts = text.split(/(?=\*{0,2}Questão\s*\d*\s*[:.]\s*\*{0,2})/gi);
+  }
 
   for (const part of parts) {
     const trimmed = part.trim();
