@@ -262,6 +262,8 @@ const Dashboard = () => {
           <PerformanceReport />
         </div>
 
+        <ActiveVideoRoomBanner />
+
         <DashboardWarnings
           todayCompleted={stats.todayCompleted}
           todayTotal={stats.todayTotal}
