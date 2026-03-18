@@ -45,6 +45,8 @@ import InterviewSimulator from "./pages/InterviewSimulator";
 import NotFound from "./pages/NotFound";
 import AnamnesisTrainer from "./pages/AnamnesisTrainer";
 import Install from "./pages/Install";
+import StudyGuides from "./pages/StudyGuides";
+import PreviousExams from "./pages/PreviousExams";
 
 const queryClient = new QueryClient();
 
