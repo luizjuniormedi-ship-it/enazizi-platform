@@ -185,7 +185,13 @@ const ErrorBank = () => {
           </h1>
           <p className="text-muted-foreground text-sm">Revisão ativa e personalizada dos seus pontos fracos</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {errors.length > 0 && (
+            <Button variant="outline" size="sm" onClick={generateFlashcardsFromErrors} disabled={generatingFlashcards} className="gap-1.5">
+              {generatingFlashcards ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlipVertical className="h-4 w-4" />}
+              Gerar Flashcards
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={loadErrors} className="gap-1.5">
             <RefreshCw className="h-4 w-4" /> Atualizar
           </Button>
