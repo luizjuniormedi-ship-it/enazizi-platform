@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare } from "lucide-react";
+import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ALL_MODULES } from "@/hooks/useModuleAccess";
 import WhatsAppPanel from "@/components/admin/WhatsAppPanel";
+import TelegramConfigPanel from "@/components/admin/TelegramConfigPanel";
 import AdminStatsCards from "@/components/admin/AdminStatsCards";
 import AdminOnlineUsers from "@/components/admin/AdminOnlineUsers";
 import AdminPlanDistribution from "@/components/admin/AdminPlanDistribution";
@@ -279,13 +280,20 @@ const Admin = () => {
             <TabsTrigger value="whatsapp" className="gap-1.5">
               <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
             </TabsTrigger>
+            <TabsTrigger value="telegram" className="gap-1.5">
+              <Send className="h-3.5 w-3.5" /> Telegram
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="whatsapp">
             <WhatsAppPanel session={session} />
           </TabsContent>
 
-          <TabsContent value={activeTab === "whatsapp" ? "__none__" : activeTab}>
+          <TabsContent value="telegram">
+            <TelegramConfigPanel />
+          </TabsContent>
+
+          <TabsContent value={activeTab === "whatsapp" || activeTab === "telegram" ? "__none__" : activeTab}>
             {loading ? (
               <div className="flex justify-center py-12">
                 <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />

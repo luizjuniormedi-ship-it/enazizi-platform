@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Video, VideoOff, Copy, Loader2, Plus, Search, Users, CheckSquare, Square, Send } from "lucide-react";
+import { Video, VideoOff, Loader2, Plus, Search, Users, CheckSquare, Square, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,9 +33,8 @@ const VideoRoom = () => {
   const [periodo, setPeriodo] = useState("");
   const [activeRoom, setActiveRoom] = useState<any>(null);
 
-  // Telegram fields
-  const [telegramChatId, setTelegramChatId] = useState("");
-  const [telegramGroupLink, setTelegramGroupLink] = useState("");
+  // Global Telegram config
+  const [telegramConfig, setTelegramConfig] = useState<{ telegram_chat_id: string | null; telegram_group_link: string | null } | null>(null);
 
   // Student selection state
   const [students, setStudents] = useState<StudentProfile[]>([]);
@@ -57,6 +56,18 @@ const VideoRoom = () => {
     return data;
   }, [session, API_URL]);
 
+  // Load global telegram config
+  useEffect(() => {
+    supabase
+      .from("platform_config" as any)
+      .select("telegram_chat_id, telegram_group_link")
+      .eq("id", 1)
+      .single()
+      .then(({ data }) => {
+        if (data) setTelegramConfig(data as any);
+      });
+  }, []);
+
   const loadRooms = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
@@ -75,7 +86,6 @@ const VideoRoom = () => {
     loadRooms();
   }, [loadRooms]);
 
-  // Load students when filters change
   const loadStudents = useCallback(async () => {
     if (!session) return;
     setLoadingStudents(true);
@@ -106,25 +116,21 @@ const VideoRoom = () => {
     });
   };
 
-  const selectAll = () => {
-    setSelectedStudentIds(new Set(filteredStudents.map(s => s.user_id)));
-  };
-
-  const deselectAll = () => {
-    setSelectedStudentIds(new Set());
-  };
+  const selectAll = () => setSelectedStudentIds(new Set(filteredStudents.map(s => s.user_id)));
+  const deselectAll = () => setSelectedStudentIds(new Set());
 
   const filteredStudents = students.filter(s =>
     !searchTerm || (s.display_name || s.email || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const notifyTelegram = async (action: "start" | "end", roomTitle: string, chatId: string, groupLink?: string) => {
+  const notifyTelegram = async (action: "start" | "end", roomTitle: string) => {
+    const chatId = telegramConfig?.telegram_chat_id;
     if (!chatId) return;
     try {
       const resp = await fetch(TELEGRAM_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ action, chat_id: chatId, title: roomTitle, group_link: groupLink }),
+        body: JSON.stringify({ action, chat_id: chatId, title: roomTitle, group_link: telegramConfig?.telegram_group_link }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || "Erro Telegram");
@@ -147,18 +153,13 @@ const VideoRoom = () => {
         faculdade_filter: faculdade && faculdade !== "all" ? faculdade : null,
         periodo_filter: periodo && periodo !== "all" ? parseInt(periodo) : null,
         invited_students: Array.from(selectedStudentIds),
-        telegram_chat_id: telegramChatId.trim() || null,
-        telegram_group_link: telegramGroupLink.trim() || null,
+        telegram_chat_id: telegramConfig?.telegram_chat_id || null,
+        telegram_group_link: telegramConfig?.telegram_group_link || null,
       } as any).select().single();
       if (error) throw error;
       setActiveRoom(data);
       toast({ title: "Sala criada!", description: `${selectedStudentIds.size} aluno(s) convidado(s).` });
-
-      // Send Telegram notification
-      if (telegramChatId.trim()) {
-        await notifyTelegram("start", title.trim() || "Sala de Aula", telegramChatId.trim(), telegramGroupLink.trim());
-      }
-
+      await notifyTelegram("start", title.trim() || "Sala de Aula");
       loadRooms();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -173,20 +174,10 @@ const VideoRoom = () => {
       .from("video_rooms")
       .update({ status: "ended", ended_at: new Date().toISOString() })
       .eq("id", roomId);
-
-    // Send end notification
-    if (room?.telegram_chat_id) {
-      await notifyTelegram("end", room.title, room.telegram_chat_id);
-    }
-
+    if (room) await notifyTelegram("end", room.title);
     setActiveRoom(null);
     toast({ title: "Sala encerrada" });
     loadRooms();
-  };
-
-  const copyLink = (link: string) => {
-    navigator.clipboard.writeText(link);
-    toast({ title: "Link copiado!", description: link });
   };
 
   if (loading) {
@@ -197,8 +188,16 @@ const VideoRoom = () => {
     );
   }
 
+  const hasTelegramConfig = !!telegramConfig?.telegram_chat_id;
+
   return (
     <div className="space-y-4">
+      {!hasTelegramConfig && (
+        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-4 text-sm text-yellow-700 dark:text-yellow-400">
+          ⚠️ O Telegram ainda não está configurado. Peça a um administrador para definir o Chat ID e Link do grupo nas configurações da plataforma.
+        </div>
+      )}
+
       {activeRoom ? (
         <>
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -207,9 +206,9 @@ const VideoRoom = () => {
               <h3 className="font-semibold">{activeRoom.title}</h3>
             </div>
             <div className="flex items-center gap-2">
-              {(activeRoom as any).telegram_group_link && (
-                <Button variant="outline" size="sm" onClick={() => copyLink((activeRoom as any).telegram_group_link)} className="gap-1">
-                  <Copy className="h-3.5 w-3.5" /> Copiar Link
+              {telegramConfig?.telegram_group_link && (
+                <Button variant="outline" size="sm" onClick={() => window.open(telegramConfig.telegram_group_link!, "_blank")} className="gap-1">
+                  <Send className="h-3.5 w-3.5" /> Abrir Grupo
                 </Button>
               )}
               <Button variant="destructive" size="sm" onClick={() => endRoom(activeRoom.id)} className="gap-1">
@@ -227,11 +226,6 @@ const VideoRoom = () => {
               <p className="text-muted-foreground text-sm max-w-md mx-auto">
                 A notificação foi enviada no grupo do Telegram. Os alunos podem entrar pela notificação ou pelo banner no dashboard.
               </p>
-              {(activeRoom as any).telegram_group_link && (
-                <Button onClick={() => window.open((activeRoom as any).telegram_group_link, "_blank")} className="gap-2">
-                  <Send className="h-4 w-4" /> Abrir Grupo no Telegram
-                </Button>
-              )}
             </CardContent>
           </Card>
         </>
@@ -241,7 +235,7 @@ const VideoRoom = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Video className="h-5 w-5 text-primary" />
-                Criar Nova Sala de Aula (Telegram)
+                Criar Nova Sala de Aula
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -273,31 +267,6 @@ const VideoRoom = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
-
-              {/* Telegram fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Send className="h-4 w-4" />
-                    Chat ID do Grupo Telegram
-                  </Label>
-                  <Input
-                    value={telegramChatId}
-                    onChange={(e) => setTelegramChatId(e.target.value)}
-                    placeholder="Ex: -1001234567890"
-                  />
-                  <p className="text-xs text-muted-foreground">ID do grupo onde o bot ENAZIZI está como admin</p>
-                </div>
-                <div className="space-y-2">
-                  <Label>Link do Grupo Telegram</Label>
-                  <Input
-                    value={telegramGroupLink}
-                    onChange={(e) => setTelegramGroupLink(e.target.value)}
-                    placeholder="Ex: https://t.me/+abc123"
-                  />
-                  <p className="text-xs text-muted-foreground">Link de convite do grupo (alunos usarão para entrar)</p>
                 </div>
               </div>
 
@@ -361,7 +330,7 @@ const VideoRoom = () => {
                 )}
               </div>
 
-              <Button onClick={createRoom} disabled={creating || selectedStudentIds.size === 0} className="gap-2">
+              <Button onClick={createRoom} disabled={creating || selectedStudentIds.size === 0 || !hasTelegramConfig} className="gap-2">
                 {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 Criar Sala ({selectedStudentIds.size} aluno{selectedStudentIds.size !== 1 ? "s" : ""})
               </Button>
