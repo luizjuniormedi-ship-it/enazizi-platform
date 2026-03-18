@@ -270,7 +270,7 @@ const QuestionsBank = () => {
           {answered && practiceQuestion.explanation && (
             <div className="mt-4 p-4 rounded-lg bg-muted text-sm">
               <p className="font-medium mb-1">Explicação:</p>
-              <p className="text-muted-foreground">{practiceQuestion.explanation}</p>
+              <p className="text-muted-foreground"><MedicalTermHighlighter text={practiceQuestion.explanation} /></p>
             </div>
           )}
 
