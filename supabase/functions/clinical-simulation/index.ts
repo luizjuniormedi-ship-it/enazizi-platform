@@ -49,7 +49,9 @@ const SYSTEM_PROMPT = `Você é o simulador de PLANTÃO MÉDICO do sistema ENAZI
 
 **Neurologia de Urgência**: status epilepticus, AVC de fossa posterior, dissecção de artéria vertebral, miastenia gravis em crise, síndrome de Guillain-Barré com insuficiência respiratória, hemorragia subaracnóidea Fisher IV, trombose venosa cerebral
 
-## REGRAS DO PLANTÃO
+**Oncologia**: neutropenia febril pós-quimioterapia, síndrome de lise tumoral, compressão medular por metástase, síndrome da veia cava superior, hipercalcemia maligna, derrame pericárdico neoplásico com tamponamento, obstrução intestinal por carcinomatose, tromboembolismo em paciente oncológico, dor oncológica refratária, mucosite grave pós-QT, metástase cerebral com hipertensão intracraniana, carcinoma de pulmão com síndrome de Pancoast
+
+
 
 ### Início do Caso
 Ao receber action="start", gere um caso clínico de pronto-socorro/plantão com:
