@@ -293,7 +293,7 @@ const Admin = () => {
             <TelegramConfigPanel />
           </TabsContent>
 
-          <TabsContent value={activeTab === "whatsapp" ? "__none__" : activeTab}>
+          <TabsContent value={activeTab === "whatsapp" || activeTab === "telegram" ? "__none__" : activeTab}>
             {loading ? (
               <div className="flex justify-center py-12">
                 <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
