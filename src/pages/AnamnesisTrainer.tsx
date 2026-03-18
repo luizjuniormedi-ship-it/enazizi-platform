@@ -297,6 +297,30 @@ const AnamnesisTrainer = () => {
               </div>
             </div>
 
+            {isPediatrics && (
+              <div className="animate-fade-in">
+                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                  <Baby className="h-4 w-4 text-primary" />
+                  Faixa Etária Pediátrica
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {PEDIATRIC_AGE_RANGES.map(a => (
+                    <Badge
+                      key={a.key}
+                      variant={pediatricAge === a.key ? "default" : "outline"}
+                      className="cursor-pointer hover:bg-primary/20 transition-colors"
+                      onClick={() => setPediatricAge(a.key)}
+                    >
+                      {a.label}
+                    </Badge>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  🩺 Categorias extras na avaliação: História Gestacional, Neonatal, DNPM, Vacinação e Alimentação
+                </p>
+              </div>
+            )}
+
             <div>
               <label className="text-sm font-medium mb-2 block">Dificuldade</label>
               <div className="flex gap-2">
