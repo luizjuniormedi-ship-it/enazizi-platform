@@ -1,0 +1,1 @@
+ALTER TABLE public.video_rooms ADD COLUMN meet_link text;
