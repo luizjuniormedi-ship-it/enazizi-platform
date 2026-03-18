@@ -337,7 +337,7 @@ const VideoRoom = () => {
                 )}
               </div>
 
-              <Button onClick={createRoom} disabled={creating || selectedStudentIds.size === 0 || !hasTelegramConfig} className="gap-2">
+              <Button onClick={createRoom} disabled={creating || selectedStudentIds.size === 0 || !meetLink.trim()} className="gap-2">
                 {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 Criar Sala ({selectedStudentIds.size} aluno{selectedStudentIds.size !== 1 ? "s" : ""})
               </Button>
