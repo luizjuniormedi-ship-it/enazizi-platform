@@ -200,7 +200,7 @@ export default function PreviousExams() {
               <div className="mt-4 space-y-3">
                 <div className="flex items-center gap-2">
                   {answers[currentIndex] === q.correct_index ? (
-                    <Badge className="bg-green-500">✅ Correto!</Badge>
+                    <Badge className="bg-primary text-primary-foreground">✅ Correto!</Badge>
                   ) : (
                     <Badge variant="destructive">❌ Incorreto — Resposta: {String.fromCharCode(65 + q.correct_index)}</Badge>
                   )}
