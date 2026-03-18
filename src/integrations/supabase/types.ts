@@ -1751,6 +1751,7 @@ export type Database = {
           ended_at: string | null
           faculdade_filter: string | null
           id: string
+          invited_students: Json
           periodo_filter: number | null
           professor_id: string
           room_code: string
@@ -1762,6 +1763,7 @@ export type Database = {
           ended_at?: string | null
           faculdade_filter?: string | null
           id?: string
+          invited_students?: Json
           periodo_filter?: number | null
           professor_id: string
           room_code: string
@@ -1773,6 +1775,7 @@ export type Database = {
           ended_at?: string | null
           faculdade_filter?: string | null
           id?: string
+          invited_students?: Json
           periodo_filter?: number | null
           professor_id?: string
           room_code?: string
