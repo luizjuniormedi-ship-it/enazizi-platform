@@ -29,6 +29,7 @@ const VideoRoom = () => {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState("Sala de Aula");
+  const [meetLink, setMeetLink] = useState("");
   const [faculdade, setFaculdade] = useState("");
   const [periodo, setPeriodo] = useState("");
   const [activeRoom, setActiveRoom] = useState<any>(null);
@@ -130,7 +131,7 @@ const VideoRoom = () => {
       const resp = await fetch(TELEGRAM_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ action, chat_id: chatId, title: roomTitle, group_link: telegramConfig?.telegram_group_link }),
+        body: JSON.stringify({ action, chat_id: chatId, title: roomTitle, group_link: telegramConfig?.telegram_group_link, meet_link: meetLink.trim() || undefined }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || "Erro Telegram");
@@ -155,6 +156,7 @@ const VideoRoom = () => {
         invited_students: Array.from(selectedStudentIds),
         telegram_chat_id: telegramConfig?.telegram_chat_id || null,
         telegram_group_link: telegramConfig?.telegram_group_link || null,
+        meet_link: meetLink.trim() || null,
       } as any).select().single();
       if (error) throw error;
       setActiveRoom(data);
@@ -202,13 +204,13 @@ const VideoRoom = () => {
         <>
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
-              <Badge className="bg-red-500 text-white animate-pulse">● AO VIVO</Badge>
+              <Badge className="bg-destructive text-destructive-foreground animate-pulse">● AO VIVO</Badge>
               <h3 className="font-semibold">{activeRoom.title}</h3>
             </div>
             <div className="flex items-center gap-2">
-              {telegramConfig?.telegram_group_link && (
-                <Button variant="outline" size="sm" onClick={() => window.open(telegramConfig.telegram_group_link!, "_blank")} className="gap-1">
-                  <Send className="h-3.5 w-3.5" /> Abrir Grupo
+              {(activeRoom as any).meet_link && (
+                <Button variant="outline" size="sm" onClick={() => window.open((activeRoom as any).meet_link, "_blank")} className="gap-1">
+                  <Video className="h-3.5 w-3.5" /> Abrir Meet
                 </Button>
               )}
               <Button variant="destructive" size="sm" onClick={() => endRoom(activeRoom.id)} className="gap-1">
@@ -220,11 +222,11 @@ const VideoRoom = () => {
           <Card>
             <CardContent className="py-12 text-center space-y-4">
               <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                <Send className="h-8 w-8 text-primary" />
+                <Video className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold">Aula ao vivo no Telegram</h3>
+              <h3 className="text-lg font-semibold">Aula ao vivo no Google Meet</h3>
               <p className="text-muted-foreground text-sm max-w-md mx-auto">
-                A notificação foi enviada no grupo do Telegram. Os alunos podem entrar pela notificação ou pelo banner no dashboard.
+                Os alunos receberão um popup com o link do Google Meet no dashboard. A notificação também foi enviada no Telegram.
               </p>
             </CardContent>
           </Card>
@@ -243,6 +245,11 @@ const VideoRoom = () => {
                 <div className="space-y-2">
                   <Label>Nome da Sala</Label>
                   <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Revisão de Cardiologia" />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Link do Google Meet</Label>
+                  <Input value={meetLink} onChange={(e) => setMeetLink(e.target.value)} placeholder="Ex: https://meet.google.com/abc-defg-hij" />
+                  <p className="text-xs text-muted-foreground">Crie a sala no Google Meet e cole o link aqui. Os alunos receberão esse link automaticamente.</p>
                 </div>
                 <div className="space-y-2">
                   <Label>Faculdade (filtro)</Label>
@@ -330,7 +337,7 @@ const VideoRoom = () => {
                 )}
               </div>
 
-              <Button onClick={createRoom} disabled={creating || selectedStudentIds.size === 0 || !hasTelegramConfig} className="gap-2">
+              <Button onClick={createRoom} disabled={creating || selectedStudentIds.size === 0 || !meetLink.trim()} className="gap-2">
                 {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 Criar Sala ({selectedStudentIds.size} aluno{selectedStudentIds.size !== 1 ? "s" : ""})
               </Button>
