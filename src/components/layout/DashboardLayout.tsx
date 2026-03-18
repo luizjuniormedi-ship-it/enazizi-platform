@@ -250,6 +250,7 @@ const DashboardLayout = () => {
             <span className="hidden xl:inline">{theme === "dark" ? "Claro" : "Escuro"}</span>
           </button>
         </div>
+        <ActiveVideoRoomPopup />
         <div className="relative z-10 w-full max-w-full">
           <Outlet />
         </div>

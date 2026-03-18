@@ -21,7 +21,7 @@ import MiniLeaderboard from "@/components/dashboard/MiniLeaderboard";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import DailyPlanWidget from "@/components/dashboard/DailyPlanWidget";
 import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner";
-import ActiveVideoRoomPopup from "@/components/dashboard/ActiveVideoRoomPopup";
+
 
 interface PlanJson {
   weeklySchedule?: { day: string; tasks: { time: string; subject: string; duration: string; type?: string }[] }[];
