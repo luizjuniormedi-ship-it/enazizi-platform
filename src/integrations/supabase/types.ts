@@ -617,6 +617,36 @@ export type Database = {
         }
         Relationships: []
       }
+      medical_terms: {
+        Row: {
+          aliases: string[] | null
+          created_at: string | null
+          definition_json: Json | null
+          id: string
+          specialty: string | null
+          term: string
+          updated_at: string | null
+        }
+        Insert: {
+          aliases?: string[] | null
+          created_at?: string | null
+          definition_json?: Json | null
+          id?: string
+          specialty?: string | null
+          term: string
+          updated_at?: string | null
+        }
+        Update: {
+          aliases?: string[] | null
+          created_at?: string | null
+          definition_json?: Json | null
+          id?: string
+          specialty?: string | null
+          term?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       organizations: {
         Row: {
           created_at: string
