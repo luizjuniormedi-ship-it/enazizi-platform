@@ -23,7 +23,16 @@ const SPECIALTIES = [
   "Ortopedia", "Psiquiatria", "Emergência", "Dermatologia", "Semiologia",
 ];
 
-const CATEGORIES = [
+const PEDIATRIC_AGE_RANGES = [
+  { key: "neonato", label: "Neonato (0-28 dias)" },
+  { key: "lactente", label: "Lactente (1-24 meses)" },
+  { key: "pre_escolar", label: "Pré-escolar (2-6 anos)" },
+  { key: "escolar", label: "Escolar (7-12 anos)" },
+  { key: "adolescente", label: "Adolescente (13-17 anos)" },
+  { key: "aleatorio", label: "Aleatório" },
+];
+
+const BASE_CATEGORIES = [
   { key: "identification", label: "Identificação", icon: User },
   { key: "chief_complaint", label: "Queixa Principal", icon: MessageCircle },
   { key: "hda", label: "HDA", icon: Activity },
@@ -34,6 +43,14 @@ const CATEGORIES = [
   { key: "social_history", label: "Hábitos de Vida", icon: Heart },
   { key: "review_of_systems", label: "Rev. Sistemas", icon: Stethoscope },
   { key: "gynecological", label: "Ginecológica", icon: Baby },
+];
+
+const PEDIATRIC_EXTRA_CATEGORIES = [
+  { key: "gestational_history", label: "Hist. Gestacional", icon: Heart },
+  { key: "birth_history", label: "Hist. Neonatal", icon: Baby },
+  { key: "development", label: "DNPM", icon: Activity },
+  { key: "vaccination", label: "Vacinação", icon: ClipboardCheck },
+  { key: "feeding", label: "Alimentação", icon: Stethoscope },
 ];
 
 const DIAGNOSIS_CATEGORIES = [
