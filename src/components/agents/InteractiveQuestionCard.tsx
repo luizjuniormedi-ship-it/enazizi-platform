@@ -1,4 +1,5 @@
 import { useState } from "react";
+import MedicalTermHighlighter from "@/components/medical/MedicalTermHighlighter";
 import { CheckCircle2, XCircle, BookOpen, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
