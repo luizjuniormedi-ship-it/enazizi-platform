@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Video, VideoOff, Copy, Loader2, Plus, Search, Users, CheckSquare, Square } from "lucide-react";
+import { Video, VideoOff, Copy, Loader2, Plus, Search, Users, CheckSquare, Square, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,7 +32,10 @@ const VideoRoom = () => {
   const [faculdade, setFaculdade] = useState("");
   const [periodo, setPeriodo] = useState("");
   const [activeRoom, setActiveRoom] = useState<any>(null);
-  const [displayName, setDisplayName] = useState("");
+
+  // Telegram fields
+  const [telegramChatId, setTelegramChatId] = useState("");
+  const [telegramGroupLink, setTelegramGroupLink] = useState("");
 
   // Student selection state
   const [students, setStudents] = useState<StudentProfile[]>([]);
@@ -41,6 +44,7 @@ const VideoRoom = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/professor-simulado`;
+  const TELEGRAM_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-classroom`;
 
   const callAPI = useCallback(async (body: Record<string, unknown>) => {
     const resp = await fetch(API_URL, {
@@ -70,16 +74,6 @@ const VideoRoom = () => {
   useEffect(() => {
     loadRooms();
   }, [loadRooms]);
-
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => setDisplayName(data?.display_name || "Professor"));
-  }, [user]);
 
   // Load students when filters change
   const loadStudents = useCallback(async () => {
@@ -124,6 +118,23 @@ const VideoRoom = () => {
     !searchTerm || (s.display_name || s.email || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const notifyTelegram = async (action: "start" | "end", roomTitle: string, chatId: string, groupLink?: string) => {
+    if (!chatId) return;
+    try {
+      const resp = await fetch(TELEGRAM_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ action, chat_id: chatId, title: roomTitle, group_link: groupLink }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || "Erro Telegram");
+      toast({ title: action === "start" ? "Notificação enviada no Telegram!" : "Aviso de encerramento enviado!" });
+    } catch (e) {
+      console.error("Telegram notification error:", e);
+      toast({ title: "Erro ao notificar Telegram", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    }
+  };
+
   const createRoom = async () => {
     if (!user) return;
     setCreating(true);
@@ -136,10 +147,18 @@ const VideoRoom = () => {
         faculdade_filter: faculdade && faculdade !== "all" ? faculdade : null,
         periodo_filter: periodo && periodo !== "all" ? parseInt(periodo) : null,
         invited_students: Array.from(selectedStudentIds),
-      }).select().single();
+        telegram_chat_id: telegramChatId.trim() || null,
+        telegram_group_link: telegramGroupLink.trim() || null,
+      } as any).select().single();
       if (error) throw error;
       setActiveRoom(data);
       toast({ title: "Sala criada!", description: `${selectedStudentIds.size} aluno(s) convidado(s).` });
+
+      // Send Telegram notification
+      if (telegramChatId.trim()) {
+        await notifyTelegram("start", title.trim() || "Sala de Aula", telegramChatId.trim(), telegramGroupLink.trim());
+      }
+
       loadRooms();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -149,24 +168,26 @@ const VideoRoom = () => {
   };
 
   const endRoom = async (roomId: string) => {
+    const room = rooms.find(r => r.id === roomId);
     await supabase
       .from("video_rooms")
       .update({ status: "ended", ended_at: new Date().toISOString() })
       .eq("id", roomId);
+
+    // Send end notification
+    if (room?.telegram_chat_id) {
+      await notifyTelegram("end", room.title, room.telegram_chat_id);
+    }
+
     setActiveRoom(null);
     toast({ title: "Sala encerrada" });
     loadRooms();
   };
 
-  const copyLink = (roomCode: string) => {
-    const jitsiUrl = `https://meet.jit.si/${roomCode}`;
-    navigator.clipboard.writeText(jitsiUrl);
-    toast({ title: "Link copiado!", description: jitsiUrl });
+  const copyLink = (link: string) => {
+    navigator.clipboard.writeText(link);
+    toast({ title: "Link copiado!", description: link });
   };
-
-  const jitsiUrl = activeRoom
-    ? `https://meet.jit.si/${activeRoom.room_code}#userInfo.displayName="${encodeURIComponent(displayName)}"`
-    : "";
 
   if (loading) {
     return (
@@ -186,22 +207,33 @@ const VideoRoom = () => {
               <h3 className="font-semibold">{activeRoom.title}</h3>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => copyLink(activeRoom.room_code)} className="gap-1">
-                <Copy className="h-3.5 w-3.5" /> Copiar Link
-              </Button>
+              {(activeRoom as any).telegram_group_link && (
+                <Button variant="outline" size="sm" onClick={() => copyLink((activeRoom as any).telegram_group_link)} className="gap-1">
+                  <Copy className="h-3.5 w-3.5" /> Copiar Link
+                </Button>
+              )}
               <Button variant="destructive" size="sm" onClick={() => endRoom(activeRoom.id)} className="gap-1">
                 <VideoOff className="h-3.5 w-3.5" /> Encerrar
               </Button>
             </div>
           </div>
-          <div className="rounded-lg overflow-hidden border border-border" style={{ height: "70vh" }}>
-            <iframe
-              src={jitsiUrl}
-              allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-write"
-              className="w-full h-full"
-              title="Video Call"
-            />
-          </div>
+
+          <Card>
+            <CardContent className="py-12 text-center space-y-4">
+              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                <Send className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold">Aula ao vivo no Telegram</h3>
+              <p className="text-muted-foreground text-sm max-w-md mx-auto">
+                A notificação foi enviada no grupo do Telegram. Os alunos podem entrar pela notificação ou pelo banner no dashboard.
+              </p>
+              {(activeRoom as any).telegram_group_link && (
+                <Button onClick={() => window.open((activeRoom as any).telegram_group_link, "_blank")} className="gap-2">
+                  <Send className="h-4 w-4" /> Abrir Grupo no Telegram
+                </Button>
+              )}
+            </CardContent>
+          </Card>
         </>
       ) : (
         <>
@@ -209,7 +241,7 @@ const VideoRoom = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Video className="h-5 w-5 text-primary" />
-                Criar Nova Sala de Vídeo
+                Criar Nova Sala de Aula (Telegram)
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -241,6 +273,31 @@ const VideoRoom = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              {/* Telegram fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Send className="h-4 w-4" />
+                    Chat ID do Grupo Telegram
+                  </Label>
+                  <Input
+                    value={telegramChatId}
+                    onChange={(e) => setTelegramChatId(e.target.value)}
+                    placeholder="Ex: -1001234567890"
+                  />
+                  <p className="text-xs text-muted-foreground">ID do grupo onde o bot ENAZIZI está como admin</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Link do Grupo Telegram</Label>
+                  <Input
+                    value={telegramGroupLink}
+                    onChange={(e) => setTelegramGroupLink(e.target.value)}
+                    placeholder="Ex: https://t.me/+abc123"
+                  />
+                  <p className="text-xs text-muted-foreground">Link de convite do grupo (alunos usarão para entrar)</p>
                 </div>
               </div>
 
