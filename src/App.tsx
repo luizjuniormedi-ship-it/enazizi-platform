@@ -45,6 +45,8 @@ import InterviewSimulator from "./pages/InterviewSimulator";
 import NotFound from "./pages/NotFound";
 import AnamnesisTrainer from "./pages/AnamnesisTrainer";
 import Install from "./pages/Install";
+import StudyGuides from "./pages/StudyGuides";
+import PreviousExams from "./pages/PreviousExams";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +74,8 @@ const App = () => (
               <Route path="questoes" element={<QuestionGenerator />} />
               <Route path="banco-questoes" element={<QuestionsBank />} />
               <Route path="resumos" element={<ContentSummarizer />} />
+              <Route path="apostilas" element={<StudyGuides />} />
+              <Route path="provas-anteriores" element={<PreviousExams />} />
               <Route path="coach" element={<MotivationalCoach />} />
               {/* estudar removed - merged into ChatGPT */}
               <Route path="chatgpt" element={<ChatGPT />} />

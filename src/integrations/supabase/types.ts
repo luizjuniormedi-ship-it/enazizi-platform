@@ -508,6 +508,45 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_banks: {
+        Row: {
+          banca: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          name: string
+          source_tag: string
+          specialty: string | null
+          time_limit_minutes: number | null
+          total_questions: number | null
+          year: number
+        }
+        Insert: {
+          banca: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name: string
+          source_tag: string
+          specialty?: string | null
+          time_limit_minutes?: number | null
+          total_questions?: number | null
+          year: number
+        }
+        Update: {
+          banca?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name?: string
+          source_tag?: string
+          specialty?: string | null
+          time_limit_minutes?: number | null
+          total_questions?: number | null
+          year?: number
+        }
+        Relationships: []
+      }
       exam_sessions: {
         Row: {
           answers_json: Json | null

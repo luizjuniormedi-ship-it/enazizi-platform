@@ -42,7 +42,7 @@ const navGroups: NavGroup[] = [
       { to: "/dashboard/flashcards", icon: FlipVertical, label: "🃏 Flashcards" },
       { to: "/dashboard/gerar-flashcards", icon: FlipVertical, label: "🃏 Gerador Flashcards" },
       { to: "/dashboard/resumos", icon: BookOpen, label: "📖 Resumidor" },
-      
+      { to: "/dashboard/apostilas", icon: BookOpen, label: "📚 Apostilas & Resumos" },
     ],
   },
   {
@@ -50,6 +50,7 @@ const navGroups: NavGroup[] = [
     items: [
       { to: "/dashboard/simulados", icon: FileText, label: "📝 Simulados" },
       { to: "/dashboard/simulado-completo", icon: Award, label: "🏆 Simulado Completo" },
+      { to: "/dashboard/provas-anteriores", icon: GraduationCap, label: "📋 Provas Anteriores" },
       { to: "/dashboard/questoes", icon: HelpCircle, label: "❓ Gerador Questões" },
       { to: "/dashboard/banco-questoes", icon: Database, label: "🗃️ Banco de Questões" },
       { to: "/dashboard/discursivas", icon: PenLine, label: "✍️ Discursivas" },
