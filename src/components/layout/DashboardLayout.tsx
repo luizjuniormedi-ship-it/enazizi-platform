@@ -17,6 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTheme } from "@/hooks/useTheme";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { cn } from "@/lib/utils";
+import ActiveVideoRoomPopup from "@/components/dashboard/ActiveVideoRoomPopup";
 
 interface MobileNavGroup {
   title: string;
@@ -249,6 +250,7 @@ const DashboardLayout = () => {
             <span className="hidden xl:inline">{theme === "dark" ? "Claro" : "Escuro"}</span>
           </button>
         </div>
+        <ActiveVideoRoomPopup />
         <div className="relative z-10 w-full max-w-full">
           <Outlet />
         </div>
