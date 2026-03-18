@@ -130,6 +130,9 @@ const ClinicalSimulation = () => {
   const [phase, setPhase] = useState<Phase>("lobby");
   const [specialty, setSpecialty] = useState("Clínica Médica");
   const [difficulty, setDifficulty] = useState("intermediário");
+  const [pediatricAge, setPediatricAge] = useState("aleatorio");
+
+  const isPediatrics = specialty === "Pediatria";
   const [loading, setLoading] = useState(false);
 
   // Simulation state
