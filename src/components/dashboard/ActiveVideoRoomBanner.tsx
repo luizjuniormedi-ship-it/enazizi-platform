@@ -12,14 +12,12 @@ const ActiveVideoRoomBanner = () => {
     if (!user) return;
 
     const load = async () => {
-      // Get student's profile for filtering
       const { data: profile } = await supabase
         .from("profiles")
         .select("faculdade, periodo")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      // Find active rooms matching student's filters
       const { data: rooms } = await supabase
         .from("video_rooms")
         .select("*")
@@ -29,8 +27,13 @@ const ActiveVideoRoomBanner = () => {
 
       if (!rooms || rooms.length === 0) return;
 
-      // Filter rooms that match student's faculdade/periodo or have no filter
       const matching = rooms.find((r: any) => {
+        // If invited_students has entries, only show to invited students
+        const invited: string[] = r.invited_students || [];
+        if (invited.length > 0) {
+          return invited.includes(user.id);
+        }
+        // Fallback: filter by faculdade/periodo
         const facMatch = !r.faculdade_filter || r.faculdade_filter === profile?.faculdade;
         const perMatch = !r.periodo_filter || r.periodo_filter === profile?.periodo;
         return facMatch && perMatch;
@@ -40,7 +43,7 @@ const ActiveVideoRoomBanner = () => {
     };
 
     load();
-    const interval = setInterval(load, 30000); // poll every 30s
+    const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
   }, [user]);
 

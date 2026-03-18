@@ -1,19 +1,29 @@
 import { useState, useEffect, useCallback } from "react";
-import { Video, VideoOff, Copy, Users, Loader2, Plus } from "lucide-react";
+import { Video, VideoOff, Copy, Loader2, Plus, Search, Users, CheckSquare, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
 const FACULDADES = ["UNIG", "Estácio", "Outra"];
 
+interface StudentProfile {
+  user_id: string;
+  display_name: string;
+  email: string;
+  faculdade: string | null;
+  periodo: number | null;
+}
+
 const VideoRoom = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { toast } = useToast();
   const [rooms, setRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +33,25 @@ const VideoRoom = () => {
   const [periodo, setPeriodo] = useState("");
   const [activeRoom, setActiveRoom] = useState<any>(null);
   const [displayName, setDisplayName] = useState("");
+
+  // Student selection state
+  const [students, setStudents] = useState<StudentProfile[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/professor-simulado`;
+
+  const callAPI = useCallback(async (body: Record<string, unknown>) => {
+    const resp = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify(body),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || "Erro");
+    return data;
+  }, [session, API_URL]);
 
   const loadRooms = useCallback(async () => {
     if (!user) return;
@@ -52,6 +81,49 @@ const VideoRoom = () => {
       .then(({ data }) => setDisplayName(data?.display_name || "Professor"));
   }, [user]);
 
+  // Load students when filters change
+  const loadStudents = useCallback(async () => {
+    if (!session) return;
+    setLoadingStudents(true);
+    try {
+      const res = await callAPI({
+        action: "get_students",
+        faculdade: faculdade && faculdade !== "all" ? faculdade : undefined,
+        periodo: periodo && periodo !== "all" ? parseInt(periodo) : undefined,
+      });
+      setStudents(res.students || []);
+    } catch (e) {
+      toast({ title: "Erro ao carregar alunos", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    } finally {
+      setLoadingStudents(false);
+    }
+  }, [session, callAPI, faculdade, periodo, toast]);
+
+  useEffect(() => {
+    loadStudents();
+  }, [loadStudents]);
+
+  const toggleStudent = (userId: string) => {
+    setSelectedStudentIds(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedStudentIds(new Set(filteredStudents.map(s => s.user_id)));
+  };
+
+  const deselectAll = () => {
+    setSelectedStudentIds(new Set());
+  };
+
+  const filteredStudents = students.filter(s =>
+    !searchTerm || (s.display_name || s.email || "").toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const createRoom = async () => {
     if (!user) return;
     setCreating(true);
@@ -63,10 +135,11 @@ const VideoRoom = () => {
         title: title.trim() || "Sala de Aula",
         faculdade_filter: faculdade && faculdade !== "all" ? faculdade : null,
         periodo_filter: periodo && periodo !== "all" ? parseInt(periodo) : null,
+        invited_students: Array.from(selectedStudentIds),
       }).select().single();
       if (error) throw error;
       setActiveRoom(data);
-      toast({ title: "Sala criada!", description: "Compartilhe o link com seus alunos." });
+      toast({ title: "Sala criada!", description: `${selectedStudentIds.size} aluno(s) convidado(s).` });
       loadRooms();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -170,9 +243,70 @@ const VideoRoom = () => {
                   </Select>
                 </div>
               </div>
-              <Button onClick={createRoom} disabled={creating} className="gap-2">
+
+              {/* Student Selection */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Selecionar Alunos ({selectedStudentIds.size} selecionado{selectedStudentIds.size !== 1 ? "s" : ""})
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={selectAll} className="gap-1 text-xs">
+                      <CheckSquare className="h-3.5 w-3.5" /> Todos
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={deselectAll} className="gap-1 text-xs">
+                      <Square className="h-3.5 w-3.5" /> Nenhum
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar aluno por nome..."
+                    className="pl-9"
+                  />
+                </div>
+
+                {loadingStudents ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : filteredStudents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">Nenhum aluno encontrado.</p>
+                ) : (
+                  <ScrollArea className="h-[240px] rounded-md border border-border">
+                    <div className="divide-y divide-border">
+                      {filteredStudents.map((s) => (
+                        <label
+                          key={s.user_id}
+                          className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-accent/50 transition-colors"
+                          onClick={() => toggleStudent(s.user_id)}
+                        >
+                          <Checkbox
+                            checked={selectedStudentIds.has(s.user_id)}
+                            onCheckedChange={() => toggleStudent(s.user_id)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{s.display_name || s.email}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {s.faculdade || "—"} · {s.periodo ? `${s.periodo}º período` : "—"}
+                            </p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
+              </div>
+
+              <Button onClick={createRoom} disabled={creating || selectedStudentIds.size === 0} className="gap-2">
                 {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                Criar Sala e Iniciar
+                Criar Sala ({selectedStudentIds.size} aluno{selectedStudentIds.size !== 1 ? "s" : ""})
               </Button>
             </CardContent>
           </Card>
