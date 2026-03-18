@@ -28,7 +28,7 @@ const SPECIALTIES = [
   "Clínica Médica", "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia",
   "Nefrologia", "Infectologia", "Pediatria", "Cirurgia", "Ginecologia e Obstetrícia",
   "Ortopedia", "Psiquiatria", "Emergência", "Dermatologia", "Angiologia",
-  "Semiologia", "Anatomia", "Farmacologia",
+  "Semiologia", "Anatomia", "Farmacologia", "Oncologia",
 ];
 
 const PEDIATRIC_AGE_RANGES = [
