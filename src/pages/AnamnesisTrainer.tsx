@@ -146,7 +146,12 @@ const AnamnesisTrainer = () => {
   const handleStart = async () => {
     setLoading(true);
     try {
-      const data = await callEdgeFunction({ action: "start", specialty, difficulty });
+      const data = await callEdgeFunction({
+        action: "start",
+        specialty,
+        difficulty,
+        ...(isPediatrics && pediatricAge !== "aleatorio" ? { pediatric_age_range: pediatricAge } : {}),
+      });
       setPatientData(data);
       setMessages([{
         role: "patient",
