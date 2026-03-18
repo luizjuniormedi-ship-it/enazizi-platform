@@ -735,6 +735,8 @@ const ClinicalSimulation = () => {
                 )}
               </div>
             )}
+
+            <Button onClick={startSimulation} disabled={loading} className="w-full gap-2 bg-red-600 hover:bg-red-700 text-white">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
               {loading ? "Preparando plantão..." : "🚨 Iniciar Plantão"}
             </Button>
