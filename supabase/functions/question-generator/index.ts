@@ -119,13 +119,38 @@ EXPERT: Casos de DECISÃO TERAPÊUTICA complexa
 - Manejo de complicações de tratamento
 - Ex: "TEP maciço com instabilidade hemodinâmica: trombólise vs embolectomia em paciente com AVC hemorrágico há 3 meses"
 
-Formato padrão:
+Formato OBRIGATÓRIO para cada questão (SEGUIR EXATAMENTE):
+
+---
+
 **Tópico:** [área - subtema]
-**Questão:** [caso clínico ou enunciado]
-a) [alternativa] b) [alternativa] c) [alternativa] d) [alternativa] e) [alternativa]
+
+**Questão ${"{N}"}:**
+
+[caso clínico completo ou enunciado]
+
+a) [alternativa A]
+b) [alternativa B]
+c) [alternativa C]
+d) [alternativa D]
+e) [alternativa E]
+
 **Gabarito:** [letra correta]
+
 **Explicação:** [explicação detalhada com análise de cada alternativa]
+
 📚 Referência: [fonte com ano]
+
+---
+
+REGRAS DE FORMATO (INVIOLÁVEIS):
+- SEMPRE colocar cada alternativa (a, b, c, d, e) em UMA LINHA SEPARADA — NUNCA juntar na mesma linha
+- SEMPRE separar questões com "---" (linha horizontal)
+- SEMPRE usar linha em branco entre o enunciado e as alternativas
+- SEMPRE usar linha em branco entre as alternativas e o gabarito
+- SEMPRE usar linha em branco entre o gabarito e a explicação
+- NUNCA omitir a linha **Tópico:** antes de cada questão
+- NUNCA omitir a linha **Gabarito:** após as alternativas
 
 Regras:
 - SEMPRE em português brasileiro
