@@ -311,6 +311,7 @@ const ClinicalSimulation = () => {
         specialty,
         difficulty,
         ...(teacherCaseId ? { teacher_case_id: teacherCaseId } : {}),
+        ...(isPediatrics && pediatricAge !== "aleatorio" ? { pediatric_age_range: pediatricAge } : {}),
       });
 
       setVitals(res.vitals);
