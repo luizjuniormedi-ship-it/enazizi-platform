@@ -52,7 +52,12 @@ Tema: "${topic}"
 Faça 5-7 perguntas CURTAS de recuperação ativa da memória.
 Apresente TODAS numeradas. O aluno responderá e você corrigirá.
 Foque em: mecanismos, diagnósticos, condutas, pontos de prova.
-Se o aluno errar: resposta correta + raciocínio + revisão + ponto de prova.`;
+Se o aluno errar: resposta correta + raciocínio + revisão + ponto de prova.
+
+⛔ REGRA ANTI-REPETIÇÃO (PRIORIDADE MÁXIMA):
+- Cada pergunta DEVE abordar um conceito DIFERENTE (nunca 2 perguntas sobre o mesmo mecanismo/conduta)
+- Distribua entre: fisiopatologia, diagnóstico, tratamento, complicações, epidemiologia, semiologia
+- VERIFICAÇÃO: antes de finalizar, confirme que nenhuma pergunta testa o mesmo conhecimento que outra`;
 
     case "questions":
       return `${base}
