@@ -42,12 +42,7 @@ describe("Landing Page Components", () => {
         <FeaturesSection />
       </MemoryRouter>
     );
-    expect(screen.getByText("Aulas Completas com IA")).toBeInTheDocument();
-    expect(screen.getByText("Active Recall")).toBeInTheDocument();
-    expect(screen.getByText("Questões Estilo Prova")).toBeInTheDocument();
-    expect(screen.getByText("Discussão Clínica Detalhada")).toBeInTheDocument();
-    expect(screen.getByText("Mapa de Evolução")).toBeInTheDocument();
-    expect(screen.getByText("Repetição Inteligente")).toBeInTheDocument();
-    expect(screen.getByText("Protocolo Pedagógico")).toBeInTheDocument();
+    expect(screen.getByText("Ensino Profundo com IA")).toBeInTheDocument();
+    expect(screen.getByText("Protocolo ENAZIZI")).toBeInTheDocument();
   });
 });
