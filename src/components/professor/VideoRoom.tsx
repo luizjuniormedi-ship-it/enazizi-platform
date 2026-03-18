@@ -156,6 +156,7 @@ const VideoRoom = () => {
         invited_students: Array.from(selectedStudentIds),
         telegram_chat_id: telegramConfig?.telegram_chat_id || null,
         telegram_group_link: telegramConfig?.telegram_group_link || null,
+        meet_link: meetLink.trim() || null,
       } as any).select().single();
       if (error) throw error;
       setActiveRoom(data);
