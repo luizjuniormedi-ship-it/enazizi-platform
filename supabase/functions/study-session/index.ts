@@ -55,10 +55,12 @@ Apresente TODAS numeradas. O aluno responderá e você corrigirá.
 Foque em: mecanismos, diagnósticos, condutas, pontos de prova.
 Se o aluno errar: resposta correta + raciocínio + revisão + ponto de prova.
 
-⛔ REGRA ANTI-REPETIÇÃO (PRIORIDADE MÁXIMA):
-- Cada pergunta DEVE abordar um conceito DIFERENTE (nunca 2 perguntas sobre o mesmo mecanismo/conduta)
-- Distribua entre: fisiopatologia, diagnóstico, tratamento, complicações, epidemiologia, semiologia
-- VERIFICAÇÃO: antes de finalizar, confirme que nenhuma pergunta testa o mesmo conhecimento que outra`;
+REGRA DE REPETIÇÃO ESPAÇADA (PRIORIDADE MÁXIMA):
+- PODE repetir o mesmo tema, desde que haja pelo menos 2 perguntas de INTERVALO
+- Quando repetir, use ENFOQUE DIFERENTE (ex: P1=fisiopatologia, P4=tratamento)
+- NUNCA coloque duas perguntas do MESMO CONCEITO em posições CONSECUTIVAS
+- QUANDO O ALUNO ERRAR: inclua pergunta de REFORÇO do mesmo conceito com enfoque diferente nas próximas 3-5 perguntas
+- Distribua entre: fisiopatologia, diagnóstico, tratamento, complicações, epidemiologia, semiologia`;
 
     case "questions":
       return `${base}
