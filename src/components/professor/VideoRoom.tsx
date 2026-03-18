@@ -246,6 +246,11 @@ const VideoRoom = () => {
                   <Label>Nome da Sala</Label>
                   <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Revisão de Cardiologia" />
                 </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Link do Google Meet</Label>
+                  <Input value={meetLink} onChange={(e) => setMeetLink(e.target.value)} placeholder="Ex: https://meet.google.com/abc-defg-hij" />
+                  <p className="text-xs text-muted-foreground">Crie a sala no Google Meet e cole o link aqui. Os alunos receberão esse link automaticamente.</p>
+                </div>
                 <div className="space-y-2">
                   <Label>Faculdade (filtro)</Label>
                   <Select value={faculdade} onValueChange={setFaculdade}>
