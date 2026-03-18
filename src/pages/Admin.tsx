@@ -280,10 +280,17 @@ const Admin = () => {
             <TabsTrigger value="whatsapp" className="gap-1.5">
               <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
             </TabsTrigger>
+            <TabsTrigger value="telegram" className="gap-1.5">
+              <Send className="h-3.5 w-3.5" /> Telegram
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="whatsapp">
             <WhatsAppPanel session={session} />
+          </TabsContent>
+
+          <TabsContent value="telegram">
+            <TelegramConfigPanel />
           </TabsContent>
 
           <TabsContent value={activeTab === "whatsapp" ? "__none__" : activeTab}>
