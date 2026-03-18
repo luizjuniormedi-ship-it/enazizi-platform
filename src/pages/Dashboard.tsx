@@ -372,6 +372,9 @@ const Dashboard = () => {
         </div>
       )}
 
+      {/* Daily Plan Widget */}
+      <DailyPlanWidget />
+
       {/* Daily Summary & Streak */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="glass-card p-5 flex items-center gap-4">
