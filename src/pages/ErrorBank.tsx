@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { AlertTriangle, BookOpen, BarChart3, Trash2, RefreshCw, ArrowRight, Brain, HelpCircle, Stethoscope, ListChecks } from "lucide-react";
+import { AlertTriangle, BookOpen, BarChart3, Trash2, RefreshCw, ArrowRight, Brain, HelpCircle, Stethoscope, ListChecks, FlipVertical, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
@@ -50,6 +50,7 @@ const ErrorBank = () => {
   const [errors, setErrors] = useState<ErrorEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTema, setSelectedTema] = useState<string | null>(null);
+  const [generatingFlashcards, setGeneratingFlashcards] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -130,6 +131,47 @@ const ErrorBank = () => {
       .sort((a, b) => b.total - a.total);
   })();
 
+  const generateFlashcardsFromErrors = async () => {
+    if (!user || errors.length === 0) return;
+    setGeneratingFlashcards(true);
+    try {
+      const topErrors = errors.slice(0, 15);
+      const errorSummary = topErrors.map(e =>
+        `Tema: ${e.tema}${e.subtema ? ` > ${e.subtema}` : ""}${e.motivo_erro ? ` | Motivo: ${e.motivo_erro}` : ""}${e.conteudo ? ` | Conteúdo: ${e.conteudo.slice(0, 100)}` : ""}`
+      ).join("\n");
+
+      const response = await supabase.functions.invoke("generate-flashcards", {
+        body: {
+          topic: "Revisão dos Erros Mais Frequentes",
+          content: `Gere flashcards de revisão para os seguintes temas onde o aluno errou:\n${errorSummary}\n\nCrie flashcards focados nos conceitos-chave que o aluno precisa revisar para não errar novamente.`,
+          count: Math.min(topErrors.length, 10),
+        },
+      });
+
+      if (response.error) throw response.error;
+      const flashcards = response.data?.flashcards || response.data || [];
+      if (Array.isArray(flashcards) && flashcards.length > 0) {
+        const inserts = flashcards.map((fc: any) => ({
+          user_id: user.id,
+          question: fc.question || fc.front || fc.pergunta,
+          answer: fc.answer || fc.back || fc.resposta,
+          topic: fc.topic || "Banco de Erros",
+        })).filter((fc: any) => fc.question && fc.answer);
+
+        if (inserts.length > 0) {
+          await supabase.from("flashcards").insert(inserts);
+          toast({ title: "Flashcards gerados!", description: `${inserts.length} flashcards criados a partir dos seus erros.` });
+        }
+      } else {
+        toast({ title: "Nenhum flashcard gerado", description: "Tente novamente.", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Erro ao gerar flashcards", description: err.message, variant: "destructive" });
+    } finally {
+      setGeneratingFlashcards(false);
+    }
+  };
+
   const filteredErrors = selectedTema ? errors.filter((e) => e.tema === selectedTema) : errors;
   const totalErrors = errors.reduce((s, e) => s + e.vezes_errado, 0);
 
@@ -143,7 +185,13 @@ const ErrorBank = () => {
           </h1>
           <p className="text-muted-foreground text-sm">Revisão ativa e personalizada dos seus pontos fracos</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {errors.length > 0 && (
+            <Button variant="outline" size="sm" onClick={generateFlashcardsFromErrors} disabled={generatingFlashcards} className="gap-1.5">
+              {generatingFlashcards ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlipVertical className="h-4 w-4" />}
+              Gerar Flashcards
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={loadErrors} className="gap-1.5">
             <RefreshCw className="h-4 w-4" /> Atualizar
           </Button>

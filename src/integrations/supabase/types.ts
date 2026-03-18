@@ -250,6 +250,42 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_plans: {
+        Row: {
+          completed_blocks: Json
+          completed_count: number
+          created_at: string | null
+          id: string
+          plan_date: string
+          plan_json: Json
+          total_blocks: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_blocks?: Json
+          completed_count?: number
+          created_at?: string | null
+          id?: string
+          plan_date?: string
+          plan_json?: Json
+          total_blocks?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_blocks?: Json
+          completed_count?: number
+          created_at?: string | null
+          id?: string
+          plan_date?: string
+          plan_json?: Json
+          total_blocks?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       desempenho_questoes: {
         Row: {
           created_at: string

@@ -3,7 +3,9 @@ import { BarChart3, TrendingUp, Target, Clock, BookOpen, CheckCircle2, Loader2, 
 import PerformanceReport from "@/components/dashboard/PerformanceReport";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from "recharts";
+import ActivityHeatmap from "@/components/analytics/ActivityHeatmap";
+import AccuracyTrendChart from "@/components/analytics/AccuracyTrendChart";
+import SpecialtyRadarChart from "@/components/analytics/SpecialtyRadarChart";
 
 interface AnalyticsData {
   totalQuestions: number;
@@ -17,6 +19,9 @@ interface AnalyticsData {
   topicBreakdown: { topic: string; correct: number; total: number; rate: number }[];
   weeklyActivity: { day: string; tasks: number }[];
   examScores: { title: string; score: number; date: string }[];
+  activityDates: string[];
+  weeklyAccuracy: { week: string; accuracy: number; total: number }[];
+  radarData: { specialty: string; score: number }[];
 }
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--accent))", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16"];
@@ -30,7 +35,7 @@ const Analytics = () => {
     if (!user) return;
     const load = async () => {
       const [attemptsRes, flashcardsRes, uploadsRes, tasksRes, examsRes, perfRes] = await Promise.all([
-        supabase.from("practice_attempts").select("correct, question_id, questions_bank(topic)").eq("user_id", user.id),
+        supabase.from("practice_attempts").select("correct, created_at, question_id, questions_bank(topic)").eq("user_id", user.id),
         supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("study_tasks").select("completed, created_at").eq("user_id", user.id),
@@ -55,7 +60,7 @@ const Analytics = () => {
         .map(([topic, v]) => ({ topic, ...v, rate: v.total > 0 ? Math.round((v.correct / v.total) * 100) : 0 }))
         .sort((a, b) => b.total - a.total);
 
-      // Weekly activity (tasks completed per day, last 7 days)
+      // Weekly activity (last 7 days)
       const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
       const weeklyActivity = days.map(day => ({ day, tasks: 0 }));
       const now = new Date();
@@ -63,10 +68,37 @@ const Analytics = () => {
       for (const t of tasks) {
         if (!t.completed) continue;
         const d = new Date(t.created_at);
-        if (d >= weekAgo) {
-          weeklyActivity[d.getDay()].tasks++;
-        }
+        if (d >= weekAgo) weeklyActivity[d.getDay()].tasks++;
       }
+
+      // Activity dates for heatmap (from attempts + completed tasks)
+      const activityDateSet = new Set<string>();
+      for (const a of attempts) {
+        activityDateSet.add(new Date((a as any).created_at).toISOString().split("T")[0]);
+      }
+      for (const t of tasks) {
+        if (t.completed) activityDateSet.add(new Date(t.created_at).toISOString().split("T")[0]);
+      }
+      const activityDates = Array.from(activityDateSet);
+
+      // Weekly accuracy trend
+      const weekMap: Record<string, { correct: number; total: number }> = {};
+      for (const a of attempts) {
+        const d = new Date((a as any).created_at);
+        const weekStart = new Date(d);
+        weekStart.setDate(d.getDate() - d.getDay());
+        const key = `${String(weekStart.getDate()).padStart(2, "0")}/${String(weekStart.getMonth() + 1).padStart(2, "0")}`;
+        if (!weekMap[key]) weekMap[key] = { correct: 0, total: 0 };
+        weekMap[key].total++;
+        if (a.correct) weekMap[key].correct++;
+      }
+      const weeklyAccuracy = Object.entries(weekMap)
+        .map(([week, v]) => ({ week, accuracy: Math.round((v.correct / v.total) * 100), total: v.total }))
+        .sort((a, b) => a.week.localeCompare(b.week))
+        .slice(-12);
+
+      // Radar data from topic breakdown
+      const radarData = topicBreakdown.slice(0, 8).map(t => ({ specialty: t.topic, score: t.rate }));
 
       // Exam scores
       const examScores = (examsRes.data || []).map(e => ({
@@ -75,10 +107,7 @@ const Analytics = () => {
         date: e.finished_at ? new Date(e.finished_at).toLocaleDateString("pt-BR") : "",
       }));
 
-      // Sessions count from study_performance
-      const sessionCount = perfRes.data
-        ? ((perfRes.data.historico_estudo as any[]) || []).length
-        : 0;
+      const sessionCount = perfRes.data ? ((perfRes.data.historico_estudo as any[]) || []).length : 0;
 
       setData({
         totalQuestions: attempts.length,
@@ -92,6 +121,9 @@ const Analytics = () => {
         topicBreakdown,
         weeklyActivity,
         examScores,
+        activityDates,
+        weeklyAccuracy,
+        radarData,
       });
       setLoading(false);
     };
@@ -147,6 +179,15 @@ const Analytics = () => {
         </div>
       </div>
 
+      {/* Activity Heatmap */}
+      <ActivityHeatmap dates={data.activityDates} />
+
+      {/* Accuracy Trend + Radar side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <AccuracyTrendChart data={data.weeklyAccuracy} />
+        <SpecialtyRadarChart data={data.radarData} />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Weekly Activity */}
         <div className="glass-card p-6">
@@ -182,10 +223,7 @@ const Analytics = () => {
                   <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${t.rate}%`,
-                        backgroundColor: COLORS[i % COLORS.length],
-                      }}
+                      style={{ width: `${t.rate}%`, backgroundColor: COLORS[i % COLORS.length] }}
                     />
                   </div>
                   <span className={`text-xs font-medium w-12 text-right ${t.rate >= 70 ? "text-emerald-500" : t.rate >= 50 ? "text-amber-500" : "text-destructive"}`}>

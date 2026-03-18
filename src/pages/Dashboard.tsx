@@ -19,6 +19,7 @@ import WeeklyProgressCard from "@/components/dashboard/WeeklyProgressCard";
 import PerformanceReport from "@/components/dashboard/PerformanceReport";
 import MiniLeaderboard from "@/components/dashboard/MiniLeaderboard";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
+import DailyPlanWidget from "@/components/dashboard/DailyPlanWidget";
 
 interface PlanJson {
   weeklySchedule?: { day: string; tasks: { time: string; subject: string; duration: string; type?: string }[] }[];
@@ -370,6 +371,9 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Daily Plan Widget */}
+      <DailyPlanWidget />
 
       {/* Daily Summary & Streak */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
