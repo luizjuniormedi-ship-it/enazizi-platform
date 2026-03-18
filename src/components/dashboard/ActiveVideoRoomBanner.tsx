@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Video } from "lucide-react";
+import { Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -28,12 +28,10 @@ const ActiveVideoRoomBanner = () => {
       if (!rooms || rooms.length === 0) return;
 
       const matching = rooms.find((r: any) => {
-        // If invited_students has entries, only show to invited students
         const invited: string[] = r.invited_students || [];
         if (invited.length > 0) {
           return invited.includes(user.id);
         }
-        // Fallback: filter by faculdade/periodo
         const facMatch = !r.faculdade_filter || r.faculdade_filter === profile?.faculdade;
         const perMatch = !r.periodo_filter || r.periodo_filter === profile?.periodo;
         return facMatch && perMatch;
@@ -49,22 +47,24 @@ const ActiveVideoRoomBanner = () => {
 
   if (!room) return null;
 
-  const jitsiUrl = `https://meet.jit.si/${room.room_code}`;
+  const groupLink = (room as any).telegram_group_link;
 
   return (
     <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 flex items-center justify-between gap-3 animate-fade-in">
       <div className="flex items-center gap-3">
         <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center">
-          <Video className="h-5 w-5 text-red-500 animate-pulse" />
+          <Send className="h-5 w-5 text-red-500 animate-pulse" />
         </div>
         <div>
           <h4 className="font-semibold text-sm">📹 Aula ao vivo: {room.title}</h4>
-          <p className="text-xs text-muted-foreground">Um professor iniciou uma chamada de vídeo</p>
+          <p className="text-xs text-muted-foreground">Um professor iniciou uma aula — entre pelo Telegram</p>
         </div>
       </div>
-      <Button size="sm" className="gap-1 bg-red-500 hover:bg-red-600" onClick={() => window.open(jitsiUrl, "_blank")}>
-        <Video className="h-3.5 w-3.5" /> Entrar
-      </Button>
+      {groupLink && (
+        <Button size="sm" className="gap-1 bg-red-500 hover:bg-red-600" onClick={() => window.open(groupLink, "_blank")}>
+          <Send className="h-3.5 w-3.5" /> Entrar
+        </Button>
+      )}
     </div>
   );
 };

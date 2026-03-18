@@ -1795,6 +1795,8 @@ export type Database = {
           professor_id: string
           room_code: string
           status: string
+          telegram_chat_id: string | null
+          telegram_group_link: string | null
           title: string
         }
         Insert: {
@@ -1807,6 +1809,8 @@ export type Database = {
           professor_id: string
           room_code: string
           status?: string
+          telegram_chat_id?: string | null
+          telegram_group_link?: string | null
           title?: string
         }
         Update: {
@@ -1819,6 +1823,8 @@ export type Database = {
           professor_id?: string
           room_code?: string
           status?: string
+          telegram_chat_id?: string | null
+          telegram_group_link?: string | null
           title?: string
         }
         Relationships: []

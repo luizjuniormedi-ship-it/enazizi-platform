@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.medical-term-lookup]
 verify_jwt = false
+
+[functions.telegram-classroom]
+verify_jwt = false
