@@ -196,7 +196,7 @@ export default function StudyGuides() {
               </CardHeader>
               <CardContent>
                 <div className="prose prose-sm max-w-none dark:prose-invert">
-                  <ReactMarkdown>{generatedContent}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{generatedContent}</ReactMarkdown>
                 </div>
               </CardContent>
             </Card>
