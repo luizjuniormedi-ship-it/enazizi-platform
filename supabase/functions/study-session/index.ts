@@ -113,11 +113,11 @@ Apresente caso clínico COMPLETO e de ALTO NÍVEL com:
 O caso deve ter complexidade suficiente para exigir raciocínio clínico em etapas.
 Inclua pelo menos uma "armadilha" diagnóstica (apresentação atípica ou comorbidade que confunde).
 
-⛔ REGRA ANTI-REPETIÇÃO (PRIORIDADE MÁXIMA):
-- NUNCA repita perfil de paciente já usado em casos anteriores da sessão
-- Varie: nome, idade, sexo, profissão, cenário clínico, comorbidades
-- Aborde um SUBTÓPICO ou APRESENTAÇÃO CLÍNICA diferente dos casos anteriores
-- VERIFICAÇÃO: antes de finalizar, confirme que este caso NÃO repete conceitos já explorados
+REGRA DE REPETIÇÃO ESPAÇADA (PRIORIDADE MÁXIMA):
+- PODE retomar temas anteriores, desde que não seja o caso CONSECUTIVO anterior
+- Quando retomar, use ENFOQUE DIFERENTE (diagnóstico → conduta → complicação)
+- QUANDO O ALUNO ERRAR: retome o tema nos próximos 3-5 casos para REFORÇO com ângulo diferente
+- NUNCA repita perfil de paciente: varie nome, idade, sexo, profissão, cenário, comorbidades
 
 Pergunte:
 1. Qual o diagnóstico mais provável? Justifique com base nos achados.

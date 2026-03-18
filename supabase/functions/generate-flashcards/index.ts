@@ -71,36 +71,34 @@ REGRAS:
 - Casos clínicos realistas baseados em provas de residência
 
 ==================================================
-⛔ REGRA ANTI-REPETIÇÃO (PRIORIDADE MÁXIMA)
+REGRA DE REPETIÇÃO ESPAÇADA (PRIORIDADE MÁXIMA)
 ==================================================
-Esta é a regra mais importante do sistema. Sua violação invalida todo o bloco.
+Esta é a regra mais importante do sistema.
 
-🔴 PROIBIÇÃO DE REPETIÇÃO DE CONTEÚDO:
-- NUNCA repita a MESMA PERGUNTA ou RESPOSTA entre flashcards, mesmo com enunciados diferentes
-- NUNCA aborde o MESMO CONCEITO CLÍNICO duas vezes no mesmo bloco (ex: dois flashcards sobre diagnóstico de IAM)
-- NUNCA gere dois flashcards sobre a MESMA DOENÇA/CONDIÇÃO com o mesmo enfoque
-- Se o tema é "Cardiologia", NÃO gere 3 flashcards sobre IAM — distribua: IAM, IC, FA, valvopatia, endocardite, etc.
-- Cada flashcard DEVE testar um CONCEITO DIFERENTE e ÚNICO
+🔵 REPETIÇÃO ESPAÇADA DE TEMAS:
+- PODE repetir o mesmo tema/doença, desde que haja pelo menos 2 flashcards de INTERVALO
+- Quando repetir, OBRIGATORIAMENTE use ENFOQUE DIFERENTE (ex: FC2=diagnóstico IAM, FC5=tratamento IAM, FC8=complicações IAM)
+- NUNCA coloque dois flashcards do MESMO TEMA em posições CONSECUTIVAS
+- Distribua enfoques: diagnóstico, tratamento, fisiopatologia, epidemiologia, complicações, prevenção
 
-🔴 PROIBIÇÃO DE REPETIÇÃO DE PACIENTES:
+🔵 REFORÇO AUTOMÁTICO AO ERRAR:
+- QUANDO O ALUNO ERRAR um flashcard: gere novo flashcard do MESMO TEMA com enfoque diferente nas próximas 3-5 posições
+- O reforço deve abordar o conceito errado por outro ângulo clínico
+
+🔴 VARIAÇÃO DE PACIENTES (OBRIGATÓRIA):
 - NUNCA repita nome, idade, sexo ou perfil de paciente entre flashcards
 - Cada caso clínico DEVE ter um paciente COMPLETAMENTE DIFERENTE
 - Variar: nomes regionais brasileiros, idades de 0 a 95 anos, profissões diversas
 - Alternar cenários: PS, enfermaria, UTI, UBS, ambulatório, domicílio
 - Variar comorbidades: DM, HAS, IRC, HIV, tabagismo, etilismo, gestante
-- PROIBIDO: dois pacientes com mesmo perfil demográfico no mesmo bloco
 
 🔴 VERIFICAÇÃO PRÉ-ENVIO (OBRIGATÓRIA):
-Antes de enviar o bloco, verifique mentalmente:
-1. Alguma pergunta tem resposta idêntica ou muito similar a outra? → REESCREVA
-2. Algum conceito clínico aparece em mais de um flashcard? → SUBSTITUA por outro conceito
-3. Algum perfil de paciente se repete? → MUDE completamente
-4. As doenças/condições estão bem distribuídas dentro do tema? → DIVERSIFIQUE
-Se QUALQUER verificação falhar, CORRIJA antes de enviar.
+1. Algum tema aparece em posições CONSECUTIVAS? → Intercale com outro tema
+2. Algum perfil de paciente se repete? → MUDE completamente
+3. As doenças/condições estão bem distribuídas? → DIVERSIFIQUE
 
-🔴 ESTRATÉGIA DE DIVERSIFICAÇÃO:
+🔵 ESTRATÉGIA DE DIVERSIFICAÇÃO:
 - Para cada tema, liste mentalmente 10+ subtópicos DIFERENTES antes de gerar
-- Distribua flashcards entre: diagnóstico, tratamento, fisiopatologia, epidemiologia, complicações, prevenção
 - Varie o nível de complexidade: básico, intermediário, avançado
 - Inclua pelo menos 2 flashcards sobre temas menos óbvios/frequentes da especialidade
 
