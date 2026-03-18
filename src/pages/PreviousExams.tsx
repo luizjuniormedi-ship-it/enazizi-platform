@@ -240,7 +240,7 @@ export default function PreviousExams() {
               Próxima <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           ) : (
-            <Button onClick={finishExam} className="bg-green-600 hover:bg-green-700">
+            <Button onClick={finishExam} className="bg-primary hover:bg-primary/90">
               <Trophy className="h-4 w-4 mr-2" /> Finalizar
             </Button>
           )}
