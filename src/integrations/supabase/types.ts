@@ -800,6 +800,27 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_config: {
+        Row: {
+          id: number
+          telegram_chat_id: string | null
+          telegram_group_link: string | null
+          updated_at: string
+        }
+        Insert: {
+          id: number
+          telegram_chat_id?: string | null
+          telegram_group_link?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          telegram_chat_id?: string | null
+          telegram_group_link?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       practice_attempts: {
         Row: {
           correct: boolean
