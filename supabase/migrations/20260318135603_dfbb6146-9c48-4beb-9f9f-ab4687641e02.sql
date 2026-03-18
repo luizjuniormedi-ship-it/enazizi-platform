@@ -1,0 +1,1 @@
+DELETE FROM flashcards WHERE topic ILIKE '%Declarações de Interesse%';
