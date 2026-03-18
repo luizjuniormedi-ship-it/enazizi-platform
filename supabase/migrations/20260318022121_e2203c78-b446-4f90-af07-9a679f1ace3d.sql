@@ -1,0 +1,1 @@
+ALTER TABLE public.video_rooms ADD COLUMN invited_students jsonb NOT NULL DEFAULT '[]'::jsonb;
