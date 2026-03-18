@@ -152,7 +152,7 @@ FORMATO JSON OBRIGATÓRIO:
     }
 
     // Insert flashcards
-    const flashcards = (parsed.flashcards || []).filter((f: any) => f.question && f.answer);
+    const flashcards = (parsed.flashcards || []).filter((f: any) => f.question && f.answer && !INVALID_CONTENT_REGEX.test(f.question) && !INVALID_CONTENT_REGEX.test(f.answer));
     let fCount = 0;
     if (flashcards.length > 0) {
       const fRows = flashcards.map((f: any) => ({
