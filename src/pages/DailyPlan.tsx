@@ -43,15 +43,52 @@ const DailyPlan = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [plan, setPlan] = useState<DailyPlanData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
   const [completedBlocks, setCompletedBlocks] = useState<Set<number>>(new Set());
+
+  // Load today's plan from DB on mount
+  useEffect(() => {
+    if (!user) return;
+    const loadToday = async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const { data } = await supabase
+        .from("daily_plans")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("plan_date", today)
+        .maybeSingle();
+
+      if (data) {
+        setPlan(data.plan_json as unknown as DailyPlanData);
+        const completed = (data.completed_blocks as number[]) || [];
+        setCompletedBlocks(new Set(completed));
+      }
+      setLoading(false);
+    };
+    loadToday();
+  }, [user]);
+
+  const savePlanToDB = async (planData: DailyPlanData, completed: Set<number>) => {
+    if (!user) return;
+    const today = new Date().toISOString().split("T")[0];
+    await supabase
+      .from("daily_plans")
+      .upsert({
+        user_id: user.id,
+        plan_date: today,
+        plan_json: planData as any,
+        completed_blocks: Array.from(completed) as any,
+        total_blocks: planData.blocks.length,
+        completed_count: completed.size,
+      }, { onConflict: "user_id,plan_date" });
+  };
 
   const generatePlan = async () => {
     if (!user) return;
-    setLoading(true);
+    setGenerating(true);
 
     try {
-      // Gather user data
       const [attemptsRes, flashcardsRes, profileRes] = await Promise.all([
         supabase.from("practice_attempts").select("correct, question_id, questions_bank(topic)").eq("user_id", user.id).order("created_at", { ascending: false }).limit(100),
         supabase.from("reviews").select("id").eq("user_id", user.id).lte("next_review", new Date().toISOString()),
@@ -87,26 +124,34 @@ const DailyPlan = () => {
       });
 
       if (response.error) throw response.error;
-      setPlan(response.data);
-      setCompletedBlocks(new Set());
+      const newPlan = response.data as DailyPlanData;
+      setPlan(newPlan);
+      const newCompleted = new Set<number>();
+      setCompletedBlocks(newCompleted);
+      await savePlanToDB(newPlan, newCompleted);
     } catch (err: any) {
       toast({ title: "Erro ao gerar plano", description: err.message, variant: "destructive" });
     } finally {
-      setLoading(false);
+      setGenerating(false);
     }
   };
 
-  useEffect(() => { generatePlan(); }, [user]);
-
-  const toggleBlock = (order: number) => {
-    setCompletedBlocks(prev => {
-      const next = new Set(prev);
-      if (next.has(order)) next.delete(order); else next.add(order);
-      return next;
-    });
+  const toggleBlock = async (order: number) => {
+    const next = new Set(completedBlocks);
+    if (next.has(order)) next.delete(order); else next.add(order);
+    setCompletedBlocks(next);
+    if (plan) await savePlanToDB(plan, next);
   };
 
   const completionPct = plan ? Math.round((completedBlocks.size / plan.blocks.length) * 100) : 0;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -118,22 +163,21 @@ const DailyPlan = () => {
           </h1>
           <p className="text-muted-foreground">Roteiro otimizado por IA baseado no seu desempenho.</p>
         </div>
-        <Button onClick={generatePlan} disabled={loading} variant="outline" size="sm">
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-          Regenerar
+        <Button onClick={generatePlan} disabled={generating} variant="outline" size="sm">
+          <RefreshCw className={`h-4 w-4 mr-2 ${generating ? "animate-spin" : ""}`} />
+          {plan ? "Regenerar" : "Gerar Plano"}
         </Button>
       </div>
 
-      {loading && (
+      {generating && (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 text-primary animate-spin" />
           <span className="ml-3 text-muted-foreground">Analisando seu desempenho...</span>
         </div>
       )}
 
-      {plan && !loading && (
+      {plan && !generating && (
         <>
-          {/* Greeting & Focus */}
           <div className="glass-card p-5">
             <p className="text-lg font-medium">{plan.greeting}</p>
             {plan.focus_areas.length > 0 && (
@@ -145,7 +189,6 @@ const DailyPlan = () => {
             )}
           </div>
 
-          {/* Progress */}
           <div className="glass-card p-4 flex items-center gap-4">
             <div className="flex-1">
               <div className="flex justify-between text-sm mb-1">
@@ -162,7 +205,6 @@ const DailyPlan = () => {
             </div>
           </div>
 
-          {/* Study Blocks */}
           <div className="space-y-3">
             {plan.blocks.map((block) => {
               const Icon = typeIcons[block.type] || BookOpen;
@@ -207,7 +249,6 @@ const DailyPlan = () => {
             })}
           </div>
 
-          {/* Tips */}
           {plan.tips && plan.tips.length > 0 && (
             <div className="glass-card p-5">
               <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
@@ -223,7 +264,6 @@ const DailyPlan = () => {
             </div>
           )}
 
-          {/* Review reminder */}
           {plan.review_reminder && (
             <div className="glass-card p-4 border-warning/30 bg-warning/5">
               <p className="text-sm text-warning font-medium">{plan.review_reminder}</p>
@@ -232,10 +272,10 @@ const DailyPlan = () => {
         </>
       )}
 
-      {!plan && !loading && (
+      {!plan && !generating && (
         <div className="text-center py-16">
           <Brain className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">Clique em "Regenerar" para criar seu plano do dia.</p>
+          <p className="text-muted-foreground">Clique em "Gerar Plano" para criar seu plano do dia.</p>
         </div>
       )}
     </div>
