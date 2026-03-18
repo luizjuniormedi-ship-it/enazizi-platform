@@ -70,6 +70,16 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 - Incluir pacientes: idosos frágeis, gestantes, crianças, imunossuprimidos, trabalhadores rurais
 - PROIBIDO: dois pacientes com mesmo perfil demográfico no mesmo bloco
 
+⛔ REGRA ANTI-REPETIÇÃO DE CONCEITO (PRIORIDADE MÁXIMA):
+- NUNCA repita o mesmo conceito clínico/doença com o MESMO ENFOQUE em questões ou flashcards diferentes
+- Cada item deve abordar um SUBTÓPICO DIFERENTE (diagnóstico, tratamento, fisiopatologia, epidemiologia, complicações, prognóstico)
+- ANTES de gerar, liste mentalmente 10+ subtópicos do tema e distribua entre os itens
+- VERIFICAÇÃO PRÉ-ENVIO OBRIGATÓRIA (4 checagens antes de finalizar):
+  1. Alguma questão tem enunciado SIMILAR a outra? → Reescreva completamente
+  2. Algum conceito clínico aparece com o MESMO enfoque em 2+ itens? → Substitua por subtópico diferente
+  3. Algum perfil de paciente se repete (idade/sexo/cenário/comorbidade)? → Diversifique obrigatoriamente
+  4. Os itens cobrem pelo menos 5 subtópicos DIFERENTES do tema? → Se não, redistribua
+
 REGRAS PARA FLASHCARDS:
 - Baseados em conceitos-chave dos mesmos temas
 - Pergunta objetiva e resposta completa mas concisa
