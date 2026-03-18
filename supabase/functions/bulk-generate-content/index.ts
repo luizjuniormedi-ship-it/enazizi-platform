@@ -7,6 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const INVALID_CONTENT_REGEX = /(declara[cç][aã]o financeira|declara[cç][oõ]es de interesse|pagamento de qualquer esp[eé]cie|empresa farmac[eê]utica|ind[uú]stria farmac[eê]utica|honor[aá]rio|palestrante remunerado|conflito de interesse|relat[oó]rio de interesse)/i;
+
 const SPECIALTIES = [
   "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia",
   "Gastroenterologia", "Pediatria", "Ginecologia e Obstetrícia",
@@ -98,7 +100,7 @@ FORMATO JSON OBRIGATÓRIO:
     const response = await aiFetch({
       model: "google/gemini-2.5-flash",
       messages: [
-        { role: "system", content: "Você é um professor de medicina especialista em criar questões de residência médica. Responda APENAS com JSON válido, sem markdown." },
+        { role: "system", content: "Você é um professor de medicina especialista em criar questões de residência médica. Responda APENAS com JSON válido, sem markdown.\n\n⛔ CONTEÚDO PROIBIDO: NUNCA gere questões ou flashcards sobre declarações financeiras, conflitos de interesse, relações com empresas/indústrias farmacêuticas, honorários, pagamentos de palestrantes, vínculos empregatícios com laboratórios. Foque EXCLUSIVAMENTE em conteúdo clínico-científico para estudo médico." },
         { role: "user", content: prompt },
       ],
     });
@@ -126,7 +128,8 @@ FORMATO JSON OBRIGATÓRIO:
 
     // Insert questions
     const questions = (parsed.questions || []).filter((q: any) =>
-      q.statement && Array.isArray(q.options) && q.options.length >= 2 && typeof q.correct_index === "number"
+      q.statement && Array.isArray(q.options) && q.options.length >= 2 && typeof q.correct_index === "number" &&
+      !INVALID_CONTENT_REGEX.test(q.statement) && !INVALID_CONTENT_REGEX.test(q.explanation || "")
     );
 
     let qCount = 0;
@@ -149,7 +152,7 @@ FORMATO JSON OBRIGATÓRIO:
     }
 
     // Insert flashcards
-    const flashcards = (parsed.flashcards || []).filter((f: any) => f.question && f.answer);
+    const flashcards = (parsed.flashcards || []).filter((f: any) => f.question && f.answer && !INVALID_CONTENT_REGEX.test(f.question) && !INVALID_CONTENT_REGEX.test(f.answer));
     let fCount = 0;
     if (flashcards.length > 0) {
       const fRows = flashcards.map((f: any) => ({
