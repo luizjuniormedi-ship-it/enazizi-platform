@@ -204,13 +204,13 @@ const VideoRoom = () => {
         <>
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
-              <Badge className="bg-red-500 text-white animate-pulse">● AO VIVO</Badge>
+              <Badge className="bg-destructive text-destructive-foreground animate-pulse">● AO VIVO</Badge>
               <h3 className="font-semibold">{activeRoom.title}</h3>
             </div>
             <div className="flex items-center gap-2">
-              {telegramConfig?.telegram_group_link && (
-                <Button variant="outline" size="sm" onClick={() => window.open(telegramConfig.telegram_group_link!, "_blank")} className="gap-1">
-                  <Send className="h-3.5 w-3.5" /> Abrir Grupo
+              {(activeRoom as any).meet_link && (
+                <Button variant="outline" size="sm" onClick={() => window.open((activeRoom as any).meet_link, "_blank")} className="gap-1">
+                  <Video className="h-3.5 w-3.5" /> Abrir Meet
                 </Button>
               )}
               <Button variant="destructive" size="sm" onClick={() => endRoom(activeRoom.id)} className="gap-1">
@@ -222,11 +222,11 @@ const VideoRoom = () => {
           <Card>
             <CardContent className="py-12 text-center space-y-4">
               <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                <Send className="h-8 w-8 text-primary" />
+                <Video className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold">Aula ao vivo no Telegram</h3>
+              <h3 className="text-lg font-semibold">Aula ao vivo no Google Meet</h3>
               <p className="text-muted-foreground text-sm max-w-md mx-auto">
-                A notificação foi enviada no grupo do Telegram. Os alunos podem entrar pela notificação ou pelo banner no dashboard.
+                Os alunos receberão um popup com o link do Google Meet no dashboard. A notificação também foi enviada no Telegram.
               </p>
             </CardContent>
           </Card>

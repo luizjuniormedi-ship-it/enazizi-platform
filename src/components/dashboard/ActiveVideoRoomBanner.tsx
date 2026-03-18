@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Send } from "lucide-react";
+import { Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -7,18 +7,16 @@ import { Button } from "@/components/ui/button";
 const ActiveVideoRoomBanner = () => {
   const { user } = useAuth();
   const [room, setRoom] = useState<any>(null);
-  const [groupLink, setGroupLink] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
 
     const load = async () => {
-      const [{ data: profile }, { data: config }] = await Promise.all([
-        supabase.from("profiles").select("faculdade, periodo").eq("user_id", user.id).maybeSingle(),
-        supabase.from("platform_config" as any).select("telegram_group_link").eq("id", 1).single(),
-      ]);
-
-      if (config) setGroupLink((config as any).telegram_group_link);
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("faculdade, periodo")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
       const { data: rooms } = await supabase
         .from("video_rooms")
@@ -47,22 +45,22 @@ const ActiveVideoRoomBanner = () => {
 
   if (!room) return null;
 
-  const link = (room as any).telegram_group_link || groupLink;
+  const link = (room as any).meet_link;
 
   return (
     <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-3 animate-fade-in">
       <div className="flex items-center gap-3">
         <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
-          <Send className="h-5 w-5 text-destructive animate-pulse" />
+          <Video className="h-5 w-5 text-destructive animate-pulse" />
         </div>
         <div>
           <h4 className="font-semibold text-sm">📹 Aula ao vivo: {room.title}</h4>
-          <p className="text-xs text-muted-foreground">Um professor iniciou uma aula — entre pelo Telegram</p>
+          <p className="text-xs text-muted-foreground">Um professor iniciou uma aula — entre pelo Google Meet</p>
         </div>
       </div>
       {link && (
         <Button size="sm" variant="destructive" className="gap-1" onClick={() => window.open(link, "_blank")}>
-          <Send className="h-3.5 w-3.5" /> Entrar
+          <Video className="h-3.5 w-3.5" /> Entrar
         </Button>
       )}
     </div>

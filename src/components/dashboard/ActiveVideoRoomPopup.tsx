@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Video, Send } from "lucide-react";
+import { Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -15,19 +15,18 @@ import {
 const ActiveVideoRoomPopup = () => {
   const { user } = useAuth();
   const [room, setRoom] = useState<any>(null);
-  const [link, setLink] = useState<string | null>(null);
+  const [meetLink, setMeetLink] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
 
     const load = async () => {
-      const [{ data: profile }, { data: config }] = await Promise.all([
-        supabase.from("profiles").select("faculdade, periodo").eq("user_id", user.id).maybeSingle(),
-        supabase.from("platform_config").select("telegram_group_link").eq("id", 1).single(),
-      ]);
-
-      const fallbackLink = (config as any)?.telegram_group_link || null;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("faculdade, periodo")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
       const { data: rooms } = await supabase
         .from("video_rooms")
@@ -51,9 +50,8 @@ const ActiveVideoRoomPopup = () => {
       const dismissedKey = `popup_dismissed_${matching.id}`;
       if (sessionStorage.getItem(dismissedKey)) return;
 
-      const roomLink = (matching as any).telegram_group_link || fallbackLink;
       setRoom(matching);
-      setLink(roomLink);
+      setMeetLink((matching as any).meet_link || null);
       setOpen(true);
     };
 
@@ -68,7 +66,7 @@ const ActiveVideoRoomPopup = () => {
   };
 
   const handleJoin = () => {
-    if (link) window.open(link, "_blank");
+    if (meetLink) window.open(meetLink, "_blank");
     handleDismiss();
   };
 
@@ -82,16 +80,16 @@ const ActiveVideoRoomPopup = () => {
           <DialogTitle className="text-center">📹 Aula ao Vivo!</DialogTitle>
           <DialogDescription className="text-center">
             O professor iniciou a aula <strong className="text-foreground">{room?.title}</strong>.
-            Clique abaixo para entrar pelo Telegram.
+            Clique abaixo para entrar no Google Meet.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
           <Button variant="outline" onClick={handleDismiss} className="w-full sm:w-auto">
             Depois
           </Button>
-          {link && (
+          {meetLink && (
             <Button variant="destructive" onClick={handleJoin} className="w-full sm:w-auto gap-2">
-              <Send className="h-4 w-4" /> Entrar na Aula
+              <Video className="h-4 w-4" /> Entrar na Aula
             </Button>
           )}
         </DialogFooter>
