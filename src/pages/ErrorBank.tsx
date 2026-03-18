@@ -50,6 +50,7 @@ const ErrorBank = () => {
   const [errors, setErrors] = useState<ErrorEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTema, setSelectedTema] = useState<string | null>(null);
+  const [generatingFlashcards, setGeneratingFlashcards] = useState(false);
 
   useEffect(() => {
     if (!user) return;
