@@ -135,7 +135,7 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
               <span className="font-medium text-foreground flex items-center gap-1 mb-1">
                 <BookOpen className="h-3.5 w-3.5" /> Explicação:
               </span>
-              {question.explanation}
+              <MedicalTermHighlighter text={question.explanation} />
             </div>
           )}
           {question.reference && (
