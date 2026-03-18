@@ -36,10 +36,11 @@ Tema: "${topic || "solicitado pelo aluno"}"
 ENSINE seguindo RIGOROSAMENTE o MARCADOR DE BLOCO.
 NUNCA faça perguntas nesta fase até o final do bloco (active recall).
 
-⛔ REGRA ANTI-REPETIÇÃO (PRIORIDADE MÁXIMA):
-- NUNCA repita o mesmo conceito/exemplo já apresentado em blocos anteriores da sessão
-- Cada bloco deve abordar um SUBTÓPICO DIFERENTE (diagnóstico, tratamento, fisiopatologia, epidemiologia, complicações)
-- ANTES de ensinar, liste mentalmente 10+ subtópicos do tema e distribua entre os blocos
+REGRA DE REPETIÇÃO ESPAÇADA (PRIORIDADE MÁXIMA):
+- PODE repetir o mesmo tema/conceito, desde que haja pelo menos 2 blocos de INTERVALO
+- Quando repetir, OBRIGATORIAMENTE use um ENFOQUE DIFERENTE (diagnóstico → tratamento → complicações)
+- NUNCA repita o mesmo conceito em blocos CONSECUTIVOS
+- QUANDO O ALUNO ERRAR: retome o tema com enfoque diferente nos próximos 3-5 blocos para REFORÇO AUTOMÁTICO
 - Varie exemplos clínicos: NUNCA repita perfil de paciente (idade/sexo/cenário) em exemplos diferentes
 
 Ao final: "Quando estiver pronto, avance para o Active Recall!"`;
@@ -54,10 +55,12 @@ Apresente TODAS numeradas. O aluno responderá e você corrigirá.
 Foque em: mecanismos, diagnósticos, condutas, pontos de prova.
 Se o aluno errar: resposta correta + raciocínio + revisão + ponto de prova.
 
-⛔ REGRA ANTI-REPETIÇÃO (PRIORIDADE MÁXIMA):
-- Cada pergunta DEVE abordar um conceito DIFERENTE (nunca 2 perguntas sobre o mesmo mecanismo/conduta)
-- Distribua entre: fisiopatologia, diagnóstico, tratamento, complicações, epidemiologia, semiologia
-- VERIFICAÇÃO: antes de finalizar, confirme que nenhuma pergunta testa o mesmo conhecimento que outra`;
+REGRA DE REPETIÇÃO ESPAÇADA (PRIORIDADE MÁXIMA):
+- PODE repetir o mesmo tema, desde que haja pelo menos 2 perguntas de INTERVALO
+- Quando repetir, use ENFOQUE DIFERENTE (ex: P1=fisiopatologia, P4=tratamento)
+- NUNCA coloque duas perguntas do MESMO CONCEITO em posições CONSECUTIVAS
+- QUANDO O ALUNO ERRAR: inclua pergunta de REFORÇO do mesmo conceito com enfoque diferente nas próximas 3-5 perguntas
+- Distribua entre: fisiopatologia, diagnóstico, tratamento, complicações, epidemiologia, semiologia`;
 
     case "questions":
       return `${base}
@@ -112,11 +115,11 @@ Apresente caso clínico COMPLETO e de ALTO NÍVEL com:
 O caso deve ter complexidade suficiente para exigir raciocínio clínico em etapas.
 Inclua pelo menos uma "armadilha" diagnóstica (apresentação atípica ou comorbidade que confunde).
 
-⛔ REGRA ANTI-REPETIÇÃO (PRIORIDADE MÁXIMA):
-- NUNCA repita perfil de paciente já usado em casos anteriores da sessão
-- Varie: nome, idade, sexo, profissão, cenário clínico, comorbidades
-- Aborde um SUBTÓPICO ou APRESENTAÇÃO CLÍNICA diferente dos casos anteriores
-- VERIFICAÇÃO: antes de finalizar, confirme que este caso NÃO repete conceitos já explorados
+REGRA DE REPETIÇÃO ESPAÇADA (PRIORIDADE MÁXIMA):
+- PODE retomar temas anteriores, desde que não seja o caso CONSECUTIVO anterior
+- Quando retomar, use ENFOQUE DIFERENTE (diagnóstico → conduta → complicação)
+- QUANDO O ALUNO ERRAR: retome o tema nos próximos 3-5 casos para REFORÇO com ângulo diferente
+- NUNCA repita perfil de paciente: varie nome, idade, sexo, profissão, cenário, comorbidades
 
 Pergunte:
 1. Qual o diagnóstico mais provável? Justifique com base nos achados.

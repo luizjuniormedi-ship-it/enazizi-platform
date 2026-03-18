@@ -192,17 +192,19 @@ Regras:
 - Exemplo PROIBIDO: B, B, B, A, C (correct_index: 1, 1, 1, 0, 2)
 - Em blocos de 10 questões, cada letra deve aparecer aproximadamente 2 vezes
 
-=== ⛔ REGRA ANTI-REPETIÇÃO (PRIORIDADE MÁXIMA) ===
-- NUNCA repita o mesmo conceito clínico/doença com o MESMO ENFOQUE em questões diferentes
-- Cada questão deve abordar um SUBTÓPICO DIFERENTE (ex: diagnóstico, tratamento, fisiopatologia, epidemiologia, complicações, prognóstico)
-- ANTES de gerar, liste mentalmente 10+ subtópicos do tema e distribua entre as questões
-- Se o tema for "IAM", por exemplo: Q1=diagnóstico ECG, Q2=tratamento fibrinolítico, Q3=complicação mecânica, Q4=reabilitação, Q5=diagnóstico diferencial
+=== REGRA DE REPETIÇÃO ESPAÇADA (PRIORIDADE MÁXIMA) ===
+- PODE repetir o mesmo tema/especialidade, desde que haja pelo menos 2 questões de INTERVALO entre elas
+- Quando repetir um tema, OBRIGATORIAMENTE use um ENFOQUE DIFERENTE (ex: Q2=diagnóstico ECG, Q5=tratamento farmacológico, Q8=complicações)
+- NUNCA coloque duas questões do MESMO TEMA em posições CONSECUTIVAS
+- Distribua subtópicos diferentes: diagnóstico, tratamento, fisiopatologia, epidemiologia, complicações, prognóstico, prevenção
+- QUANDO O ALUNO ERRAR uma questão: gere uma nova questão do MESMO TEMA com enfoque diferente nas próximas 3-5 questões para REFORÇO AUTOMÁTICO
+- O reforço deve abordar o CONCEITO ERRADO por outro ângulo (ex: se errou diagnóstico, reforce com caso clínico diferente do mesmo diagnóstico)
+- Se o tema for "IAM", por exemplo: Q1=diagnóstico ECG, Q3=tratamento fibrinolítico (pula Q2 para outro tema), Q5=complicação mecânica
 
-VERIFICAÇÃO PRÉ-ENVIO OBRIGATÓRIA (4 checagens antes de finalizar):
-1. Alguma questão tem enunciado ou raciocínio SIMILAR a outra? → Reescreva completamente
-2. Algum conceito clínico aparece com o MESMO enfoque em 2+ questões? → Substitua por subtópico diferente
-3. Algum perfil de paciente se repete (idade/sexo/cenário/comorbidade)? → Diversifique obrigatoriamente
-4. As questões cobrem pelo menos 5 subtópicos DIFERENTES do tema? → Se não, redistribua
+VERIFICAÇÃO PRÉ-ENVIO OBRIGATÓRIA:
+1. Alguma questão do MESMO TEMA está CONSECUTIVA a outra do mesmo tema? → Intercale com outro tema
+2. Algum perfil de paciente se repete (idade/sexo/cenário/comorbidade)? → Diversifique obrigatoriamente
+3. As questões cobrem pelo menos 5 subtópicos DIFERENTES do tema? → Se não, redistribua
 
 === PADRÃO DE ESPAÇAMENTO VISUAL OBRIGATÓRIO ===
 Todas as respostas devem usar espaçamento visual organizado para facilitar leitura em celular.
