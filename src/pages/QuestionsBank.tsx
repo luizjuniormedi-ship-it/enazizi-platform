@@ -242,7 +242,7 @@ const QuestionsBank = () => {
               {practiceQuestion.topic}
             </span>
           )}
-          <p className="text-base font-medium mb-6">{practiceQuestion.statement}</p>
+          <p className="text-base font-medium mb-6"><MedicalTermHighlighter text={practiceQuestion.statement} /></p>
 
           <div className="space-y-3">
             {practiceQuestion.options.map((opt, i) => (
