@@ -518,7 +518,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
           if (count > 0) {
             const lastIdx = messages.length; // index of the assistant message just added
             setSavedMsgIdxs((prev) => new Set(prev).add(lastIdx));
-            toast({ title: "✅ Salvo automaticamente!", description: `${count} flashcard(s) salvo(s) no seu banco.` });
+            toast({ title: "✅ Salvo automaticamente!", description: `${count} item(ns) salvo(s) no seu banco.` });
           }
         } catch {
           // Silent fail for auto-save - user can still save manually

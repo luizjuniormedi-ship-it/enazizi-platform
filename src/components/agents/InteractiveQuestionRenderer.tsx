@@ -1,10 +1,11 @@
 import ReactMarkdown from "react-markdown";
 import InteractiveQuestionCard, { type InteractiveQuestion } from "./InteractiveQuestionCard";
 
-/**
- * Parses an AI-generated markdown message to extract interactive questions.
- * Falls back to plain markdown for non-question content.
- */
+// Flexible regex for options: a), A), **a)**, a., **A.** etc.
+const OPTION_RE = /^\*{0,2}[a-eA-E][).]\*{0,2}\s+/;
+const OPTION_LINE_RE = /^\*{0,2}[a-eA-E][).]\*{0,2}\s+.+/gim;
+const OPTION_CLEAN_RE = /^\*{0,2}[a-eA-E][).]\*{0,2}\s*/i;
+
 export function parseQuestionsFromMarkdown(text: string): { questions: InteractiveQuestion[]; segments: Array<{ type: "text" | "question"; content?: string; question?: InteractiveQuestion }> } {
   const segments: Array<{ type: "text" | "question"; content?: string; question?: InteractiveQuestion }> = [];
   const questions: InteractiveQuestion[] = [];
@@ -16,14 +17,16 @@ export function parseQuestionsFromMarkdown(text: string): { questions: Interacti
     const trimmed = part.trim();
     if (!trimmed) continue;
 
-    // Check if this block looks like a question (has options a) through e))
-    const hasOptions = /^[a-e]\)\s/im.test(trimmed);
-    if (!hasOptions) {
+    const hasOptions = OPTION_RE.test(trimmed.split("\n").find(l => OPTION_RE.test(l.trim())) || "");
+    // Also check multi-line
+    const hasOptionsML = OPTION_LINE_RE.test(trimmed);
+    OPTION_LINE_RE.lastIndex = 0; // reset regex state
+
+    if (!hasOptions && !hasOptionsML) {
       segments.push({ type: "text", content: trimmed });
       continue;
     }
 
-    // Try parsing as a question
     const q = parseOneQuestion(trimmed);
     if (q) {
       questions.push(q);
@@ -49,15 +52,16 @@ function parseOneQuestion(block: string): InteractiveQuestion | null {
   const refMatch = block.match(/(?:📚\s*(?:Referência:?\s*)?|\*{0,2}Referência\s*:?\s*\*{0,2})\s*(.+)/i);
   const reference = refMatch?.[1]?.trim() || undefined;
 
-  // Extract gabarito
-  const gabMatch = block.match(/\*{0,2}Gabarito\s*:?\s*\*{0,2}\s*(.+)/i);
+  // Extract gabarito - handle **Gabarito:** **A**, Gabarito: a, etc.
+  const gabMatch = block.match(/\*{0,2}Gabarito\s*:?\s*\*{0,2}\s*\*{0,2}\s*(.+)/i);
   const gabText = gabMatch?.[1]?.trim().replace(/\*+/g, "").toLowerCase() || "";
 
-  // Extract options
-  const optionMatches = block.match(/^[a-e]\)\s*.+/gim);
+  // Extract options with flexible format
+  const optionMatches = block.match(OPTION_LINE_RE);
+  OPTION_LINE_RE.lastIndex = 0;
   if (!optionMatches || optionMatches.length < 2) return null;
 
-  const firstOptIdx = block.search(/^[a-e]\)\s*/im);
+  const firstOptIdx = block.search(/^\*{0,2}[a-eA-E][).]\*{0,2}\s*/im);
   let statement = block.slice(0, firstOptIdx).trim();
 
   // Clean statement
@@ -69,7 +73,7 @@ function parseOneQuestion(block: string): InteractiveQuestion | null {
 
   if (!statement) return null;
 
-  const options = optionMatches.map((o) => o.replace(/^[a-e]\)\s*/i, "").trim());
+  const options = optionMatches.map((o) => o.replace(OPTION_CLEAN_RE, "").trim());
 
   // Determine correct answer
   const letterMatch = gabText.match(/([a-e])/i);

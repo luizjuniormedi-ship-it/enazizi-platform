@@ -11,6 +11,10 @@ export interface ParsedQuestion {
   topic?: string;
 }
 
+// Flexible option regex: a), A), **a)**, a., **A.** etc.
+const OPTION_LINE_RE = /^\*{0,2}[a-eA-E][).]\*{0,2}\s+.+/gim;
+const OPTION_CLEAN_RE = /^\*{0,2}[a-eA-E][).]\*{0,2}\s*/i;
+
 export function parseQuestionsFromText(text: string): ParsedQuestion[] {
   const questions: ParsedQuestion[] = [];
 
@@ -28,7 +32,13 @@ export function parseQuestionsFromText(text: string): ParsedQuestion[] {
   }
 
   for (const part of parts) {
-    if (!/\(\s*\)\s*certo/i.test(part) && !/^[a-e]\)\s/im.test(part)) continue;
+    // Check for CESPE or multiple choice options (flexible)
+    const hasCespe = /\(\s*\)\s*certo/i.test(part);
+    OPTION_LINE_RE.lastIndex = 0;
+    const hasOptions = OPTION_LINE_RE.test(part);
+    OPTION_LINE_RE.lastIndex = 0;
+
+    if (!hasCespe && !hasOptions) continue;
     try {
       const q = parseBlock(part.trim());
       if (q) questions.push(q);
@@ -55,8 +65,8 @@ function parseBlock(block: string): ParsedQuestion | null {
   const explMatch = block.match(/\*{0,2}Explicação\s*:?\s*\*{0,2}\s*([\s\S]*?)$/i);
   const explanation = explMatch?.[1]?.trim().replace(/^\*{1,2}\s*/, "") || "";
 
-  // Extract gabarito
-  const gabMatch = block.match(/\*{0,2}Gabarito\s*:?\s*\*{0,2}\s*(.+)/i);
+  // Extract gabarito - handle **Gabarito:** **A**, Gabarito: a, etc.
+  const gabMatch = block.match(/\*{0,2}Gabarito\s*:?\s*\*{0,2}\s*\*{0,2}\s*(.+)/i);
   const gabText = gabMatch?.[1]?.trim().replace(/\*+/g, "").toLowerCase() || "";
 
   // CESPE (Certo/Errado)
@@ -71,13 +81,14 @@ function parseBlock(block: string): ParsedQuestion | null {
     return { statement, options: ["Certo", "Errado"], correctIndex, explanation, topic };
   }
 
-  // Multiple choice
-  const optionMatches = block.match(/^[a-e]\)\s*.+/gim);
+  // Multiple choice with flexible format
+  const optionMatches = block.match(OPTION_LINE_RE);
+  OPTION_LINE_RE.lastIndex = 0;
   if (optionMatches && optionMatches.length >= 2) {
-    const firstOptIdx = block.search(/^[a-e]\)\s*/im);
+    const firstOptIdx = block.search(/^\*{0,2}[a-eA-E][).]\*{0,2}\s*/im);
     let statement = block.slice(0, firstOptIdx).trim();
     statement = cleanStatement(statement);
-    const options = optionMatches.map((o) => o.replace(/^[a-e]\)\s*/i, "").trim());
+    const options = optionMatches.map((o) => o.replace(OPTION_CLEAN_RE, "").trim());
 
     const letterMatch = gabText.match(/([a-e])/i);
     const correctIndex = letterMatch ? letterMatch[1].toLowerCase().charCodeAt(0) - 97 : 0;
