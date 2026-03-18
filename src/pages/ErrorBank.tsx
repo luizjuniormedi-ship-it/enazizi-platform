@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { AlertTriangle, BookOpen, BarChart3, Trash2, RefreshCw, ArrowRight, Brain, HelpCircle, Stethoscope, ListChecks } from "lucide-react";
+import { AlertTriangle, BookOpen, BarChart3, Trash2, RefreshCw, ArrowRight, Brain, HelpCircle, Stethoscope, ListChecks, FlipVertical, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
