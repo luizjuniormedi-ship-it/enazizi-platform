@@ -31,6 +31,15 @@ const SPECIALTIES = [
   "Semiologia", "Anatomia", "Farmacologia",
 ];
 
+const PEDIATRIC_AGE_RANGES = [
+  { key: "neonato", label: "Neonato (0-28 dias)", vitalRef: "FC 120-160, FR 40-60, PA 60-80/30-45, Temp 36.5-37.5, SpO2 ≥95%" },
+  { key: "lactente", label: "Lactente (1-24 meses)", vitalRef: "FC 100-150, FR 25-40, PA 80-100/50-65, Temp 36.5-37.5, SpO2 ≥95%" },
+  { key: "pre_escolar", label: "Pré-escolar (2-6 anos)", vitalRef: "FC 80-120, FR 20-30, PA 85-110/50-70, Temp 36.5-37.5, SpO2 ≥95%" },
+  { key: "escolar", label: "Escolar (7-12 anos)", vitalRef: "FC 70-110, FR 18-25, PA 90-120/55-75, Temp 36.5-37.5, SpO2 ≥95%" },
+  { key: "adolescente", label: "Adolescente (13-17 anos)", vitalRef: "FC 60-100, FR 12-20, PA 100-130/60-80, Temp 36.5-37.5, SpO2 ≥95%" },
+  { key: "aleatorio", label: "Aleatório", vitalRef: "" },
+];
+
 const QUICK_ACTIONS = [
   { label: "Anamnese", icon: MessageCircle, prompt: "Quais são seus sintomas? Quando começou?" },
   { label: "Exame Físico", icon: Stethoscope, prompt: "Gostaria de realizar exame físico do paciente." },
@@ -121,6 +130,9 @@ const ClinicalSimulation = () => {
   const [phase, setPhase] = useState<Phase>("lobby");
   const [specialty, setSpecialty] = useState("Clínica Médica");
   const [difficulty, setDifficulty] = useState("intermediário");
+  const [pediatricAge, setPediatricAge] = useState("aleatorio");
+
+  const isPediatrics = specialty === "Pediatria";
   const [loading, setLoading] = useState(false);
 
   // Simulation state
@@ -299,6 +311,7 @@ const ClinicalSimulation = () => {
         specialty,
         difficulty,
         ...(teacherCaseId ? { teacher_case_id: teacherCaseId } : {}),
+        ...(isPediatrics && pediatricAge !== "aleatorio" ? { pediatric_age_range: pediatricAge } : {}),
       });
 
       setVitals(res.vitals);
@@ -700,6 +713,28 @@ const ClinicalSimulation = () => {
                 </select>
               </div>
             </div>
+
+            {isPediatrics && (
+              <div className="animate-fade-in space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  👶 Faixa Etária Pediátrica
+                </label>
+                <select
+                  value={pediatricAge}
+                  onChange={(e) => setPediatricAge(e.target.value)}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                >
+                  {PEDIATRIC_AGE_RANGES.map(a => (
+                    <option key={a.key} value={a.key}>{a.label}</option>
+                  ))}
+                </select>
+                {pediatricAge !== "aleatorio" && (
+                  <p className="text-xs text-muted-foreground">
+                    📊 Valores de referência: {PEDIATRIC_AGE_RANGES.find(a => a.key === pediatricAge)?.vitalRef}
+                  </p>
+                )}
+              </div>
+            )}
 
             <Button onClick={startSimulation} disabled={loading} className="w-full gap-2 bg-red-600 hover:bg-red-700 text-white">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}

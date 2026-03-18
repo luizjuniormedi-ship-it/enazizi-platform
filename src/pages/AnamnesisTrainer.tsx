@@ -23,7 +23,16 @@ const SPECIALTIES = [
   "Ortopedia", "Psiquiatria", "Emergência", "Dermatologia", "Semiologia",
 ];
 
-const CATEGORIES = [
+const PEDIATRIC_AGE_RANGES = [
+  { key: "neonato", label: "Neonato (0-28 dias)" },
+  { key: "lactente", label: "Lactente (1-24 meses)" },
+  { key: "pre_escolar", label: "Pré-escolar (2-6 anos)" },
+  { key: "escolar", label: "Escolar (7-12 anos)" },
+  { key: "adolescente", label: "Adolescente (13-17 anos)" },
+  { key: "aleatorio", label: "Aleatório" },
+];
+
+const BASE_CATEGORIES = [
   { key: "identification", label: "Identificação", icon: User },
   { key: "chief_complaint", label: "Queixa Principal", icon: MessageCircle },
   { key: "hda", label: "HDA", icon: Activity },
@@ -34,6 +43,14 @@ const CATEGORIES = [
   { key: "social_history", label: "Hábitos de Vida", icon: Heart },
   { key: "review_of_systems", label: "Rev. Sistemas", icon: Stethoscope },
   { key: "gynecological", label: "Ginecológica", icon: Baby },
+];
+
+const PEDIATRIC_EXTRA_CATEGORIES = [
+  { key: "gestational_history", label: "Hist. Gestacional", icon: Heart },
+  { key: "birth_history", label: "Hist. Neonatal", icon: Baby },
+  { key: "development", label: "DNPM", icon: Activity },
+  { key: "vaccination", label: "Vacinação", icon: ClipboardCheck },
+  { key: "feeding", label: "Alimentação", icon: Stethoscope },
 ];
 
 const DIAGNOSIS_CATEGORIES = [
@@ -85,6 +102,12 @@ const AnamnesisTrainer = () => {
   const [phase, setPhase] = useState<Phase>("lobby");
   const [specialty, setSpecialty] = useState("Clínica Médica");
   const [difficulty, setDifficulty] = useState("intermediário");
+  const [pediatricAge, setPediatricAge] = useState("aleatorio");
+
+  const isPediatrics = specialty === "Pediatria";
+  const CATEGORIES = isPediatrics
+    ? [...BASE_CATEGORIES.filter(c => c.key !== "gynecological" && c.key !== "social_history"), ...PEDIATRIC_EXTRA_CATEGORIES]
+    : BASE_CATEGORIES;
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -123,7 +146,12 @@ const AnamnesisTrainer = () => {
   const handleStart = async () => {
     setLoading(true);
     try {
-      const data = await callEdgeFunction({ action: "start", specialty, difficulty });
+      const data = await callEdgeFunction({
+        action: "start",
+        specialty,
+        difficulty,
+        ...(isPediatrics && pediatricAge !== "aleatorio" ? { pediatric_age_range: pediatricAge } : {}),
+      });
       setPatientData(data);
       setMessages([{
         role: "patient",
@@ -268,6 +296,30 @@ const AnamnesisTrainer = () => {
                 ))}
               </div>
             </div>
+
+            {isPediatrics && (
+              <div className="animate-fade-in">
+                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                  <Baby className="h-4 w-4 text-primary" />
+                  Faixa Etária Pediátrica
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {PEDIATRIC_AGE_RANGES.map(a => (
+                    <Badge
+                      key={a.key}
+                      variant={pediatricAge === a.key ? "default" : "outline"}
+                      className="cursor-pointer hover:bg-primary/20 transition-colors"
+                      onClick={() => setPediatricAge(a.key)}
+                    >
+                      {a.label}
+                    </Badge>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  🩺 Categorias extras na avaliação: História Gestacional, Neonatal, DNPM, Vacinação e Alimentação
+                </p>
+              </div>
+            )}
 
             <div>
               <label className="text-sm font-medium mb-2 block">Dificuldade</label>

@@ -211,7 +211,7 @@ serve(async (req) => {
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user) throw new Error("Não autenticado");
 
-    const { action, specialty, difficulty, message, conversation_history, specialist_area, teacher_case_id, triage_color: requestedTriageColor } = await req.json();
+    const { action, specialty, difficulty, message, conversation_history, specialist_area, teacher_case_id, triage_color: requestedTriageColor, pediatric_age_range } = await req.json();
 
     let messages: Array<{ role: string; content: string }> = [
       { role: "system", content: SYSTEM_PROMPT },
@@ -253,9 +253,23 @@ serve(async (req) => {
         ? requestedTriageColor
         : triageOptions[Math.floor(Math.random() * triageOptions.length)];
 
+      const isPediatrics = (specialty || "").toLowerCase().includes("pediatria");
+      const ageRangeMap: Record<string, string> = {
+        neonato: "Neonato (0-28 dias) — sinais vitais de referência: FC 120-160, FR 40-60, PA 60-80/30-45",
+        lactente: "Lactente (1-24 meses) — sinais vitais de referência: FC 100-150, FR 25-40, PA 80-100/50-65",
+        pre_escolar: "Pré-escolar (2-6 anos) — sinais vitais de referência: FC 80-120, FR 20-30, PA 85-110/50-70",
+        escolar: "Escolar (7-12 anos) — sinais vitais de referência: FC 70-110, FR 18-25, PA 90-120/55-75",
+        adolescente: "Adolescente (13-17 anos) — sinais vitais de referência: FC 60-100, FR 12-20, PA 100-130/60-80",
+      };
+      const pediatricInstruction = isPediatrics && pediatric_age_range && ageRangeMap[pediatric_age_range]
+        ? ` O paciente DEVE ser da faixa etária: ${ageRangeMap[pediatric_age_range]}. Use sinais vitais adequados para a idade (os valores de referência acima são para o paciente SAUDÁVEL — ajuste conforme a gravidade do caso e classificação de risco). O responsável (mãe/pai/avó) acompanha a criança. Use linguagem de cuidador preocupado para as falas do paciente. Inclua peso e dose de medicações por kg quando aplicável.`
+        : isPediatrics
+        ? ` O paciente DEVE ser pediátrico (0-17 anos). Use sinais vitais adequados para a faixa etária. O responsável acompanha a criança.`
+        : "";
+
       messages.push({
         role: "user",
-        content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}. Dificuldade: ${difficulty || "intermediário"}. Classificação de risco obrigatória: ${triage.toUpperCase()}. O campo triage_color DEVE ser "${triage}". Os sinais vitais e a gravidade do caso DEVEM ser coerentes com a classificação ${triage.toUpperCase()}. Responda APENAS em JSON válido.`,
+        content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}. Dificuldade: ${difficulty || "intermediário"}. Classificação de risco obrigatória: ${triage.toUpperCase()}. O campo triage_color DEVE ser "${triage}". Os sinais vitais e a gravidade do caso DEVEM ser coerentes com a classificação ${triage.toUpperCase()}.${pediatricInstruction} Responda APENAS em JSON válido.`,
       });
     } else if (action === "interact") {
       if (conversation_history && Array.isArray(conversation_history)) {
