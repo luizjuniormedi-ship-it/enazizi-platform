@@ -29,6 +29,7 @@ const VideoRoom = () => {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState("Sala de Aula");
+  const [meetLink, setMeetLink] = useState("");
   const [faculdade, setFaculdade] = useState("");
   const [periodo, setPeriodo] = useState("");
   const [activeRoom, setActiveRoom] = useState<any>(null);
