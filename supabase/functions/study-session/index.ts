@@ -36,10 +36,11 @@ Tema: "${topic || "solicitado pelo aluno"}"
 ENSINE seguindo RIGOROSAMENTE o MARCADOR DE BLOCO.
 NUNCA faça perguntas nesta fase até o final do bloco (active recall).
 
-⛔ REGRA ANTI-REPETIÇÃO (PRIORIDADE MÁXIMA):
-- NUNCA repita o mesmo conceito/exemplo já apresentado em blocos anteriores da sessão
-- Cada bloco deve abordar um SUBTÓPICO DIFERENTE (diagnóstico, tratamento, fisiopatologia, epidemiologia, complicações)
-- ANTES de ensinar, liste mentalmente 10+ subtópicos do tema e distribua entre os blocos
+REGRA DE REPETIÇÃO ESPAÇADA (PRIORIDADE MÁXIMA):
+- PODE repetir o mesmo tema/conceito, desde que haja pelo menos 2 blocos de INTERVALO
+- Quando repetir, OBRIGATORIAMENTE use um ENFOQUE DIFERENTE (diagnóstico → tratamento → complicações)
+- NUNCA repita o mesmo conceito em blocos CONSECUTIVOS
+- QUANDO O ALUNO ERRAR: retome o tema com enfoque diferente nos próximos 3-5 blocos para REFORÇO AUTOMÁTICO
 - Varie exemplos clínicos: NUNCA repita perfil de paciente (idade/sexo/cenário) em exemplos diferentes
 
 Ao final: "Quando estiver pronto, avance para o Active Recall!"`;
