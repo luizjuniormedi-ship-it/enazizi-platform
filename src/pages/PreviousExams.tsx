@@ -73,13 +73,13 @@ export default function PreviousExams() {
         .eq("is_global", true)
         .not("source", "is", null);
 
-      if (selectedBanca) {
+      if (selectedBanca && selectedBanca !== "all") {
         query = query.ilike("source", `%${selectedBanca}%`);
       }
-      if (selectedYear) {
+      if (selectedYear && selectedYear !== "all") {
         query = query.ilike("source", `%${selectedYear}%`);
       }
-      if (selectedTopic) {
+      if (selectedTopic && selectedTopic !== "all") {
         query = query.eq("topic", selectedTopic);
       }
 
