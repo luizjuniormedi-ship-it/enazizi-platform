@@ -12,6 +12,7 @@ import { BookOpen, Download, Loader2, Search, Sparkles, FileText } from "lucide-
 import { toast } from "sonner";
 import { exportToPdf } from "@/lib/exportPdf";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const SPECIALTIES = [
   "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia", "Gastroenterologia",
