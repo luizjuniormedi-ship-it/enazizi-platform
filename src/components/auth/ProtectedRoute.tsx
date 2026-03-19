@@ -186,6 +186,28 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
             </div>
 
             <div className="space-y-2">
+              <Label>Eu sou</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormUserType("estudante")}
+                  className={`flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors ${formUserType === "estudante" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground hover:bg-accent"}`}
+                >
+                  <GraduationCap className="h-4 w-4" />
+                  Estudante
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormUserType("medico")}
+                  className={`flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors ${formUserType === "medico" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground hover:bg-accent"}`}
+                >
+                  <Stethoscope className="h-4 w-4" />
+                  Médico
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
               <Label className="flex items-center gap-1.5">
                 <Phone className="h-3.5 w-3.5 text-muted-foreground" />
                 WhatsApp
@@ -204,40 +226,42 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1.5">
-                  <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
-                  Período
-                </Label>
-                <Select value={formPeriodo} onValueChange={setFormPeriodo}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map((p) => (
-                      <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {formUserType === "estudante" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
+                    Período
+                  </Label>
+                  <Select value={formPeriodo} onValueChange={setFormPeriodo}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((p) => (
+                        <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    <Building className="h-3.5 w-3.5 text-muted-foreground" />
+                    Faculdade
+                  </Label>
+                  <Select value={formFaculdade} onValueChange={setFormFaculdade}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FACULDADES.map((f) => (
+                        <SelectItem key={f} value={f}>{f}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1.5">
-                  <Building className="h-3.5 w-3.5 text-muted-foreground" />
-                  Faculdade
-                </Label>
-                <Select value={formFaculdade} onValueChange={setFormFaculdade}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FACULDADES.map((f) => (
-                      <SelectItem key={f} value={f}>{f}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            )}
 
             <Button onClick={handleOnboardingSave} disabled={saving} className="w-full mt-2">
               {saving ? (
