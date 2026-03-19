@@ -24,18 +24,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       setLoading(false);
 
-      // Force PWA update on login so latest code is loaded
-      if (event === "SIGNED_IN" && "serviceWorker" in navigator) {
-        navigator.serviceWorker.getRegistration().then((reg) => {
-          if (reg) {
-            reg.update().then(() => {
-              if (reg.waiting) {
-                reg.waiting.postMessage({ type: "SKIP_WAITING" });
-                window.location.reload();
-              }
+      // Force PWA cache clear + reload on login to load latest code
+      if (event === "SIGNED_IN") {
+        const lastUpdate = sessionStorage.getItem("pwa-updated");
+        if (!lastUpdate) {
+          sessionStorage.setItem("pwa-updated", Date.now().toString());
+          
+          if ("caches" in window) {
+            caches.keys().then((names) => {
+              Promise.all(names.map((name) => caches.delete(name))).then(() => {
+                if ("serviceWorker" in navigator) {
+                  navigator.serviceWorker.getRegistration().then((reg) => {
+                    if (reg) {
+                      reg.update().then(() => {
+                        window.location.reload();
+                      });
+                    } else {
+                      window.location.reload();
+                    }
+                  });
+                } else {
+                  window.location.reload();
+                }
+              });
             });
           }
-        });
+        }
       }
     });
 
