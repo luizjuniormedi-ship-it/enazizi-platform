@@ -131,7 +131,7 @@ const MobileNav = () => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <button className="landscape-tablet:hidden md:hidden p-2"><Menu className="h-6 w-6" /></button>
+        <button className="landscape-tablet:hidden lg:hidden p-2"><Menu className="h-6 w-6" /></button>
       </SheetTrigger>
       <SheetContent side="left" className="bg-sidebar border-sidebar-border w-72 p-0 flex flex-col">
         <VisuallyHidden>
