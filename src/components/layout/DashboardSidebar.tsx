@@ -141,7 +141,7 @@ const DashboardSidebar = () => {
   };
 
   return (
-    <aside className="hidden md:flex flex-col w-56 lg:w-64 border-r border-sidebar-border bg-sidebar h-screen sticky top-0">
+    <aside className="hidden landscape-tablet:flex md:flex flex-col w-52 md:w-56 lg:w-64 border-r border-sidebar-border bg-sidebar h-screen sticky top-0">
       <div className="p-6 flex-shrink-0">
         <Link to="/" className="flex items-center gap-2">
           <img src={enazizi} alt="ENAZIZI" className="h-9 w-9 rounded-lg object-cover" />
