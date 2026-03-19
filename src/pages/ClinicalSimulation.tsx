@@ -310,6 +310,7 @@ const ClinicalSimulation = () => {
       const res = await callAPI({
         action: "start",
         specialty,
+        subtopic: subtopic.trim() || undefined,
         difficulty,
         ...(teacherCaseId ? { teacher_case_id: teacherCaseId } : {}),
         ...(isPediatrics && pediatricAge !== "aleatorio" ? { pediatric_age_range: pediatricAge } : {}),

@@ -150,6 +150,7 @@ const AnamnesisTrainer = () => {
       const data = await callEdgeFunction({
         action: "start",
         specialty,
+        subtopic: subtopic.trim() || undefined,
         difficulty,
         ...(isPediatrics && pediatricAge !== "aleatorio" ? { pediatric_age_range: pediatricAge } : {}),
       });
