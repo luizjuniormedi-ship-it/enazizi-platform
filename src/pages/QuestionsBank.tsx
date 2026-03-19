@@ -190,6 +190,11 @@ const QuestionsBank = () => {
     // Award XP
     await addXp(isCorrect ? XP_REWARDS.question_correct : XP_REWARDS.question_answered);
 
+    // Update medical domain map
+    if (practiceQuestion.topic) {
+      await updateDomainMap(user.id, [{ topic: practiceQuestion.topic, correct: isCorrect }]);
+    }
+
     // Log wrong answer to error_bank
     if (!isCorrect) {
       await logErrorToBank({
