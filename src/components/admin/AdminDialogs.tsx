@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { LogOut, BarChart3, Brain, ClipboardList, CreditCard, AlertTriangle, TrendingUp, BookOpen, Target, Activity, Lock, Phone, GraduationCap, Calendar, Clock, Stethoscope, Building2 } from "lucide-react";
+import { LogOut, BarChart3, Brain, ClipboardList, CreditCard, AlertTriangle, TrendingUp, BookOpen, Target, Activity, Lock, Phone, GraduationCap, Calendar, Clock, Stethoscope, Building2, PenTool, FileCheck, Upload, FlipVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -358,6 +358,29 @@ const AdminDialogs = ({
                 </div>
               ))}
             </div>
+
+            {/* Activity Metrics */}
+            {trackingDialog.data.activityMetrics && (
+              <div className="rounded-lg border bg-card p-4">
+                <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5"><Activity className="h-4 w-4" /> Atividades do Usuário</h3>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                  {[
+                    { label: "Questões criadas", value: trackingDialog.data.activityMetrics.questionsCreated, icon: PenTool },
+                    { label: "Simulações clínicas", value: trackingDialog.data.activityMetrics.clinicalSimulations, icon: Stethoscope },
+                    { label: "Anamneses", value: trackingDialog.data.activityMetrics.anamnesisCompleted, icon: ClipboardList },
+                    { label: "Resumos", value: trackingDialog.data.activityMetrics.summariesCreated, icon: FileCheck },
+                    { label: "Discursivas", value: trackingDialog.data.activityMetrics.discursivasCompleted, icon: BookOpen },
+                    { label: "Uploads", value: trackingDialog.data.activityMetrics.uploadsCount, icon: Upload },
+                  ].map((m) => (
+                    <div key={m.label} className="text-center p-2 rounded-lg bg-secondary/50">
+                      <m.icon className="h-4 w-4 mx-auto mb-1 text-primary" />
+                      <div className="text-lg font-bold">{m.value}</div>
+                      <div className="text-[10px] text-muted-foreground leading-tight">{m.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {trackingDialog.data.quota && (
               <div className="rounded-lg border bg-card p-4">

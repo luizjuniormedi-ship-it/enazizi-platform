@@ -235,6 +235,12 @@ Deno.serve(async (req) => {
           { data: examSessions },
           { data: diagnostics },
           { data: quota },
+          { count: questionsCreated },
+          { count: clinicalSimulations },
+          { count: anamnesisCompleted },
+          { count: summariesCreated },
+          { count: discursivasCompleted },
+          { count: uploadsCount },
         ] = await Promise.all([
           supabaseAuth.from("profiles").select("*").eq("user_id", target_user_id).maybeSingle(),
           supabaseAuth.from("study_performance").select("*").eq("user_id", target_user_id).order("updated_at", { ascending: false }).limit(1),
@@ -246,6 +252,12 @@ Deno.serve(async (req) => {
           supabaseAuth.from("exam_sessions").select("id, title, score, total_questions, status, started_at, finished_at").eq("user_id", target_user_id).order("started_at", { ascending: false }).limit(10),
           supabaseAuth.from("diagnostic_results").select("*").eq("user_id", target_user_id).order("completed_at", { ascending: false }).limit(1),
           supabaseAuth.from("user_quotas").select("*").eq("user_id", target_user_id).maybeSingle(),
+          supabaseAuth.from("questions_bank").select("id", { count: "exact", head: true }).eq("user_id", target_user_id),
+          supabaseAuth.from("simulation_history").select("id", { count: "exact", head: true }).eq("user_id", target_user_id),
+          supabaseAuth.from("anamnesis_results").select("id", { count: "exact", head: true }).eq("user_id", target_user_id),
+          supabaseAuth.from("summaries").select("id", { count: "exact", head: true }).eq("user_id", target_user_id),
+          supabaseAuth.from("discursive_attempts").select("id", { count: "exact", head: true }).eq("user_id", target_user_id).not("finished_at", "is", null),
+          supabaseAuth.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", target_user_id),
         ]);
 
         // Calculate stats from attempts
@@ -268,6 +280,14 @@ Deno.serve(async (req) => {
           examSessions: examSessions || [],
           diagnostic: diagnostics?.[0] || null,
           quota: quota || null,
+          activityMetrics: {
+            questionsCreated: questionsCreated || 0,
+            clinicalSimulations: clinicalSimulations || 0,
+            anamnesisCompleted: anamnesisCompleted || 0,
+            summariesCreated: summariesCreated || 0,
+            discursivasCompleted: discursivasCompleted || 0,
+            uploadsCount: uploadsCount || 0,
+          },
         });
       }
 
