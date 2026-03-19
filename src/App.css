@@ -9,11 +9,24 @@ html, body {
   overscroll-behavior: none;
 }
 
+/* Force layout recalc on orientation change (Android fix) */
+@media (orientation: landscape) {
+  #root {
+    min-height: 100dvh;
+    height: 100dvh;
+  }
+}
+
+@media (orientation: portrait) {
+  #root {
+    min-height: 100dvh;
+  }
+}
+
 /* Tablet landscape: tighter spacing */
-@media (min-width: 768px) and (max-width: 1023px) and (orientation: landscape) {
+@media (orientation: landscape) and (min-width: 600px) and (min-height: 400px) {
   .dashboard-main {
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
+    padding: 0.5rem 0.75rem;
   }
 }
 
