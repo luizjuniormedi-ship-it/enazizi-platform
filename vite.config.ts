@@ -64,7 +64,7 @@ export default defineConfig(({ mode }) => ({
         start_url: "/",
         scope: "/",
         display: "standalone",
-        orientation: "portrait",
+        orientation: "any",
         theme_color: "#0f172a",
         background_color: "#0f172a",
         categories: ["education", "medical"],
