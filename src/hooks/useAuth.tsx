@@ -24,31 +24,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       setLoading(false);
 
-      // Force PWA cache clear + reload on login to load latest code
+      // Force PWA cache clear + reload on ANY login, all devices (iOS/Android/desktop)
       if (event === "SIGNED_IN") {
-        const lastUpdate = sessionStorage.getItem("pwa-updated");
-        if (!lastUpdate) {
-          sessionStorage.setItem("pwa-updated", Date.now().toString());
-          
-          if ("caches" in window) {
-            caches.keys().then((names) => {
-              Promise.all(names.map((name) => caches.delete(name))).then(() => {
-                if ("serviceWorker" in navigator) {
-                  navigator.serviceWorker.getRegistration().then((reg) => {
-                    if (reg) {
-                      reg.update().then(() => {
-                        window.location.reload();
-                      });
-                    } else {
-                      window.location.reload();
-                    }
-                  });
-                } else {
-                  window.location.reload();
+        try {
+          const alreadyUpdated = window.__pwaUpdated;
+          if (alreadyUpdated) return;
+          (window as any).__pwaUpdated = true;
+
+          const clearAndReload = async () => {
+            // Clear all caches (works on Chrome, Safari, Firefox, Samsung Internet)
+            if ("caches" in window) {
+              const names = await caches.keys();
+              await Promise.all(names.map((n) => caches.delete(n)));
+            }
+            // Update service worker if available
+            if ("serviceWorker" in navigator) {
+              const reg = await navigator.serviceWorker.getRegistration();
+              if (reg) {
+                await reg.update().catch(() => {});
+                if (reg.waiting) {
+                  reg.waiting.postMessage({ type: "SKIP_WAITING" });
                 }
-              });
-            });
-          }
+              }
+            }
+            window.location.reload();
+          };
+          
+          clearAndReload();
+        } catch {
+          // Fallback: just reload
+          window.location.reload();
         }
       }
     });
