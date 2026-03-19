@@ -1,4 +1,4 @@
-import { Award, GraduationCap, TrendingUp, Clock, Target, BarChart3 } from "lucide-react";
+import { Award, GraduationCap, TrendingUp, Clock, Target, BarChart3, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,7 @@ import type { AnswerRecord, DiagQuestion } from "./DiagnosticExam";
 interface DiagnosticResultProps {
   questions: DiagQuestion[];
   answers: AnswerRecord[];
+  xpEarned?: number;
 }
 
 const DiagnosticResult = ({ questions, answers }: DiagnosticResultProps) => {
