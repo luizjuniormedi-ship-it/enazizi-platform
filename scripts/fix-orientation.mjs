@@ -1,7 +1,7 @@
 /**
- * Post-sync script: Fixes orientation + SDK versions for iOS and Android.
- * Run after `npx cap sync`: node scripts/fix-orientation.mjs
- * Or use: npm run capsync
+ * Post-build/sync script: Fixes orientation + SDK versions for iOS and Android.
+ * Runs automatically after `npm run build` (postbuild) and `npm run capsync`.
+ * Silently skips if native folders don't exist.
  */
 
 import { readFileSync, writeFileSync, existsSync } from "fs";
