@@ -41,13 +41,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         setProfileStatus(data?.status || "pending");
       }
       // Check if profile is incomplete
-      const incomplete = !data?.phone || !data?.periodo || !data?.faculdade || !data?.display_name;
+      const userType = (data as any)?.user_type || "estudante";
+      const isStudent = userType === "estudante";
+      const incomplete = !data?.phone || !data?.display_name || (isStudent && (!data?.periodo || !data?.faculdade));
       setProfileIncomplete(incomplete);
       if (incomplete) {
         setFormName(data?.display_name || "");
         setFormPhone(data?.phone || "");
         setFormPeriodo(data?.periodo ? String(data.periodo) : "");
         setFormFaculdade(data?.faculdade || "");
+        setFormUserType(userType);
       }
       setCheckingProfile(false);
     };
