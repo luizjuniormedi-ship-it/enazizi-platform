@@ -25,6 +25,7 @@ const Profile = () => {
   const [periodo, setPeriodo] = useState("");
   const [faculdade, setFaculdade] = useState("");
   const [phone, setPhone] = useState("");
+  const [userType, setUserType] = useState("estudante");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
