@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
+import { useLandscapeTablet } from "@/hooks/useLandscapeTablet";
 import DashboardSidebar from "./DashboardSidebar";
 import GlobalSearch from "./GlobalSearch";
 import NotificationBell from "@/components/dashboard/NotificationBell";
