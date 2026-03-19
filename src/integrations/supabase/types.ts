@@ -874,6 +874,7 @@ export type Database = {
           target_specialty: string | null
           updated_at: string
           user_id: string
+          user_type: string
         }
         Insert: {
           approved_at?: string | null
@@ -895,6 +896,7 @@ export type Database = {
           target_specialty?: string | null
           updated_at?: string
           user_id: string
+          user_type?: string
         }
         Update: {
           approved_at?: string | null
@@ -916,6 +918,7 @@ export type Database = {
           target_specialty?: string | null
           updated_at?: string
           user_id?: string
+          user_type?: string
         }
         Relationships: [
           {
