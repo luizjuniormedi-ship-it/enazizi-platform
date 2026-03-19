@@ -82,6 +82,7 @@ const Dashboard = () => {
         flashcardsRes, uploadsRes, tasksRes, plansRes, reviewsRes, profileRes,
         practiceRes, errorBankRes, pendingRevisoesRes, simuladosRes, discursivasRes,
         gamificationRes, globalFlashRes, globalQuestRes,
+        questionsCreatedRes, clinicalSimRes, anamnesisRes, summariesRes,
       ] = await Promise.all([
         supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", user.id),
@@ -98,6 +99,11 @@ const Dashboard = () => {
         supabase.from("user_gamification").select("current_streak, xp, level").eq("user_id", user.id).maybeSingle(),
         supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("is_global", true),
         supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("is_global", true),
+        // New activity metrics
+        supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("simulation_history").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("anamnesis_results").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("summaries").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       ]);
 
       setDisplayName(profileRes.data?.display_name || null);
