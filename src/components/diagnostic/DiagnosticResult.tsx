@@ -11,7 +11,7 @@ interface DiagnosticResultProps {
   xpEarned?: number;
 }
 
-const DiagnosticResult = ({ questions, answers }: DiagnosticResultProps) => {
+const DiagnosticResult = ({ questions, answers, xpEarned = 0 }: DiagnosticResultProps) => {
   const navigate = useNavigate();
   const correctCount = answers.filter(a => a.correct).length;
   const score = questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0;
