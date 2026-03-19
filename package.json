@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "capsync": "npx cap sync && node scripts/fix-orientation.mjs"
+    "capsync": "npx cap sync && node scripts/fix-orientation.mjs",
+    "postbuild": "node scripts/fix-orientation.mjs"
   },
   "dependencies": {
     "@capacitor/cli": "^8.2.0",
