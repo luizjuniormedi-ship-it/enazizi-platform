@@ -46,6 +46,7 @@ const Flashcards = () => {
   const [showTopicFilter, setShowTopicFilter] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { addXp } = useGamification();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Sprint mode state
