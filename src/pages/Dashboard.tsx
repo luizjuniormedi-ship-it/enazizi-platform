@@ -325,35 +325,67 @@ const Dashboard = () => {
       </div>
 
       {/* Secondary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <Link to="/dashboard/flashcards" className="glass-card p-5 hover:border-primary/30 transition-all group">
           <div className="flex items-center justify-between mb-3">
             <FlipVertical className="h-5 w-5 text-primary" />
-            <TrendingUp className="h-4 w-4 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <TrendingUp className="h-4 w-4 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="text-2xl font-bold">{stats.flashcards}</div>
           <div className="text-sm text-muted-foreground">Flashcards</div>
         </Link>
+        <Link to="/dashboard/questoes" className="glass-card p-5 hover:border-primary/30 transition-all group">
+          <div className="flex items-center justify-between mb-3">
+            <PenTool className="h-5 w-5 text-primary" />
+            <TrendingUp className="h-4 w-4 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <div className="text-2xl font-bold">{metrics.questionsCreated}</div>
+          <div className="text-sm text-muted-foreground">Questões criadas</div>
+        </Link>
+        <Link to="/dashboard/plantao" className="glass-card p-5 hover:border-primary/30 transition-all group">
+          <div className="flex items-center justify-between mb-3">
+            <Activity className="h-5 w-5 text-primary" />
+            <TrendingUp className="h-4 w-4 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <div className="text-2xl font-bold">{metrics.clinicalSimulations}</div>
+          <div className="text-sm text-muted-foreground">Simulações clínicas</div>
+        </Link>
+        <Link to="/dashboard/anamnese" className="glass-card p-5 hover:border-primary/30 transition-all group">
+          <div className="flex items-center justify-between mb-3">
+            <ClipboardList className="h-5 w-5 text-primary" />
+            <TrendingUp className="h-4 w-4 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <div className="text-2xl font-bold">{metrics.anamnesisCompleted}</div>
+          <div className="text-sm text-muted-foreground">Anamneses realizadas</div>
+        </Link>
         <Link to="/dashboard/cronograma" className="glass-card p-5 hover:border-primary/30 transition-all group">
           <div className="flex items-center justify-between mb-3">
             <CheckCircle2 className="h-5 w-5 text-accent" />
-            <TrendingUp className="h-4 w-4 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <TrendingUp className="h-4 w-4 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="text-2xl font-bold">{stats.completedTasks}/{stats.totalTasks}</div>
           <div className="text-sm text-muted-foreground">Tarefas concluídas</div>
         </Link>
         <Link to="/dashboard/uploads" className="glass-card p-5 hover:border-primary/30 transition-all group">
           <div className="flex items-center justify-between mb-3">
-            <Upload className="h-5 w-5 text-green-500" />
-            <TrendingUp className="h-4 w-4 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Upload className="h-5 w-5 text-emerald-500" />
+            <TrendingUp className="h-4 w-4 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="text-2xl font-bold">{stats.uploads}</div>
           <div className="text-sm text-muted-foreground">Uploads</div>
         </Link>
+        <Link to="/dashboard/resumos" className="glass-card p-5 hover:border-primary/30 transition-all group">
+          <div className="flex items-center justify-between mb-3">
+            <FileCheck className="h-5 w-5 text-primary" />
+            <TrendingUp className="h-4 w-4 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <div className="text-2xl font-bold">{metrics.summariesCreated}</div>
+          <div className="text-sm text-muted-foreground">Resumos gerados</div>
+        </Link>
         <Link to="/dashboard/discursivas" className="glass-card p-5 hover:border-primary/30 transition-all group">
           <div className="flex items-center justify-between mb-3">
-            <Stethoscope className="h-5 w-5 text-purple-500" />
-            <TrendingUp className="h-4 w-4 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Stethoscope className="h-5 w-5 text-primary" />
+            <TrendingUp className="h-4 w-4 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="text-2xl font-bold">{metrics.discursivasCompleted}</div>
           <div className="text-sm text-muted-foreground">Discursivas feitas</div>
