@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { logErrorToBank } from "@/lib/errorBankLogger";
+import { updateDomainMap } from "@/lib/updateDomainMap";
+import { isMedicalQuestion } from "@/lib/medicalValidation";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { FileText, Clock, Award, GraduationCap, Play, Loader2, ArrowRight, BarChart3, AlertTriangle, Zap } from "lucide-react";
