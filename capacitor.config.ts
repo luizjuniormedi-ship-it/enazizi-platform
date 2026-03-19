@@ -11,9 +11,12 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: "automatic",
     preferredContentMode: "mobile",
+    minVersion: "16.0",
+    scheme: "ENAZIZI",
   },
   android: {
     backgroundColor: "#0f172a",
+    minWebViewVersion: "113.0.5672.24",
   },
 };
 
