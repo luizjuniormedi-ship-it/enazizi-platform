@@ -240,7 +240,7 @@ const DashboardLayout = () => {
           />
         </div>
         {/* Desktop top bar */}
-        <div className="hidden landscape-tablet:flex md:flex fixed top-4 right-4 z-50 items-center gap-2">
+        <div className="hidden landscape-tablet:flex lg:flex fixed top-4 right-4 z-50 items-center gap-2">
           <GlobalSearch />
           <NotificationBell />
           <button
