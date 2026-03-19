@@ -59,6 +59,15 @@ const DiagnosticResult = ({ questions, answers, xpEarned = 0 }: DiagnosticResult
         </p>
       </div>
 
+      {/* XP earned */}
+      {xpEarned > 0 && (
+        <div className="glass-card p-4 flex items-center justify-center gap-3 border-primary/30 bg-primary/5">
+          <Zap className="h-6 w-6 text-primary" />
+          <span className="text-lg font-bold text-primary">+{xpEarned} XP</span>
+          <span className="text-sm text-muted-foreground">ganhos neste diagnóstico</span>
+        </div>
+      )}
+
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3">
         <div className="glass-card p-4 text-center">
