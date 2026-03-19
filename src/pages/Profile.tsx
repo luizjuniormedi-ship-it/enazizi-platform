@@ -108,14 +108,18 @@ const Profile = () => {
 
     setSaving(true);
     try {
+      const updateData: Record<string, any> = {
+        display_name: trimmed,
+        phone: phone.replace(/\D/g, "") || null,
+        user_type: userType,
+      };
+      if (userType === "estudante") {
+        updateData.periodo = periodo ? parseInt(periodo) : null;
+        updateData.faculdade = faculdade || null;
+      }
       const { error } = await supabase
         .from("profiles")
-        .update({
-          display_name: trimmed,
-          periodo: periodo ? parseInt(periodo) : null,
-          faculdade: faculdade || null,
-          phone: phone.replace(/\D/g, "") || null,
-        })
+        .update(updateData)
         .eq("user_id", user.id);
       if (error) throw error;
       toast({ title: "Perfil atualizado!" });
