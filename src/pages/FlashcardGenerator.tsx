@@ -89,6 +89,8 @@ const FlashcardGenerator = () => {
       functionName="generate-flashcards"
       onSaveMessage={handleSaveFlashcards}
       quickActions={quickActions}
+      showUploadButton={true}
+      autoPromptAfterUpload="Gere 10 flashcards clínicos baseados no material que acabei de enviar: {filename}. Use o conteúdo do material como base para criar casos clínicos variados."
     />
   );
 };
