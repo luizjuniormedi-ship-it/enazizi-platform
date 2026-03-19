@@ -15,7 +15,7 @@ interface DiagQuestion {
   explanation: string;
 }
 
-const AREAS = ["Clínica Médica", "Cirurgia", "Pediatria", "Ginecologia e Obstetrícia", "Medicina Preventiva"];
+const AREAS = ["Clínica Médica", "Cirurgia", "Pediatria", "Ginecologia e Obstetrícia", "Medicina Preventiva", "Oncologia"];
 
 const Diagnostic = () => {
   const { user } = useAuth();

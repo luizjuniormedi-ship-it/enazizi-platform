@@ -15,7 +15,7 @@ const ALL_TOPICS = [
   "Pediatria", "Ginecologia e Obstetrícia", "Cirurgia Geral", "Cirurgia do Trauma",
   "Ortopedia", "Urologia", "Psiquiatria", "Oftalmologia", "Otorrinolaringologia",
   "Medicina Preventiva", "Medicina de Emergência", "Terapia Intensiva",
-  "Clínica Médica", "Saúde da Família", "Semiologia", "Anatomia", "Farmacologia",
+  "Clínica Médica", "Saúde da Família", "Semiologia", "Anatomia", "Farmacologia", "Oncologia",
 ];
 
 const DIFFICULTY_OPTIONS = [
