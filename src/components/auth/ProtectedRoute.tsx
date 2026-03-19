@@ -61,20 +61,25 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (!user) return;
     const trimmedName = formName.trim();
     const cleanPhone = formPhone.replace(/\D/g, "");
-    if (!trimmedName || !cleanPhone || cleanPhone.length < 10 || !formPeriodo || !formFaculdade) {
+    const isStudent = formUserType === "estudante";
+    if (!trimmedName || !cleanPhone || cleanPhone.length < 10 || (isStudent && (!formPeriodo || !formFaculdade))) {
       toast({ title: "Preencha todos os campos corretamente", variant: "destructive" });
       return;
     }
     setSaving(true);
     try {
+      const updateData: Record<string, any> = {
+        display_name: trimmedName,
+        phone: cleanPhone,
+        user_type: formUserType,
+      };
+      if (isStudent) {
+        updateData.periodo = parseInt(formPeriodo);
+        updateData.faculdade = formFaculdade;
+      }
       const { error } = await supabase
         .from("profiles")
-        .update({
-          display_name: trimmedName,
-          phone: cleanPhone,
-          periodo: parseInt(formPeriodo),
-          faculdade: formFaculdade,
-        })
+        .update(updateData)
         .eq("user_id", user.id);
       if (error) throw error;
       setProfileIncomplete(false);
