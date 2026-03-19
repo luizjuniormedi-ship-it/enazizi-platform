@@ -219,6 +219,13 @@ const ExamSimulator = () => {
       }
       // Award XP for completing simulado
       await addXp(XP_REWARDS.simulado_completed);
+
+      // Update medical_domain_map
+      const domainEntries = questions.map((q, i) => ({
+        topic: q.topic,
+        correct: selectedAnswers[i] === q.correct_index,
+      }));
+      await updateDomainMap(user.id, domainEntries);
     }
 
     setPhase("result");
