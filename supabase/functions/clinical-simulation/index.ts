@@ -213,7 +213,7 @@ serve(async (req) => {
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user) throw new Error("Não autenticado");
 
-    const { action, specialty, difficulty, message, conversation_history, specialist_area, teacher_case_id, triage_color: requestedTriageColor, pediatric_age_range } = await req.json();
+    const { action, specialty, subtopic, difficulty, message, conversation_history, specialist_area, teacher_case_id, triage_color: requestedTriageColor, pediatric_age_range } = await req.json();
 
     let messages: Array<{ role: string; content: string }> = [
       { role: "system", content: SYSTEM_PROMPT },
@@ -271,7 +271,7 @@ serve(async (req) => {
 
       messages.push({
         role: "user",
-        content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}. Dificuldade: ${difficulty || "intermediário"}. Classificação de risco obrigatória: ${triage.toUpperCase()}. O campo triage_color DEVE ser "${triage}". Os sinais vitais e a gravidade do caso DEVEM ser coerentes com a classificação ${triage.toUpperCase()}.${pediatricInstruction} Responda APENAS em JSON válido.`,
+        content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}${subtopic ? ` — Subassunto/Tema específico: ${subtopic}. O caso DEVE ser sobre este subassunto.` : ""}. Dificuldade: ${difficulty || "intermediário"}. Classificação de risco obrigatória: ${triage.toUpperCase()}. O campo triage_color DEVE ser "${triage}". Os sinais vitais e a gravidade do caso DEVEM ser coerentes com a classificação ${triage.toUpperCase()}.${pediatricInstruction} Responda APENAS em JSON válido.`,
       });
     } else if (action === "interact") {
       if (conversation_history && Array.isArray(conversation_history)) {

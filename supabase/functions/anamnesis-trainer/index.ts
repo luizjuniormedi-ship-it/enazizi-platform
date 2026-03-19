@@ -168,7 +168,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { action, specialty, difficulty, messages, conversationHistory, hypothesis, differentials, proposed_conduct, pediatric_age_range } = await req.json();
+    const { action, specialty, subtopic, difficulty, messages, conversationHistory, hypothesis, differentials, proposed_conduct, pediatric_age_range } = await req.json();
 
     if (action === "start") {
       const isPediatrics = (specialty || "").toLowerCase().includes("pediatria");
@@ -199,9 +199,11 @@ serve(async (req) => {
 \nO responsável acompanha a criança.`
         : "";
 
+      const subtopicInstruction = subtopic ? `\nSubassunto/Tema específico: ${subtopic}. O caso DEVE estar relacionado a este subassunto dentro da especialidade.` : "";
+
       const prompt = `action="start"
 Especialidade: ${specialty || "Clínica Médica"}
-Dificuldade: ${difficulty || "intermediário"}${ageInstruction}
+Dificuldade: ${difficulty || "intermediário"}${ageInstruction}${subtopicInstruction}
 
 Gere um paciente realista para treino de anamnese. Queixa vaga e coloquial. Dados ocultos completos.
 Lembre-se: NUNCA repita pacientes anteriores. Varie todos os parâmetros demográficos e clínicos.`;

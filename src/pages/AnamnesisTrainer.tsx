@@ -101,6 +101,7 @@ const AnamnesisTrainer = () => {
 
   const [phase, setPhase] = useState<Phase>("lobby");
   const [specialty, setSpecialty] = useState("Clínica Médica");
+  const [subtopic, setSubtopic] = useState("");
   const [difficulty, setDifficulty] = useState("intermediário");
   const [pediatricAge, setPediatricAge] = useState("aleatorio");
 
@@ -149,6 +150,7 @@ const AnamnesisTrainer = () => {
       const data = await callEdgeFunction({
         action: "start",
         specialty,
+        subtopic: subtopic.trim() || undefined,
         difficulty,
         ...(isPediatrics && pediatricAge !== "aleatorio" ? { pediatric_age_range: pediatricAge } : {}),
       });
@@ -295,6 +297,13 @@ const AnamnesisTrainer = () => {
                   </Badge>
                 ))}
               </div>
+              <Input
+                value={subtopic}
+                onChange={(e) => setSubtopic(e.target.value)}
+                placeholder="Ex: IC descompensada, Meningite, Pré-eclâmpsia..."
+                className="mt-2"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Subassunto (opcional): direcione o caso do paciente</p>
             </div>
 
             {isPediatrics && (

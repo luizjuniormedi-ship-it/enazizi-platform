@@ -129,6 +129,7 @@ const ClinicalSimulation = () => {
 
   const [phase, setPhase] = useState<Phase>("lobby");
   const [specialty, setSpecialty] = useState("Clínica Médica");
+  const [subtopic, setSubtopic] = useState("");
   const [difficulty, setDifficulty] = useState("intermediário");
   const [pediatricAge, setPediatricAge] = useState("aleatorio");
 
@@ -309,6 +310,7 @@ const ClinicalSimulation = () => {
       const res = await callAPI({
         action: "start",
         specialty,
+        subtopic: subtopic.trim() || undefined,
         difficulty,
         ...(teacherCaseId ? { teacher_case_id: teacherCaseId } : {}),
         ...(isPediatrics && pediatricAge !== "aleatorio" ? { pediatric_age_range: pediatricAge } : {}),
@@ -697,8 +699,15 @@ const ClinicalSimulation = () => {
                   onChange={(e) => setSpecialty(e.target.value)}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                 >
-                  {SPECIALTIES.map((s) => <option key={s} value={s}>{s}</option>)}
+                   {SPECIALTIES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
+                <Input
+                  value={subtopic}
+                  onChange={(e) => setSubtopic(e.target.value)}
+                  placeholder="Ex: IAM, Dengue Grave, Eclâmpsia..."
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Subassunto (opcional): direcione o caso clínico</p>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Dificuldade</label>
