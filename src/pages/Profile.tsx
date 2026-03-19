@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { User, Camera, Loader2, Save, GraduationCap, Building, Phone } from "lucide-react";
+import { User, Camera, Loader2, Save, GraduationCap, Building, Phone, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +25,7 @@ const Profile = () => {
   const [periodo, setPeriodo] = useState("");
   const [faculdade, setFaculdade] = useState("");
   const [phone, setPhone] = useState("");
+  const [userType, setUserType] = useState("estudante");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -44,6 +45,7 @@ const Profile = () => {
         setPeriodo(data.periodo ? String(data.periodo) : "");
         setFaculdade(data.faculdade || "");
         setPhone(data.phone || "");
+        setUserType((data as any).user_type || "estudante");
       }
       setLoading(false);
     };
@@ -106,14 +108,18 @@ const Profile = () => {
 
     setSaving(true);
     try {
+      const updateData: Record<string, any> = {
+        display_name: trimmed,
+        phone: phone.replace(/\D/g, "") || null,
+        user_type: userType,
+      };
+      if (userType === "estudante") {
+        updateData.periodo = periodo ? parseInt(periodo) : null;
+        updateData.faculdade = faculdade || null;
+      }
       const { error } = await supabase
         .from("profiles")
-        .update({
-          display_name: trimmed,
-          periodo: periodo ? parseInt(periodo) : null,
-          faculdade: faculdade || null,
-          phone: phone.replace(/\D/g, "") || null,
-        })
+        .update(updateData)
         .eq("user_id", user.id);
       if (error) throw error;
       toast({ title: "Perfil atualizado!" });
@@ -193,40 +199,64 @@ const Profile = () => {
           <p className="text-xs text-muted-foreground">O e-mail não pode ser alterado.</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <Label className="flex items-center gap-1.5">
-              <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
-              Período
-            </Label>
-            <Select value={periodo} onValueChange={setPeriodo}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((p) => (
-                  <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label className="flex items-center gap-1.5">
-              <Building className="h-3.5 w-3.5 text-muted-foreground" />
-              Faculdade
-            </Label>
-            <Select value={faculdade} onValueChange={setFaculdade}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {FACULDADES.map((f) => (
-                  <SelectItem key={f} value={f}>{f}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="space-y-2">
+          <Label>Eu sou</Label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setUserType("estudante")}
+              className={`flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors ${userType === "estudante" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground hover:bg-accent"}`}
+            >
+              <GraduationCap className="h-4 w-4" />
+              Estudante
+            </button>
+            <button
+              type="button"
+              onClick={() => setUserType("medico")}
+              className={`flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors ${userType === "medico" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground hover:bg-accent"}`}
+            >
+              <Stethoscope className="h-4 w-4" />
+              Médico
+            </button>
           </div>
         </div>
+
+        {userType === "estudante" && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
+                Período
+              </Label>
+              <Select value={periodo} onValueChange={setPeriodo}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((p) => (
+                    <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Building className="h-3.5 w-3.5 text-muted-foreground" />
+                Faculdade
+              </Label>
+              <Select value={faculdade} onValueChange={setFaculdade}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FACULDADES.map((f) => (
+                    <SelectItem key={f} value={f}>{f}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label className="flex items-center gap-1.5">

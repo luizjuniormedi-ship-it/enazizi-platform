@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, Clock, Save, Loader2, GraduationCap, Building, Phone, User } from "lucide-react";
+import { LogOut, Clock, Save, Loader2, GraduationCap, Building, Phone, User, Stethoscope } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,6 +24,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [formPhone, setFormPhone] = useState("");
   const [formPeriodo, setFormPeriodo] = useState("");
   const [formFaculdade, setFormFaculdade] = useState("");
+  const [formUserType, setFormUserType] = useState("estudante");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -40,13 +41,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         setProfileStatus(data?.status || "pending");
       }
       // Check if profile is incomplete
-      const incomplete = !data?.phone || !data?.periodo || !data?.faculdade || !data?.display_name;
+      const userType = (data as any)?.user_type || "estudante";
+      const isStudent = userType === "estudante";
+      const incomplete = !data?.phone || !data?.display_name || (isStudent && (!data?.periodo || !data?.faculdade));
       setProfileIncomplete(incomplete);
       if (incomplete) {
         setFormName(data?.display_name || "");
         setFormPhone(data?.phone || "");
         setFormPeriodo(data?.periodo ? String(data.periodo) : "");
         setFormFaculdade(data?.faculdade || "");
+        setFormUserType(userType);
       }
       setCheckingProfile(false);
     };
@@ -57,20 +61,25 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (!user) return;
     const trimmedName = formName.trim();
     const cleanPhone = formPhone.replace(/\D/g, "");
-    if (!trimmedName || !cleanPhone || cleanPhone.length < 10 || !formPeriodo || !formFaculdade) {
+    const isStudent = formUserType === "estudante";
+    if (!trimmedName || !cleanPhone || cleanPhone.length < 10 || (isStudent && (!formPeriodo || !formFaculdade))) {
       toast({ title: "Preencha todos os campos corretamente", variant: "destructive" });
       return;
     }
     setSaving(true);
     try {
+      const updateData: Record<string, any> = {
+        display_name: trimmedName,
+        phone: cleanPhone,
+        user_type: formUserType,
+      };
+      if (isStudent) {
+        updateData.periodo = parseInt(formPeriodo);
+        updateData.faculdade = formFaculdade;
+      }
       const { error } = await supabase
         .from("profiles")
-        .update({
-          display_name: trimmedName,
-          phone: cleanPhone,
-          periodo: parseInt(formPeriodo),
-          faculdade: formFaculdade,
-        })
+        .update(updateData)
         .eq("user_id", user.id);
       if (error) throw error;
       setProfileIncomplete(false);
@@ -177,6 +186,28 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
             </div>
 
             <div className="space-y-2">
+              <Label>Eu sou</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormUserType("estudante")}
+                  className={`flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors ${formUserType === "estudante" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground hover:bg-accent"}`}
+                >
+                  <GraduationCap className="h-4 w-4" />
+                  Estudante
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormUserType("medico")}
+                  className={`flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors ${formUserType === "medico" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground hover:bg-accent"}`}
+                >
+                  <Stethoscope className="h-4 w-4" />
+                  Médico
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
               <Label className="flex items-center gap-1.5">
                 <Phone className="h-3.5 w-3.5 text-muted-foreground" />
                 WhatsApp
@@ -195,40 +226,42 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1.5">
-                  <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
-                  Período
-                </Label>
-                <Select value={formPeriodo} onValueChange={setFormPeriodo}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map((p) => (
-                      <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {formUserType === "estudante" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
+                    Período
+                  </Label>
+                  <Select value={formPeriodo} onValueChange={setFormPeriodo}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((p) => (
+                        <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    <Building className="h-3.5 w-3.5 text-muted-foreground" />
+                    Faculdade
+                  </Label>
+                  <Select value={formFaculdade} onValueChange={setFormFaculdade}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FACULDADES.map((f) => (
+                        <SelectItem key={f} value={f}>{f}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1.5">
-                  <Building className="h-3.5 w-3.5 text-muted-foreground" />
-                  Faculdade
-                </Label>
-                <Select value={formFaculdade} onValueChange={setFormFaculdade}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FACULDADES.map((f) => (
-                      <SelectItem key={f} value={f}>{f}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            )}
 
             <Button onClick={handleOnboardingSave} disabled={saving} className="w-full mt-2">
               {saving ? (
