@@ -160,12 +160,12 @@ NÃO inclua texto extra, APENAS o JSON.` }],
     }
 
     if (user) {
-      await supabase.from("diagnostic_results").insert({
+      await supabase.from("diagnostic_results").insert([{
         user_id: user.id,
         score,
         total_questions: questions.length,
-        results_json: { answers: finalAnswers, areaResults },
-      });
+        results_json: { answers: finalAnswers, areaResults } as any,
+      }]);
       await supabase.from("profiles").update({ has_completed_diagnostic: true }).eq("user_id", user.id);
     }
 
