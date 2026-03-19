@@ -1,4 +1,4 @@
-import { CalendarDays, FlipVertical, FileText, Upload, TrendingUp, Clock, BookOpen, CheckCircle2, Loader2, BarChart3, Flame, CalendarCheck, Globe, HelpCircle, AlertTriangle, Target, Stethoscope, Award } from "lucide-react";
+import { CalendarDays, FlipVertical, FileText, Upload, TrendingUp, Clock, BookOpen, CheckCircle2, Loader2, BarChart3, Flame, CalendarCheck, Globe, HelpCircle, AlertTriangle, Target, Stethoscope, Award, PenTool, Activity, ClipboardList, FileCheck } from "lucide-react";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
 import { Link } from "react-router-dom";
