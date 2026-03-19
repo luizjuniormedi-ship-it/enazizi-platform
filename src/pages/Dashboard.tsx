@@ -94,7 +94,7 @@ const Dashboard = () => {
         supabase.from("practice_attempts").select("correct").eq("user_id", user.id),
         supabase.from("error_bank").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("revisoes").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "pendente"),
-        supabase.from("exam_sessions").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "finished"),
+        supabase.from("exam_sessions").select("id, total_questions, score", { count: "exact" }).eq("user_id", user.id).eq("status", "finished"),
         supabase.from("discursive_attempts").select("id", { count: "exact", head: true }).eq("user_id", user.id).not("finished_at", "is", null),
         supabase.from("user_gamification").select("current_streak, xp, level").eq("user_id", user.id).maybeSingle(),
         supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("is_global", true),
@@ -105,6 +105,17 @@ const Dashboard = () => {
         supabase.from("anamnesis_results").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("summaries").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       ]);
+
+      // Also fetch questions answered from teacher simulados (uses student_id)
+      const teacherSimuladoRes = await supabase
+        .from("teacher_simulado_results")
+        .select("total_questions, score")
+        .eq("student_id", user.id);
+
+      const teacherClinicalRes = await supabase
+        .from("teacher_clinical_case_results")
+        .select("id", { count: "exact", head: true })
+        .eq("student_id", user.id);
 
       setDisplayName(profileRes.data?.display_name || null);
 
