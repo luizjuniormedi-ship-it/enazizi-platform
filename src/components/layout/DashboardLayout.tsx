@@ -207,6 +207,7 @@ const MobileNav = () => {
 
 const DashboardLayout = () => {
   usePresenceHeartbeat();
+  useLandscapeTablet();
   const { theme, toggle: toggleTheme } = useTheme();
 
   return (
