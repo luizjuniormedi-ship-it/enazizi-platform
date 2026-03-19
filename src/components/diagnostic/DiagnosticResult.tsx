@@ -1,4 +1,4 @@
-import { Award, GraduationCap, TrendingUp, Clock, Target, BarChart3 } from "lucide-react";
+import { Award, GraduationCap, TrendingUp, Clock, Target, BarChart3, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -8,9 +8,10 @@ import type { AnswerRecord, DiagQuestion } from "./DiagnosticExam";
 interface DiagnosticResultProps {
   questions: DiagQuestion[];
   answers: AnswerRecord[];
+  xpEarned?: number;
 }
 
-const DiagnosticResult = ({ questions, answers }: DiagnosticResultProps) => {
+const DiagnosticResult = ({ questions, answers, xpEarned = 0 }: DiagnosticResultProps) => {
   const navigate = useNavigate();
   const correctCount = answers.filter(a => a.correct).length;
   const score = questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0;
@@ -57,6 +58,15 @@ const DiagnosticResult = ({ questions, answers }: DiagnosticResultProps) => {
           {correctCount} de {questions.length} questões corretas
         </p>
       </div>
+
+      {/* XP earned */}
+      {xpEarned > 0 && (
+        <div className="glass-card p-4 flex items-center justify-center gap-3 border-primary/30 bg-primary/5">
+          <Zap className="h-6 w-6 text-primary" />
+          <span className="text-lg font-bold text-primary">+{xpEarned} XP</span>
+          <span className="text-sm text-muted-foreground">ganhos neste diagnóstico</span>
+        </div>
+      )}
 
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3">

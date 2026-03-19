@@ -3,7 +3,9 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
+import { mapTopicToSpecialty } from "@/lib/mapTopicToSpecialty";
 import DiagnosticIntro from "@/components/diagnostic/DiagnosticIntro";
 import DiagnosticExam from "@/components/diagnostic/DiagnosticExam";
 import DiagnosticReview from "@/components/diagnostic/DiagnosticReview";
@@ -31,11 +33,13 @@ type Phase = "intro" | "loading" | "exam" | "review" | "result";
 const Diagnostic = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { addXp } = useGamification();
   const [phase, setPhase] = useState<Phase>("intro");
   const [questions, setQuestions] = useState<DiagQuestion[]>([]);
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
   const [alreadyDone, setAlreadyDone] = useState(false);
   const [resumeIdx, setResumeIdx] = useState(0);
+  const [xpEarned, setXpEarned] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -130,26 +134,76 @@ NÃO inclua texto extra, APENAS o JSON.` }],
     }));
   };
 
+  const updateMedicalDomainMap = async (finalAnswers: AnswerRecord[]) => {
+    if (!user) return;
+
+    // Group answers by normalized specialty
+    const specialtyMap: Record<string, { correct: number; total: number }> = {};
+    for (const a of finalAnswers) {
+      const specialty = mapTopicToSpecialty(a.topic) || a.topic;
+      if (!specialtyMap[specialty]) specialtyMap[specialty] = { correct: 0, total: 0 };
+      specialtyMap[specialty].total++;
+      if (a.correct) specialtyMap[specialty].correct++;
+    }
+
+    for (const [specialty, { correct, total }] of Object.entries(specialtyMap)) {
+      const domainScore = Math.round((correct / total) * 100);
+
+      // Check if exists
+      const { data: existing } = await supabase
+        .from("medical_domain_map")
+        .select("id, questions_answered, correct_answers")
+        .eq("user_id", user.id)
+        .eq("specialty", specialty)
+        .maybeSingle();
+
+      if (existing) {
+        const newAnswered = existing.questions_answered + total;
+        const newCorrect = existing.correct_answers + correct;
+        const newScore = Math.round((newCorrect / newAnswered) * 100);
+        await supabase.from("medical_domain_map").update({
+          questions_answered: newAnswered,
+          correct_answers: newCorrect,
+          domain_score: newScore,
+          last_studied_at: new Date().toISOString(),
+        }).eq("id", existing.id);
+      } else {
+        await supabase.from("medical_domain_map").insert({
+          user_id: user.id,
+          specialty,
+          questions_answered: total,
+          correct_answers: correct,
+          domain_score: domainScore,
+          last_studied_at: new Date().toISOString(),
+        });
+      }
+    }
+  };
+
   const handleExamFinish = async (finalAnswers: AnswerRecord[]) => {
     setAnswers(finalAnswers);
 
-    // Log wrong answers
-    if (user) {
-      for (const a of finalAnswers) {
-        if (!a.correct && a.selected >= 0) {
-          const q = questions[a.questionIdx];
-          logErrorToBank({
-            userId: user.id,
-            tema: q.topic || "Geral",
-            tipoQuestao: "diagnostico",
-            conteudo: q.statement,
-            motivoErro: `Marcou "${q.options[a.selected]}" — Correta: "${q.options[q.correct_index]}"`,
-            categoriaErro: "conceito",
-          });
-        }
+    if (!user) {
+      setPhase("result");
+      return;
+    }
+
+    // Log wrong answers to error bank
+    for (const a of finalAnswers) {
+      if (!a.correct && a.selected >= 0) {
+        const q = questions[a.questionIdx];
+        logErrorToBank({
+          userId: user.id,
+          tema: mapTopicToSpecialty(q.topic || "Geral") || q.topic || "Geral",
+          tipoQuestao: "diagnostico",
+          conteudo: q.statement,
+          motivoErro: `Marcou "${q.options[a.selected]}" — Correta: "${q.options[q.correct_index]}"`,
+          categoriaErro: "conceito",
+        });
       }
     }
 
+    // Calculate & save score
     const correctCount = finalAnswers.filter(a => a.correct).length;
     const score = questions.length > 0 ? (correctCount / questions.length) * 100 : 0;
     const areaResults: Record<string, { correct: number; total: number }> = {};
@@ -159,15 +213,23 @@ NÃO inclua texto extra, APENAS o JSON.` }],
       if (a.correct) areaResults[a.topic].correct++;
     }
 
-    if (user) {
-      await supabase.from("diagnostic_results").insert([{
-        user_id: user.id,
-        score,
-        total_questions: questions.length,
-        results_json: { answers: finalAnswers, areaResults } as any,
-      }]);
-      await supabase.from("profiles").update({ has_completed_diagnostic: true }).eq("user_id", user.id);
-    }
+    await supabase.from("diagnostic_results").insert([{
+      user_id: user.id,
+      score,
+      total_questions: questions.length,
+      results_json: { answers: finalAnswers, areaResults } as any,
+    }]);
+    await supabase.from("profiles").update({ has_completed_diagnostic: true }).eq("user_id", user.id);
+
+    // Gamification: award XP
+    const xpPerCorrect = XP_REWARDS.question_correct;
+    const xpPerAttempt = XP_REWARDS.question_answered;
+    const totalXp = (correctCount * xpPerCorrect) + (finalAnswers.length * xpPerAttempt);
+    const earned = await addXp(totalXp, "diagnostic_completed");
+    setXpEarned(earned || totalXp);
+
+    // Update medical domain map with normalized specialties
+    await updateMedicalDomainMap(finalAnswers);
 
     setPhase("result");
   };
@@ -214,7 +276,7 @@ NÃO inclua texto extra, APENAS o JSON.` }],
     );
   }
 
-  return <DiagnosticResult questions={questions} answers={answers} />;
+  return <DiagnosticResult questions={questions} answers={answers} xpEarned={xpEarned} />;
 };
 
 export default Diagnostic;
