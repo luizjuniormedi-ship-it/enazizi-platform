@@ -119,11 +119,33 @@ const Dashboard = () => {
 
       setDisplayName(profileRes.data?.display_name || null);
 
-      // Calculate real accuracy from practice_attempts
-      const attempts = practiceRes.data || [];
-      const questionsAnswered = attempts.length;
-      const correctCount = attempts.filter((a: any) => a.correct).length;
-      const accuracy = questionsAnswered > 0 ? Math.round((correctCount / questionsAnswered) * 100) : 0;
+      // Calculate real accuracy from ALL sources
+      const practiceAttempts = practiceRes.data || [];
+      const practiceCorrect = practiceAttempts.filter((a: any) => a.correct).length;
+      const practiceTotal = practiceAttempts.length;
+
+      // Questions from exam_sessions (simulados próprios)
+      const examData = simuladosRes.data || [];
+      const examQuestionsTotal = examData.reduce((sum: number, e: any) => sum + (e.total_questions || 0), 0);
+      const examCorrectTotal = examData.reduce((sum: number, e: any) => sum + (e.score || 0), 0);
+
+      // Questions from teacher simulados
+      const teacherSimData = teacherSimuladoRes.data || [];
+      const teacherQuestionsTotal = teacherSimData.reduce((sum: number, e: any) => sum + (e.total_questions || 0), 0);
+      const teacherCorrectTotal = teacherSimData.reduce((sum: number, e: any) => sum + (e.score || 0), 0);
+
+      // Clinical cases from teacher
+      const teacherClinicalCount = teacherClinicalRes.count || 0;
+
+      const questionsAnswered = practiceTotal + examQuestionsTotal + teacherQuestionsTotal;
+      const totalCorrect = practiceCorrect + examCorrectTotal + teacherCorrectTotal;
+      const accuracy = questionsAnswered > 0 ? Math.round((totalCorrect / questionsAnswered) * 100) : 0;
+
+      // Total simulados = own exam_sessions + teacher simulados
+      const totalSimulados = (simuladosRes.count || 0) + teacherSimData.length;
+
+      // Total clinical simulations = simulation_history + teacher clinical cases
+      const totalClinical = (clinicalSimRes.count || 0) + teacherClinicalCount;
 
       const gamData = gamificationRes.data;
 
@@ -132,7 +154,7 @@ const Dashboard = () => {
         accuracy,
         errorsCount: errorBankRes.count || 0,
         pendingRevisoes: pendingRevisoesRes.count || 0,
-        simuladosCompleted: simuladosRes.count || 0,
+        simuladosCompleted: totalSimulados,
         discursivasCompleted: discursivasRes.count || 0,
         gamificationStreak: gamData?.current_streak || 0,
         gamificationXp: gamData?.xp || 0,
@@ -140,7 +162,7 @@ const Dashboard = () => {
         globalFlashcards: globalFlashRes.count || 0,
         globalQuestions: globalQuestRes.count || 0,
         questionsCreated: questionsCreatedRes.count || 0,
-        clinicalSimulations: clinicalSimRes.count || 0,
+        clinicalSimulations: totalClinical,
         anamnesisCompleted: anamnesisRes.count || 0,
         summariesCreated: summariesRes.count || 0,
       });
