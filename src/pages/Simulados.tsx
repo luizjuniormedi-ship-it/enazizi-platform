@@ -271,6 +271,13 @@ Distribua igualmente entre os temas solicitados. Com casos clínicos.`
 
       // Award XP
       await addXp(XP_REWARDS.simulado_completed);
+
+      // Update medical_domain_map
+      const domainEntries = questions.map((q, i) => ({
+        topic: q.topic,
+        correct: !!answers[i]?.correct,
+      }));
+      await updateDomainMap(user.id, domainEntries);
     }
 
     setPhase("finished");
