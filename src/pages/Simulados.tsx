@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { logErrorToBank } from "@/lib/errorBankLogger";
+import { updateDomainMap } from "@/lib/updateDomainMap";
+import { isMedicalQuestion } from "@/lib/medicalValidation";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { FileText, Clock, Award, GraduationCap, Play, Loader2, ArrowRight, BarChart3, AlertTriangle, Zap } from "lucide-react";
@@ -205,7 +207,7 @@ Distribua igualmente entre os temas solicitados. Com casos clínicos.`
       correct: Number.isInteger(q.correct_index) ? q.correct_index : 0,
       topic: String(q.topic || selectedTopics[0]),
       explanation: String(q.explanation || ""),
-    })).filter((q: SimQuestion) => q.options.length >= 4 && q.statement.length > 10);
+    })).filter((q: SimQuestion) => q.options.length >= 4 && q.statement.length > 10 && isMedicalQuestion({ statement: q.statement, topic: q.topic, options: q.options }));
 
   const handleAnswer = () => {
     if (selected === null) return;
@@ -269,6 +271,13 @@ Distribua igualmente entre os temas solicitados. Com casos clínicos.`
 
       // Award XP
       await addXp(XP_REWARDS.simulado_completed);
+
+      // Update medical_domain_map
+      const domainEntries = questions.map((q, i) => ({
+        topic: q.topic,
+        correct: !!answers[i]?.correct,
+      }));
+      await updateDomainMap(user.id, domainEntries);
     }
 
     setPhase("finished");

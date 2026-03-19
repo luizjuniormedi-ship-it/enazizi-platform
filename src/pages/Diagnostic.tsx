@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
+import { updateDomainMap } from "@/lib/updateDomainMap";
 import { mapTopicToSpecialty } from "@/lib/mapTopicToSpecialty";
 import DiagnosticIntro from "@/components/diagnostic/DiagnosticIntro";
 import DiagnosticExam from "@/components/diagnostic/DiagnosticExam";
@@ -136,48 +137,8 @@ NÃO inclua texto extra, APENAS o JSON.` }],
 
   const updateMedicalDomainMap = async (finalAnswers: AnswerRecord[]) => {
     if (!user) return;
-
-    // Group answers by normalized specialty
-    const specialtyMap: Record<string, { correct: number; total: number }> = {};
-    for (const a of finalAnswers) {
-      const specialty = mapTopicToSpecialty(a.topic) || a.topic;
-      if (!specialtyMap[specialty]) specialtyMap[specialty] = { correct: 0, total: 0 };
-      specialtyMap[specialty].total++;
-      if (a.correct) specialtyMap[specialty].correct++;
-    }
-
-    for (const [specialty, { correct, total }] of Object.entries(specialtyMap)) {
-      const domainScore = Math.round((correct / total) * 100);
-
-      // Check if exists
-      const { data: existing } = await supabase
-        .from("medical_domain_map")
-        .select("id, questions_answered, correct_answers")
-        .eq("user_id", user.id)
-        .eq("specialty", specialty)
-        .maybeSingle();
-
-      if (existing) {
-        const newAnswered = existing.questions_answered + total;
-        const newCorrect = existing.correct_answers + correct;
-        const newScore = Math.round((newCorrect / newAnswered) * 100);
-        await supabase.from("medical_domain_map").update({
-          questions_answered: newAnswered,
-          correct_answers: newCorrect,
-          domain_score: newScore,
-          last_studied_at: new Date().toISOString(),
-        }).eq("id", existing.id);
-      } else {
-        await supabase.from("medical_domain_map").insert({
-          user_id: user.id,
-          specialty,
-          questions_answered: total,
-          correct_answers: correct,
-          domain_score: domainScore,
-          last_studied_at: new Date().toISOString(),
-        });
-      }
-    }
+    const entries = finalAnswers.map(a => ({ topic: a.topic, correct: a.correct }));
+    await updateDomainMap(user.id, entries);
   };
 
   const handleExamFinish = async (finalAnswers: AnswerRecord[]) => {

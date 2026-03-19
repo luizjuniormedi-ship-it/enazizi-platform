@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
+import { updateDomainMap } from "@/lib/updateDomainMap";
+import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays, Send, CheckCircle, XCircle, GraduationCap, Filter, Download, Zap, Clock, Award, Maximize2, Minimize2 } from "lucide-react";
 import { exportToPdf } from "@/lib/exportPdf";
 import { useNavigate } from "react-router-dom";
@@ -44,6 +46,7 @@ const Flashcards = () => {
   const [showTopicFilter, setShowTopicFilter] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { addXp } = useGamification();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Sprint mode state
@@ -211,6 +214,15 @@ const Flashcards = () => {
         interval_days: newInterval,
         next_review: nextReview.toISOString(),
       });
+    }
+
+    // Award XP for flashcard review
+    const isCorrect = quality !== "again";
+    await addXp(isCorrect ? XP_REWARDS.question_correct : XP_REWARDS.question_answered);
+
+    // Update medical domain map
+    if (card.topic) {
+      await updateDomainMap(user.id, [{ topic: card.topic, correct: isCorrect }]);
     }
 
     // Log error to error_bank if wrong
