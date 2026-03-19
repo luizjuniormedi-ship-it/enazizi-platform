@@ -24,6 +24,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [formPhone, setFormPhone] = useState("");
   const [formPeriodo, setFormPeriodo] = useState("");
   const [formFaculdade, setFormFaculdade] = useState("");
+  const [formUserType, setFormUserType] = useState("estudante");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
