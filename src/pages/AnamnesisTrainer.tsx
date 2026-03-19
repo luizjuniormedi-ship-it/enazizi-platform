@@ -296,6 +296,13 @@ const AnamnesisTrainer = () => {
                   </Badge>
                 ))}
               </div>
+              <Input
+                value={subtopic}
+                onChange={(e) => setSubtopic(e.target.value)}
+                placeholder="Ex: IC descompensada, Meningite, Pré-eclâmpsia..."
+                className="mt-2"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Subassunto (opcional): direcione o caso do paciente</p>
             </div>
 
             {isPediatrics && (
