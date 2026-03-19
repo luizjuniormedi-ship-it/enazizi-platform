@@ -58,6 +58,10 @@ interface RealMetrics {
   gamificationLevel: number;
   globalFlashcards: number;
   globalQuestions: number;
+  questionsCreated: number;
+  clinicalSimulations: number;
+  anamnesisCompleted: number;
+  summariesCreated: number;
 }
 
 const Dashboard = () => {
