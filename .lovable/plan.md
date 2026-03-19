@@ -1,19 +1,35 @@
 
 
-## Plano: Habilitar Upload no Gerador de Questões
+## Plano: Alinhar o Diagnóstico com os demais módulos
 
-### O que muda
+O módulo Diagnóstico atualmente opera isolado — não concede XP, não atualiza o Mapa de Domínio, não registra `practice_attempts` e não usa o `mapTopicToSpecialty` para padronizar especialidades. Os outros módulos (Simulados, ExamSimulator, ChatGPT) já fazem tudo isso.
 
-**Arquivo: `src/pages/QuestionGenerator.tsx`**
+### Lacunas identificadas
 
-Adicionar duas props ao componente `AgentChat`:
+| Funcionalidade | Simulados / ChatGPT | Diagnóstico |
+|---|---|---|
+| Gamificação (XP) | ✅ `addXp` ao finalizar | ❌ Ausente |
+| Mapa de Domínio | ✅ Atualiza `medical_domain_map` | ❌ Ausente |
+| `practice_attempts` | ✅ Registra tentativas | ❌ Ausente |
+| `mapTopicToSpecialty` | ✅ Normaliza tópico → especialidade | ❌ Usa tópicos crus |
+| Validação de conteúdo médico | ✅ Regex anti-não-médico | ❌ Ausente |
+| Dificuldade configurável | ✅ Fácil/Intermediário/Difícil/Misto | ❌ Apenas adaptativo interno |
 
-1. `showUploadButton` — exibe o botão de upload na interface do chat
-2. `autoPromptAfterUpload` — após o upload ser processado, envia automaticamente um prompt pedindo questões baseadas no conteúdo do material
+### O que será feito
 
-### Detalhes técnicos
+1. **Integrar gamificação (XP)** — Importar `useGamification` e conceder XP ao finalizar (ex: +15 por acerto, +5 por tentativa), igual aos Simulados.
 
-- O componente `AgentChat` já possui toda a lógica de upload (envio ao storage, processamento via edge function, extração de conteúdo e injeção como contexto). Basta ativar as props.
-- A edge function `question-generator` já recebe e utiliza `userContext` de materiais enviados. Nenhuma alteração no backend é necessária.
-- Mudança de apenas 2 linhas no arquivo `QuestionGenerator.tsx`.
+2. **Atualizar Mapa de Domínio** — Após finalização, usar `mapTopicToSpecialty` para normalizar os tópicos e atualizar a tabela `medical_domain_map` (upsert com `questions_answered`, `correct_answers`, `domain_score`).
+
+3. **Registrar `practice_attempts`** — Salvar cada questão respondida na tabela `practice_attempts` para alimentar o histórico unificado.
+
+4. **Normalizar tópicos com `mapTopicToSpecialty`** — Garantir que os tópicos gerados pela IA sejam mapeados para as mesmas especialidades usadas nos outros módulos.
+
+5. **Adicionar validação de conteúdo médico** — Usar o mesmo regex dos Simulados/ExamSimulator para filtrar questões não-médicas geradas pela IA.
+
+### Arquivos afetados
+
+- `src/pages/Diagnostic.tsx` — Adicionar hooks de gamificação, lógica de `medical_domain_map`, `practice_attempts` e `mapTopicToSpecialty` no `handleExamFinish`.
+- `src/components/diagnostic/DiagnosticExam.tsx` — Sem mudanças (a interface já está ok).
+- `src/components/diagnostic/DiagnosticResult.tsx` — Exibir XP ganho no resultado final.
 
