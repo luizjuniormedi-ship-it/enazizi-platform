@@ -112,5 +112,11 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    plugin(function ({ addVariant }) {
+      // Matches landscape orientation on screens >= 600px wide (tablets)
+      addVariant("landscape-tablet", "@media (orientation: landscape) and (min-width: 600px) and (min-height: 400px)");
+    }),
+  ],
 } satisfies Config;
