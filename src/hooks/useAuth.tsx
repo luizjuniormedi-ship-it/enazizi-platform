@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Force PWA cache clear + reload on ANY login, all devices (iOS/Android/desktop)
       if (event === "SIGNED_IN") {
         try {
-          const alreadyUpdated = window.__pwaUpdated;
+          const alreadyUpdated = (window as any).__pwaUpdated;
           if (alreadyUpdated) return;
           (window as any).__pwaUpdated = true;
 
