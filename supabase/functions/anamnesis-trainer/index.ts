@@ -168,7 +168,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { action, specialty, difficulty, messages, conversationHistory, hypothesis, differentials, proposed_conduct, pediatric_age_range } = await req.json();
+    const { action, specialty, subtopic, difficulty, messages, conversationHistory, hypothesis, differentials, proposed_conduct, pediatric_age_range } = await req.json();
 
     if (action === "start") {
       const isPediatrics = (specialty || "").toLowerCase().includes("pediatria");
