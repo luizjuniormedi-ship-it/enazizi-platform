@@ -125,6 +125,12 @@ const DiscursiveQuestions = () => {
       setPhase("result");
       // Award XP for discursive completion
       await addXp(XP_REWARDS.discursive_completed);
+
+      // Update medical domain map
+      if (user) {
+        const passed = res.correction && res.correction.total_score >= (res.correction.max_score * 0.5);
+        await updateDomainMap(user.id, [{ topic: specialty, correct: !!passed }]);
+      }
       
       // Log to error_bank if score < 70%
       if (user && res.correction && res.correction.total_score < (res.correction.max_score * 0.7)) {

@@ -207,7 +207,7 @@ Distribua igualmente entre os temas solicitados. Com casos clínicos.`
       correct: Number.isInteger(q.correct_index) ? q.correct_index : 0,
       topic: String(q.topic || selectedTopics[0]),
       explanation: String(q.explanation || ""),
-    })).filter((q: SimQuestion) => q.options.length >= 4 && q.statement.length > 10);
+    })).filter((q: SimQuestion) => q.options.length >= 4 && q.statement.length > 10 && isMedicalQuestion({ statement: q.statement, topic: q.topic, options: q.options }));
 
   const handleAnswer = () => {
     if (selected === null) return;

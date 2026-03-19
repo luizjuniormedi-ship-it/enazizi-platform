@@ -216,6 +216,15 @@ const Flashcards = () => {
       });
     }
 
+    // Award XP for flashcard review
+    const isCorrect = quality !== "again";
+    await addXp(isCorrect ? XP_REWARDS.question_correct : XP_REWARDS.question_answered);
+
+    // Update medical domain map
+    if (card.topic) {
+      await updateDomainMap(user.id, [{ topic: card.topic, correct: isCorrect }]);
+    }
+
     // Log error to error_bank if wrong
     if (quality === "again" && card.topic) {
       await logErrorToBank({
