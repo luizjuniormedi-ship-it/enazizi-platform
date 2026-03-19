@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import MedicalTermHighlighter from "@/components/medical/MedicalTermHighlighter";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
+import { updateDomainMap } from "@/lib/updateDomainMap";
 import { Database, Play, Trash2, ChevronDown, ChevronUp, Search, BarChart3, Target, TrendingUp, GraduationCap, Download, HelpCircle, Zap } from "lucide-react";
 import { exportToPdf } from "@/lib/exportPdf";
 import { useNavigate } from "react-router-dom";
