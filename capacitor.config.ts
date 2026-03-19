@@ -13,6 +13,7 @@ const config: CapacitorConfig = {
     preferredContentMode: "mobile",
     minVersion: "16.0",
     scheme: "ENAZIZI",
+    allowsLinkPreview: true,
   },
   android: {
     backgroundColor: "#0f172a",
