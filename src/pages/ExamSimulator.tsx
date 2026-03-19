@@ -231,7 +231,7 @@ const ExamSimulator = () => {
   };
 
   const ALL_AREAS = [
-    "Clínica Médica", "Cirurgia", "Pediatria", "GO", "Preventiva",
+    "Clínica Médica", "Cirurgia", "Pediatria", "GO", "Preventiva", "Oncologia",
     "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia", "Gastroenterologia",
     "Nefrologia", "Infectologia", "Hematologia", "Reumatologia", "Dermatologia",
     "Urologia", "Ortopedia", "Psiquiatria", "Oftalmologia", "Otorrinolaringologia",
