@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
-import { mapTopicToSpecialty } from "@/lib/mapTopicToSpecialty";
+import { updateDomainMap } from "@/lib/updateDomainMap";
 import DiagnosticIntro from "@/components/diagnostic/DiagnosticIntro";
 import DiagnosticExam from "@/components/diagnostic/DiagnosticExam";
 import DiagnosticReview from "@/components/diagnostic/DiagnosticReview";
