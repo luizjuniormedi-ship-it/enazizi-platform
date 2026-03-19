@@ -214,7 +214,7 @@ const DashboardLayout = () => {
   <div className="flex min-h-[100dvh] min-h-screen bg-background w-full overflow-hidden">
     <DashboardSidebar />
     <div className="flex-1 flex flex-col min-w-0 w-full max-w-full">
-      <header className="landscape-tablet:hidden md:hidden h-14 border-b border-border flex items-center px-3 sm:px-4 gap-2 sm:gap-3 flex-shrink-0">
+      <header className="landscape-tablet:hidden lg:hidden h-14 border-b border-border flex items-center px-3 sm:px-4 gap-2 sm:gap-3 flex-shrink-0">
         <MobileNav />
         <img src={enazizi} alt="ENAZIZI" className="h-6 w-6 rounded object-cover flex-shrink-0" />
         <span className="font-bold text-sm truncate">ENAZIZI</span>
