@@ -45,6 +45,7 @@ const Profile = () => {
         setPeriodo(data.periodo ? String(data.periodo) : "");
         setFaculdade(data.faculdade || "");
         setPhone(data.phone || "");
+        setUserType((data as any).user_type || "estudante");
       }
       setLoading(false);
     };
