@@ -199,40 +199,64 @@ const Profile = () => {
           <p className="text-xs text-muted-foreground">O e-mail não pode ser alterado.</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <Label className="flex items-center gap-1.5">
-              <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
-              Período
-            </Label>
-            <Select value={periodo} onValueChange={setPeriodo}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((p) => (
-                  <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label className="flex items-center gap-1.5">
-              <Building className="h-3.5 w-3.5 text-muted-foreground" />
-              Faculdade
-            </Label>
-            <Select value={faculdade} onValueChange={setFaculdade}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {FACULDADES.map((f) => (
-                  <SelectItem key={f} value={f}>{f}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="space-y-2">
+          <Label>Eu sou</Label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setUserType("estudante")}
+              className={`flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors ${userType === "estudante" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground hover:bg-accent"}`}
+            >
+              <GraduationCap className="h-4 w-4" />
+              Estudante
+            </button>
+            <button
+              type="button"
+              onClick={() => setUserType("medico")}
+              className={`flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors ${userType === "medico" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground hover:bg-accent"}`}
+            >
+              <Stethoscope className="h-4 w-4" />
+              Médico
+            </button>
           </div>
         </div>
+
+        {userType === "estudante" && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
+                Período
+              </Label>
+              <Select value={periodo} onValueChange={setPeriodo}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((p) => (
+                    <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Building className="h-3.5 w-3.5 text-muted-foreground" />
+                Faculdade
+              </Label>
+              <Select value={faculdade} onValueChange={setFaculdade}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FACULDADES.map((f) => (
+                    <SelectItem key={f} value={f}>{f}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label className="flex items-center gap-1.5">
