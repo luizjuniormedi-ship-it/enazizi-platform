@@ -24,20 +24,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       setLoading(false);
 
-      // Force PWA cache clear + reload on ANY login, all devices (iOS/Android/desktop)
+      // Force PWA cache clear + reload on login (once per session)
       if (event === "SIGNED_IN") {
-        try {
-          const alreadyUpdated = (window as any).__pwaUpdated;
-          if (alreadyUpdated) return;
-          (window as any).__pwaUpdated = true;
+        const already = sessionStorage.getItem("pwa-updated");
+        if (already) return;
+        sessionStorage.setItem("pwa-updated", "1");
 
-          const clearAndReload = async () => {
-            // Clear all caches (works on Chrome, Safari, Firefox, Samsung Internet)
+        const clearAndReload = async () => {
+          try {
             if ("caches" in window) {
               const names = await caches.keys();
               await Promise.all(names.map((n) => caches.delete(n)));
             }
-            // Update service worker if available
             if ("serviceWorker" in navigator) {
               const reg = await navigator.serviceWorker.getRegistration();
               if (reg) {
@@ -47,14 +45,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 }
               }
             }
-            window.location.reload();
-          };
-          
-          clearAndReload();
-        } catch {
-          // Fallback: just reload
+          } catch {
+            // ignore
+          }
           window.location.reload();
-        }
+        };
+        clearAndReload();
+      }
+
+      // Clear flag on logout so next login triggers update
+      if (event === "SIGNED_OUT") {
+        sessionStorage.removeItem("pwa-updated");
       }
     });
 
