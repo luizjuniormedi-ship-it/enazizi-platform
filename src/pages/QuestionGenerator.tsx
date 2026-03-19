@@ -68,6 +68,8 @@ const QuestionGenerator = () => {
       onSaveMessage={handleSaveQuestions}
       quickActions={quickActions}
       renderAssistantMessage={renderInteractive}
+      showUploadButton={true}
+      autoPromptAfterUpload="Gere 10 questões originais no formato ENARE baseadas no material que acabei de enviar: {filename}. Use o conteúdo do material como base para criar casos clínicos variados."
     />
   );
 };
