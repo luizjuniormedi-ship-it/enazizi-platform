@@ -128,6 +128,10 @@ const Dashboard = () => {
         gamificationLevel: gamData?.level || 1,
         globalFlashcards: globalFlashRes.count || 0,
         globalQuestions: globalQuestRes.count || 0,
+        questionsCreated: questionsCreatedRes.count || 0,
+        clinicalSimulations: clinicalSimRes.count || 0,
+        anamnesisCompleted: anamnesisRes.count || 0,
+        summariesCreated: summariesRes.count || 0,
       });
 
       const tasks = tasksRes.data || [];
