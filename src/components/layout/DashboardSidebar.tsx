@@ -23,11 +23,13 @@ interface NavItem {
 interface NavGroup {
   title: string;
   items: NavItem[];
+  defaultOpen?: boolean;
 }
 
 const navGroups: NavGroup[] = [
   {
     title: "Principal",
+    defaultOpen: true,
     items: [
       { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
       { to: "/dashboard/chatgpt", icon: Sparkles, label: "🤖 Tutor IA" },
@@ -37,6 +39,7 @@ const navGroups: NavGroup[] = [
   },
   {
     title: "Estudo",
+    defaultOpen: false,
     items: [
       { to: "/dashboard/cronograma", icon: CalendarDays, label: "📅 Cronograma" },
       { to: "/dashboard/flashcards", icon: FlipVertical, label: "🃏 Flashcards" },
@@ -47,6 +50,7 @@ const navGroups: NavGroup[] = [
   },
   {
     title: "Avaliação",
+    defaultOpen: false,
     items: [
       { to: "/dashboard/simulados", icon: FileText, label: "📝 Simulados" },
       { to: "/dashboard/simulado-completo", icon: Award, label: "🏆 Simulado Completo" },
@@ -60,6 +64,7 @@ const navGroups: NavGroup[] = [
   },
   {
     title: "Progresso",
+    defaultOpen: false,
     items: [
       { to: "/dashboard/predictor", icon: TrendingUp, label: "📈 Previsão" },
       { to: "/dashboard/banco-erros", icon: AlertTriangle, label: "🚨 Banco de Erros" },
@@ -122,11 +127,12 @@ const DashboardSidebar = () => {
   const { isProfessor } = useProfessorCheck();
   const { isModuleEnabled } = useModuleAccess();
 
-  // All groups open by default; auto-open group with active route
+  // Only auto-open group with active route + "Principal" always open
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     navGroups.forEach((g) => {
-      initial[g.title] = true;
+      const hasActive = g.items.some((item) => location.pathname === item.to);
+      initial[g.title] = g.defaultOpen || hasActive;
     });
     return initial;
   });
