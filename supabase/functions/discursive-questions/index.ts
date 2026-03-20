@@ -159,7 +159,8 @@ Retorne APENAS um JSON válido:
         if (!response.ok) throw new Error("Erro ao corrigir resposta");
 
         const aiData = await response.json();
-        const content = aiData.choices?.[0]?.message?.content || "";
+        const rawContent = aiData.choices?.[0]?.message?.content || "";
+        const content = rawContent.replace(/[\x00-\x1F\x7F]/g, (ch: string) => ch === '\n' || ch === '\r' || ch === '\t' ? ch : ' ');
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error("Erro ao processar correção");
 
