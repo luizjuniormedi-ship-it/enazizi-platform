@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Play, CalendarDays, AlertTriangle, Clock, CheckCircle2, ShieldAlert } from "lucide-react";
+import StudyBlockActions from "./StudyBlockActions";
+import type { TemaEstudado, Revisao, TemaComputado } from "@/pages/CronogramaInteligente";
 import type { TemaEstudado, Revisao, TemaComputado } from "@/pages/CronogramaInteligente";
 
 interface Props {
