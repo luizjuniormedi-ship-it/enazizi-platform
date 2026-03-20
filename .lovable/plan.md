@@ -1,64 +1,57 @@
 
 
-## Analise Focada no Usuario Final + Melhorias
+## Rebranding: ENAZIZI → MedStudy AI
 
-### Problemas Encontrados
+Renomear todas as referências do projeto de "ENAZIZI" para "MedStudy AI" em 55 arquivos.
 
-**1. Warnings no Console (Bugs Visuais Potenciais)**
-- `TopicEvolution.tsx` passa ref para `Badge` (function component sem forwardRef) - causa warning em loop
-- `DashboardCharts.tsx` - mesmo problema com o lazy-loaded BarChart component
-- Impacto: poluição do console, potencial instabilidade em re-renders
+### Escopo das mudanças
 
-**2. Dashboard Sobrecarregado**
-- O Dashboard renderiza ~12 componentes empilhados verticalmente sem hierarquia visual clara
-- O usuario precisa scrollar muito para ver tudo: MotivationalGreeting → XP → Metrics (6 KPIs) → Metrics (8 secondary) → Global Banner → Daily Summary → Streak → Weekly Chart → Reviews → Subject Hours → Subjects → WeeklyProgress → Leaderboard → TopicEvolution → SpecialtyBenchmark
-- Muito ruido visual para um usuario novo que ainda tem 0 dados
+**Frontend (UI visível ao usuário):**
+- Landing page: Navbar, HeroSection, FeaturesSection, Footer
+- Dashboard: Sidebar, Layout mobile, BottomTabBar
+- Onboarding, SystemGuide, WhatsNew popups
+- Install page (PWA)
+- Páginas de agentes (AgentsHub, AIMentor, MedicalReviewer, etc.)
+- Saudações motivacionais, TopicEvolution, DiagnosticResult
 
-**3. Estado Vazio (Empty States) Fracos**
-- Quando o usuario e novo, quase todos os widgets mostram "0" ou "Nenhum dado" - desmotivante
-- Nao ha CTAs claros tipo "Comece seu primeiro simulado!" nos estados vazios
+**Backend (Edge Functions):**
+- `enazizi-prompt.ts` → renomear referências internas para "MedStudy AI"
+- Todas as edge functions que mencionam "ENAZIZI" nos system prompts (mentor-chat, clinical-simulation, content-summarizer, motivational-coach, medical-reviewer, etc.)
 
-**4. TopicEvolution Nao Usa React Query**
-- Unico componente do Dashboard que ainda usa useState/useEffect manual (inconsistente com refator anterior)
-- Faz queries separadas a cada render
+**Configuração:**
+- `index.html` — title e meta tags
+- `public/manifest.json` — name e short_name
+- `capacitor.config.ts` — appName
 
-**5. Mobile UX**
-- Menu mobile repete a navegacao da sidebar desktop sem filtragem por `useModuleAccess`
-- Nao ha bottom navigation para acesso rapido aos modulos mais usados
+**Assets:**
+- Manter o arquivo `enazizi-mascot.png` (é o mascote, só mudar o alt text)
+- Renomear imports de variável `enazizi` → `mascot` para clareza
 
-**6. Login/Register sem Recuperacao de Senha**
-- Pagina de login nao tem link "Esqueci minha senha"
+**Testes:**
+- Atualizar strings nos testes (Landing.test, DashboardSidebar.test)
 
----
+**localStorage keys:**
+- Manter as keys existentes (`enazizi_onboarding_completed`, etc.) para não quebrar estado dos usuários atuais
 
-### Plano de Melhorias
+### Regra de substituição
 
-**Fase 1 - Corrigir Bugs (Console Warnings)**
-1. Wrap `Badge` com `forwardRef` ou remover refs desnecessarias em `TopicEvolution.tsx`
-2. Corrigir o lazy BarChart em `DashboardCharts.tsx` para exportar componente correto
+| De | Para |
+|---|---|
+| `ENAZIZI` (display) | `MedStudy AI` |
+| `Protocolo ENAZIZI` | `Protocolo MedStudy` |
+| `sistema ENAZIZI` | `sistema MedStudy AI` |
+| `tutor ENAZIZI` | `tutor MedStudy AI` |
+| Alt text `ENAZIZI` | `MedStudy AI` |
 
-**Fase 2 - Dashboard UX**
-3. Adicionar empty states motivacionais com CTAs quando dados = 0 (ex: "Faca seu primeiro simulado!" com botao direto)
-4. Esconder widgets sem dados para usuarios novos e mostrar um "Quick Start" card
-5. Migrar `TopicEvolution` para React Query (consistencia)
+### Arquivos principais (~30 edições)
 
-**Fase 3 - Mobile**
-6. Aplicar filtro `useModuleAccess` no menu mobile (`DashboardLayout.tsx` mobileNavGroups)
-7. Adicionar bottom tab bar no mobile com 4 itens: Dashboard, Tutor IA, Simulados, Perfil
-
-**Fase 4 - Auth UX**
-8. Adicionar link "Esqueci minha senha" na pagina de Login com fluxo de reset via email
-9. Melhorar feedback de erro no login (mensagens em portugues)
-
-### Detalhes Tecnicos
-
-**Arquivos a editar:**
-- `src/components/ui/badge.tsx` - adicionar forwardRef
-- `src/components/dashboard/DashboardCharts.tsx` - corrigir lazy export
-- `src/components/dashboard/TopicEvolution.tsx` - migrar para React Query
-- `src/pages/Dashboard.tsx` - adicionar Quick Start para novos usuarios
-- `src/components/dashboard/DashboardMetricsGrid.tsx` - empty states com CTAs
-- `src/components/layout/DashboardLayout.tsx` - filtrar mobile nav + bottom tabs
-- `src/pages/Login.tsx` - link de "Esqueci senha" + resetPassword
-- `src/hooks/useAuth.tsx` - adicionar funcao resetPassword
+1. `index.html`, `public/manifest.json`, `capacitor.config.ts`
+2. `src/components/landing/*` (Navbar, Footer, FeaturesSection)
+3. `src/components/layout/DashboardSidebar.tsx`, `DashboardLayout.tsx`, `BottomTabBar.tsx`
+4. `src/components/dashboard/*` (OnboardingTour, SystemGuidePopup, WhatsNewPopup, MotivationalGreeting)
+5. `src/pages/Install.tsx`, `AgentsHub.tsx`, `AIMentor.tsx`
+6. `src/components/diagnostic/DiagnosticResult.tsx`, `TopicEvolution.tsx`, `InteractiveQuestionCard.tsx`
+7. `src/components/professor/ClassAnalytics.tsx`
+8. `supabase/functions/_shared/enazizi-prompt.ts` + todas as edge functions
+9. Testes: `Landing.test.tsx`, `DashboardSidebar.test.tsx`
 
