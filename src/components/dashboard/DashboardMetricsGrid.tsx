@@ -54,7 +54,7 @@ const DashboardMetricsGrid = ({ stats, metrics }: Props) => (
         { to: "/dashboard/questoes", icon: PenTool, value: metrics.questionsCreated, label: "Questões criadas" },
         { to: "/dashboard/plantao", icon: Activity, value: metrics.clinicalSimulations, label: "Simulações clínicas" },
         { to: "/dashboard/anamnese", icon: ClipboardList, value: metrics.anamnesisCompleted, label: "Anamneses realizadas" },
-        { to: "/dashboard/cronograma", icon: Check2, value: `${stats.completedTasks}/${stats.totalTasks}`, label: "Tarefas concluídas" },
+        { to: "/dashboard/cronograma", icon: CheckCircle2, value: `${stats.completedTasks}/${stats.totalTasks}`, label: "Tarefas concluídas" },
         { to: "/dashboard/uploads", icon: Upload, value: stats.uploads, label: "Uploads", iconColor: "text-emerald-500" },
         { to: "/dashboard/resumos", icon: FileCheck, value: metrics.summariesCreated, label: "Resumos gerados" },
         { to: "/dashboard/discursivas", icon: Stethoscope, value: metrics.discursivasCompleted, label: "Discursivas feitas" },
