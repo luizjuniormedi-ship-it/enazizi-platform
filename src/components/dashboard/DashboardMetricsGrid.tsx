@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import {
   Target, CheckCircle2, Flame, CalendarDays, AlertTriangle, Award,
   FlipVertical, TrendingUp, PenTool, Activity, ClipboardList,
-  CheckCircle2 as Check2, Upload, FileCheck, Stethoscope, BookOpen, HelpCircle, Globe
+  Upload, FileCheck, Stethoscope, BookOpen, HelpCircle, Globe
 } from "lucide-react";
 import type { DashboardStats, DashboardMetrics } from "@/hooks/useDashboardData";
 
