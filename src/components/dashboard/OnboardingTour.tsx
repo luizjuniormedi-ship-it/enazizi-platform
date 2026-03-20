@@ -3,7 +3,7 @@ import { X, ChevronRight, ChevronLeft, Sparkles, BookOpen, Brain, FileText, Trop
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
-const ONBOARDING_KEY = "enazizi_onboarding_completed";
+const ONBOARDING_KEY = "enazizi_onboarding_completed_v2";
 
 interface Step {
   icon: React.ReactNode;
