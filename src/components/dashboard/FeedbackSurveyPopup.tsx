@@ -74,13 +74,16 @@ const FeedbackSurveyPopup = () => {
     const alreadyGiven = localStorage.getItem(`${FEEDBACK_GIVEN_KEY_PREFIX}${user.id}`);
     if (alreadyGiven === "true") return;
 
-    const loginCount = parseInt(
-      localStorage.getItem(`${LOGIN_COUNT_KEY_PREFIX}${user.id}`) || "0",
-      10
-    );
+    const loginCountRaw = localStorage.getItem(`${LOGIN_COUNT_KEY_PREFIX}${user.id}`);
+    const loginCount = loginCountRaw ? parseInt(loginCountRaw, 10) : 0;
 
-    // Show on 3rd login or any login after that (for existing users)
-    if (loginCount < MIN_LOGINS) return;
+    // If counter exists, require MIN_LOGINS (new users)
+    // If counter doesn't exist, this is an existing user who never had the counter —
+    // show immediately (they've been using the app before the feature was added)
+    const isExistingUserWithoutCounter = loginCountRaw === null;
+    const hasEnoughLogins = loginCount >= MIN_LOGINS;
+
+    if (!isExistingUserWithoutCounter && !hasEnoughLogins) return;
 
     // Also check DB in case they submitted from another device
     supabase
