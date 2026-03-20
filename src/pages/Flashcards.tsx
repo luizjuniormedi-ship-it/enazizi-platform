@@ -346,7 +346,7 @@ const Flashcards = () => {
             size="sm"
             onClick={() => exportToPdf(
               filteredCards.map((c) => ({ title: c.question, content: c.answer, subtitle: c.topic || undefined })),
-              "Flashcards_MedStudy AI"
+              "Flashcards_MedStudy_AI"
             )}
             disabled={filteredCards.length === 0}
           >
