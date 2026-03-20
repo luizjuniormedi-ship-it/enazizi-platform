@@ -150,8 +150,8 @@ const DashboardSidebar = () => {
     <aside className="hidden landscape-tablet:flex lg:flex flex-col w-52 md:w-56 lg:w-64 border-r border-sidebar-border bg-sidebar h-screen sticky top-0">
       <div className="p-6 flex-shrink-0">
         <Link to="/" className="flex items-center gap-2">
-          <img src={enazizi} alt="ENAZIZI" className="h-9 w-9 rounded-lg object-cover" />
-          <span className="text-lg font-bold text-sidebar-foreground">ENAZIZI</span>
+          <img src={enazizi} alt="MedStudy AI" className="h-9 w-9 rounded-lg object-cover" />
+          <span className="text-lg font-bold text-sidebar-foreground">MedStudy AI</span>
         </Link>
       </div>
 

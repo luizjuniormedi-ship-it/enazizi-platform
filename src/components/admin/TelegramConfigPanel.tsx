@@ -67,7 +67,7 @@ const TelegramConfigPanel = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Configure o grupo do Telegram onde o bot ENAZIZI enviará notificações de aulas ao vivo. Esses dados serão usados automaticamente por todos os professores.
+          Configure o grupo do Telegram onde o bot MedStudy AI enviará notificações de aulas ao vivo. Esses dados serão usados automaticamente por todos os professores.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

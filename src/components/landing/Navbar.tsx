@@ -11,8 +11,8 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <img src={enazizi} alt="ENAZIZI" className="h-9 w-9 rounded-lg object-cover" />
-          <span className="text-lg font-bold">ENAZIZI</span>
+          <img src={enazizi} alt="MedStudy AI" className="h-9 w-9 rounded-lg object-cover" />
+          <span className="text-lg font-bold">MedStudy AI</span>
         </Link>
 
         <div className="hidden md:flex items-center gap-8">

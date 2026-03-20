@@ -346,7 +346,7 @@ const Flashcards = () => {
             size="sm"
             onClick={() => exportToPdf(
               filteredCards.map((c) => ({ title: c.question, content: c.answer, subtitle: c.topic || undefined })),
-              "Flashcards_ENAZIZI"
+              "Flashcards_MedStudy AI"
             )}
             disabled={filteredCards.length === 0}
           >
@@ -555,7 +555,7 @@ const Flashcards = () => {
                   className="gap-1.5 text-xs"
                   onClick={() => navigate("/dashboard/chatgpt", {
                     state: {
-                      initialMessage: `Errei um flashcard sobre "${card.topic}". A pergunta era: "${card.question}". A resposta correta era: "${card.answer}". Me explique este tema seguindo o protocolo ENAZIZI.`,
+                      initialMessage: `Errei um flashcard sobre "${card.topic}". A pergunta era: "${card.question}". A resposta correta era: "${card.answer}". Me explique este tema seguindo o protocolo MedStudy.`,
                       fromErrorBank: true,
                     },
                   })}

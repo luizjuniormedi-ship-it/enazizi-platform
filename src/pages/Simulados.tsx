@@ -286,7 +286,7 @@ Distribua igualmente entre os temas solicitados. Com casos clínicos.`
   const handleStudyWithTutor = (q: SimQuestion) => {
     navigate("/dashboard/chatgpt", {
       state: {
-        initialMessage: `Errei uma questão sobre "${q.topic}". O enunciado era: "${q.statement.slice(0, 200)}". A resposta correta era "${q.options[q.correct]}". Me explique este tema em detalhes seguindo o protocolo ENAZIZI.`,
+        initialMessage: `Errei uma questão sobre "${q.topic}". O enunciado era: "${q.statement.slice(0, 200)}". A resposta correta era "${q.options[q.correct]}". Me explique este tema em detalhes seguindo o protocolo MedStudy.`,
         fromErrorBank: true,
       },
     });

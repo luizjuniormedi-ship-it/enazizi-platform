@@ -42,11 +42,11 @@ const Install = () => {
       <Card className="max-w-md w-full">
         <CardContent className="pt-6 text-center space-y-6">
           <div className="flex justify-center">
-            <img src="/pwa-icon-192.png" alt="ENAZIZI" className="w-24 h-24 rounded-2xl shadow-lg" />
+            <img src="/pwa-icon-192.png" alt="MedStudy AI" className="w-24 h-24 rounded-2xl shadow-lg" />
           </div>
 
           <div>
-            <h1 className="text-2xl font-bold">ENAZIZI</h1>
+            <h1 className="text-2xl font-bold">MedStudy AI</h1>
             <p className="text-muted-foreground text-sm mt-1">
               Plataforma de Estudos Médicos com IA
             </p>
@@ -57,7 +57,7 @@ const Install = () => {
               <CheckCircle className="h-12 w-12 text-green-500" />
               <p className="font-medium">App já instalado!</p>
               <p className="text-sm text-muted-foreground">
-                Abra o ENAZIZI direto da sua tela inicial.
+                Abra o MedStudy AI direto da sua tela inicial.
               </p>
             </div>
           ) : isIOS ? (
@@ -93,7 +93,7 @@ const Install = () => {
                   <div>
                     <p className="text-sm font-medium">3. Toque em "Adicionar"</p>
                     <p className="text-xs text-muted-foreground">
-                      O ENAZIZI aparecerá na sua tela inicial
+                      O MedStudy AI aparecerá na sua tela inicial
                     </p>
                   </div>
                 </div>
@@ -102,7 +102,7 @@ const Install = () => {
           ) : deferredPrompt ? (
             <Button onClick={handleInstall} size="lg" className="gap-2 w-full">
               <Download className="h-5 w-5" />
-              Instalar ENAZIZI
+              Instalar MedStudy AI
             </Button>
           ) : (
             <div className="space-y-4 text-left">
@@ -126,7 +126,7 @@ const Install = () => {
                   <div>
                     <p className="text-sm font-medium">2. "Instalar app" ou "Adicionar à tela inicial"</p>
                     <p className="text-xs text-muted-foreground">
-                      O ENAZIZI será instalado como um app nativo
+                      O MedStudy AI será instalado como um app nativo
                     </p>
                   </div>
                 </div>

@@ -7,9 +7,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SUMMARIZER_PREFIX = `Você é o Resumidor de Conteúdo do sistema ENAZIZI, especializado em Residência Médica no Brasil.
+const SUMMARIZER_PREFIX = `Você é o Resumidor de Conteúdo do sistema MedStudy AI, especializado em Residência Médica no Brasil.
 
-Seu objetivo é gerar RESUMOS ESTRUTURADOS seguindo exatamente a mesma organização visual e pedagógica do Tutor ENAZIZI.
+Seu objetivo é gerar RESUMOS ESTRUTURADOS seguindo exatamente a mesma organização visual e pedagógica do Tutor MedStudy AI.
 
 ⛔ RESTRIÇÃO ABSOLUTA DE ESCOPO:
 Você SOMENTE pode resumir conteúdo relacionado a MEDICINA, SAÚDE e CIÊNCIAS BIOMÉDICAS.
@@ -38,7 +38,7 @@ IMPORTANTE: Quando o aluno fornecer material, use-o como base para criar resumos
 Cite diretrizes, protocolos (MS, SBP, FEBRASGO, ATLS, ACLS) e referências.
 SEMPRE em português brasileiro.
 
-Agora siga TODAS as regras de formatação visual, espaçamento e organização do Protocolo ENAZIZI abaixo:
+Agora siga TODAS as regras de formatação visual, espaçamento e organização do Protocolo MedStudy abaixo:
 
 ${ENAZIZI_PROMPT}`;
 
