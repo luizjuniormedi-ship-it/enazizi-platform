@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { isMedicalQuestion } from "@/lib/medicalValidation";
 import MedicalTermHighlighter from "@/components/medical/MedicalTermHighlighter";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
@@ -119,13 +120,12 @@ const QuestionsBank = () => {
         .limit(1000);
 
       if (data) {
-        setQuestions(
-          data.map((q) => ({
+        const mapped = data.map((q) => ({
             ...q,
             options: parseOptions(q.options),
             correct_index: q.correct_index ?? 0,
-          }))
-        );
+          }));
+        setQuestions(mapped.filter(q => isMedicalQuestion(q)));
       }
       if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
       setLoading(false);

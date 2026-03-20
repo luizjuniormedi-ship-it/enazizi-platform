@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { logErrorToBank } from "@/lib/errorBankLogger";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -99,7 +100,28 @@ const StudySession = () => {
   }, [user]);
 
   const savePerformance = useCallback((data: PerformanceData) => {
-    setPerformance(data);
+    setPerformance(prev => {
+      // Log new weak topics to ErrorBank
+      if (user && data.weakTopics) {
+        const prevWeakSet = new Set((prev?.weakTopics || []).map((t: any) => typeof t === "string" ? t : t.name));
+        const newWeakTopics = (data.weakTopics as any[]).filter((t: any) => {
+          const name = typeof t === "string" ? t : t.name;
+          return !prevWeakSet.has(name);
+        });
+        for (const t of newWeakTopics) {
+          const topicName = typeof t === "string" ? t : t.name;
+          logErrorToBank({
+            userId: user.id,
+            tema: topicName,
+            tipoQuestao: "active-recall",
+            conteudo: `Tema fraco identificado na sessão de estudo: ${topicName}`,
+            motivoErro: "Identificado como tema fraco pelo tutor IA",
+            categoriaErro: "conceito",
+          });
+        }
+      }
+      return data;
+    });
     if (user) localStorage.setItem(`enazizi-perf-${user.id}`, JSON.stringify(data));
   }, [user]);
 

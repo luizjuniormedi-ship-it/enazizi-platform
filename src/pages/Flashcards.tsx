@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { isMedicalContent } from "@/lib/medicalValidation";
 import { createPortal } from "react-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
@@ -119,7 +120,8 @@ const Flashcards = () => {
     const ownCards = ownRes.data || [];
     const globalCards = globalRes.data || [];
     const ownIds = new Set(ownCards.map(c => c.id));
-    const merged = [...ownCards, ...globalCards.filter(c => !ownIds.has(c.id))];
+     const merged = [...ownCards, ...globalCards.filter(c => !ownIds.has(c.id))]
+      .filter(c => isMedicalContent(`${c.question} ${c.answer}`));
 
     setAllCards(merged);
 

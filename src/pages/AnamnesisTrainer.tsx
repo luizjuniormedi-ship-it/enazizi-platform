@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { logErrorToBank } from "@/lib/errorBankLogger";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -242,6 +243,23 @@ const AnamnesisTrainer = () => {
           time_total_minutes: Math.round(elapsed / 60),
           xp_earned: data.xp_earned || 0,
         } as any);
+
+        // Log to ErrorBank if score < 70
+        if ((data.final_score || 0) < 70) {
+          const missedCategories = Object.entries(data.categories_summary || {})
+            .filter(([, v]: [string, any]) => !v)
+            .map(([k]) => k);
+          logErrorToBank({
+            userId: user.id,
+            tema: specialty,
+            tipoQuestao: "active-recall",
+            conteudo: `Anamnese ${specialty} - Score: ${data.final_score}%`,
+            motivoErro: missedCategories.length > 0
+              ? `Categorias não cobertas: ${missedCategories.join(", ")}`
+              : "Score abaixo de 70%",
+            categoriaErro: "conceito",
+          });
+        }
 
         if (data.xp_earned) {
           addXp(data.xp_earned);

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { isMedicalQuestion } from "@/lib/medicalValidation";
 import { useNavigate } from "react-router-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import {
@@ -168,7 +169,8 @@ const StudentSimulados = () => {
   const startQuiz = async (item: AssignedSimulado) => {
     setCurrent(item);
     setQuestionIndex(0);
-    const questions = item.simulado.questions_json || [];
+    const questions = (item.simulado.questions_json || []).filter((q: any) => isMedicalQuestion(q));
+    item.simulado.questions_json = questions;
     setAnswers(new Array(questions.length).fill(null));
     setTimeLeft(item.simulado.time_limit_minutes * 60);
     setPhase("quiz");

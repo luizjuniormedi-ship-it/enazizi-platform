@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isMedicalQuestion } from "@/lib/medicalValidation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -84,7 +85,7 @@ export default function PreviousExams() {
       }
 
       const { data } = await query.order("created_at", { ascending: false }).limit(100);
-      return (data || []) as Question[];
+      return ((data || []) as Question[]).filter(q => isMedicalQuestion(q));
     },
     enabled: !!(selectedBanca || selectedYear || selectedTopic),
   });
