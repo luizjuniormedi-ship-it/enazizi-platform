@@ -176,7 +176,7 @@ Responda APENAS com JSON: {"flashcards": [{"question": "...", "answer": "...", "
       if (aiResponse.ok) {
         const aiData = await aiResponse.json();
         let flashcards: Array<{ question: string; answer: string; topic: string }> = [];
-        const content = aiData.choices?.[0]?.message?.content || "";
+        const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
         try {
           const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
           flashcards = JSON.parse(cleaned).flashcards || [];
