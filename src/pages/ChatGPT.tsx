@@ -36,7 +36,7 @@ interface EnaziziProgress {
   historico_estudo: string[];
 }
 
-const MedStudy AI_STEPS = [
+const MEDSTUDY_STEPS = [
   { num: 1, label: "Painel", icon: "📊" },
   { num: 2, label: "Tema", icon: "📚" },
   { num: 3, label: "Técnico 1", icon: "🔬" },
@@ -54,11 +54,11 @@ const MedStudy AI_STEPS = [
 ];
 
 const FUNCTION_NAME = "chatgpt-agent";
-const MedStudy AI_SEQUENTIAL_APPENDIX = "IMPORTANTE: para não cortar a explicação, divida em tópicos e entregue em blocos atômicos sequenciais (2 a 3 seções por resposta), finalize cada bloco sem truncar frases e pergunte se pode continuar antes do próximo bloco.";
+const MEDSTUDY_SEQUENTIAL_APPENDIX = "IMPORTANTE: para não cortar a explicação, divida em tópicos e entregue em blocos atômicos sequenciais (2 a 3 seções por resposta), finalize cada bloco sem truncar frases e pergunte se pode continuar antes do próximo bloco.";
 
 const ensureSequentialInitialMessage = (message: string) => {
   if (/blocos? curtos?|bloco at[oô]mico|2\s*a\s*3\s*se[cç][oõ]es/i.test(message)) return message;
-  return `${message}\n\n${MedStudy AI_SEQUENTIAL_APPENDIX}`;
+  return `${message}\n\n${MEDSTUDY_SEQUENTIAL_APPENDIX}`;
 };
 
 const ChatGPT = () => {
@@ -1017,7 +1017,7 @@ const ChatGPT = () => {
               </div>
             )}
             <div className="flex gap-0.5">
-              {MedStudy AI_STEPS.map((s) => (
+              {MEDSTUDY_STEPS.map((s) => (
                 <div
                   key={s.num}
                   title={`${s.num}. ${s.label}`}
@@ -1032,7 +1032,7 @@ const ChatGPT = () => {
               ))}
             </div>
             <div className="hidden sm:flex justify-between mt-1">
-              {MedStudy AI_STEPS.map((s) => (
+              {MEDSTUDY_STEPS.map((s) => (
                 <span
                   key={s.num}
                   className={`text-[9px] ${
