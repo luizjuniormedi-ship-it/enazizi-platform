@@ -1,23 +1,37 @@
 
 
-# Atualização do Nome no Ícone PWA
+# Adicionar Especialidades Faltantes ao Cronograma
 
-## Diagnóstico
+## Problema
+A lista `SPECIALTIES` do Cronograma tem 22 especialidades, mas faltam 3 que já existem no sistema (`mapTopicToSpecialty`) e são cobradas em provas ENAMED/Revalida:
+- **Medicina de Emergência**
+- **Terapia Intensiva**
+- **Oncologia**
 
-Os arquivos de manifesto (`vite.config.ts` e `public/manifest.json`) **já estão corretos** com o nome "MedStudy AI". Não há nenhuma referência residual a "ENAZIZI" nos manifests.
+Quando um tema dessas áreas é importado via edital, ele cai no fallback "Medicina Preventiva", quebrando a categorização e os analytics.
 
-O nome antigo que alguns usuários veem no ícone da tela inicial é um **cache do sistema operacional** da instalação anterior.
+## Alteração
 
-## Comportamento por Plataforma
+### `src/pages/CronogramaInteligente.tsx` — Expandir `SPECIALTIES`
+Adicionar as 3 especialidades faltantes à constante `SPECIALTIES` (linhas 100-107):
 
-- **Android**: O Chrome atualiza o nome automaticamente ao detectar mudança no manifest (pode levar até 30 dias). O mecanismo de force-update no login que já existe no app acelera isso.
-- **iOS**: O nome do ícone **nunca é atualizado** após instalação. O usuário precisa deletar o app e reinstalar.
+```typescript
+export const SPECIALTIES = [
+  "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia",
+  "Gastroenterologia", "Nefrologia", "Infectologia", "Pediatria",
+  "Ginecologia e Obstetrícia", "Cirurgia", "Medicina Preventiva",
+  "Hematologia", "Reumatologia", "Dermatologia", "Urologia",
+  "Ortopedia", "Otorrinolaringologia", "Oftalmologia", "Psiquiatria",
+  "Semiologia", "Anatomia", "Farmacologia",
+  "Medicina de Emergência", "Terapia Intensiva", "Oncologia",
+];
+```
 
-## Plano de Ação
+Isso garante que:
+- O dropdown de "Nova Tema" mostra essas opções
+- Temas importados de editais são categorizados corretamente
+- Os gráficos de performance por especialidade incluem essas áreas
 
-Nenhuma alteração de código é necessária — os manifests já estão corretos.
-
-Para garantir que os usuários recebam a atualização mais rápido no Android, o sistema de force-update no login (já implementado em `useAuth.tsx`) já faz `caches.delete()` + `registration.update()`, o que força o navegador a buscar o novo manifest.
-
-Para iOS, a única solução é orientar os usuários a reinstalarem o PWA.
+### Arquivos modificados
+- `src/pages/CronogramaInteligente.tsx` — 1 linha adicionada na constante
 
