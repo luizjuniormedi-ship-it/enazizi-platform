@@ -64,6 +64,7 @@ const Dashboard = () => {
     <div className="space-y-6 animate-fade-in pb-16 lg:pb-0">
       <WhatsNewPopup />
       <SystemGuidePopup />
+      <FeedbackSurveyPopup />
       <OnboardingTour />
 
       <div>
