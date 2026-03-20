@@ -18,6 +18,9 @@ import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner"
 import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
 import DashboardCharts from "@/components/dashboard/DashboardCharts";
 import QuickStartCard from "@/components/dashboard/QuickStartCard";
+import SmartRecommendations from "@/components/dashboard/SmartRecommendations";
+import ApprovalThermometer from "@/components/dashboard/ApprovalThermometer";
+import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { fireCelebration } from "@/lib/celebrations";
