@@ -50,7 +50,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const AnamnesisTrainer = lazy(() => import("./pages/AnamnesisTrainer"));
 const Install = lazy(() => import("./pages/Install"));
 const StudyGuides = lazy(() => import("./pages/StudyGuides"));
-const PreviousExams = lazy(() => import("./pages/PreviousExams"));
+
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 const PageLoader = () => (
@@ -95,7 +95,7 @@ const App = () => (
                 <Route path="banco-questoes" element={<QuestionsBank />} />
                 <Route path="resumos" element={<ContentSummarizer />} />
                 <Route path="apostilas" element={<StudyGuides />} />
-                <Route path="provas-anteriores" element={<PreviousExams />} />
+                
                 <Route path="coach" element={<MotivationalCoach />} />
                 <Route path="chatgpt" element={<ChatGPT />} />
                 <Route path="plano-dia" element={<DailyPlan />} />
