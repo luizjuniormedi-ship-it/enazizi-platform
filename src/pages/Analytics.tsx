@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { BarChart3, TrendingUp, Target, Clock, BookOpen, CheckCircle2, Loader2, HelpCircle, Stethoscope, Award } from "lucide-react";
+import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import PerformanceReport from "@/components/dashboard/PerformanceReport";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
