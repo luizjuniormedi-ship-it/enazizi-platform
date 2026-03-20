@@ -1,4 +1,5 @@
 import { Stethoscope, ArrowRight, Clock, Brain, Target, BarChart3 } from "lucide-react";
+import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { Button } from "@/components/ui/button";
 
 interface DiagnosticIntroProps {

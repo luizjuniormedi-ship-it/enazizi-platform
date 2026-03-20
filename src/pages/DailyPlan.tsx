@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Brain, Clock, BookOpen, RefreshCw, CheckCircle2, Loader2, Zap, Target, FlipVertical, GraduationCap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
