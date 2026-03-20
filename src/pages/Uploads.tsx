@@ -1,4 +1,5 @@
 import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle, Database } from "lucide-react";
+import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useState, useRef, useEffect, useCallback } from "react";
