@@ -121,8 +121,12 @@ const FeedbackSurveyPopup = () => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) setOpen(false); }}>
-      <DialogContent className="sm:max-w-md border-primary/20" onInteractOutside={(e) => e.preventDefault()}>
+    <Dialog open={open} onOpenChange={(v) => { if (v) setOpen(true); }}>
+      <DialogContent
+        className="sm:max-w-md border-primary/20 [&>button]:hidden"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
