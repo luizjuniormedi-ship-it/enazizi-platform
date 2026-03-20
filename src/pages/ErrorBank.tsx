@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { AlertTriangle, BookOpen, BarChart3, Trash2, RefreshCw, ArrowRight, Brain, HelpCircle, Stethoscope, ListChecks, FlipVertical, Loader2 } from "lucide-react";
+import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
