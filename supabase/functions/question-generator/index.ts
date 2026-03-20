@@ -11,10 +11,12 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { messages, userContext, stream: clientStream, difficulty } = body;
+    const { messages, userContext, stream: clientStream, difficulty, maxRetries, timeoutMs } = body;
 
     // Default to streaming unless client explicitly sets stream=false
     const useStream = clientStream !== false;
+    const safeMaxRetries = typeof maxRetries === "number" ? Math.max(0, Math.min(2, maxRetries)) : undefined;
+    const safeTimeoutMs = typeof timeoutMs === "number" ? Math.max(8000, Math.min(45000, timeoutMs)) : undefined;
 
     let systemPrompt = `Você é um gerador de questões de ELITE que segue obrigatoriamente o PROTOCOLO MedStudy AI, especializado em provas de Residência Médica no Brasil (ENARE, USP, UNIFESP, Santa Casa, UERJ, SUS-SP, AMRIGS, Revalida INEP).
 
