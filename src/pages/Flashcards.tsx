@@ -291,18 +291,24 @@ const Flashcards = () => {
   if (allCards.length === 0) {
     return (
       <div className="space-y-8 animate-fade-in">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <FlipVertical className="h-6 w-6 text-primary" />
-            Flashcards
-          </h1>
-          <p className="text-muted-foreground">Revise seus flashcards com repetição espaçada.</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <FlipVertical className="h-6 w-6 text-primary" />
+              Flashcards
+            </h1>
+            <p className="text-muted-foreground">Revise seus flashcards com repetição espaçada.</p>
+          </div>
+          <ModuleHelpButton moduleKey="flashcards" moduleName="Flashcards" steps={["Vá em 'Gerar Flashcards' no menu para criar com IA", "Escolha a especialidade e quantidade desejada", "Revise marcando Fácil, Médio ou Difícil", "O algoritmo agenda revisões automáticas (1, 3, 7, 14, 30 dias)"]} />
         </div>
-        <div className="glass-card p-12 text-center">
-          <FlipVertical className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-          <p className="text-lg font-medium mb-2">Nenhum flashcard ainda</p>
-          <p className="text-sm text-muted-foreground">Envie um PDF na seção de Uploads para gerar flashcards automaticamente com IA.</p>
-        </div>
+        <ModuleEmptyState
+          icon="📚"
+          title="Nenhum flashcard ainda"
+          description="Gere flashcards com IA a partir de qualquer tema médico ou envie um PDF."
+          steps={["Vá em 'Gerar Flashcards' e escolha um tema", "A IA cria flashcards com casos clínicos", "Revise marcando Fácil/Difícil — o algoritmo agenda revisões"]}
+          actionLabel="Gerar Flashcards Agora"
+          actionPath="/dashboard/flashcard-generator"
+        />
       </div>
     );
   }
