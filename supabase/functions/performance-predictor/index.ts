@@ -64,7 +64,7 @@ Regras:
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
+    const content = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
     
     let prediction;
     try {

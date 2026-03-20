@@ -321,7 +321,7 @@ serve(async (req) => {
     }
 
     const aiData = await aiResp.json();
-    const raw = aiData.choices?.[0]?.message?.content || "";
+    const raw = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
 
     let parsed;
     try {

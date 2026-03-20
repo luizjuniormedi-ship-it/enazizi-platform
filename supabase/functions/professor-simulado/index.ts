@@ -89,7 +89,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
         }
 
         const aiData = await response.json();
-        const content = aiData.choices?.[0]?.message?.content || "";
+        const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
 
         // Parse JSON from response
         const jsonMatch = content.match(/\[[\s\S]*\]/);
