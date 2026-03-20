@@ -340,8 +340,8 @@ export default function PreviousExams() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas</SelectItem>
-                  {BANCAS.map((b) => (
-                    <SelectItem key={b} value={b}>{b}</SelectItem>
+                  {availableBancas.map(({ label, count }) => (
+                    <SelectItem key={label} value={label}>{label} ({count})</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
