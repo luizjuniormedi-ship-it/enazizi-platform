@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { isMedicalContent } from "@/lib/medicalValidation";
 import { createPortal } from "react-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
