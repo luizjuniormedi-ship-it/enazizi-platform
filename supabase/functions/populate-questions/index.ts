@@ -92,8 +92,8 @@ Se não encontrar questões, retorne {"questions": []}`
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
-    const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+    const rawContent = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
+    const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
 
     let parsed: any = null;
     try { parsed = JSON.parse(cleaned); } catch {

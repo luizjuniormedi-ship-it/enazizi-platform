@@ -226,7 +226,7 @@ Se não encontrar questões válidas, retorne {"questions": []}`
         });
         if (!response.ok) return [];
         const data = await response.json();
-        const content = data.choices?.[0]?.message?.content || "";
+        const content = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
         const results: Array<{ statement: string; options: string[]; correct_index: number; explanation: string; topic: string }> = [];
         try {
           const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();

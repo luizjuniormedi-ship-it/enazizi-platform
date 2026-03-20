@@ -386,7 +386,7 @@ REGRAS:
         }
 
         const aiData = await response.json();
-        const content = aiData.choices?.[0]?.message?.content || "";
+        const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
         const jsonStr = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
         const caseData = JSON.parse(jsonStr);
 
