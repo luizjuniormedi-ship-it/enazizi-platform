@@ -133,6 +133,7 @@ const MobileNav = () => {
   const { signOut } = useAuth();
   const { isAdmin } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
+  const { isModuleEnabled } = useModuleAccess();
   const [open, setOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -159,7 +160,7 @@ const MobileNav = () => {
         <ScrollArea className="flex-1 min-h-0">
           <nav className="px-3 py-2 space-y-2">
             {mobileNavGroups.map((group) => (
-              <MobileNavGroupSection key={group.title} group={group} location={location} setOpen={setOpen} />
+              <MobileNavGroupSection key={group.title} group={group} location={location} setOpen={setOpen} isModuleEnabled={isModuleEnabled} />
             ))}
             <div className="pt-3 mt-3 border-t border-sidebar-border space-y-1">
               <Link
