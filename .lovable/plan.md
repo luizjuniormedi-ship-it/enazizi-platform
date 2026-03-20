@@ -1,27 +1,18 @@
 
 
-# Provas Anteriores — Sem Conteúdo Visível
+# Excluir Módulo "Provas Anteriores"
 
-## Problema
-O módulo tem **5.307 questões** no banco, mas a lista de bancas é hardcoded (`ENARE`, `USP`, etc.) e não coincide com os nomes reais das fontes no banco de dados (ex: `upload:REVALIDA INEP 2020 OBJETIVA(1).pdf`, `prova:USP-SP-2023-CM`, `AMRIGS 2020`). Além disso, a query só roda quando pelo menos um filtro é selecionado — sem filtro, nada aparece.
+Remover completamente o módulo da aplicação. São 4 arquivos a editar:
 
-## Solução
-Tornar as bancas e anos **dinâmicos**, extraídos diretamente do banco, em vez de hardcoded. Também mostrar questões por padrão (sem exigir filtro).
+## Alterações
 
-## Alterações em `src/pages/PreviousExams.tsx`
+1. **Deletar** `src/pages/PreviousExams.tsx`
 
-1. **Remover `BANCAS` hardcoded** — extrair bancas únicas dos `source` reais do banco, normalizando nomes (ex: extrair "USP" de `prova:USP-SP-2023-CM`, "Revalida" de `REVALIDA INEP 2020`)
+2. **`src/App.tsx`** — Remover import lazy e a Route `provas-anteriores`
 
-2. **Criar função de normalização de source**:
-   - Mapear patterns conhecidos: `Revalida/REVALIDA/revalida` → "Revalida", `USP/FMUSP` → "USP", `UNICAMP` → "UNICAMP", `AMRIGS` → "AMRIGS", `SUS-SP` → "SUS-SP", `HSL` → "Hospital Sírio-Libanês", `PUC` → "PUC-PR", `HSCSP/São Camilo` → "São Camilo", `IDOMED` → "IDOMED"
-   - Fallback: usar o source original truncado
+3. **`src/components/layout/DashboardSidebar.tsx`** — Remover o item de menu `Provas Anteriores` da sidebar
 
-3. **Extrair anos dos sources** (regex `\d{4}`) — já funciona, mas depende dos dados corretos
+4. **`src/hooks/useModuleAccess.ts`** — Remover `provas-anteriores` da lista de módulos
 
-4. **Habilitar query sem filtros** — mudar `enabled` para `true` sempre, com fallback mostrando as 100 questões mais recentes quando nenhum filtro está selecionado
-
-5. **Mostrar contagem real** de questões disponíveis por banca no dropdown (opcional, melhoria UX)
-
-## Resultado
-Ao abrir "Provas Anteriores", o usuário verá imediatamente as questões disponíveis e poderá filtrar por bancas reais que existem no sistema.
+O banco de questões (`questions_bank`) permanece intacto — as questões continuam acessíveis via outros módulos como Simulados e Banco de Questões.
 
