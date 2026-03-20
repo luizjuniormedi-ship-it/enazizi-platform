@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { aiFetch } from "../_shared/ai-fetch.ts";
+import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -89,7 +89,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
         }
 
         const aiData = await response.json();
-        const content = aiData.choices?.[0]?.message?.content || "";
+        const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
 
         // Parse JSON from response
         const jsonMatch = content.match(/\[[\s\S]*\]/);
@@ -386,7 +386,7 @@ REGRAS:
         }
 
         const aiData = await response.json();
-        const content = aiData.choices?.[0]?.message?.content || "";
+        const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
         const jsonStr = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
         const caseData = JSON.parse(jsonStr);
 

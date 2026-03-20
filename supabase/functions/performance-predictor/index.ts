@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { aiFetch } from "../_shared/ai-fetch.ts";
+import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,7 +64,7 @@ Regras:
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
+    const content = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
     
     let prediction;
     try {

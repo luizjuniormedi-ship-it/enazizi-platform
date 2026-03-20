@@ -168,3 +168,37 @@ export function getAiErrorMessage(error: unknown): string {
   if (msg === "AI_SERVICE_UNAVAILABLE") return "Serviço de IA temporariamente indisponível. Tente novamente em alguns minutos.";
   return "Erro inesperado no serviço de IA. Tente novamente.";
 }
+
+/**
+ * Sanitize AI response content by removing control characters that break JSON.parse.
+ * Preserves newlines, carriage returns, and tabs.
+ */
+export function sanitizeAiContent(raw: string): string {
+  return raw.replace(/[\x00-\x1F\x7F]/g, (ch: string) =>
+    ch === '\n' || ch === '\r' || ch === '\t' ? ch : ' '
+  );
+}
+
+/**
+ * Extract and parse JSON from AI response content.
+ * Handles markdown code blocks and control character sanitization.
+ */
+export function parseAiJson(rawContent: string): any {
+  const content = sanitizeAiContent(rawContent);
+  
+  // Try markdown code block first
+  const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    return JSON.parse(codeBlockMatch[1].trim());
+  }
+  
+  // Try extracting JSON object
+  const objMatch = content.match(/\{[\s\S]*\}/);
+  if (objMatch) return JSON.parse(objMatch[0]);
+  
+  // Try extracting JSON array
+  const arrMatch = content.match(/\[[\s\S]*\]/);
+  if (arrMatch) return JSON.parse(arrMatch[0]);
+  
+  throw new Error("No valid JSON found in AI response");
+}

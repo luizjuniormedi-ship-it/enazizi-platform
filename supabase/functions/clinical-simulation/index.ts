@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.3.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { aiFetch } from "../_shared/ai-fetch.ts";
+import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -321,7 +321,7 @@ serve(async (req) => {
     }
 
     const aiData = await aiResp.json();
-    const raw = aiData.choices?.[0]?.message?.content || "";
+    const raw = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
 
     let parsed;
     try {

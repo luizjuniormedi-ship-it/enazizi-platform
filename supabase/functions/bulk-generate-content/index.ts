@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { aiFetch } from "../_shared/ai-fetch.ts";
+import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -123,8 +123,8 @@ FORMATO JSON OBRIGATÓRIO:
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
-    const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+    const rawContent = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
+    const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
     
     let parsed: any = null;
     try {

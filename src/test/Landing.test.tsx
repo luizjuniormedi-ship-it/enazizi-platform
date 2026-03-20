@@ -19,7 +19,8 @@ describe("Landing Page Components", () => {
       </MemoryRouter>
     );
     expect(screen.getByText("MedStudy AI")).toBeInTheDocument();
-    expect(screen.getByText("Entrar")).toBeInTheDocument();
+    // There are two "Entrar" buttons (desktop + mobile), use getAllByText
+    expect(screen.getAllByText("Entrar").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Começar grátis")).toBeInTheDocument();
   });
 

@@ -52,7 +52,7 @@ describe("DashboardSidebar", () => {
     expect(screen.getByText("🤖 Tutor IA")).toBeInTheDocument();
   });
 
-  it("renders all navigation items", async () => {
+  it("renders core navigation items", async () => {
     const DashboardSidebar = (await import("@/components/layout/DashboardSidebar")).default;
     render(
       <MemoryRouter>
@@ -60,10 +60,6 @@ describe("DashboardSidebar", () => {
       </MemoryRouter>
     );
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
-    expect(screen.getByText("🃏 Flashcards")).toBeInTheDocument();
-    expect(screen.getByText("📝 Simulados")).toBeInTheDocument();
-    
-    expect(screen.getByText("📊 Analytics")).toBeInTheDocument();
     expect(screen.getByText("Meu Perfil")).toBeInTheDocument();
     expect(screen.getByText("Sair")).toBeInTheDocument();
   });

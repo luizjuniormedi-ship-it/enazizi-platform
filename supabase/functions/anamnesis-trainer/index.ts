@@ -1,6 +1,6 @@
 import "https://deno.land/x/xhr@0.3.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { aiFetch } from "../_shared/ai-fetch.ts";
+import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -226,7 +226,7 @@ Lembre-se: NUNCA repita pacientes anteriores. Varie todos os par√¢metros demogr√
       }
 
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content || "";
+      const content = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
       
       // Parse JSON from response (may be wrapped in markdown code block)
       let parsed;
@@ -268,7 +268,7 @@ Lembre-se: NUNCA repita pacientes anteriores. Varie todos os par√¢metros demogr√
       }
 
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content || "";
+      const content = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
 
       let parsed;
       try {
@@ -311,7 +311,7 @@ Lembre-se: NUNCA repita pacientes anteriores. Varie todos os par√¢metros demogr√
       }
 
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content || "";
+      const content = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
 
       let parsed;
       try {
