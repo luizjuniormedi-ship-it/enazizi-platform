@@ -6,6 +6,7 @@ import DashboardWarnings from "@/components/dashboard/DashboardWarnings";
 import TopicEvolution from "@/components/dashboard/TopicEvolution";
 import MotivationalGreeting from "@/components/dashboard/MotivationalGreeting";
 import WhatsNewPopup from "@/components/dashboard/WhatsNewPopup";
+import FeedbackSurveyPopup from "@/components/dashboard/FeedbackSurveyPopup";
 import SystemGuidePopup from "@/components/dashboard/SystemGuidePopup";
 import SpecialtyBenchmark from "@/components/dashboard/SpecialtyBenchmark";
 import OnboardingTour from "@/components/dashboard/OnboardingTour";
