@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, Bell, AlertTriangle, ShieldAlert } from "lucide-react";
+import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import type { TabCronograma } from "@/pages/CronogramaInteligente";
 
 interface Props {
