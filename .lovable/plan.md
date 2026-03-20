@@ -1,57 +1,34 @@
 
 
-## Rebranding: ENAZIZI → MedStudy AI
+# Fix: Taxa de Acerto — Converter Percentuais para Contagens
 
-Renomear todas as referências do projeto de "ENAZIZI" para "MedStudy AI" em 55 arquivos.
+## Problema
+`exam_sessions.score` e `teacher_simulado_results.score` armazenam **percentuais** (ex: 50, 71.4, 80), mas o código soma esses valores como se fossem **contagens de acertos**, inflando a taxa para 400%+.
 
-### Escopo das mudanças
+## Solução
+Converter os percentuais de volta para contagens absolutas antes de somar:
 
-**Frontend (UI visível ao usuário):**
-- Landing page: Navbar, HeroSection, FeaturesSection, Footer
-- Dashboard: Sidebar, Layout mobile, BottomTabBar
-- Onboarding, SystemGuide, WhatsNew popups
-- Install page (PWA)
-- Páginas de agentes (AgentsHub, AIMentor, MedicalReviewer, etc.)
-- Saudações motivacionais, TopicEvolution, DiagnosticResult
+**Arquivo: `src/hooks/useDashboardData.ts`** (linhas 87 e 91)
 
-**Backend (Edge Functions):**
-- `enazizi-prompt.ts` → renomear referências internas para "MedStudy AI"
-- Todas as edge functions que mencionam "ENAZIZI" nos system prompts (mentor-chat, clinical-simulation, content-summarizer, motivational-coach, medical-reviewer, etc.)
+```typescript
+// score é percentual → converter para contagem
+const examCorrectTotal = examData.reduce((sum, e) => {
+  const total = e.total_questions || 0;
+  return sum + Math.round(((e.score || 0) / 100) * total);
+}, 0);
 
-**Configuração:**
-- `index.html` — title e meta tags
-- `public/manifest.json` — name e short_name
-- `capacitor.config.ts` — appName
+const teacherCorrectTotal = teacherSimData.reduce((sum, e) => {
+  const total = e.total_questions || 0;
+  return sum + Math.round(((e.score || 0) / 100) * total);
+}, 0);
+```
 
-**Assets:**
-- Manter o arquivo `enazizi-mascot.png` (é o mascote, só mudar o alt text)
-- Renomear imports de variável `enazizi` → `mascot` para clareza
+Adicionar safety cap na linha 96:
+```typescript
+const accuracy = questionsAnswered > 0
+  ? Math.min(Math.round((totalCorrect / questionsAnswered) * 100), 100)
+  : 0;
+```
 
-**Testes:**
-- Atualizar strings nos testes (Landing.test, DashboardSidebar.test)
-
-**localStorage keys:**
-- Manter as keys existentes (`enazizi_onboarding_completed`, etc.) para não quebrar estado dos usuários atuais
-
-### Regra de substituição
-
-| De | Para |
-|---|---|
-| `ENAZIZI` (display) | `MedStudy AI` |
-| `Protocolo ENAZIZI` | `Protocolo MedStudy` |
-| `sistema ENAZIZI` | `sistema MedStudy AI` |
-| `tutor ENAZIZI` | `tutor MedStudy AI` |
-| Alt text `ENAZIZI` | `MedStudy AI` |
-
-### Arquivos principais (~30 edições)
-
-1. `index.html`, `public/manifest.json`, `capacitor.config.ts`
-2. `src/components/landing/*` (Navbar, Footer, FeaturesSection)
-3. `src/components/layout/DashboardSidebar.tsx`, `DashboardLayout.tsx`, `BottomTabBar.tsx`
-4. `src/components/dashboard/*` (OnboardingTour, SystemGuidePopup, WhatsNewPopup, MotivationalGreeting)
-5. `src/pages/Install.tsx`, `AgentsHub.tsx`, `AIMentor.tsx`
-6. `src/components/diagnostic/DiagnosticResult.tsx`, `TopicEvolution.tsx`, `InteractiveQuestionCard.tsx`
-7. `src/components/professor/ClassAnalytics.tsx`
-8. `supabase/functions/_shared/enazizi-prompt.ts` + todas as edge functions
-9. Testes: `Landing.test.tsx`, `DashboardSidebar.test.tsx`
+Isso corrige o cálculo combinado mantendo todas as fontes (practice, simulados, professor) unificadas numa única taxa de acerto precisa.
 
