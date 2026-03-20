@@ -36,7 +36,7 @@ interface EnaziziProgress {
   historico_estudo: string[];
 }
 
-const ENAZIZI_STEPS = [
+const MedStudy AI_STEPS = [
   { num: 1, label: "Painel", icon: "📊" },
   { num: 2, label: "Tema", icon: "📚" },
   { num: 3, label: "Técnico 1", icon: "🔬" },
@@ -54,11 +54,11 @@ const ENAZIZI_STEPS = [
 ];
 
 const FUNCTION_NAME = "chatgpt-agent";
-const ENAZIZI_SEQUENTIAL_APPENDIX = "IMPORTANTE: para não cortar a explicação, divida em tópicos e entregue em blocos atômicos sequenciais (2 a 3 seções por resposta), finalize cada bloco sem truncar frases e pergunte se pode continuar antes do próximo bloco.";
+const MedStudy AI_SEQUENTIAL_APPENDIX = "IMPORTANTE: para não cortar a explicação, divida em tópicos e entregue em blocos atômicos sequenciais (2 a 3 seções por resposta), finalize cada bloco sem truncar frases e pergunte se pode continuar antes do próximo bloco.";
 
 const ensureSequentialInitialMessage = (message: string) => {
   if (/blocos? curtos?|bloco at[oô]mico|2\s*a\s*3\s*se[cç][oõ]es/i.test(message)) return message;
-  return `${message}\n\n${ENAZIZI_SEQUENTIAL_APPENDIX}`;
+  return `${message}\n\n${MedStudy AI_SEQUENTIAL_APPENDIX}`;
 };
 
 const ChatGPT = () => {
@@ -271,7 +271,7 @@ const ChatGPT = () => {
       }
       const summaryText = state.fromSummary.slice(0, 10000);
       const prompt = ensureSequentialInitialMessage(
-        `Com base neste resumo, continue a explicação aprofundada seguindo o Protocolo ENAZIZI. Aprofunde os pontos mais importantes, faça perguntas de active recall e proponha questões clínicas:\n\n${summaryText}`
+        `Com base neste resumo, continue a explicação aprofundada seguindo o Protocolo MedStudy. Aprofunde os pontos mais importantes, faça perguntas de active recall e proponha questões clínicas:\n\n${summaryText}`
       );
       setStudyStarted(true);
       setCurrentTopic("Aprofundamento de Resumo");
@@ -686,7 +686,7 @@ const ChatGPT = () => {
     setEnaziziStep(3);
     savePerformance({ tema_atual: t });
     saveEnaziziStep(3, t);
-    sendMessage(`Quero estudar o tema: ${t}. Comece com o Bloco Técnico 1 (conceito e definição — explicação técnica baseada na literatura). Estou na etapa 3/13 do Protocolo ENAZIZI.`);
+    sendMessage(`Quero estudar o tema: ${t}. Comece com o Bloco Técnico 1 (conceito e definição — explicação técnica baseada na literatura). Estou na etapa 3/13 do Protocolo MedStudy.`);
   };
 
 
@@ -781,7 +781,7 @@ const ChatGPT = () => {
             <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
             <span className="truncate">ChatGPT Médico</span>
           </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground truncate">Protocolo ENAZIZI com GPT-4o</p>
+          <p className="text-xs sm:text-sm text-muted-foreground truncate">Protocolo MedStudy com GPT-4o</p>
         </div>
         <div className="flex gap-1 sm:gap-2 flex-shrink-0 flex-wrap justify-end">
           <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
@@ -902,7 +902,7 @@ const ChatGPT = () => {
           <div>
             <h2 className="text-lg sm:text-xl font-semibold">O que você quer estudar?</h2>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              Digite o tema e o ChatGPT seguirá o Protocolo ENAZIZI
+              Digite o tema e o ChatGPT seguirá o Protocolo MedStudy
             </p>
           </div>
           <div className="flex gap-2 max-w-lg mx-auto">
@@ -1017,7 +1017,7 @@ const ChatGPT = () => {
               </div>
             )}
             <div className="flex gap-0.5">
-              {ENAZIZI_STEPS.map((s) => (
+              {MedStudy AI_STEPS.map((s) => (
                 <div
                   key={s.num}
                   title={`${s.num}. ${s.label}`}
@@ -1032,7 +1032,7 @@ const ChatGPT = () => {
               ))}
             </div>
             <div className="hidden sm:flex justify-between mt-1">
-              {ENAZIZI_STEPS.map((s) => (
+              {MedStudy AI_STEPS.map((s) => (
                 <span
                   key={s.num}
                   className={`text-[9px] ${

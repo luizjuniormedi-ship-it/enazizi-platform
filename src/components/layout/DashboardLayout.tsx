@@ -149,12 +149,12 @@ const MobileNav = () => {
       <SheetContent side="left" className="bg-sidebar border-sidebar-border w-72 p-0 flex flex-col">
         <VisuallyHidden>
           <SheetTitle>Menu de navegação</SheetTitle>
-          <SheetDescription>Navegação principal do ENAZIZI</SheetDescription>
+          <SheetDescription>Navegação principal do MedStudy AI</SheetDescription>
         </VisuallyHidden>
         <div className="p-6 border-b border-sidebar-border flex-shrink-0">
           <Link to="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-            <img src={enazizi} alt="ENAZIZI" className="h-7 w-7 rounded-lg object-cover" />
-            <span className="font-bold">ENAZIZI</span>
+            <img src={enazizi} alt="MedStudy AI" className="h-7 w-7 rounded-lg object-cover" />
+            <span className="font-bold">MedStudy AI</span>
           </Link>
         </div>
         <ScrollArea className="flex-1 min-h-0">
@@ -229,8 +229,8 @@ const DashboardLayout = () => {
     <div className="flex-1 flex flex-col min-w-0 w-full max-w-full">
       <header className="landscape-tablet:hidden lg:hidden h-14 border-b border-border flex items-center px-3 sm:px-4 gap-2 sm:gap-3 flex-shrink-0">
         <MobileNav />
-        <img src={enazizi} alt="ENAZIZI" className="h-6 w-6 rounded object-cover flex-shrink-0" />
-        <span className="font-bold text-sm truncate">ENAZIZI</span>
+        <img src={enazizi} alt="MedStudy AI" className="h-6 w-6 rounded object-cover flex-shrink-0" />
+        <span className="font-bold text-sm truncate">MedStudy AI</span>
         <div className="ml-auto flex items-center gap-1 flex-shrink-0">
           <GlobalSearch />
           <NotificationBell />

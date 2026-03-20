@@ -58,8 +58,8 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       manifest: {
-        name: "ENAZIZI - Plataforma de Estudos Médicos",
-        short_name: "ENAZIZI",
+        name: "MedStudy AI - Plataforma de Estudos Médicos",
+        short_name: "MedStudy AI",
         description: "Plataforma inteligente para preparação em residência médica e Revalida com IA",
         start_url: "/",
         scope: "/",

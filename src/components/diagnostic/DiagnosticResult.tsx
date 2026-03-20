@@ -132,7 +132,7 @@ const DiagnosticResult = ({ questions, answers, xpEarned = 0 }: DiagnosticResult
                 className="gap-1.5 text-xs"
                 onClick={() => navigate("/dashboard/chatgpt", {
                   state: {
-                    initialMessage: `No diagnóstico inicial, tive dificuldade em "${area}" (${Math.round((correct / total) * 100)}% de acerto). Me dê uma aula completa seguindo o protocolo ENAZIZI para reforçar este tema.`,
+                    initialMessage: `No diagnóstico inicial, tive dificuldade em "${area}" (${Math.round((correct / total) * 100)}% de acerto). Me dê uma aula completa seguindo o protocolo MedStudy para reforçar este tema.`,
                     fromErrorBank: true,
                   },
                 })}

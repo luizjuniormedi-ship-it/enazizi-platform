@@ -87,7 +87,7 @@ const FeaturesSection = () => {
         {/* Header */}
         <div className="text-center mb-20">
           <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-            Protocolo ENAZIZI
+            Protocolo MedStudy
           </span>
           <h2 className="text-3xl md:text-5xl font-bold mb-4">
             Tudo que você precisa para <span className="gradient-text">ser aprovado</span>

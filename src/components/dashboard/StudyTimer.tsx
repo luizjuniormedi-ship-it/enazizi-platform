@@ -66,7 +66,7 @@ const StudyTimer = () => {
 
             // Browser notification
             if (Notification.permission === "granted") {
-              new Notification("⏰ ENAZIZI", {
+              new Notification("⏰ MedStudy AI", {
                 body: mode === "pomodoro-work"
                   ? "Hora de descansar! Faça uma pausa de 5 minutos. ☕"
                   : mode === "pomodoro-break"

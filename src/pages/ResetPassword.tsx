@@ -74,7 +74,7 @@ const ResetPassword = () => {
             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
               <Brain className="h-6 w-6 text-primary" />
             </div>
-            <span className="text-xl font-bold">ENAZIZI</span>
+            <span className="text-xl font-bold">MedStudy AI</span>
           </Link>
           <h1 className="text-2xl font-bold">Nova senha</h1>
           <p className="text-muted-foreground mt-1">Defina sua nova senha abaixo</p>

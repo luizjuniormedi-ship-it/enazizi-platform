@@ -408,7 +408,7 @@ const ExamSimulator = () => {
                     className="gap-1.5 mt-2 text-xs"
                     onClick={() => navigate("/dashboard/chatgpt", {
                       state: {
-                        initialMessage: `Errei uma questão sobre "${q.topic}". O enunciado era: "${q.statement.slice(0, 200)}". A resposta correta era "${q.options[q.correct_index]}". Me explique este tema seguindo o protocolo ENAZIZI.`,
+                        initialMessage: `Errei uma questão sobre "${q.topic}". O enunciado era: "${q.statement.slice(0, 200)}". A resposta correta era "${q.options[q.correct_index]}". Me explique este tema seguindo o protocolo MedStudy.`,
                         fromErrorBank: true,
                       },
                     })}

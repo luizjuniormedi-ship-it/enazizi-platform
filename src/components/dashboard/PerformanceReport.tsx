@@ -49,7 +49,7 @@ const PerformanceReport = () => {
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(100);
-      doc.text(`ENAZIZI — ${new Date().toLocaleDateString("pt-BR")}`, M, y);
+      doc.text(`MedStudy AI — ${new Date().toLocaleDateString("pt-BR")}`, M, y);
       y += 10;
       doc.setTextColor(0);
 
@@ -197,7 +197,7 @@ const PerformanceReport = () => {
       y += 10;
       doc.setFontSize(8);
       doc.setTextColor(150);
-      doc.text("Gerado automaticamente pela plataforma ENAZIZI. Dados sujeitos a atualização.", M, y);
+      doc.text("Gerado automaticamente pela plataforma MedStudy AI. Dados sujeitos a atualização.", M, y);
 
       const name = (profile?.display_name || "aluno").replace(/\s+/g, "_");
       doc.save(`Relatorio_${name}_${new Date().toISOString().slice(0, 10)}.pdf`);

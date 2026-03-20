@@ -294,7 +294,7 @@ const QuestionsBank = () => {
                     className="gap-2"
                     onClick={() => navigate("/dashboard/chatgpt", {
                       state: {
-                        initialMessage: `Errei uma questão sobre "${practiceQuestion.topic || "Medicina"}". O enunciado era: "${practiceQuestion.statement.slice(0, 200)}". A resposta correta era "${practiceQuestion.options[practiceQuestion.correct_index]}". Me explique este tema seguindo o protocolo ENAZIZI.`,
+                        initialMessage: `Errei uma questão sobre "${practiceQuestion.topic || "Medicina"}". O enunciado era: "${practiceQuestion.statement.slice(0, 200)}". A resposta correta era "${practiceQuestion.options[practiceQuestion.correct_index]}". Me explique este tema seguindo o protocolo MedStudy.`,
                         fromErrorBank: true,
                       },
                     })}
@@ -336,7 +336,7 @@ const QuestionsBank = () => {
                 content: q.options.map((o: string, j: number) => `${String.fromCharCode(65 + j)}) ${o}${j === q.correct_index ? " ✓" : ""}`).join("\n") + (q.explanation ? `\n\nExplicação: ${q.explanation}` : ""),
                 subtitle: q.topic || undefined,
               })),
-              "Banco_Questoes_ENAZIZI"
+              "Banco_Questoes_MedStudy AI"
             )}
             disabled={filtered.length === 0}
             className="gap-1.5"

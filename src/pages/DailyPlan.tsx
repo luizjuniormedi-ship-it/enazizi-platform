@@ -234,7 +234,7 @@ const DailyPlan = () => {
                         className="mt-2 gap-1.5 text-xs h-7 px-2 text-primary hover:text-primary"
                         onClick={() => navigate("/dashboard/chatgpt", {
                           state: {
-                            initialMessage: `Quero estudar o tópico "${block.topic}". Me dê uma aula completa seguindo o protocolo ENAZIZI.`,
+                            initialMessage: `Quero estudar o tópico "${block.topic}". Me dê uma aula completa seguindo o protocolo MedStudy.`,
                             fromErrorBank: true,
                           },
                         })}
