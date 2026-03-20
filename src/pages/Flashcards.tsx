@@ -299,7 +299,14 @@ const Flashcards = () => {
             </h1>
             <p className="text-muted-foreground">Revise seus flashcards com repetição espaçada.</p>
           </div>
-          <ModuleHelpButton moduleKey="flashcards" moduleName="Flashcards" steps={["Vá em 'Gerar Flashcards' no menu para criar com IA", "Escolha a especialidade e quantidade desejada", "Revise marcando Fácil, Médio ou Difícil", "O algoritmo agenda revisões automáticas (1, 3, 7, 14, 30 dias)"]} />
+          <ModuleHelpButton moduleKey="flashcards" moduleName="Flashcards" steps={[
+            "Vá em 'Gerar Flashcards' no menu lateral para criar cards com IA por tema",
+            "Cada card tem frente (pergunta) e verso (resposta) — clique para virar",
+            "Após virar, avalie: Fácil (revê em 7d), Médio (3d) ou Difícil (1d)",
+            "O algoritmo de repetição espaçada agenda revisões automáticas",
+            "Use o modo Sprint ⚡ para revisar vários cards com cronômetro",
+            "Filtre por tema e exporte cards em PDF para estudo offline",
+          ]} />
         </div>
         <ModuleEmptyState
           icon="📚"
