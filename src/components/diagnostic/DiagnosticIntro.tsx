@@ -21,6 +21,16 @@ const DiagnosticIntro = ({ alreadyDone, onStart }: DiagnosticIntroProps) => {
         <div className="h-24 w-24 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-primary/10">
           <Stethoscope className="h-12 w-12 text-primary" />
         </div>
+        <div className="flex justify-center mb-3">
+          <ModuleHelpButton moduleKey="diagnostic" moduleName="Diagnóstico Inicial" steps={[
+            "Clique em 'Iniciar Diagnóstico' para começar a avaliação",
+            "São 40 questões em 8 especialidades — cada uma com 1 minuto de tempo",
+            "A dificuldade se adapta: acertou? Próxima será mais difícil",
+            "Ao finalizar, veja seu desempenho por área e um mapa de domínio",
+            "Os resultados alimentam seu Mapa de Domínio e Cronograma automaticamente",
+            "Erros vão para o Banco de Erros para revisão futura",
+          ]} />
+        </div>
         <h1 className="text-3xl font-bold mb-3">Diagnóstico Inicial</h1>
         <p className="text-muted-foreground text-lg mb-2">
           {alreadyDone

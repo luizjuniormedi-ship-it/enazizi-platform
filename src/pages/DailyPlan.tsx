@@ -164,10 +164,20 @@ const DailyPlan = () => {
           </h1>
           <p className="text-muted-foreground">Roteiro otimizado por IA baseado no seu desempenho.</p>
         </div>
-        <Button onClick={generatePlan} disabled={generating} variant="outline" size="sm">
-          <RefreshCw className={`h-4 w-4 mr-2 ${generating ? "animate-spin" : ""}`} />
-          {plan ? "Regenerar" : "Gerar Plano"}
-        </Button>
+        <div className="flex gap-2 items-center flex-wrap">
+          <ModuleHelpButton moduleKey="daily-plan" moduleName="Plano do Dia" steps={[
+            "Clique em 'Gerar Plano' — a IA analisa seus erros, flashcards pendentes e desempenho",
+            "Receba blocos de estudo com tema, duração e prioridade (alta, média, baixa)",
+            "Marque cada bloco como concluído clicando no ícone à esquerda",
+            "Use 'Estudar com Tutor IA' para abrir sessão direta no tema sugerido",
+            "Acompanhe o progresso pela barra — tente completar 100% do dia",
+            "Clique 'Regenerar' a qualquer momento para atualizar o plano",
+          ]} />
+          <Button onClick={generatePlan} disabled={generating} variant="outline" size="sm">
+            <RefreshCw className={`h-4 w-4 mr-2 ${generating ? "animate-spin" : ""}`} />
+            {plan ? "Regenerar" : "Gerar Plano"}
+          </Button>
+        </div>
       </div>
 
       {generating && (
