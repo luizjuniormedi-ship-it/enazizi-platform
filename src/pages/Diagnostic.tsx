@@ -97,7 +97,7 @@ NÃO inclua texto extra, APENAS o JSON.` }],
         else if (raw?.choices?.[0]?.message?.content) content = raw.choices[0].message.content;
         else content = JSON.stringify(raw);
 
-        const parsed = parseQuestions(content, area, difficulty);
+        const parsed = parseQuestions(content, area, difficulty).filter(q => isMedicalQuestion(q));
         allQuestions.push(...parsed.slice(0, 5));
       }
 

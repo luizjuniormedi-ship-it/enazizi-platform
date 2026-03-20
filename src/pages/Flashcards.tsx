@@ -120,7 +120,8 @@ const Flashcards = () => {
     const ownCards = ownRes.data || [];
     const globalCards = globalRes.data || [];
     const ownIds = new Set(ownCards.map(c => c.id));
-    const merged = [...ownCards, ...globalCards.filter(c => !ownIds.has(c.id))];
+     const merged = [...ownCards, ...globalCards.filter(c => !ownIds.has(c.id))]
+      .filter(c => isMedicalContent(`${c.question} ${c.answer}`));
 
     setAllCards(merged);
 

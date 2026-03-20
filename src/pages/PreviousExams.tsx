@@ -85,7 +85,7 @@ export default function PreviousExams() {
       }
 
       const { data } = await query.order("created_at", { ascending: false }).limit(100);
-      return (data || []) as Question[];
+      return ((data || []) as Question[]).filter(q => isMedicalQuestion(q));
     },
     enabled: !!(selectedBanca || selectedYear || selectedTopic),
   });
