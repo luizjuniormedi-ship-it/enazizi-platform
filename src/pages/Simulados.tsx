@@ -301,7 +301,14 @@ Distribua igualmente entre os temas solicitados. Com casos clínicos.`
       <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
         <div className="text-center py-4 relative">
           <div className="absolute top-4 right-0">
-            <ModuleHelpButton moduleKey="simulados" moduleName="Simulados" steps={["Selecione as especialidades e quantidade de questões", "Escolha a dificuldade e inicie o simulado", "Responda dentro do tempo — simula prova real", "Veja resultado detalhado por área e revise erros com o Tutor"]} />
+            <ModuleHelpButton moduleKey="simulados" moduleName="Simulados" steps={[
+              "Selecione uma ou mais especialidades clicando nos chips de tema",
+              "Defina a quantidade de questões (5 a 100) e o nível de dificuldade",
+              "Clique 'Iniciar Simulado' — o cronômetro começa automaticamente",
+              "Responda cada questão e navegue com as setas ou número da questão",
+              "Ao finalizar, veja resultado por especialidade com % de acerto",
+              "Erros são salvos automaticamente no Banco de Erros para revisão",
+            ]} />
           </div>
           <FileText className="h-12 w-12 text-primary mx-auto mb-3" />
           <h1 className="text-2xl font-bold">Simulados</h1>

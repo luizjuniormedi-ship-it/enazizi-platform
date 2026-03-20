@@ -248,7 +248,14 @@ const Uploads = () => {
           </h1>
           <p className="text-muted-foreground">Envie materiais de medicina para gerar flashcards e questões automaticamente com IA.</p>
         </div>
-        <ModuleHelpButton moduleKey="uploads" moduleName="Uploads" steps={["Clique na área de upload ou arraste um PDF/TXT", "A IA extrai o conteúdo e gera flashcards + questões", "Acompanhe o processamento pela barra de progresso", "Os materiais ficam disponíveis em todos os módulos"]} />
+        <ModuleHelpButton moduleKey="uploads" moduleName="Uploads" steps={[
+          "Clique na área de upload ou arraste um arquivo PDF, TXT ou DOCX",
+          "A IA extrai o conteúdo e identifica temas médicos automaticamente",
+          "Aguarde o processamento — acompanhe pela barra de progresso",
+          "Após processar, gere flashcards e questões a partir do material",
+          "Os materiais ficam salvos e acessíveis para consulta futura",
+          "Use a categoria para organizar seus uploads por especialidade",
+        ]} />
       </div>
 
       <input

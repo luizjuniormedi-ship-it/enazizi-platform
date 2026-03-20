@@ -154,7 +154,14 @@ const Analytics = () => {
           <p className="text-muted-foreground">Seu desempenho real baseado nos dados da plataforma.</p>
         </div>
         <div className="flex items-center gap-2">
-          <ModuleHelpButton moduleKey="analytics" moduleName="Analytics" steps={["Os dados se atualizam automaticamente conforme você estuda", "Veja taxa de acerto, heatmap de atividade e radar por especialidade", "Use o relatório de performance para visão detalhada", "Identifique áreas fracas e priorize seus estudos"]} />
+          <ModuleHelpButton moduleKey="analytics" moduleName="Analytics" steps={[
+            "Os dados se atualizam automaticamente conforme você usa os módulos",
+            "Veja KPIs principais: questões respondidas, taxa de acerto, streak e revisões",
+            "O heatmap mostra seus dias ativos — tente manter consistência semanal",
+            "O gráfico radar compara seu desempenho entre especialidades",
+            "Use o 'Relatório de Performance' para uma visão PDF exportável",
+            "Identifique áreas abaixo de 60% de acerto e priorize no Cronograma",
+          ]} />
           <PerformanceReport />
         </div>
       </div>

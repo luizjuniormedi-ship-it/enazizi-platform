@@ -785,7 +785,14 @@ const ChatGPT = () => {
           <p className="text-xs sm:text-sm text-muted-foreground truncate">Protocolo MedStudy com GPT-4o</p>
         </div>
         <div className="flex gap-1 sm:gap-2 flex-shrink-0 flex-wrap justify-end items-center">
-          <ModuleHelpButton moduleKey="chatgpt" moduleName="Tutor IA" steps={["Digite um tema médico e inicie a sessão", "O tutor explica em blocos: técnico → leigo → questão → correção", "Responda questões no chat — erros vão pro Banco de Erros", "Finalize a sessão para salvar progresso e ganhar XP"]} />
+          <ModuleHelpButton moduleKey="chatgpt" moduleName="Tutor IA" steps={[
+            "Digite um tema médico no campo de texto e envie para iniciar a sessão",
+            "O tutor explica em 4 etapas: técnico → linguagem simples → questão → correção",
+            "Responda as questões diretamente no chat — escolha a alternativa correta",
+            "Erros são salvos automaticamente no Banco de Erros para revisão futura",
+            "Use os botões rápidos (Resumo, Questão, Caso Clínico) para atalhos",
+            "Finalize a sessão para salvar progresso, ganhar XP e atualizar seu Mapa de Domínio",
+          ]} />
           <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             <span className="hidden sm:inline">{isFullscreen ? "Sair" : "Tela cheia"}</span>
