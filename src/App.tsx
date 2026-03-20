@@ -121,6 +121,7 @@ const App = () => (
                 <Route index element={<ProfessorDashboard />} />
               </Route>
               <Route path="/install" element={<Install />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
