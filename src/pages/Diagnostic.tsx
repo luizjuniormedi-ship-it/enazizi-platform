@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { isMedicalQuestion } from "@/lib/medicalValidation";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
