@@ -77,12 +77,22 @@ const MobileNavGroupSection = ({
   group,
   location,
   setOpen,
+  isModuleEnabled,
 }: {
   group: MobileNavGroup;
   location: ReturnType<typeof useLocation>;
   setOpen: (v: boolean) => void;
+  isModuleEnabled: (key: string) => boolean;
 }) => {
-  const hasActive = group.items.some((item) => location.pathname === item.to);
+  // Filter items by module access
+  const filteredItems = group.items.filter((item) => {
+    const moduleKey = item.to.replace("/dashboard/", "").replace("/dashboard", "dashboard");
+    return isModuleEnabled(moduleKey || "dashboard");
+  });
+
+  if (filteredItems.length === 0) return null;
+
+  const hasActive = filteredItems.some((item) => location.pathname === item.to);
   const [isOpen, setIsOpen] = useState(hasActive || group.title === "Principal");
 
   return (
@@ -98,7 +108,7 @@ const MobileNavGroupSection = ({
         <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen ? "" : "-rotate-90")} />
       </button>
       {isOpen &&
-        group.items.map((item) => (
+        filteredItems.map((item) => (
           <Link
             key={item.to}
             to={item.to}
