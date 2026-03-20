@@ -13,7 +13,7 @@ export const ALL_MODULES = [
   { key: "gerar-flashcards", label: "🃏 Gerador Flashcards" },
   { key: "resumos", label: "📖 Resumidor" },
   { key: "apostilas", label: "📚 Apostilas & Resumos" },
-  { key: "provas-anteriores", label: "📋 Provas Anteriores" },
+  
   { key: "simulados", label: "📝 Simulados" },
   { key: "simulado-completo", label: "🏆 Simulado Completo" },
   { key: "questoes", label: "❓ Gerador Questões" },
