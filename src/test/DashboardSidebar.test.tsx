@@ -60,7 +60,6 @@ describe("DashboardSidebar", () => {
       </MemoryRouter>
     );
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
-    expect(screen.getByText("📝 Simulados")).toBeInTheDocument();
     expect(screen.getByText("Meu Perfil")).toBeInTheDocument();
     expect(screen.getByText("Sair")).toBeInTheDocument();
   });

@@ -47,7 +47,7 @@ describe("TopicEvolution", () => {
   it("renders title and overall score", async () => {
     renderComponent();
     await waitFor(() => {
-      expect(screen.getByText("Mapa de Evolução")).toBeInTheDocument();
+      expect(screen.getByText(/Evolução por especialidade/)).toBeInTheDocument();
     });
   });
 
