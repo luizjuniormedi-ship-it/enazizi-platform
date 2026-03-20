@@ -5,6 +5,7 @@ import { isMedicalQuestion } from "@/lib/medicalValidation";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { FileText, Clock, Award, GraduationCap, Play, Loader2, ArrowRight, BarChart3, AlertTriangle, Zap } from "lucide-react";
+import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
