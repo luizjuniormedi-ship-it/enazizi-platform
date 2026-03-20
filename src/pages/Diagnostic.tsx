@@ -32,6 +32,9 @@ const SCENARIO_HINTS: Record<string, string> = {
 
 type Phase = "intro" | "loading" | "exam" | "review" | "result";
 
+const QUESTIONS_PER_AREA = 5;
+const REQUEST_TIMEOUT_MS = 22000;
+
 const Diagnostic = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -59,26 +62,38 @@ const Diagnostic = () => {
     return "básico";
   };
 
+  const invokeQuestionGeneratorWithTimeout = async (body: Record<string, unknown>, timeoutMs: number) => {
+    let timer: number | undefined;
+    try {
+      const request = supabase.functions.invoke("question-generator", { body });
+      const timeout = new Promise<never>((_, reject) => {
+        timer = window.setTimeout(() => reject(new Error("Tempo limite ao gerar questões.")), timeoutMs);
+      });
+      return await Promise.race([request, timeout]) as Awaited<typeof request>;
+    } finally {
+      if (timer) window.clearTimeout(timer);
+    }
+  };
+
   const startExam = async () => {
     setPhase("loading");
     try {
-      const allQuestions: DiagQuestion[] = [];
-      const allAnswers: AnswerRecord[] = [];
+      const results = await Promise.allSettled(
+        AREAS.map(async (area) => {
+          const hint = SCENARIO_HINTS[area] || "";
+          const difficulty = getDifficultyForArea(area, answers);
+          const seed = Math.floor(Math.random() * 99999);
+          const usedTopics = questions
+            .filter(q => q.topic === area)
+            .map(q => q.statement.slice(0, 40))
+            .slice(-3)
+            .join("; ");
 
-      for (const area of AREAS) {
-        const hint = SCENARIO_HINTS[area] || "";
-        const difficulty = getDifficultyForArea(area, allAnswers);
-        const seed = Math.floor(Math.random() * 99999);
-
-        const usedTopics = allQuestions
-          .filter(q => q.topic === area)
-          .map(q => q.statement.slice(0, 40))
-          .join("; ");
-
-        const res = await supabase.functions.invoke("question-generator", {
-          body: {
+          const res = await invokeQuestionGeneratorWithTimeout({
             stream: false,
-            messages: [{ role: "user", content: `Gere EXATAMENTE 5 questões de múltipla escolha de ${area} para simulado diagnóstico de residência médica. Nível: ${difficulty}. Seed: ${seed}.
+            maxRetries: 0,
+            timeoutMs: 18000,
+            messages: [{ role: "user", content: `Gere EXATAMENTE ${QUESTIONS_PER_AREA} questões de múltipla escolha de ${area} para simulado diagnóstico de residência médica. Nível: ${difficulty}. Seed: ${seed}.
 
 REGRAS DE DIVERSIDADE OBRIGATÓRIAS:
 - ${hint}
@@ -95,26 +110,39 @@ REGRA DE GABARITO:
 FORMATO: Retorne APENAS JSON array:
 [{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"topic":"${area}","explanation":"...","difficulty":"${difficulty}"}]
 NÃO inclua texto extra, APENAS o JSON.` }],
-          },
+          }, REQUEST_TIMEOUT_MS);
+
+          if (res.error) throw res.error;
+
+          const raw = res.data;
+          let content = "";
+          if (typeof raw === "string") content = raw;
+          else if (raw?.choices?.[0]?.message?.content) content = raw.choices[0].message.content;
+          else content = JSON.stringify(raw);
+
+          const parsed = parseQuestions(content, area, difficulty).filter(q => isMedicalQuestion(q));
+          return parsed.slice(0, QUESTIONS_PER_AREA);
+        })
+      );
+
+      const failedAreas: string[] = [];
+      const allQuestions = results.flatMap((result, idx) => {
+        const area = AREAS[idx];
+        if (result.status === "fulfilled" && result.value.length > 0) {
+          return result.value;
+        }
+        failedAreas.push(area);
+        return generateFallbackQuestionsForArea(area, QUESTIONS_PER_AREA);
+      });
+
+      if (failedAreas.length > 0) {
+        toast({
+          title: "Geração parcial concluída",
+          description: `Algumas áreas demoraram demais (${failedAreas.join(", ")}). Inserimos questões de contingência para você continuar.`,
         });
-
-        if (res.error) throw res.error;
-
-        const raw = res.data;
-        let content = "";
-        if (typeof raw === "string") content = raw;
-        else if (raw?.choices?.[0]?.message?.content) content = raw.choices[0].message.content;
-        else content = JSON.stringify(raw);
-
-        const parsed = parseQuestions(content, area, difficulty).filter(q => isMedicalQuestion(q));
-        allQuestions.push(...parsed.slice(0, 5));
       }
 
-      if (allQuestions.length < 10) {
-        allQuestions.push(...generateFallbackQuestions());
-      }
-
-      setQuestions(allQuestions);
+      setQuestions(allQuestions.length > 0 ? allQuestions : generateFallbackQuestions());
       setPhase("exam");
     } catch (err: any) {
       toast({ title: "Erro ao gerar diagnóstico", description: err.message, variant: "destructive" });
@@ -134,15 +162,20 @@ NÃO inclua texto extra, APENAS o JSON.` }],
     return [];
   };
 
-  const generateFallbackQuestions = (): DiagQuestion[] => {
-    return AREAS.map(area => ({
-      statement: `Questão diagnóstica de ${area}: Paciente de 45 anos apresenta-se no pronto-socorro com queixa de dor torácica há 2 horas. Qual a conduta inicial mais adequada?`,
+  const generateFallbackQuestionsForArea = (area: string, count = 1): DiagQuestion[] => {
+    const focuses = ["diagnóstico inicial", "conduta imediata", "exame complementar", "fisiopatologia", "tratamento"];
+    return Array.from({ length: count }, (_, idx) => ({
+      statement: `Questão de ${area} (${idx + 1}/${count}): Paciente de 45 anos apresenta dor torácica há 2 horas no pronto-socorro. Qual a melhor ${focuses[idx % focuses.length]}?`,
       options: ["A) ECG em até 10 minutos", "B) Solicitar troponina e aguardar", "C) Prescrever analgésico", "D) Encaminhar para enfermaria", "E) Solicitar raio-X de tórax primeiro"],
       correct_index: 0,
       topic: area,
-      explanation: "O ECG deve ser realizado em até 10 minutos da chegada do paciente com dor torácica.",
+      explanation: "O ECG deve ser realizado em até 10 minutos da chegada em casos com suspeita de síndrome coronariana aguda.",
       difficulty: "intermediário",
     }));
+  };
+
+  const generateFallbackQuestions = (): DiagQuestion[] => {
+    return AREAS.flatMap(area => generateFallbackQuestionsForArea(area, QUESTIONS_PER_AREA));
   };
 
   const updateMedicalDomainMap = async (finalAnswers: AnswerRecord[]) => {
