@@ -5,6 +5,8 @@ import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays, Send, CheckCircle, XCircle, GraduationCap, Filter, Download, Zap, Clock, Award, Maximize2, Minimize2 } from "lucide-react";
+import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
+import ModuleEmptyState from "@/components/layout/ModuleEmptyState";
 import { exportToPdf } from "@/lib/exportPdf";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
