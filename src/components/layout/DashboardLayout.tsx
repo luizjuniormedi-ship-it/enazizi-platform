@@ -6,6 +6,7 @@ import GlobalSearch from "./GlobalSearch";
 import NotificationBell from "@/components/dashboard/NotificationBell";
 import { Menu, LogOut, User, Shield, GraduationCap, Sun, Moon, ChevronDown } from "lucide-react";
 import StudyTimer from "@/components/dashboard/StudyTimer";
+import BottomTabBar from "./BottomTabBar";
 import enazizi from "@/assets/enazizi-mascot.png";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -14,6 +15,7 @@ import { SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTheme } from "@/hooks/useTheme";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -75,13 +77,23 @@ const MobileNavGroupSection = ({
   group,
   location,
   setOpen,
+  isModuleEnabled,
 }: {
   group: MobileNavGroup;
   location: ReturnType<typeof useLocation>;
   setOpen: (v: boolean) => void;
+  isModuleEnabled: (key: string) => boolean;
 }) => {
-  const hasActive = group.items.some((item) => location.pathname === item.to);
+  // Filter items by module access
+  const filteredItems = group.items.filter((item) => {
+    const moduleKey = item.to.replace("/dashboard/", "").replace("/dashboard", "dashboard");
+    return isModuleEnabled(moduleKey || "dashboard");
+  });
+
+  const hasActive = filteredItems.some((item) => location.pathname === item.to);
   const [isOpen, setIsOpen] = useState(hasActive || group.title === "Principal");
+
+  if (filteredItems.length === 0) return null;
 
   return (
     <div>
@@ -96,7 +108,7 @@ const MobileNavGroupSection = ({
         <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen ? "" : "-rotate-90")} />
       </button>
       {isOpen &&
-        group.items.map((item) => (
+        filteredItems.map((item) => (
           <Link
             key={item.to}
             to={item.to}
@@ -121,6 +133,7 @@ const MobileNav = () => {
   const { signOut } = useAuth();
   const { isAdmin } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
+  const { isModuleEnabled } = useModuleAccess();
   const [open, setOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -147,7 +160,7 @@ const MobileNav = () => {
         <ScrollArea className="flex-1 min-h-0">
           <nav className="px-3 py-2 space-y-2">
             {mobileNavGroups.map((group) => (
-              <MobileNavGroupSection key={group.title} group={group} location={location} setOpen={setOpen} />
+              <MobileNavGroupSection key={group.title} group={group} location={location} setOpen={setOpen} isModuleEnabled={isModuleEnabled} />
             ))}
             <div className="pt-3 mt-3 border-t border-sidebar-border space-y-1">
               <Link
@@ -253,10 +266,11 @@ const DashboardLayout = () => {
           </button>
         </div>
         <ActiveVideoRoomPopup />
-        <div className="relative z-10 w-full max-w-full">
+        <div className="relative z-10 w-full max-w-full pb-16 lg:pb-0">
           <Outlet />
         </div>
       </main>
+      <BottomTabBar />
     </div>
   </div>
   );

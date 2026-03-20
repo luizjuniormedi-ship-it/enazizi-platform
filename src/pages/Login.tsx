@@ -6,12 +6,21 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
+const errorMessages: Record<string, string> = {
+  "Invalid login credentials": "Email ou senha incorretos.",
+  "Email not confirmed": "Confirme seu email antes de entrar.",
+  "User not found": "Nenhuma conta encontrada com este email.",
+  "Too many requests": "Muitas tentativas. Aguarde um momento.",
+};
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, resetPassword } = useAuth();
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -20,9 +29,27 @@ const Login = () => {
     const { error } = await signIn(email, password);
     setLoading(false);
     if (error) {
-      toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
+      const msg = errorMessages[error.message] || error.message;
+      toast({ title: "Erro ao entrar", description: msg, variant: "destructive" });
     } else {
       navigate("/dashboard");
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast({ title: "Digite seu email", description: "Informe o email cadastrado para redefinir a senha.", variant: "destructive" });
+      return;
+    }
+    setForgotLoading(true);
+    const { error } = await resetPassword(email);
+    setForgotLoading(false);
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Email enviado!", description: "Verifique sua caixa de entrada para redefinir a senha." });
+      setForgotMode(false);
     }
   };
 
@@ -36,29 +63,54 @@ const Login = () => {
             </div>
             <span className="text-xl font-bold">ENAZIZI</span>
           </Link>
-          <h1 className="text-2xl font-bold">Bem-vindo de volta</h1>
-          <p className="text-muted-foreground mt-1">Entre na sua conta para continuar</p>
+          <h1 className="text-2xl font-bold">{forgotMode ? "Recuperar senha" : "Bem-vindo de volta"}</h1>
+          <p className="text-muted-foreground mt-1">
+            {forgotMode ? "Digite seu email para receber o link de redefinição" : "Entre na sua conta para continuar"}
+          </p>
         </div>
 
-        <form onSubmit={handleLogin} className="glass-card p-8 space-y-5">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Email</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input type="email" placeholder="seu@email.com" className="pl-10 bg-secondary border-border" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        {forgotMode ? (
+          <form onSubmit={handleForgotPassword} className="glass-card p-8 space-y-5">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input type="email" placeholder="seu@email.com" className="pl-10 bg-secondary border-border" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
             </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Senha</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input type="password" placeholder="••••••••" className="pl-10 bg-secondary border-border" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <Button type="submit" className="w-full" disabled={forgotLoading}>
+              {forgotLoading ? "Enviando..." : "Enviar link de redefinição"}
+            </Button>
+            <button type="button" onClick={() => setForgotMode(false)} className="text-sm text-primary hover:underline w-full text-center">
+              Voltar ao login
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleLogin} className="glass-card p-8 space-y-5">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input type="email" placeholder="seu@email.com" className="pl-10 bg-secondary border-border" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
             </div>
-          </div>
-          <Button type="submit" className="w-full glow" disabled={loading}>
-            {loading ? "Entrando..." : "Entrar"}
-          </Button>
-        </form>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Senha</label>
+                <button type="button" onClick={() => setForgotMode(true)} className="text-xs text-primary hover:underline">
+                  Esqueci minha senha
+                </button>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input type="password" placeholder="••••••••" className="pl-10 bg-secondary border-border" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              </div>
+            </div>
+            <Button type="submit" className="w-full glow" disabled={loading}>
+              {loading ? "Entrando..." : "Entrar"}
+            </Button>
+          </form>
+        )}
 
         <p className="text-center text-sm text-muted-foreground mt-6">
           Não tem conta?{" "}

@@ -51,6 +51,7 @@ const AnamnesisTrainer = lazy(() => import("./pages/AnamnesisTrainer"));
 const Install = lazy(() => import("./pages/Install"));
 const StudyGuides = lazy(() => import("./pages/StudyGuides"));
 const PreviousExams = lazy(() => import("./pages/PreviousExams"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[400px]">
@@ -120,6 +121,7 @@ const App = () => (
                 <Route index element={<ProfessorDashboard />} />
               </Route>
               <Route path="/install" element={<Install />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

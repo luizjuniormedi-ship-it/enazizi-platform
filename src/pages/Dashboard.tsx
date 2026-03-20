@@ -15,6 +15,7 @@ import DailyPlanWidget from "@/components/dashboard/DailyPlanWidget";
 import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner";
 import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
 import DashboardCharts from "@/components/dashboard/DashboardCharts";
+import QuickStartCard from "@/components/dashboard/QuickStartCard";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
@@ -32,9 +33,10 @@ const Dashboard = () => {
 
   const { stats, metrics, displayName } = data;
   const taskPercent = stats.totalTasks > 0 ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0;
+  const isNewUser = metrics.questionsAnswered === 0 && stats.flashcards === 0;
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in pb-16 lg:pb-0">
       <WhatsNewPopup />
       <SystemGuidePopup />
       <OnboardingTour />
@@ -79,17 +81,28 @@ const Dashboard = () => {
         />
       </div>
 
-      <DashboardMetricsGrid stats={stats} metrics={metrics} />
-      <DailyPlanWidget />
-      <DashboardCharts stats={stats} metrics={metrics} />
+      {/* Quick Start for new users */}
+      <QuickStartCard
+        questionsAnswered={metrics.questionsAnswered}
+        flashcards={stats.flashcards}
+        hasCompletedDiagnostic={false}
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <WeeklyProgressCard />
-        <MiniLeaderboard />
-      </div>
+      {!isNewUser && (
+        <>
+          <DashboardMetricsGrid stats={stats} metrics={metrics} />
+          <DailyPlanWidget />
+          <DashboardCharts stats={stats} metrics={metrics} />
 
-      <TopicEvolution />
-      <SpecialtyBenchmark />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <WeeklyProgressCard />
+            <MiniLeaderboard />
+          </div>
+
+          <TopicEvolution />
+          <SpecialtyBenchmark />
+        </>
+      )}
     </div>
   );
 };

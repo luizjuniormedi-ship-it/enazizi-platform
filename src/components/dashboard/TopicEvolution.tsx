@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Progress } from "@/components/ui/progress";
@@ -26,9 +26,24 @@ interface DomainEntry {
 const TopicEvolution = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [domains, setDomains] = useState<DomainEntry[]>([]);
-  const [errorTopics, setErrorTopics] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["topic-evolution", user?.id],
+    enabled: !!user,
+    staleTime: 3 * 60 * 1000,
+    queryFn: async () => {
+      const [domainRes, errorRes] = await Promise.all([
+        supabase.from("medical_domain_map").select("specialty, domain_score, questions_answered, errors_count").eq("user_id", user!.id),
+        supabase.from("error_bank").select("tema, vezes_errado").eq("user_id", user!.id),
+      ]);
+      const domains = (domainRes.data || []) as DomainEntry[];
+      const topics: Record<string, number> = {};
+      for (const e of errorRes.data || []) {
+        topics[e.tema] = (topics[e.tema] || 0) + (e.vezes_errado || 1);
+      }
+      return { domains, errorTopics: topics };
+    },
+  });
 
   const handleStudyTopic = (specialty: string) => {
     navigate("/dashboard/chatgpt", {
@@ -39,27 +54,7 @@ const TopicEvolution = () => {
     });
   };
 
-  useEffect(() => {
-    if (!user) return;
-    const load = async () => {
-      const [domainRes, errorRes] = await Promise.all([
-        supabase.from("medical_domain_map").select("specialty, domain_score, questions_answered, errors_count").eq("user_id", user.id),
-        supabase.from("error_bank").select("tema, vezes_errado").eq("user_id", user.id),
-      ]);
-
-      setDomains(domainRes.data || []);
-
-      const topics: Record<string, number> = {};
-      for (const e of errorRes.data || []) {
-        topics[e.tema] = (topics[e.tema] || 0) + (e.vezes_errado || 1);
-      }
-      setErrorTopics(topics);
-      setLoading(false);
-    };
-    load();
-  }, [user]);
-
-  if (loading) {
+  if (isLoading || !data) {
     return (
       <div className="glass-card p-6 flex items-center justify-center min-h-[200px]">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -67,6 +62,7 @@ const TopicEvolution = () => {
     );
   }
 
+  const { domains, errorTopics } = data;
   const domainMap = new Map(domains.map((d) => [d.specialty, d]));
 
   const studied = SPECIALTIES.filter((s) => {
@@ -115,7 +111,6 @@ const TopicEvolution = () => {
         </div>
       </div>
 
-      {/* Studied specialties with scores */}
       {studied.length > 0 && (
         <div className="space-y-3">
           {SPECIALTIES.filter((s) => domainMap.get(s)?.questions_answered).map((s) => {
@@ -131,12 +126,7 @@ const TopicEvolution = () => {
                     <Badge variant={getBadgeVariant(d.domain_score)} className="text-xs">
                       {Math.round(d.domain_score)}%
                     </Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-xs gap-1"
-                      onClick={() => handleStudyTopic(s)}
-                    >
+                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs gap-1" onClick={() => handleStudyTopic(s)}>
                       <GraduationCap className="h-3.5 w-3.5" />
                       Estudar
                     </Button>
@@ -149,7 +139,6 @@ const TopicEvolution = () => {
         </div>
       )}
 
-      {/* Not studied */}
       {notStudied.length > 0 && (
         <div>
           <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
@@ -172,7 +161,6 @@ const TopicEvolution = () => {
         </div>
       )}
 
-      {/* Top error topics */}
       {topErrors.length > 0 && (
         <div>
           <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
@@ -190,7 +178,6 @@ const TopicEvolution = () => {
         </div>
       )}
 
-      {/* Summary */}
       <div className="flex items-center justify-between pt-2 border-t border-border">
         <div className="flex gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
