@@ -226,7 +226,7 @@ Lembre-se: NUNCA repita pacientes anteriores. Varie todos os par√¢metros demogr√
       }
 
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content || "";
+      const content = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
       
       // Parse JSON from response (may be wrapped in markdown code block)
       let parsed;
