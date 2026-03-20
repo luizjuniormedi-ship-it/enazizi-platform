@@ -63,25 +63,34 @@ const Diagnostic = () => {
     setPhase("loading");
     try {
       const allQuestions: DiagQuestion[] = [];
+      const allAnswers: AnswerRecord[] = [];
 
       for (const area of AREAS) {
         const hint = SCENARIO_HINTS[area] || "";
-        const difficulty = getDifficultyForArea(area, allQuestions.flatMap(() => []));
+        const difficulty = getDifficultyForArea(area, allAnswers);
+        const seed = Math.floor(Math.random() * 99999);
+
+        const usedTopics = allQuestions
+          .filter(q => q.topic === area)
+          .map(q => q.statement.slice(0, 40))
+          .join("; ");
 
         const res = await supabase.functions.invoke("question-generator", {
           body: {
             stream: false,
-            messages: [{ role: "user", content: `Gere EXATAMENTE 5 questões de múltipla escolha de ${area} para simulado diagnóstico de residência médica. Nível: ${difficulty}.
+            messages: [{ role: "user", content: `Gere EXATAMENTE 5 questões de múltipla escolha de ${area} para simulado diagnóstico de residência médica. Nível: ${difficulty}. Seed: ${seed}.
 
-REGRAS DE DIVERSIDADE:
+REGRAS DE DIVERSIDADE OBRIGATÓRIAS:
 - ${hint}
-- Cada questão DEVE ter caso clínico ÚNICO
-- PROIBIDO repetir cenário ou perfil de paciente
-- Varie pergunta: diagnóstico, conduta, exame complementar, fisiopatologia
+- Cada questão DEVE abordar um SUBTÓPICO DIFERENTE dentro de ${area}
+- PROIBIDO repetir cenário, perfil de paciente, faixa etária ou queixa principal
+- Varie o TIPO de pergunta: 1 diagnóstico, 1 conduta, 1 exame complementar, 1 fisiopatologia, 1 tratamento
+- Cada paciente deve ter idade, sexo e contexto clínico DISTINTOS
+- ${usedTopics ? `NÃO repita temas similares a: ${usedTopics}` : ""}
 
 REGRA DE GABARITO:
 - NUNCA repita mesma letra consecutiva
-- Use pelo menos 3 letras diferentes (A=0,B=1,C=2,D=3,E=4)
+- Distribua gabaritos entre A(0), B(1), C(2), D(3), E(4) — use pelo menos 4 letras diferentes
 
 FORMATO: Retorne APENAS JSON array:
 [{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"topic":"${area}","explanation":"...","difficulty":"${difficulty}"}]
@@ -99,7 +108,6 @@ NÃO inclua texto extra, APENAS o JSON.` }],
 
         const parsed = parseQuestions(content, area, difficulty).filter(q => isMedicalQuestion(q));
         allQuestions.push(...parsed.slice(0, 5));
-      }
 
       if (allQuestions.length < 10) {
         allQuestions.push(...generateFallbackQuestions());
