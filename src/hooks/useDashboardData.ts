@@ -84,16 +84,22 @@ async function fetchDashboardData(userId: string) {
 
   const examData = simuladosRes.data || [];
   const examQuestionsTotal = examData.reduce((sum: number, e: any) => sum + (e.total_questions || 0), 0);
-  const examCorrectTotal = examData.reduce((sum: number, e: any) => sum + (e.score || 0), 0);
+  const examCorrectTotal = examData.reduce((sum: number, e: any) => {
+    const total = e.total_questions || 0;
+    return sum + Math.round(((e.score || 0) / 100) * total);
+  }, 0);
 
   const teacherSimData = teacherSimuladoRes.data || [];
   const teacherQuestionsTotal = teacherSimData.reduce((sum: number, e: any) => sum + (e.total_questions || 0), 0);
-  const teacherCorrectTotal = teacherSimData.reduce((sum: number, e: any) => sum + (e.score || 0), 0);
+  const teacherCorrectTotal = teacherSimData.reduce((sum: number, e: any) => {
+    const total = e.total_questions || 0;
+    return sum + Math.round(((e.score || 0) / 100) * total);
+  }, 0);
 
   const teacherClinicalCount = teacherClinicalRes.count || 0;
   const questionsAnswered = practiceTotal + examQuestionsTotal + teacherQuestionsTotal;
   const totalCorrect = practiceCorrect + examCorrectTotal + teacherCorrectTotal;
-  const accuracy = questionsAnswered > 0 ? Math.round((totalCorrect / questionsAnswered) * 100) : 0;
+  const accuracy = questionsAnswered > 0 ? Math.min(Math.round((totalCorrect / questionsAnswered) * 100), 100) : 0;
 
   const totalSimulados = (simuladosRes.count || 0) + teacherSimData.length;
   const totalClinical = (clinicalSimRes.count || 0) + teacherClinicalCount;
