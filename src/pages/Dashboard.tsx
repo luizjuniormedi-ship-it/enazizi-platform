@@ -18,6 +18,9 @@ import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner"
 import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
 import DashboardCharts from "@/components/dashboard/DashboardCharts";
 import QuickStartCard from "@/components/dashboard/QuickStartCard";
+import SmartRecommendations from "@/components/dashboard/SmartRecommendations";
+import ApprovalThermometer from "@/components/dashboard/ApprovalThermometer";
+import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { fireCelebration } from "@/lib/celebrations";
@@ -109,6 +112,20 @@ const Dashboard = () => {
         hasCompletedDiagnostic={false}
       />
 
+      {/* Onboarding Checklist */}
+      <OnboardingChecklist
+        stats={stats}
+        metrics={metrics}
+        hasCompletedDiagnostic={false}
+      />
+
+      {/* Smart Recommendations */}
+      <SmartRecommendations
+        stats={stats}
+        metrics={metrics}
+        hasCompletedDiagnostic={false}
+      />
+
       {!isNewUser && (
         <>
           {/* Daily Goal + KPIs */}
@@ -122,7 +139,11 @@ const Dashboard = () => {
             <MiniLeaderboard />
           </div>
 
-          <TopicEvolution />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ApprovalThermometer metrics={metrics} />
+            <TopicEvolution />
+          </div>
+
           <SpecialtyBenchmark />
         </>
       )}
