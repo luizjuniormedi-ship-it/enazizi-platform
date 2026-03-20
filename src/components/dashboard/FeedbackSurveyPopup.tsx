@@ -14,9 +14,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-const ACCESS_COUNT_KEY = "enazizi_access_count";
-const FEEDBACK_GIVEN_KEY = "enazizi_feedback_given";
-const MIN_ACCESS = 3;
+const LOGIN_COUNT_KEY_PREFIX = "enazizi_login_count_";
+const FEEDBACK_GIVEN_KEY_PREFIX = "enazizi_feedback_given_";
+const MIN_LOGINS = 3;
 
 const MODULES = [
   { key: "simulados", label: "Simulados" },
@@ -71,29 +71,31 @@ const FeedbackSurveyPopup = () => {
   useEffect(() => {
     if (!user) return;
 
-    const alreadyGiven = localStorage.getItem(`${FEEDBACK_GIVEN_KEY}_${user.id}`);
+    const alreadyGiven = localStorage.getItem(`${FEEDBACK_GIVEN_KEY_PREFIX}${user.id}`);
     if (alreadyGiven === "true") return;
 
-    const raw = localStorage.getItem(`${ACCESS_COUNT_KEY}_${user.id}`);
-    const count = raw ? parseInt(raw, 10) + 1 : 1;
-    localStorage.setItem(`${ACCESS_COUNT_KEY}_${user.id}`, String(count));
+    const loginCount = parseInt(
+      localStorage.getItem(`${LOGIN_COUNT_KEY_PREFIX}${user.id}`) || "0",
+      10
+    );
 
-    if (count >= MIN_ACCESS) {
-      // Also check DB in case they submitted from another device
-      supabase
-        .from("user_feedback")
-        .select("id")
-        .eq("user_id", user.id)
-        .limit(1)
-        .then(({ data }) => {
-          if (data && data.length > 0) {
-            localStorage.setItem(`${FEEDBACK_GIVEN_KEY}_${user.id}`, "true");
-            return;
-          }
-          const timer = setTimeout(() => setOpen(true), 2000);
-          return () => clearTimeout(timer);
-        });
-    }
+    // Show on 3rd login or any login after that (for existing users)
+    if (loginCount < MIN_LOGINS) return;
+
+    // Also check DB in case they submitted from another device
+    supabase
+      .from("user_feedback")
+      .select("id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          localStorage.setItem(`${FEEDBACK_GIVEN_KEY_PREFIX}${user.id}`, "true");
+          return;
+        }
+        const timer = setTimeout(() => setOpen(true), 2000);
+        return () => clearTimeout(timer);
+      });
   }, [user]);
 
   const allRated = MODULES.every((m) => ratings[m.key] && ratings[m.key] > 0);
@@ -109,7 +111,7 @@ const FeedbackSurveyPopup = () => {
         feedback_text: feedbackText.trim(),
       });
       if (error) throw error;
-      localStorage.setItem(`${FEEDBACK_GIVEN_KEY}_${user.id}`, "true");
+      localStorage.setItem(`${FEEDBACK_GIVEN_KEY_PREFIX}${user.id}`, "true");
       toast.success("Obrigado pelo feedback! 💜");
       setOpen(false);
     } catch {
