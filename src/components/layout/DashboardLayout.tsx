@@ -90,10 +90,10 @@ const MobileNavGroupSection = ({
     return isModuleEnabled(moduleKey || "dashboard");
   });
 
-  if (filteredItems.length === 0) return null;
-
   const hasActive = filteredItems.some((item) => location.pathname === item.to);
   const [isOpen, setIsOpen] = useState(hasActive || group.title === "Principal");
+
+  if (filteredItems.length === 0) return null;
 
   return (
     <div>
