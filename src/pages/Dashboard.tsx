@@ -112,6 +112,20 @@ const Dashboard = () => {
         hasCompletedDiagnostic={false}
       />
 
+      {/* Onboarding Checklist */}
+      <OnboardingChecklist
+        stats={stats}
+        metrics={metrics}
+        hasCompletedDiagnostic={false}
+      />
+
+      {/* Smart Recommendations */}
+      <SmartRecommendations
+        stats={stats}
+        metrics={metrics}
+        hasCompletedDiagnostic={false}
+      />
+
       {!isNewUser && (
         <>
           {/* Daily Goal + KPIs */}
@@ -125,7 +139,11 @@ const Dashboard = () => {
             <MiniLeaderboard />
           </div>
 
-          <TopicEvolution />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ApprovalThermometer metrics={metrics} />
+            <TopicEvolution />
+          </div>
+
           <SpecialtyBenchmark />
         </>
       )}
