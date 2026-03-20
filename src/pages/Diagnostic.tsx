@@ -108,6 +108,7 @@ NÃO inclua texto extra, APENAS o JSON.` }],
 
         const parsed = parseQuestions(content, area, difficulty).filter(q => isMedicalQuestion(q));
         allQuestions.push(...parsed.slice(0, 5));
+      }
 
       if (allQuestions.length < 10) {
         allQuestions.push(...generateFallbackQuestions());
