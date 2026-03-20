@@ -37,7 +37,14 @@ const CronogramaHeader = ({ tab, setTab, revisoesHoje, revisoesAtrasadas, temasC
         </p>
       </div>
       <div className="flex gap-2 flex-wrap items-center">
-        <ModuleHelpButton moduleKey="cronograma" moduleName="Cronograma Inteligente" steps={["Adicione temas na aba 'Novo Tema' com dificuldade e fonte", "A aba 'Agenda' mostra revisões do dia com prioridade", "Registre desempenho ao concluir — o algoritmo ajusta intervalos", "Veja temas críticos e gráficos de evolução nas abas dedicadas"]} />
+        <ModuleHelpButton moduleKey="cronograma" moduleName="Cronograma Inteligente" steps={[
+          "Na aba '➕ Novo Tema', adicione um tema com especialidade, dificuldade e fonte (ex: Harrison)",
+          "A aba '📅 Agenda' mostra revisões do dia ordenadas por prioridade e risco de esquecimento",
+          "Ao concluir uma revisão, registre seu desempenho — o algoritmo recalcula o próximo intervalo",
+          "A aba '⚠️ Críticos' destaca temas com baixa retenção que precisam de atenção urgente",
+          "Na aba '📋 Plano de Estudos', importe editais em PDF para gerar temas automaticamente",
+          "Use '📈 Gráficos' para visualizar sua evolução e '⚙️ Config' para ajustar metas",
+        ]} />
         {revisoesAtrasadas > 0 && (
           <Badge variant="destructive" className="animate-pulse text-xs px-2.5 py-1 cursor-pointer" onClick={() => setTab("hoje")}>
             <AlertTriangle className="h-3 w-3 mr-1" />

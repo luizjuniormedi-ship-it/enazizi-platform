@@ -187,7 +187,14 @@ const ErrorBank = () => {
           <p className="text-muted-foreground text-sm">Revisão ativa e personalizada dos seus pontos fracos</p>
         </div>
         <div className="flex gap-2 flex-wrap items-center">
-          <ModuleHelpButton moduleKey="error-bank" moduleName="Banco de Erros" steps={["Erros são coletados automaticamente de todos os módulos", "Filtre por tema ou categoria para focar nos pontos fracos", "Clique em 'Revisar' para estudar com o Tutor IA", "Gere flashcards dos erros para fixar o conteúdo"]} />
+          <ModuleHelpButton moduleKey="error-bank" moduleName="Banco de Erros" steps={[
+            "Erros são coletados automaticamente do Tutor IA, Simulados e Diagnóstico",
+            "Use os filtros por tema ou categoria de erro para focar nos pontos fracos",
+            "Clique em 'Revisar com Tutor' para abrir uma sessão focada no erro específico",
+            "Gere flashcards dos erros clicando no botão — eles vão direto para revisão",
+            "Acompanhe quantas vezes errou cada tema para medir sua evolução",
+            "Exclua erros já dominados para manter o banco limpo e focado",
+          ]} />
           {errors.length > 0 && (
             <Button variant="outline" size="sm" onClick={generateFlashcardsFromErrors} disabled={generatingFlashcards} className="gap-1.5">
               {generatingFlashcards ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlipVertical className="h-4 w-4" />}
