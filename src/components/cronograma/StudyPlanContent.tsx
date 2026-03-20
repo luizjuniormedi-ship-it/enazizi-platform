@@ -1,4 +1,5 @@
 import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check, FileDown, Bell, BellOff, GripVertical, CheckCircle2, Circle } from "lucide-react";
+import StudyBlockActions from "./StudyBlockActions";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -495,6 +496,7 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
                         <div className={`text-sm font-medium truncate ${isCompleted ? "line-through text-muted-foreground" : ""}`}>{task.subject}</div>
                         <div className="text-xs text-muted-foreground">{task.time} • {task.duration}</div>
                       </div>
+                      <StudyBlockActions subject={task.subject} />
                       <button onClick={() => startEdit(dayIndex, taskIndex)} className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
                       <button onClick={() => removeTask(dayIndex, taskIndex)} className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                     </div>

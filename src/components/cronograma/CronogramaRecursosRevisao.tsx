@@ -170,6 +170,15 @@ const CronogramaRecursosRevisao = ({ tema, especialidade }: Props) => {
           variant="outline"
           size="sm"
           className="text-xs"
+          onClick={() => navigate(`/dashboard/chatgpt?topic=${encodeURIComponent(tema)}`)}
+        >
+          <Brain className="h-3 w-3 mr-1" /> Tutor IA
+          <ExternalLink className="h-3 w-3 ml-1" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs"
           onClick={() => navigate(`/dashboard/questoes?topic=${encodeURIComponent(tema)}`)}
         >
           <BookOpen className="h-3 w-3 mr-1" /> Banco de Questões
@@ -188,9 +197,27 @@ const CronogramaRecursosRevisao = ({ tema, especialidade }: Props) => {
           variant="outline"
           size="sm"
           className="text-xs"
-          onClick={() => navigate("/dashboard/simulados")}
+          onClick={() => navigate(`/dashboard/gerador-questoes?topic=${encodeURIComponent(tema)}`)}
         >
-          <Brain className="h-3 w-3 mr-1" /> Simulados
+          <BookOpen className="h-3 w-3 mr-1" /> Gerar Questões
+          <ExternalLink className="h-3 w-3 ml-1" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs"
+          onClick={() => navigate(`/dashboard/anamnese?specialty=${encodeURIComponent(especialidade)}`)}
+        >
+          <Brain className="h-3 w-3 mr-1" /> Anamnese
+          <ExternalLink className="h-3 w-3 ml-1" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs"
+          onClick={() => navigate(`/dashboard/simulacao-clinica?specialty=${encodeURIComponent(especialidade)}`)}
+        >
+          <Brain className="h-3 w-3 mr-1" /> Caso Clínico
           <ExternalLink className="h-3 w-3 ml-1" />
         </Button>
       </div>

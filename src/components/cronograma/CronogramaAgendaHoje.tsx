@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Play, CalendarDays, AlertTriangle, Clock, CheckCircle2, ShieldAlert } from "lucide-react";
+import StudyBlockActions from "./StudyBlockActions";
 import type { TemaEstudado, Revisao, TemaComputado } from "@/pages/CronogramaInteligente";
 
 interface Props {
@@ -52,9 +53,12 @@ const CronogramaAgendaHoje = ({ revisoes, temas, temasComputados, onStartRevisao
             </div>
           </div>
         </div>
-        <Button size="sm" variant={isUrgent ? "destructive" : "default"} className="flex-shrink-0 ml-2" onClick={() => onStartRevisao(r)}>
-          <Play className="h-3.5 w-3.5 mr-1" /> Revisar
-        </Button>
+        <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+          <StudyBlockActions subject={tema.tema} specialty={tema.especialidade} />
+          <Button size="sm" variant={isUrgent ? "destructive" : "default"} onClick={() => onStartRevisao(r)}>
+            <Play className="h-3.5 w-3.5 mr-1" /> Revisar
+          </Button>
+        </div>
       </div>
     );
   };
