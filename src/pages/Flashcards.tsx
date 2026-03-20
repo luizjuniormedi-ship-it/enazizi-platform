@@ -327,6 +327,9 @@ const Flashcards = () => {
             {allCards.length} total • {dueCards.length} para revisar hoje • {reviewedCount} em dia
           </p>
         </div>
+        <div className="flex items-center gap-2">
+          <ModuleHelpButton moduleKey="flashcards" moduleName="Flashcards" steps={["Vá em 'Gerar Flashcards' no menu para criar com IA", "Escolha a especialidade e quantidade desejada", "Revise marcando Fácil, Médio ou Difícil", "O algoritmo agenda revisões automáticas (1, 3, 7, 14, 30 dias)"]} />
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
