@@ -241,6 +241,8 @@ REGRAS DE ESPAÇAMENTO:
       response = await aiFetch({
         messages: [{ role: "system", content: systemPrompt }, ...messages],
         stream: useStream,
+        ...(safeMaxRetries !== undefined ? { maxRetries: safeMaxRetries } : {}),
+        ...(safeTimeoutMs !== undefined ? { timeoutMs: safeTimeoutMs } : {}),
       });
     } catch (aiErr) {
       console.error("question-generator aiFetch error:", aiErr);
