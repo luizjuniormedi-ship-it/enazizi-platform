@@ -31,6 +31,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (already) return;
         sessionStorage.setItem("pwa-updated", "1");
 
+        // Increment login count for feedback survey
+        const uid = session?.user?.id;
+        if (uid) {
+          const key = `enazizi_login_count_${uid}`;
+          const prev = parseInt(localStorage.getItem(key) || "0", 10);
+          localStorage.setItem(key, String(prev + 1));
+        }
+
         const clearAndReload = async () => {
           try {
             if ("caches" in window) {
