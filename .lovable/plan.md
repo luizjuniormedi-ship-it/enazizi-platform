@@ -1,34 +1,54 @@
 
 
-# Fix: Taxa de Acerto — Converter Percentuais para Contagens
+# Fase 3: Validação Médica + ErrorBank nos Módulos Faltantes
 
-## Problema
-`exam_sessions.score` e `teacher_simulado_results.score` armazenam **percentuais** (ex: 50, 71.4, 80), mas o código soma esses valores como se fossem **contagens de acertos**, inflando a taxa para 400%+.
+## Resumo
 
-## Solução
-Converter os percentuais de volta para contagens absolutas antes de somar:
+Adicionar `isMedicalQuestion`/`isMedicalContent` filtering e `logErrorToBank` nos módulos que ainda nao possuem.
 
-**Arquivo: `src/hooks/useDashboardData.ts`** (linhas 87 e 91)
+## Situacao Atual
 
-```typescript
-// score é percentual → converter para contagem
-const examCorrectTotal = examData.reduce((sum, e) => {
-  const total = e.total_questions || 0;
-  return sum + Math.round(((e.score || 0) / 100) * total);
-}, 0);
+| Modulo | logErrorToBank | isMedicalQuestion filter |
+|--------|---------------|------------------------|
+| Simulados | Sim | Sim |
+| ExamSimulator | Sim | Sim |
+| QuestionsBank | Sim | Nao |
+| Flashcards | Sim | Nao |
+| PreviousExams | Sim | Nao |
+| StudentSimulados | Sim | Nao |
+| Diagnostic | Sim | Nao |
+| AnamnesisTrainer | Nao | N/A (chat) |
+| StudySession | Nao | N/A (chat) |
 
-const teacherCorrectTotal = teacherSimData.reduce((sum, e) => {
-  const total = e.total_questions || 0;
-  return sum + Math.round(((e.score || 0) / 100) * total);
-}, 0);
-```
+## Alteracoes
 
-Adicionar safety cap na linha 96:
-```typescript
-const accuracy = questionsAnswered > 0
-  ? Math.min(Math.round((totalCorrect / questionsAnswered) * 100), 100)
-  : 0;
-```
+### 1. QuestionsBank.tsx — Adicionar filtro medico
+Na linha ~122, apos mapear as questoes, aplicar `.filter(isMedicalQuestion)` antes de setar no state.
 
-Isso corrige o cálculo combinado mantendo todas as fontes (practice, simulados, professor) unificadas numa única taxa de acerto precisa.
+### 2. Flashcards.tsx — Adicionar filtro medico
+Na linha ~122, apos merge dos cards, aplicar `.filter(c => isMedicalContent(c.question + " " + c.answer))`.
+
+### 3. PreviousExams.tsx — Adicionar filtro medico
+Na linha ~87, filtrar o retorno da query com `.filter(isMedicalQuestion)` antes de retornar.
+
+### 4. StudentSimulados.tsx — Adicionar filtro medico
+Ao montar as questoes do quiz, filtrar com `isMedicalQuestion`.
+
+### 5. Diagnostic.tsx — Adicionar filtro medico
+Na linha ~100, apos `parseQuestions`, aplicar `.filter(isMedicalQuestion)` nas questoes geradas pela IA.
+
+### 6. AnamnesisTrainer.tsx — Adicionar ErrorBank logging
+Na linha ~244, apos salvar o resultado, se `final_score < 70`, chamar `logErrorToBank` com tipo `"active-recall"`, tema = specialty, motivo = categorias nao cobertas.
+
+### 7. StudySession.tsx — Adicionar ErrorBank logging
+O StudySession e um chat streaming — nao ha processamento local de respostas. A unica informacao disponivel sao os `weakTopics` do performance. Adicionar logging quando novos weakTopics sao detectados (ao salvar performance), registrando-os como erros conceituais para alimentar o ErrorBank.
+
+## Arquivos modificados
+- `src/pages/QuestionsBank.tsx` — import + filtro
+- `src/pages/Flashcards.tsx` — import + filtro
+- `src/pages/PreviousExams.tsx` — import + filtro
+- `src/pages/StudentSimulados.tsx` — import + filtro
+- `src/pages/Diagnostic.tsx` — import + filtro
+- `src/pages/AnamnesisTrainer.tsx` — import + logging
+- `src/pages/StudySession.tsx` — import + logging
 
