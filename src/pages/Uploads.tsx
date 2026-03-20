@@ -1,4 +1,5 @@
 import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle, Database } from "lucide-react";
+import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -239,12 +240,15 @@ const Uploads = () => {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Upload className="h-6 w-6 text-primary" />
-          Uploads
-        </h1>
-        <p className="text-muted-foreground">Envie materiais de medicina para gerar flashcards e questões automaticamente com IA.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Upload className="h-6 w-6 text-primary" />
+            Uploads
+          </h1>
+          <p className="text-muted-foreground">Envie materiais de medicina para gerar flashcards e questões automaticamente com IA.</p>
+        </div>
+        <ModuleHelpButton moduleKey="uploads" moduleName="Uploads" steps={["Clique na área de upload ou arraste um PDF/TXT", "A IA extrai o conteúdo e gera flashcards + questões", "Acompanhe o processamento pela barra de progresso", "Os materiais ficam disponíveis em todos os módulos"]} />
       </div>
 
       <input

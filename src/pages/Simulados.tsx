@@ -5,6 +5,7 @@ import { isMedicalQuestion } from "@/lib/medicalValidation";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { FileText, Clock, Award, GraduationCap, Play, Loader2, ArrowRight, BarChart3, AlertTriangle, Zap } from "lucide-react";
+import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -298,7 +299,10 @@ Distribua igualmente entre os temas solicitados. Com casos clínicos.`
   if (phase === "setup") {
     return (
       <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
-        <div className="text-center py-4">
+        <div className="text-center py-4 relative">
+          <div className="absolute top-4 right-0">
+            <ModuleHelpButton moduleKey="simulados" moduleName="Simulados" steps={["Selecione as especialidades e quantidade de questões", "Escolha a dificuldade e inicie o simulado", "Responda dentro do tempo — simula prova real", "Veja resultado detalhado por área e revise erros com o Tutor"]} />
+          </div>
           <FileText className="h-12 w-12 text-primary mx-auto mb-3" />
           <h1 className="text-2xl font-bold">Simulados</h1>
           <p className="text-muted-foreground">Configure seu simulado com dificuldade, cronômetro e relatório detalhado.</p>

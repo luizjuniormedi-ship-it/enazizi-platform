@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { BarChart3, TrendingUp, Target, Clock, BookOpen, CheckCircle2, Loader2, HelpCircle, Stethoscope, Award } from "lucide-react";
+import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import PerformanceReport from "@/components/dashboard/PerformanceReport";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -152,7 +153,10 @@ const Analytics = () => {
           </h1>
           <p className="text-muted-foreground">Seu desempenho real baseado nos dados da plataforma.</p>
         </div>
-        <PerformanceReport />
+        <div className="flex items-center gap-2">
+          <ModuleHelpButton moduleKey="analytics" moduleName="Analytics" steps={["Os dados se atualizam automaticamente conforme você estuda", "Veja taxa de acerto, heatmap de atividade e radar por especialidade", "Use o relatório de performance para visão detalhada", "Identifique áreas fracas e priorize seus estudos"]} />
+          <PerformanceReport />
+        </div>
       </div>
 
       {/* Stats Cards */}

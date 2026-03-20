@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useLocation } from "react-router-dom";
 import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap, LogOut, AlertTriangle, Maximize2, Minimize2 } from "lucide-react";
+import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -783,7 +784,8 @@ const ChatGPT = () => {
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground truncate">Protocolo MedStudy com GPT-4o</p>
         </div>
-        <div className="flex gap-1 sm:gap-2 flex-shrink-0 flex-wrap justify-end">
+        <div className="flex gap-1 sm:gap-2 flex-shrink-0 flex-wrap justify-end items-center">
+          <ModuleHelpButton moduleKey="chatgpt" moduleName="Tutor IA" steps={["Digite um tema médico e inicie a sessão", "O tutor explica em blocos: técnico → leigo → questão → correção", "Responda questões no chat — erros vão pro Banco de Erros", "Finalize a sessão para salvar progresso e ganhar XP"]} />
           <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             <span className="hidden sm:inline">{isFullscreen ? "Sair" : "Tela cheia"}</span>

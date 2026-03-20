@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { AlertTriangle, BookOpen, BarChart3, Trash2, RefreshCw, ArrowRight, Brain, HelpCircle, Stethoscope, ListChecks, FlipVertical, Loader2 } from "lucide-react";
+import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
@@ -185,7 +186,8 @@ const ErrorBank = () => {
           </h1>
           <p className="text-muted-foreground text-sm">Revisão ativa e personalizada dos seus pontos fracos</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
+          <ModuleHelpButton moduleKey="error-bank" moduleName="Banco de Erros" steps={["Erros são coletados automaticamente de todos os módulos", "Filtre por tema ou categoria para focar nos pontos fracos", "Clique em 'Revisar' para estudar com o Tutor IA", "Gere flashcards dos erros para fixar o conteúdo"]} />
           {errors.length > 0 && (
             <Button variant="outline" size="sm" onClick={generateFlashcardsFromErrors} disabled={generatingFlashcards} className="gap-1.5">
               {generatingFlashcards ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlipVertical className="h-4 w-4" />}
