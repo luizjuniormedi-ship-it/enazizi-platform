@@ -127,7 +127,7 @@ async function processInBackground(
 
     if (validationResponse.ok) {
       const valData = await validationResponse.json();
-      const valContent = valData.choices?.[0]?.message?.content || "";
+      const valContent = sanitizeAiContent(valData.choices?.[0]?.message?.content || "");
       try {
         const cleaned = valContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
         const validation = JSON.parse(cleaned);
