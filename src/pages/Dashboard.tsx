@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
@@ -12,16 +13,36 @@ import WeeklyProgressCard from "@/components/dashboard/WeeklyProgressCard";
 import PerformanceReport from "@/components/dashboard/PerformanceReport";
 import MiniLeaderboard from "@/components/dashboard/MiniLeaderboard";
 import DailyPlanWidget from "@/components/dashboard/DailyPlanWidget";
+import DailyGoalWidget from "@/components/dashboard/DailyGoalWidget";
 import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner";
 import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
 import DashboardCharts from "@/components/dashboard/DashboardCharts";
 import QuickStartCard from "@/components/dashboard/QuickStartCard";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { fireCelebration } from "@/lib/celebrations";
 
 const Dashboard = () => {
   useRevisionNotifier();
   const { data, isLoading } = useDashboardData();
+  const prevLevelRef = useRef<number | null>(null);
+  const prevStreakRef = useRef<number | null>(null);
+
+  // Celebrate level ups and streak milestones
+  useEffect(() => {
+    if (!data) return;
+    const { metrics, stats } = data;
+
+    if (prevLevelRef.current !== null && metrics.gamificationLevel > prevLevelRef.current) {
+      fireCelebration("levelup");
+    }
+    prevLevelRef.current = metrics.gamificationLevel;
+
+    if (prevStreakRef.current !== null && stats.streak > prevStreakRef.current && stats.streak % 7 === 0) {
+      fireCelebration("streak");
+    }
+    prevStreakRef.current = stats.streak;
+  }, [data]);
 
   if (isLoading || !data) {
     return (
@@ -36,7 +57,7 @@ const Dashboard = () => {
   const isNewUser = metrics.questionsAnswered === 0 && stats.flashcards === 0;
 
   return (
-    <div className="space-y-8 animate-fade-in pb-16 lg:pb-0">
+    <div className="space-y-6 animate-fade-in pb-16 lg:pb-0">
       <WhatsNewPopup />
       <SystemGuidePopup />
       <OnboardingTour />
@@ -90,6 +111,8 @@ const Dashboard = () => {
 
       {!isNewUser && (
         <>
+          {/* Daily Goal + KPIs */}
+          <DailyGoalWidget />
           <DashboardMetricsGrid stats={stats} metrics={metrics} />
           <DailyPlanWidget />
           <DashboardCharts stats={stats} metrics={metrics} />

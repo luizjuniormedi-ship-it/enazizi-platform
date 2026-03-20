@@ -244,14 +244,6 @@ const DashboardLayout = () => {
         </div>
       </header>
       <main className="dashboard-main flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-x-hidden overflow-y-auto relative w-full">
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-0">
-          <img
-            src={enazizi}
-            alt=""
-            className="w-[30vmin] h-[30vmin] sm:w-[40vmin] sm:h-[40vmin] object-contain opacity-[0.15] select-none"
-            draggable={false}
-          />
-        </div>
         {/* Desktop top bar */}
         <div className="hidden landscape-tablet:flex lg:flex fixed top-4 right-4 z-50 items-center gap-2">
           <GlobalSearch />
