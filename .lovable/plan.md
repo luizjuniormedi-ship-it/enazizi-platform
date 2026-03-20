@@ -1,54 +1,23 @@
 
 
-# Fase 3: Validação Médica + ErrorBank nos Módulos Faltantes
+# Atualização do Nome no Ícone PWA
 
-## Resumo
+## Diagnóstico
 
-Adicionar `isMedicalQuestion`/`isMedicalContent` filtering e `logErrorToBank` nos módulos que ainda nao possuem.
+Os arquivos de manifesto (`vite.config.ts` e `public/manifest.json`) **já estão corretos** com o nome "MedStudy AI". Não há nenhuma referência residual a "ENAZIZI" nos manifests.
 
-## Situacao Atual
+O nome antigo que alguns usuários veem no ícone da tela inicial é um **cache do sistema operacional** da instalação anterior.
 
-| Modulo | logErrorToBank | isMedicalQuestion filter |
-|--------|---------------|------------------------|
-| Simulados | Sim | Sim |
-| ExamSimulator | Sim | Sim |
-| QuestionsBank | Sim | Nao |
-| Flashcards | Sim | Nao |
-| PreviousExams | Sim | Nao |
-| StudentSimulados | Sim | Nao |
-| Diagnostic | Sim | Nao |
-| AnamnesisTrainer | Nao | N/A (chat) |
-| StudySession | Nao | N/A (chat) |
+## Comportamento por Plataforma
 
-## Alteracoes
+- **Android**: O Chrome atualiza o nome automaticamente ao detectar mudança no manifest (pode levar até 30 dias). O mecanismo de force-update no login que já existe no app acelera isso.
+- **iOS**: O nome do ícone **nunca é atualizado** após instalação. O usuário precisa deletar o app e reinstalar.
 
-### 1. QuestionsBank.tsx — Adicionar filtro medico
-Na linha ~122, apos mapear as questoes, aplicar `.filter(isMedicalQuestion)` antes de setar no state.
+## Plano de Ação
 
-### 2. Flashcards.tsx — Adicionar filtro medico
-Na linha ~122, apos merge dos cards, aplicar `.filter(c => isMedicalContent(c.question + " " + c.answer))`.
+Nenhuma alteração de código é necessária — os manifests já estão corretos.
 
-### 3. PreviousExams.tsx — Adicionar filtro medico
-Na linha ~87, filtrar o retorno da query com `.filter(isMedicalQuestion)` antes de retornar.
+Para garantir que os usuários recebam a atualização mais rápido no Android, o sistema de force-update no login (já implementado em `useAuth.tsx`) já faz `caches.delete()` + `registration.update()`, o que força o navegador a buscar o novo manifest.
 
-### 4. StudentSimulados.tsx — Adicionar filtro medico
-Ao montar as questoes do quiz, filtrar com `isMedicalQuestion`.
-
-### 5. Diagnostic.tsx — Adicionar filtro medico
-Na linha ~100, apos `parseQuestions`, aplicar `.filter(isMedicalQuestion)` nas questoes geradas pela IA.
-
-### 6. AnamnesisTrainer.tsx — Adicionar ErrorBank logging
-Na linha ~244, apos salvar o resultado, se `final_score < 70`, chamar `logErrorToBank` com tipo `"active-recall"`, tema = specialty, motivo = categorias nao cobertas.
-
-### 7. StudySession.tsx — Adicionar ErrorBank logging
-O StudySession e um chat streaming — nao ha processamento local de respostas. A unica informacao disponivel sao os `weakTopics` do performance. Adicionar logging quando novos weakTopics sao detectados (ao salvar performance), registrando-os como erros conceituais para alimentar o ErrorBank.
-
-## Arquivos modificados
-- `src/pages/QuestionsBank.tsx` — import + filtro
-- `src/pages/Flashcards.tsx` — import + filtro
-- `src/pages/PreviousExams.tsx` — import + filtro
-- `src/pages/StudentSimulados.tsx` — import + filtro
-- `src/pages/Diagnostic.tsx` — import + filtro
-- `src/pages/AnamnesisTrainer.tsx` — import + logging
-- `src/pages/StudySession.tsx` — import + logging
+Para iOS, a única solução é orientar os usuários a reinstalarem o PWA.
 
