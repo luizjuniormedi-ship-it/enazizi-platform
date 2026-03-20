@@ -36,7 +36,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (uid) {
           const key = `enazizi_login_count_${uid}`;
           const prev = parseInt(localStorage.getItem(key) || "0", 10);
-          localStorage.setItem(key, String(prev + 1));
+          const createdAt = session?.user?.created_at;
+          const isLegacyUser =
+            !!createdAt && Date.now() - new Date(createdAt).getTime() > 24 * 60 * 60 * 1000;
+          const nextCount = isLegacyUser ? Math.max(prev + 1, 3) : prev + 1;
+          localStorage.setItem(key, String(nextCount));
         }
 
         const clearAndReload = async () => {

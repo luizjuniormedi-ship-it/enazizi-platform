@@ -74,16 +74,12 @@ const FeedbackSurveyPopup = () => {
     const alreadyGiven = localStorage.getItem(`${FEEDBACK_GIVEN_KEY_PREFIX}${user.id}`);
     if (alreadyGiven === "true") return;
 
-    const loginCountRaw = localStorage.getItem(`${LOGIN_COUNT_KEY_PREFIX}${user.id}`);
-    const loginCount = loginCountRaw ? parseInt(loginCountRaw, 10) : 0;
+    const loginCount = parseInt(
+      localStorage.getItem(`${LOGIN_COUNT_KEY_PREFIX}${user.id}`) || "0",
+      10,
+    );
 
-    // If counter exists, require MIN_LOGINS (new users)
-    // If counter doesn't exist, this is an existing user who never had the counter —
-    // show immediately (they've been using the app before the feature was added)
-    const isExistingUserWithoutCounter = loginCountRaw === null;
-    const hasEnoughLogins = loginCount >= MIN_LOGINS;
-
-    if (!isExistingUserWithoutCounter && !hasEnoughLogins) return;
+    if (loginCount < MIN_LOGINS) return;
 
     // Also check DB in case they submitted from another device
     supabase
@@ -125,8 +121,12 @@ const FeedbackSurveyPopup = () => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) setOpen(false); }}>
-      <DialogContent className="sm:max-w-md border-primary/20" onInteractOutside={(e) => e.preventDefault()}>
+    <Dialog open={open} onOpenChange={(v) => { if (v) setOpen(true); }}>
+      <DialogContent
+        className="sm:max-w-md border-primary/20 [&>button]:hidden"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
