@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { isMedicalQuestion } from "@/lib/medicalValidation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +13,31 @@ import { FileText, Clock, CheckCircle, XCircle, ChevronRight, Trophy, Filter, Ba
 import { toast } from "sonner";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 
-const BANCAS = ["ENARE", "USP", "UNIFESP", "UNICAMP", "Santa Casa", "AMRIGS", "SUS-SP", "UERJ", "Revalida", "FMUSP"];
+const BANCA_PATTERNS: [RegExp, string][] = [
+  [/revalida/i, "Revalida"],
+  [/USP|FMUSP/i, "USP"],
+  [/UNICAMP/i, "UNICAMP"],
+  [/AMRIGS/i, "AMRIGS"],
+  [/SUS[- ]?SP/i, "SUS-SP"],
+  [/Santa\s*Casa|HSCSP/i, "Santa Casa"],
+  [/UERJ/i, "UERJ"],
+  [/UNIFESP/i, "UNIFESP"],
+  [/ENARE/i, "ENARE"],
+  [/HSL|S[íi]rio/i, "Hospital Sírio-Libanês"],
+  [/PUC/i, "PUC"],
+  [/IDOMED/i, "IDOMED"],
+  [/Einstein/i, "Einstein"],
+];
+
+function normalizeSource(source: string | null): string | null {
+  if (!source) return null;
+  for (const [pattern, label] of BANCA_PATTERNS) {
+    if (pattern.test(source)) return label;
+  }
+  // Fallback: clean prefix and truncate
+  const cleaned = source.replace(/^(upload:|prova:|exam:)/i, "").trim();
+  return cleaned.length > 30 ? cleaned.slice(0, 30) : cleaned;
+}
 
 interface Question {
   id: string;
@@ -50,6 +74,18 @@ export default function PreviousExams() {
     },
   });
 
+  // Dynamic bancas from real data
+  const availableBancas = useMemo(() => {
+    const map = new Map<string, number>();
+    (availableSources || []).forEach((s) => {
+      const label = normalizeSource(s.source);
+      if (label) map.set(label, (map.get(label) || 0) + 1);
+    });
+    return [...map.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([label, count]) => ({ label, count }));
+  }, [availableSources]);
+
   // Get unique years from sources
   const availableYears = [...new Set(
     (availableSources || [])
@@ -64,8 +100,8 @@ export default function PreviousExams() {
     (availableSources || []).map((s) => s.topic).filter(Boolean)
   )].sort();
 
-  // Fetch questions based on filters
-  const { data: questions, isLoading, refetch } = useQuery({
+  // Fetch questions — always enabled, shows recent by default
+  const { data: questions, isLoading } = useQuery({
     queryKey: ["exam-questions", selectedBanca, selectedYear, selectedTopic],
     queryFn: async () => {
       let query = supabase
@@ -75,7 +111,13 @@ export default function PreviousExams() {
         .not("source", "is", null);
 
       if (selectedBanca && selectedBanca !== "all") {
-        query = query.ilike("source", `%${selectedBanca}%`);
+        // Find all original sources that match this normalized banca
+        const matchingSources = (availableSources || [])
+          .filter((s) => normalizeSource(s.source) === selectedBanca)
+          .map((s) => s.source);
+        if (matchingSources.length > 0) {
+          query = query.in("source", [...new Set(matchingSources)]);
+        }
       }
       if (selectedYear && selectedYear !== "all") {
         query = query.ilike("source", `%${selectedYear}%`);
@@ -87,7 +129,7 @@ export default function PreviousExams() {
       const { data } = await query.order("created_at", { ascending: false }).limit(100);
       return ((data || []) as Question[]).filter(q => isMedicalQuestion(q));
     },
-    enabled: !!(selectedBanca || selectedYear || selectedTopic),
+    enabled: true,
   });
 
   const startExam = () => {
