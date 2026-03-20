@@ -23,7 +23,7 @@ interface Props {
   hasCompletedDiagnostic: boolean;
 }
 
-const DISMISSED_KEY = "onboarding_checklist_dismissed";
+const DISMISSED_KEY = "onboarding_checklist_dismissed_v2";
 
 export default function OnboardingChecklist({ stats, metrics, hasCompletedDiagnostic }: Props) {
   const navigate = useNavigate();

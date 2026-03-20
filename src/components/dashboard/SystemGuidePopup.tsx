@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChevronDown } from "lucide-react";
 import mascot from "@/assets/enazizi-mascot.png";
 
-const STORAGE_KEY = "enazizi_guide_seen";
+const STORAGE_KEY = "enazizi_guide_seen_v2";
 
 const features = [
   {
