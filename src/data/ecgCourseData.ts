@@ -662,51 +662,193 @@ A arritmia sustentada mais comum na prática clínica.
         },
         {
           id: "ecg-4-3",
-          title: "ECG nos Distúrbios Eletrolíticos",
-          subtitle: "Hiper/hipocalemia, hiper/hipocalcemia — emergências no ECG",
-          theory: `## Potássio — O Íon Mais Importante no ECG
+          title: "ECG nos Distúrbios do Potássio",
+          subtitle: "Hipercalemia e hipocalemia — do mecanismo iônico ao ECG de emergência",
+          theory: `## O Potássio e a Eletrofisiologia Cardíaca
 
-### Hipercalemia (K+ > 5.5 mEq/L)
-Progressão das alterações com o aumento do K+:
-1. **K+ 5.5-6.5**: T apiculadas e simétricas (mais precoce)
-2. **K+ 6.5-7.5**: achatamento de P + PR alargado
-3. **K+ 7.5-8.0**: QRS alargado
-4. **K+ > 8.0**: padrão sinusoidal → FV → assistolia
-
-> **EMERGÊNCIA**: K+ > 6.5 com alterações de ECG → gluconato de cálcio 10% IV imediato!
-
-### Hipocalemia (K+ < 3.5 mEq/L)
-1. Achatamento/inversão de T
-2. Aparecimento de **onda U** (após T)
-3. Infra de ST
-4. Prolongamento de QT
-5. K+ < 2.5: risco de arritmias graves (Torsades)
+Apenas 2% do K⁺ corporal está no meio extracelular (3,5-5,5 mEq/L). Ele influencia dois processos cruciais:
+1. **Repolarização** (fase 3) de todas as células — abertura de canais de K⁺
+2. **Potencial de repouso** (fase 4) das células de resposta rápida — determinado pelo gradiente de K⁺
 
 ---
 
-## Cálcio
+## HIPERCALEMIA (K⁺ > 5,5 mEq/L)
 
-### Hipercalcemia (Ca > 10.5)
-- **QT curto** (encurtamento de ST)
-- Onda T pode ficar apiculada
-- Bradicardia
-- Causa: hiperparatireoidismo, neoplasias
+### Mecanismo Eletrofisiológico
+O excesso de K⁺ extracelular reduz o gradiente de concentração → a célula atinge o equilíbrio com **menor saída de K⁺** → potencial de repouso **menos negativo** (ex: de -90 para -80 mV).
 
-### Hipocalcemia (Ca < 8.5)
-- **QT longo** (prolongamento de ST)
-- Risco de Torsades de Pointes
-- Causa: hipoparatireoidismo, pancreatite, IRC
+**Duas consequências:**
+1. **Repolarização encurtada**: fica mais fácil retornar ao novo potencial de repouso → onda T mais alta, apiculada e estreita ("em tenda") + QT encurtado
+2. **Despolarização lentificada**: potencial de repouso próximo de 0 → menos canais de Na⁺ disponíveis → QRS alargado + P achatada
 
-### Mnemônico dos Eletrólitos
-> "**Hiper K = T de ponta** (apiculada), **Hipo K = U de sobra** (onda U)"
-> "**Hiper Ca = QT curto**, **Hipo Ca = QT longo**"`,
+### Progressão das Alterações no ECG
+
+#### Hipercalemia Leve (5,5-7,0 mEq/L)
+- **T apiculada e simétrica** ("em tenda") — primeiro sinal!
+- Base estreita, amplitude aumentada
+- QT pode estar encurtado
+
+#### Hipercalemia Moderada (7,0-9,0 mEq/L)
+- **P achatada** → pode desaparecer (ritmo sinoventricular)
+- **PR alargado** (BAV 1° grau funcional)
+- **QRS progressivamente alargado**
+- O estímulo sinusal continua, mas depende dos feixes internodais para alcançar os ventrículos
+
+> **Ritmo sinoventricular**: ritmo sinusal SEM onda P visível — praticamente indistinguível de ritmo juncional ou ventricular no ECG!
+
+#### Hipercalemia Grave (> 9,0 mEq/L)
+- **Supra de ST** (pseudoinfarto / "corrente de lesão dialisável") — reverte com diálise
+- **QRS funde-se com onda T** → **"onda em sino"** (parada iminente!)
+- Padrão sinusoidal → FV → assistolia
+
+### Mnemônico de Progressão
+> T em Tenda → P desaparece → QRS alarga → Sino → Parada
+
+### ⚠️ A Hipercalemia na Pena de Morte
+O protocolo de injeção letal usa cloreto de potássio como agente final — a hipercalemia severa causa parada cardíaca por interferência direta nas propriedades elétricas do miocárdio.
+
+---
+
+## HIPOCALEMIA (K⁺ < 3,5 mEq/L)
+
+### Mecanismo Eletrofisiológico
+Com menos K⁺ extracelular, aumenta o gradiente de concentração → mais K⁺ sai da célula → potencial de repouso **mais negativo** (ex: de -90 para -95 mV).
+
+**Duas consequências:**
+1. **Repolarização prolongada**: mais difícil retornar ao potencial de repouso mais negativo → onda T achatada + QT prolongado + aparecimento da onda U
+2. **Despolarização mais intensa**: mais canais de Na⁺ disponíveis → pode aumentar amplitude da onda P e predispor a ectopias
+
+### Progressão das Alterações (geralmente < 2,8-3,0 mEq/L)
+1. **Onda T achatada** e com base alargada — primeiro sinal
+2. **Onda U proeminente** — achado mais típico! (pode ultrapassar a onda T)
+3. **"QT prolongado"** — na verdade, mede-se o intervalo **QU** (T + U fundidas)
+4. **Infra de ST**
+5. K⁺ < 2,5: risco de **Torsades de Pointes** e arritmias graves
+
+> **Teoria da onda U patológica**: repolarização tardia das fibras de Purkinje que separa a onda T em dois componentes — o 2° é a onda U.
+
+### Hipocalemia Grave
+- QRS pode alargar (paradoxal: retenção de Ca²⁺ intracelular altera novamente o potencial de repouso)
+- A onda U pode mascarar a onda P do ciclo seguinte
+
+### Resumo Comparativo K⁺
+| Parâmetro | Hipercalemia | Hipocalemia |
+|-----------|-------------|-------------|
+| Onda T | Alta, apiculada ("tenda") | Achatada, alargada |
+| Onda U | Ausente | Proeminente (patognomônica) |
+| QRS | Alargado | Normal (alargado se grave) |
+| QT | Encurtado | Prolongado (QU) |
+| Onda P | Achatada → ausente | Amplitude aumentada |
+| Risco | Parada cardíaca | Torsades de Pointes |
+
+> **Mnemônico**: "Hiper K = T de ponta (apiculada), Hipo K = U de sobra (onda U)"`,
           keyPoints: [
-            "Hipercalemia: T apiculada → P achatada → QRS largo → sinusoidal",
-            "Hipocalemia: T achatada + onda U proeminente + QT longo",
-            "Hipercalcemia: QT curto",
-            "Hipocalcemia: QT longo → risco de Torsades",
+            "K⁺ alto → potencial de repouso menos negativo → repolarização rápida (T apiculada) + despolarização lenta (QRS largo)",
+            "K⁺ baixo → potencial de repouso mais negativo → repolarização lenta (T achatada + onda U) + QT longo",
+            "Progressão da hipercalemia: T tenda → P some → QRS alarga → sino → parada",
+            "Onda U proeminente é o achado mais típico da hipocalemia",
+            "Ritmo sinoventricular: ritmo sinusal sem onda P — confunde com juncional",
           ],
-          clinicalTip: "Na emergência com ECG sinusoidal, trate como hipercalemia até prova em contrário: gluconato de cálcio 10mL a 10% IV em 2-3 min. Estabiliza a membrana em segundos enquanto você aguarda o resultado do potássio.",
+          clinicalTip: "Na emergência com ECG sinusoidal ou 'onda em sino', trate como hipercalemia até prova em contrário: gluconato de cálcio 10mL a 10% IV em 2-3 min. Ele não reduz o K⁺, mas estabiliza a membrana ao alterar o potencial limiar (de -70 para -60 mV), restaurando a função dos canais de Na⁺.",
+        },
+        {
+          id: "ecg-4-4",
+          title: "ECG nos Distúrbios do Cálcio e Efeito Digitálico",
+          subtitle: "Hipercalcemia, hipocalcemia, onda J de Osborn e 'pá de pedreiro'",
+          theory: `## O Cálcio e a Eletrofisiologia
+
+99% do Ca²⁺ corporal está nos ossos; apenas 1% no sangue (metade ligada à albumina). O Ca²⁺ ionizado é o que interage com o coração.
+
+### Onde o Cálcio Atua no Potencial de Ação
+- **Células de resposta rápida**: participa da **fase 2 (platô)** → inscrita como **segmento ST** no ECG
+- **Células de resposta lenta**: participa das fases 0 (despolarização) e 4 (repouso)
+- É o responsável pelo **acoplamento excitação-contração** (ativa complexo actina-miosina)
+
+> As alterações do Ca²⁺ afetam principalmente o **segmento ST** e, por consequência, o **intervalo QT**.
+
+⚠️ Diferente do K⁺, não há boa correlação progressiva entre nível sérico e alterações no ECG — as mudanças só ocorrem em variações extremas.
+
+---
+
+## HIPERCALCEMIA (Ca > 10,5 mg/dL)
+
+### Mecanismo
+Mais Ca²⁺ extracelular → maior influxo na fase 2 → **platô mais curto** → encurtamento do segmento ST e do QT.
+
+### Alterações no ECG
+| Achado | Descrição |
+|--------|-----------|
+| **QT curto** | Principal achado — por redução/ausência do segmento ST |
+| **Supra de ST** | Pode simular IAM ("pseudoinfarto") |
+| **Onda J de Osborn** | Entalhe positivo no final do QRS (não é exclusiva de hipotermia!) |
+| PR alargado | Menos comum |
+| Bradicardia | Em casos severos |
+
+### Onda J de Osborn — Não é Só Hipotermia!
+Descrita por John J. Osborn (1953), surge por acentuação do entalhe no potencial de ação epicárdico. Causas:
+- **Hipotermia** (< 30°C) — acompanha a gravidade
+- **Hipercalcemia**
+- Hemorragia subaracnoide
+- Traumatismo craniano
+- Angina de Prinzmetal
+
+### Tratamento da Hipercalcemia
+1. **Hidratação** com SF 0,9% (200-300 mL/h)
+2. **Calcitonina** 4 U/kg IM 12/12h (efeito em 48h)
+3. **Bifosfonados** (ácido zoledrônico 4mg IV ou pamidronato 60-90mg IV) — efeito por até 2 semanas
+
+---
+
+## HIPOCALCEMIA (Ca < 8,5 mg/dL)
+
+### Mecanismo
+Menos Ca²⁺ → fase 2 (platô) **prolongada** → segmento ST e QT se alongam.
+
+### Alterações no ECG
+- **QT longo** (às custas de **alargamento do segmento ST**) — principal achado
+- Risco de **Torsades de Pointes**
+- Causas: hipoparatireoidismo, pancreatite, IRC, deficiência de vitamina D
+
+### Como Diferenciar QT Longo: Hipocalemia vs Hipocalcemia?
+| | Hipocalemia | Hipocalcemia |
+|---|-----------|-------------|
+| QT longo por | Onda U proeminente (intervalo QU) | Alargamento do segmento ST |
+| Onda T | Achatada | Relativamente preservada |
+| Onda U | Presente e aumentada | Ausente ou discreta |
+
+### Tratamento da Hipocalcemia
+- Com alteração no ECG ou sintomas (tetania, Chvostek, Trousseau):
+- **Gluconato de cálcio** 1-2g IV em 10-20 min (1-2 ampolas a 10%)
+
+---
+
+## EFEITO DIGITÁLICO (Bônus!)
+
+### Mecanismo
+O digital **bloqueia a bomba Na⁺/K⁺ ATPase** → acúmulo de Na⁺ intracelular → trocador Na⁺/Ca²⁺ retém mais Ca²⁺ → mimetiza hipercalemia (K⁺ extracelular ↑) + hipercalcemia (Ca²⁺ intracelular ↑).
+
+### Alterações no ECG
+- **Infra de ST** com aspecto de **"pá de pedreiro"** (ou "Bigode de Salvador Dalí")
+- **QT encurtado**
+- Pode causar bradiarritmias e taquiarritmias
+
+### As 3 Grandes Causas de QT Curto
+| Causa | Pista associada |
+|-------|----------------|
+| **Hipercalemia** | T em tenda + QRS alargado |
+| **Hipercalcemia** | Ausência isolada do segmento ST |
+| **Digital** | Infra de ST em "pá de pedreiro" |
+
+> ⚠️ Na hipercalemia por intoxicação digitálica, o uso de gluconato de cálcio é **controverso** — o digital já acumula Ca²⁺ intracelular, e mais Ca²⁺ pode agravar arritmias!`,
+          keyPoints: [
+            "Ca²⁺ afeta principalmente o segmento ST (fase 2 do potencial de ação)",
+            "Hipercalcemia: QT curto + pode ter supra de ST (pseudoinfarto) + onda J de Osborn",
+            "Hipocalcemia: QT longo às custas de alargamento do ST (não da onda U!)",
+            "Onda J de Osborn: não é exclusiva de hipotermia — aparece também na hipercalcemia",
+            "Digital: bloqueia bomba Na⁺/K⁺ ATPase → infra ST em 'pá de pedreiro' + QT curto",
+            "3 causas de QT curto: hipercalemia, hipercalcemia, digital",
+          ],
+          clinicalTip: "Quando encontrar QT prolongado no ECG, diferencie: se tem onda U proeminente e T achatada → hipocalemia; se o ST está alargado com T preservada → hipocalcemia. O tratamento é completamente diferente! Reponha K⁺ ou Ca²⁺ conforme o caso.",
         },
       ],
     },
