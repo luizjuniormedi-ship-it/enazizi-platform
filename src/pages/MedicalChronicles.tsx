@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import InteractiveQuestionRenderer from "@/components/agents/InteractiveQuestionRenderer";
+import ChronicleRenderer from "@/components/chronicles/ChronicleRenderer";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -510,7 +510,7 @@ const MedicalChronicles = () => {
           )}
 
           {/* Messages */}
-          <div ref={scrollRef} className="flex-1 glass-card p-2 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 mb-2 sm:mb-4 min-h-0">
+          <div ref={scrollRef} className="flex-1 glass-card p-3 sm:p-6 overflow-y-auto space-y-5 sm:space-y-6 mb-2 sm:mb-4 min-h-0">
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
                 {msg.role === "assistant" && (
@@ -522,7 +522,7 @@ const MedicalChronicles = () => {
                   msg.role === "user" ? "max-w-[85%] sm:max-w-[75%] bg-primary text-primary-foreground" : "w-full bg-secondary text-secondary-foreground"
                 }`}>
                   {msg.role === "assistant" ? (
-                    <InteractiveQuestionRenderer content={msg.content} />
+                    <ChronicleRenderer content={msg.content} />
                   ) : (
                     <span className="whitespace-pre-wrap">{msg.content}</span>
                   )}
