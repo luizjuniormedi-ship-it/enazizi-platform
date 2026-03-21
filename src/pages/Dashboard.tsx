@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
+import SpecialtyProgressCard from "@/components/dashboard/SpecialtyProgressCard";
+import StreakCalendar from "@/components/dashboard/StreakCalendar";
 import DashboardWarnings from "@/components/dashboard/DashboardWarnings";
 import TopicEvolution from "@/components/dashboard/TopicEvolution";
 import MotivationalGreeting from "@/components/dashboard/MotivationalGreeting";
