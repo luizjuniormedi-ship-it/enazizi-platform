@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { HelpCircle, BookOpen, Heart, ArrowRight, Sparkles, Activity, FlipVertical, MessageCircle } from "lucide-react";
+import { HelpCircle, BookOpen, Heart, ArrowRight, Sparkles, Activity, FlipVertical, MessageCircle, ImageIcon } from "lucide-react";
 
 const agents = [
   {
@@ -59,6 +59,15 @@ const agents = [
     description: "Aprenda medicina através de narrativas clínicas imersivas. Você é o médico no plantão — raciocine, decida e aprenda com casos cinematográficos.",
     color: "text-amber-400",
     bgColor: "bg-amber-500/10",
+    isNew: true,
+  },
+  {
+    to: "/dashboard/quiz-imagens",
+    icon: ImageIcon,
+    title: "🖼️ Quiz de Imagens Médicas",
+    description: "Interprete ECGs e RX de Tórax com gabarito comentado. 50+ imagens clássicas de fontes públicas para treinar sua leitura diagnóstica.",
+    color: "text-violet-400",
+    bgColor: "bg-violet-500/10",
     isNew: true,
   },
   {

@@ -727,6 +727,98 @@ export type Database = {
         }
         Relationships: []
       }
+      medical_image_attempts: {
+        Row: {
+          correct: boolean
+          created_at: string
+          id: string
+          image_id: string
+          selected_index: number
+          time_seconds: number | null
+          user_id: string
+        }
+        Insert: {
+          correct: boolean
+          created_at?: string
+          id?: string
+          image_id: string
+          selected_index: number
+          time_seconds?: number | null
+          user_id: string
+        }
+        Update: {
+          correct?: boolean
+          created_at?: string
+          id?: string
+          image_id?: string
+          selected_index?: number
+          time_seconds?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_image_attempts_image_id_fkey"
+            columns: ["image_id"]
+            isOneToOne: false
+            referencedRelation: "medical_images"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medical_images: {
+        Row: {
+          category: string
+          correct_index: number
+          created_at: string
+          created_by: string | null
+          diagnosis: string
+          difficulty: number
+          explanation: string | null
+          id: string
+          image_source: string | null
+          image_url: string
+          is_active: boolean
+          options: Json
+          subcategory: string | null
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          correct_index?: number
+          created_at?: string
+          created_by?: string | null
+          diagnosis: string
+          difficulty?: number
+          explanation?: string | null
+          id?: string
+          image_source?: string | null
+          image_url: string
+          is_active?: boolean
+          options?: Json
+          subcategory?: string | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          correct_index?: number
+          created_at?: string
+          created_by?: string | null
+          diagnosis?: string
+          difficulty?: number
+          explanation?: string | null
+          id?: string
+          image_source?: string | null
+          image_url?: string
+          is_active?: boolean
+          options?: Json
+          subcategory?: string | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       medical_terms: {
         Row: {
           aliases: string[] | null
