@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Brain, ClipboardList, User } from "lucide-react";
+import { LayoutDashboard, Brain, ClipboardList, User, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +26,7 @@ const BottomTabBar = () => {
   const tabs = [
     { to: "/dashboard", icon: LayoutDashboard, label: "Início", badge: 0 },
     { to: "/dashboard/chatgpt", icon: Brain, label: "Tutor IA", badge: 0 },
+    { to: "/dashboard/cronicas", icon: BookOpen, label: "Crônicas", badge: 0 },
     { to: "/dashboard/simulados", icon: ClipboardList, label: "Simulados", badge: pendingCount || 0 },
     { to: "/dashboard/perfil", icon: User, label: "Perfil", badge: 0 },
   ];
