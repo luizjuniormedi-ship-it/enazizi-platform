@@ -47,15 +47,26 @@ const AdminFeedbackPanel = () => {
       setLoading(true);
       const { data } = await supabase
         .from("user_feedback")
-        .select("*, profile:profiles!user_feedback_user_id_fkey(display_name, email)")
+        .select("*")
         .order("created_at", { ascending: false })
         .limit(200);
 
-      if (data) {
+      if (data && data.length > 0) {
+        // Fetch profiles for all user_ids
+        const userIds = [...new Set(data.map((d: any) => d.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, display_name, email")
+          .in("user_id", userIds);
+
+        const profileMap = new Map(
+          (profiles || []).map((p: any) => [p.user_id, p])
+        );
+
         const mapped = data.map((d: any) => ({
           ...d,
           ratings: (d.ratings || {}) as Record<string, number>,
-          profile: Array.isArray(d.profile) ? d.profile[0] : d.profile,
+          profile: profileMap.get(d.user_id) || null,
         }));
         setFeedbacks(mapped);
       }
