@@ -132,10 +132,19 @@ const Dashboard = () => {
 
       {!isNewUser && (
         <>
-          {/* Daily Goal + KPIs */}
-          <DailyGoalWidget />
+          {/* Streak Calendar (Duolingo-style) + Daily Goal */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <StreakCalendar />
+            <DailyGoalWidget />
+          </div>
+
+          {/* KPIs */}
           <DashboardMetricsGrid stats={stats} metrics={metrics} />
           <DailyPlanWidget />
+
+          {/* Specialty Progress Bars */}
+          <SpecialtyProgressCard />
+
           <DashboardCharts stats={stats} metrics={metrics} />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
