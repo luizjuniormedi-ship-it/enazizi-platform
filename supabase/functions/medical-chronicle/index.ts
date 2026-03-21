@@ -66,23 +66,10 @@ Exame segmentar completo: estado geral, cabeça/pescoço, aparelho cardiovascula
    - Achados negativos relevantes (o que NÃO está presente)
    - Classificação quando aplicável (ex: Fisher, BIRADS, Child-Pugh)
    
-   **IMPORTANTE: Inclua uma imagem de referência real usando este formato:**
+   **IMPORTANTE: NÃO inclua links de imagens externas (URLs). Descreva a imagem textualmente com máxima riqueza de detalhes, como se estivesse ditando um laudo radiológico para um colega que não pode ver a imagem.**
    
-   ![Descrição da imagem](URL_DA_IMAGEM)
-   
-   Use imagens de fontes médicas abertas:
-   - Radiopaedia: https://radiopaedia.org/cases/... (busque casos similares)
-   - Wikimedia Commons: https://upload.wikimedia.org/wikipedia/commons/...
-   - OpenI NIH: https://openi.nlm.nih.gov/...
-   
-   Exemplos de URLs válidas para cada modalidade:
-   - RX Tórax pneumonia: https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Pneumonia_x-ray.jpg/800px-Pneumonia_x-ray.jpg
-   - RX Tórax derrame pleural: https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Effusion_x-ray.jpg/800px-Effusion_x-ray.jpg
-   - ECG IAM com supra ST: https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/AMI_ECG.jpg/800px-AMI_ECG.jpg
-   - TC crânio AVC: https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/MCA_territory_infarct.jpg/800px-MCA_territory_infarct.jpg
-   - RX abdome obstrução: https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Small_bowel_obstruction.jpg/800px-Small_bowel_obstruction.jpg
-   
-   Se não encontrar URL exata, descreva a imagem textualmente com riqueza de detalhes e use um placeholder descritivo.
+   Exemplo de descrição ideal:
+   > 📷 **Radiografia de tórax PA**: Opacidade homogênea ocupando 2/3 inferiores do hemitórax esquerdo, com velamento do seio costofrênico ipsilateral e desvio contralateral do mediastino. Parênquima pulmonar direito sem alterações. Silhueta cardíaca parcialmente obscurecida. Achados compatíveis com derrame pleural volumoso à esquerda.
 
 ### BLOCO 4 — CONDUTA E ARMADILHAS
 
