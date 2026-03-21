@@ -1,36 +1,46 @@
 
 
-# Aba de Feedbacks no Painel Admin
+# Adicionar Seção Obrigatória de Fisiopatologia no Prompt do Tutor IA
 
-## O que será feito
+## Problema
 
-Adicionar uma nova aba "Feedbacks" no painel Admin que exibe todas as avaliações enviadas pelos usuários, com notas por módulo e comentários.
+A estrutura atual do prompt pula de "Explicação simples" e "Mecanismos principais" direto para "Consequências clínicas". Falta uma seção dedicada de **fisiopatologia** que explique o "porquê" molecular/celular/hemodinâmico das doenças — essencial para provas de residência.
 
 ## Plano
 
-### 1. Criar componente `AdminFeedbackPanel`
-- Novo arquivo `src/components/admin/AdminFeedbackPanel.tsx`
-- Consulta a tabela `user_feedback` com join nos `profiles` para mostrar nome/email do usuário
-- Exibe uma lista/tabela com:
-  - Nome e email do usuário
-  - Data do feedback
-  - Notas (estrelas) por módulo em formato visual
-  - Texto do feedback
-  - Média geral do usuário
-- Estatísticas resumidas no topo: total de feedbacks, média geral por módulo, NPS simplificado
+### 1. Inserir seção 🔬 FISIOPATOLOGIA na estrutura obrigatória
 
-### 2. Adicionar aba no Admin
-- Em `src/pages/Admin.tsx`, adicionar uma nova `TabsTrigger` "⭐ Feedbacks" e `TabsContent` que renderiza o `AdminFeedbackPanel`
+No arquivo `supabase/functions/_shared/enazizi-prompt.ts`:
 
-### 3. RLS — garantir acesso admin
-- A tabela `user_feedback` precisa de uma policy para admins lerem todos os feedbacks (atualmente provavelmente só tem policy de insert do próprio usuário)
-- Migration: adicionar `SELECT` policy para admins usando `has_role(auth.uid(), 'admin')`
+- Renumerar os passos da "ESTRUTURA OBRIGATÓRIA DAS EXPLICAÇÕES" (linhas 70-129)
+- Inserir entre o passo 1 (Explicação simples) e o atual passo 2 (Mecanismos principais) uma nova seção:
 
-### Arquivos
+```
+2️⃣ 🔬 Fisiopatologia
+Explicar o mecanismo fisiopatológico em profundidade:
+- Via molecular ou celular envolvida
+- Cascata inflamatória, hemodinâmica ou metabólica
+- Alterações histopatológicas quando relevante
+- Conexão entre fisiopatologia e manifestações clínicas
 
-| Arquivo | Ação |
-|---------|------|
-| `src/components/admin/AdminFeedbackPanel.tsx` | Criar |
-| `src/pages/Admin.tsx` | Adicionar aba |
-| Migration SQL | RLS policy para admin ler feedbacks |
+Formato:
+🔬 FISIOPATOLOGIA
+Mecanismo central: [descrição]
+→ [etapa 1 da cascata]
+→ [etapa 2]
+→ [resultado clínico]
+
+Referências: citar base (Guyton, Robbins, Harrison) quando aplicável.
+```
+
+### 2. Atualizar sequência de entrega (blocos atômicos)
+
+- Linha 36: Incluir 🔬 FISIOPATOLOGIA na Mensagem 1 junto com explicação técnica
+- Ajuste: `Mensagem 1: 💡 EXPLICAÇÃO PARA LEIGO + 🔬 FISIOPATOLOGIA + 🔬 EXPLICAÇÃO TÉCNICA`
+
+### Arquivo modificado
+
+| Arquivo | Mudança |
+|---------|---------|
+| `supabase/functions/_shared/enazizi-prompt.ts` | Adicionar seção fisiopatologia obrigatória + renumerar passos |
 
