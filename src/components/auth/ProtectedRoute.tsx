@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { FACULDADES } from "@/constants/faculdades";
+import FaculdadeCombobox from "@/components/FaculdadeCombobox";
 
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -117,46 +118,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (profileStatus === "pending") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4 p-8 max-w-md">
-          <div className="h-16 w-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto">
-            <Clock className="h-8 w-8 text-amber-500" />
-          </div>
-          <h1 className="text-2xl font-bold">Aguardando Aprovação</h1>
-          <p className="text-muted-foreground">
-            Sua conta está aguardando aprovação do administrador. Você receberá acesso assim que for aprovado.
-          </p>
-          <div className="pt-4">
-            <Button variant="outline" onClick={() => signOut()} className="gap-2">
-              <LogOut className="h-4 w-4" /> Sair
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (profileStatus === "disabled") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4 p-8 max-w-md">
-          <div className="text-5xl">❌</div>
-          <h1 className="text-2xl font-bold text-destructive">Conta Rejeitada</h1>
-          <p className="text-muted-foreground">
-            Sua solicitação de acesso foi rejeitada pelo administrador. Entre em contato com o suporte se acredita que isso é um erro.
-          </p>
-          <Button variant="outline" onClick={() => signOut()} className="gap-2">
-            <LogOut className="h-4 w-4" /> Sair
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-
-  if (profileStatus === "active" && profileIncomplete) {
+  // Force onboarding BEFORE showing pending/approval screen
+  if (profileIncomplete) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="w-full max-w-md space-y-6 animate-fade-in">
@@ -248,16 +211,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
                     <Building className="h-3.5 w-3.5 text-muted-foreground" />
                     Faculdade
                   </Label>
-                  <Select value={formFaculdade} onValueChange={setFormFaculdade}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FACULDADES.map((f) => (
-                        <SelectItem key={f} value={f}>{f}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FaculdadeCombobox value={formFaculdade} onChange={setFormFaculdade} />
                 </div>
               </div>
             )}
@@ -280,6 +234,45 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       </div>
     );
   }
+
+  if (profileStatus === "pending") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4 p-8 max-w-md">
+          <div className="h-16 w-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto">
+            <Clock className="h-8 w-8 text-amber-500" />
+          </div>
+          <h1 className="text-2xl font-bold">Aguardando Aprovação</h1>
+          <p className="text-muted-foreground">
+            Sua conta está aguardando aprovação do administrador. Você receberá acesso assim que for aprovado.
+          </p>
+          <div className="pt-4">
+            <Button variant="outline" onClick={() => signOut()} className="gap-2">
+              <LogOut className="h-4 w-4" /> Sair
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (profileStatus === "disabled") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4 p-8 max-w-md">
+          <div className="text-5xl">❌</div>
+          <h1 className="text-2xl font-bold text-destructive">Conta Rejeitada</h1>
+          <p className="text-muted-foreground">
+            Sua solicitação de acesso foi rejeitada pelo administrador. Entre em contato com o suporte se acredita que isso é um erro.
+          </p>
+          <Button variant="outline" onClick={() => signOut()} className="gap-2">
+            <LogOut className="h-4 w-4" /> Sair
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
 
   return <>{children}</>;
 };

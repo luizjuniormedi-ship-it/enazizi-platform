@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { FACULDADES } from "@/constants/faculdades";
+import FaculdadeCombobox from "@/components/FaculdadeCombobox";
 
 const Profile = () => {
   const { user } = useAuth();
@@ -239,16 +239,7 @@ const Profile = () => {
                 <Building className="h-3.5 w-3.5 text-muted-foreground" />
                 Faculdade
               </Label>
-              <Select value={faculdade} onValueChange={setFaculdade}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {FACULDADES.map((f) => (
-                    <SelectItem key={f} value={f}>{f}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FaculdadeCombobox value={faculdade} onChange={setFaculdade} />
             </div>
           </div>
         )}
