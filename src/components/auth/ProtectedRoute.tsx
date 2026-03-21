@@ -66,12 +66,26 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const handleOnboardingSave = async () => {
     if (!user) return;
     const trimmedName = formName.trim();
-    const cleanPhone = formPhone.replace(/\D/g, "");
     const isStudent = formUserType === "estudante";
-    if (!trimmedName || !cleanPhone || cleanPhone.length < 10 || (isStudent && (!formPeriodo || !formFaculdade))) {
-      toast({ title: "Preencha todos os campos corretamente", variant: "destructive" });
+
+    const nameCheck = isValidName(trimmedName);
+    if (!nameCheck.valid) {
+      toast({ title: nameCheck.message || "Nome inválido", variant: "destructive" });
       return;
     }
+
+    const phoneCheck = isValidPhone(formPhone);
+    if (!phoneCheck.valid) {
+      toast({ title: phoneCheck.message || "Telefone inválido", variant: "destructive" });
+      return;
+    }
+
+    if (isStudent && (!formPeriodo || !formFaculdade)) {
+      toast({ title: "Selecione período e faculdade", variant: "destructive" });
+      return;
+    }
+
+    const cleanPhone = formPhone.replace(/\D/g, "");
     setSaving(true);
     try {
       const updateData: Record<string, any> = {
