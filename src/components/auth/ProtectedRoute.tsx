@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { FACULDADES } from "@/constants/faculdades";
 import FaculdadeCombobox from "@/components/FaculdadeCombobox";
+import { isValidPhone, isValidName, isProfileComplete } from "@/lib/profileValidation";
 
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
