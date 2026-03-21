@@ -203,10 +203,8 @@ O Ca²⁺ que entra na fase 2 ativa o **complexo actina-miosina** → contraçã
           ],
           clinicalTip: "Bloqueadores de canal de cálcio (diltiazem, verapamil) agem nas células de resposta lenta reduzindo automatismo (bradicardia) e nas rápidas reduzindo Ca²⁺ para contração (inotropismo negativo). Por isso são contraindicados na IC com FE reduzida!",
           images: [
-            { src: "/course-images/ecg-fig3-dipolo-pilha.jpg", caption: "Figura 3: Analogia do dipolo — assim como a pilha, o coração forma corrente elétrica ao criar polos de cargas opostas." },
-            { src: "/course-images/ecg-fig4-potencial-repouso.jpg", caption: "Figura 4: Gradientes iônicos e formação do potencial de repouso transmembrana." },
-            { src: "/course-images/ecg-fig5-celulas-automaticas.jpg", caption: "Figura 5: Potencial de ação das células automáticas (resposta lenta) e não-automáticas (resposta rápida)." },
-            { src: "/course-images/ecg-fig-canais-ionicos.jpg", caption: "Figura: Canais iônicos responsáveis por cada fase do potencial de ação." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Action_potential_ventr_myocyte.gif/800px-Action_potential_ventr_myocyte.gif", caption: "Potencial de ação do miócito ventricular — fases 0 a 4 com os canais iônicos correspondentes." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Cardiac_action_potential.svg/800px-Cardiac_action_potential.svg.png", caption: "Comparação dos potenciais de ação: células automáticas (nodos) vs não-automáticas (ventrículos)." },
           ],
           quiz: [
             {
