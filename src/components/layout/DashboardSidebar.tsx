@@ -46,6 +46,7 @@ const navGroups: NavGroup[] = [
       { to: "/dashboard/gerar-flashcards", icon: FlipVertical, label: "🃏 Gerador Flashcards" },
       { to: "/dashboard/resumos", icon: BookOpen, label: "📖 Resumidor" },
       { to: "/dashboard/apostilas", icon: BookOpen, label: "📚 Apostilas & Resumos" },
+      { to: "/dashboard/cronicas", icon: BookOpen, label: "📖 Crônicas Médicas" },
     ],
   },
   {
