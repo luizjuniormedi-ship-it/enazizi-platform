@@ -228,6 +228,15 @@ const MedicalImageQuiz = () => {
                 alt={`${currentImage.category} - Quiz`}
                 className="max-w-full max-h-[400px] object-contain"
                 loading="eager"
+                referrerPolicy="no-referrer"
+                crossOrigin="anonymous"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (!target.dataset.retried) {
+                    target.dataset.retried = "1";
+                    target.src = currentImage.image_url + "?t=" + Date.now();
+                  }
+                }}
               />
               <div className="absolute top-3 left-3 flex gap-2">
                 <Badge className={difficultyLabels[currentImage.difficulty]?.color || ""}>
@@ -324,7 +333,21 @@ const MedicalImageQuiz = () => {
               }}
             >
               <div className="relative bg-black/80 h-40 flex items-center justify-center">
-                <img src={img.image_url} alt="Quiz" className="max-h-full max-w-full object-contain" loading="lazy" />
+                <img
+                  src={img.image_url}
+                  alt="Quiz"
+                  className="max-h-full max-w-full object-contain"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (!target.dataset.retried) {
+                      target.dataset.retried = "1";
+                      target.src = img.image_url + "?t=" + Date.now();
+                    }
+                  }}
+                />
                 <Badge className={cn("absolute top-2 left-2", difficultyLabels[img.difficulty]?.color)}>
                   {difficultyLabels[img.difficulty]?.label}
                 </Badge>
