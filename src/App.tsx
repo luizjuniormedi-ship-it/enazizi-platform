@@ -52,6 +52,7 @@ const Install = lazy(() => import("./pages/Install"));
 const StudyGuides = lazy(() => import("./pages/StudyGuides"));
 const MedicalChronicles = lazy(() => import("./pages/MedicalChronicles"));
 const MedicalImageQuiz = lazy(() => import("./pages/MedicalImageQuiz"));
+const Courses = lazy(() => import("./pages/Courses"));
 
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
