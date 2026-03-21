@@ -50,6 +50,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const AnamnesisTrainer = lazy(() => import("./pages/AnamnesisTrainer"));
 const Install = lazy(() => import("./pages/Install"));
 const StudyGuides = lazy(() => import("./pages/StudyGuides"));
+const MedicalChronicles = lazy(() => import("./pages/MedicalChronicles"));
 
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
