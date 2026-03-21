@@ -1,46 +1,35 @@
 
 
-# Adicionar Seção Obrigatória de Fisiopatologia no Prompt do Tutor IA
+## Plano: Adicionar universidades do Rio de Janeiro ao cadastro
 
-## Problema
+### Problema
+A lista de faculdades está duplicada em 7 arquivos diferentes, cada um com apenas "UNIG", "Estácio" e "Outra". Precisa incluir as principais universidades do RJ e centralizar a lista.
 
-A estrutura atual do prompt pula de "Explicação simples" e "Mecanismos principais" direto para "Consequências clínicas". Falta uma seção dedicada de **fisiopatologia** que explique o "porquê" molecular/celular/hemodinâmico das doenças — essencial para provas de residência.
+### Solução
 
-## Plano
+**1. Criar arquivo centralizado `src/constants/faculdades.ts`**
 
-### 1. Inserir seção 🔬 FISIOPATOLOGIA na estrutura obrigatória
+Lista completa das universidades do Rio de Janeiro:
+- UFRJ, UERJ, UFF, UNIRIO, PUC-Rio, UNIG, Estácio, UniRedentor, UNIFESO, UNESA, Souza Marques, FTESM, IBMR, Universidade Castelo Branco, UNIGRANRIO, Universidade Vassouras, UNIFOA, FMP/Fase, Arthur Sá Earp Neto (FASE), Outra
 
-No arquivo `supabase/functions/_shared/enazizi-prompt.ts`:
+**2. Atualizar 7 arquivos para importar da constante centralizada**
 
-- Renumerar os passos da "ESTRUTURA OBRIGATÓRIA DAS EXPLICAÇÕES" (linhas 70-129)
-- Inserir entre o passo 1 (Explicação simples) e o atual passo 2 (Mecanismos principais) uma nova seção:
-
-```
-2️⃣ 🔬 Fisiopatologia
-Explicar o mecanismo fisiopatológico em profundidade:
-- Via molecular ou celular envolvida
-- Cascata inflamatória, hemodinâmica ou metabólica
-- Alterações histopatológicas quando relevante
-- Conexão entre fisiopatologia e manifestações clínicas
-
-Formato:
-🔬 FISIOPATOLOGIA
-Mecanismo central: [descrição]
-→ [etapa 1 da cascata]
-→ [etapa 2]
-→ [resultado clínico]
-
-Referências: citar base (Guyton, Robbins, Harrison) quando aplicável.
+Remover a declaração local `const FACULDADES = [...]` e substituir por:
+```typescript
+import { FACULDADES } from "@/constants/faculdades";
 ```
 
-### 2. Atualizar sequência de entrega (blocos atômicos)
+Arquivos afetados:
+- `src/pages/Profile.tsx`
+- `src/components/auth/ProtectedRoute.tsx`
+- `src/components/professor/VideoRoom.tsx`
+- `src/components/professor/ProfessorPlantao.tsx`
+- `src/components/professor/StudentTracker.tsx`
+- `src/components/professor/ClassAnalytics.tsx`
+- `src/pages/ProfessorDashboard.tsx`
 
-- Linha 36: Incluir 🔬 FISIOPATOLOGIA na Mensagem 1 junto com explicação técnica
-- Ajuste: `Mensagem 1: 💡 EXPLICAÇÃO PARA LEIGO + 🔬 FISIOPATOLOGIA + 🔬 EXPLICAÇÃO TÉCNICA`
-
-### Arquivo modificado
-
-| Arquivo | Mudança |
-|---------|---------|
-| `supabase/functions/_shared/enazizi-prompt.ts` | Adicionar seção fisiopatologia obrigatória + renumerar passos |
+### Detalhes técnicos
+- Nenhuma mudança no banco de dados necessária (campo `faculdade` é texto livre)
+- A lista será ordenada alfabeticamente, com "Outra" sempre por último
+- Sem impacto em dados existentes
 
