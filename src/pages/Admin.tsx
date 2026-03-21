@@ -26,6 +26,8 @@ const Admin = () => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filterFaculdade, setFilterFaculdade] = useState<string>("all");
+  const [filterPeriodo, setFilterPeriodo] = useState<string>("all");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
 
