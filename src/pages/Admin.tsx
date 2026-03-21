@@ -263,11 +263,11 @@ const Admin = () => {
       {/* Users with tabs */}
       <div className="glass-card p-6">
         <div className="flex flex-col gap-3 mb-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <UserCog className="h-5 w-5" /> Gerenciar Usuários
             </h2>
-            <div className="relative w-64">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Buscar por nome ou email..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
@@ -277,7 +277,7 @@ const Admin = () => {
           <div className="flex flex-wrap items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <Select value={filterFaculdade} onValueChange={setFilterFaculdade}>
-              <SelectTrigger className="w-[200px] h-8 text-xs">
+              <SelectTrigger className="w-full sm:w-[200px] h-8 text-xs">
                 <SelectValue placeholder="Universidade" />
               </SelectTrigger>
               <SelectContent>
@@ -289,7 +289,7 @@ const Admin = () => {
             </Select>
 
             <Select value={filterPeriodo} onValueChange={setFilterPeriodo}>
-              <SelectTrigger className="w-[140px] h-8 text-xs">
+              <SelectTrigger className="w-full sm:w-[140px] h-8 text-xs">
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
               <SelectContent>
