@@ -522,7 +522,7 @@ const MedicalChronicles = () => {
                   msg.role === "user" ? "max-w-[85%] sm:max-w-[75%] bg-primary text-primary-foreground" : "w-full bg-secondary text-secondary-foreground"
                 }`}>
                   {msg.role === "assistant" ? (
-                    <InteractiveQuestionRenderer content={msg.content} />
+                    <ChronicleRenderer content={msg.content} />
                   ) : (
                     <span className="whitespace-pre-wrap">{msg.content}</span>
                   )}
