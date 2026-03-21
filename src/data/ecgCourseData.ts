@@ -966,9 +966,7 @@ O digital **bloqueia a bomba Na⁺/K⁺ ATPase** → acúmulo de Na⁺ intracelu
           ],
           clinicalTip: "Quando encontrar QT prolongado no ECG, diferencie: se tem onda U proeminente e T achatada → hipocalemia; se o ST está alargado com T preservada → hipocalcemia. O tratamento é completamente diferente! Reponha K⁺ ou Ca²⁺ conforme o caso.",
           images: [
-            { src: "/course-images/ecg-fig-osborn-hipotermia.jpg", caption: "Onda J de Osborn e encurtamento do ST na hipercalcemia — note o supra de V3 a V6." },
-            { src: "/course-images/ecg-fig-hipocalcemia.jpg", caption: "Comparação do prolongamento do QT: na hipocalemia (B) pelo aumento da onda U; na hipocalcemia (C) pelo alargamento do ST." },
-            { src: "/course-images/ecg-fig-digital-efeito.jpg", caption: "Efeito digitálico: infra de ST em aspecto de 'pá de pedreiro' (Bigode de Salvador Dalí)." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Osborn_wave.svg/800px-Osborn_wave.svg.png", caption: "Onda J de Osborn — achado clássico na hipotermia, também presente na hipercalcemia." },
           ],
           quiz: [
             {
