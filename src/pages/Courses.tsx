@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
 import { ecgCourse, rxCourse, type CourseData, type CourseModule, type CourseLesson } from "@/data/ecgCourseData";
-import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, ChevronDown, Heart, Lock, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, ChevronDown, Heart, Image, Lock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import LessonQuiz from "@/components/courses/LessonQuiz";
 
 const STORAGE_KEY = "course-progress";
 
