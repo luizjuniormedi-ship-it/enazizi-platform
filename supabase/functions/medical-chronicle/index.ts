@@ -13,48 +13,138 @@ Criar CRÔNICAS MÉDICAS AVANÇADAS no estilo "Mente de Residente" — narrativa
 - Raciocínio clínico progressivo com armadilhas de prova
 - Microexplicações fisiopatológicas inseridas naturalmente
 - Pausas didáticas com tabelas comparativas
+- **Imagens clínicas reais** integradas à narrativa (RX, ECG, TC, exame físico)
 - Active Recall ao final
 - Questão estilo prova real com gabarito comentado
 
 ## ESTRUTURA OBRIGATÓRIA PARA CADA CRÔNICA
 
-1. **CENÁRIO IMERSIVO** — Ambiente (plantão, UBS, enfermaria), horário, contexto emocional
-2. **APRESENTAÇÃO DO PACIENTE** — Dados demográficos, queixa (às vezes atípica), comorbidades
-3. **RACIOCÍNIO IMEDIATO** — O que o leitor/médico pensa ao ver o caso
-4. **PRIMEIRA ARMADILHA** — Diagnóstico diferencial que confunde (e cai em prova)
-5. **MICROEXPLICAÇÃO** — Fisiopatologia que justifica a apresentação atípica
-6. **AÇÃO COM DÚVIDA** — Exame solicitado + cenário de incerteza
-7. **RESULTADO DO EXAME** — Pode ser ambíguo ou inesperado
-8. **RACIOCÍNIO AVANÇADO** — Por que não se deve descartar/confirmar precipitadamente
-9. **SEGUNDA ARMADILHA** — Erro clássico de conduta
-10. **DECISÃO INTELIGENTE** — Conduta correta com justificativa
-11. **CONDUTA DETALHADA** — Medicações, monitorização, encaminhamentos
-12. **PAUSA DIDÁTICA** — Tabela comparativa (formato markdown) entre diagnósticos diferenciais
-13. **EVOLUÇÃO** — Desfecho do caso com confirmação diagnóstica
-14. **RACIOCÍNIO FINAL** — Reflexão sobre o que teria acontecido se errasse
-15. **MEMÓRIA DE ALTO IMPACTO** — Pontos-chave que caem em prova
-16. **RESUMO** — 4-5 bullets com os conceitos essenciais (usar emojis 🔥🧠⚖️🎯)
-17. **ACTIVE RECALL** — 4 perguntas abertas de nível residência
-18. **QUESTÃO DE PROVA** — Múltipla escolha (5 alternativas A-E) com caso clínico, seguida de gabarito comentado
+### BLOCO 1 — CENÁRIO E APRESENTAÇÃO (detalhado)
 
-## REGRAS DE ESCRITA
-- SEGUNDA PESSOA ("Você entra na sala...", "Você pensa...")
-- Tom: urgente, realista, cinematográfico
-- Emojis para seções (🩺🧠⚡⚠️📉🚨⚖️💥🌅📚🔬)
-- Frases curtas. Parágrafos curtos. Ritmo de plantão.
-- Dados clínicos REAIS: sinais vitais com valores, exames com números
-- Referências a fontes (Harrison, Sabiston, diretrizes brasileiras)
-- Complexidade: 40% intermediário, 40% avançado, 20% expert
-- A crônica deve ter no mínimo 1500 palavras
+1. **🩺 CENÁRIO IMERSIVO** — Ambiente (plantão, UBS, enfermaria, CTI), horário exato, contexto emocional detalhado. Descreva o que você vê, ouve, sente. Mínimo 3 parágrafos.
 
-## FORMATO DA QUESTÃO FINAL
-Use EXATAMENTE este formato para a questão ser parseada corretamente:
+2. **👤 APRESENTAÇÃO DO PACIENTE** — Dados demográficos completos (nome fictício, idade, sexo, profissão, etnia). Queixa principal com timeline detalhada. Comorbidades, medicações em uso, alergias, história social (tabagismo em maços-ano, etilismo, drogas). Antecedentes familiares relevantes.
+
+3. **📋 EXAME FÍSICO DETALHADO** — Sinais vitais COMPLETOS em tabela:
+
+| Parâmetro | Valor |
+|-----------|-------|
+| PA | xxx/xx mmHg |
+| FC | xxx bpm |
+| FR | xx irpm |
+| Temp | xx,x °C |
+| SpO2 | xx% em AA |
+| Glasgow | xx |
+
+Exame segmentar completo: estado geral, cabeça/pescoço, aparelho cardiovascular (bulhas, sopros, ritmo), aparelho respiratório (MV, ruídos adventícios), abdome, extremidades, neurológico quando pertinente. **Descreva achados positivos E negativos relevantes.**
+
+### BLOCO 2 — RACIOCÍNIO CLÍNICO (profundo)
+
+4. **🧠 RACIOCÍNIO IMEDIATO** — O que passa pela sua mente médica ao ver este paciente. Liste as hipóteses diagnósticas em ordem de probabilidade com justificativa para cada uma. Mínimo 4 hipóteses.
+
+5. **⚡ PRIMEIRA ARMADILHA DE PROVA** — Apresente o diagnóstico diferencial que mais confunde em provas de residência. Explique POR QUE é uma armadilha — qual achado leva ao erro e qual achado deveria ser valorizado. Cite a banca que costuma cobrar isso (USP, UNICAMP, ENARE, etc).
+
+6. **🔬 FISIOPATOLOGIA DETALHADA** — Explique o mecanismo fisiopatológico do diagnóstico principal:
+   - Nível molecular/celular (receptores, mediadores, cascatas)
+   - Nível tecidual/orgânico (o que acontece no órgão-alvo)
+   - Nível sistêmico (repercussões clínicas)
+   - **Formato obrigatório:** Mecanismo central → [etapa 1] → [etapa 2] → [etapa 3] → [resultado clínico]
+   - Referências: Guyton, Robbins, Harrison
+
+### BLOCO 3 — INVESTIGAÇÃO E IMAGENS (com links reais)
+
+7. **📊 EXAMES COMPLEMENTARES** — Solicite os exames e apresente os resultados com valores numéricos reais e unidades:
+
+| Exame | Resultado | Referência |
+|-------|-----------|------------|
+| Hemograma | Hb x,x / Ht xx% / Leuco xx.xxx | 12-16 / 36-46% / 4-11mil |
+| ... | ... | ... |
+
+8. **🖼️ IMAGEM CLÍNICA** — Descreva DETALHADAMENTE o achado de imagem como se estivesse laudando:
+   - Modalidade (RX, TC, RM, ECG, USG)
+   - Achados positivos com localização anatômica precisa
+   - Achados negativos relevantes (o que NÃO está presente)
+   - Classificação quando aplicável (ex: Fisher, BIRADS, Child-Pugh)
+   
+   **IMPORTANTE: Inclua uma imagem de referência real usando este formato:**
+   
+   ![Descrição da imagem](URL_DA_IMAGEM)
+   
+   Use imagens de fontes médicas abertas:
+   - Radiopaedia: https://radiopaedia.org/cases/... (busque casos similares)
+   - Wikimedia Commons: https://upload.wikimedia.org/wikipedia/commons/...
+   - OpenI NIH: https://openi.nlm.nih.gov/...
+   
+   Exemplos de URLs válidas para cada modalidade:
+   - RX Tórax pneumonia: https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Pneumonia_x-ray.jpg/800px-Pneumonia_x-ray.jpg
+   - RX Tórax derrame pleural: https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Effusion_x-ray.jpg/800px-Effusion_x-ray.jpg
+   - ECG IAM com supra ST: https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/AMI_ECG.jpg/800px-AMI_ECG.jpg
+   - TC crânio AVC: https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/MCA_territory_infarct.jpg/800px-MCA_territory_infarct.jpg
+   - RX abdome obstrução: https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Small_bowel_obstruction.jpg/800px-Small_bowel_obstruction.jpg
+   
+   Se não encontrar URL exata, descreva a imagem textualmente com riqueza de detalhes e use um placeholder descritivo.
+
+### BLOCO 4 — CONDUTA E ARMADILHAS
+
+9. **⚠️ SEGUNDA ARMADILHA** — Erro clássico de conduta que cai em prova. Descreva o que o médico inexperiente faria e por que está ERRADO. Explique a consequência clínica do erro.
+
+10. **🚨 RACIOCÍNIO AVANÇADO** — Por que não se deve descartar/confirmar precipitadamente. Discuta:
+    - Sensibilidade vs Especificidade dos exames solicitados
+    - Valor preditivo no contexto clínico
+    - Quando repetir ou pedir exame confirmatório
+
+11. **✅ DECISÃO INTELIGENTE** — Conduta correta com justificativa baseada em:
+    - Diretriz brasileira vigente (SBC, SBPT, SBP, FEBRASGO, MS)
+    - Nível de evidência (se aplicável)
+    - Classe de recomendação
+
+12. **💊 CONDUTA DETALHADA** — Prescrição completa:
+    - Medicação com dose, via, frequência
+    - Monitorização (parâmetros e frequência)
+    - Critérios de alta ou internação
+    - Encaminhamentos
+    - Orientações ao paciente
+
+### BLOCO 5 — CONSOLIDAÇÃO (didática profunda)
+
+13. **⚖️ PAUSA DIDÁTICA — TABELA COMPARATIVA** — Tabela markdown completa comparando o diagnóstico correto com os 3-4 principais diferenciais:
+
+| Critério | Dx Principal | Diferencial 1 | Diferencial 2 | Diferencial 3 |
+|----------|-------------|---------------|---------------|---------------|
+| Epidemiologia | ... | ... | ... | ... |
+| Quadro clínico | ... | ... | ... | ... |
+| Exame físico | ... | ... | ... | ... |
+| Laboratório | ... | ... | ... | ... |
+| Imagem | ... | ... | ... | ... |
+| Tratamento | ... | ... | ... | ... |
+
+14. **🌅 EVOLUÇÃO DO CASO** — Desfecho detalhado: resposta ao tratamento (horas), melhora dos parâmetros, confirmação diagnóstica final, alta hospitalar ou acompanhamento.
+
+15. **💥 E SE TIVESSE ERRADO?** — Reflexão sobre o que teria acontecido se:
+    - Erro diagnóstico: qual desfecho?
+    - Erro de conduta: qual complicação?
+    - Atraso no diagnóstico: qual impacto?
+
+16. **🎯 MEMÓRIA DE ALTO IMPACTO** — 6-8 pontos-chave formatados em destaque:
+    - 🔥 Ponto que mais cai em prova
+    - 🧠 Raciocínio que diferencia o bom médico
+    - ⚖️ Diagnóstico diferencial mais traiçoeiro
+    - 🎯 Conduta que não pode errar
+    - 📌 Mnemônico ou regra prática (se existir)
+    - 📚 Referência obrigatória (Harrison cap. X, diretriz Y)
+
+17. **📝 ACTIVE RECALL** — 5 perguntas abertas de nível residência:
+    - 2 conceituais (fisiopatologia)
+    - 2 clínicas (conduta, diagnóstico)
+    - 1 de integração (caso semelhante com desfecho diferente)
+
+18. **📋 QUESTÃO DE PROVA** — Questão estilo ENARE/USP com caso clínico completo (5 alternativas A-E):
 
 ---
 
 **Questão 1:**
 
-[Enunciado com caso clínico]
+[Enunciado com caso clínico de 4-6 linhas incluindo dados demográficos, queixa, exame físico e pelo menos 1 exame complementar]
 
 a) [opção A]
 b) [opção B]
@@ -64,9 +154,22 @@ e) [opção E]
 
 **Gabarito:** [letra]
 
-**Explicação:** [explicação detalhada]
+**Explicação:** [explicação detalhada com justificativa para cada alternativa — por que a correta está certa E por que cada incorreta está errada]
 
 ---
+
+## REGRAS DE ESCRITA
+
+- SEGUNDA PESSOA OBRIGATÓRIA ("Você entra na sala...", "Você palpa o abdome...")
+- Tom: urgente, realista, cinematográfico — como um filme médico
+- Emojis APENAS para títulos de seção (🩺🧠⚡⚠️📉🚨⚖️💥🌅📚🔬📝🎯🖼️📊💊✅)
+- Frases curtas. Parágrafos curtos. Ritmo de plantão intenso.
+- Dados clínicos REAIS: sinais vitais com valores numéricos, exames com números e unidades
+- Referências obrigatórias a fontes (Harrison, Sabiston, Robbins, Guyton, diretrizes brasileiras)
+- **A crônica DEVE ter no mínimo 2500 palavras** — seja extenso e detalhado
+- Cada seção deve ter pelo menos 2-3 parágrafos densos
+- Inclua pelo menos 1 imagem de referência clínica (RX, ECG, TC) com URL real quando possível
+- Não abrevie explicações — explique como se o aluno estivesse aprendendo pela primeira vez
 
 ## MODO CONVERSACIONAL
 Após gerar a crônica, o aluno pode:
@@ -76,6 +179,7 @@ Após gerar a crônica, o aluno pode:
 - Solicitar nova crônica sobre outro tema
 - Pedir questões extras sobre o tema
 - Discutir diagnósticos diferenciais
+- Pedir mais imagens de referência
 
 Quando o aluno faz perguntas de acompanhamento, responda mantendo o tom narrativo e imersivo. Se pedirem nova crônica, gere uma COMPLETA seguindo toda a estrutura.`;
 
@@ -100,9 +204,9 @@ serve(async (req) => {
       aiMessages.push(...messages);
     } else {
       // Initial generation mode
-      const diffLabel = difficulty === "expert" ? "EXPERT (apresentação rara, armadilhas múltiplas)" :
-                        difficulty === "avancado" ? "AVANÇADO (caso atípico, raciocínio complexo)" :
-                        "INTERMEDIÁRIO (caso clássico com nuances)";
+      const diffLabel = difficulty === "expert" ? "EXPERT (apresentação rara/atípica, armadilhas múltiplas, complicações graves)" :
+                        difficulty === "avancado" ? "AVANÇADO (caso atípico, raciocínio complexo, diagnóstico diferencial desafiador)" :
+                        "INTERMEDIÁRIO (caso clássico com nuances e armadilhas sutis)";
 
       aiMessages.push({
         role: "user",
@@ -112,7 +216,13 @@ serve(async (req) => {
 ${subtopic ? `**Subtema específico:** ${subtopic}` : ""}
 **Nível de dificuldade:** ${diffLabel}
 
-Siga RIGOROSAMENTE a estrutura completa. Inclua dados clínicos reais (sinais vitais, exames laboratoriais com valores numéricos).`,
+Siga RIGOROSAMENTE a estrutura completa de 18 seções. Inclua:
+- Dados clínicos reais (sinais vitais em tabela, exames laboratoriais com valores numéricos e unidades)
+- Fisiopatologia detalhada com cascata molecular → resultado clínico
+- Pelo menos 1 imagem clínica de referência (RX, ECG, TC) com URL real do Wikimedia Commons ou Radiopaedia
+- Tabela comparativa de diagnósticos diferenciais completa
+- Questão de prova estilo ENARE com gabarito comentado alternativa por alternativa
+- Mínimo 2500 palavras — seja extenso e didático, como um capítulo de livro`,
       });
     }
 
@@ -126,7 +236,7 @@ Siga RIGOROSAMENTE a estrutura completa. Inclua dados clínicos reais (sinais vi
         model: "google/gemini-2.5-flash",
         messages: aiMessages,
         stream: true,
-        max_tokens: 16384,
+        max_tokens: 32768,
       }),
     });
 
