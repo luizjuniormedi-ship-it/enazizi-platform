@@ -9,10 +9,10 @@ const Navbar = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
-      <div className="container flex h-16 items-center justify-between">
+      <div className="container flex h-14 sm:h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
-          <img src={enazizi} alt="MedStudy AI" className="h-9 w-9 rounded-lg object-cover" />
-          <span className="text-lg font-bold">MedStudy AI</span>
+          <img src={enazizi} alt="MedStudy AI" className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg object-cover" />
+          <span className="text-base sm:text-lg font-bold">MedStudy AI</span>
         </Link>
 
         <div className="hidden md:flex items-center gap-8">
@@ -42,8 +42,9 @@ const Navbar = () => {
 
       {open && (
         <div className="md:hidden border-t border-border/50 bg-background/95 backdrop-blur-xl p-4 space-y-3">
-          <a href="#features" className="block text-sm text-muted-foreground py-2">Recursos</a>
-          <a href="#pricing" className="block text-sm text-muted-foreground py-2">Planos</a>
+          <a href="#features" className="block text-sm text-muted-foreground py-2" onClick={() => setOpen(false)}>Recursos</a>
+          <a href="#pricing" className="block text-sm text-muted-foreground py-2" onClick={() => setOpen(false)}>Planos</a>
+          <a href="#faq" className="block text-sm text-muted-foreground py-2" onClick={() => setOpen(false)}>FAQ</a>
           <div className="flex gap-2 pt-2">
             <Button variant="ghost" asChild className="flex-1"><Link to="/login">Entrar</Link></Button>
             <Button asChild className="flex-1"><Link to="/register">Começar grátis</Link></Button>

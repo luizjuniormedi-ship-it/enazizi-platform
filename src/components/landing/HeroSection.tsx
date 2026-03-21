@@ -19,7 +19,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
+    <section className="relative min-h-[85vh] sm:min-h-screen flex items-center justify-center overflow-hidden pt-16">
       <video
         ref={videoRef}
         autoPlay
@@ -38,13 +38,13 @@ const HeroSection = () => {
       </button>
       <div className="absolute inset-0" style={{ background: "var(--gradient-hero)" }} />
 
-      <div className="container relative z-10 text-center py-20">
-        <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-4 py-1.5 mb-8 animate-fade-in">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <span className="text-sm text-primary font-medium">Plataforma de ensino com IA para Residência Médica</span>
+      <div className="container relative z-10 text-center py-12 sm:py-20 px-4">
+        <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-3 sm:px-4 py-1.5 mb-6 sm:mb-8 animate-fade-in">
+          <Sparkles className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-primary" />
+          <span className="text-xs sm:text-sm text-primary font-medium">Plataforma de ensino com IA para Residência Médica</span>
         </div>
 
-        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black leading-tight mb-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+        <h1 className="text-3xl sm:text-5xl md:text-7xl font-black leading-tight mb-4 sm:mb-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
           Sua aprovação em
           <br />
           <span className="gradient-text">Residência Médica</span>
@@ -52,25 +52,24 @@ const HeroSection = () => {
           começa aqui.
         </h1>
 
-        <p className="max-w-2xl mx-auto text-lg md:text-xl text-muted-foreground mb-10 animate-fade-in" style={{ animationDelay: "0.2s" }}>
+        <p className="max-w-2xl mx-auto text-base sm:text-lg md:text-xl text-muted-foreground mb-8 sm:mb-10 animate-fade-in" style={{ animationDelay: "0.2s" }}>
           Aulas completas, active recall, questões estilo prova, discussão clínica detalhada
           e análise de desempenho por especialidade — tudo guiado por IA.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: "0.3s" }}>
-          <Button size="lg" asChild className="text-lg px-8 py-6 glow">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center animate-fade-in" style={{ animationDelay: "0.3s" }}>
+          <Button size="lg" asChild className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 glow">
             <Link to="/register">
               Começar grátis <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>
-          <Button size="lg" variant="outline" asChild className="text-lg px-8 py-6">
+          <Button size="lg" variant="outline" asChild className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6">
             <Link to="/login">Entrar</Link>
           </Button>
-          <Button size="lg" variant="ghost" asChild className="text-lg px-8 py-6 sm:hidden">
+          <Button size="lg" variant="ghost" asChild className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 sm:hidden">
             <a href="#features">Ver recursos</a>
           </Button>
         </div>
-
       </div>
     </section>
   );

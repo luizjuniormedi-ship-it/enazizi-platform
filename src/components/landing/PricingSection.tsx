@@ -65,56 +65,55 @@ const plans = [
 
 const PricingSection = () => {
   return (
-    <section id="pricing" className="py-24 relative overflow-hidden">
-      {/* Background accent */}
+    <section id="pricing" className="py-16 sm:py-24 relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-primary/5 blur-3xl" />
       </div>
 
-      <div className="container relative z-10">
-        <div className="text-center mb-16">
+      <div className="container relative z-10 px-4">
+        <div className="text-center mb-10 sm:mb-16">
           <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
             Planos
           </span>
-          <h2 className="text-3xl md:text-5xl font-bold mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold mb-3 sm:mb-4">
             Conheça nossos <span className="gradient-text">planos</span>
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
             Escolha o nível ideal para acelerar sua preparação e alcançar a aprovação.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-7xl mx-auto items-stretch">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 max-w-7xl mx-auto items-stretch">
           {plans.map((plan) => {
             const Icon = plan.icon;
             return (
               <div
                 key={plan.name}
-                className={`relative rounded-2xl border p-6 flex flex-col transition-all duration-300 hover:-translate-y-1 ${
+                className={`relative rounded-2xl border p-4 sm:p-6 flex flex-col transition-all duration-300 hover:-translate-y-1 ${
                   plan.popular
                     ? "border-primary/60 bg-primary/5 shadow-[0_0_40px_hsl(var(--primary)/0.12)]"
                     : "border-border/60 bg-card/80 hover:border-primary/30"
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-bold text-primary-foreground tracking-wide uppercase">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 sm:px-4 py-1 text-[10px] sm:text-xs font-bold text-primary-foreground tracking-wide uppercase whitespace-nowrap">
                     Mais popular
                   </div>
                 )}
 
-                <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl mb-4 ${
+                <div className={`inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl mb-3 sm:mb-4 ${
                   plan.popular ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground"
                 }`}>
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
 
-                <h3 className="text-xl font-bold mb-1">{plan.name}</h3>
-                <p className="text-sm text-muted-foreground mb-6">{plan.desc}</p>
+                <h3 className="text-base sm:text-xl font-bold mb-0.5 sm:mb-1">{plan.name}</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">{plan.desc}</p>
 
-                <ul className="space-y-3 mb-8 flex-1">
+                <ul className="space-y-2 sm:space-y-3 mb-5 sm:mb-8 flex-1">
                   {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-sm">
-                      <Check className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
+                    <li key={f} className="flex items-start gap-1.5 sm:gap-2.5 text-xs sm:text-sm">
+                      <Check className={`h-3.5 w-3.5 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0 ${
                         plan.popular ? "text-primary" : "text-primary/70"
                       }`} />
                       <span className="text-foreground/90">{f}</span>
@@ -124,8 +123,9 @@ const PricingSection = () => {
 
                 <Button
                   asChild
+                  size="sm"
                   variant={plan.popular ? "default" : "outline"}
-                  className={`w-full font-semibold ${plan.popular ? "shadow-[0_4px_20px_hsl(var(--primary)/0.3)]" : ""}`}
+                  className={`w-full font-semibold text-xs sm:text-sm ${plan.popular ? "shadow-[0_4px_20px_hsl(var(--primary)/0.3)]" : ""}`}
                 >
                   <Link to="/register">{plan.cta}</Link>
                 </Button>
