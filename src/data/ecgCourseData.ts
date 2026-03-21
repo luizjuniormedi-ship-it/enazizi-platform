@@ -297,6 +297,34 @@ Três vetores principais em sequência:
             "O 2° vetor ventricular (parede livre do VE) é o de maior amplitude — determina o eixo do QRS",
           ],
           clinicalTip: "Se a onda T está discordante do QRS (apontam em direções opostas), há alteração da repolarização: isquemia, sobrecarga ventricular, bloqueio de ramo ou efeito de drogas. A discordância esperada no BRE é 'secundária' — se concordar, é sinal de IAM (critério de Sgarbossa)!",
+          images: [
+            { src: "/course-images/ecg-fig-vetores-dipolo.jpg", caption: "Vetores cardíacos e sua relação com as derivações — o registro é positivo quando o vetor aponta para o eletrodo explorador." },
+            { src: "/course-images/ecg-fig-derivacoes-registro.jpg", caption: "Relação entre vetores e derivações — o 'rosto' do ECG aparece conforme a posição do olho elétrico." },
+            { src: "/course-images/ecg-fig-ativacao-atrial.jpg", caption: "Ativação elétrica atrial — a onda P é formada pela resultante da despolarização dos átrios direito e esquerdo." },
+            { src: "/course-images/ecg-fig-ativacao-ventricular.jpg", caption: "Os três vetores da despolarização ventricular e a formação do complexo QRS." },
+            { src: "/course-images/ecg-fig-repolarizacao-ventricular.jpg", caption: "Repolarização ventricular — inicia-se pelo epicárdio, gerando onda T de mesma polaridade do QRS." },
+            { src: "/course-images/ecg-fig-pqrst-completo.jpg", caption: "Figura 23: Atividade elétrica do coração e sua repercussão completa no ECG — P, QRS, T e segmentos." },
+          ],
+          quiz: [
+            {
+              question: "Por que o registro eletrocardiográfico é isoelétrico (linha reta) durante o segmento PR?",
+              options: ["Não há atividade elétrica alguma", "A onda P está sendo formada nesse momento", "As poucas células do NAV/His-Purkinje geram vetores imperceptíveis", "O coração está em assistolia transitória"],
+              correctIndex: 2,
+              explanation: "O segmento PR corresponde à condução pelo NAV e sistema His-Purkinje. Como são poucas células, os vetores formados são insignificantes e não produzem deflexão no ECG — mas HÁ atividade elétrica acontecendo."
+            },
+            {
+              question: "Nos ventrículos, a repolarização e a despolarização geram vetores de mesmo sentido porque:",
+              options: ["A repolarização e despolarização seguem o mesmo caminho", "As últimas áreas despolarizadas são as primeiras a repolarizar", "O NSA controla ambos os processos de forma idêntica", "O Ca²⁺ impede a inversão vetorial"],
+              correctIndex: 1,
+              explanation: "Nos ventrículos, a repolarização começa pelo epicárdio (última região despolarizada) — o sentido do processo é inverso, mas os vetores resultantes apontam na mesma direção, gerando QRS e onda T de mesma polaridade."
+            },
+            {
+              question: "A origem do nome 'PQRST' para as ondas do ECG é:",
+              options: ["Referência aos íons (P=potássio, Q=quinase...)", "Convenção matemática usando a 2ª metade do alfabeto, a partir de P", "Homenagem a 5 cardiologistas pioneiros", "Abreviação de termos em alemão"],
+              correctIndex: 1,
+              explanation: "Einthoven usou a convenção matemática de nomear com letras da 2ª metade do alfabeto. N e O já eram usadas para outros fins matemáticos, então começou pela letra P."
+            },
+          ],
         },
         {
           id: "ecg-1-2",
