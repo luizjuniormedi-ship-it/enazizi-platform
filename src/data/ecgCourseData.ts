@@ -111,8 +111,8 @@ O sistema de condução pode apresentar variações patológicas — **atalhos**
           ],
           clinicalTip: "Em um BAVT, o ritmo de escape será tanto mais lento e instável quanto mais distal for a sede do bloqueio. Escape juncional (QRS estreito) é mais estável que ventricular (QRS largo). Se o NSA falha, o NAV assume a 40-60 bpm; se ambos falham, sobra Purkinje a 20-40 bpm — situação de emergência!",
           images: [
-            { src: "/course-images/ecg-fig1-sistema-conducao.jpg", caption: "Figura 1: Sistema de Condução Cardíaco — do nó sinusal às fibras de Purkinje." },
-            { src: "/course-images/ecg-fig2-vias-acessorias.jpg", caption: "Figura 2: Vias acessórias — Feixe de James (A), Feixe de Kent (B) e Fibras de Mahaim (C)." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/ConductionsystemoftheheartwithouttheHeart.png/800px-ConductionsystemoftheheartwithouttheHeart.png", caption: "Figura 1: Sistema de Condução Cardíaco — do nó sinusal às fibras de Purkinje." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Reizleitungssystem_1.png/800px-Reizleitungssystem_1.png", caption: "Figura 2: Sistema de condução cardíaco com nó sinusal, nó AV, feixe de His e fibras de Purkinje." },
           ],
           quiz: [
             {
@@ -203,10 +203,8 @@ O Ca²⁺ que entra na fase 2 ativa o **complexo actina-miosina** → contraçã
           ],
           clinicalTip: "Bloqueadores de canal de cálcio (diltiazem, verapamil) agem nas células de resposta lenta reduzindo automatismo (bradicardia) e nas rápidas reduzindo Ca²⁺ para contração (inotropismo negativo). Por isso são contraindicados na IC com FE reduzida!",
           images: [
-            { src: "/course-images/ecg-fig3-dipolo-pilha.jpg", caption: "Figura 3: Analogia do dipolo — assim como a pilha, o coração forma corrente elétrica ao criar polos de cargas opostas." },
-            { src: "/course-images/ecg-fig4-potencial-repouso.jpg", caption: "Figura 4: Gradientes iônicos e formação do potencial de repouso transmembrana." },
-            { src: "/course-images/ecg-fig5-celulas-automaticas.jpg", caption: "Figura 5: Potencial de ação das células automáticas (resposta lenta) e não-automáticas (resposta rápida)." },
-            { src: "/course-images/ecg-fig-canais-ionicos.jpg", caption: "Figura: Canais iônicos responsáveis por cada fase do potencial de ação." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Action_potential_ventr_myocyte.gif/800px-Action_potential_ventr_myocyte.gif", caption: "Potencial de ação do miócito ventricular — fases 0 a 4 com os canais iônicos correspondentes." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Cardiac_action_potential.svg/800px-Cardiac_action_potential.svg.png", caption: "Comparação dos potenciais de ação: células automáticas (nodos) vs não-automáticas (ventrículos)." },
           ],
           quiz: [
             {
@@ -298,12 +296,9 @@ Três vetores principais em sequência:
           ],
           clinicalTip: "Se a onda T está discordante do QRS (apontam em direções opostas), há alteração da repolarização: isquemia, sobrecarga ventricular, bloqueio de ramo ou efeito de drogas. A discordância esperada no BRE é 'secundária' — se concordar, é sinal de IAM (critério de Sgarbossa)!",
           images: [
-            { src: "/course-images/ecg-fig-vetores-dipolo.jpg", caption: "Vetores cardíacos e sua relação com as derivações — o registro é positivo quando o vetor aponta para o eletrodo explorador." },
-            { src: "/course-images/ecg-fig-derivacoes-registro.jpg", caption: "Relação entre vetores e derivações — o 'rosto' do ECG aparece conforme a posição do olho elétrico." },
-            { src: "/course-images/ecg-fig-ativacao-atrial.jpg", caption: "Ativação elétrica atrial — a onda P é formada pela resultante da despolarização dos átrios direito e esquerdo." },
-            { src: "/course-images/ecg-fig-ativacao-ventricular.jpg", caption: "Os três vetores da despolarização ventricular e a formação do complexo QRS." },
-            { src: "/course-images/ecg-fig-repolarizacao-ventricular.jpg", caption: "Repolarização ventricular — inicia-se pelo epicárdio, gerando onda T de mesma polaridade do QRS." },
-            { src: "/course-images/ecg-fig-pqrst-completo.jpg", caption: "Figura 23: Atividade elétrica do coração e sua repercussão completa no ECG — P, QRS, T e segmentos." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/ECG_principle_slow.gif/800px-ECG_principle_slow.gif", caption: "Princípio do ECG — vetores cardíacos e sua projeção nas derivações." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/SinusRhythmLabels.svg/800px-SinusRhythmLabels.svg.png", caption: "ECG normal com ondas P, QRS, T e segmentos ST e PR identificados." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Limb_leads.svg/800px-Limb_leads.svg.png", caption: "Derivações dos membros — posicionamento e triângulo de Einthoven." },
           ],
           quiz: [
             {
@@ -838,9 +833,7 @@ Com menos K⁺ extracelular, aumenta o gradiente de concentração → mais K⁺
           ],
           clinicalTip: "Na emergência com ECG sinusoidal ou 'onda em sino', trate como hipercalemia até prova em contrário: gluconato de cálcio 10mL a 10% IV em 2-3 min. Ele não reduz o K⁺, mas estabiliza a membrana ao alterar o potencial limiar (de -70 para -60 mV), restaurando a função dos canais de Na⁺.",
           images: [
-            { src: "/course-images/ecg-fig-hipercalemia-influencia.jpg", caption: "Figura 1: Influência do potássio nas fases do potencial de ação — repolarização (fase 3) e repouso (fase 4)." },
-            { src: "/course-images/ecg-fig-hipercalemia-ecg.jpg", caption: "Onda T em tenda e achatamento da onda P — achados clássicos da hipercalemia." },
-            { src: "/course-images/ecg-fig-hipercalemia-grave.jpg", caption: "Hipercalemia grave: QRS alargado, onda em sino (fusão QRS+T) — iminência de parada cardíaca." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/ECG_in_hyperkalemia.svg/800px-ECG_in_hyperkalemia.svg.png", caption: "Progressão do ECG na hipercalemia: T em tenda → P achatada → QRS alargado → onda sinusoidal." },
           ],
           quiz: [
             {
@@ -973,9 +966,7 @@ O digital **bloqueia a bomba Na⁺/K⁺ ATPase** → acúmulo de Na⁺ intracelu
           ],
           clinicalTip: "Quando encontrar QT prolongado no ECG, diferencie: se tem onda U proeminente e T achatada → hipocalemia; se o ST está alargado com T preservada → hipocalcemia. O tratamento é completamente diferente! Reponha K⁺ ou Ca²⁺ conforme o caso.",
           images: [
-            { src: "/course-images/ecg-fig-osborn-hipotermia.jpg", caption: "Onda J de Osborn e encurtamento do ST na hipercalcemia — note o supra de V3 a V6." },
-            { src: "/course-images/ecg-fig-hipocalcemia.jpg", caption: "Comparação do prolongamento do QT: na hipocalemia (B) pelo aumento da onda U; na hipocalcemia (C) pelo alargamento do ST." },
-            { src: "/course-images/ecg-fig-digital-efeito.jpg", caption: "Efeito digitálico: infra de ST em aspecto de 'pá de pedreiro' (Bigode de Salvador Dalí)." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Osborn_wave.svg/800px-Osborn_wave.svg.png", caption: "Onda J de Osborn — achado clássico na hipotermia, também presente na hipercalcemia." },
           ],
           quiz: [
             {
