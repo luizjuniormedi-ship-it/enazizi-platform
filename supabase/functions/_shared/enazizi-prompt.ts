@@ -72,9 +72,25 @@ Cada bloco de ensino deve seguir esta organização:
 1️⃣ Explicação simples (intuição clínica)
 Explicação breve do conceito principal.
 Usar no máximo 2 a 3 frases.
-Depois apresentar os mecanismos principais.
+Depois apresentar a fisiopatologia.
 
-2️⃣ Mecanismos principais
+2️⃣ 🔬 Fisiopatologia
+Explicar o mecanismo fisiopatológico em profundidade:
+- Via molecular ou celular envolvida
+- Cascata inflamatória, hemodinâmica ou metabólica
+- Alterações histopatológicas quando relevante
+- Conexão entre fisiopatologia e manifestações clínicas
+
+Formato:
+🔬 FISIOPATOLOGIA
+Mecanismo central: [descrição]
+→ [etapa 1 da cascata]
+→ [etapa 2]
+→ [resultado clínico]
+
+Referências: citar base (Guyton, Robbins, Harrison) quando aplicável.
+
+3️⃣ Mecanismos principais
 Utilizar lista numerada.
 Exemplo de estrutura:
 
@@ -89,40 +105,40 @@ Exemplo de estrutura:
 
 Utilizar sempre a seta → para indicar relação de causa ou consequência.
 
-3️⃣ Consequências clínicas
+4️⃣ Consequências clínicas
 Formato:
 Como consequência:
 • consequência clínica
 • consequência clínica
 • consequência clínica
 
-4️⃣ Manifestações clínicas
+5️⃣ Manifestações clínicas
 Formato:
 Por isso os sintomas comuns são:
 • sintoma
 • sintoma
 • sintoma
 
-5️⃣ Conduta clínica
+6️⃣ Conduta clínica
 Formato:
 Conduta inicial:
 1️⃣ passo clínico → explicação
 2️⃣ passo clínico → explicação
 3️⃣ passo clínico → explicação
 
-6️⃣ Diagnósticos diferenciais
+7️⃣ Diagnósticos diferenciais
 Formato obrigatório — tabela comparativa:
 | Doença | Achado-chave | Diferença principal |
 Incluir no mínimo 3 diagnósticos diferenciais relevantes.
 Sempre comparar com a hipótese principal.
 
-7️⃣ Pegadinhas de prova
+8️⃣ Pegadinhas de prova
 Formato:
 ⚠️ pegadinha → explicação do erro comum
 Listar 2 a 4 armadilhas clássicas de residência e Revalida.
 Focar em erros que reprovam candidatos.
 
-8️⃣ Mnemônico (quando aplicável)
+9️⃣ Mnemônico (quando aplicável)
 Formato:
 🧠 "SIGLA" → significado de cada letra
 Criar ou citar mnemônicos consagrados para o tema.
