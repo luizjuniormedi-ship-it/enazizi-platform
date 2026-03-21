@@ -62,7 +62,7 @@ const navGroups: NavGroup[] = [
       { to: "/dashboard/discursivas", icon: PenLine, label: "✍️ Discursivas" },
       { to: "/dashboard/anamnese", icon: MessageCircle, label: "🩺 Anamnese" },
       { to: "/dashboard/plantao", icon: Activity, label: "🚨 Modo Plantão" },
-      { to: "/dashboard/quiz-imagens", icon: ImageIcon, label: "🖼️ Quiz Imagens" },
+      
     ],
   },
   {

@@ -115,7 +115,7 @@ const App = () => (
                 <Route path="conquistas" element={<Achievements />} />
                 <Route path="anamnese" element={<AnamnesisTrainer />} />
                 <Route path="cronicas" element={<MedicalChronicles />} />
-                <Route path="quiz-imagens" element={<MedicalImageQuiz />} />
+                
                 
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="perfil" element={<Profile />} />

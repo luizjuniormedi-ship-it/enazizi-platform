@@ -15,7 +15,7 @@ export const ALL_MODULES = [
   { key: "apostilas", label: "📚 Apostilas & Resumos" },
   { key: "cronicas", label: "📖 Crônicas Médicas" },
   { key: "cursos", label: "📚 Cursos ECG & RX" },
-  { key: "quiz-imagens", label: "🖼️ Quiz Imagens" },
+  
   { key: "entrevista", label: "🎤 Entrevista" },
 
   { key: "simulados", label: "📝 Simulados" },
