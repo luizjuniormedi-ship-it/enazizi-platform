@@ -972,6 +972,37 @@ O digital **bloqueia a bomba Na⁺/K⁺ ATPase** → acúmulo de Na⁺ intracelu
             "3 causas de QT curto: hipercalemia, hipercalcemia, digital",
           ],
           clinicalTip: "Quando encontrar QT prolongado no ECG, diferencie: se tem onda U proeminente e T achatada → hipocalemia; se o ST está alargado com T preservada → hipocalcemia. O tratamento é completamente diferente! Reponha K⁺ ou Ca²⁺ conforme o caso.",
+          images: [
+            { src: "/course-images/ecg-fig-osborn-hipotermia.jpg", caption: "Onda J de Osborn e encurtamento do ST na hipercalcemia — note o supra de V3 a V6." },
+            { src: "/course-images/ecg-fig-hipocalcemia.jpg", caption: "Comparação do prolongamento do QT: na hipocalemia (B) pelo aumento da onda U; na hipocalcemia (C) pelo alargamento do ST." },
+            { src: "/course-images/ecg-fig-digital-efeito.jpg", caption: "Efeito digitálico: infra de ST em aspecto de 'pá de pedreiro' (Bigode de Salvador Dalí)." },
+          ],
+          quiz: [
+            {
+              question: "A principal alteração eletrocardiográfica da hipercalcemia é:",
+              options: ["Prolongamento do intervalo QT", "Encurtamento do segmento ST (intervalo QT curto)", "Onda T apiculada em tenda", "Aparecimento de onda U proeminente"],
+              correctIndex: 1,
+              explanation: "Na hipercalcemia, a fase 2 (platô) é encurtada → o segmento ST fica muito curto ou até ausente → QT curto. Diferente da hipercalemia, onde há T em tenda e QRS largo."
+            },
+            {
+              question: "A onda J de Osborn NÃO é patognomônica de hipotermia. Ela também pode ser encontrada em:",
+              options: ["Hipocalemia grave", "Hipercalcemia e hemorragia subaracnoide", "Infarto inferior isolado", "Bloqueio de ramo direito"],
+              correctIndex: 1,
+              explanation: "A onda J de Osborn pode ser vista na hipercalcemia, insultos neurológicos (HSA, HIC, TCE) e angina de Prinzmetal — não é exclusiva da hipotermia."
+            },
+            {
+              question: "O 'efeito digitálico' no ECG produz um aspecto de ST em 'pá de pedreiro' porque o digital:",
+              options: ["Bloqueia canais de sódio", "Bloqueia a bomba Na⁺/K⁺ ATPase, acumulando Ca²⁺ intracelular (mimetiza hipercalcemia)", "Aumenta os canais de potássio", "Prolonga a fase 4 do potencial de ação"],
+              correctIndex: 1,
+              explanation: "O digital bloqueia a bomba Na⁺/K⁺ ATPase → acúmulo de Na⁺ intracelular → menor troca pelo trocador Na⁺/Ca²⁺ → acúmulo de Ca²⁺ → mimetiza hipercalcemia (ST encurtado) com aspecto em 'pá de pedreiro'."
+            },
+            {
+              question: "Mulher de 63 anos com câncer de mama metastático apresenta fraqueza e constipação. O ECG mostra segmento ST praticamente ausente com QT curto, sem onda T em tenda nem QRS alargado. O distúrbio mais provável é:",
+              options: ["Hipocalemia", "Hipercalemia", "Hipocalcemia", "Hipercalcemia"],
+              correctIndex: 3,
+              explanation: "O encurtamento isolado do ST (sem T em tenda ou QRS largo) aponta para hipercalcemia. A metástase óssea do câncer de mama explica a hipercalcemia, e fraqueza + constipação são sintomas compatíveis."
+            },
+          ],
         },
       ],
     },
