@@ -148,6 +148,41 @@ export type Database = {
           },
         ]
       }
+      chronicle_favorites: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          specialty: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          specialty?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          specialty?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chronicle_favorites_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clinical_cases: {
         Row: {
           clinical_history: string

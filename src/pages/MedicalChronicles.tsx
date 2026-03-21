@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Send, Bot, User, Loader2, Plus, History, Trash2, BookOpen, Maximize2, Minimize2 } from "lucide-react";
+import { Send, Bot, User, Loader2, Plus, History, Trash2, BookOpen, Maximize2, Minimize2, Heart, HeartOff, Lightbulb, AlertTriangle } from "lucide-react";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import InteractiveQuestionRenderer from "@/components/agents/InteractiveQuestionRenderer";
+import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 
 type Msg = { role: "user" | "assistant"; content: string };
 interface Conversation { id: string; title: string; created_at: string; }
@@ -32,6 +34,7 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/medical-chro
 
 const MedicalChronicles = () => {
   const { user } = useAuth();
+  const { addXp } = useGamification();
   const [specialty, setSpecialty] = useState("Clínica Médica");
   const [subtopic, setSubtopic] = useState("");
   const [difficulty, setDifficulty] = useState("avancado");
@@ -44,8 +47,31 @@ const MedicalChronicles = () => {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [weakTopics, setWeakTopics] = useState<{ tema: string; count: number }[]>([]);
+  const [xpAwarded, setXpAwarded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Load weak topics from error_bank for smart suggestions
+  const loadWeakTopics = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("error_bank")
+      .select("tema, vezes_errado")
+      .eq("user_id", user.id)
+      .order("vezes_errado", { ascending: false })
+      .limit(8);
+    if (data && data.length > 0) {
+      const grouped = data.reduce((acc, row) => {
+        const existing = acc.find(a => a.tema === row.tema);
+        if (existing) existing.count += row.vezes_errado;
+        else acc.push({ tema: row.tema, count: row.vezes_errado });
+        return acc;
+      }, [] as { tema: string; count: number }[]);
+      setWeakTopics(grouped.sort((a, b) => b.count - a.count).slice(0, 5));
+    }
+  }, [user]);
 
   const loadConversations = useCallback(async () => {
     if (!user) return;
@@ -59,11 +85,46 @@ const MedicalChronicles = () => {
     setConversations(data || []);
   }, [user]);
 
-  useEffect(() => { loadConversations(); }, [loadConversations]);
+  // Check if current conversation is favorited
+  const checkFavorite = useCallback(async (convId: string) => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("chronicle_favorites")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("conversation_id", convId)
+      .maybeSingle();
+    setIsFavorited(!!data);
+  }, [user]);
+
+  useEffect(() => { loadConversations(); loadWeakTopics(); }, [loadConversations, loadWeakTopics]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
+
+  useEffect(() => {
+    if (activeConversationId) checkFavorite(activeConversationId);
+    else setIsFavorited(false);
+  }, [activeConversationId, checkFavorite]);
+
+  const toggleFavorite = async () => {
+    if (!user || !activeConversationId) return;
+    if (isFavorited) {
+      await supabase.from("chronicle_favorites").delete()
+        .eq("user_id", user.id).eq("conversation_id", activeConversationId);
+      setIsFavorited(false);
+      toast({ title: "Removido dos favoritos" });
+    } else {
+      await supabase.from("chronicle_favorites").insert({
+        user_id: user.id,
+        conversation_id: activeConversationId,
+        specialty: currentTopic,
+      });
+      setIsFavorited(true);
+      toast({ title: "💖 Crônica salva nos favoritos!" });
+    }
+  };
 
   const loadConversation = async (convId: string) => {
     const { data } = await supabase
@@ -78,10 +139,12 @@ const MedicalChronicles = () => {
     }
     setActiveConversationId(convId);
     setShowHistory(false);
+    setXpAwarded(true); // already read
   };
 
   const deleteConversation = async (convId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    await supabase.from("chronicle_favorites").delete().eq("conversation_id", convId);
     await supabase.from("chat_conversations").delete().eq("id", convId);
     if (activeConversationId === convId) startNewSession();
     loadConversations();
@@ -94,9 +157,11 @@ const MedicalChronicles = () => {
     setCurrentTopic("");
     setSubtopic("");
     setShowHistory(false);
+    setIsFavorited(false);
+    setXpAwarded(false);
   };
 
-  const streamResponse = async (body: Record<string, any>, allMessages: Msg[]) => {
+  const streamResponse = async (body: Record<string, unknown>, allMessages: Msg[]) => {
     setIsLoading(true);
     let assistantSoFar = "";
 
@@ -176,6 +241,12 @@ const MedicalChronicles = () => {
         }
       }
 
+      // Award XP for completing a chronicle
+      if (user && assistantSoFar && !xpAwarded) {
+        await addXp(XP_REWARDS.question_answered * 3); // 3x XP for reading a full chronicle
+        setXpAwarded(true);
+      }
+
       // Save to DB
       if (user && assistantSoFar) {
         let convId = activeConversationId;
@@ -192,7 +263,6 @@ const MedicalChronicles = () => {
           }
         }
         if (convId) {
-          // Save user message if it was a follow-up
           const lastUserMsg = allMessages[allMessages.length - 1];
           if (lastUserMsg?.role === "user") {
             await supabase.from("chat_messages").insert({
@@ -214,16 +284,18 @@ const MedicalChronicles = () => {
     }
   };
 
-  const handleStartChronicle = () => {
-    const topicLabel = subtopic.trim() ? `${specialty} — ${subtopic.trim()}` : specialty;
+  const handleStartChronicle = (overrideTopic?: string) => {
+    const topicToUse = overrideTopic || (subtopic.trim() ? `${specialty} — ${subtopic.trim()}` : specialty);
     setStudyStarted(true);
-    setCurrentTopic(topicLabel);
+    setCurrentTopic(topicToUse);
+    setXpAwarded(false);
 
-    const userMsg: Msg = { role: "user", content: `Crie uma Crônica Médica sobre **${topicLabel}** (nível ${difficulty})` };
+    const userMsg: Msg = { role: "user", content: `Crie uma Crônica Médica sobre **${topicToUse}** (nível ${difficulty})` };
     setMessages([userMsg]);
 
+    const topicParts = topicToUse.split(" — ");
     streamResponse(
-      { specialty, subtopic: subtopic.trim() || undefined, difficulty },
+      { specialty: topicParts[0] || specialty, subtopic: topicParts[1] || subtopic.trim() || undefined, difficulty },
       [userMsg],
     );
   };
@@ -258,7 +330,7 @@ const MedicalChronicles = () => {
             <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
             <span className="truncate">Crônicas Médicas</span>
           </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground truncate">Aprenda medicina através de narrativas clínicas imersivas</p>
+          <p className="text-xs sm:text-sm text-muted-foreground truncate">Narrativas clínicas imersivas no estilo "Mente de Residente"</p>
         </div>
         <div className="flex gap-1 sm:gap-2 flex-shrink-0 flex-wrap justify-end items-center">
           <ModuleHelpButton moduleKey="cronicas" moduleName="Crônicas Médicas" steps={[
@@ -266,12 +338,22 @@ const MedicalChronicles = () => {
             "A IA gera uma crônica imersiva onde VOCÊ é o médico no plantão",
             "Acompanhe o raciocínio clínico, armadilhas e decisões",
             "Responda a questão de prova ao final da crônica",
-            "Use os botões rápidos para aprofundar, pedir questões extras ou nova crônica",
-            "Converse livremente para tirar dúvidas sobre o caso",
+            "Use os botões rápidos para aprofundar ou pedir questões extras",
+            "Salve suas crônicas favoritas com o botão ❤️",
           ]} />
+          {studyStarted && activeConversationId && (
+            <Button
+              variant={isFavorited ? "default" : "outline"}
+              size="sm"
+              onClick={toggleFavorite}
+              className={`gap-1 h-8 px-2 text-xs ${isFavorited ? "bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30" : ""}`}
+              title={isFavorited ? "Remover dos favoritos" : "Salvar nos favoritos"}
+            >
+              {isFavorited ? <Heart className="h-4 w-4 fill-current" /> : <HeartOff className="h-4 w-4" />}
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            <span className="hidden sm:inline">{isFullscreen ? "Sair" : "Tela cheia"}</span>
           </Button>
           <Button variant="outline" size="sm" onClick={startNewSession} className="gap-1 h-8 px-2 text-xs">
             <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nova</span>
@@ -309,56 +391,88 @@ const MedicalChronicles = () => {
 
       {/* Topic Selection */}
       {!studyStarted && (
-        <div className="glass-card p-4 sm:p-6 mb-3 sm:mb-4 text-center space-y-4">
-          <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-            <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-lg sm:text-xl font-semibold">Escolha o tema da crônica</h2>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              Você será imerso em um caso clínico cinematográfico — como se estivesse no plantão
-            </p>
+        <div className="flex-1 overflow-y-auto space-y-4">
+          <div className="glass-card p-4 sm:p-6 text-center space-y-4">
+            <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+              <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold">Escolha o tema da crônica</h2>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                Você será imerso em um caso clínico cinematográfico — como se estivesse no plantão
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto text-left">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Especialidade</label>
+                <Select value={specialty} onValueChange={setSpecialty}>
+                  <SelectTrigger className="bg-secondary border-border text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {SPECIALTIES.map(s => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Subtema (opcional)</label>
+                <Input
+                  placeholder="Ex: IAM, Dengue, Meningite..."
+                  value={subtopic}
+                  onChange={e => setSubtopic(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleStartChronicle()}
+                  className="bg-secondary border-border text-sm"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Dificuldade</label>
+                <Select value={difficulty} onValueChange={setDifficulty}>
+                  <SelectTrigger className="bg-secondary border-border text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {DIFFICULTIES.map(d => (
+                      <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Button onClick={() => handleStartChronicle()} className="glow gap-2 px-6" size="lg">
+              <BookOpen className="h-5 w-5" />
+              Gerar Crônica
+            </Button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto text-left">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Especialidade</label>
-              <Select value={specialty} onValueChange={setSpecialty}>
-                <SelectTrigger className="bg-secondary border-border text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {SPECIALTIES.map(s => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Smart Suggestions from weak topics */}
+          {weakTopics.length > 0 && (
+            <div className="glass-card p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                  <Lightbulb className="h-4 w-4 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold">Sugestões Inteligentes</h3>
+                  <p className="text-[10px] text-muted-foreground">Baseado nos seus temas com mais erros</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {weakTopics.map((wt) => (
+                  <button
+                    key={wt.tema}
+                    onClick={() => handleStartChronicle(wt.tema)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs font-medium text-amber-300 hover:bg-amber-500/20 transition-colors"
+                  >
+                    <AlertTriangle className="h-3 w-3" />
+                    {wt.tema}
+                    <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-amber-500/20">
+                      {wt.count}x erros
+                    </Badge>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Subtema (opcional)</label>
-              <Input
-                placeholder="Ex: IAM, Dengue, Meningite..."
-                value={subtopic}
-                onChange={e => setSubtopic(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleStartChronicle()}
-                className="bg-secondary border-border text-sm"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Dificuldade</label>
-              <Select value={difficulty} onValueChange={setDifficulty}>
-                <SelectTrigger className="bg-secondary border-border text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {DIFFICULTIES.map(d => (
-                    <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <Button onClick={handleStartChronicle} className="glow gap-2 px-6" size="lg">
-            <BookOpen className="h-5 w-5" />
-            Gerar Crônica
-          </Button>
+          )}
         </div>
       )}
 
@@ -370,6 +484,11 @@ const MedicalChronicles = () => {
             <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium truncate max-w-[60%]">
               📖 {currentTopic}
             </span>
+            {xpAwarded && (
+              <span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[10px] font-medium">
+                ✨ XP ganho
+              </span>
+            )}
           </div>
 
           {/* Quick action buttons */}
