@@ -264,7 +264,7 @@ const Admin = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="mb-4 flex-wrap h-auto gap-1">
+          <TabsList className="mb-4 flex flex-wrap h-auto gap-1 justify-start">
             <TabsTrigger value="all" className="gap-1.5">
               Todos <Badge variant="secondary" className="text-xs ml-1">{users.length}</Badge>
             </TabsTrigger>
