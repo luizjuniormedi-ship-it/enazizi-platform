@@ -26,6 +26,7 @@ const BottomTabBar = () => {
   const tabs = [
     { to: "/dashboard", icon: LayoutDashboard, label: "Início", badge: 0 },
     { to: "/dashboard/chatgpt", icon: Brain, label: "Tutor IA", badge: 0 },
+    { to: "/dashboard/cronicas", icon: BookOpen, label: "Crônicas", badge: 0 },
     { to: "/dashboard/simulados", icon: ClipboardList, label: "Simulados", badge: pendingCount || 0 },
     { to: "/dashboard/perfil", icon: User, label: "Perfil", badge: 0 },
   ];

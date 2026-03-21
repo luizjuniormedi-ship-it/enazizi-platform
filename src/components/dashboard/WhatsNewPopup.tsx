@@ -22,45 +22,33 @@ interface UpdateItem {
 const updates: UpdateItem[] = [
   {
     icon: "rocket",
-    title: "Dificuldade nos Simulados",
+    title: "🆕 Crônicas Médicas — Mente de Residente",
     description:
-      "Escolha entre Fácil, Intermediário, Difícil ou Misto ao criar simulados. A IA adapta a complexidade dos casos clínicos ao nível selecionado.",
+      "Novo módulo! Aprenda medicina através de narrativas clínicas imersivas. Você é o médico no plantão: enfrente armadilhas diagnósticas, tome decisões sob pressão e responda questões de prova ao final.",
   },
   {
     icon: "sparkles",
-    title: "Cronômetro Configurável nos Simulados",
+    title: "Barra de Progresso nas Crônicas",
     description:
-      "Defina tempo por questão (30s a 5min) com contagem regressiva visual. Alerta vermelho nos últimos 60 segundos e auto-submit ao zerar.",
+      "Acompanhe visualmente em qual etapa da crônica você está: Cenário → Raciocínio → Armadilha → Diferencial → Questão.",
+  },
+  {
+    icon: "check",
+    title: "Ações Rápidas nas Crônicas",
+    description:
+      "Use botões como '🔥 Nível Extremo', '🔬 Aprofundar' e '⚖️ Diferenciais' para personalizar sua experiência de aprendizado.",
   },
   {
     icon: "rocket",
-    title: "Modo Sprint — Flashcards Cronometrados",
+    title: "Favoritos e Histórico de Crônicas",
     description:
-      "Revise flashcards contra o relógio! Escolha quantidade e tempo, receba estatísticas detalhadas (acertos, erros, pulados) ao final.",
+      "Salve suas crônicas favoritas com ❤️ e acesse o histórico completo de casos clínicos estudados.",
   },
   {
     icon: "sparkles",
-    title: "Quick Actions Expandidos",
+    title: "Aba de Feedbacks no Admin",
     description:
-      "Gerador de Questões e Flashcards agora cobrem 20+ especialidades: GO, Emergência, Preventiva, Endócrino, Reumato, Psiquiatria, Hematologia e mais.",
-  },
-  {
-    icon: "check",
-    title: "XP nas Questões Interativas",
-    description:
-      "Responda questões no chat dos agentes e ganhe XP automaticamente! Acertos valem +15 XP, tentativas +5 XP. Erros são salvos no Caderno de Erros.",
-  },
-  {
-    icon: "check",
-    title: "Simulados Salvos com Relatório por Área",
-    description:
-      "Todas as sessões de simulado são salvas com gráfico de desempenho por especialidade e caderno de erros detalhado para revisão.",
-  },
-  {
-    icon: "rocket",
-    title: "Exam Simulator Aprimorado",
-    description:
-      "Pool de até 1000 questões do banco, filtro por dificuldade e botão 'Estudar com Tutor IA' para cada erro no relatório final.",
+      "Administradores agora visualizam todas as avaliações dos usuários com notas por módulo, NPS e comentários.",
   },
 ];
 const iconMap = {
