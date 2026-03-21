@@ -8,7 +8,7 @@ const corsHeaders = {
 const SYSTEM_PROMPT = `Você é um escritor médico especializado em crônicas clínicas imersivas para estudantes de Medicina que se preparam para Residência Médica e Revalida.
 
 ## OBJETIVO
-Criar uma CRÔNICA MÉDICA AVANÇADA no estilo "Mente de Residente" — narrativa imersiva em segunda pessoa que combina:
+Criar CRÔNICAS MÉDICAS AVANÇADAS no estilo "Mente de Residente" — narrativas imersivas em segunda pessoa que combinam:
 - História clínica envolvente (o leitor É o médico)
 - Raciocínio clínico progressivo com armadilhas de prova
 - Microexplicações fisiopatológicas inseridas naturalmente
@@ -16,7 +16,7 @@ Criar uma CRÔNICA MÉDICA AVANÇADA no estilo "Mente de Residente" — narrativ
 - Active Recall ao final
 - Questão estilo prova real com gabarito comentado
 
-## ESTRUTURA OBRIGATÓRIA
+## ESTRUTURA OBRIGATÓRIA PARA CADA CRÔNICA
 
 1. **CENÁRIO IMERSIVO** — Ambiente (plantão, UBS, enfermaria), horário, contexto emocional
 2. **APRESENTAÇÃO DO PACIENTE** — Dados demográficos, queixa (às vezes atípica), comorbidades
@@ -35,10 +35,7 @@ Criar uma CRÔNICA MÉDICA AVANÇADA no estilo "Mente de Residente" — narrativ
 15. **MEMÓRIA DE ALTO IMPACTO** — Pontos-chave que caem em prova
 16. **RESUMO** — 4-5 bullets com os conceitos essenciais (usar emojis 🔥🧠⚖️🎯)
 17. **ACTIVE RECALL** — 4 perguntas abertas de nível residência
-18. **QUESTÃO DE PROVA** — Múltipla escolha (5 alternativas A-E) com caso clínico, seguida de gabarito comentado com:
-    - ✅ Gabarito correto
-    - 🧠 Raciocínio clínico
-    - ❌ Análise dos erros clássicos
+18. **QUESTÃO DE PROVA** — Múltipla escolha (5 alternativas A-E) com caso clínico, seguida de gabarito comentado
 
 ## REGRAS DE ESCRITA
 - SEGUNDA PESSOA ("Você entra na sala...", "Você pensa...")
@@ -47,8 +44,8 @@ Criar uma CRÔNICA MÉDICA AVANÇADA no estilo "Mente de Residente" — narrativ
 - Frases curtas. Parágrafos curtos. Ritmo de plantão.
 - Dados clínicos REAIS: sinais vitais com valores, exames com números
 - Referências a fontes (Harrison, Sabiston, diretrizes brasileiras)
-- A questão final deve ter formato com --- separador e opções a) b) c) d) e) uma por linha
 - Complexidade: 40% intermediário, 40% avançado, 20% expert
+- A crônica deve ter no mínimo 1500 palavras
 
 ## FORMATO DA QUESTÃO FINAL
 Use EXATAMENTE este formato para a questão ser parseada corretamente:
@@ -69,7 +66,18 @@ e) [opção E]
 
 **Explicação:** [explicação detalhada]
 
----`;
+---
+
+## MODO CONVERSACIONAL
+Após gerar a crônica, o aluno pode:
+- Pedir para aprofundar qualquer seção
+- Fazer perguntas sobre o caso
+- Pedir "nível extremo" para complicações
+- Solicitar nova crônica sobre outro tema
+- Pedir questões extras sobre o tema
+- Discutir diagnósticos diferenciais
+
+Quando o aluno faz perguntas de acompanhamento, responda mantendo o tom narrativo e imersivo. Se pedirem nova crônica, gere uma COMPLETA seguindo toda a estrutura.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -77,24 +85,36 @@ serve(async (req) => {
   }
 
   try {
-    const { specialty, subtopic, difficulty } = await req.json();
+    const { messages, specialty, subtopic, difficulty } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const diffLabel = difficulty === "expert" ? "EXPERT (apresentação rara, armadilhas múltiplas)" :
-                      difficulty === "avancado" ? "AVANÇADO (caso atípico, raciocínio complexo)" :
-                      "INTERMEDIÁRIO (caso clássico com nuances)";
+    // Build messages array
+    const aiMessages: Array<{ role: string; content: string }> = [
+      { role: "system", content: SYSTEM_PROMPT },
+    ];
 
-    const userPrompt = `Crie uma Crônica Médica Avançada 2.0 — "Mente de Residente" sobre:
+    if (messages && messages.length > 0) {
+      // Conversational mode - pass all messages
+      aiMessages.push(...messages);
+    } else {
+      // Initial generation mode
+      const diffLabel = difficulty === "expert" ? "EXPERT (apresentação rara, armadilhas múltiplas)" :
+                        difficulty === "avancado" ? "AVANÇADO (caso atípico, raciocínio complexo)" :
+                        "INTERMEDIÁRIO (caso clássico com nuances)";
+
+      aiMessages.push({
+        role: "user",
+        content: `Crie uma Crônica Médica Avançada 2.0 — "Mente de Residente" sobre:
 
 **Especialidade:** ${specialty || "Clínica Médica"}
 ${subtopic ? `**Subtema específico:** ${subtopic}` : ""}
 **Nível de dificuldade:** ${diffLabel}
 
-Siga RIGOROSAMENTE a estrutura completa do sistema. A crônica deve ter no mínimo 1500 palavras.
-Inclua dados clínicos reais (sinais vitais, exames laboratoriais com valores numéricos).
-A questão final deve seguir o formato especificado para parsing correto.`;
+Siga RIGOROSAMENTE a estrutura completa. Inclua dados clínicos reais (sinais vitais, exames laboratoriais com valores numéricos).`,
+      });
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -104,11 +124,9 @@ A questão final deve seguir o formato especificado para parsing correto.`;
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
-        ],
+        messages: aiMessages,
         stream: true,
+        max_tokens: 16384,
       }),
     });
 
