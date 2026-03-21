@@ -18,12 +18,16 @@ const MODULE_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
   flashcards: "Flashcards",
   questoes: "Questões",
+  banco_questoes: "Banco de Questões",
   simulados: "Simulados",
   cronograma: "Cronograma",
   tutor: "Tutor IA",
+  agentes_ia: "Agentes IA",
   cronicas: "Crônicas",
+  simulacao_clinica: "Simulação Clínica",
   simulacao: "Simulação Clínica",
   anamnese: "Anamnese",
+  caderno_erros: "Caderno de Erros",
   geral: "Geral",
 };
 
