@@ -1,34 +1,33 @@
 
 
-## Plano: Criar vídeo animado de resumo sobre Insuficiência Cardíaca
+## Plano: Cadastro obrigatório completo + universidades de todo o Brasil
 
-### O que será criado
-Um vídeo MP4 de ~20 segundos com motion graphics educativo sobre Insuficiência Cardíaca, contendo:
-- **Cena 1**: Título "Insuficiência Cardíaca" com animação de entrada dramática
-- **Cena 2**: Definição e fisiopatologia com ícones animados (coração, setas)
-- **Cena 3**: Classificação NYHA (I-IV) com tabela animada
-- **Cena 4**: Diagnóstico (BNP, eco, RX) com bullets animados
-- **Cena 5**: Tratamento (IECA/BRA, betabloq, diuréticos) com pilares animados
+### Problema atual
+1. Usuários com status "pending" veem a tela de "aguardando aprovação" **sem completar o cadastro** — o admin aprova sem saber faculdade/telefone
+2. A lista de universidades tem apenas ~20 do Rio de Janeiro
 
-### Direção criativa
-- **Paleta**: Azul médico (#1E3A5F), vermelho cardíaco (#E63946), branco (#F1FAEE), cinza escuro (#2B2D42)
-- **Fontes**: Inter (títulos) + Source Sans (corpo)
-- **Estilo**: Tech/Editorial médico — limpo, profissional, com transições suaves
-- **Resolução**: 1920x1080, 30fps
+### Mudanças
 
-### Como será feito
-1. Criar projeto Remotion em `/tmp/medical-video/`
-2. Instalar dependências (remotion, react, etc.)
-3. Criar 5 cenas com animações frame-based (`interpolate` + `spring`)
-4. Usar `TransitionSeries` para transições suaves entre cenas
-5. Renderizar para `/mnt/documents/ic-resumo.mp4`
+**1. Forçar onboarding ANTES da tela de aprovação**
 
-### Resultado
-Arquivo MP4 baixável com resumo visual animado de Insuficiência Cardíaca — demonstração do conceito de "vídeos educacionais animados" para o Tutor IA.
+No `ProtectedRoute.tsx`, mover o check de `profileIncomplete` para **antes** do check de `profileStatus === "pending"`. Assim, qualquer usuário (pending, active, etc.) precisa completar o cadastro primeiro.
 
-### Detalhes técnicos
-- Renderização via script programático (`scripts/render.mjs`) usando Chromium headless
-- Sem áudio (versão visual apenas)
-- Tempo estimado de render: ~2-3 minutos
-- Todas animações via `useCurrentFrame()` + `interpolate()`/`spring()` (sem CSS animations)
+**2. Expandir lista de universidades para todo o Brasil**
+
+Atualizar `src/constants/faculdades.ts` com as principais siglas de universidades federais, estaduais e privadas do Brasil (~120 instituições), organizadas alfabeticamente, com "Outra" por último. Incluir:
+- Federais: UFRJ, USP, UNICAMP, UFMG, UFRGS, UFBA, UFC, UFPE, UFPR, UFSC, UnB, UFES, UFPA, UFSM, UFG, etc.
+- Estaduais: UERJ, UNESP, UEPA, UECE, UEL, UEM, UEZO, etc.
+- Privadas: PUC (Rio, SP, MG, PR, RS), Estácio, UniRedentor, Unigranrio, Einstein, Sírio-Libanês, Santo Amaro, Anhembi Morumbi, etc.
+
+**3. Adicionar busca/filtro no select de faculdade**
+
+Com ~120 opções, trocar o `Select` por um componente com campo de busca (usando `Command`/Combobox do shadcn) tanto no onboarding quanto no perfil, para facilitar a seleção.
+
+### Arquivos afetados
+- `src/constants/faculdades.ts` — lista expandida
+- `src/components/auth/ProtectedRoute.tsx` — reordenar checks (incomplete antes de pending)
+- `src/pages/Profile.tsx` — componente de busca no select de faculdade
+
+### Sem mudanças no banco de dados
+O campo `faculdade` é texto livre, aceita qualquer valor.
 
