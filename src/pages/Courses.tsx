@@ -276,6 +276,34 @@ const Courses = () => {
           </div>
         )}
 
+        {/* Images Gallery */}
+        {selectedLesson.images && selectedLesson.images.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <Image className="h-4 w-4 text-primary" />
+              Figuras da Aula
+            </h3>
+            <div className="grid grid-cols-1 gap-4">
+              {selectedLesson.images.map((img, i) => (
+                <div key={i} className="glass-card p-3 space-y-2">
+                  <img
+                    src={img.src}
+                    alt={img.caption}
+                    className="w-full rounded-lg border border-border"
+                    loading="lazy"
+                  />
+                  <p className="text-xs text-muted-foreground italic text-center">{img.caption}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Quiz Section */}
+        {selectedLesson.quiz && selectedLesson.quiz.length > 0 && (
+          <LessonQuiz questions={selectedLesson.quiz} />
+        )}
+
         {/* Navigation */}
         <div className="flex items-center justify-between pt-4 border-t border-border">
           <Button
