@@ -104,9 +104,30 @@ const MedicalChronicles = () => {
 
   useEffect(() => { loadConversations(); loadWeakTopics(); }, [loadConversations, loadWeakTopics]);
 
+  // Smart scroll: only auto-scroll if user is near bottom
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
+    setIsNearBottom(nearBottom);
+    if (!nearBottom && isLoading) {
+      setUserScrolledUp(true);
+    }
+    if (nearBottom) {
+      setUserScrolledUp(false);
+    }
+  }, [isLoading]);
+
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages]);
+    if (!userScrolledUp && isNearBottom && bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+  }, [messages, userScrolledUp, isNearBottom]);
+
+  const scrollToBottom = () => {
+    setUserScrolledUp(false);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  };
 
   useEffect(() => {
     if (activeConversationId) checkFavorite(activeConversationId);
