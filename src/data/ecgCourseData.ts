@@ -111,8 +111,8 @@ O sistema de condução pode apresentar variações patológicas — **atalhos**
           ],
           clinicalTip: "Em um BAVT, o ritmo de escape será tanto mais lento e instável quanto mais distal for a sede do bloqueio. Escape juncional (QRS estreito) é mais estável que ventricular (QRS largo). Se o NSA falha, o NAV assume a 40-60 bpm; se ambos falham, sobra Purkinje a 20-40 bpm — situação de emergência!",
           images: [
-            { src: "/course-images/ecg-fig1-sistema-conducao.jpg", caption: "Figura 1: Sistema de Condução Cardíaco — do nó sinusal às fibras de Purkinje." },
-            { src: "/course-images/ecg-fig2-vias-acessorias.jpg", caption: "Figura 2: Vias acessórias — Feixe de James (A), Feixe de Kent (B) e Fibras de Mahaim (C)." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/ConductionsystemoftheheartwithouttheHeart.png/800px-ConductionsystemoftheheartwithouttheHeart.png", caption: "Figura 1: Sistema de Condução Cardíaco — do nó sinusal às fibras de Purkinje." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Reizleitungssystem_1.png/800px-Reizleitungssystem_1.png", caption: "Figura 2: Sistema de condução cardíaco com nó sinusal, nó AV, feixe de His e fibras de Purkinje." },
           ],
           quiz: [
             {
