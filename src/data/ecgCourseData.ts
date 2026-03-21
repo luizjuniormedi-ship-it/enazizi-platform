@@ -33,51 +33,211 @@ export const ecgCourse: CourseData = {
     {
       id: "ecg-basics",
       title: "Fundamentos do ECG",
-      description: "Bases eletrofisiológicas e registro do ECG de 12 derivações.",
+      description: "Bases eletrofisiológicas, sistema de condução e registro do ECG de 12 derivações.",
       icon: "⚡",
       lessons: [
         {
           id: "ecg-1-1",
           title: "O Sistema de Condução Cardíaco",
-          subtitle: "Nó sinusal → Nó AV → Feixe de His → Fibras de Purkinje",
+          subtitle: "Nó sinusal → Nó AV → Feixe de His → Fibras de Purkinje → Vias Acessórias",
           theory: `## O Coração como Gerador Elétrico
 
-O coração possui um sistema elétrico autônomo que gera e conduz impulsos de forma organizada:
+O coração não é um órgão que funciona de forma anárquica. Ele é estruturado de modo que a contração cardíaca aconteça direcionando o fluxo de sangue. Para isso, a corrente elétrica — a **onda de despolarização** — deve seguir uma sequência temporal e espacial adequada. O estímulo elétrico tem um local para ser gerado e um caminho a ser percorrido: é o **sistema de condução cardíaco**.
 
-### 1. Nó Sinusal (Sinoatrial — SA)
-- **Localização**: junção da veia cava superior com o átrio direito
+### 1. Nó Sinusal (Sinoatrial — NSA)
+- **Localização**: região lateral da parede posterior do átrio direito, na junção com a veia cava superior
 - **Frequência intrínseca**: 60-100 bpm
-- **Função**: marca-passo fisiológico do coração — inicia cada batimento
+- **Função**: marca-passo fisiológico — suas células possuem a **maior frequência de despolarização** automática
+- **Paradoxo importante**: apesar de maior automatismo, a velocidade de condução dentro do NSA é **relativamente lenta**
+- **Conceito-chave**: células com maior automatismo conduzem mais lentamente, e vice-versa
 
-### 2. Nó Atrioventricular (AV)
-- **Localização**: triângulo de Koch, septo interatrial
-- **Função**: retarda o impulso (~120-200 ms) → permite enchimento ventricular antes da contração
+### 2. Feixes Atriais Internodais
+- Três feixes responsáveis pela condução nos átrios: **anterior, médio e posterior**
+- O feixe internodal anterior possui o **feixe de Bachmann**, que conduz o impulso ao átrio esquerdo
+- A condução sinoventricular é quase independente da ativação dos miócitos atriais, graças a estes feixes
+
+### 3. Nó Atrioventricular (NAV)
+- **Localização**: próximo ao óstio do seio coronariano (triângulo de Koch)
 - **Frequência de escape**: 40-60 bpm
+- **Função dupla**:
+  1. **Retardar a condução** AV (~120-200 ms) → permite que a contração atrial preceda a ventricular
+  2. **Filtrar taquiarritmias atriais** → protege os ventrículos (condução decremental)
+- **Condução decremental**: à medida que o estímulo alcança o NAV, a eficácia da propagação cai progressivamente
 
-### 3. Feixe de His
-- Atravessa o esqueleto fibroso → divide-se em:
-  - **Ramo direito**: fino, superficial (vulnerável)
-  - **Ramo esquerdo**: espesso, divide-se em fascículo anterior e posterior
+### 4. Sistema His-Purkinje (SHP)
+- Origina-se do NAV com células orientadas longitudinalmente e bainha de colágeno
+- **Feixe de His**: divide-se em dois ramos:
+  - **Ramo direito**: fino, superficial, segue sem bifurcação até o músculo papilar anterior direito (mais vulnerável a bloqueios)
+  - **Ramo esquerdo**: espesso, divide-se em **hemifascículo anterossuperior** e **posteroinferior**
+- **Fibras de Purkinje**: rede subendocárdica, velocidade de condução ~4 m/s (a mais rápida do coração)
+- Despolarizam os ventrículos **de dentro para fora** (endocárdio → epicárdio)
 
-### 4. Fibras de Purkinje
-- Rede subendocárdica que despolariza os ventrículos de dentro para fora
-- Velocidade de condução: ~4 m/s (a mais rápida do coração)
-
-### Hierarquia de Marca-passos
+### Hierarquia de Marca-passos e Inibição por Supraestimulação
 | Estrutura | Frequência | Quando assume? |
 |-----------|-----------|----------------|
 | Nó SA | 60-100 bpm | Normal (fisiológico) |
-| Nó AV | 40-60 bpm | Falha do nó SA |
-| His-Purkinje | 20-40 bpm | Bloqueio AV completo |
+| Nó AV (juncional) | 40-60 bpm | Falha do nó SA |
+| His-Purkinje (ventricular) | 20-40 bpm | Bloqueio AV completo |
 
-> **Conceito-chave**: Se o marca-passo superior falha, o inferior assume — mas com frequência menor e QRS mais largo.`,
+O mecanismo pelo qual o marca-passo mais rápido suprime os inferiores é chamado **inibição automática por supraestimulação** (*overdrive suppression*): o NSA despolariza sistematicamente as demais células automáticas antes que elas atinjam seu próprio limiar.
+
+---
+
+### Vias Acessórias (Pré-excitação)
+O sistema de condução pode apresentar variações patológicas — **atalhos** que comunicam diretamente átrios e ventrículos, evitando o NAV:
+
+| Via | Comunicação | Consequência |
+|-----|------------|--------------|
+| **Feixe de Kent** | Átrio → Ventrículo (direta) | Síndrome de **Wolff-Parkinson-White** |
+| **Feixe de James** | Internodal posterior → His (desvia NAV) | Síndrome de **Lown-Ganong-Levine** |
+| **Fibras de Mahaim** | NAV/His → septo ventricular | Pré-excitação atípica |
+
+> O feixe de Kent pode estar presente fisiologicamente em RN até 6 meses de idade. É mais comum no átrio esquerdo.`,
           keyPoints: [
-            "Nó SA é o marca-passo natural (60-100 bpm)",
-            "Nó AV retarda o impulso (intervalo PR) para permitir enchimento ventricular",
-            "Ramo direito é mais vulnerável a bloqueios por ser fino e superficial",
-            "Fibras de Purkinje garantem despolarização ventricular rápida e sincronizada",
+            "NSA: maior automatismo, mas condução lenta — é o marca-passo natural (60-100 bpm)",
+            "NAV: retarda impulso (intervalo PR) + filtra taquiarritmias (condução decremental)",
+            "Ramo direito é fino e superficial — mais vulnerável a bloqueios",
+            "Overdrive suppression: o marca-passo mais rápido suprime os inferiores",
+            "Feixe de Kent (WPW), James (LGL) e Mahaim são vias acessórias patológicas",
           ],
-          clinicalTip: "Em um BAVT (bloqueio AV total), o ritmo de escape será tanto mais lento e instável quanto mais distal for a sede do bloqueio. BAV com escape juncional (QRS estreito) é mais estável que escape ventricular (QRS largo).",
+          clinicalTip: "Em um BAVT, o ritmo de escape será tanto mais lento e instável quanto mais distal for a sede do bloqueio. Escape juncional (QRS estreito) é mais estável que ventricular (QRS largo). Se o NSA falha, o NAV assume a 40-60 bpm; se ambos falham, sobra Purkinje a 20-40 bpm — situação de emergência!",
+        },
+        {
+          id: "ecg-1-1b",
+          title: "Eletrofisiologia Celular",
+          subtitle: "Potencial de repouso, células de resposta lenta vs rápida, fases do potencial de ação",
+          theory: `## De Onde Vem a Corrente Elétrica do Coração?
+
+O coração consegue continuar batendo mesmo quando removido do corpo (transplante cardíaco!). Isso é possível porque possui um sistema elétrico independente com capacidade de **automatismo** — geração espontânea de impulso elétrico.
+
+### Potencial de Repouso Transmembrana
+
+A célula miocárdica em repouso mantém um potencial transmembrana entre **-65 e -90 mV** (meio intracelular negativo). Os principais responsáveis:
+
+1. **Bomba Na⁺/K⁺ ATPase**: expulsa 3 Na⁺ e internaliza 2 K⁺ → o interior fica mais negativo ("o começo de tudo!")
+2. **Gradiente de concentração do K⁺**: como há mais K⁺ intracelular, ele tende a sair da célula
+3. **Equilíbrio eletroquímico**: a saída de K⁺ (gradiente de concentração) é equilibrada pela atração eletrostática (gradiente elétrico que puxa K⁺ de volta) → nasce o potencial de repouso
+
+> **O potássio é o "maestro" do potencial de repouso** — é a saída deste íon que deixa a célula polarizada!
+
+### Dois Tipos de Células Cardíacas
+
+#### 1. Células de Resposta Lenta (Automáticas)
+Encontradas nos **nodos SA e AV**. Formam o impulso elétrico.
+
+| Fase | Evento | Íon |
+|------|--------|-----|
+| **Fase 0** | Despolarização lenta | Entrada de Ca²⁺ |
+| **Fase 2** | Repolarização lenta | Saída de K⁺ |
+| **Fase 3** | Repolarização final | Saída de K⁺ |
+| **Fase 4** | "Repouso" instável | Entrada lenta de Ca²⁺ e Na⁺ |
+
+- **Não possuem fase 1!**
+- Na fase 4, não há repouso verdadeiro — logo emendam nova despolarização espontânea
+- O potencial de repouso é menos negativo (~-65 mV)
+
+#### 2. Células de Resposta Rápida (Condutoras)
+Encontradas nos **átrios, His-Purkinje e ventrículos**. Conduzem o impulso.
+
+| Fase | Evento | Íon |
+|------|--------|-----|
+| **Fase 0** | Despolarização rápida | Entrada intensa de Na⁺ |
+| **Fase 1** | Repolarização transitória | Saída de K⁺ |
+| **Fase 2** | Platô (repolarização lenta) | Entrada de Ca²⁺ + saída de K⁺ |
+| **Fase 3** | Repolarização final | Saída de K⁺ |
+| **Fase 4** | Repouso elétrico | Bomba Na⁺/K⁺ ATPase |
+
+- Possuem todas as 5 fases
+- Potencial de repouso mais negativo (~-90 mV)
+- A fase 2 (platô) é onde entra o Ca²⁺ responsável pelo **acoplamento excitação-contração**
+
+### Acoplamento Excitação-Contração
+O Ca²⁺ que entra na fase 2 ativa o **complexo actina-miosina** → contração muscular. Além disso, este Ca²⁺ estimula o **retículo sarcoplasmático** a liberar mais Ca²⁺ → intensifica a contração.
+
+### Aplicação Clínica Direta
+
+| Droga | Mecanismo | Efeito |
+|-------|-----------|--------|
+| **Diltiazem/Verapamil** | Bloqueiam canais de Ca²⁺ | Bradicardia (↓automatismo) + inotropismo negativo |
+| **Propafenona** | Bloqueia canais de Na⁺ | ↓ condução → antiarrítmico |
+| **Digital** | Bloqueia bomba Na⁺/K⁺ ATPase | ↑ Ca²⁺ intracelular → inotropismo positivo |`,
+          keyPoints: [
+            "Bomba Na⁺/K⁺ ATPase é o 'começo de tudo' — mantém o potencial de repouso",
+            "K⁺ é o maestro do potencial de repouso; Na⁺ é o íon da despolarização rápida",
+            "Células de resposta lenta (nodos): Ca²⁺-dependentes, automáticas, sem fase 1",
+            "Células de resposta rápida (ventrículos): Na⁺-dependentes, com platô (fase 2 = Ca²⁺)",
+            "A fase 2 (platô) é responsável pelo segmento ST no ECG",
+          ],
+          clinicalTip: "Bloqueadores de canal de cálcio (diltiazem, verapamil) agem nas células de resposta lenta reduzindo automatismo (bradicardia) e nas rápidas reduzindo Ca²⁺ para contração (inotropismo negativo). Por isso são contraindicados na IC com FE reduzida!",
+        },
+        {
+          id: "ecg-1-1c",
+          title: "Teoria do Dipolo e Vetores Cardíacos",
+          subtitle: "Como a atividade elétrica celular se transforma no traçado do ECG",
+          theory: `## Do Íon ao Traçado: A Teoria do Dipolo
+
+### O Que é um Dipolo?
+Um sistema formado por duas cargas de mesmo valor, polaridades opostas, separadas por uma distância. Na célula cardíaca, o dipolo surge quando a despolarização altera a polaridade da membrana:
+
+- Célula em repouso: superfície positiva → sem dipolo entre células vizinhas (todas iguais)
+- Célula despolarizada: superfície torna-se negativa → cria diferença com as vizinhas → **dipolo formado!**
+
+### Vetores de Despolarização e Repolarização
+
+**Despolarização**: o vetor aponta **no mesmo sentido** da onda despolarizante (em direção às células positivas, ainda em repouso)
+
+**Repolarização**: o vetor aponta em **sentido oposto** ao da onda repolarizante (a célula repolarizada volta a ser positiva → vetor aponta para ela)
+
+> É por isso que, em situações normais, a repolarização ventricular (onda T) é concordante com a despolarização (QRS) — porque a repolarização começa pelo epicárdio (de fora para dentro), invertendo o sentido do processo e mantendo o vetor na mesma direção!
+
+### As Derivações como "Olhos Elétricos"
+
+Uma **derivação** é um eixo formado por dois eletrodos (positivo e negativo) que mede diferenças de potencial:
+
+| Relação vetor × derivação | Registro no ECG |
+|--------------------------|-----------------|
+| Vetor aponta para o eletrodo positivo | **Onda positiva** (sobe) |
+| Vetor aponta para o eletrodo negativo | **Onda negativa** (desce) |
+| Vetor perpendicular à derivação | **Onda bifásica/isoelétrica** |
+| Todas as células em repouso ou despolarizadas | **Linha isoelétrica** |
+
+O eletrodo positivo é o verdadeiro **"eletrodo explorador"** — ele registra o que "enxerga" se aproximando ou se afastando.
+
+### Sequência de Ativação Cardíaca
+
+#### 1. Ativação Atrial (Onda P)
+- O NSA dispara, mas tem massa desprezível → não gera registro
+- AD despolariza primeiro → vetor para baixo, frente e esquerda
+- AE despolariza depois → vetor para trás e esquerda
+- **Onda P**: AD = porção inicial; sobreposição AD+AE = meio; AE = porção final
+- Positiva em DII (vetor aponta para o eletrodo positivo de DII)
+
+#### 2. Condução pelo NAV (Segmento PR)
+- Poucas células + condução lenta → **vetores insignificantes**
+- Registro: **linha isoelétrica** (o segmento PR)
+- ⚠️ Não significa ausência de atividade elétrica — apenas não detectável!
+
+#### 3. Ativação Ventricular (Complexo QRS)
+Três vetores principais em sequência:
+
+| Vetor | Tempo | Direção | Estrutura |
+|-------|-------|---------|-----------|
+| **1° (septal)** | ~20ms | Direita e frente | Septo interventricular (E→D) |
+| **2° (principal)** | ~40ms | Esquerda e baixo | Parede livre do VE (maior amplitude!) |
+| **3° (basal)** | ~60ms | Trás e cima | Parede basal dos ventrículos |
+
+#### 4. Repolarização Ventricular (Onda T)
+- O vetor de repolarização aponta no sentido contrário ao processo repolarizante
+- Como a repolarização vai do epicárdio para o endocárdio (inverso da despolarização), o vetor acaba tendo a **mesma orientação** do vetor de despolarização
+- Resultado: **onda T concordante com QRS** (ambas positivas em DII, por exemplo)`,
+          keyPoints: [
+            "Dipolo = duas cargas opostas — surge quando a célula despolariza",
+            "Vetor de despolarização: mesmo sentido da onda; vetor de repolarização: sentido oposto",
+            "Derivação = 'olho elétrico'; registro positivo quando vetor vai para eletrodo positivo",
+            "Segmento PR isoelétrico = condução pelo NAV (poucas células, não detectável)",
+            "O 2° vetor ventricular (parede livre do VE) é o de maior amplitude — determina o eixo do QRS",
+          ],
+          clinicalTip: "Se a onda T está discordante do QRS (apontam em direções opostas), há alteração da repolarização: isquemia, sobrecarga ventricular, bloqueio de ramo ou efeito de drogas. A discordância esperada no BRE é 'secundária' — se concordar, é sinal de IAM (critério de Sgarbossa)!",
         },
         {
           id: "ecg-1-2",
@@ -144,41 +304,44 @@ Avaliam o coração no plano transversal:
 ### Intervalo PR
 - **O que representa**: tempo do nó SA ao início da despolarização ventricular
 - **Normal**: 120-200 ms (3-5 quadradinhos)
+- **Corresponde no ECG**: condução pelo NAV e His-Purkinje (pouquíssimas células → linha isoelétrica)
 - **PR curto (< 120ms)**: pré-excitação (Wolff-Parkinson-White)
 - **PR longo (> 200ms)**: BAV 1° grau
 
 ### Complexo QRS
-- **O que representa**: despolarização ventricular
+- **O que representa**: despolarização ventricular (3 vetores sequenciais)
 - **Duração normal**: < 120 ms
 - **QRS largo (≥ 120ms)**: bloqueio de ramo, pré-excitação, marca-passo, TV
 - Nomenclatura:
-  - **Q**: primeira deflexão negativa antes de R
-  - **R**: primeira deflexão positiva
-  - **S**: deflexão negativa após R
+  - **Q**: primeira deflexão negativa antes de R (vetor septal)
+  - **R**: primeira deflexão positiva (vetor principal — parede livre do VE)
+  - **S**: deflexão negativa após R (vetor basal)
 
 ### Segmento ST
-- **O que representa**: período entre despolarização e repolarização ventricular
+- **O que representa**: fase de platô (fase 2) do potencial de ação — Ca²⁺ entrando e K⁺ saindo
 - **Normal**: isoelétrico (no mesmo nível da linha de base)
 - **Supradesnivelamento**: IAM com supra (IAMCSST), pericardite, Brugada
 - **Infradesnivelamento**: isquemia subendocárdica, efeito digitálico
 
 ### Onda T
-- **O que representa**: repolarização ventricular
-- **Normal**: positiva onde QRS é positivo (concordante)
+- **O que representa**: repolarização ventricular (fase 3 — saída de K⁺)
+- **Normal**: positiva onde QRS é positivo (concordante) — porque a repolarização vai do epicárdio ao endocárdio
 - **T invertida**: isquemia, sobrecarga, TEP, SCA
 - **T apiculada**: hipercalemia (emergência!)
 
 ### Intervalo QT
 - **Normal**: QTc < 450ms (homens), < 470ms (mulheres)
-- **QT longo**: risco de Torsades de Pointes → antiarrítmicos, congênito
+- **QT longo**: risco de Torsades de Pointes → antiarrítmicos, congênito, hipocalemia, hipocalcemia
+- **QT curto**: hipercalemia, hipercalcemia, efeito digitálico
 - **Fórmula de Bazett**: QTc = QT / √RR`,
           keyPoints: [
             "PR normal: 120-200ms — curto sugere WPW, longo sugere BAV",
             "QRS normal: < 120ms — alargado sugere bloqueio de ramo ou pré-excitação",
-            "ST deve ser isoelétrico — supra = IAM/pericardite, infra = isquemia",
+            "ST = fase de platô (fase 2); supra = IAM/pericardite, infra = isquemia",
             "QTc prolongado = risco de Torsades de Pointes (morte súbita)",
+            "QT curto: pensar em hipercalemia, hipercalcemia ou digital",
           ],
-          clinicalTip: "A hipercalemia é a causa mais importante de T apiculada. Se K+ > 6.5 com alteração de ECG, é EMERGÊNCIA: gluconato de cálcio IV imediatamente, antes de corrigir o potássio.",
+          clinicalTip: "A hipercalemia é a causa mais importante de T apiculada. Se K⁺ > 6.5 com alteração de ECG, é EMERGÊNCIA: gluconato de cálcio IV imediatamente, antes de corrigir o potássio.",
         },
       ],
     },
