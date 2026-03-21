@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     switch (action) {
       case "list_users": {
         const [{ data: profiles }, { data: roles }, { data: subs }, { data: quotas }, { data: domainMaps }, { data: attempts }, { data: presenceData }] = await Promise.all([
-          supabaseAuth.from("profiles").select("user_id, display_name, email, is_blocked, created_at, avatar_url, organization_id, status, approved_by, approved_at").order("created_at", { ascending: false }),
+          supabaseAuth.from("profiles").select("user_id, display_name, email, is_blocked, created_at, avatar_url, organization_id, status, approved_by, approved_at, faculdade, periodo, phone, user_type").order("created_at", { ascending: false }),
           supabaseAuth.from("user_roles").select("user_id, role"),
           supabaseAuth.from("subscriptions").select("user_id, status, plan_id, plans(name, price)").eq("status", "active"),
           supabaseAuth.from("user_quotas").select("user_id, questions_used, questions_limit"),
