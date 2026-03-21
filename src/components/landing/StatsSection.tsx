@@ -1,9 +1,9 @@
 import { Users, BookOpen, Trophy, Brain } from "lucide-react";
 
 const stats = [
-  { icon: Users, value: "2.500+", label: "Alunos ativos", color: "text-blue-400" },
-  { icon: BookOpen, value: "150.000+", label: "Questões geradas", color: "text-emerald-400" },
-  { icon: Trophy, value: "92%", label: "Taxa de aprovação", color: "text-amber-400" },
+  { icon: Users, value: "100+", label: "Alunos cadastrados", color: "text-blue-400" },
+  { icon: BookOpen, value: "5.600+", label: "Questões no banco", color: "text-emerald-400" },
+  { icon: Trophy, value: "4.900+", label: "Flashcards criados", color: "text-amber-400" },
   { icon: Brain, value: "8", label: "Agentes IA especializados", color: "text-violet-400" },
 ];
 
