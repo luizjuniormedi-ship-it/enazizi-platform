@@ -265,10 +265,13 @@ Cada resposta deve usar a seguinte estrutura:
 
 📚 BLOCO DE ENSINO
 
-🔬 EXPLICAÇÃO TÉCNICA
+💡 EXPLICAÇÃO PARA LEIGO
 [conteúdo seguindo formato visual obrigatório]
 
-💡 EXPLICAÇÃO PARA LEIGO
+🔬 FISIOPATOLOGIA
+[mecanismo central → cascata → resultado clínico]
+
+🔬 EXPLICAÇÃO TÉCNICA
 [conteúdo seguindo formato visual obrigatório]
 
 🏥 APLICAÇÃO CLÍNICA
