@@ -1003,358 +1003,1055 @@ O digital **bloqueia a bomba Na⁺/K⁺ ATPase** → acúmulo de Na⁺ intracelu
 export const rxCourse: CourseData = {
   id: "rx-torax-interpretation",
   title: "Curso de Raio-X de Tórax",
-  description: "Domine a interpretação sistemática do RX de tórax — da técnica às patologias mais cobradas em prova.",
+  description: "Domine a interpretação sistemática do RX de tórax — da técnica radiológica às patologias mais cobradas em provas de residência.",
   category: "rx_torax",
   modules: [
     {
       id: "rx-basics",
-      title: "Fundamentos do RX de Tórax",
-      description: "Técnica, incidências e anatomia radiológica normal.",
+      title: "Fundamentos e Técnica",
+      description: "Incidências, critérios de qualidade, anatomia radiológica e roteiro sistemático de leitura.",
       icon: "📷",
       lessons: [
         {
           id: "rx-1-1",
           title: "Técnica e Qualidade do RX",
-          subtitle: "PA vs AP, critérios de qualidade ABCDE",
-          theory: `## Incidências do RX de Tórax
+          subtitle: "PA vs AP, critérios de qualidade, mnemônico ABCDE",
+          theory: `## Princípios da Radiografia de Tórax
 
-### PA (Póstero-Anterior) — Padrão
-- Raios entram pelas **costas**, saem pelo peito → filme anterior
-- **Vantagem**: silhueta cardíaca em tamanho real (sem magnificação)
-- Paciente em **ortostase**, inspiração profunda
-- É o RX "ideal" — solicite sempre que possível
+O raio-X de tórax é o **exame de imagem mais solicitado** na prática médica. É rápido, barato, acessível e fornece uma visão panorâmica do tórax. Para interpretá-lo corretamente, é obrigatório entender a técnica.
 
-### AP (Ântero-Posterior) — Leito
-- Raios entram pelo peito → película posterior
-- **Problema**: coração parece MAIOR (magnificação ~20%)
-- Usado em pacientes acamados/UTI
-- Não avalie cardiomegalia em AP!
+### Incidências Fundamentais
 
-### Perfil (Lateral)
-- Complementar ao PA para avaliar:
-  - Lesões retrocardíacas
-  - Derrames loculados
-  - Linfonodos hilares
+#### PA (Póstero-Anterior) — O Padrão-Ouro
+- Raios entram pelas **costas** e o filme fica **anterior** (junto ao peito)
+- O coração está **próximo ao filme** → silhueta com tamanho real
+- Paciente em **ortostase**, braços em rotação interna, inspiração profunda
+- **Sempre solicite PA** — é a referência para todas as medidas
+
+#### AP (Ântero-Posterior) — O RX de Leito
+- Raios entram pelo **peito** e o filme fica **posterior** (nas costas)
+- O coração está **longe do filme** → **magnificação de ~20%**
+- Usado em UTI, emergência, pacientes acamados
+- ⚠️ **NUNCA avalie cardiomegalia em AP** — o coração parece maior do que realmente é
+
+#### Perfil (Lateral Esquerdo)
+- Paciente com o **lado esquerdo** junto ao filme
+- Complementar para avaliar:
+  - Lesões **retrocardíacas** (invisíveis no PA)
+  - Derrames **loculados** em cisuras
+  - **Coluna vertebral**: normalmente os corpos ficam mais transparentes de cima para baixo. Se isso não ocorre → lesão retroCardíaca
+
+#### Incidência de Laurell (Decúbito Lateral)
+- Paciente deitado **sobre o lado afetado** com raios horizontais
+- Finalidade: confirmar **derrame pleural livre** (líquido se move com gravidade)
+- Se espessura > 1 cm → **derrame puncionável**
 
 ---
 
 ## Critérios de Qualidade — Mnemônico "ABCDE"
 
-### A — Adequação (Alinhamento)
-- Processos espinhosos entre as clavículas (sem rotação)
-- Se clavícula D mais próxima da linha média → rotado para E
+Antes de interpretar qualquer achado, avalie se o exame tem qualidade:
 
-### B — Brilho (Exposição/Penetração)
-- Ideal: ver corpos vertebrais atrás do coração
-- Muito claro (hiperpenetrado) → perde detalhes pulmonares
-- Muito escuro (hipopenetrado) → falsa opacidade
+### A — Alinhamento (Rotação)
+- Os **processos espinhosos** devem estar equidistantes das extremidades mediais das clavículas
+- Clavícula D mais próxima da linha média → paciente **rotado para a esquerda**
+- Rotação altera a aparência do mediastino e pode simular alargamento
 
-### C — Cobertura
-- Incluir ápices pulmonares até seios costofrênicos
-- Incluir partes moles laterais
+### B — Brilho (Penetração)
+- **Ideal**: visualizar corpos vertebrais atrás do mediastino, mas não com excessiva clareza
+- **Hipopenetrado** (escuro): falsa opacidade, perde detalhes, simula consolidação
+- **Hiperpenetrado** (claro): perde detalhes pulmonares, não vê infiltrado sutil
+
+### C — Cobertura (Campo Incluído)
+- Do **ápice pulmonar** até os **seios costofrênicos** bilateralmente
+- Deve incluir **partes moles laterais** completas
+- Ápices cortados → perde nódulos apicais e pneumotórax
 
 ### D — Dispositivos
-- Identificar: TOT, cateter venoso central, dreno, marca-passo, sonda
+- Antes de qualquer interpretação, identifique: TOT, cateter venoso central, Swan-Ganz, dreno torácico, sonda nasogástrica, marca-passo, PICC
+- Verifique **posição adequada** de cada dispositivo
 
 ### E — Expansão (Inspiração)
-- Ideal: contar **6 arcos costais anteriores** ou 9-10 posteriores acima do diafragma
-- < 6 arcos = hiperinsuflação ou inspiração inadequada`,
+- Conte **arcos costais anteriores** visíveis acima do diafragma
+- **Ideal: 6 arcos anteriores** (ou 9-10 posteriores)
+- < 5 arcos → **hiperinsuflação inadequada** (falsa congestão)
+- > 7 arcos → **hiperinsuflação** (enfisema, asma)`,
           keyPoints: [
-            "PA é o padrão — AP magnifica o coração (não avalie ICT em AP)",
-            "Sem rotação: espinhosos centrados entre as clavículas",
-            "Boa inspiração: 6 arcos costais anteriores visíveis",
-            "Sempre procure dispositivos médicos antes de interpretar",
+            "PA é o padrão-ouro — AP magnifica o coração em ~20% (nunca avalie ICT em AP)",
+            "Sem rotação: processos espinhosos centrados entre as extremidades mediais das clavículas",
+            "Boa inspiração: 6 arcos costais anteriores acima do diafragma",
+            "Laurell > 1cm = derrame puncionável",
+            "Sempre identifique dispositivos antes de interpretar o parênquima",
           ],
-          clinicalTip: "Antes de laudar 'cardiomegalia', confirme que o RX é PA. No AP de leito, o coração pode parecer aumentado mesmo sendo normal. Correlacione com ecocardiograma quando em dúvida.",
+          clinicalTip: "Na emergência, o RX AP de leito é comum. Antes de laudar 'cardiomegalia' ou 'alargamento de mediastino', confirme a incidência. No AP, o coração parece 20% maior e o mediastino superior pode parecer alargado mesmo sem patologia.",
+          images: [
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Chest_Xray_PA_3-8-2010.png/800px-Chest_Xray_PA_3-8-2010.png", caption: "RX de tórax PA normal — observe a silhueta cardíaca, mediastino centralizado e seios costofrênicos agudos." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Chest_radiograph_of_a_healthy_male.jpg/600px-Chest_radiograph_of_a_healthy_male.jpg", caption: "RX PA de paciente saudável com boa inspiração (6 arcos costais anteriores visíveis)." },
+          ],
+          quiz: [
+            {
+              question: "Em qual incidência do RX de tórax NÃO se deve avaliar o índice cardiotorácico (ICT)?",
+              options: ["PA (póstero-anterior)", "AP (ântero-posterior)", "Perfil esquerdo", "Laurell"],
+              correctIndex: 1,
+              explanation: "Na incidência AP, os raios entram pelo peito e o coração está longe do filme, causando magnificação de ~20%. Isso superestima o tamanho cardíaco, tornando a medida do ICT não confiável."
+            },
+            {
+              question: "Qual o número ideal de arcos costais anteriores visíveis acima do diafragma em um RX bem inspirado?",
+              options: ["4 arcos", "5 arcos", "6 arcos", "8 arcos"],
+              correctIndex: 2,
+              explanation: "O ideal são 6 arcos costais anteriores (ou 9-10 posteriores). Menos que 5 sugere inspiração inadequada; mais que 7 sugere hiperinsuflação (DPOC, asma)."
+            },
+            {
+              question: "Na incidência de Laurell, qual espessura do derrame pleural indica necessidade de punção?",
+              options: ["Qualquer quantidade visível", "> 0,5 cm", "> 1 cm", "> 3 cm"],
+              correctIndex: 2,
+              explanation: "Derrame com espessura > 1 cm no Laurell indica volume significativo (~200mL) e é indicação de toracocentese para análise (diferencial entre transudato e exsudato)."
+            },
+          ],
         },
         {
           id: "rx-1-2",
           title: "Anatomia Radiológica Normal",
-          subtitle: "Silhueta cardíaca, mediastino, hilos, parênquima, pleura",
-          theory: `## Roteiro Sistemático de Leitura
+          subtitle: "Silhueta cardíaca, mediastino, hilos, parênquima, pleura e diafragma",
+          theory: `## Roteiro Sistemático de Leitura do RX de Tórax
 
-### 1. Partes Moles e Ossos
-- Enfisema subcutâneo (ar nos tecidos moles)
-- Fraturas costais (trauma)
-- Lesões líticas/blásticas (metástases)
-- Mastectomia (assimetria de partes moles)
+A interpretação do RX de tórax deve seguir um **roteiro sistemático** para não perder achados. Nunca vá direto ao "óbvio" — achados sutis estão nos cantos.
 
-### 2. Mediastino
-**Superior**: traqueia (centralizada), grandes vasos
-**Anterior**: timo (crianças), tireoide retroesternal, linfoma, teratoma ("4 T's")
-**Médio**: coração, grandes vasos, linfonodos hilares
-**Posterior**: esôfago, aorta descendente, coluna
+### 1. Partes Moles e Esqueleto
+
+- **Enfisema subcutâneo**: ar nos tecidos moles (linhas radiolucentes entre fibras musculares)
+- **Fraturas costais**: procure especialmente em costelas inferiores (trauma) e superiores (metástases)
+- **Lesões líticas**: áreas de destruição óssea (metástases de mama, pulmão, rim, tireoide)
+- **Lesões blásticas**: áreas de esclerose (metástases de próstata)
+- **Mastectomia prévia**: assimetria de partes moles = pista diagnóstica ("mama fantasma")
+- **Calcificações vasculares**: aorta, coronárias (aterosclerose)
+
+### 2. Mediastino — Compartimentos
+
+#### Superior
+- **Traqueia**: deve estar **centralizada** (desvio = massa, pneumotórax, atelectasia)
+- **Grandes vasos**: arco aórtico, VCS, tronco braquiocefálico
+
+#### Anterior (Pré-vascular) — "Os 4 T's"
+- **T**imoma (mais comum em adultos)
+- **T**ireoide retroesternal (bócio mergulhante)
+- **T**eratoma (e outros tumores germinativos)
+- **T**errível linfoma (Hodgkin é o mais comum)
+
+#### Médio (Visceral)
+- Coração, pericárdio, grandes vasos
+- Linfonodos hilares e paratraqueais
+- Esôfago (não visível normalmente)
+
+#### Posterior (Paravertebral)
+- Esôfago, aorta descendente
+- Coluna vertebral, discos, tumores neurogênicos (schwannoma)
 
 ### 3. Silhueta Cardíaca
-- **Borda direita**: AD (átrio direito) + VCS
-- **Borda esquerda** (de cima para baixo):
-  1. Botão aórtico
-  2. Tronco da artéria pulmonar
-  3. Aurícula do AE
-  4. VE (ventrículo esquerdo)
-- **ICT** (índice cardiotorácico): diâmetro cardíaco / diâmetro torácico
-  - Normal: **< 0,50** (apenas em PA!)
+
+#### Borda Direita (de cima para baixo)
+1. **VCS** (veia cava superior)
+2. **Átrio direito** (AD)
+
+#### Borda Esquerda (de cima para baixo)
+1. **Botão aórtico** (arco aórtico)
+2. **Tronco da artéria pulmonar** (janela aortopulmonar)
+3. **Aurícula do átrio esquerdo** (AE)
+4. **Ventrículo esquerdo** (VE)
+
+#### Índice Cardiotorácico (ICT)
+- ICT = diâmetro cardíaco máximo / diâmetro torácico interno
+- **Normal: < 0,50** (apenas em PA!)
+- ICT > 0,50 = **cardiomegalia** (sensibilidade ~60%, especificidade ~95%)
 
 ### 4. Hilos Pulmonares
-- Hilo E normalmente mais alto que o D (1-3cm)
-- Compostos por artérias e veias pulmonares + brônquios + linfonodos
-- Hilo aumentado: hipertensão pulmonar, linfadenopatia, massa
+
+- **Composição**: artérias pulmonares (principal componente), veias, brônquios, linfonodos
+- **Hilo esquerdo** é normalmente **mais alto** que o direito (1-3 cm)
+- **Hilo aumentado**: HAP, linfadenopatia (sarcoidose, linfoma, TB), massa
+- **Hilo deslocado**: atelectasia (puxa para cima), derrame (empurra para baixo)
+- **Dança dos hilos**: hilos pulsáteis na fluoroscopia = HAP
 
 ### 5. Parênquima Pulmonar
-- Compare os dois lados sistematicamente
-- Ápices, terço médio, bases
-- Padrão alveolar (opacidade com broncograma aéreo)
-- Padrão intersticial (reticular, nodular, reticulonodular)
+
+Compare **sistematicamente** os dois lados (ápice com ápice, base com base):
+
+| Padrão | Características | Exemplos |
+|--------|----------------|----------|
+| **Alveolar** | Opacidade homogênea, broncograma aéreo, coalescência | Pneumonia, edema, hemorragia |
+| **Intersticial reticular** | Linhas finas formando rede | Fibrose, ICC, linfangite |
+| **Intersticial nodular** | Múltiplos nódulos | Metástases, TB miliar, silicose |
+| **Intersticial reticulonodular** | Linhas + nódulos | Sarcoidose, pneumoconioses |
+| **Nódulo/massa** | Opacidade arredondada (< ou > 3cm) | Tumor, granuloma, abscesso |
+| **Cavitação** | Lesão com centro radiolucente | TB, abscesso, carcinoma escamoso |
 
 ### 6. Pleura e Diafragma
-- Seios costofrênicos devem ser **agudos** (livres)
-- Velamento = derrame pleural (> 200mL para ser visível em PA)
-- Hemidiafragma D normalmente mais alto que E (fígado)
-- Retificação: hiperinsuflação (DPOC, asma)`,
+
+- **Seios costofrênicos**: devem ser **agudos** (livres)
+- **Velamento**: sinal de derrame (> 200mL para ser visível em PA)
+- **Hemidiafragma direito** normalmente **mais alto** que o esquerdo (fígado)
+- **Retificação diafragmática**: hiperinsuflação (DPOC, asma grave)
+- **Elevação unilateral**: paralisia frênica, hepatomegalia, abscesso subfrênico`,
           keyPoints: [
-            "ICT < 0.50 é normal (apenas em PA!)",
-            "Borda E: botão aórtico → AP → aurícula AE → VE",
-            "Hilo E mais alto que D é normal",
-            "Seios costofrênicos agudos = normais; velados = derrame",
+            "ICT < 0,50 é normal em PA — ICT > 0,50 = cardiomegalia",
+            "Borda esquerda: botão aórtico → tronco pulmonar → aurícula AE → VE",
+            "Hilo esquerdo mais alto que o direito é NORMAL",
+            "Seios costofrênicos agudos = normais; velados = derrame (> 200mL)",
+            "Massas do mediastino anterior: 4 T's (Timoma, Tireoide, Teratoma, Terrível linfoma)",
           ],
-          clinicalTip: "O 'sinal da silhueta' é um dos mais úteis: se uma opacidade apaga a borda do coração, ela está no mesmo plano (anterior/língula). Se apaga o diafragma, está na base posterior. Use para localizar lesões!",
+          clinicalTip: "O 'sinal da silhueta' é fundamental: se uma opacidade apaga a borda do coração, está no mesmo plano (segmento anterior/língula). Se apaga o diafragma, está na base posterior. Se não apaga nenhum → está no lobo médio/posterior. Use para localizar lesões sem TC!",
+          images: [
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Heart_normal_short_axis_section.jpg/800px-Heart_normal_short_axis_section.jpg", caption: "Anatomia cardíaca em corte — base para entender a silhueta no RX." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Blausen_0458_Heart_Anterior.png/800px-Blausen_0458_Heart_Anterior.png", caption: "Visão anterior do coração — correlação com as bordas cardíacas vistas no RX PA." },
+          ],
+          quiz: [
+            {
+              question: "Qual estrutura forma a borda cardíaca esquerda mais inferior no RX PA?",
+              options: ["Átrio esquerdo", "Ventrículo esquerdo", "Ventrículo direito", "Botão aórtico"],
+              correctIndex: 1,
+              explanation: "O VE forma a porção mais inferior e lateral da borda esquerda. De cima para baixo: botão aórtico → tronco pulmonar → aurícula do AE → VE."
+            },
+            {
+              question: "As massas do mediastino anterior são lembradas pelo mnemônico '4 T's'. Qual NÃO pertence a esse grupo?",
+              options: ["Timoma", "Tireoide retroesternal", "Tuberculose", "Teratoma"],
+              correctIndex: 2,
+              explanation: "A TB causa linfadenopatia do mediastino médio e posterior, não anterior. Os 4 T's são: Timoma, Tireoide, Teratoma e Terrível linfoma."
+            },
+            {
+              question: "O 'sinal da silhueta' positivo (apagamento da borda cardíaca esquerda) indica que a lesão está em qual localização?",
+              options: ["Lobo inferior posterior", "Lobo superior", "Língula ou segmento anterior", "Mediastino posterior"],
+              correctIndex: 2,
+              explanation: "Se a opacidade apaga a borda do coração, ela está no mesmo plano anteroposterior — ou seja, na língula (esquerda) ou lobo médio (direita). Lesões posteriores não apagam a silhueta cardíaca."
+            },
+          ],
+        },
+        {
+          id: "rx-1-3",
+          title: "Sinal da Silhueta e Localização",
+          subtitle: "Identificando a localização de lesões sem TC",
+          theory: `## O Sinal da Silhueta — A Ferramenta Mais Poderosa do RX
+
+O sinal da silhueta foi descrito por **Benjamin Felson** e é talvez o conceito mais útil na interpretação do RX de tórax. Ele permite **localizar lesões** sem necessidade de TC.
+
+### Princípio Fundamental
+
+> Quando duas estruturas de **mesma densidade radiológica** estão em contato no mesmo plano, **seus contornos se apagam** (perdem a interface).
+
+Exemplo: se uma consolidação no lobo médio (anterior) toca o coração (anterior), a borda cardíaca direita **desaparece** → sinal da silhueta positivo.
+
+### Aplicações Práticas
+
+| Borda apagada | Localização da lesão |
+|--------------|---------------------|
+| Borda cardíaca D (AD) | Lobo médio direito |
+| Borda cardíaca E (VE) | Língula |
+| Hemidiafragma D | Lobo inferior D (segmento basal posterior) |
+| Hemidiafragma E | Lobo inferior E (segmento basal posterior) |
+| Botão aórtico | Lobo superior E (segmento apicoposterior) |
+| Aorta descendente | Lobo inferior E (segmento posterior) |
+
+### Sinal da Silhueta NEGATIVO
+- Se a opacidade **NÃO apaga** a borda adjacente → está em **plano diferente** (mais posterior ou anterior)
+- Exemplo: opacidade na base E sem apagar o hemidiafragma → lesão no segmento superior do lobo inferior (posterior ao diafragma)
+
+### Outros Sinais de Localização
+
+#### Sinal da Convergência Hilar
+- Vasos convergem para a opacidade → **massa hilar** (tumor de pulmão)
+- Vasos NÃO convergem → **massa mediastinal** (linfoma, timoma)
+
+#### Sinal do Broncograma Aéreo
+- Ar nos brônquios visível dentro de opacidade → consolidação **parenquimatosa**
+- Confirma que a lesão é PULMONAR (não pleural ou mediastinal)
+
+#### Sinal da Coluna Vertebral (no Perfil)
+- Normalmente: corpos vertebrais ficam progressivamente mais **transparentes** de cima para baixo
+- Se isso não ocorre (ficam mais brancos) → **lesão retrocardíaca** (derrame, massa, consolidação)
+
+#### Sinal do Cervical
+- Massa mediastinal que se estende acima das clavículas sem alterar contorno → **origem posterior** (neurôgenio)
+- Se altera contorno do mediastino → **origem anterior** (tireoide, timoma)`,
+          keyPoints: [
+            "Sinal da silhueta: apagamento de borda = lesão no MESMO plano anteroposterior",
+            "Borda cardíaca D apagada → lobo médio; borda E → língula",
+            "Diafragma apagado → lesão basal posterior",
+            "Broncograma aéreo = lesão parenquimatosa (não pleural nem mediastinal)",
+            "Sinal da coluna no perfil: perda de transparência progressiva = lesão retrocardíaca",
+          ],
+          clinicalTip: "Na prova, quando mostrarem um RX com opacidade que apaga a borda cardíaca, a resposta provavelmente é 'pneumonia de lobo médio' (direita) ou 'pneumonia da língula' (esquerda). Se a opacidade NÃO apaga a borda cardíaca, a lesão está mais posterior — lobo inferior.",
+          quiz: [
+            {
+              question: "Uma opacidade no hemitórax direito que apaga a borda do átrio direito sugere lesão em qual localização?",
+              options: ["Lobo superior direito", "Lobo médio direito", "Lobo inferior direito (segmento posterior)", "Mediastino posterior"],
+              correctIndex: 1,
+              explanation: "O lobo médio é anterior, no mesmo plano que o átrio direito. Quando uma consolidação o preenche, apaga a interface entre ambos (sinal da silhueta positivo com borda cardíaca direita)."
+            },
+            {
+              question: "No RX em perfil, os corpos vertebrais torácicos devem ficar progressivamente mais transparentes de cima para baixo. Se isso NÃO ocorre, o que sugere?",
+              options: ["Hiperinsuflação pulmonar", "Lesão retrocardíaca (derrame, massa ou consolidação)", "Derrame pericárdico", "Pneumotórax posterior"],
+              correctIndex: 1,
+              explanation: "O sinal da coluna vertebral indica lesão retrocardíaca — geralmente derrame pleural, consolidação do lobo inferior ou massa mediastinal posterior. Normalmente o pulmão aerado torna os corpos mais transparentes nas porções inferiores."
+            },
+          ],
         },
       ],
     },
     {
       id: "rx-pathology",
       title: "Patologias Essenciais",
-      description: "Pneumonia, derrame, pneumotórax, IC, DPOC, TB e mais.",
+      description: "Pneumonia, derrame pleural, pneumotórax e atelectasia — os diagnósticos que você PRECISA dominar.",
       icon: "🫁",
       lessons: [
         {
           id: "rx-2-1",
           title: "Pneumonia e Consolidação",
-          subtitle: "Padrão alveolar, broncograma aéreo, tipos de pneumonia",
-          theory: `## Consolidação Pulmonar
+          subtitle: "Padrão alveolar, broncograma aéreo, tipos de pneumonia e complicações",
+          theory: `## Consolidação Pulmonar no RX
 
-### Padrão Alveolar — Características
-- **Opacidade homogênea** (branca) com limites mal definidos
-- **Broncograma aéreo**: ar nos brônquios visível dentro da opacidade
-- **Sinal da silhueta**: apagamento da estrutura adjacente (coração, diafragma)
-- **Tendência a confluência**: coalescência de opacidades
+### O Padrão Alveolar — Características Cardinais
+1. **Opacidade homogênea** com limites mal definidos
+2. **Broncograma aéreo**: ar nos brônquios visível dentro da opacidade (patognomônico de lesão parenquimatosa)
+3. **Sinal da silhueta**: apagamento da estrutura adjacente
+4. **Tendência à coalescência**: opacidades que se fundem
+5. **Evolução rápida**: muda em horas a dias (diferente do intersticial)
 
 ### Pneumonia Lobar (Típica)
-- **Agente**: Streptococcus pneumoniae (mais comum)
-- **RX**: consolidação homogênea respeitando cisuras
-- **Sinal**: broncograma aéreo positivo
-- Exemplo: opacidade densa no lobo inferior direito com limite na cisura horizontal
+- **Agente mais comum**: *Streptococcus pneumoniae*
+- **RX**: consolidação homogênea densa, respeitando limites lobares (cisuras)
+- **Broncograma aéreo**: PRESENTE (ar nos brônquios, alvéolos preenchidos)
+- **Localização preferencial**: lobos inferiores
+- **Evolução**: pneumonia → hepatização vermelha → hepatização cinza → resolução
 
-### Broncopneumonia (Atípica)
-- **Agentes**: Mycoplasma, vírus, Legionella
-- **RX**: infiltrado intersticial difuso ou opacidades multifocais
-- **Padrão**: reticular ou reticulonodular, bilateral
-- Pode ter derrame pleural associado
+> **Caso clínico típico**: Homem de 55 anos, febre alta (39,5°C), tosse com escarro ferrugem (pneumocócica), dor pleurítica. RX: consolidação do lobo inferior direito com broncograma aéreo.
+
+### Broncopneumonia
+- **Agentes**: *Staphylococcus aureus*, gram-negativos, anaeróbios
+- **RX**: opacidades multifocais, heterogêneas, bilaterais
+- **Não respeita limites lobares** (disseminação pelas vias aéreas)
+- Complicações mais frequentes: abscesso, pneumatocele, empiema
+
+### Pneumonia Atípica (Intersticial)
+- **Agentes**: *Mycoplasma pneumoniae* (mais comum), vírus, *Chlamydia*, *Legionella*
+- **RX**: infiltrado intersticial reticular ou reticulonodular, bilateral
+- **Dissociação clínico-radiológica**: RX parece grave, paciente parece bem (ou vice-versa)
+- Pode evoluir para padrão alveolar
 
 ### Pneumonia Redonda
-- Opacidade esférica bem definida — DD com nódulo/massa
-- Mais comum em crianças
-- Geralmente pneumocócica
+- Opacidade **esférica**, bem delimitada — diagnóstico diferencial com nódulo/massa
+- Mais comum em **crianças** (poros de Kohn imaturos)
+- Geralmente pneumocócica, boa resposta a ATB
 
-### Complicações
-- **Derrame parapneumônico**: velamento costofrênico → Laurell > 1cm → punção
-- **Empiema**: derrame septado, espessamento pleural
-- **Abscesso**: cavitação com nível hidroaéreo
-- **Pneumatocele**: cavidade de paredes finas (pós-estafilocócica)`,
+### Pneumonia Aspirativa
+- **Localização**: segmentos posteriores dos lobos superiores (deitado) ou segmentos basais dos lobos inferiores (em pé)
+- **Fatores de risco**: etilismo, AVC, disfagia, anestesia, DRGE
+- **Agentes**: flora mista com anaeróbios → tendência a **abscesso** e **empiema**
+- RX: consolidação nos segmentos dependentes (gravitacionais)
+
+### Complicações Radiológicas
+| Complicação | RX | Significado |
+|------------|-----|------------|
+| Derrame parapneumônico | Velamento costofrênico | Laurell > 1cm → puncionar |
+| Empiema | Derrame septado, espessamento pleural | Drenagem + ATB |
+| Abscesso pulmonar | Cavitação com **nível hidroaéreo** | ATB prolongado ± drenagem |
+| Pneumatocele | Cavidade de **paredes finas** | Pós-estafilocócica, observar |`,
           keyPoints: [
-            "Consolidação = opacidade + broncograma aéreo + sinal da silhueta",
-            "Pneumonia lobar (S. pneumoniae): consolidação homogênea com cisuras preservadas",
-            "Broncopneumonia: infiltrado difuso, bilateral, padrão intersticial",
-            "Derrame parapneumônico com Laurell > 1cm → puncionar",
+            "Consolidação = opacidade homogênea + broncograma aéreo + sinal da silhueta",
+            "Pneumonia lobar (S. pneumoniae): respeita cisuras, broncograma aéreo presente",
+            "Pneumonia atípica (Mycoplasma): padrão intersticial com dissociação clínico-radiológica",
+            "Pneumonia aspirativa: segmentos posteriores superiores (deitado) ou basais inferiores (em pé)",
+            "Derrame parapneumônico com Laurell > 1cm → toracocentese obrigatória",
           ],
-          clinicalTip: "Pneumonia de lobo superior direito com abaulamento da cisura horizontal ('sinal do lobo pesado') sugere Klebsiella pneumoniae — comum em etilistas e diabéticos. Alta mortalidade, iniciar ATB agressivo!",
+          clinicalTip: "Pneumonia do lobo superior direito com abaulamento da cisura horizontal ('sinal do lobo pesado') sugere *Klebsiella pneumoniae* — o Friedlander. Clássico em etilistas e diabéticos. Tem tendência a cavitação e alta mortalidade!",
+          images: [
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Pneumonia_x-ray.jpg/800px-Pneumonia_x-ray.jpg", caption: "Pneumonia lobar — consolidação densa no lobo inferior direito com broncograma aéreo." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Aspiration_pneumonia.jpg/448px-Aspiration_pneumonia.jpg", caption: "Pneumonia aspirativa — opacidade no segmento posterior do lobo superior direito." },
+          ],
+          quiz: [
+            {
+              question: "Qual achado radiológico é PATOGNOMÔNICO de consolidação parenquimatosa?",
+              options: ["Opacidade homogênea", "Broncograma aéreo", "Sinal da silhueta", "Derrame pleural associado"],
+              correctIndex: 1,
+              explanation: "O broncograma aéreo (ar nos brônquios dentro de uma opacidade) confirma que a lesão é PARENQUIMATOSA (alvéolos preenchidos), diferenciando de derrame pleural ou massa mediastinal."
+            },
+            {
+              question: "A 'dissociação clínico-radiológica' (paciente pouco sintomático com RX extenso) é clássica de qual tipo de pneumonia?",
+              options: ["Pneumonia lobar pneumocócica", "Pneumonia atípica (Mycoplasma)", "Broncopneumonia estafilocócica", "Pneumonia aspirativa"],
+              correctIndex: 1,
+              explanation: "Na pneumonia por Mycoplasma, o infiltrado intersticial pode parecer extenso no RX, mas o paciente apresenta sintomas leves — tosse seca, estado geral preservado. É a clássica 'pneumonia que anda' (walking pneumonia)."
+            },
+            {
+              question: "Paciente etilista, 50 anos, com pneumonia do lobo superior direito e abaulamento da cisura horizontal. Qual agente é mais provável?",
+              options: ["Streptococcus pneumoniae", "Mycoplasma pneumoniae", "Klebsiella pneumoniae", "Staphylococcus aureus"],
+              correctIndex: 2,
+              explanation: "O 'sinal do lobo pesado' (abaulamento da cisura por edema intenso) é clássico da Klebsiella (Friedlander). Comum em etilistas/diabéticos, com tendência a cavitação e alta mortalidade."
+            },
+          ],
         },
         {
           id: "rx-2-2",
           title: "Derrame Pleural",
-          subtitle: "Sinais radiológicos, classificação, incidência de Laurell",
-          theory: `## Derrame Pleural no RX
+          subtitle: "Detecção, classificação, critérios de Light e armadilhas diagnósticas",
+          theory: `## Derrame Pleural — O Achado Mais Comum no RX
 
-### Quantidade Mínima para Detecção
-- **PA em ortostase**: > 200-300 mL
-- **Perfil**: > 50 mL (mais sensível)
-- **Laurell (decúbito lateral)**: > 10 mL
-- **USG**: > 5 mL (mais sensível de todos)
+### Sensibilidade por Incidência
+| Incidência | Volume mínimo detectável |
+|-----------|------------------------|
+| USG de tórax | > 5 mL (mais sensível!) |
+| Laurell (decúbito lateral) | > 10 mL |
+| Perfil | > 50 mL |
+| PA em ortostase | > 200-300 mL |
+| AP (leito) | > 500 mL |
 
-### Sinais Radiológicos
-1. **Velamento do seio costofrênico** (sinal mais precoce em PA)
-2. **Menisco** (curva de Damoiseau): concavidade superior, mais alta lateralmente
-3. **Opacificação homogênea** da base com desvio do mediastino para o lado oposto (se volumoso)
-4. **Hemitórax opaco**: derrame maciço → desvio contralateral
+### Sinais Radiológicos — Progressão
 
-### Classificação pela Incidência de Laurell
-| Espessura em Laurell | Classificação | Conduta |
-|---------------------|---------------|---------|
-| < 1 cm | Pequeno | Observar |
-| 1-5 cm | Moderado | Considerar punção |
-| > 5 cm | Grande | Punção + drenagem |
+#### Derrame Pequeno (200-500 mL)
+- **Velamento do seio costofrênico** (sinal mais precoce em PA)
+- O ângulo agudo torna-se **obtuso** (borrado)
 
-### Transudato vs Exsudato (Critérios de Light)
-É **exsudato** se qualquer UM dos critérios:
-- Proteína líquido/sérica > 0,5
-- LDH líquido/sérica > 0,6
-- LDH líquido > 2/3 do limite superior sérico
+#### Derrame Moderado (500-1500 mL)
+- **Menisco** (curva de Damoiseau): concavidade superior, mais alta lateralmente
+- Opacificação parcial do hemitórax
 
-### Causas Principais
+#### Derrame Volumoso (> 1500 mL)
+- **Opacificação completa** do hemitórax
+- **Desvio do mediastino** para o lado OPOSTO
+- Se hemitórax opaco COM desvio mediastinal → derrame
+- Se hemitórax opaco SEM desvio → atelectasia total
+
+#### Derrame Subpulmonar
+- Líquido se acumula **entre o pulmão e o diafragma**
+- Simula **elevação do hemidiafragma**
+- Pista: o "pico" do diafragma está mais lateral que o normal
+- Confirmação: Laurell (líquido se espalha)
+
+#### Derrame Loculado
+- Líquido aprisionado por aderências (empiema, hemotórax organizado)
+- **NÃO se move** no Laurell
+- Pode simular massa pleural ou pulmonar
+- Forma de "fuso" quando em cisura (pseudotumor, tumor fantasma da IC)
+
+### Classificação — Critérios de Light
+
+É **EXSUDATO** se QUALQUER UM dos seguintes:
+1. Proteína líquido/sérica > **0,5**
+2. LDH líquido/sérica > **0,6**
+3. LDH do líquido > **2/3** do limite superior normal sérico
+
+> Se NENHUM critério → **transudato** (fuga de líquido por pressão)
+
+### Etiologia
+
 | Transudato | Exsudato |
 |-----------|----------|
-| ICC (mais comum!) | Pneumonia/parapneumônico |
-| Cirrose/ascite | TB pleural |
+| ICC (causa #1!) | Derrame parapneumônico |
+| Cirrose/ascite | TB pleural (ADA > 40) |
 | Síndrome nefrótica | Neoplasia |
-| Diálise peritoneal | TEP |`,
+| Hipotireoidismo | TEP |
+| Diálise peritoneal | Artrite reumatoide/LES |
+
+### Armadilhas Diagnósticas
+- Derrame à **ESQUERDA isolado** na suposta ICC → pensar em outras causas (TB, neoplasia)
+- Derrame + **febre** que não melhora com ATB → empiema? TB? Neoplasia com infecção?
+- **Líquido sanguinolento** (hemorrágico): neoplasia, TEP, trauma`,
           keyPoints: [
-            "PA detecta derrame > 200mL; perfil > 50mL; USG > 5mL",
-            "Curva de Damoiseau: concavidade superior, maior lateralmente",
-            "Laurell > 1cm → puncionar para análise",
+            "PA detecta derrame > 200mL; USG > 5mL (muito mais sensível)",
+            "Curva de Damoiseau: concavidade superior, mais alta lateralmente",
+            "Hemitórax opaco + desvio contralateral = derrame; SEM desvio = atelectasia",
             "Critérios de Light: qualquer 1 positivo = exsudato",
+            "Derrame subpulmonar: simula elevação do diafragma — confirme com Laurell",
           ],
-          clinicalTip: "Derrame pleural unilateral ESQUERDO em paciente com dor torácica — pense em dissecção de aorta (hemotórax) ou perfuração esofágica (mediastinite). Não é 'só um derrame' — pode ser emergência cirúrgica!",
+          clinicalTip: "Na IC, o derrame pleural é bilateral em 75% dos casos e isolado à DIREITA em 15%. Derrame isolado à ESQUERDA é atípico para IC — investigue TB, neoplasia ou TEP. Não aceite esse achado como 'só IC'!",
+          images: [
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Pleural_effusion.jpg/420px-Pleural_effusion.jpg", caption: "Derrame pleural volumoso à esquerda — opacificação do hemitórax com desvio do mediastino para a direita." },
+          ],
+          quiz: [
+            {
+              question: "Hemitórax completamente opaco sem desvio do mediastino. Qual é o diagnóstico mais provável?",
+              options: ["Derrame pleural maciço", "Atelectasia total do pulmão", "Consolidação pneumônica extensa", "Hemotórax traumático"],
+              correctIndex: 1,
+              explanation: "Na atelectasia total, o pulmão colaba e NÃO há efeito de massa (não desvia o mediastino — na verdade pode atrair). No derrame maciço, há efeito de massa com desvio CONTRALATERAL."
+            },
+            {
+              question: "Qual exame é o MAIS sensível para detectar derrame pleural mínimo?",
+              options: ["RX PA em ortostase", "RX em perfil", "Incidência de Laurell", "Ultrassonografia de tórax"],
+              correctIndex: 3,
+              explanation: "A USG de tórax detecta derrames a partir de 5 mL, muito mais sensível que qualquer incidência radiográfica. É o exame de escolha para confirmar e guiar punção."
+            },
+          ],
         },
         {
           id: "rx-2-3",
           title: "Pneumotórax",
-          subtitle: "Simples, hipertensivo, tipos e conduta",
-          theory: `## Pneumotórax no RX
+          subtitle: "Diagnóstico, classificação, pneumotórax hipertensivo e condutas",
+          theory: `## Pneumotórax — Ar na Cavidade Pleural
 
 ### Diagnóstico Radiológico
-- **Linha pleural visceral** visível: fina linha branca separada da parede
-- **Ausência de trama vascular** além da linha pleural
-- Melhor visualizado em **expiração** (pulmão menor, pneumotórax mais evidente)
-- Pode ser sutil — procure no ápice!
 
-### Classificação por Tamanho
-| Tamanho | Critério (BTS) | Conduta |
-|---------|---------------|---------|
-| Pequeno | < 2 cm do ápice à cúpula | Observação + O₂ |
-| Grande | ≥ 2 cm | Drenagem torácica |
+#### Achados Clássicos
+- **Linha pleural visceral** visível: fina linha branca separada da parede torácica
+- **Ausência de trama vascular** lateral à linha pleural
+- **Hipotransparência** entre a pleura visceral e a parede (ar puro = preto)
+- Melhor visualizado em **expiração forçada** (pulmão menor, pneumotórax mais evidente)
 
-### Pneumotórax Hipertensivo — EMERGÊNCIA
-- **Diagnóstico CLÍNICO** (não espere RX!)
-- Sinais: hipotensão + dispneia + desvio de traqueia contralateral + turgência jugular + MV abolido
-- RX (se feito): desvio mediastinal contralateral + rebaixamento do diafragma ipsilateral
-- **Tratamento IMEDIATO**: punção descompressiva no 2° EIC na linha hemiclavicular → depois drenagem
+#### Onde Procurar
+- **Em ortostase**: ÁPICE (ar sobe)
+- **Em decúbito (UTI)**: ângulo costofrênico anterior (ar vai para cima = anteromedial)
+  - Sinais sutis: **sinal do sulco profundo** (seio costofrênico hiperlucente e profundo)
+  - **Nitidez excessiva** da borda cardíaca ou diafragma
 
-### Tipos de Pneumotórax
+### Classificação — Tamanho (Diretriz BTS)
+
+| Tamanho | Critério | Conduta |
+|---------|---------|---------|
+| Pequeno | < 2 cm do ápice à cúpula pleural | Observação + O₂ suplementar |
+| Grande | ≥ 2 cm | Drenagem torácica (5° EIC, linha axilar média) |
+
+> O O₂ suplementar em alta concentração acelera a reabsorção do pneumotórax em até **4x** (gradiente de nitrogênio)
+
+### Pneumotórax Hipertensivo — EMERGÊNCIA CLÍNICA
+
+#### ⚠️ DIAGNÓSTICO É CLÍNICO, NÃO RADIOLÓGICO!
+- **Tríade clássica**: hipotensão + dispneia + desvio de traqueia contralateral
+- Outros sinais: turgência jugular, MV abolido, enfisema subcutâneo
+- **NÃO espere o RX** — trate imediatamente
+
+#### Achados no RX (se realizado)
+- Desvio do mediastino para o lado OPOSTO
+- Rebaixamento/retificação do hemidiafragma ipsilateral
+- Colapso pulmonar completo
+
+#### Tratamento Imediato
+1. **Punção descompressiva**: jelco 14G no **2° EIC, linha hemiclavicular** (face anterior)
+2. Depois: **drenagem torácica** no 5° EIC, linha axilar média
+
+### Tipos Etiológicos
+
 | Tipo | Causa | Perfil |
 |------|-------|--------|
-| Primário espontâneo | Ruptura de bolha subpleural | Homem jovem, longilíneo, tabagista |
-| Secundário | DPOC, TB, fibrose cística | Pneumopatia prévia |
-| Traumático | Trauma torácico | Fratura de costela |
-| Iatrogênico | Punção venosa central, biópsia | Procedimento médico |
-| Catamenial | Endometriose torácica | Mulher, relacionado à menstruação |
+| Primário espontâneo | Ruptura de bolha/bleb subpleural | Homem jovem, alto, magro, tabagista |
+| Secundário espontâneo | Doença pulmonar de base (DPOC, fibrose cística, TB) | Paciente pneumopata |
+| Traumático | Trauma torácico penetrante/contuso | Fratura de costela |
+| Iatrogênico | Punção venosa central, biópsia pleural, ventilação mecânica | Procedimento médico |
+| Catamenial | Endometriose pleural/diafragmática | Mulher, coincide com menstruação |
 
 ### Hidropneumotórax
-- Ar + líquido no espaço pleural
-- **Nível hidroaéreo** retilíneo no RX (patognomônico)
-- Causas: trauma, fístula broncopleural, empiema com fístula`,
+- **Ar + líquido** na cavidade pleural simultaneamente
+- **Nível hidroaéreo retilíneo** (horizontal) = PATOGNOMÔNICO
+- Diferencia de abscesso pulmonar (nível curvo, dentro do parênquima)
+- Causas: trauma, fístula broncopleural, drenagem com ar residual`,
           keyPoints: [
-            "Linha pleural visceral + ausência de trama = pneumotórax",
-            "Pneumotórax hipertensivo: diagnóstico CLÍNICO, não radiológico",
-            "Punção descompressiva: 2° EIC, linha hemiclavicular",
-            "Pneumotórax primário: homem jovem, magro, alto, tabagista",
+            "Linha pleural visceral + ausência de trama distal = pneumotórax",
+            "Em decúbito (UTI): procure o sinal do sulco profundo (anteromedial)",
+            "Pneumotórax hipertensivo: diagnóstico CLÍNICO — NÃO espere o RX",
+            "Punção descompressiva: jelco 14G, 2° EIC, linha hemiclavicular",
+            "Hidropneumotórax: nível hidroaéreo retilíneo (horizontal) = patognomônico",
           ],
-          clinicalTip: "No pneumotórax hipertensivo, NÃO espere o RX! Se o paciente está instável com MV abolido unilateral e turgência jugular, puncione imediatamente com jelco 14G no 2° EIC. O RX é para depois da estabilização.",
+          clinicalTip: "Na UTI, o pneumotórax é ANTEROMEDIAL (ar sobe com o paciente deitado). O RX AP de leito pode parecer normal! Procure o 'sinal do sulco profundo' — um seio costofrênico anormalmente profundo e hiperlucente. Na dúvida, peça TC ou USG point-of-care.",
+          images: [
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/Pneumothorax_CXR.jpg/600px-Pneumothorax_CXR.jpg", caption: "Pneumotórax à direita — observe a linha pleural visceral e a ausência de trama vascular lateral." },
+          ],
+          quiz: [
+            {
+              question: "Paciente na UTI, em ventilação mecânica, com hipotensão súbita. RX AP mostra seio costofrênico direito anormalmente profundo e hiperlucente. Qual é o diagnóstico?",
+              options: ["Derrame pleural subpulmonar", "Pneumotórax anterior (sinal do sulco profundo)", "Atelectasia basal", "Hiperinsuflação por auto-PEEP"],
+              correctIndex: 1,
+              explanation: "Em decúbito dorsal, o ar do pneumotórax se acumula anteriormente. O 'sinal do sulco profundo' (seio costofrênico profundo e hiperlucente) é o achado mais confiável no RX AP de leito."
+            },
+            {
+              question: "Qual é o local correto para punção descompressiva no pneumotórax hipertensivo?",
+              options: ["5° EIC, linha axilar anterior", "2° EIC, linha hemiclavicular", "4° EIC, linha axilar média", "7° EIC, linha axilar posterior"],
+              correctIndex: 1,
+              explanation: "A punção descompressiva é realizada no 2° espaço intercostal, na linha hemiclavicular, com jelco 14G. É o procedimento de emergência. A drenagem definitiva é feita depois no 5° EIC, linha axilar média."
+            },
+          ],
         },
         {
           id: "rx-2-4",
+          title: "Atelectasia",
+          subtitle: "Tipos, sinais diretos e indiretos, diagnóstico diferencial com derrame",
+          theory: `## Atelectasia — Colapso Pulmonar
+
+### Definição
+Atelectasia é o **colapso parcial ou total** do parênquima pulmonar por perda de aeração. Não é uma doença, mas uma **consequência** de outra patologia.
+
+### Tipos de Atelectasia
+
+| Tipo | Mecanismo | Causa |
+|------|-----------|-------|
+| **Obstrutiva** (reabsortiva) | Obstrução brônquica → ar reabsorvido | Tumor endobrônquico (#1), corpo estranho, rolha de muco |
+| **Compressiva** | Compressão externa do parênquima | Derrame pleural, pneumotórax, massa |
+| **Cicatricial** | Fibrose retrai o parênquima | TB, fibrose pulmonar, radioterapia |
+| **Adesiva** | Deficiência de surfactante | Síndrome do desconforto respiratório (neonatal), SDRA |
+| **Passiva/Relaxamento** | Perda de pressão negativa intrapleural | Pneumotórax |
+
+### Sinais Radiológicos
+
+#### Sinais Diretos
+- **Opacidade** na região colapsada
+- **Deslocamento da cisura** em direção à atelectasia
+
+#### Sinais Indiretos (efeito de TRAÇÃO)
+- **Elevação do hemidiafragma** ipsilateral
+- **Desvio do mediastino** para o MESMO lado (diferença crucial com derrame!)
+- **Estreitamento dos espaços intercostais** ipsilateral
+- **Deslocamento hilar** (para cima se lobo superior, para baixo se inferior)
+- **Hiperinsuflação compensatória** do pulmão contralateral
+
+### Padrões por Lobo
+
+#### Lobo Superior Direito
+- Opacidade triangular com ápice no hilo
+- Cisura menor deslocada para CIMA
+- **Sinal do "S" de Golden**: contorno em S da cisura → sugere massa hilar (carcinoma broncogênico)
+
+#### Lobo Médio
+- Perda da nitidez da borda cardíaca direita (sinal da silhueta)
+- Opacidade tênue em PA, mais evidente no PERFIL
+
+#### Lobo Inferior (D ou E)
+- Opacidade triangular retrocardíaca
+- Hemidiafragma ipsilateral elevado
+- Hilo deslocado para BAIXO
+
+#### Atelectasia Total
+- **Hemitórax opaco** com desvio do mediastino para o MESMO lado
+- DD: derrame maciço (desvio para o lado OPOSTO)
+
+### Diagnóstico Diferencial Crucial
+
+| Achado | Atelectasia Total | Derrame Maciço |
+|--------|-------------------|----------------|
+| Hemitórax | Opaco | Opaco |
+| Desvio do mediastino | **IPSILATERAL** (puxa) | **CONTRALATERAL** (empurra) |
+| Diafragma | Elevado | Rebaixado |
+| Espaços intercostais | Estreitados | Alargados |`,
+          keyPoints: [
+            "Atelectasia obstrutiva: causa #1 em adultos é tumor endobrônquico",
+            "Desvio do mediastino para MESMO lado = atelectasia (puxa); lado OPOSTO = derrame (empurra)",
+            "Sinal do S de Golden: atelectasia de LSD com contorno em S = carcinoma broncogênico",
+            "Atelectasia de lobo médio: perda da silhueta cardíaca direita (sinal da silhueta)",
+            "Cisura deslocada em direção à opacidade = sinal direto mais confiável",
+          ],
+          clinicalTip: "Em adulto tabagista com atelectasia persistente de lobo superior, pense SEMPRE em carcinoma broncogênico até prova em contrário. O 'sinal do S de Golden' (contorno em S da cisura retraída) é clássico e aponta para massa hilar obstrutiva. Solicite broncoscopia!",
+          quiz: [
+            {
+              question: "Hemitórax esquerdo completamente opaco com desvio do mediastino para a ESQUERDA. Qual é o diagnóstico?",
+              options: ["Derrame pleural maciço", "Atelectasia total do pulmão esquerdo", "Pneumonia extensa", "Hemotórax traumático"],
+              correctIndex: 1,
+              explanation: "Desvio do mediastino para o MESMO LADO da opacidade indica TRAÇÃO (atelectasia). No derrame, o mediastino é EMPURRADO para o lado oposto."
+            },
+            {
+              question: "Atelectasia do lobo superior direito com contorno em 'S' da cisura (sinal do S de Golden). Qual é a etiologia mais provável?",
+              options: ["Rolha de muco pós-cirúrgica", "Carcinoma broncogênico hilar", "Corpo estranho endobrônquico", "Tuberculose endobrônquica"],
+              correctIndex: 1,
+              explanation: "O sinal do S de Golden descreve o contorno côncavo-convexo da cisura: a parte côncava é a cisura retraída pelo colapso, e a parte convexa é a MASSA hilar que obstrui o brônquio. É clássico do carcinoma broncogênico."
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: "rx-cardiopulm",
+      title: "Cardiopulmonar",
+      description: "Insuficiência cardíaca, DPOC, edema e hipertensão pulmonar no RX.",
+      icon: "❤️",
+      lessons: [
+        {
+          id: "rx-3-1",
           title: "Insuficiência Cardíaca no RX",
-          subtitle: "Congestão pulmonar, edema, redistribuição de fluxo",
-          theory: `## Sinais de IC no RX de Tórax
+          subtitle: "Congestão pulmonar progressiva, edema alveolar, mnemônico ABCDE",
+          theory: `## Sinais de IC no RX de Tórax — Progressão
 
-### Progressão dos Sinais (conforme PVC aumenta)
+A congestão pulmonar na IC segue uma progressão previsível que se correlaciona com a **pressão capilar pulmonar (PCP)**:
 
-#### Estágio 1 — Redistribuição de Fluxo (PCP 12-18 mmHg)
-- **Cefalização vascular**: vasos dos ápices calibrosos (normalmente finos)
-- Inversão do padrão vascular: ápices > bases
+### Estágio 1 — Redistribuição de Fluxo (PCP 12-18 mmHg)
+- **Cefalização vascular**: vasos dos ápices tornam-se calibrosos
+- Normalmente, vasos das bases são maiores que dos ápices (gravidade)
+- Na congestão, há **inversão**: ápices = bases ou ápices > bases
+- É o sinal **MAIS PRECOCE** de congestão
 
-#### Estágio 2 — Edema Intersticial (PCP 18-25 mmHg)
-- **Linhas B de Kerley**: linhas horizontais finas (1-2 cm) nas bases
-- **Borramento peribroncovascular**: espessamento de paredes brônquicas
+### Estágio 2 — Edema Intersticial (PCP 18-25 mmHg)
+- **Linhas B de Kerley**: linhas horizontais finas (1-2 cm) nas BASES, perpendiculares à pleura
+  - Representam septos interlobulares espessados por edema
+  - Presentes em apenas 20-30% dos casos (sensibilidade baixa!)
+- **Cuffing peribronquial**: espessamento da parede brônquica (halo ao redor dos brônquios em corte transversal)
+- **Borramento peribroncovascular**: perda da nitidez dos vasos hilares
 - **Espessamento de cisuras**: líquido nas cisuras interlobares
-- **Cuffing peribronquial**: halo ao redor dos brônquios
 
-#### Estágio 3 — Edema Alveolar (PCP > 25 mmHg)
-- **Opacidade bilateral em "asa de borboleta"** (perihilar)
-- **Consolidação alveolar difusa**: broncograma aéreo pode estar presente
-- **Derrame pleural bilateral** (mais à direita — anatomia do ducto torácico)
+### Estágio 3 — Edema Alveolar (PCP > 25 mmHg)
+- **Opacidade bilateral em "asa de borboleta"** (perihilar, poupando a periferia)
+  - Distribuição central porque a drenagem linfática é mais eficiente na periferia
+- **Consolidação alveolar difusa**: pode ter broncograma aéreo
+- **Aspecto algodonoso**: opacidades flocosas bilaterais
 
-### Outros Sinais de IC
+### Outros Achados da IC
 - **Cardiomegalia**: ICT > 0,50 em PA
 - **Derrame pleural**: bilateral (75%), isolado à D (15%), isolado à E (10%)
-- **Aumento do pedículo vascular**: > 70 mm sugere hipervolemia
+  - Derrame isolado à E → questione o diagnóstico de IC!
+- **Aumento do pedículo vascular**: > 70 mm (medido na altura do arco aórtico)
+- **Pseudotumor** (tumor fantasma): derrame loculado em cisura → desaparece com diurético
 
-### Mnemônico — "ABCDE" da IC no RX
+### Mnemônico "ABCDE" da IC no RX
 - **A** — Alveolar edema (asa de borboleta)
-- **B** — B-lines de Kerley
-- **C** — Cardiomegalia
-- **D** — Derrame pleural
-- **E** — Equalização (cefalização) dos vasos`,
+- **B** — B-lines de Kerley (septos interlobulares espessados)
+- **C** — Cardiomegalia (ICT > 0,50)
+- **D** — Derrame pleural (bilateral, mais à D)
+- **E** — Equalização/cefalização dos vasos
+
+### IC Direita vs IC Esquerda no RX
+
+| Achado | IC Esquerda | IC Direita |
+|--------|------------|------------|
+| Congestão pulmonar | SIM (venocapilar) | NÃO (campos limpos) |
+| Cardiomegalia | Sim (VE dilatado) | Sim (VD dilatado) |
+| Derrame pleural | Sim | Sim |
+| VCS alargada | Não | Sim |
+| Veia ázigos ingurgitada | Não | Sim (> 10mm em ortostase) |`,
           keyPoints: [
-            "Cefalização vascular é o sinal mais precoce de congestão",
-            "Linhas B de Kerley = edema intersticial",
+            "Cefalização vascular é o sinal MAIS PRECOCE de congestão (PCP 12-18 mmHg)",
+            "Linhas B de Kerley = edema intersticial (septos interlobulares, bases, horizontais)",
             "Asa de borboleta = edema alveolar (PCP > 25 mmHg)",
-            "Derrame na IC: bilateral (75%), mais à direita",
+            "Mnemônico: ABCDE (Alveolar, B-lines, Cardiomegalia, Derrame, Equalização)",
+            "Derrame isolado à esquerda é ATÍPICO para IC — investigue!",
           ],
-          clinicalTip: "Derrame pleural isolado à ESQUERDA em suposta IC é atípico — pense em outras causas (TB, neoplasia, TEP). O derrame da IC é geralmente bilateral ou isolado à direita pelo trajeto anatômico do ducto torácico.",
+          clinicalTip: "O 'tumor fantasma' é um derrame loculado em cisura que simula massa pulmonar no RX. Desaparece magicamente com diurético na IC compensada. Se a 'massa' some no RX de controle pós-diurético, é pseudotumor — não peça biópsia!",
+          images: [
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Pulmonary_edema.jpg/800px-Pulmonary_edema.jpg", caption: "Edema pulmonar cardiogênico — opacidade bilateral em 'asa de borboleta' com cardiomegalia." },
+          ],
+          quiz: [
+            {
+              question: "Qual é o achado radiológico MAIS PRECOCE da congestão pulmonar na IC?",
+              options: ["Linhas B de Kerley", "Edema alveolar em asa de borboleta", "Cefalização vascular (redistribuição de fluxo)", "Derrame pleural bilateral"],
+              correctIndex: 2,
+              explanation: "A cefalização vascular surge com PCP entre 12-18 mmHg — é o primeiro sinal. As linhas de Kerley aparecem com PCP 18-25 mmHg e o edema alveolar só com PCP > 25 mmHg."
+            },
+            {
+              question: "Na IC, o derrame pleural é mais frequentemente:",
+              options: ["Unilateral à esquerda", "Unilateral à direita", "Bilateral (ou unilateral à direita)", "Ausente na maioria dos casos"],
+              correctIndex: 2,
+              explanation: "O derrame da IC é bilateral em 75% e isolado à direita em 15%. Isso ocorre pela anatomia do ducto torácico e drenagem linfática. Derrame isolado à ESQUERDA deve levantar suspeita de TB, neoplasia ou TEP."
+            },
+          ],
+        },
+        {
+          id: "rx-3-2",
+          title: "DPOC e Hiperinsuflação",
+          subtitle: "Enfisema, sinais de hiperinsuflação e cor pulmonale",
+          theory: `## DPOC no RX de Tórax
+
+O RX na DPOC pode ser **normal** nos estágios iniciais. Os achados são mais evidentes no enfisema do que na bronquite crônica.
+
+### Sinais de Hiperinsuflação (Enfisema)
+
+#### Achados no PA
+- **Pulmões hiperinsuflados**: campos pulmonares hipertransparentes
+- **Retificação dos hemidiafragmas**: perdem a convexidade normal
+- **> 7 arcos costais anteriores** acima do diafragma
+- **Coração em gota** (verticalizado): diâmetro transversal reduzido
+- **Alargamento dos espaços intercostais**
+- **Rarefação vascular periférica**: vasos finos e espaçados
+
+#### Achados no Perfil
+- **Aumento do diâmetro AP** do tórax ("tórax em barril")
+- **Aumento do espaço retroesternal** (> 3 cm entre esterno e aorta ascendente)
+- **Retificação diafragmática**: em perfil é mais evidente
+
+### Bolhas de Enfisema
+- Áreas de destruição parenquimatosa com **paredes finas**
+- Podem ser **gigantes** (ocupando > 1/3 do hemitórax)
+- Risco de pneumotórax espontâneo
+- DD com pneumotórax: as bolhas têm paredes visíveis e vasos ao redor
+
+### Bronquite Crônica no RX
+- **Espessamento de paredes brônquicas** ("trilhos de trem" no PA, "anéis de sinete" no perfil)
+- **Hilos ingurgitados**: vasos calibrosos (hipertensão pulmonar associada)
+- "Pulmão sujo": aumento da trama broncovascular
+
+### Cor Pulmonale (IC Direita por Doença Pulmonar)
+- **Artérias pulmonares centrais dilatadas** (tronco AP > 29 mm)
+- **Rarefação vascular periférica** (vasos centrais grandes, periferia pobre = "poda vascular")
+- **Cardiomegalia às custas do VD**: borda cardíaca esquerda formada pelo VD (não VE)
+- **VCS e veia ázigos ingurgitadas**`,
+          keyPoints: [
+            "Hiperinsuflação: diafragma retificado, > 7 arcos costais, pulmões hipertransparentes",
+            "Coração em gota (verticalizado) é clássico do enfisema",
+            "Espaço retroesternal > 3 cm no perfil = hiperinsuflação",
+            "Cor pulmonale: artérias centrais dilatadas + rarefação periférica (poda vascular)",
+            "Bronquite crônica: espessamento brônquico ('trilhos de trem') + pulmão sujo",
+          ],
+          clinicalTip: "Paciente com DPOC e RX mostrando consolidação que não resolve com ATB → pense em carcinoma broncogênico. O tabagismo é fator de risco para ambos! Todo paciente com DPOC e opacidade persistente merece investigação com TC e/ou broncoscopia.",
+          quiz: [
+            {
+              question: "Qual achado radiológico NÃO é esperado na hiperinsuflação pulmonar por enfisema?",
+              options: ["Retificação dos hemidiafragmas", "Coração em gota", "Opacidade alveolar bilateral", "Aumento do espaço retroesternal"],
+              correctIndex: 2,
+              explanation: "O enfisema causa hiperinsuflação com campos hipertransparentes (mais pretos, não mais brancos). Opacidade alveolar bilateral sugere edema, pneumonia ou hemorragia — achados opostos ao enfisema."
+            },
+          ],
         },
       ],
     },
     {
       id: "rx-advanced",
       title: "Diagnósticos Avançados",
-      description: "TB, nódulos, TEP, mediastino e armadilhas de prova.",
+      description: "Tuberculose, nódulos pulmonares, TEP e armadilhas de prova.",
       icon: "🎯",
       lessons: [
         {
-          id: "rx-3-1",
+          id: "rx-4-1",
           title: "Tuberculose Pulmonar",
-          subtitle: "Padrões radiológicos da TB primária, pós-primária e miliar",
-          theory: `## TB no RX de Tórax
+          subtitle: "TB primária, pós-primária, miliar — padrões radiológicos e diagnósticos diferenciais",
+          theory: `## TB no RX de Tórax — O Diagnóstico Mais Cobrado
 
 ### TB Primária (Primo-infecção)
-- **Complexo de Ranke**: nódulo parenquimatoso + linfadenopatia hilar
-- Mais comum em **crianças**
-- Opacidade em qualquer lobo (não tem predileção)
-- Linfadenopatia hilar **unilateral** é a apresentação mais frequente
-- Geralmente autolimitada
+- **Complexo de Ranke**: nódulo parenquimatoso (nódulo de Ghon) + linfadenopatia hilar ipsilateral
+- **Mais comum em crianças** e adolescentes (primeiro contato)
+- O nódulo pode estar em **qualquer lobo** (não tem predileção — diferente da reativação!)
+- **Linfadenopatia hilar unilateral** é a apresentação mais frequente na criança
+- Geralmente **autolimitada** com calcificação residual (complexo de Ranke calcificado)
 
-### TB Pós-Primária (Reativação)
-- **Localização clássica**: segmentos apicais e posteriores dos lobos superiores
-- **Padrões**:
-  - Infiltrado fibronodular em ápices
-  - **Cavitação** (paredes espessas, irregulares) — forma mais bacilífera!
-  - Consolidação com broncograma aéreo
-  - Disseminação broncogênica: nódulos acinares ("árvore em brotamento" na TC)
-- **Sequelas**: fibrose, retração, bronquiectasias, calcificações
+### TB Pós-Primária (Reativação/Adulto)
+- **Localização clássica**: segmentos **apicais e posteriores** dos lobos superiores (segmentos 1 e 2)
+- Também frequente no segmento superior do lobo inferior (segmento 6 de Nelson)
+
+#### Padrões Radiológicos
+| Padrão | Descrição |
+|--------|-----------|
+| Infiltrado fibronodular apical | Opacidades heterogêneas nos ápices — achado mais precoce |
+| **Cavitação** | Cavidade com paredes **espessas e irregulares** — forma MAIS BACILÍFERA |
+| Consolidação com broncograma | Pode simular pneumonia bacteriana |
+| Disseminação broncogênica | Nódulos acinares no lobo contralateral ("árvore em brotamento" na TC) |
+| Tuberculoma | Nódulo solitário, geralmente calcificado, estável |
+
+#### Sequelas
+- Fibrose e retração apical com desvio mediastinal
+- Bronquiectasias de tração
+- Calcificações parenquimatosas e linfonodais
+- Bola fúngica (aspergiloma) dentro de caverna residual
 
 ### TB Miliar
-- **Micronódulos difusos** (1-3 mm), uniformes, bilaterais
-- Padrão "grãos de areia" distribuídos uniformemente
-- Disseminação hematogênica
-- Mais comum em imunossuprimidos (HIV, corticoterapia)
-- Pode ter RX normal inicialmente!
+- **Micronódulos difusos** (1-3 mm) bilaterais, uniformes
+- Padrão **"grãos de areia"** distribuídos homogeneamente
+- Disseminação **hematogênica**
+- Mais comum em **imunossuprimidos** (HIV com CD4 < 200, corticoterapia prolongada)
+- ⚠️ Pode ter **RX normal** inicialmente — TC é mais sensível!
 
 ### TB Pleural
-- Derrame pleural unilateral (geralmente)
-- Exsudato com **predomínio linfocítico**
-- ADA > 40 U/L = fortemente sugestivo
-- Mais comum em adultos jovens
+- Derrame pleural **unilateral** (geralmente direito)
+- Exsudato com **predomínio linfocítico** (> 80%)
+- **ADA > 40 U/L** = fortemente sugestivo (sensibilidade ~90%)
+- Mais comum em **adultos jovens** (primeira forma extrapulmonar mais frequente)
 
-### Diagnósticos Diferenciais
-- Cavitação apical: TB, abscesso, Wegener, carcinoma escamoso, aspergiloma
-- TB miliar: histoplasmose, sarcoidose, metástases (tireoide, melanoma)`,
+### TB e HIV — Padrões Atípicos
+
+| CD4 | Padrão Radiológico |
+|-----|-------------------|
+| > 350 | Clássico (cavitação apical) |
+| 200-350 | Transição — pode ser clássico ou atípico |
+| < 200 | ATÍPICO: infiltrado difuso, adenopatia hilar, miliar, OU **RX normal com BAAR+** |
+
+### Diagnósticos Diferenciais da Cavitação Apical
+- **Tuberculose** (mais comum)
+- Carcinoma escamoso (parede espessa, irregular)
+- Abscesso pulmonar (nível hidroaéreo)
+- Granulomatose de Wegener (GPA)
+- Aspergiloma (bola fúngica dentro da cavidade — "sinal do crescente aéreo")`,
           keyPoints: [
-            "TB primária: complexo de Ranke (nódulo + linfonodomegalia hilar)",
-            "TB pós-primária: cavitação em ápices dos lobos superiores",
-            "TB miliar: micronódulos difusos bilaterais ('grãos de areia')",
-            "ADA > 40 U/L no líquido pleural = fortemente sugestivo de TB",
+            "TB primária: complexo de Ranke (nódulo de Ghon + linfonodomegalia hilar) — qualquer lobo",
+            "TB pós-primária: cavitação em ápices dos lobos superiores (segmentos 1 e 2) — forma mais bacilífera",
+            "TB miliar: micronódulos difusos bilaterais uniformes — pode ter RX normal inicial",
+            "ADA > 40 U/L no líquido pleural = fortemente sugestivo de TB pleural",
+            "HIV com CD4 < 200: TB atípica — infiltrado difuso, miliar ou RX normal com BAAR+",
           ],
-          clinicalTip: "Paciente com HIV e CD4 > 350 tem TB com apresentação radiológica 'clássica' (cavitação apical). Com CD4 < 200, a TB é 'atípica' — infiltrados difusos, adenopatia hilar, padrão miliar, ou até RX normal com baciloscopia positiva.",
+          clinicalTip: "Em paciente com HIV e CD4 < 200, NÃO espere RX clássico de TB. A TB pode se apresentar com infiltrado difuso bilateral, adenopatia mediastinal ou até RX COMPLETAMENTE NORMAL com baciloscopia positiva. Na dúvida, peça TC e colete escarro.",
+          images: [
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Tuberculosis-x-ray-1.jpg/800px-Tuberculosis-x-ray-1.jpg", caption: "TB pós-primária — cavitação no lobo superior direito com infiltrado fibronodular apical bilateral." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Miliary_tuberculosis.jpg/450px-Miliary_tuberculosis.jpg", caption: "TB miliar — micronódulos difusos bilaterais uniformes ('grãos de areia')." },
+          ],
+          quiz: [
+            {
+              question: "Qual é a forma radiológica MAIS BACILÍFERA da tuberculose pulmonar?",
+              options: ["TB miliar com micronódulos difusos", "TB com cavitação apical", "TB primária com complexo de Ranke", "TB pleural com derrame unilateral"],
+              correctIndex: 1,
+              explanation: "A forma cavitária é a mais bacilífera — a caverna está em comunicação direta com as vias aéreas, permitindo grande eliminação de bacilos. Por isso é a forma mais CONTAGIOSA."
+            },
+            {
+              question: "Paciente HIV+ com CD4 = 80 apresenta febre, tosse e RX de tórax NORMAL. A baciloscopia do escarro é positiva. Isso é possível?",
+              options: ["Não — TB sempre altera o RX", "Sim — com CD4 < 200 a resposta imune não forma granuloma", "Não — provavelmente é outra micobactéria", "Sim — mas apenas na TB extrapulmonar"],
+              correctIndex: 1,
+              explanation: "Com CD4 < 200, a imunidade celular está tão comprometida que não forma granulomas adequados — a TB se dissemina sem produzir os achados radiológicos clássicos. O RX pode ser normal mesmo com baciloscopia positiva!"
+            },
+            {
+              question: "Na TB pleural, qual exame do líquido é mais utilizado para diagnóstico presuntivo?",
+              options: ["pH do líquido < 7,20", "Glicose do líquido < 60 mg/dL", "ADA (adenosina deaminase) > 40 U/L", "Proteína do líquido > 3 g/dL"],
+              correctIndex: 2,
+              explanation: "A ADA > 40 U/L tem sensibilidade ~90% e especificidade ~92% para TB pleural no Brasil (área endêmica). É o exame mais utilizado para diagnóstico presuntivo, junto com o predomínio linfocítico."
+            },
+          ],
+        },
+        {
+          id: "rx-4-2",
+          title: "Nódulo Pulmonar Solitário",
+          subtitle: "Critérios de benignidade vs malignidade, conduta e seguimento",
+          theory: `## Nódulo Pulmonar Solitário (NPS)
+
+### Definição
+- Opacidade **arredondada**, **< 3 cm**, completamente circundada por parênquima pulmonar aerado
+- **> 3 cm** = MASSA (maior probabilidade de malignidade)
+- Sem atelectasia, derrame pleural ou adenopatia associada
+
+### Critérios Radiológicos — Benigno vs Maligno
+
+| Característica | Sugere BENIGNO | Sugere MALIGNO |
+|---------------|---------------|----------------|
+| Tamanho | < 2 cm | > 2 cm (especialmente > 3 cm) |
+| Bordas | **Lisas**, bem definidas | **Espiculadas**, irregulares ("corona radiata") |
+| Calcificação | Central, laminar, em pipoca, difusa | Excêntrica ou ausente |
+| Crescimento | Estável > 2 anos | **Tempo de duplicação 20-400 dias** |
+| Cavitação | Paredes finas (< 4 mm) | Paredes espessas (> 15 mm) |
+| Idade | < 35 anos | > 50 anos, tabagista |
+| Densidade | Sólido com gordura (hamartoma) | Sólido ou parcialmente sólido (vidro fosco) |
+
+### Padrões de Calcificação
+
+#### Calcificações BENIGNAS (padrão típico)
+- **Central/target**: granuloma (TB, histoplasmose)
+- **Laminar/concêntrica**: granuloma cicatricial
+- **Em pipoca/popcorn**: **hamartoma** (tumor benigno mais comum do pulmão)
+- **Difusa/homogênea**: granuloma antigo
+
+#### Calcificação SUSPEITA
+- **Excêntrica**: tumor que engloba granuloma pré-existente
+- **Pontilhada/amorfa**: calcificação distrófica em tumor
+
+### Conduta Prática (Fleischner Society)
+
+| Tamanho | Baixo risco | Alto risco (tabagista > 50a) |
+|---------|------------|---------------------------|
+| < 6 mm | Sem seguimento | TC em 12 meses |
+| 6-8 mm | TC em 6-12 meses | TC em 6-12 meses + considerar PET |
+| > 8 mm | TC em 3 meses, PET ou biópsia | PET-CT ± biópsia |
+
+### Causas Principais
+
+#### Benignas (~60%)
+- Granuloma infeccioso (TB, histoplasmose) — mais comum!
+- Hamartoma (gordura + calcificação em pipoca = patognomônico)
+- Cisto broncogênico
+
+#### Malignas (~40%)
+- Carcinoma broncogênico primário
+- Metástase solitária (cólon, rim, melanoma, sarcoma)
+- Carcinoide brônquico`,
+          keyPoints: [
+            "Nódulo < 3 cm; massa > 3 cm (maior risco de malignidade)",
+            "Bordas espiculadas ('corona radiata') = alta suspeita de malignidade",
+            "Calcificação em pipoca = hamartoma (tumor benigno mais comum do pulmão)",
+            "Estável > 2 anos = provavelmente benigno (exceto vidro fosco!)",
+            "Tempo de duplicação de 20-400 dias = compatível com malignidade",
+          ],
+          clinicalTip: "A calcificação em 'pipoca' é PATOGNOMÔNICA do hamartoma — o tumor benigno mais comum do pulmão. Se a TC mostrar gordura + calcificação popcorn, o diagnóstico está feito sem biópsia. Qualquer outro padrão de calcificação excêntrica ou amorfa é suspeito!",
+          quiz: [
+            {
+              question: "Nódulo pulmonar solitário de 2,5 cm com bordas espiculadas ('corona radiata') em tabagista de 60 anos. Qual a conduta mais adequada?",
+              options: ["Observação com RX em 6 meses", "PET-CT e/ou biópsia", "Antibioticoterapia empírica por 30 dias", "TC de controle em 12 meses"],
+              correctIndex: 1,
+              explanation: "Nódulo > 2 cm com bordas espiculadas em tabagista > 50 anos tem alta probabilidade de malignidade. A conduta é investigação ativa com PET-CT (avalia metabolismo) e/ou biópsia percutânea/broncoscopia."
+            },
+            {
+              question: "Qual padrão de calcificação é PATOGNOMÔNICO do hamartoma?",
+              options: ["Central (target)", "Laminar concêntrica", "Em pipoca (popcorn)", "Excêntrica irregular"],
+              correctIndex: 2,
+              explanation: "A calcificação em pipoca (popcorn) + presença de gordura na TC é patognomônica do hamartoma — o tumor benigno mais comum do pulmão. Não necessita biópsia quando achado típico."
+            },
+          ],
+        },
+        {
+          id: "rx-4-3",
+          title: "Armadilhas de Prova",
+          subtitle: "Erros comuns, pegadinhas clássicas e sinais menos conhecidos",
+          theory: `## Armadilhas Clássicas no RX de Tórax
+
+### 1. Cardiomegalia em AP
+- O RX AP **magnifica o coração em ~20%**
+- ⚠️ **NUNCA** laude cardiomegalia em AP sem correlação clínica
+- Na prova: se o RX é AP e perguntam sobre ICT → a resposta é "não avaliável"
+
+### 2. Derrame Subpulmonar
+- Simula **elevação do hemidiafragma**
+- Pista: o "pico" do diafragma aparente está **mais lateral** que o normal
+- Confirmação: Laurell mostra líquido livre
+
+### 3. Pneumotórax em Decúbito (UTI)
+- Ar vai para **anterior e medial** (não para o ápice!)
+- O RX AP pode parecer **completamente normal**
+- Procure: sinal do sulco profundo, nitidez excessiva da borda cardíaca
+- Na dúvida: USG ou TC
+
+### 4. "Pulmão Branco" — Atelectasia vs Derrame
+- **COM desvio ipsilateral**: atelectasia (puxa o mediastino)
+- **COM desvio contralateral**: derrame maciço (empurra o mediastino)
+- **SEM desvio**: pensar em consolidação extensa, SDRA ou combinação
+
+### 5. Alargamento de Mediastino no AP
+- Em AP, o mediastino parece **naturalmente mais largo**
+- Correlacionar com clínica de dissecção/aneurisma antes de alarmar
+- Em trauma: mediastino > 8 cm em PA pode sugerir ruptura de aorta
+
+### 6. Tumor Fantasma (Pseudotumor)
+- Derrame **loculado em cisura** na IC descompensada
+- Simula massa pulmonar ou nódulo
+- Desaparece com **diurético** (se repetir RX)
+- Na prova: "massa" que some no RX de controle = tumor fantasma
+
+### 7. Mama e Mastectomia
+- Mama volumosa pode causar **assimetria de transparência** simulando opacidade
+- Mastectomia prévia: hemitórax ipsilateral mais **transparente** (parece hiperinsuflado)
+- Compare sempre as partes moles antes de interpretar campos pulmonares
+
+### 8. Efeito Mach
+- Banda escura na interface entre coração e pulmão
+- Artefato óptico → pode simular pneumomediastino ou pneumopericárdio
+- Não confundir com ar real no mediastino
+
+### 9. Corpo Estranho Radiolucente
+- Nem todo CE é visível no RX (plásticos, alimentos)
+- Procure sinais INDIRETOS: atelectasia, hiperinsuflação por mecanismo de válvula, desvio mediastinal
+- **Sinal de Holzknecht**: na expiração, o mediastino se desvia para o lado NORMAL (ar preso do lado do CE)
+
+### 10. Sinal de Hampton (TEP)
+- Opacidade **triangular** de base pleural (cunha) — infarto pulmonar
+- Sinal específico, mas pouco sensível
+- **Westermark**: oligoemia focal (área hipertransparente distal ao êmbolo)
+- RX normal NÃO descarta TEP!`,
+          keyPoints: [
+            "Cardiomegalia em AP: NÃO avaliável — magnificação de ~20%",
+            "Pulmão branco + desvio ipsilateral = atelectasia; desvio contralateral = derrame",
+            "Tumor fantasma: derrame loculado em cisura que some com diurético",
+            "TEP: RX pode ser NORMAL; sinal de Hampton (cunha pleural) e Westermark (oligoemia focal)",
+            "Corpo estranho radiolucente: busque sinais indiretos (atelectasia, hiperinsuflação unilateral)",
+          ],
+          clinicalTip: "Na prova, quando mostrarem RX com 'hemitórax opaco', a primeira pergunta é: para onde desvia o mediastino? IPSILATERAL = atelectasia (puxa). CONTRALATERAL = derrame (empurra). SEM desvio = consolidação maciça ou combinação de ambos. Essa é a resposta de 90% das questões sobre pulmão branco.",
+          quiz: [
+            {
+              question: "RX de tórax PA mostra uma opacidade arredondada na cisura horizontal direita. Após tratamento com diurético, a opacidade desaparece. Qual é o diagnóstico?",
+              options: ["Pneumonia redonda", "Hamartoma", "Tumor fantasma (pseudotumor)", "Carcinoma broncogênico"],
+              correctIndex: 2,
+              explanation: "O tumor fantasma (pseudotumor) é derrame pleural loculado em cisura, clássico da IC descompensada. Desaparece completamente com diurético — diferente de massas reais."
+            },
+            {
+              question: "Criança com história de engasgo, RX mostra desvio do mediastino para a ESQUERDA durante a expiração forçada. Onde está o corpo estranho?",
+              options: ["Brônquio fonte esquerdo", "Brônquio fonte direito", "Traqueia", "Esôfago"],
+              correctIndex: 1,
+              explanation: "O sinal de Holzknecht: na expiração, o mediastino se desvia para o lado NORMAL. Se desvia para a esquerda, o ar está aprisionado à DIREITA (mecanismo de válvula pelo CE no brônquio direito). O brônquio fonte direito é mais verticalizado e mais frequentemente acometido."
+            },
+            {
+              question: "Paciente com dor torácica e dispneia súbita. RX mostra uma área de hipertransparência focal no lobo inferior direito (Westermark) e opacidade triangular de base pleural (Hampton). Qual é o diagnóstico mais provável?",
+              options: ["Pneumonia lobar", "Tromboembolismo pulmonar", "Pneumotórax localizado", "Enfisema bolhoso"],
+              correctIndex: 1,
+              explanation: "O sinal de Westermark (oligoemia focal) + sinal de Hampton (opacidade triangular = infarto pulmonar) são clássicos do TEP. Porém, o RX é normal em ~50% dos casos de TEP — angio-TC é o padrão-ouro!"
+            },
+          ],
         },
       ],
     },
