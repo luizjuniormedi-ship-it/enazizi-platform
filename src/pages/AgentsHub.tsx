@@ -53,6 +53,15 @@ const agents = [
     isNew: true,
   },
   {
+    to: "/dashboard/cronicas",
+    icon: BookOpen,
+    title: "📖 Crônicas Médicas",
+    description: "Aprenda medicina através de narrativas clínicas imersivas. Você é o médico no plantão — raciocine, decida e aprenda com casos cinematográficos.",
+    color: "text-amber-400",
+    bgColor: "bg-amber-500/10",
+    isNew: true,
+  },
+  {
     to: "/dashboard/coach",
     icon: Heart,
     title: "💪 Coach Motivacional",

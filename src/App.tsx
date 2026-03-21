@@ -50,6 +50,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const AnamnesisTrainer = lazy(() => import("./pages/AnamnesisTrainer"));
 const Install = lazy(() => import("./pages/Install"));
 const StudyGuides = lazy(() => import("./pages/StudyGuides"));
+const MedicalChronicles = lazy(() => import("./pages/MedicalChronicles"));
 
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
@@ -111,6 +112,7 @@ const App = () => (
                 <Route path="entrevista" element={<InterviewSimulator />} />
                 <Route path="conquistas" element={<Achievements />} />
                 <Route path="anamnese" element={<AnamnesisTrainer />} />
+                <Route path="cronicas" element={<MedicalChronicles />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="perfil" element={<Profile />} />
               </Route>
