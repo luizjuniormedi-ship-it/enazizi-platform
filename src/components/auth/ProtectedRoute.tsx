@@ -41,10 +41,15 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       } else {
         setProfileStatus(data?.status || "pending");
       }
-      // Check if profile is incomplete
+      // Check if profile is incomplete or has invalid data
       const userType = (data as any)?.user_type || "estudante";
-      const isStudent = userType === "estudante";
-      const incomplete = !data?.phone || !data?.display_name || (isStudent && (!data?.periodo || !data?.faculdade));
+      const incomplete = !isProfileComplete({
+        phone: data?.phone,
+        display_name: data?.display_name,
+        periodo: data?.periodo,
+        faculdade: data?.faculdade,
+        user_type: userType,
+      });
       setProfileIncomplete(incomplete);
       if (incomplete) {
         setFormName(data?.display_name || "");
