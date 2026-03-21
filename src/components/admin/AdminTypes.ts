@@ -9,6 +9,10 @@ export interface AdminUser {
   approved_at: string | null;
   roles: string[];
   last_seen_at: string | null;
+  faculdade: string | null;
+  periodo: number | null;
+  phone: string | null;
+  user_type: string | null;
   subscription: { status: string; plan_id: string; plans: { name: string; price: number } | null } | null;
   quota: { questions_used: number; questions_limit: number } | null;
   evolution?: { avgScore: number; totalQuestions: number; specialties: number; recentAttempts: number; recentAccuracy: number };

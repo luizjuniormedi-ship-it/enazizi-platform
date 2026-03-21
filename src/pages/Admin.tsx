@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star } from "lucide-react";
+import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,8 @@ const Admin = () => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filterFaculdade, setFilterFaculdade] = useState<string>("all");
+  const [filterPeriodo, setFilterPeriodo] = useState<string>("all");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
 
@@ -190,11 +193,17 @@ const Admin = () => {
     }
   };
 
+  // Unique faculdades and periodos for filters
+  const uniqueFaculdades = [...new Set(users.map(u => u.faculdade).filter(Boolean))].sort() as string[];
+  const uniquePeriodos = [...new Set(users.map(u => u.periodo).filter(Boolean))].sort((a, b) => (a as number) - (b as number)) as number[];
+
   // Computed values
   const filteredUsers = users.filter((u) => {
     const q = search.toLowerCase();
     const matchesSearch = (u.display_name || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q);
     if (!matchesSearch) return false;
+    if (filterFaculdade !== "all" && u.faculdade !== filterFaculdade) return false;
+    if (filterPeriodo !== "all" && String(u.periodo) !== filterPeriodo) return false;
     switch (activeTab) {
       case "pending": return u.status === "pending";
       case "active": return u.status === "active" && !u.is_blocked;
@@ -253,13 +262,60 @@ const Admin = () => {
 
       {/* Users with tabs */}
       <div className="glass-card p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <UserCog className="h-5 w-5" /> Gerenciar Usuários
-          </h2>
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar por nome ou email..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <div className="flex flex-col gap-3 mb-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <UserCog className="h-5 w-5" /> Gerenciar Usuários
+            </h2>
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Buscar por nome ou email..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={filterFaculdade} onValueChange={setFilterFaculdade}>
+              <SelectTrigger className="w-[200px] h-8 text-xs">
+                <SelectValue placeholder="Universidade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas universidades</SelectItem>
+                {uniqueFaculdades.map((f) => (
+                  <SelectItem key={f} value={f}>{f}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterPeriodo} onValueChange={setFilterPeriodo}>
+              <SelectTrigger className="w-[140px] h-8 text-xs">
+                <SelectValue placeholder="Período" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos períodos</SelectItem>
+                {uniquePeriodos.map((p) => (
+                  <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {(filterFaculdade !== "all" || filterPeriodo !== "all") && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-xs gap-1"
+                onClick={() => { setFilterFaculdade("all"); setFilterPeriodo("all"); }}
+              >
+                <X className="h-3 w-3" /> Limpar filtros
+              </Button>
+            )}
+
+            {(filterFaculdade !== "all" || filterPeriodo !== "all") && (
+              <span className="text-xs text-muted-foreground ml-auto">
+                {filteredUsers.length} resultado{filteredUsers.length !== 1 ? "s" : ""}
+              </span>
+            )}
           </div>
         </div>
 
