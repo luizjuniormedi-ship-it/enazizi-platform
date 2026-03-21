@@ -833,9 +833,7 @@ Com menos K⁺ extracelular, aumenta o gradiente de concentração → mais K⁺
           ],
           clinicalTip: "Na emergência com ECG sinusoidal ou 'onda em sino', trate como hipercalemia até prova em contrário: gluconato de cálcio 10mL a 10% IV em 2-3 min. Ele não reduz o K⁺, mas estabiliza a membrana ao alterar o potencial limiar (de -70 para -60 mV), restaurando a função dos canais de Na⁺.",
           images: [
-            { src: "/course-images/ecg-fig-hipercalemia-influencia.jpg", caption: "Figura 1: Influência do potássio nas fases do potencial de ação — repolarização (fase 3) e repouso (fase 4)." },
-            { src: "/course-images/ecg-fig-hipercalemia-ecg.jpg", caption: "Onda T em tenda e achatamento da onda P — achados clássicos da hipercalemia." },
-            { src: "/course-images/ecg-fig-hipercalemia-grave.jpg", caption: "Hipercalemia grave: QRS alargado, onda em sino (fusão QRS+T) — iminência de parada cardíaca." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/ECG_in_hyperkalemia.svg/800px-ECG_in_hyperkalemia.svg.png", caption: "Progressão do ECG na hipercalemia: T em tenda → P achatada → QRS alargado → onda sinusoidal." },
           ],
           quiz: [
             {
