@@ -14,7 +14,10 @@ export const ALL_MODULES = [
   { key: "resumos", label: "📖 Resumidor" },
   { key: "apostilas", label: "📚 Apostilas & Resumos" },
   { key: "cronicas", label: "📖 Crônicas Médicas" },
-  
+  { key: "cursos", label: "📚 Cursos ECG & RX" },
+  { key: "quiz-imagens", label: "🖼️ Quiz Imagens" },
+  { key: "entrevista", label: "🎤 Entrevista" },
+
   { key: "simulados", label: "📝 Simulados" },
   { key: "simulado-completo", label: "🏆 Simulado Completo" },
   { key: "questoes", label: "❓ Gerador Questões" },
