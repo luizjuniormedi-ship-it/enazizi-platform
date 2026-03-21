@@ -25,7 +25,7 @@ const SPECIALTIES = [
   "Semiologia", "Anatomia", "Farmacologia",
 ];
 
-const FACULDADES = ["UNIG", "Estácio", "Outra"];
+import { FACULDADES } from "@/constants/faculdades";
 
 const ProfessorDashboard = () => {
   const { session } = useAuth();

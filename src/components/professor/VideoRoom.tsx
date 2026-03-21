@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
-const FACULDADES = ["UNIG", "Estácio", "Outra"];
+import { FACULDADES } from "@/constants/faculdades";
 
 interface StudentProfile {
   user_id: string;

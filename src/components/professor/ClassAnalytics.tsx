@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 
-const FACULDADES = ["UNIG", "Estácio", "Outra"];
+import { FACULDADES } from "@/constants/faculdades";
 
 interface StudentStat {
   user_id: string;
