@@ -1,3 +1,10 @@
+export interface QuizQuestion {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
 export interface CourseLesson {
   id: string;
   title: string;
@@ -5,6 +12,8 @@ export interface CourseLesson {
   theory: string;
   keyPoints: string[];
   clinicalTip?: string;
+  images?: { src: string; caption: string }[];
+  quiz?: QuizQuestion[];
   quizImageIds?: string[]; // IDs from medical_images table
 }
 
@@ -101,6 +110,30 @@ O sistema de condução pode apresentar variações patológicas — **atalhos**
             "Feixe de Kent (WPW), James (LGL) e Mahaim são vias acessórias patológicas",
           ],
           clinicalTip: "Em um BAVT, o ritmo de escape será tanto mais lento e instável quanto mais distal for a sede do bloqueio. Escape juncional (QRS estreito) é mais estável que ventricular (QRS largo). Se o NSA falha, o NAV assume a 40-60 bpm; se ambos falham, sobra Purkinje a 20-40 bpm — situação de emergência!",
+          images: [
+            { src: "/course-images/ecg-fig1-sistema-conducao.jpg", caption: "Figura 1: Sistema de Condução Cardíaco — do nó sinusal às fibras de Purkinje." },
+            { src: "/course-images/ecg-fig2-vias-acessorias.jpg", caption: "Figura 2: Vias acessórias — Feixe de James (A), Feixe de Kent (B) e Fibras de Mahaim (C)." },
+          ],
+          quiz: [
+            {
+              question: "Qual estrutura do sistema de condução cardíaco apresenta maior frequência de despolarização automática?",
+              options: ["Nó atrioventricular", "Nó sinusal (sinoatrial)", "Fibras de Purkinje", "Feixe de His"],
+              correctIndex: 1,
+              explanation: "O NSA é o marca-passo natural do coração, com frequência intrínseca de 60-100 bpm — a maior do sistema de condução. Por isso, suprime os demais focos pelo mecanismo de overdrive suppression."
+            },
+            {
+              question: "A condução decremental do nó AV tem como principal função:",
+              options: ["Aumentar a velocidade de condução ventricular", "Filtrar taquiarritmias atriais e proteger os ventrículos", "Gerar estímulos de alta frequência", "Conduzir o impulso diretamente ao ventrículo esquerdo"],
+              correctIndex: 1,
+              explanation: "O NAV retarda a condução AV e filtra frequências atriais elevadas, protegendo os ventrículos de arritmias potencialmente fatais. Esta é a condução decremental."
+            },
+            {
+              question: "Qual via acessória está associada à Síndrome de Wolff-Parkinson-White?",
+              options: ["Feixe de James", "Feixe de Kent", "Fibras de Mahaim", "Feixe de Bachmann"],
+              correctIndex: 1,
+              explanation: "O feixe de Kent comunica diretamente o átrio com o ventrículo, causando pré-excitação ventricular — a base da Síndrome de WPW."
+            },
+          ],
         },
         {
           id: "ecg-1-1b",
@@ -169,6 +202,32 @@ O Ca²⁺ que entra na fase 2 ativa o **complexo actina-miosina** → contraçã
             "A fase 2 (platô) é responsável pelo segmento ST no ECG",
           ],
           clinicalTip: "Bloqueadores de canal de cálcio (diltiazem, verapamil) agem nas células de resposta lenta reduzindo automatismo (bradicardia) e nas rápidas reduzindo Ca²⁺ para contração (inotropismo negativo). Por isso são contraindicados na IC com FE reduzida!",
+          images: [
+            { src: "/course-images/ecg-fig3-dipolo-pilha.jpg", caption: "Figura 3: Analogia do dipolo — assim como a pilha, o coração forma corrente elétrica ao criar polos de cargas opostas." },
+            { src: "/course-images/ecg-fig4-potencial-repouso.jpg", caption: "Figura 4: Gradientes iônicos e formação do potencial de repouso transmembrana." },
+            { src: "/course-images/ecg-fig5-celulas-automaticas.jpg", caption: "Figura 5: Potencial de ação das células automáticas (resposta lenta) e não-automáticas (resposta rápida)." },
+            { src: "/course-images/ecg-fig-canais-ionicos.jpg", caption: "Figura: Canais iônicos responsáveis por cada fase do potencial de ação." },
+          ],
+          quiz: [
+            {
+              question: "Qual é o íon considerado o 'maestro' do potencial de repouso transmembrana?",
+              options: ["Sódio (Na⁺)", "Cálcio (Ca²⁺)", "Potássio (K⁺)", "Cloro (Cl⁻)"],
+              correctIndex: 2,
+              explanation: "O potássio é o principal determinante do potencial de repouso. A membrana é mais permeável ao K⁺, que sai da célula a favor do gradiente de concentração, deixando o interior negativo (-65 a -90 mV)."
+            },
+            {
+              question: "Qual canal é o principal responsável pela despolarização (fase 0) das células de resposta lenta?",
+              options: ["Canal de sódio (INa)", "Canal de potássio (IK)", "Canal de cálcio tipo L (ICa-L)", "Bomba Na⁺/K⁺ ATPase"],
+              correctIndex: 2,
+              explanation: "Nas células de resposta lenta (nodos SA e AV), a despolarização é cálcio-dependente (canais ICa-L), diferente das células de resposta rápida que dependem do Na⁺."
+            },
+            {
+              question: "Qual é a consequência clínica principal do bloqueio dos canais de cálcio nas células de resposta lenta?",
+              options: ["Taquicardia sinusal", "Bradicardia (redução do automatismo)", "Aumento da contratilidade", "Alargamento do QRS"],
+              correctIndex: 1,
+              explanation: "Como a despolarização das células automáticas depende do Ca²⁺, bloqueá-lo reduz o automatismo cardíaco → bradicardia. É por isso que diltiazem e verapamil são usados para controlar a FC."
+            },
+          ],
         },
         {
           id: "ecg-1-1c",
@@ -238,6 +297,34 @@ Três vetores principais em sequência:
             "O 2° vetor ventricular (parede livre do VE) é o de maior amplitude — determina o eixo do QRS",
           ],
           clinicalTip: "Se a onda T está discordante do QRS (apontam em direções opostas), há alteração da repolarização: isquemia, sobrecarga ventricular, bloqueio de ramo ou efeito de drogas. A discordância esperada no BRE é 'secundária' — se concordar, é sinal de IAM (critério de Sgarbossa)!",
+          images: [
+            { src: "/course-images/ecg-fig-vetores-dipolo.jpg", caption: "Vetores cardíacos e sua relação com as derivações — o registro é positivo quando o vetor aponta para o eletrodo explorador." },
+            { src: "/course-images/ecg-fig-derivacoes-registro.jpg", caption: "Relação entre vetores e derivações — o 'rosto' do ECG aparece conforme a posição do olho elétrico." },
+            { src: "/course-images/ecg-fig-ativacao-atrial.jpg", caption: "Ativação elétrica atrial — a onda P é formada pela resultante da despolarização dos átrios direito e esquerdo." },
+            { src: "/course-images/ecg-fig-ativacao-ventricular.jpg", caption: "Os três vetores da despolarização ventricular e a formação do complexo QRS." },
+            { src: "/course-images/ecg-fig-repolarizacao-ventricular.jpg", caption: "Repolarização ventricular — inicia-se pelo epicárdio, gerando onda T de mesma polaridade do QRS." },
+            { src: "/course-images/ecg-fig-pqrst-completo.jpg", caption: "Figura 23: Atividade elétrica do coração e sua repercussão completa no ECG — P, QRS, T e segmentos." },
+          ],
+          quiz: [
+            {
+              question: "Por que o registro eletrocardiográfico é isoelétrico (linha reta) durante o segmento PR?",
+              options: ["Não há atividade elétrica alguma", "A onda P está sendo formada nesse momento", "As poucas células do NAV/His-Purkinje geram vetores imperceptíveis", "O coração está em assistolia transitória"],
+              correctIndex: 2,
+              explanation: "O segmento PR corresponde à condução pelo NAV e sistema His-Purkinje. Como são poucas células, os vetores formados são insignificantes e não produzem deflexão no ECG — mas HÁ atividade elétrica acontecendo."
+            },
+            {
+              question: "Nos ventrículos, a repolarização e a despolarização geram vetores de mesmo sentido porque:",
+              options: ["A repolarização e despolarização seguem o mesmo caminho", "As últimas áreas despolarizadas são as primeiras a repolarizar", "O NSA controla ambos os processos de forma idêntica", "O Ca²⁺ impede a inversão vetorial"],
+              correctIndex: 1,
+              explanation: "Nos ventrículos, a repolarização começa pelo epicárdio (última região despolarizada) — o sentido do processo é inverso, mas os vetores resultantes apontam na mesma direção, gerando QRS e onda T de mesma polaridade."
+            },
+            {
+              question: "A origem do nome 'PQRST' para as ondas do ECG é:",
+              options: ["Referência aos íons (P=potássio, Q=quinase...)", "Convenção matemática usando a 2ª metade do alfabeto, a partir de P", "Homenagem a 5 cardiologistas pioneiros", "Abreviação de termos em alemão"],
+              correctIndex: 1,
+              explanation: "Einthoven usou a convenção matemática de nomear com letras da 2ª metade do alfabeto. N e O já eram usadas para outros fins matemáticos, então começou pela letra P."
+            },
+          ],
         },
         {
           id: "ecg-1-2",
@@ -750,6 +837,42 @@ Com menos K⁺ extracelular, aumenta o gradiente de concentração → mais K⁺
             "Ritmo sinoventricular: ritmo sinusal sem onda P — confunde com juncional",
           ],
           clinicalTip: "Na emergência com ECG sinusoidal ou 'onda em sino', trate como hipercalemia até prova em contrário: gluconato de cálcio 10mL a 10% IV em 2-3 min. Ele não reduz o K⁺, mas estabiliza a membrana ao alterar o potencial limiar (de -70 para -60 mV), restaurando a função dos canais de Na⁺.",
+          images: [
+            { src: "/course-images/ecg-fig-hipercalemia-influencia.jpg", caption: "Figura 1: Influência do potássio nas fases do potencial de ação — repolarização (fase 3) e repouso (fase 4)." },
+            { src: "/course-images/ecg-fig-hipercalemia-ecg.jpg", caption: "Onda T em tenda e achatamento da onda P — achados clássicos da hipercalemia." },
+            { src: "/course-images/ecg-fig-hipercalemia-grave.jpg", caption: "Hipercalemia grave: QRS alargado, onda em sino (fusão QRS+T) — iminência de parada cardíaca." },
+          ],
+          quiz: [
+            {
+              question: "Qual é o primeiro achado eletrocardiográfico da hipercalemia?",
+              options: ["Alargamento do QRS", "Desaparecimento da onda P", "Onda T apiculada (em tenda)", "Ritmo sinoventricular"],
+              correctIndex: 2,
+              explanation: "A onda T apiculada (em tenda) é o primeiro sinal, surgindo com K⁺ a partir de 5,5 mEq/L. Ela reflete o encurtamento da repolarização causado pelo potencial de repouso menos negativo."
+            },
+            {
+              question: "O ritmo sinoventricular na hipercalemia moderada ocorre porque:",
+              options: ["O nó sinusal para de funcionar", "A onda P desaparece por comprometimento da condução intra-atrial", "O feixe de His assume o comando", "Os ventrículos geram ritmo próprio"],
+              correctIndex: 1,
+              explanation: "Com K⁺ > 8 mEq/L, a condução intra-atrial está tão comprometida que a onda P some, mas o NSA continua funcionando — o estímulo chega aos ventrículos pelos feixes internodais. É um ritmo sinusal sem onda P!"
+            },
+            {
+              question: "Na hipocalemia, o intervalo QT parece alargado. Na verdade, o que está sendo medido é:",
+              options: ["O intervalo QT verdadeiro", "O intervalo QU (fusão da onda U com T)", "O segmento ST prolongado", "A onda P alargada"],
+              correctIndex: 1,
+              explanation: "Na hipocalemia, surge uma onda U proeminente que se funde à onda T, criando a impressão de QT longo. Na verdade, é o intervalo QU que está sendo medido. Este achado predispõe a Torsades de Pointes."
+            },
+            {
+              question: "Qual a diferença entre o encurtamento do QT na hipercalemia vs hipercalcemia?",
+              options: [
+                "Ambos apresentam onda T em tenda",
+                "A hipercalemia tem T em tenda + QRS largo; a hipercalcemia tem apenas ST curto/ausente",
+                "A hipercalcemia apresenta onda U proeminente",
+                "Não há diferença — os achados são idênticos"
+              ],
+              correctIndex: 1,
+              explanation: "Na hipercalemia, o QT curto vem acompanhado de onda T em tenda, QRS alargado e P achatada. Na hipercalcemia, o encurtamento é isolado — o segmento ST fica muito curto ou ausente, sem outras alterações."
+            },
+          ],
         },
         {
           id: "ecg-4-4",
@@ -849,6 +972,37 @@ O digital **bloqueia a bomba Na⁺/K⁺ ATPase** → acúmulo de Na⁺ intracelu
             "3 causas de QT curto: hipercalemia, hipercalcemia, digital",
           ],
           clinicalTip: "Quando encontrar QT prolongado no ECG, diferencie: se tem onda U proeminente e T achatada → hipocalemia; se o ST está alargado com T preservada → hipocalcemia. O tratamento é completamente diferente! Reponha K⁺ ou Ca²⁺ conforme o caso.",
+          images: [
+            { src: "/course-images/ecg-fig-osborn-hipotermia.jpg", caption: "Onda J de Osborn e encurtamento do ST na hipercalcemia — note o supra de V3 a V6." },
+            { src: "/course-images/ecg-fig-hipocalcemia.jpg", caption: "Comparação do prolongamento do QT: na hipocalemia (B) pelo aumento da onda U; na hipocalcemia (C) pelo alargamento do ST." },
+            { src: "/course-images/ecg-fig-digital-efeito.jpg", caption: "Efeito digitálico: infra de ST em aspecto de 'pá de pedreiro' (Bigode de Salvador Dalí)." },
+          ],
+          quiz: [
+            {
+              question: "A principal alteração eletrocardiográfica da hipercalcemia é:",
+              options: ["Prolongamento do intervalo QT", "Encurtamento do segmento ST (intervalo QT curto)", "Onda T apiculada em tenda", "Aparecimento de onda U proeminente"],
+              correctIndex: 1,
+              explanation: "Na hipercalcemia, a fase 2 (platô) é encurtada → o segmento ST fica muito curto ou até ausente → QT curto. Diferente da hipercalemia, onde há T em tenda e QRS largo."
+            },
+            {
+              question: "A onda J de Osborn NÃO é patognomônica de hipotermia. Ela também pode ser encontrada em:",
+              options: ["Hipocalemia grave", "Hipercalcemia e hemorragia subaracnoide", "Infarto inferior isolado", "Bloqueio de ramo direito"],
+              correctIndex: 1,
+              explanation: "A onda J de Osborn pode ser vista na hipercalcemia, insultos neurológicos (HSA, HIC, TCE) e angina de Prinzmetal — não é exclusiva da hipotermia."
+            },
+            {
+              question: "O 'efeito digitálico' no ECG produz um aspecto de ST em 'pá de pedreiro' porque o digital:",
+              options: ["Bloqueia canais de sódio", "Bloqueia a bomba Na⁺/K⁺ ATPase, acumulando Ca²⁺ intracelular (mimetiza hipercalcemia)", "Aumenta os canais de potássio", "Prolonga a fase 4 do potencial de ação"],
+              correctIndex: 1,
+              explanation: "O digital bloqueia a bomba Na⁺/K⁺ ATPase → acúmulo de Na⁺ intracelular → menor troca pelo trocador Na⁺/Ca²⁺ → acúmulo de Ca²⁺ → mimetiza hipercalcemia (ST encurtado) com aspecto em 'pá de pedreiro'."
+            },
+            {
+              question: "Mulher de 63 anos com câncer de mama metastático apresenta fraqueza e constipação. O ECG mostra segmento ST praticamente ausente com QT curto, sem onda T em tenda nem QRS alargado. O distúrbio mais provável é:",
+              options: ["Hipocalemia", "Hipercalemia", "Hipocalcemia", "Hipercalcemia"],
+              correctIndex: 3,
+              explanation: "O encurtamento isolado do ST (sem T em tenda ou QRS largo) aponta para hipercalcemia. A metástase óssea do câncer de mama explica a hipercalcemia, e fraqueza + constipação são sintomas compatíveis."
+            },
+          ],
         },
       ],
     },

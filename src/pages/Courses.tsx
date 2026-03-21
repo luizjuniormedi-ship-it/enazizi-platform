@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
 import { ecgCourse, rxCourse, type CourseData, type CourseModule, type CourseLesson } from "@/data/ecgCourseData";
-import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, ChevronDown, Heart, Lock, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, ChevronDown, Heart, Image, Lock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import LessonQuiz from "@/components/courses/LessonQuiz";
 
 const STORAGE_KEY = "course-progress";
 
@@ -273,6 +274,34 @@ const Courses = () => {
             </h3>
             <p className="text-sm text-muted-foreground">{selectedLesson.clinicalTip}</p>
           </div>
+        )}
+
+        {/* Images Gallery */}
+        {selectedLesson.images && selectedLesson.images.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <Image className="h-4 w-4 text-primary" />
+              Figuras da Aula
+            </h3>
+            <div className="grid grid-cols-1 gap-4">
+              {selectedLesson.images.map((img, i) => (
+                <div key={i} className="glass-card p-3 space-y-2">
+                  <img
+                    src={img.src}
+                    alt={img.caption}
+                    className="w-full rounded-lg border border-border"
+                    loading="lazy"
+                  />
+                  <p className="text-xs text-muted-foreground italic text-center">{img.caption}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Quiz Section */}
+        {selectedLesson.quiz && selectedLesson.quiz.length > 0 && (
+          <LessonQuiz questions={selectedLesson.quiz} />
         )}
 
         {/* Navigation */}
