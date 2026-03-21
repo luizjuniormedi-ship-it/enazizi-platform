@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { FACULDADES } from "@/constants/faculdades";
 import FaculdadeCombobox from "@/components/FaculdadeCombobox";
+import { isValidPhone, isValidName, isProfileComplete } from "@/lib/profileValidation";
 
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -40,10 +41,15 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       } else {
         setProfileStatus(data?.status || "pending");
       }
-      // Check if profile is incomplete
+      // Check if profile is incomplete or has invalid data
       const userType = (data as any)?.user_type || "estudante";
-      const isStudent = userType === "estudante";
-      const incomplete = !data?.phone || !data?.display_name || (isStudent && (!data?.periodo || !data?.faculdade));
+      const incomplete = !isProfileComplete({
+        phone: data?.phone,
+        display_name: data?.display_name,
+        periodo: data?.periodo,
+        faculdade: data?.faculdade,
+        user_type: userType,
+      });
       setProfileIncomplete(incomplete);
       if (incomplete) {
         setFormName(data?.display_name || "");
@@ -60,12 +66,26 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const handleOnboardingSave = async () => {
     if (!user) return;
     const trimmedName = formName.trim();
-    const cleanPhone = formPhone.replace(/\D/g, "");
     const isStudent = formUserType === "estudante";
-    if (!trimmedName || !cleanPhone || cleanPhone.length < 10 || (isStudent && (!formPeriodo || !formFaculdade))) {
-      toast({ title: "Preencha todos os campos corretamente", variant: "destructive" });
+
+    const nameCheck = isValidName(trimmedName);
+    if (!nameCheck.valid) {
+      toast({ title: nameCheck.message || "Nome inválido", variant: "destructive" });
       return;
     }
+
+    const phoneCheck = isValidPhone(formPhone);
+    if (!phoneCheck.valid) {
+      toast({ title: phoneCheck.message || "Telefone inválido", variant: "destructive" });
+      return;
+    }
+
+    if (isStudent && (!formPeriodo || !formFaculdade)) {
+      toast({ title: "Selecione período e faculdade", variant: "destructive" });
+      return;
+    }
+
+    const cleanPhone = formPhone.replace(/\D/g, "");
     setSaving(true);
     try {
       const updateData: Record<string, any> = {

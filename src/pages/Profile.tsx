@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import FaculdadeCombobox from "@/components/FaculdadeCombobox";
+import { isValidPhone, isValidName } from "@/lib/profileValidation";
 
 const Profile = () => {
   const { user } = useAuth();
@@ -92,12 +93,15 @@ const Profile = () => {
   const handleSave = async () => {
     if (!user) return;
     const trimmed = displayName.trim();
-    if (!trimmed) {
-      toast({ title: "Nome não pode ser vazio", variant: "destructive" });
+    const nameCheck = isValidName(trimmed);
+    if (!nameCheck.valid) {
+      toast({ title: nameCheck.message || "Nome inválido", variant: "destructive" });
       return;
     }
-    if (trimmed.length > 100) {
-      toast({ title: "Nome muito longo", description: "Máximo de 100 caracteres.", variant: "destructive" });
+
+    const phoneCheck = isValidPhone(phone);
+    if (!phoneCheck.valid) {
+      toast({ title: phoneCheck.message || "Telefone inválido", variant: "destructive" });
       return;
     }
 
