@@ -338,12 +338,11 @@ const MedicalImageQuiz = () => {
                   className="max-h-full max-w-full object-contain"
                   loading="lazy"
                   referrerPolicy="no-referrer"
-                  crossOrigin="anonymous"
                   onError={(e) => {
                     const target = e.currentTarget;
                     if (!target.dataset.retried) {
                       target.dataset.retried = "1";
-                      target.src = img.image_url + "?t=" + Date.now();
+                      setTimeout(() => { target.src = img.image_url; }, 1000);
                     }
                   }}
                 />
