@@ -51,7 +51,11 @@ const MedicalChronicles = () => {
   const [isFavorited, setIsFavorited] = useState(false);
   const [weakTopics, setWeakTopics] = useState<{ tema: string; count: number }[]>([]);
   const [xpAwarded, setXpAwarded] = useState(false);
+  const [showQuickActions, setShowQuickActions] = useState(false);
+  const [isNearBottom, setIsNearBottom] = useState(true);
+  const [userScrolledUp, setUserScrolledUp] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   // Load weak topics from error_bank for smart suggestions
