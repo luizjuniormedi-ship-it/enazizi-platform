@@ -110,6 +110,30 @@ O sistema de condução pode apresentar variações patológicas — **atalhos**
             "Feixe de Kent (WPW), James (LGL) e Mahaim são vias acessórias patológicas",
           ],
           clinicalTip: "Em um BAVT, o ritmo de escape será tanto mais lento e instável quanto mais distal for a sede do bloqueio. Escape juncional (QRS estreito) é mais estável que ventricular (QRS largo). Se o NSA falha, o NAV assume a 40-60 bpm; se ambos falham, sobra Purkinje a 20-40 bpm — situação de emergência!",
+          images: [
+            { src: "/course-images/ecg-fig1-sistema-conducao.jpg", caption: "Figura 1: Sistema de Condução Cardíaco — do nó sinusal às fibras de Purkinje." },
+            { src: "/course-images/ecg-fig2-vias-acessorias.jpg", caption: "Figura 2: Vias acessórias — Feixe de James (A), Feixe de Kent (B) e Fibras de Mahaim (C)." },
+          ],
+          quiz: [
+            {
+              question: "Qual estrutura do sistema de condução cardíaco apresenta maior frequência de despolarização automática?",
+              options: ["Nó atrioventricular", "Nó sinusal (sinoatrial)", "Fibras de Purkinje", "Feixe de His"],
+              correctIndex: 1,
+              explanation: "O NSA é o marca-passo natural do coração, com frequência intrínseca de 60-100 bpm — a maior do sistema de condução. Por isso, suprime os demais focos pelo mecanismo de overdrive suppression."
+            },
+            {
+              question: "A condução decremental do nó AV tem como principal função:",
+              options: ["Aumentar a velocidade de condução ventricular", "Filtrar taquiarritmias atriais e proteger os ventrículos", "Gerar estímulos de alta frequência", "Conduzir o impulso diretamente ao ventrículo esquerdo"],
+              correctIndex: 1,
+              explanation: "O NAV retarda a condução AV e filtra frequências atriais elevadas, protegendo os ventrículos de arritmias potencialmente fatais. Esta é a condução decremental."
+            },
+            {
+              question: "Qual via acessória está associada à Síndrome de Wolff-Parkinson-White?",
+              options: ["Feixe de James", "Feixe de Kent", "Fibras de Mahaim", "Feixe de Bachmann"],
+              correctIndex: 1,
+              explanation: "O feixe de Kent comunica diretamente o átrio com o ventrículo, causando pré-excitação ventricular — a base da Síndrome de WPW."
+            },
+          ],
         },
         {
           id: "ecg-1-1b",
