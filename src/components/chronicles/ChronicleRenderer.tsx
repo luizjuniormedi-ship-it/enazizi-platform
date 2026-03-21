@@ -72,45 +72,9 @@ function splitIntoSections(content: string): string[] {
   return sections;
 }
 
-/** Custom image component for clinical images with proper styling */
-const ClinicalImage = ({ src, alt }: { src?: string; alt?: string }) => {
-  if (!src) return null;
-  
-  return (
-    <figure className="my-4 sm:my-6">
-      <div className="rounded-xl overflow-hidden border-2 border-cyan-500/20 bg-black/20 shadow-lg">
-        <img
-          src={src}
-          alt={alt || "Imagem clínica"}
-          className="w-full max-h-[500px] object-contain bg-black/40"
-          loading="lazy"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.style.display = "none";
-            const fallback = target.nextElementSibling;
-            if (fallback) (fallback as HTMLElement).style.display = "flex";
-          }}
-        />
-        <div className="hidden items-center justify-center p-8 bg-muted/30 text-muted-foreground text-sm gap-2">
-          <span>🖼️</span>
-          <span>Imagem indisponível — {alt || "consulte fonte original"}</span>
-        </div>
-      </div>
-      {alt && (
-        <figcaption className="mt-2 text-center text-xs sm:text-sm text-muted-foreground italic px-2">
-          📷 {alt}
-        </figcaption>
-      )}
-    </figure>
-  );
-};
+/** Markdown components */
+const markdownComponents = {};
 
-/** Markdown components with clinical image support */
-const markdownComponents = {
-  img: ({ src, alt }: { src?: string; alt?: string }) => (
-    <ClinicalImage src={src} alt={alt} />
-  ),
-};
 
 interface Props {
   content: string;
