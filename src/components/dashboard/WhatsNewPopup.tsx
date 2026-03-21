@@ -22,9 +22,21 @@ interface UpdateItem {
 const updates: UpdateItem[] = [
   {
     icon: "rocket",
+    title: "🆕 Quiz de Imagens Médicas — ECG e RX de Tórax",
+    description:
+      "Novo módulo! Interprete 50+ imagens médicas reais (ECGs e RX de Tórax) com gabarito comentado. Treine leitura diagnóstica com imagens clássicas de fontes públicas. Acesse em Agentes IA → Quiz de Imagens.",
+  },
+  {
+    icon: "sparkles",
+    title: "📊 Dashboard de Progresso Aprimorado",
+    description:
+      "Novo Streak Calendar estilo Duolingo e barras de progresso por especialidade médica para acompanhar sua evolução.",
+  },
+  {
+    icon: "rocket",
     title: "🆕 Crônicas Médicas — Mente de Residente",
     description:
-      "Novo módulo! Aprenda medicina através de narrativas clínicas imersivas. Você é o médico no plantão: enfrente armadilhas diagnósticas, tome decisões sob pressão e responda questões de prova ao final.",
+      "Aprenda medicina através de narrativas clínicas imersivas. Você é o médico no plantão: enfrente armadilhas diagnósticas, tome decisões sob pressão e responda questões de prova ao final.",
   },
   {
     icon: "sparkles",
