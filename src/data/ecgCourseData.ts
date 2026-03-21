@@ -202,6 +202,32 @@ O Ca²⁺ que entra na fase 2 ativa o **complexo actina-miosina** → contraçã
             "A fase 2 (platô) é responsável pelo segmento ST no ECG",
           ],
           clinicalTip: "Bloqueadores de canal de cálcio (diltiazem, verapamil) agem nas células de resposta lenta reduzindo automatismo (bradicardia) e nas rápidas reduzindo Ca²⁺ para contração (inotropismo negativo). Por isso são contraindicados na IC com FE reduzida!",
+          images: [
+            { src: "/course-images/ecg-fig3-dipolo-pilha.jpg", caption: "Figura 3: Analogia do dipolo — assim como a pilha, o coração forma corrente elétrica ao criar polos de cargas opostas." },
+            { src: "/course-images/ecg-fig4-potencial-repouso.jpg", caption: "Figura 4: Gradientes iônicos e formação do potencial de repouso transmembrana." },
+            { src: "/course-images/ecg-fig5-celulas-automaticas.jpg", caption: "Figura 5: Potencial de ação das células automáticas (resposta lenta) e não-automáticas (resposta rápida)." },
+            { src: "/course-images/ecg-fig-canais-ionicos.jpg", caption: "Figura: Canais iônicos responsáveis por cada fase do potencial de ação." },
+          ],
+          quiz: [
+            {
+              question: "Qual é o íon considerado o 'maestro' do potencial de repouso transmembrana?",
+              options: ["Sódio (Na⁺)", "Cálcio (Ca²⁺)", "Potássio (K⁺)", "Cloro (Cl⁻)"],
+              correctIndex: 2,
+              explanation: "O potássio é o principal determinante do potencial de repouso. A membrana é mais permeável ao K⁺, que sai da célula a favor do gradiente de concentração, deixando o interior negativo (-65 a -90 mV)."
+            },
+            {
+              question: "Qual canal é o principal responsável pela despolarização (fase 0) das células de resposta lenta?",
+              options: ["Canal de sódio (INa)", "Canal de potássio (IK)", "Canal de cálcio tipo L (ICa-L)", "Bomba Na⁺/K⁺ ATPase"],
+              correctIndex: 2,
+              explanation: "Nas células de resposta lenta (nodos SA e AV), a despolarização é cálcio-dependente (canais ICa-L), diferente das células de resposta rápida que dependem do Na⁺."
+            },
+            {
+              question: "Qual é a consequência clínica principal do bloqueio dos canais de cálcio nas células de resposta lenta?",
+              options: ["Taquicardia sinusal", "Bradicardia (redução do automatismo)", "Aumento da contratilidade", "Alargamento do QRS"],
+              correctIndex: 1,
+              explanation: "Como a despolarização das células automáticas depende do Ca²⁺, bloqueá-lo reduz o automatismo cardíaco → bradicardia. É por isso que diltiazem e verapamil são usados para controlar a FC."
+            },
+          ],
         },
         {
           id: "ecg-1-1c",
