@@ -510,7 +510,7 @@ const MedicalChronicles = () => {
           )}
 
           {/* Messages */}
-          <div ref={scrollRef} className="flex-1 glass-card p-2 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 mb-2 sm:mb-4 min-h-0">
+          <div ref={scrollRef} className="flex-1 glass-card p-3 sm:p-6 overflow-y-auto space-y-5 sm:space-y-6 mb-2 sm:mb-4 min-h-0">
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
                 {msg.role === "assistant" && (
