@@ -505,47 +505,37 @@ const MedicalChronicles = () => {
       {/* Chat area */}
       {studyStarted && (
         <>
-          {/* Topic indicator */}
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium truncate max-w-[60%]">
-              📖 {currentTopic}
-            </span>
-            {xpAwarded && (
-              <span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[10px] font-medium">
-                ✨ XP ganho
+          {/* Topic indicator + progress bar */}
+          <div className="space-y-2 mb-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium truncate max-w-[60%]">
+                📖 {currentTopic}
               </span>
+              {xpAwarded && (
+                <span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[10px] font-medium">
+                  ✨ XP ganho
+                </span>
+              )}
+            </div>
+            {/* Chronicle progress bar */}
+            {messages.some(m => m.role === "assistant") && (
+              <ChronicleProgressBar content={messages.filter(m => m.role === "assistant").map(m => m.content).join("")} />
             )}
           </div>
 
-          {/* Quick action buttons */}
-          {messages.length >= 2 && !isLoading && (
-            <div className="flex flex-wrap gap-1.5 mb-2 overflow-x-auto">
-              {QUICK_ACTIONS.map((action) => (
-                <Button
-                  key={action.label}
-                  variant="outline"
-                  size="sm"
-                  className="text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0"
-                  onClick={() => sendMessage(action.prompt)}
-                  disabled={isLoading}
-                >
-                  {action.label}
-                </Button>
-              ))}
-            </div>
-          )}
-
           {/* Messages */}
-          <div ref={scrollRef} className="flex-1 glass-card p-3 sm:p-6 overflow-y-auto space-y-5 sm:space-y-6 mb-2 sm:mb-4 min-h-0">
+          <div ref={scrollRef} onScroll={handleScroll} className="relative flex-1 glass-card p-3 sm:p-6 overflow-y-auto space-y-5 sm:space-y-8 mb-2 sm:mb-4 min-h-0">
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
                 {msg.role === "assistant" && (
-                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
                     <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                   </div>
                 )}
-                <div className={`rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm leading-relaxed ${
-                  msg.role === "user" ? "max-w-[85%] sm:max-w-[75%] bg-primary text-primary-foreground" : "w-full bg-secondary text-secondary-foreground"
+                <div className={`rounded-xl text-xs sm:text-sm leading-relaxed ${
+                  msg.role === "user"
+                    ? "max-w-[85%] sm:max-w-[75%] bg-primary text-primary-foreground px-3 py-2 sm:px-4 sm:py-3"
+                    : "w-full py-1"
                 }`}>
                   {msg.role === "assistant" ? (
                     <ChronicleRenderer content={msg.content} />
@@ -570,7 +560,47 @@ const MedicalChronicles = () => {
                 </div>
               </div>
             )}
+            <div ref={bottomRef} />
+
+            {/* Scroll to bottom button */}
+            {userScrolledUp && (
+              <button
+                onClick={scrollToBottom}
+                className="sticky bottom-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-medium shadow-lg hover:bg-primary/90 transition-all"
+              >
+                <ChevronDown className="h-3 w-3" />
+                Rolar ao final
+              </button>
+            )}
           </div>
+
+          {/* Quick actions above input */}
+          {messages.length >= 2 && !isLoading && (
+            <div className="mb-2">
+              <button
+                onClick={() => setShowQuickActions(!showQuickActions)}
+                className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] sm:text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors sm:hidden"
+              >
+                <Zap className="h-3 w-3" />
+                Ações rápidas
+                <ChevronDown className={`h-3 w-3 transition-transform ${showQuickActions ? "rotate-180" : ""}`} />
+              </button>
+              <div className={`flex flex-wrap gap-1.5 overflow-x-auto ${showQuickActions ? "" : "hidden sm:flex"}`}>
+                {QUICK_ACTIONS.map((action) => (
+                  <Button
+                    key={action.label}
+                    variant="outline"
+                    size="sm"
+                    className="text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0"
+                    onClick={() => sendMessage(action.prompt)}
+                    disabled={isLoading}
+                  >
+                    {action.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Input */}
           <div className="flex gap-2">
