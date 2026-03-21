@@ -64,6 +64,9 @@ const HeroSection = () => {
             </Link>
           </Button>
           <Button size="lg" variant="outline" asChild className="text-lg px-8 py-6">
+            <Link to="/login">Entrar</Link>
+          </Button>
+          <Button size="lg" variant="ghost" asChild className="text-lg px-8 py-6 sm:hidden">
             <a href="#features">Ver recursos</a>
           </Button>
         </div>
