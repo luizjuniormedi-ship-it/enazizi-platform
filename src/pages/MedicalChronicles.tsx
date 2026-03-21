@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import InteractiveQuestionRenderer from "@/components/agents/InteractiveQuestionRenderer";
+import ChronicleRenderer from "@/components/chronicles/ChronicleRenderer";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 
 type Msg = { role: "user" | "assistant"; content: string };
