@@ -193,11 +193,17 @@ const Admin = () => {
     }
   };
 
+  // Unique faculdades and periodos for filters
+  const uniqueFaculdades = [...new Set(users.map(u => u.faculdade).filter(Boolean))].sort() as string[];
+  const uniquePeriodos = [...new Set(users.map(u => u.periodo).filter(Boolean))].sort((a, b) => (a as number) - (b as number)) as number[];
+
   // Computed values
   const filteredUsers = users.filter((u) => {
     const q = search.toLowerCase();
     const matchesSearch = (u.display_name || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q);
     if (!matchesSearch) return false;
+    if (filterFaculdade !== "all" && u.faculdade !== filterFaculdade) return false;
+    if (filterPeriodo !== "all" && String(u.periodo) !== filterPeriodo) return false;
     switch (activeTab) {
       case "pending": return u.status === "pending";
       case "active": return u.status === "active" && !u.is_blocked;
