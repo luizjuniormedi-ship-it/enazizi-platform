@@ -1,3 +1,10 @@
+export interface QuizQuestion {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
 export interface CourseLesson {
   id: string;
   title: string;
@@ -5,6 +12,8 @@ export interface CourseLesson {
   theory: string;
   keyPoints: string[];
   clinicalTip?: string;
+  images?: { src: string; caption: string }[];
+  quiz?: QuizQuestion[];
   quizImageIds?: string[]; // IDs from medical_images table
 }
 
