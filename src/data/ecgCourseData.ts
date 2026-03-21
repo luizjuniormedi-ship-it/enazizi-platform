@@ -837,6 +837,42 @@ Com menos K⁺ extracelular, aumenta o gradiente de concentração → mais K⁺
             "Ritmo sinoventricular: ritmo sinusal sem onda P — confunde com juncional",
           ],
           clinicalTip: "Na emergência com ECG sinusoidal ou 'onda em sino', trate como hipercalemia até prova em contrário: gluconato de cálcio 10mL a 10% IV em 2-3 min. Ele não reduz o K⁺, mas estabiliza a membrana ao alterar o potencial limiar (de -70 para -60 mV), restaurando a função dos canais de Na⁺.",
+          images: [
+            { src: "/course-images/ecg-fig-hipercalemia-influencia.jpg", caption: "Figura 1: Influência do potássio nas fases do potencial de ação — repolarização (fase 3) e repouso (fase 4)." },
+            { src: "/course-images/ecg-fig-hipercalemia-ecg.jpg", caption: "Onda T em tenda e achatamento da onda P — achados clássicos da hipercalemia." },
+            { src: "/course-images/ecg-fig-hipercalemia-grave.jpg", caption: "Hipercalemia grave: QRS alargado, onda em sino (fusão QRS+T) — iminência de parada cardíaca." },
+          ],
+          quiz: [
+            {
+              question: "Qual é o primeiro achado eletrocardiográfico da hipercalemia?",
+              options: ["Alargamento do QRS", "Desaparecimento da onda P", "Onda T apiculada (em tenda)", "Ritmo sinoventricular"],
+              correctIndex: 2,
+              explanation: "A onda T apiculada (em tenda) é o primeiro sinal, surgindo com K⁺ a partir de 5,5 mEq/L. Ela reflete o encurtamento da repolarização causado pelo potencial de repouso menos negativo."
+            },
+            {
+              question: "O ritmo sinoventricular na hipercalemia moderada ocorre porque:",
+              options: ["O nó sinusal para de funcionar", "A onda P desaparece por comprometimento da condução intra-atrial", "O feixe de His assume o comando", "Os ventrículos geram ritmo próprio"],
+              correctIndex: 1,
+              explanation: "Com K⁺ > 8 mEq/L, a condução intra-atrial está tão comprometida que a onda P some, mas o NSA continua funcionando — o estímulo chega aos ventrículos pelos feixes internodais. É um ritmo sinusal sem onda P!"
+            },
+            {
+              question: "Na hipocalemia, o intervalo QT parece alargado. Na verdade, o que está sendo medido é:",
+              options: ["O intervalo QT verdadeiro", "O intervalo QU (fusão da onda U com T)", "O segmento ST prolongado", "A onda P alargada"],
+              correctIndex: 1,
+              explanation: "Na hipocalemia, surge uma onda U proeminente que se funde à onda T, criando a impressão de QT longo. Na verdade, é o intervalo QU que está sendo medido. Este achado predispõe a Torsades de Pointes."
+            },
+            {
+              question: "Qual a diferença entre o encurtamento do QT na hipercalemia vs hipercalcemia?",
+              options: [
+                "Ambos apresentam onda T em tenda",
+                "A hipercalemia tem T em tenda + QRS largo; a hipercalcemia tem apenas ST curto/ausente",
+                "A hipercalcemia apresenta onda U proeminente",
+                "Não há diferença — os achados são idênticos"
+              ],
+              correctIndex: 1,
+              explanation: "Na hipercalemia, o QT curto vem acompanhado de onda T em tenda, QRS alargado e P achatada. Na hipercalcemia, o encurtamento é isolado — o segmento ST fica muito curto ou ausente, sem outras alterações."
+            },
+          ],
         },
         {
           id: "ecg-4-4",
