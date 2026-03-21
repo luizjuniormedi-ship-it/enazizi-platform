@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send } from "lucide-react";
+import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,7 @@ import AdminPlanDistribution from "@/components/admin/AdminPlanDistribution";
 import AdminAuditLog from "@/components/admin/AdminAuditLog";
 import AdminDialogs from "@/components/admin/AdminDialogs";
 import AdminUserRow from "@/components/admin/AdminUserRow";
+import AdminFeedbackPanel from "@/components/admin/AdminFeedbackPanel";
 import type { AdminUser, Stats } from "@/components/admin/AdminTypes";
 
 const Admin = () => {
@@ -283,6 +284,9 @@ const Admin = () => {
             <TabsTrigger value="telegram" className="gap-1.5">
               <Send className="h-3.5 w-3.5" /> Telegram
             </TabsTrigger>
+            <TabsTrigger value="feedbacks" className="gap-1.5">
+              <Star className="h-3.5 w-3.5" /> Feedbacks
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="whatsapp">
@@ -293,7 +297,11 @@ const Admin = () => {
             <TelegramConfigPanel />
           </TabsContent>
 
-          <TabsContent value={activeTab === "whatsapp" || activeTab === "telegram" ? "__none__" : activeTab}>
+          <TabsContent value="feedbacks">
+            <AdminFeedbackPanel />
+          </TabsContent>
+
+          <TabsContent value={activeTab === "whatsapp" || activeTab === "telegram" || activeTab === "feedbacks" ? "__none__" : activeTab}>
             {loading ? (
               <div className="flex justify-center py-12">
                 <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
