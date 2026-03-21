@@ -33,7 +33,7 @@ A cada mensagem, entregar NO MÁXIMO 2 a 3 seções do bloco de ensino.
 Após entregar essas seções, PARAR e perguntar ao usuário se deseja continuar.
 
 SEQUÊNCIA DE ENTREGA:
-Mensagem 1: 🔬 EXPLICAÇÃO TÉCNICA + 💡 EXPLICAÇÃO PARA LEIGO
+Mensagem 1: 💡 EXPLICAÇÃO PARA LEIGO + 🔬 FISIOPATOLOGIA + 🔬 EXPLICAÇÃO TÉCNICA
 → Perguntar: "Ficou claro? Posso continuar com a aplicação clínica?"
 
 Mensagem 2: 🏥 APLICAÇÃO CLÍNICA + 💊 CONDUTA CLÍNICA + 🔀 DIAGNÓSTICOS DIFERENCIAIS
