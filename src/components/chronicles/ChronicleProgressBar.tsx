@@ -2,9 +2,12 @@ import { useMemo } from "react";
 
 const MILESTONES = [
   { emoji: "🩺", label: "Cenário", color: "bg-blue-400" },
+  { emoji: "🔬", label: "Fisiopatologia", color: "bg-teal-400" },
+  { emoji: "🖼️", label: "Imagem", color: "bg-cyan-400" },
   { emoji: "🧠", label: "Raciocínio", color: "bg-purple-400" },
   { emoji: "⚠️", label: "Armadilha", color: "bg-amber-400" },
   { emoji: "⚖️", label: "Diferencial", color: "bg-emerald-400" },
+  { emoji: "🎯", label: "Memória", color: "bg-orange-400" },
   { emoji: "📝", label: "Questão", color: "bg-violet-400" },
 ];
 
