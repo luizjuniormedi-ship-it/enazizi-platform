@@ -52,6 +52,7 @@ const Install = lazy(() => import("./pages/Install"));
 const StudyGuides = lazy(() => import("./pages/StudyGuides"));
 const MedicalChronicles = lazy(() => import("./pages/MedicalChronicles"));
 const MedicalImageQuiz = lazy(() => import("./pages/MedicalImageQuiz"));
+const Courses = lazy(() => import("./pages/Courses"));
 
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
@@ -115,6 +116,7 @@ const App = () => (
                 <Route path="anamnese" element={<AnamnesisTrainer />} />
                 <Route path="cronicas" element={<MedicalChronicles />} />
                 <Route path="quiz-imagens" element={<MedicalImageQuiz />} />
+                <Route path="cursos" element={<Courses />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="perfil" element={<Profile />} />
               </Route>
