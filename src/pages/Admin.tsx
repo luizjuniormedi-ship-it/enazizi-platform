@@ -297,6 +297,10 @@ const Admin = () => {
             <TelegramConfigPanel />
           </TabsContent>
 
+          <TabsContent value="feedbacks">
+            <AdminFeedbackPanel />
+          </TabsContent>
+
           <TabsContent value={activeTab === "whatsapp" || activeTab === "telegram" ? "__none__" : activeTab}>
             {loading ? (
               <div className="flex justify-center py-12">
