@@ -296,12 +296,9 @@ Três vetores principais em sequência:
           ],
           clinicalTip: "Se a onda T está discordante do QRS (apontam em direções opostas), há alteração da repolarização: isquemia, sobrecarga ventricular, bloqueio de ramo ou efeito de drogas. A discordância esperada no BRE é 'secundária' — se concordar, é sinal de IAM (critério de Sgarbossa)!",
           images: [
-            { src: "/course-images/ecg-fig-vetores-dipolo.jpg", caption: "Vetores cardíacos e sua relação com as derivações — o registro é positivo quando o vetor aponta para o eletrodo explorador." },
-            { src: "/course-images/ecg-fig-derivacoes-registro.jpg", caption: "Relação entre vetores e derivações — o 'rosto' do ECG aparece conforme a posição do olho elétrico." },
-            { src: "/course-images/ecg-fig-ativacao-atrial.jpg", caption: "Ativação elétrica atrial — a onda P é formada pela resultante da despolarização dos átrios direito e esquerdo." },
-            { src: "/course-images/ecg-fig-ativacao-ventricular.jpg", caption: "Os três vetores da despolarização ventricular e a formação do complexo QRS." },
-            { src: "/course-images/ecg-fig-repolarizacao-ventricular.jpg", caption: "Repolarização ventricular — inicia-se pelo epicárdio, gerando onda T de mesma polaridade do QRS." },
-            { src: "/course-images/ecg-fig-pqrst-completo.jpg", caption: "Figura 23: Atividade elétrica do coração e sua repercussão completa no ECG — P, QRS, T e segmentos." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/ECG_principle_slow.gif/800px-ECG_principle_slow.gif", caption: "Princípio do ECG — vetores cardíacos e sua projeção nas derivações." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/SinusRhythmLabels.svg/800px-SinusRhythmLabels.svg.png", caption: "ECG normal com ondas P, QRS, T e segmentos ST e PR identificados." },
+            { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Limb_leads.svg/800px-Limb_leads.svg.png", caption: "Derivações dos membros — posicionamento e triângulo de Einthoven." },
           ],
           quiz: [
             {
