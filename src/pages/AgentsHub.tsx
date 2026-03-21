@@ -62,6 +62,15 @@ const agents = [
     isNew: true,
   },
   {
+    to: "/dashboard/quiz-imagens",
+    icon: ImageIcon,
+    title: "🖼️ Quiz de Imagens Médicas",
+    description: "Interprete ECGs e RX de Tórax com gabarito comentado. 50+ imagens clássicas de fontes públicas para treinar sua leitura diagnóstica.",
+    color: "text-violet-400",
+    bgColor: "bg-violet-500/10",
+    isNew: true,
+  },
+  {
     to: "/dashboard/coach",
     icon: Heart,
     title: "💪 Coach Motivacional",
