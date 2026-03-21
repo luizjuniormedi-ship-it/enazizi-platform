@@ -8,12 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-
-const FACULDADES = [
-  "UNIG",
-  "Estácio",
-  "Outra",
-];
+import { FACULDADES } from "@/constants/faculdades";
 
 const Profile = () => {
   const { user } = useAuth();

@@ -32,7 +32,7 @@ const SPECIALTIES = [
   "Ortopedia", "Psiquiatria", "Emergência", "Dermatologia", "Angiologia",
 ];
 
-const FACULDADES = ["UNIG", "Estácio", "Outra"];
+import { FACULDADES } from "@/constants/faculdades";
 
 const EVAL_LABELS: Record<string, string> = {
   anamnesis: "Anamnese", physical_exam: "Exame Físico",
