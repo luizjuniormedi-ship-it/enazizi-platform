@@ -92,7 +92,7 @@ const ChronicleRenderer = ({ content }: Props) => {
   let qIdx = 0;
 
   return (
-    <div className="chronicle-content space-y-4">
+    <div className="chronicle-content space-y-6 sm:space-y-8">
       {hasQuestions ? (
         // Render with interactive questions
         segments.map((seg, i) => {
@@ -103,7 +103,7 @@ const ChronicleRenderer = ({ content }: Props) => {
           if (seg.type === "text" && seg.content) {
             const innerSections = splitIntoSections(seg.content);
             return (
-              <div key={`t-${i}`} className="space-y-4">
+              <div key={`t-${i}`} className="space-y-6 sm:space-y-8">
                 {innerSections.map((sec, j) => (
                   <SectionBlock key={j} content={sec} />
                 ))}
