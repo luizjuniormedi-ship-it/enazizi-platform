@@ -33,29 +33,29 @@ const faqs = [
 ];
 
 const FAQSection = () => (
-  <section id="faq" className="py-24 relative overflow-hidden">
-    <div className="container relative z-10">
-      <div className="text-center mb-16">
+  <section id="faq" className="py-16 sm:py-24 relative overflow-hidden">
+    <div className="container relative z-10 px-4">
+      <div className="text-center mb-10 sm:mb-16">
         <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
           FAQ
         </span>
-        <h2 className="text-3xl md:text-5xl font-bold mb-4">
+        <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold mb-3 sm:mb-4">
           Perguntas <span className="gradient-text">frequentes</span>
         </h2>
       </div>
 
       <div className="max-w-3xl mx-auto">
-        <Accordion type="single" collapsible className="space-y-3">
+        <Accordion type="single" collapsible className="space-y-2 sm:space-y-3">
           {faqs.map((faq, i) => (
             <AccordionItem
               key={i}
               value={`faq-${i}`}
-              className="rounded-xl border border-border/40 bg-card/60 px-6 data-[state=open]:border-primary/30 transition-colors"
+              className="rounded-xl border border-border/40 bg-card/60 px-4 sm:px-6 data-[state=open]:border-primary/30 transition-colors"
             >
-              <AccordionTrigger className="text-left font-semibold text-sm md:text-base py-5 hover:no-underline">
+              <AccordionTrigger className="text-left font-semibold text-sm md:text-base py-4 sm:py-5 hover:no-underline">
                 {faq.q}
               </AccordionTrigger>
-              <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-5">
+              <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4 sm:pb-5">
                 {faq.a}
               </AccordionContent>
             </AccordionItem>
