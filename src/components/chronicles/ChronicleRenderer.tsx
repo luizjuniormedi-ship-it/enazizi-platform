@@ -130,14 +130,14 @@ const SectionBlock = ({ content }: { content: string }) => {
 
   if (style) {
     return (
-      <div className={`rounded-xl border-l-4 ${style.border} ${style.bg} p-4 sm:p-5 transition-all`}>
+      <div className={`rounded-xl border-l-4 ${style.border} ${style.bg} p-5 sm:p-6 transition-all`}>
         <div className="prose prose-base dark:prose-invert max-w-none leading-relaxed
           [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
-          prose-headings:text-base prose-headings:sm:text-lg prose-headings:font-bold prose-headings:mb-3
-          prose-p:my-2.5 prose-p:text-sm prose-p:sm:text-base prose-p:leading-7
-          prose-ul:my-3 prose-ol:my-3 prose-li:my-1.5
+          prose-headings:text-lg prose-headings:sm:text-xl prose-headings:font-bold prose-headings:mb-4
+          prose-p:my-3 prose-p:text-sm prose-p:sm:text-base prose-p:leading-7
+          prose-ul:my-3 prose-ol:my-3 prose-li:my-2
           prose-li:text-sm prose-li:sm:text-base
-          prose-blockquote:border-l-primary/40 prose-blockquote:bg-primary/5 prose-blockquote:rounded-r-lg prose-blockquote:py-1 prose-blockquote:px-3
+          prose-blockquote:border-l-primary/40 prose-blockquote:bg-primary/5 prose-blockquote:rounded-r-lg prose-blockquote:py-2 prose-blockquote:px-4
           prose-strong:text-foreground
           prose-table:text-xs prose-table:sm:text-sm
           prose-th:bg-muted/50 prose-th:px-3 prose-th:py-2
