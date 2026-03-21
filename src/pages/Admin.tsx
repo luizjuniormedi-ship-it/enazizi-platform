@@ -262,13 +262,60 @@ const Admin = () => {
 
       {/* Users with tabs */}
       <div className="glass-card p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <UserCog className="h-5 w-5" /> Gerenciar Usuários
-          </h2>
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar por nome ou email..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <div className="flex flex-col gap-3 mb-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <UserCog className="h-5 w-5" /> Gerenciar Usuários
+            </h2>
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Buscar por nome ou email..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={filterFaculdade} onValueChange={setFilterFaculdade}>
+              <SelectTrigger className="w-[200px] h-8 text-xs">
+                <SelectValue placeholder="Universidade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas universidades</SelectItem>
+                {uniqueFaculdades.map((f) => (
+                  <SelectItem key={f} value={f}>{f}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterPeriodo} onValueChange={setFilterPeriodo}>
+              <SelectTrigger className="w-[140px] h-8 text-xs">
+                <SelectValue placeholder="Período" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos períodos</SelectItem>
+                {uniquePeriodos.map((p) => (
+                  <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {(filterFaculdade !== "all" || filterPeriodo !== "all") && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-xs gap-1"
+                onClick={() => { setFilterFaculdade("all"); setFilterPeriodo("all"); }}
+              >
+                <X className="h-3 w-3" /> Limpar filtros
+              </Button>
+            )}
+
+            {(filterFaculdade !== "all" || filterPeriodo !== "all") && (
+              <span className="text-xs text-muted-foreground ml-auto">
+                {filteredUsers.length} resultado{filteredUsers.length !== 1 ? "s" : ""}
+              </span>
+            )}
           </div>
         </div>
 
