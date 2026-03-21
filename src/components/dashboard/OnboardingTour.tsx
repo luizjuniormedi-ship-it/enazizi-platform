@@ -136,7 +136,7 @@ const OnboardingTour = () => {
   const progress = ((currentStep + 1) / steps.length) * 100;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-8 sm:pt-12 p-4">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={handleClose} />
 
