@@ -359,35 +359,29 @@ const MedicalChronicles = () => {
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground truncate">Narrativas clínicas imersivas no estilo "Mente de Residente"</p>
         </div>
-        <div className="flex gap-1 sm:gap-2 flex-shrink-0 flex-wrap justify-end items-center">
-          <ModuleHelpButton moduleKey="cronicas" moduleName="Crônicas Médicas" steps={[
-            "Escolha a especialidade, subtema e nível de dificuldade",
-            "A IA gera uma crônica imersiva onde VOCÊ é o médico no plantão",
-            "Acompanhe o raciocínio clínico, armadilhas e decisões",
-            "Responda a questão de prova ao final da crônica",
-            "Use os botões rápidos para aprofundar ou pedir questões extras",
-            "Salve suas crônicas favoritas com o botão ❤️",
-          ]} />
-          {studyStarted && activeConversationId && (
-            <Button
-              variant={isFavorited ? "default" : "outline"}
-              size="sm"
-              onClick={toggleFavorite}
-              className={`gap-1 h-8 px-2 text-xs ${isFavorited ? "bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30" : ""}`}
-              title={isFavorited ? "Remover dos favoritos" : "Salvar nos favoritos"}
-            >
-              {isFavorited ? <Heart className="h-4 w-4 fill-current" /> : <HeartOff className="h-4 w-4" />}
-            </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+        <div className="flex gap-1.5 flex-shrink-0 items-center">
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setIsFullscreen(!isFullscreen)} title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
-          <Button variant="outline" size="sm" onClick={startNewSession} className="gap-1 h-8 px-2 text-xs">
-            <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nova</span>
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)} className="gap-1 h-8 px-2 text-xs">
-            <History className="h-4 w-4" /> <span className="hidden sm:inline">Histórico</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {studyStarted && activeConversationId && (
+                <DropdownMenuItem onClick={toggleFavorite}>
+                  {isFavorited ? <Heart className="h-4 w-4 mr-2 fill-current text-red-400" /> : <HeartOff className="h-4 w-4 mr-2" />}
+                  {isFavorited ? "Remover favorito" : "Salvar favorito"}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={startNewSession}><Plus className="h-4 w-4 mr-2" /> Nova crônica</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowHistory(!showHistory)}><History className="h-4 w-4 mr-2" /> Histórico</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => {}}>
+                <HelpCircle className="h-4 w-4 mr-2" /> Como usar
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

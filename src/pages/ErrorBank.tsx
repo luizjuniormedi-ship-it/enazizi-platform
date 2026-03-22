@@ -287,25 +287,24 @@ const ErrorBank = () => {
           </h1>
           <p className="text-muted-foreground text-sm">Revisão ativa e personalizada dos seus pontos fracos</p>
         </div>
-        <div className="flex gap-2 flex-wrap items-center">
-          <ModuleHelpButton moduleKey="error-bank" moduleName="Banco de Erros" steps={[
-            "Erros são coletados automaticamente do Tutor IA, Simulados e Diagnóstico",
-            "Use os filtros por tema, tipo ou categoria para focar nos pontos fracos",
-            "Clique '✓ Dominei' para marcar erros superados sem perder o histórico",
-            "Gere flashcards dos erros clicando no botão — eles vão direto para revisão",
-            "Acompanhe sua evolução semanal no gráfico do topo",
-            "Indicadores de tendência (↑↓) mostram se está melhorando ou piorando por tema",
-          ]} />
-          {errors.length > 0 && (
-            <Button variant="outline" size="sm" onClick={generateFlashcardsFromErrors} disabled={generatingFlashcards} className="gap-1.5">
-              {generatingFlashcards ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlipVertical className="h-4 w-4" />}
-              Gerar Flashcards
-            </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={loadErrors} className="gap-1.5">
-            <RefreshCw className="h-4 w-4" /> Atualizar
-          </Button>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {errors.length > 0 && (
+              <DropdownMenuItem onClick={generateFlashcardsFromErrors} disabled={generatingFlashcards}>
+                {generatingFlashcards ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FlipVertical className="h-4 w-4 mr-2" />}
+                Gerar Flashcards
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={loadErrors}><RefreshCw className="h-4 w-4 mr-2" /> Atualizar</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => {}}>
+              <HelpCircle className="h-4 w-4 mr-2" /> Como usar
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Summary Cards */}

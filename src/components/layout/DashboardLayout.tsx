@@ -244,20 +244,20 @@ const DashboardLayout = () => {
           </button>
         </div>
       </header>
+      {/* Desktop top bar */}
+      <div className="hidden landscape-tablet:flex lg:flex h-12 border-b border-border items-center justify-end px-4 gap-2 flex-shrink-0">
+        <GlobalSearch />
+        <NotificationBell />
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-sm"
+          aria-label="Alternar tema"
+        >
+          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          <span className="hidden xl:inline">{theme === "dark" ? "Claro" : "Escuro"}</span>
+        </button>
+      </div>
       <main className="dashboard-main flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-x-hidden overflow-y-auto relative w-full">
-        {/* Desktop top bar */}
-        <div className="hidden landscape-tablet:flex lg:flex fixed top-4 right-4 z-50 items-center gap-2">
-          <GlobalSearch />
-          <NotificationBell />
-          <button
-            onClick={toggleTheme}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-sm"
-            aria-label="Alternar tema"
-          >
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            <span className="hidden xl:inline">{theme === "dark" ? "Claro" : "Escuro"}</span>
-          </button>
-        </div>
         <ActiveVideoRoomPopup />
         <div className="relative z-10 w-full max-w-full pb-16 lg:pb-0">
           <Outlet />
