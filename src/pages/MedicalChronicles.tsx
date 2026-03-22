@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { createPortal } from "react-dom";
 import { Send, Bot, User, Loader2, Plus, History, Trash2, BookOpen, Maximize2, Minimize2, Heart, HeartOff, Lightbulb, AlertTriangle, ChevronDown, Zap, MoreVertical, HelpCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";

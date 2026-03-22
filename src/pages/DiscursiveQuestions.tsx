@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { updateDomainMap } from "@/lib/updateDomainMap";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
