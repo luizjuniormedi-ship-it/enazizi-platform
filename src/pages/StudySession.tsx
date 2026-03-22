@@ -13,8 +13,9 @@ import { toast } from "@/hooks/use-toast";
 import {
   BookOpen, Brain, HelpCircle, MessageSquare, BarChart3,
   Send, Loader2, GraduationCap, Play, RotateCcw, Stethoscope,
-  FileText, AlertTriangle, TrendingUp, Target, Maximize2, Minimize2
+  FileText, AlertTriangle, TrendingUp, Target, Maximize2, Minimize2, MoreVertical
 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ReactMarkdown from "react-markdown";
 
 type Phase = "start" | "performance" | "lesson" | "active-recall" | "questions" | "discussion" | "discursive" | "scoring";
