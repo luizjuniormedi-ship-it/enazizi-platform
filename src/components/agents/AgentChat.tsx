@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useNavigate } from "react-router-dom";
 import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Save, Upload, GraduationCap, Maximize2, Minimize2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
@@ -83,6 +85,44 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const previousContentRef = useRef<string>("");
   const previousContentLoadedRef = useRef(false);
   const { toast } = useToast();
+
+  // Session persistence for "continue where you left off"
+  const {
+    pendingSession,
+    checked: sessionChecked,
+    saveSession,
+    completeSession,
+    abandonSession,
+    registerAutoSave,
+    clearPending,
+  } = useSessionPersistence({ moduleKey: functionName });
+
+  // Register auto-save: persist messages + activeConversationId
+  useEffect(() => {
+    registerAutoSave(() => {
+      if (messages.length <= 1) return {};
+      return {
+        messages,
+        activeConversationId,
+      };
+    });
+  }, [messages, activeConversationId, registerAutoSave]);
+
+  const handleResumeSession = useCallback(() => {
+    if (!pendingSession?.session_data) return;
+    const data = pendingSession.session_data as Record<string, any>;
+    if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
+      setMessages(data.messages);
+    }
+    if (data.activeConversationId) {
+      setActiveConversationId(data.activeConversationId);
+    }
+    clearPending();
+  }, [pendingSession, clearPending]);
+
+  const handleDiscardSession = useCallback(() => {
+    abandonSession();
+  }, [abandonSession]);
 
   // Load previous content for anti-repetition
   useEffect(() => {
@@ -363,6 +403,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   };
 
   const startNewConversation = () => {
+    completeSession();
     setActiveConversationId(null);
     setMessages([{ role: "assistant", content: welcomeMessage }]);
     setShowHistory(false);
@@ -687,6 +728,15 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
           </div>
         )}
       </div>
+
+      {/* Resume session banner */}
+      {sessionChecked && pendingSession && messages.length <= 1 && (
+        <ResumeSessionBanner
+          updatedAt={pendingSession.updated_at}
+          onResume={handleResumeSession}
+          onDiscard={handleDiscardSession}
+        />
+      )}
 
       {showHistory && (
         <div className="glass-card p-3 mb-4 max-h-48 overflow-y-auto space-y-1">
