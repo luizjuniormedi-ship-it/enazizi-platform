@@ -318,8 +318,7 @@ serve(async (req) => {
         content: `action="finish". O aluno decidiu encerrar o atendimento. Avalie o desempenho completo com base em toda a interação, incluindo avaliação de prescrição, conduta, diagnóstico e parecer/encaminhamento. Use as 7 categorias de avaliação. Responda APENAS em JSON válido.`,
       });
     } else if (action === "deteriorate") {
-      const { deterioration_level } = await req.json().catch(() => ({ deterioration_level: 1 }));
-      const level = body?.deterioration_level || deterioration_level || 1;
+      const level = deterioration_level || 1;
       if (conversation_history && Array.isArray(conversation_history)) {
         messages.push(...conversation_history);
       }
