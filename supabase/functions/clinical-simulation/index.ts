@@ -229,7 +229,7 @@ serve(async (req) => {
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user) throw new Error("Não autenticado");
 
-    const { action, specialty, subtopic, difficulty, message, conversation_history, specialist_area, teacher_case_id, triage_color: requestedTriageColor, pediatric_age_range, deterioration_level } = await req.json();
+    const { action, specialty, subtopic, difficulty, message, conversation_history, specialist_area, teacher_case_id, triage_color: requestedTriageColor, pediatric_age_range, deterioration_level, patient_status: requestedPatientStatus } = await req.json();
 
     let messages: Array<{ role: string; content: string }> = [
       { role: "system", content: SYSTEM_PROMPT },
@@ -322,37 +322,64 @@ serve(async (req) => {
       if (conversation_history && Array.isArray(conversation_history)) {
         messages.push(...conversation_history);
       }
-      const severityMap: Record<number, string> = {
-        1: "LEVE: Piore levemente os sinais vitais (ex: taquicardia leve, queda discreta de PA). Descreva que o paciente parece mais desconfortável, inquieto. patient_status deve ser 'instável'. score_delta: -2",
-        2: "MODERADA: Piore significativamente os sinais vitais (hipotensão, taquicardia importante, dessaturação). O paciente demonstra sinais de choque ou insuficiência orgânica. patient_status deve ser 'grave'. score_delta: -3",
-        3: "GRAVE/CRÍTICA: O paciente evolui para parada cardiorrespiratória ou choque refratário. Sinais vitais críticos. patient_status deve ser 'crítico'. score_delta: -3",
-      };
-      const severityInstruction = severityMap[Math.min(level, 3)] || severityMap[1];
+      const triageCtx = requestedTriageColor || "desconhecido";
+      const statusCtx = requestedPatientStatus || "desconhecido";
+
       messages.push({
         role: "user",
-        content: `action="deteriorate". O aluno ficou INATIVO por 90 segundos sem tomar conduta. Nível de deterioração: ${level}/3. 
+        content: `action="deteriorate". O aluno ficou INATIVO por 90 segundos sem tomar conduta. Nível de deterioração: ${level}/3.
+Classificação de risco atual (triage): ${triageCtx}. Status atual do paciente: ${statusCtx}.
 
-INSTRUÇÃO DE GRAVIDADE: ${severityInstruction}
+## REGRAS OBRIGATÓRIAS DE DETERIORAÇÃO FISIOPATOLOGICAMENTE COERENTE
 
-Você DEVE:
-1. Piorar os sinais vitais proporcionalmente ao nível
-2. Descrever a evolução clínica como narrador ("O paciente começa a apresentar...")
-3. Incluir "vitals" atualizados com a piora
-4. Incluir "patient_status" atualizado
-5. Incluir "score_delta" negativo conforme instruído
-6. Se nível 3, incluir "critical_action_needed": "Paciente em parada cardiorrespiratória! Iniciar RCP imediatamente!"
+A piora DEVE seguir a fisiopatologia do diagnóstico oculto (hidden_diagnosis) do caso. Você NÃO pode inventar pioras que não se justificam pela doença de base.
 
-Responda em JSON: { "response": "...", "response_type": "deterioration", "patient_status": "...", "vitals": {...}, "time_elapsed_minutes": ..., "score_delta": ..., "critical_action_needed": "..." }
+### PROIBIÇÕES EXPLÍCITAS:
+- Paciente VERDE ou AMARELO NÃO pode evoluir para parada cardiorrespiratória no nível 1 ou 2
+- Paciente com queixa menor (tosse isolada, lombalgia, cefaleia simples, IVAS) NÃO deve ter piora hemodinâmica severa (choque, hipotensão grave) nos níveis 1-2
+- A piora NÃO pode ser desproporcional à classificação de risco inicial
+- NÃO invente complicações que não têm relação com o diagnóstico oculto
+
+### MAPA DE SEVERIDADE POR TRIAGE:
+
+**VERDE (pouco urgente)**:
+- Nível 1: Desconforto leve — paciente mais ansioso, dor aumenta levemente, sinais vitais minimamente alterados (ex: FC +10bpm)
+- Nível 2: Piora moderada — sintomas intensificam, pode surgir febre ou taquicardia leve, paciente preocupado
+- Nível 3: Complicação plausível mas NÃO parada — ex: infecção urinária pode evoluir para pielonefrite, lombalgia pode revelar sinal neurológico. NUNCA parada cardíaca.
+
+**AMARELO (urgente)**:
+- Nível 1: Instabilidade inicial — sinais vitais levemente piores, paciente mais sintomático
+- Nível 2: Deterioração — hipotensão leve, taquicardia, dessaturação discreta. Sinais de alerta
+- Nível 3: Grave mas reversível — paciente em situação séria que exige intervenção, mas NÃO parada
+
+**LARANJA/VERMELHO (muito urgente/emergência)**:
+- Nível 1: Piora proporcional à doença de base (ex: sepse → hipotensão progressiva)
+- Nível 2: Falência orgânica incipiente, sinais de choque ou insuficiência
+- Nível 3: Situação crítica — parada ou choque refratário SÓ se fisiopatologicamente justificado pela doença de base
+
+### EXEMPLOS DE COERÊNCIA:
+- Pneumonia → piora SpO2 e FR, NÃO hipotensão severa no nível 1
+- Sepse → hipotensão e taquicardia progressivas
+- Fratura → dor e edema crescentes, SEM alteração hemodinâmica drástica
+- Crise asmática → broncoespasmo progressivo, dessaturação
+- IAM → arritmia, hipotensão, sinais de IC
+
+### FORMATO DA NARRATIVA:
+Descreva a piora com justificativa clínica: "Devido à falta de [conduta esperada], o paciente evolui com [piora fisiopatologicamente coerente]..."
+
+Responda em JSON:
+{
+  "response": "texto narrativo da piora com justificativa clínica",
+  "response_type": "deterioration",
+  "patient_status": "instável/grave/crítico (proporcional ao nível e triage)",
+  "vitals": { "PA": "...", "FC": "...", "FR": "...", "Temp": "...", "SpO2": "..." },
+  "time_elapsed_minutes": número,
+  "score_delta": -2 ou -3,
+  "critical_action_needed": "string se houver urgência real, null se não",
+  "deterioration_rationale": "explicação fisiopatológica resumida da piora (ex: 'Pneumonia não tratada → progressão para SDRA com hipoxemia')"
+}
 Responda APENAS em JSON válido.`,
       });
-    } else {
-      throw new Error("action inválida");
-    }
-
-    const aiResp = await aiFetch({
-      model: "google/gemini-2.5-flash",
-      messages,
-    });
 
     if (!aiResp.ok) {
       const errText = await aiResp.text();
