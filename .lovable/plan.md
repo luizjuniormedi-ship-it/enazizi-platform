@@ -1,26 +1,39 @@
 
 
-# Plano: Adicionar "Continuar de Onde Parou" no AgentChat
+# Plano: Adicionar Persistência nos 3 Módulos Restantes
 
-## Problema
-O `AgentChat` (usado por QuestionGenerator, FlashcardGenerator, MentorMed, MotivationalCoach, MedicalReviewer, InterviewSimulator, ContentSummarizer) não tem `useSessionPersistence`. Os 6 módulos que já têm são páginas independentes (ChatGPT, Flashcards, ExamSimulator, etc.).
+## Módulos Faltantes
+1. **DiscursiveQuestions** — questões discursivas
+2. **MedicalChronicles** — crônicas médicas
+3. **MedicalImageQuiz** — quiz de imagens
 
-## Solução
-Integrar `useSessionPersistence` diretamente no componente `AgentChat.tsx`, usando `functionName` como `moduleKey`. Isso cobre **7 módulos** de uma vez.
+## Mudanças
 
-## Mudanças em `src/components/agents/AgentChat.tsx`
+### 1. `src/pages/DiscursiveQuestions.tsx`
+- `useSessionPersistence({ moduleKey: "discursive" })`
+- Salvar: fase atual, especialidade, questão gerada, resposta do aluno
+- Banner visível na fase inicial (setup)
+- `completeSession()` ao finalizar correção
 
-1. Importar `useSessionPersistence` e `ResumeSessionBanner`
-2. Chamar `useSessionPersistence({ moduleKey: functionName })` 
-3. Registrar auto-save com `registerAutoSave` — salva `messages` e `activeConversationId`
-4. Mostrar `ResumeSessionBanner` no topo do chat quando:
-   - `pendingSession` existe
-   - Chat está no estado inicial (apenas welcome message)
-5. Ao clicar "Continuar": restaurar `messages` e `activeConversationId` do `session_data`
-6. Ao clicar "Descartar": chamar `abandonSession()`
-7. Ao criar nova conversa ou limpar chat: chamar `completeSession()`
+### 2. `src/pages/MedicalChronicles.tsx`
+- `useSessionPersistence({ moduleKey: "chronicles" })`
+- Salvar: mensagens do chat, especialidade, dificuldade selecionadas
+- Banner visível quando chat está vazio
+- `completeSession()` ao limpar conversa
+
+### 3. `src/pages/MedicalImageQuiz.tsx`
+- `useSessionPersistence({ moduleKey: "image-quiz" })`
+- Salvar: score, filtros (categoria/dificuldade), índice atual, modo (browse/quiz)
+- Banner visível no modo browse
+- `completeSession()` ao finalizar quiz
+
+## Arquivos Modificados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/components/agents/AgentChat.tsx` | Adicionar persistência de sessão universal |
+| `src/pages/DiscursiveQuestions.tsx` | +persistência |
+| `src/pages/MedicalChronicles.tsx` | +persistência |
+| `src/pages/MedicalImageQuiz.tsx` | +persistência |
+
+Resultado: **todos os 16 módulos** terão "Continuar de onde parou".
 
