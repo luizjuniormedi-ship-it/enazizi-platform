@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, CheckCircle2, Rocket } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const CURRENT_VERSION = "6.0.0";
+const CURRENT_VERSION = "7.0.0";
 const STORAGE_KEY = "enazizi_last_seen_version_v2";
 
 interface UpdateItem {
@@ -22,52 +22,35 @@ interface UpdateItem {
 const updates: UpdateItem[] = [
   {
     icon: "rocket",
-    title: "🆕 Quiz de Imagens Médicas — ECG e RX de Tórax",
+    title: "📚 +700 Questões Revalida 2011-2024 Comentadas",
     description:
-      "Novo módulo! Interprete 50+ imagens médicas reais (ECGs e RX de Tórax) com gabarito comentado. Treine leitura diagnóstica com imagens clássicas de fontes públicas. Acesse em Agentes IA → Quiz de Imagens.",
+      "Banco de questões massivamente expandido com provas oficiais do Revalida de 2011 a 2024.2, todas com gabarito e comentários detalhados. Disponíveis no Banco de Questões, Flashcards e Casos Clínicos.",
   },
   {
     icon: "sparkles",
-    title: "📊 Dashboard de Progresso Aprimorado",
+    title: "🏥 Casos Clínicos de Provas Reais",
     description:
-      "Novo Streak Calendar estilo Duolingo e barras de progresso por especialidade médica para acompanhar sua evolução.",
+      "Mais de 600 casos clínicos extraídos de provas reais de residência médica, cobrindo 20+ especialidades com diagnósticos diferenciais.",
   },
   {
     icon: "rocket",
-    title: "🆕 Crônicas Médicas — Mente de Residente",
+    title: "🆕 Quiz de Imagens Médicas — ECG e RX de Tórax",
     description:
-      "Aprenda medicina através de narrativas clínicas imersivas. Você é o médico no plantão: enfrente armadilhas diagnósticas, tome decisões sob pressão e responda questões de prova ao final.",
+      "Interprete 50+ imagens médicas reais com gabarito comentado. Acesse em Agentes IA → Quiz de Imagens.",
   },
   {
     icon: "sparkles",
-    title: "Barra de Progresso nas Crônicas",
+    title: "🆕 Crônicas Médicas — Mente de Residente",
     description:
-      "Acompanhe visualmente em qual etapa da crônica você está: Cenário → Raciocínio → Armadilha → Diferencial → Questão.",
+      "Aprenda medicina através de narrativas clínicas imersivas. Você é o médico no plantão!",
   },
   {
     icon: "check",
-    title: "Ações Rápidas nas Crônicas",
+    title: "📊 Dashboard e Filtros Aprimorados",
     description:
-      "Use botões como '🔥 Nível Extremo', '🔬 Aprofundar' e '⚖️ Diferenciais' para personalizar sua experiência de aprendizado.",
-  },
-  {
-    icon: "rocket",
-    title: "Favoritos e Histórico de Crônicas",
-    description:
-      "Salve suas crônicas favoritas com ❤️ e acesse o histórico completo de casos clínicos estudados.",
-  },
-  {
-    icon: "sparkles",
-    title: "Aba de Feedbacks no Admin",
-    description:
-      "Administradores agora visualizam todas as avaliações dos usuários com notas por módulo, NPS e comentários.",
+      "Filtros por universidade e período no painel Admin. Dashboard com Streak Calendar e progresso por especialidade.",
   },
 ];
-const iconMap = {
-  sparkles: Sparkles,
-  check: CheckCircle2,
-  rocket: Rocket,
-};
 
 const WhatsNewPopup = () => {
   const [open, setOpen] = useState(false);
