@@ -98,24 +98,39 @@ Responda em JSON:
 - Se o aluno prescreve MEDICAÇÃO → descreva a resposta do paciente
 - Se o aluno propõe DIAGNÓSTICO → NÃO confirme nem negue diretamente, deixe-o justificar
 
+## REGRA CRÍTICA: SINAIS VITAIS DINÂMICOS
+Em TODA resposta de interação (action="interact"), você DEVE incluir o campo "vitals" com os sinais vitais ATUALIZADOS do paciente. Os sinais vitais devem mudar dinamicamente conforme:
+- A conduta do aluno (ex: hidratação melhora PA, oxigênio melhora SpO2)
+- A evolução natural da doença (ex: sepse piora FC e PA se não tratada)
+- Condutas perigosas (ex: medicação errada piora sinais vitais)
+- Tempo decorrido sem intervenção (piora progressiva)
+
 Responda em JSON:
 {
   "response": "texto da resposta (como paciente ou narrador)",
   "response_type": "anamnesis|physical_exam|lab_result|imaging|prescription|diagnosis_attempt|other",
   "patient_status": "estável/instável/grave/crítico",
+  "vitals": { "PA": "...", "FC": "...", "FR": "...", "Temp": "...", "SpO2": "..." },
   "time_elapsed_minutes": número de minutos que se passaram,
   "hint": "dica sutil se o aluno estiver perdido (opcional)",
-  "score_delta": pontuação delta (-2 a +3) baseado na qualidade da ação
+  "score_delta": pontuação delta (-3 a +3) baseado na qualidade da ação,
+  "critical_action_needed": "string descrevendo ação urgente necessária, se houver (opcional, null se não houver)"
 }
 
 Critérios de score_delta:
 - Pergunta relevante na anamnese: +1
-- Exame físico direcionado: +2
-- Exame complementar adequado: +1
-- Exame desnecessário/caro: -1
-- Conduta correta: +3
-- Conduta potencialmente perigosa: -2
+- Exame físico direcionado ao sistema correto: +2
+- Exame físico de sistema irrelevante: 0
+- Exame complementar adequado (padrão-ouro): +2
+- Exame complementar razoável: +1
+- Exame desnecessário/caro sem indicação: -1
+- Conduta correta e oportuna: +3
+- Conduta potencialmente perigosa: -3
+- Conduta parcialmente correta: +1
 - Diagnóstico correto com justificativa: +3
+- Diagnóstico correto sem justificativa: +1
+- Raciocínio clínico estruturado (mencionou diagnósticos diferenciais): +2
+- Demora excessiva para agir em paciente grave: -2
 
 ### Ajuda do Preceptor
 Quando action="hint", você age como PRECEPTOR/PROFESSOR orientador:
@@ -187,13 +202,14 @@ Inclua também uma análise de DIAGNÓSTICOS DIFERENCIAIS: liste 3-5 diagnóstic
 
 ## IMPORTANTE
 - Seja realista como paciente (use linguagem coloquial, não termos médicos)
-- Sinais vitais devem ser coerentes com o quadro
+- Sinais vitais devem ser coerentes com o quadro E ATUALIZADOS A CADA INTERAÇÃO
 - Resultados de exames devem ser realistas e coerentes
-- Se o aluno fizer algo perigoso, o paciente deve reagir (piora dos sinais vitais)
+- Se o aluno fizer algo perigoso, o paciente deve reagir (piora dos sinais vitais) e inclua "critical_action_needed" descrevendo a urgência
 - Mantenha consistência ao longo de toda a simulação
 - Na avaliação final, seja RIGOROSO e EDUCATIVO: o objetivo é ensinar medicina
 - Use diretrizes médicas ATUALIZADAS (2024-2026): Sepsis-3, AHA/ACC, MS Brasil, SBC, ATLS 10ª ed
-- JAMAIS repita um caso anterior — cada simulação deve ser única e surpreendente`;
+- JAMAIS repita um caso anterior — cada simulação deve ser única e surpreendente
+- Use formatação **markdown** nas respostas para destacar achados importantes (negrito, itálico, listas)`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -220,7 +236,6 @@ serve(async (req) => {
     ];
 
     if (action === "start") {
-      // If teacher_case_id provided, load the pre-created case
       if (teacher_case_id) {
         const supabaseService = createClient(
           Deno.env.get("SUPABASE_URL")!,
@@ -235,7 +250,6 @@ serve(async (req) => {
 
         if (caseErr || !teacherCase) throw new Error("Caso clínico não encontrado");
 
-        // Update result status to in_progress
         await supabaseService
           .from("teacher_clinical_case_results")
           .update({ status: "in_progress", started_at: new Date().toISOString() })
@@ -243,13 +257,11 @@ serve(async (req) => {
           .eq("student_id", user.id)
           .eq("status", "pending");
 
-        // Return the pre-created case directly
         return new Response(JSON.stringify(teacherCase.case_prompt), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Determine triage color: use provided value or pick randomly
       const triageOptions = ["vermelho", "laranja", "amarelo", "verde"];
       const triage = requestedTriageColor && triageOptions.includes(requestedTriageColor)
         ? requestedTriageColor
@@ -279,7 +291,7 @@ serve(async (req) => {
       }
       messages.push({
         role: "user",
-        content: `action="interact". Mensagem do médico plantonista: "${message}". Responda APENAS em JSON válido.`,
+        content: `action="interact". Mensagem do médico plantonista: "${message}". OBRIGATÓRIO: inclua o campo "vitals" com sinais vitais atualizados na resposta. Responda APENAS em JSON válido.`,
       });
     } else if (action === "hint") {
       if (conversation_history && Array.isArray(conversation_history)) {
