@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
@@ -35,6 +37,7 @@ const difficultyLabels: Record<number, { label: string; color: string }> = {
 const MedicalImageQuiz = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { pendingSession, checked, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "image-quiz" });
   const [category, setCategory] = useState<string>("all");
   const [difficulty, setDifficulty] = useState<string>("all");
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -91,6 +94,28 @@ const MedicalImageQuiz = () => {
 
   const currentImage = images[currentIndex];
 
+  // Auto-save session
+  useEffect(() => {
+    registerAutoSave(() => {
+      if (quizMode !== "quiz" || score.total === 0) return {};
+      return { category, difficulty, currentIndex, score, quizMode };
+    });
+  }, [category, difficulty, currentIndex, score, quizMode, registerAutoSave]);
+
+  const handleResumeSession = () => {
+    if (!pendingSession) return;
+    const d = pendingSession.session_data as any;
+    if (d.category) setCategory(d.category);
+    if (d.difficulty) setDifficulty(d.difficulty);
+    if (typeof d.currentIndex === "number") setCurrentIndex(d.currentIndex);
+    if (d.score) setScore(d.score);
+    if (d.quizMode) setQuizMode(d.quizMode);
+    setSelectedAnswer(null);
+    setShowExplanation(false);
+    setStartTime(Date.now());
+    clearPending();
+  };
+
   const handleAnswer = (index: number) => {
     if (selectedAnswer !== null) return;
     setSelectedAnswer(index);
@@ -115,6 +140,7 @@ const MedicalImageQuiz = () => {
   };
 
   const handleRestart = () => {
+    completeSession();
     setCurrentIndex(0);
     setSelectedAnswer(null);
     setShowExplanation(false);
@@ -141,6 +167,14 @@ const MedicalImageQuiz = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Resume banner */}
+      {quizMode === "browse" && pendingSession && (
+        <ResumeSessionBanner
+          updatedAt={pendingSession.updated_at}
+          onResume={handleResumeSession}
+          onDiscard={abandonSession}
+        />
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { createPortal } from "react-dom";
 import { Send, Bot, User, Loader2, Plus, History, Trash2, BookOpen, Maximize2, Minimize2, Heart, HeartOff, Lightbulb, AlertTriangle, ChevronDown, Zap, MoreVertical, HelpCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -37,6 +39,7 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/medical-chro
 const MedicalChronicles = () => {
   const { user } = useAuth();
   const { addXp } = useGamification();
+  const { pendingSession, checked, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "chronicles" });
   const [specialty, setSpecialty] = useState("Clínica Médica");
   const [subtopic, setSubtopic] = useState("");
   const [difficulty, setDifficulty] = useState("avancado");
@@ -104,6 +107,28 @@ const MedicalChronicles = () => {
   }, [user]);
 
   useEffect(() => { loadConversations(); loadWeakTopics(); }, [loadConversations, loadWeakTopics]);
+
+  // Auto-save session
+  useEffect(() => {
+    registerAutoSave(() => {
+      if (!studyStarted || messages.length === 0) return {};
+      return { messages, activeConversationId, specialty, difficulty, subtopic, currentTopic };
+    });
+  }, [messages, activeConversationId, specialty, difficulty, subtopic, currentTopic, studyStarted, registerAutoSave]);
+
+  const handleResumeSession = () => {
+    if (!pendingSession) return;
+    const d = pendingSession.session_data as any;
+    if (d.messages?.length) setMessages(d.messages);
+    if (d.activeConversationId) setActiveConversationId(d.activeConversationId);
+    if (d.specialty) setSpecialty(d.specialty);
+    if (d.difficulty) setDifficulty(d.difficulty);
+    if (d.subtopic) setSubtopic(d.subtopic);
+    if (d.currentTopic) setCurrentTopic(d.currentTopic);
+    setStudyStarted(true);
+    setXpAwarded(true);
+    clearPending();
+  };
 
   // Smart scroll: only auto-scroll if user is near bottom
   const handleScroll = useCallback(() => {
@@ -178,6 +203,7 @@ const MedicalChronicles = () => {
   };
 
   const startNewSession = () => {
+    completeSession();
     setActiveConversationId(null);
     setMessages([]);
     setStudyStarted(false);
@@ -413,6 +439,13 @@ const MedicalChronicles = () => {
       {/* Topic Selection */}
       {!studyStarted && (
         <div className="flex-1 overflow-y-auto space-y-4">
+          {pendingSession && (
+            <ResumeSessionBanner
+              updatedAt={pendingSession.updated_at}
+              onResume={handleResumeSession}
+              onDiscard={abandonSession}
+            />
+          )}
           <div className="glass-card p-4 sm:p-6 text-center space-y-4">
             <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
               <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />

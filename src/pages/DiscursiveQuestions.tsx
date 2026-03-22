@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { updateDomainMap } from "@/lib/updateDomainMap";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
@@ -58,6 +60,8 @@ const DiscursiveQuestions = () => {
   const { addXp } = useGamification();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  const { pendingSession, checked, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "discursive" });
+
   const [phase, setPhase] = useState<Phase>("setup");
   const [specialty, setSpecialty] = useState("");
   const [difficulty, setDifficulty] = useState("intermediário");
@@ -77,6 +81,29 @@ const DiscursiveQuestions = () => {
   // History
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+
+  // Auto-save session
+  useEffect(() => {
+    registerAutoSave(() => {
+      if (phase === "setup") return {};
+      return { phase, specialty, difficulty, attemptId, clinicalCase, question, gradingCriteria, answer, correction };
+    });
+  }, [phase, specialty, difficulty, attemptId, clinicalCase, question, gradingCriteria, answer, correction, registerAutoSave]);
+
+  const handleResumeSession = () => {
+    if (!pendingSession) return;
+    const d = pendingSession.session_data as any;
+    if (d.phase) setPhase(d.phase);
+    if (d.specialty) setSpecialty(d.specialty);
+    if (d.difficulty) setDifficulty(d.difficulty);
+    if (d.attemptId) setAttemptId(d.attemptId);
+    if (d.clinicalCase) setClinicalCase(d.clinicalCase);
+    if (d.question) setQuestion(d.question);
+    if (d.gradingCriteria) setGradingCriteria(d.gradingCriteria);
+    if (d.answer) setAnswer(d.answer);
+    if (d.correction) setCorrection(d.correction);
+    clearPending();
+  };
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/discursive-questions`;
 
@@ -171,6 +198,7 @@ const DiscursiveQuestions = () => {
   };
 
   const reset = () => {
+    completeSession();
     setPhase("setup");
     setAttemptId(null);
     setClinicalCase("");
@@ -217,6 +245,14 @@ const DiscursiveQuestions = () => {
 
       {/* SETUP PHASE */}
       {phase === "setup" && (
+        <>
+          {pendingSession && (
+            <ResumeSessionBanner
+              updatedAt={pendingSession.updated_at}
+              onResume={handleResumeSession}
+              onDiscard={abandonSession}
+            />
+          )}
         <Card>
           <CardContent className="p-6 space-y-5">
             <div className="text-center space-y-2">
@@ -258,6 +294,7 @@ const DiscursiveQuestions = () => {
             </Button>
           </CardContent>
         </Card>
+        </>
       )}
 
       {/* ANSWERING PHASE */}
