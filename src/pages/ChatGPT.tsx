@@ -468,6 +468,7 @@ const ChatGPT = () => {
       await addXp(xpGained);
     }
 
+    await completeSession();
     toast({ title: "Sessão finalizada!", description: `Dados salvos. ${sessionQuestions} questões nesta sessão.` });
   };
 
