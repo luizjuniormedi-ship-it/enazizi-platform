@@ -101,6 +101,7 @@ const Dashboard = () => {
         </div>
 
         <ActiveVideoRoomBanner />
+        <SmartNotifications />
         <DashboardWarnings
           todayCompleted={stats.todayCompleted}
           todayTotal={stats.todayTotal}
@@ -109,6 +110,7 @@ const Dashboard = () => {
           streak={stats.streak}
           daysUntilExam={stats.daysUntilExam}
         />
+        <ErrorReviewCard />
       </div>
 
       {/* Quick Start for new users */}
