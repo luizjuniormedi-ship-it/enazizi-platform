@@ -1,58 +1,44 @@
 
 
-# Plano: Melhorar Interacao Paciente-Medico no Plantao
+# Plano: Modo Real com Deterioração Automática por Inatividade
 
-## Problema Atual
-A interacao e basicamente um chat de texto simples. O aluno digita texto livre ou clica em botoes genericos (Anamnese, Exame Fisico, etc.) que enviam prompts fixos. Falta imersao, estrutura e guia clinico.
+## Resumo
+Adicionar um toggle "Modo Real" na tela de configuração do plantão. Quando ativado, o paciente piora automaticamente se o aluno demorar para agir (90s de inatividade). No modo treino (padrão), o paciente aguarda indefinidamente.
 
-## Melhorias
+## Mudanças
 
-### 1. Quick Actions Expandidos e Contextuais
-Substituir os 6 botoes genericos por acoes mais especificas e organizadas em categorias:
+### 1. Toggle "Modo Real" no Lobby (`ClinicalSimulation.tsx`)
+- Novo state `realisticMode` (boolean, default `false`)
+- Switch com label "🔴 Modo Real" + descrição curta: "Paciente piora se você demorar"
+- Posicionar abaixo do seletor de dificuldade
 
-**Anamnese**: HDA, Antecedentes Pessoais, Antecedentes Familiares, Habitos de Vida, Medicamentos em Uso, Alergias, Revisao de Sistemas
-**Exame Fisico**: Sistemas especificos (Cardiovascular, Respiratorio, Abdome, Neurologico, Musculoesqueletico, Cabeca/Pescoco, Pele/Mucosas)
-**Exames**: Hemograma, Bioquimica, Gasometria, ECG, Rx Torax, TC, USG, RM
-**Conduta**: Acesso Venoso, Monitorizacao, Oxigenoterapia, Sonda, IOT
+### 2. Sistema de Deterioração Automática (`ClinicalSimulation.tsx`)
+- `lastActionTime` ref — atualizado a cada mensagem enviada
+- `deteriorationCount` state (0 a 3)
+- `setInterval` a cada 10s checando inatividade (só quando `realisticMode === true` e `phase === "active"`)
+- **60s sem ação**: badge amarelo pulsante "⚠️ Paciente aguardando conduta..."
+- **90s sem ação**: dispara chamada automática à edge function com `action: "deteriorate"`
+  - Vitais pioram progressivamente
+  - Score penalizado (-2 a -3)
+  - Timeline recebe entrada "⚠️ Paciente piorou (inatividade)"
+  - Som `worsened` + animação de alerta
+- **3 deteriorações**: caso encerra automaticamente como "paciente em parada cardíaca"
 
-Implementar como dropdown/popover por categoria em vez de botoes inline.
-
-### 2. Painel de Evolucao do Paciente
-Adicionar uma area visivel mostrando:
-- Timeline visual das acoes realizadas (icones + hora)
-- Status do paciente com animacao de transicao (estavel -> instavel -> grave)
-- Alerta visual pulsante quando paciente piora (borda vermelha, shake)
-
-### 3. Chat Imersivo
-- Avatar do paciente nos baloes de mensagem (icone de pessoa)
-- Avatar do medico nos baloes enviados (icone de estetoscopio)
-- Indicador de "paciente digitando..." com dots animados
-- Formatacao markdown basica (negrito, italico) no texto das respostas
-- Destaque visual para sinais vitais mencionados no texto (badge inline)
-
-### 4. Painel de Sinais Vitais Mobile
-- Substituir `hidden lg:block` por um botao flutuante que abre Sheet/Drawer no mobile
-- Mostrar mini-resumo de vitais sempre visivel (PA e FC no status bar)
-
-### 5. Feedback Sonoro e Visual por Acao
-- Som sutil diferente para: resposta do paciente, piora do paciente, score positivo, score negativo
-- Animacao de flash verde/vermelho no score quando muda
-- Toast automatico quando paciente muda de status
-
-### 6. Edge Function: Vitais Dinamicos Obrigatorios
-Atualizar o prompt para que TODA resposta de interacao inclua `vitals` atualizados e campo `critical_action_needed` para alertas de emergencia.
+### 3. Handler de Deterioração na Edge Function (`clinical-simulation/index.ts`)
+- Reconhecer `action: "deteriorate"` com campo `deterioration_level` (1, 2 ou 3)
+- Prompt específico: "O aluno não agiu. Piore vitais proporcionalmente ao nível. Nível 3 = parada/choque refratário"
+- Retornar vitais atualizados, `patient_status` ajustado, score com penalidade
 
 ## Arquivos Modificados
 
-| Arquivo | Mudanca |
+| Arquivo | Mudança |
 |---------|---------|
-| `src/pages/ClinicalSimulation.tsx` | Quick actions expandidos com popovers por categoria, avatares no chat, typing indicator, feedback sonoro/visual, Sheet mobile para vitais, timeline de acoes, alerta de piora |
-| `supabase/functions/clinical-simulation/index.ts` | Prompt atualizado: vitals obrigatorios em toda resposta, campo critical_action_needed, scoring refinado |
+| `src/pages/ClinicalSimulation.tsx` | State `realisticMode`, Switch no lobby, lógica de inatividade com interval, aviso visual, auto-deterioração, auto-encerramento após 3 pioras |
+| `supabase/functions/clinical-simulation/index.ts` | Handler para `action: "deteriorate"` com piora progressiva em 3 níveis |
 
-## Detalhes Tecnicos
-- Popover do shadcn para categorias de acoes rapidas
-- Sheet do shadcn para painel de vitais no mobile
-- CSS keyframes para animacoes de alerta (pulse, shake)
-- AudioContext para sons sutis diferenciados
-- Nenhuma mudanca no banco de dados
+## Detalhes Técnicos
+- Switch do shadcn para o toggle
+- `useRef` para `lastActionTime` (evita re-renders)
+- Interval com cleanup no unmount e ao encerrar caso
+- Nenhuma mudança no banco de dados
 
