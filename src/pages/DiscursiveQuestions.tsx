@@ -245,6 +245,14 @@ const DiscursiveQuestions = () => {
 
       {/* SETUP PHASE */}
       {phase === "setup" && (
+        <>
+          {pendingSession && (
+            <ResumeSessionBanner
+              updatedAt={pendingSession.updated_at}
+              onResume={handleResumeSession}
+              onDiscard={abandonSession}
+            />
+          )}
         <Card>
           <CardContent className="p-6 space-y-5">
             <div className="text-center space-y-2">
