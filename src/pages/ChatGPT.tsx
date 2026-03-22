@@ -279,7 +279,17 @@ const ChatGPT = () => {
   const errorBankHandled = useRef(false);
   const summaryHandled = useRef(false);
   useEffect(() => {
-    const state = location.state as { initialMessage?: string; fromErrorBank?: boolean; fromSimulado?: boolean; fromSummary?: string; sharedUploadIds?: string[] } | null;
+    const state = location.state as { initialMessage?: string; fromErrorBank?: boolean; fromSimulado?: boolean; fromErrorReview?: boolean; fromSummary?: string; sharedUploadIds?: string[] } | null;
+    if (state?.fromErrorReview && state?.initialMessage && !errorBankHandled.current && user) {
+      errorBankHandled.current = true;
+      const initialMessage = ensureSequentialInitialMessage(state.initialMessage);
+      setStudyStarted(true);
+      setCurrentTopic("Revisão Inteligente de Erros");
+      setTimeout(() => {
+        sendMessage(initialMessage);
+      }, 500);
+      window.history.replaceState({}, document.title);
+    }
     if (state?.fromErrorBank && state?.initialMessage && !errorBankHandled.current && user) {
       errorBankHandled.current = true;
       const initialMessage = ensureSequentialInitialMessage(state.initialMessage);
