@@ -40,6 +40,8 @@ function parseOptions(raw: Json | null): string[] {
   return [];
 }
 
+const PAGE_SIZE = 200;
+
 const QuestionsBank = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -47,9 +49,13 @@ const QuestionsBank = () => {
   const navigate = useNavigate();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [topicFilter, setTopicFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
   // Stats
   const [topicStats, setTopicStats] = useState<TopicStat[]>([]);
@@ -108,31 +114,49 @@ const QuestionsBank = () => {
     );
   }, [user]);
 
+  const fetchQuestions = useCallback(async (pageNum: number, append = false) => {
+    if (!user) return;
+    if (pageNum === 0) setLoading(true);
+    else setLoadingMore(true);
+
+    const from = pageNum * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    const { data, error, count } = await supabase
+      .from("questions_bank")
+      .select("*", { count: "exact" })
+      .or(`user_id.eq.${user.id},is_global.eq.true`)
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (data) {
+      const mapped = data.map((q) => ({
+        ...q,
+        options: parseOptions(q.options),
+        correct_index: q.correct_index ?? 0,
+      }));
+      const filtered = mapped.filter(q => isMedicalQuestion(q));
+      setQuestions(prev => append ? [...prev, ...filtered] : filtered);
+      setTotalCount(count ?? 0);
+      setHasMore((from + data.length) < (count ?? 0));
+    }
+    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    setLoading(false);
+    setLoadingMore(false);
+  }, [user, toast]);
+
+  const loadMore = useCallback(() => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchQuestions(nextPage, true);
+  }, [page, fetchQuestions]);
+
   useEffect(() => {
     if (!user) return;
-    const load = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("questions_bank")
-        .select("*")
-        .or(`user_id.eq.${user.id},is_global.eq.true`)
-        .order("created_at", { ascending: false })
-        .limit(1000);
-
-      if (data) {
-        const mapped = data.map((q) => ({
-            ...q,
-            options: parseOptions(q.options),
-            correct_index: q.correct_index ?? 0,
-          }));
-        setQuestions(mapped.filter(q => isMedicalQuestion(q)));
-      }
-      if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
-      setLoading(false);
-    };
-    load();
+    setPage(0);
+    fetchQuestions(0);
     loadStats();
-  }, [user, loadStats]);
+  }, [user, fetchQuestions, loadStats]);
 
   const topics = useMemo(() => {
     const set = new Set(questions.map((q) => q.topic).filter(Boolean) as string[]);
@@ -320,7 +344,7 @@ const QuestionsBank = () => {
             Banco de Questões
           </h1>
           <p className="text-muted-foreground">
-            {questions.length} questão(ões) salva(s) no total
+            Mostrando {questions.length} de {totalCount} questão(ões)
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -536,6 +560,13 @@ const QuestionsBank = () => {
               )}
             </div>
           ))}
+          {hasMore && (
+            <div className="flex justify-center pt-4">
+              <Button variant="outline" onClick={loadMore} disabled={loadingMore} className="gap-2">
+                {loadingMore ? "Carregando..." : `Carregar mais (${questions.length} de ${totalCount})`}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
