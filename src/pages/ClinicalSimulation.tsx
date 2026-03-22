@@ -633,6 +633,8 @@ const ClinicalSimulation = () => {
     const msg = text || input.trim();
     if (!msg || loading) return;
     setInput("");
+    lastActionTimeRef.current = Date.now();
+    setInactivityWarning(false);
 
     const doctorMsg: ChatMessage = { role: "doctor", content: msg, timestamp: Date.now() };
     setMessages((prev) => [...prev, doctorMsg]);
