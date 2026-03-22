@@ -54,6 +54,29 @@ const Flashcards = () => {
   const { addXp } = useGamification();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  const {
+    pendingSession, checked: sessionChecked, saveSession: persistSession,
+    completeSession, abandonSession, registerAutoSave, clearPending,
+  } = useSessionPersistence({ moduleKey: "flashcards" });
+
+  // Register auto-save
+  useEffect(() => {
+    registerAutoSave(() => {
+      if (allCards.length === 0) return {};
+      return { idx, mode, flipped, selectedTopics: Array.from(selectedTopics) };
+    });
+  }, [registerAutoSave, idx, mode, flipped, selectedTopics, allCards.length]);
+
+  const handleRestoreSession = () => {
+    if (!pendingSession) return;
+    const data = pendingSession.session_data as any;
+    if (data.idx != null) setIdx(data.idx);
+    if (data.mode) setMode(data.mode);
+    if (data.selectedTopics) setSelectedTopics(new Set(data.selectedTopics));
+    clearPending();
+  };
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   // Sprint mode state
   const [sprintConfig, setSprintConfig] = useState({ cardCount: 10, timeMinutes: 5 });
   const [sprintActive, setSprintActive] = useState(false);

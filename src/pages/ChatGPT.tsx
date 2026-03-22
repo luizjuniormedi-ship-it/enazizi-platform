@@ -846,6 +846,15 @@ const ChatGPT = () => {
         </div>
       </div>
 
+      {/* Resume Session Banner */}
+      {pendingSession && !studyStarted && (
+        <ResumeSessionBanner
+          updatedAt={pendingSession.updated_at}
+          onResume={handleRestoreSession}
+          onDiscard={abandonSession}
+        />
+      )}
+
       {/* Performance Panel */}
       <div className={`grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4 ${isFullscreen ? "hidden" : ""}`}>
         <div className="glass-card p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
