@@ -821,7 +821,7 @@ const ChatGPT = () => {
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground truncate">Protocolo MedStudy com GPT-4o</p>
         </div>
-        <div className="flex gap-1 sm:gap-2 flex-shrink-0 flex-wrap justify-end items-center">
+        <div className="flex gap-1.5 flex-shrink-0 items-center">
           <ModuleHelpButton moduleKey="chatgpt" moduleName="Tutor IA" steps={[
             "Digite um tema médico no campo de texto e envie para iniciar a sessão",
             "O tutor explica em 4 etapas: técnico → linguagem simples → questão → correção",
@@ -830,21 +830,29 @@ const ChatGPT = () => {
             "Use os botões rápidos (Resumo, Questão, Caso Clínico) para atalhos",
             "Finalize a sessão para salvar progresso, ganhar XP e atualizar seu Mapa de Domínio",
           ]} />
-          <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+          <Button variant="outline" size="icon" onClick={() => setIsFullscreen(!isFullscreen)} className="h-8 w-8" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            <span className="hidden sm:inline">{isFullscreen ? "Sair" : "Tela cheia"}</span>
           </Button>
           {studyStarted && (
             <Button variant="destructive" size="sm" onClick={handleFinishSession} className="gap-1 h-8 px-2 text-xs">
               <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">Finalizar</span>
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={startNewSession} className="gap-1 h-8 px-2 text-xs">
-            <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nova</span>
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)} className="gap-1 h-8 px-2 text-xs">
-            <History className="h-4 w-4" /> <span className="hidden sm:inline">Histórico</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={startNewSession}>
+                <Plus className="h-4 w-4 mr-2" /> Nova sessão
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowHistory(!showHistory)}>
+                <History className="h-4 w-4 mr-2" /> Histórico
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
