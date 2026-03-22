@@ -729,6 +729,15 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
         )}
       </div>
 
+      {/* Resume session banner */}
+      {sessionChecked && pendingSession && messages.length <= 1 && (
+        <ResumeSessionBanner
+          updatedAt={pendingSession.updated_at}
+          onResume={handleResumeSession}
+          onDiscard={handleDiscardSession}
+        />
+      )}
+
       {showHistory && (
         <div className="glass-card p-3 mb-4 max-h-48 overflow-y-auto space-y-1">
           {conversations.length === 0 ? (
