@@ -560,6 +560,13 @@ const QuestionsBank = () => {
               )}
             </div>
           ))}
+          {hasMore && (
+            <div className="flex justify-center pt-4">
+              <Button variant="outline" onClick={loadMore} disabled={loadingMore} className="gap-2">
+                {loadingMore ? "Carregando..." : `Carregar mais (${questions.length} de ${totalCount})`}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
