@@ -60,8 +60,7 @@ const DiscursiveQuestions = () => {
   const { addXp } = useGamification();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const { pendingSession, checked, saveSession, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "discursive" });
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const { pendingSession, checked, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "discursive" });
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [specialty, setSpecialty] = useState("");
