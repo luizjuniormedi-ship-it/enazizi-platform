@@ -140,6 +140,7 @@ const MedicalImageQuiz = () => {
   };
 
   const handleRestart = () => {
+    completeSession();
     setCurrentIndex(0);
     setSelectedAnswer(null);
     setShowExplanation(false);
