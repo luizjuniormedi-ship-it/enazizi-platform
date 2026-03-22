@@ -34,6 +34,10 @@ export interface DashboardMetrics {
   clinicalSimulations: number;
   anamnesisCompleted: number;
   summariesCreated: number;
+  chroniclesCompleted: number;
+  imageQuizAttempts: number;
+  diagnosticCompleted: number;
+  chatConversations: number;
 }
 
 interface PlanJson {
@@ -49,6 +53,7 @@ async function fetchDashboardData(userId: string) {
     practiceRes, errorBankRes, pendingRevisoesRes, simuladosRes, discursivasRes,
     gamificationRes, globalFlashRes, globalQuestRes,
     questionsCreatedRes, clinicalSimRes, anamnesisRes, summariesRes,
+    chroniclesRes, imageQuizRes, diagnosticRes, chatConvRes,
   ] = await Promise.all([
     supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", userId),
@@ -68,6 +73,10 @@ async function fetchDashboardData(userId: string) {
     supabase.from("simulation_history").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("anamnesis_results").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("summaries").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("chat_conversations").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("agent_type", "medical-chronicle"),
+    supabase.from("medical_image_attempts").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("diagnostic_results").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("chat_conversations").select("id", { count: "exact", head: true }).eq("user_id", userId),
   ]);
 
   const [teacherSimuladoRes, teacherClinicalRes] = await Promise.all([
@@ -121,6 +130,10 @@ async function fetchDashboardData(userId: string) {
     clinicalSimulations: totalClinical,
     anamnesisCompleted: anamnesisRes.count || 0,
     summariesCreated: summariesRes.count || 0,
+    chroniclesCompleted: chroniclesRes.count || 0,
+    imageQuizAttempts: imageQuizRes.count || 0,
+    diagnosticCompleted: diagnosticRes.count || 0,
+    chatConversations: chatConvRes.count || 0,
   };
 
   // Build stats
@@ -209,7 +222,8 @@ export const useDashboardData = () => {
     queryKey: ["dashboard-data", user?.id],
     queryFn: () => fetchDashboardData(user!.id),
     enabled: !!user,
-    staleTime: 3 * 60 * 1000, // 3 min cache
-    gcTime: 10 * 60 * 1000,
+    staleTime: 30 * 1000, // 30s - refresh quickly after module activities
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 };

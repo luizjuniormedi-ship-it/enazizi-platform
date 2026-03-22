@@ -4,7 +4,7 @@ import {
   Target, CheckCircle2, Flame, CalendarDays, AlertTriangle, Award,
   FlipVertical, TrendingUp, PenTool, Activity, ClipboardList,
   Upload, FileCheck, Stethoscope, BookOpen, HelpCircle, Globe,
-  ChevronDown
+  ChevronDown, ImageIcon, MessageSquare, GraduationCap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DashboardStats, DashboardMetrics } from "@/hooks/useDashboardData";
@@ -73,6 +73,9 @@ const DashboardMetricsGrid = ({ stats, metrics }: Props) => {
               { to: "/dashboard/resumos", icon: FileCheck, value: metrics.summariesCreated, label: "Resumos gerados" },
               { to: "/dashboard/uploads", icon: Upload, value: stats.uploads, label: "Uploads" },
               { to: "/dashboard/discursivas", icon: Stethoscope, value: metrics.discursivasCompleted, label: "Discursivas feitas" },
+              { to: "/dashboard/cronicas", icon: BookOpen, value: metrics.chroniclesCompleted, label: "Crônicas médicas" },
+              { to: "/dashboard/quiz-imagens", icon: ImageIcon, value: metrics.imageQuizAttempts, label: "Quiz imagens" },
+              { to: "/dashboard/chatgpt", icon: MessageSquare, value: metrics.chatConversations, label: "Conversas IA" },
             ].map((item) => (
               <Link key={item.to} to={item.to} className="glass-card p-4 hover:border-primary/30 transition-all group">
                 <div className="flex items-center justify-between mb-2">
