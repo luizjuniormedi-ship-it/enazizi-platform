@@ -434,6 +434,17 @@ const StudySession = () => {
           </div>
         )}
 
+        {/* Resume Session Banner */}
+        {pendingSession && phase === "start" && (
+          <div className="px-4 pt-4">
+            <ResumeSessionBanner
+              updatedAt={pendingSession.updated_at}
+              onResume={handleRestoreSession}
+              onDiscard={abandonSession}
+            />
+          </div>
+        )}
+
         {/* Start Screen */}
         {phase === "start" && (
           <div className="flex-1 flex items-center justify-center p-6">

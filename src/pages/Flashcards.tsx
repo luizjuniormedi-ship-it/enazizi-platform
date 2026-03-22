@@ -348,6 +348,14 @@ const Flashcards = () => {
 
   const content = (
     <div className={`animate-fade-in ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4 overflow-auto" : "space-y-6"}`}>
+      {/* Resume Session Banner */}
+      {pendingSession && (
+        <ResumeSessionBanner
+          updatedAt={pendingSession.updated_at}
+          onResume={handleRestoreSession}
+          onDiscard={abandonSession}
+        />
+      )}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
