@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BarChart3, TrendingUp, Target, Clock, BookOpen, CheckCircle2, Loader2, HelpCircle, Stethoscope, Award, MoreVertical } from "lucide-react";
+import { BarChart3, TrendingUp, Target, Clock, BookOpen, CheckCircle2, Loader2, HelpCircle, Stethoscope, Award, MoreVertical, Brain, Heart, PenLine, MessageCircle, ImageIcon } from "lucide-react";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -9,6 +9,8 @@ import { useAuth } from "@/hooks/useAuth";
 import ActivityHeatmap from "@/components/analytics/ActivityHeatmap";
 import AccuracyTrendChart from "@/components/analytics/AccuracyTrendChart";
 import SpecialtyRadarChart from "@/components/analytics/SpecialtyRadarChart";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 
 interface AnalyticsData {
   totalQuestions: number;
@@ -25,6 +27,13 @@ interface AnalyticsData {
   activityDates: string[];
   weeklyAccuracy: { week: string; accuracy: number; total: number }[];
   radarData: { specialty: string; score: number }[];
+  // New module data
+  clinicalSimulations: { total: number; avgScore: number; diagnosisRate: number };
+  anamnesisResults: { total: number; avgScore: number; avgGrade: string };
+  discursiveResults: { total: number; avgScore: number };
+  chroniclesCount: number;
+  imageQuizResults: { total: number; accuracy: number };
+  chatConversations: number;
 }
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--accent))", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16"];
@@ -37,13 +46,23 @@ const Analytics = () => {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const [attemptsRes, flashcardsRes, uploadsRes, tasksRes, examsRes, perfRes] = await Promise.all([
+      const [
+        attemptsRes, flashcardsRes, uploadsRes, tasksRes, examsRes, perfRes,
+        simHistoryRes, anamnesisRes, discursiveRes, chroniclesRes, imageQuizRes, chatConvRes,
+      ] = await Promise.all([
         supabase.from("practice_attempts").select("correct, created_at, question_id, questions_bank(topic)").eq("user_id", user.id),
         supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("study_tasks").select("completed, created_at").eq("user_id", user.id),
         supabase.from("exam_sessions").select("title, score, finished_at").eq("user_id", user.id).eq("status", "finished").order("finished_at", { ascending: false }).limit(10),
         supabase.from("study_performance").select("*").eq("user_id", user.id).maybeSingle(),
+        // New queries
+        supabase.from("simulation_history").select("final_score, student_got_diagnosis, grade").eq("user_id", user.id),
+        supabase.from("anamnesis_results").select("final_score, grade").eq("user_id", user.id),
+        supabase.from("discursive_attempts").select("score, max_score").eq("user_id", user.id).not("finished_at", "is", null),
+        supabase.from("chat_conversations").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("agent_type", "medical-chronicle"),
+        supabase.from("medical_image_attempts").select("correct").eq("user_id", user.id),
+        supabase.from("chat_conversations").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       ]);
 
       const attempts = attemptsRes.data || [];
@@ -63,7 +82,7 @@ const Analytics = () => {
         .map(([topic, v]) => ({ topic, ...v, rate: v.total > 0 ? Math.round((v.correct / v.total) * 100) : 0 }))
         .sort((a, b) => b.total - a.total);
 
-      // Weekly activity (last 7 days)
+      // Weekly activity
       const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
       const weeklyActivity = days.map(day => ({ day, tasks: 0 }));
       const now = new Date();
@@ -74,7 +93,7 @@ const Analytics = () => {
         if (d >= weekAgo) weeklyActivity[d.getDay()].tasks++;
       }
 
-      // Activity dates for heatmap (from attempts + completed tasks)
+      // Activity dates for heatmap
       const activityDateSet = new Set<string>();
       for (const a of attempts) {
         activityDateSet.add(new Date((a as any).created_at).toISOString().split("T")[0]);
@@ -82,6 +101,11 @@ const Analytics = () => {
       for (const t of tasks) {
         if (t.completed) activityDateSet.add(new Date(t.created_at).toISOString().split("T")[0]);
       }
+      // Add simulation/anamnesis/discursive dates to heatmap
+      const simHistory = simHistoryRes.data || [];
+      const anamnesisData = anamnesisRes.data || [];
+      const discursiveData = discursiveRes.data || [];
+
       const activityDates = Array.from(activityDateSet);
 
       // Weekly accuracy trend
@@ -100,10 +124,8 @@ const Analytics = () => {
         .sort((a, b) => a.week.localeCompare(b.week))
         .slice(-12);
 
-      // Radar data from topic breakdown
       const radarData = topicBreakdown.slice(0, 8).map(t => ({ specialty: t.topic, score: t.rate }));
 
-      // Exam scores
       const examScores = (examsRes.data || []).map(e => ({
         title: e.title || "Simulado",
         score: Number(e.score) || 0,
@@ -111,6 +133,31 @@ const Analytics = () => {
       }));
 
       const sessionCount = perfRes.data ? ((perfRes.data.historico_estudo as any[]) || []).length : 0;
+
+      // Clinical simulations
+      const simTotal = simHistory.length;
+      const simAvgScore = simTotal > 0 ? Math.round(simHistory.reduce((s, h) => s + (h.final_score || 0), 0) / simTotal) : 0;
+      const simDiagRate = simTotal > 0 ? Math.round((simHistory.filter(h => h.student_got_diagnosis).length / simTotal) * 100) : 0;
+
+      // Anamnesis
+      const anamTotal = anamnesisData.length;
+      const anamAvgScore = anamTotal > 0 ? Math.round(anamnesisData.reduce((s, a) => s + (a.final_score || 0), 0) / anamTotal) : 0;
+      const gradeOrder = ["A+", "A", "B", "C", "D", "F"];
+      const anamAvgGrade = anamTotal > 0
+        ? (anamnesisData.map(a => a.grade || "F").sort((a, b) => gradeOrder.indexOf(a) - gradeOrder.indexOf(b))[Math.floor(anamTotal / 2)] || "F")
+        : "-";
+
+      // Discursive
+      const discTotal = discursiveData.length;
+      const discAvgScore = discTotal > 0
+        ? Math.round(discursiveData.reduce((s, d) => s + (Number(d.score) || 0), 0) / discTotal * 10) / 10
+        : 0;
+
+      // Image quiz
+      const imageAttempts = imageQuizRes.data || [];
+      const imageTotal = imageAttempts.length;
+      const imageCorrect = imageAttempts.filter(a => a.correct).length;
+      const imageAccuracy = imageTotal > 0 ? Math.round((imageCorrect / imageTotal) * 100) : 0;
 
       setData({
         totalQuestions: attempts.length,
@@ -127,6 +174,12 @@ const Analytics = () => {
         activityDates,
         weeklyAccuracy,
         radarData,
+        clinicalSimulations: { total: simTotal, avgScore: simAvgScore, diagnosisRate: simDiagRate },
+        anamnesisResults: { total: anamTotal, avgScore: anamAvgScore, avgGrade: anamAvgGrade },
+        discursiveResults: { total: discTotal, avgScore: discAvgScore },
+        chroniclesCount: chroniclesRes.count || 0,
+        imageQuizResults: { total: imageTotal, accuracy: imageAccuracy },
+        chatConversations: chatConvRes.count || 0,
       });
       setLoading(false);
     };
@@ -169,7 +222,7 @@ const Analytics = () => {
         </DropdownMenu>
       </div>
 
-      {/* Stats Cards */}
+      {/* Main Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="glass-card p-4">
           <HelpCircle className="h-5 w-5 text-primary mb-2" />
@@ -192,6 +245,120 @@ const Analytics = () => {
           <div className="text-xs text-muted-foreground">Tarefas concluídas</div>
         </div>
       </div>
+
+      {/* Module Performance Cards */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Desempenho por Módulo
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Clinical Simulation */}
+            <div className="p-4 rounded-lg bg-secondary/30 border border-border/50 space-y-2">
+              <div className="flex items-center gap-2">
+                <Stethoscope className="h-4 w-4 text-teal-500" />
+                <span className="text-sm font-medium">Simulação Clínica</span>
+              </div>
+              {data.clinicalSimulations.total > 0 ? (
+                <>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{data.clinicalSimulations.total} simulações</span>
+                    <span>Nota média: {data.clinicalSimulations.avgScore}/100</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Progress value={data.clinicalSimulations.diagnosisRate} className="h-2 flex-1" />
+                    <span className="text-xs font-medium">{data.clinicalSimulations.diagnosisRate}% diagnósticos corretos</span>
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground">Nenhuma simulação realizada</p>
+              )}
+            </div>
+
+            {/* Anamnesis */}
+            <div className="p-4 rounded-lg bg-secondary/30 border border-border/50 space-y-2">
+              <div className="flex items-center gap-2">
+                <Heart className="h-4 w-4 text-rose-500" />
+                <span className="text-sm font-medium">Treino de Anamnese</span>
+              </div>
+              {data.anamnesisResults.total > 0 ? (
+                <>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{data.anamnesisResults.total} treinos</span>
+                    <span>Nota média: {data.anamnesisResults.avgScore}/100</span>
+                  </div>
+                  <div className="text-xs">
+                    Conceito médio: <span className="font-bold text-primary">{data.anamnesisResults.avgGrade}</span>
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground">Nenhum treino realizado</p>
+              )}
+            </div>
+
+            {/* Discursive */}
+            <div className="p-4 rounded-lg bg-secondary/30 border border-border/50 space-y-2">
+              <div className="flex items-center gap-2">
+                <PenLine className="h-4 w-4 text-indigo-500" />
+                <span className="text-sm font-medium">Questões Discursivas</span>
+              </div>
+              {data.discursiveResults.total > 0 ? (
+                <>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{data.discursiveResults.total} questões</span>
+                    <span>Nota média: {data.discursiveResults.avgScore}/10</span>
+                  </div>
+                  <Progress value={data.discursiveResults.avgScore * 10} className="h-2" />
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground">Nenhuma questão respondida</p>
+              )}
+            </div>
+
+            {/* Image Quiz */}
+            <div className="p-4 rounded-lg bg-secondary/30 border border-border/50 space-y-2">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="h-4 w-4 text-cyan-500" />
+                <span className="text-sm font-medium">Quiz de Imagens</span>
+              </div>
+              {data.imageQuizResults.total > 0 ? (
+                <>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{data.imageQuizResults.total} tentativas</span>
+                    <span>Acerto: {data.imageQuizResults.accuracy}%</span>
+                  </div>
+                  <Progress value={data.imageQuizResults.accuracy} className="h-2" />
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground">Nenhuma tentativa realizada</p>
+              )}
+            </div>
+
+            {/* Chronicles */}
+            <div className="p-4 rounded-lg bg-secondary/30 border border-border/50 space-y-2">
+              <div className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4 text-amber-500" />
+                <span className="text-sm font-medium">Crônicas Médicas</span>
+              </div>
+              <div className="text-2xl font-bold">{data.chroniclesCount}</div>
+              <p className="text-xs text-muted-foreground">crônicas estudadas</p>
+            </div>
+
+            {/* AI Conversations */}
+            <div className="p-4 rounded-lg bg-secondary/30 border border-border/50 space-y-2">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Conversas com IA</span>
+              </div>
+              <div className="text-2xl font-bold">{data.chatConversations}</div>
+              <p className="text-xs text-muted-foreground">conversas totais</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Activity Heatmap */}
       <ActivityHeatmap dates={data.activityDates} />
