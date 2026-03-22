@@ -40,7 +40,7 @@ function parseOptions(raw: Json | null): string[] {
   return [];
 }
 
-const PAGE_SIZE = 200;
+const PAGE_SIZE = 10000;
 
 const QuestionsBank = () => {
   const { user } = useAuth();
