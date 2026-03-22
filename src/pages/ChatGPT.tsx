@@ -822,22 +822,9 @@ const ChatGPT = () => {
           <p className="text-xs sm:text-sm text-muted-foreground truncate">Protocolo MedStudy com GPT-4o</p>
         </div>
         <div className="flex gap-1.5 flex-shrink-0 items-center">
-          <ModuleHelpButton moduleKey="chatgpt" moduleName="Tutor IA" steps={[
-            "Digite um tema médico no campo de texto e envie para iniciar a sessão",
-            "O tutor explica em 4 etapas: técnico → linguagem simples → questão → correção",
-            "Responda as questões diretamente no chat — escolha a alternativa correta",
-            "Erros são salvos automaticamente no Banco de Erros para revisão futura",
-            "Use os botões rápidos (Resumo, Questão, Caso Clínico) para atalhos",
-            "Finalize a sessão para salvar progresso, ganhar XP e atualizar seu Mapa de Domínio",
-          ]} />
           <Button variant="outline" size="icon" onClick={() => setIsFullscreen(!isFullscreen)} className="h-8 w-8" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
-          {studyStarted && (
-            <Button variant="destructive" size="sm" onClick={handleFinishSession} className="gap-1 h-8 px-2 text-xs">
-              <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">Finalizar</span>
-            </Button>
-          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-8 w-8">
@@ -845,11 +832,19 @@ const ChatGPT = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {studyStarted && (
+                <DropdownMenuItem onClick={handleFinishSession} className="text-destructive focus:text-destructive">
+                  <LogOut className="h-4 w-4 mr-2" /> Finalizar sessão
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={startNewSession}>
                 <Plus className="h-4 w-4 mr-2" /> Nova sessão
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowHistory(!showHistory)}>
                 <History className="h-4 w-4 mr-2" /> Histórico
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {}}>
+                <HelpCircle className="h-4 w-4 mr-2" /> Como usar
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

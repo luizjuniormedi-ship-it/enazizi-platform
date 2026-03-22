@@ -13,8 +13,9 @@ import { toast } from "@/hooks/use-toast";
 import {
   BookOpen, Brain, HelpCircle, MessageSquare, BarChart3,
   Send, Loader2, GraduationCap, Play, RotateCcw, Stethoscope,
-  FileText, AlertTriangle, TrendingUp, Target, Maximize2, Minimize2
+  FileText, AlertTriangle, TrendingUp, Target, Maximize2, Minimize2, MoreVertical
 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ReactMarkdown from "react-markdown";
 
 type Phase = "start" | "performance" | "lesson" | "active-recall" | "questions" | "discussion" | "discursive" | "scoring";
@@ -380,21 +381,26 @@ const StudySession = () => {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+          <div className="flex items-center gap-1.5">
+            <Button variant="outline" size="icon" onClick={() => setIsFullscreen(!isFullscreen)} className="h-8 w-8" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
               {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </Button>
             {phase !== "start" && (
-              <>
-                <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>{PHASE_META[phase].label}</span>
-                  <span>•</span>
-                  <span>{progressPercent}%</span>
-                </div>
-                <Button variant="ghost" size="sm" onClick={resetSession} className="text-xs">
-                  <RotateCcw className="h-3.5 w-3.5 mr-1" /> Novo
-                </Button>
-              </>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                    {PHASE_META[phase].label} • {progressPercent}%
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={resetSession}>
+                    <RotateCcw className="h-4 w-4 mr-2" /> Nova sessão
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         </div>

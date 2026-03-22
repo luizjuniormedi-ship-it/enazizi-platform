@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
-import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays, Send, CheckCircle, XCircle, GraduationCap, Filter, Download, Zap, Clock, Award, Maximize2, Minimize2, MoreVertical } from "lucide-react";
+import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays, Send, CheckCircle, XCircle, GraduationCap, Filter, Download, Zap, Clock, Award, Maximize2, Minimize2, MoreVertical, HelpCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import ModuleEmptyState from "@/components/layout/ModuleEmptyState";
@@ -368,26 +368,9 @@ const Flashcards = () => {
           </p>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <ModuleHelpButton moduleKey="flashcards" moduleName="Flashcards" steps={[
-            "Vá em 'Gerar Flashcards' no menu lateral para criar cards com IA por tema",
-            "Cada card tem frente (pergunta) e verso (resposta) — clique para virar",
-            "Após virar, avalie: Fácil (revê em 7d), Médio (3d) ou Difícil (1d)",
-            "O algoritmo de repetição espaçada agenda revisões automáticas",
-            "Use o modo Sprint ⚡ para revisar vários cards com cronômetro",
-            "Filtre por tema e exporte cards em PDF para estudo offline",
-          ]} />
           <Button variant="outline" size="icon" onClick={() => setIsFullscreen(!isFullscreen)} className="h-8 w-8" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
-          <div className="flex gap-1">
-            <Button variant={mode === "due" ? "default" : "outline"} size="sm" className="h-8 px-2 text-xs" onClick={() => { setMode("due"); setIdx(0); setFlipped(false); }}>
-              <Brain className="h-3.5 w-3.5 mr-1" />
-              <span className="hidden sm:inline">Revisão</span> ({dueCards.length})
-            </Button>
-            <Button variant={mode === "all" ? "default" : "outline"} size="sm" className="h-8 px-2 text-xs" onClick={() => { setMode("all"); setIdx(0); setFlipped(false); setSprintActive(false); setSprintFinished(false); }}>
-              <span className="hidden sm:inline">Todos</span> ({allCards.length})
-            </Button>
-          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-8 w-8">
@@ -395,6 +378,12 @@ const Flashcards = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => { setMode("due"); setIdx(0); setFlipped(false); }}>
+                <Brain className="h-4 w-4 mr-2" /> Revisão ({dueCards.length}) {mode === "due" && "✓"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setMode("all"); setIdx(0); setFlipped(false); setSprintActive(false); setSprintFinished(false); }}>
+                <GraduationCap className="h-4 w-4 mr-2" /> Todos ({allCards.length}) {mode === "all" && "✓"}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowTopicFilter(!showTopicFilter)}>
                 <Filter className="h-4 w-4 mr-2" /> Filtrar temas {selectedTopics.size > 0 && `(${selectedTopics.size})`}
               </DropdownMenuItem>
@@ -409,6 +398,9 @@ const Flashcards = () => {
                 disabled={filteredCards.length === 0}
               >
                 <Download className="h-4 w-4 mr-2" /> Exportar PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {}}>
+                <HelpCircle className="h-4 w-4 mr-2" /> Como usar
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
