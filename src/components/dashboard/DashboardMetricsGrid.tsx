@@ -4,7 +4,7 @@ import {
   Target, CheckCircle2, Flame, CalendarDays, AlertTriangle, Award,
   FlipVertical, TrendingUp, PenTool, Activity, ClipboardList,
   Upload, FileCheck, Stethoscope, BookOpen, HelpCircle, Globe,
-  ChevronDown
+  ChevronDown, ImageIcon, MessageSquare, GraduationCap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DashboardStats, DashboardMetrics } from "@/hooks/useDashboardData";
