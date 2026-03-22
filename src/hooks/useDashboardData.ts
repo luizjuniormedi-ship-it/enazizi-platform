@@ -53,6 +53,7 @@ async function fetchDashboardData(userId: string) {
     practiceRes, errorBankRes, pendingRevisoesRes, simuladosRes, discursivasRes,
     gamificationRes, globalFlashRes, globalQuestRes,
     questionsCreatedRes, clinicalSimRes, anamnesisRes, summariesRes,
+    chroniclesRes, imageQuizRes, diagnosticRes, chatConvRes,
   ] = await Promise.all([
     supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", userId),
@@ -72,6 +73,10 @@ async function fetchDashboardData(userId: string) {
     supabase.from("simulation_history").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("anamnesis_results").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("summaries").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("chat_conversations").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("agent_type", "medical-chronicle"),
+    supabase.from("medical_image_attempts").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("diagnostic_results").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("chat_conversations").select("id", { count: "exact", head: true }).eq("user_id", userId),
   ]);
 
   const [teacherSimuladoRes, teacherClinicalRes] = await Promise.all([
