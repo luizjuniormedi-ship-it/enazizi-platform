@@ -507,6 +507,7 @@ const ClinicalSimulation = () => {
     };
   }, [realisticMode, phase, triggerDeterioration]);
 
+  const fetchHistory = useCallback(async () => {
     if (!user) return;
     setHistoryLoading(true);
     try {
