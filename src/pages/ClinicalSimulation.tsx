@@ -316,6 +316,11 @@ const ClinicalSimulation = () => {
 
   // Patient status alert animation
   const [statusAlert, setStatusAlert] = useState(false);
+  // Inactivity / realistic mode
+  const [deteriorationCount, setDeteriorationCount] = useState(0);
+  const [inactivityWarning, setInactivityWarning] = useState(false);
+  const lastActionTimeRef = useRef<number>(Date.now());
+  const deteriorationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
