@@ -52,6 +52,7 @@ interface AgentChatProps {
   showUploadButton?: boolean;
   autoPromptAfterUpload?: string;
   linkToAgent?: LinkToAgent;
+  previousContentLoader?: () => Promise<string>;
 }
 
 const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions, renderAssistantMessage, showUploadButton, autoPromptAfterUpload, linkToAgent }: AgentChatProps) => {
