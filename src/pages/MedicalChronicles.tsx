@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Send, Bot, User, Loader2, Plus, History, Trash2, BookOpen, Maximize2, Minimize2, Heart, HeartOff, Lightbulb, AlertTriangle, ChevronDown, Zap } from "lucide-react";
+import { Send, Bot, User, Loader2, Plus, History, Trash2, BookOpen, Maximize2, Minimize2, Heart, HeartOff, Lightbulb, AlertTriangle, ChevronDown, Zap, MoreVertical, HelpCircle } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import ChronicleProgressBar from "@/components/chronicles/ChronicleProgressBar";
 import { Button } from "@/components/ui/button";
