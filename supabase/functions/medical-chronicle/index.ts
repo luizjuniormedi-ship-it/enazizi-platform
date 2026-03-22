@@ -145,6 +145,23 @@ e) [opção E]
 
 ---
 
+## REGRA ANTI-REPETIÇÃO (PRIORIDADE MÁXIMA)
+
+- **NUNCA repita o mesmo caso clínico, diagnóstico ou cenário** já apresentado anteriormente na conversa.
+- Analise TODAS as mensagens anteriores do histórico antes de gerar nova crônica.
+- A cada nova crônica, varie OBRIGATORIAMENTE TODOS estes parâmetros:
+  * Diagnóstico principal (NUNCA repetir a mesma condição)
+  * Faixa etária (neonato, lactente, criança, adolescente, adulto jovem, meia-idade, idoso)
+  * Sexo biológico (alternar entre masculino e feminino)
+  * Cenário de atendimento (PS, enfermaria, UTI, UBS, SAMU, ambulatório, sala de parto, domicílio)
+  * Comorbidades de base (DM, HAS, IRC, HIV, tabagismo, etilismo, gestante, imunossuprimido, transplantado)
+  * Região/contexto social (urbano, rural, comunidade ribeirinha, indígena, presídio)
+  * Profissão do paciente (agricultor, professor, caminhoneiro, pescador, pedreiro, etc.)
+- Priorize diagnósticos MENOS COMUNS e apresentações ATÍPICAS de doenças comuns
+- Inclua doenças TROPICAIS e NEGLIGENCIADAS quando pertinente
+- Use nomes regionais brasileiros variados (nordestinos, sulistas, indígenas)
+- VERIFICAÇÃO PRÉ-ENVIO: Antes de gerar, revise o histórico e confirme que NENHUM parâmetro se repete
+
 ## REGRAS DE ESCRITA
 
 - SEGUNDA PESSOA OBRIGATÓRIA ("Você entra na sala...", "Você palpa o abdome...")
