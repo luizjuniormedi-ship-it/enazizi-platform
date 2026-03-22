@@ -86,6 +86,44 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const previousContentLoadedRef = useRef(false);
   const { toast } = useToast();
 
+  // Session persistence for "continue where you left off"
+  const {
+    pendingSession,
+    checked: sessionChecked,
+    saveSession,
+    completeSession,
+    abandonSession,
+    registerAutoSave,
+    clearPending,
+  } = useSessionPersistence({ moduleKey: functionName });
+
+  // Register auto-save: persist messages + activeConversationId
+  useEffect(() => {
+    registerAutoSave(() => {
+      if (messages.length <= 1) return {};
+      return {
+        messages,
+        activeConversationId,
+      };
+    });
+  }, [messages, activeConversationId, registerAutoSave]);
+
+  const handleResumeSession = useCallback(() => {
+    if (!pendingSession?.session_data) return;
+    const data = pendingSession.session_data as Record<string, any>;
+    if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
+      setMessages(data.messages);
+    }
+    if (data.activeConversationId) {
+      setActiveConversationId(data.activeConversationId);
+    }
+    clearPending();
+  }, [pendingSession, clearPending]);
+
+  const handleDiscardSession = useCallback(() => {
+    abandonSession();
+  }, [abandonSession]);
+
   // Load previous content for anti-repetition
   useEffect(() => {
     if (!user || !previousContentLoader || previousContentLoadedRef.current) return;
