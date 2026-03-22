@@ -490,6 +490,8 @@ const ClinicalSimulation = () => {
         action: "deteriorate",
         deterioration_level: level,
         conversation_history: updatedHistory,
+        triage_color: triageColor,
+        patient_status: patientStatus,
       });
 
       setIsTyping(false);
