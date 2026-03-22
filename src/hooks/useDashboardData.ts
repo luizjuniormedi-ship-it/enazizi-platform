@@ -34,6 +34,10 @@ export interface DashboardMetrics {
   clinicalSimulations: number;
   anamnesisCompleted: number;
   summariesCreated: number;
+  chroniclesCompleted: number;
+  imageQuizAttempts: number;
+  diagnosticCompleted: number;
+  chatConversations: number;
 }
 
 interface PlanJson {
