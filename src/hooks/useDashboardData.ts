@@ -222,7 +222,8 @@ export const useDashboardData = () => {
     queryKey: ["dashboard-data", user?.id],
     queryFn: () => fetchDashboardData(user!.id),
     enabled: !!user,
-    staleTime: 3 * 60 * 1000, // 3 min cache
-    gcTime: 10 * 60 * 1000,
+    staleTime: 30 * 1000, // 30s - refresh quickly after module activities
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 };
