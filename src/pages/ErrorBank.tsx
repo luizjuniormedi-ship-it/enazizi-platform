@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
-import { AlertTriangle, BookOpen, BarChart3, RefreshCw, ArrowRight, Brain, HelpCircle, Stethoscope, ListChecks, FlipVertical, Loader2, CheckCircle2, TrendingDown, TrendingUp, Filter, X, SortAsc, SortDesc, ChevronDown, ChevronRight, Trash2, Target } from "lucide-react";
+import { AlertTriangle, BookOpen, BarChart3, RefreshCw, ArrowRight, Brain, HelpCircle, Stethoscope, ListChecks, FlipVertical, Loader2, CheckCircle2, TrendingDown, TrendingUp, Filter, X, SortAsc, SortDesc, ChevronDown, ChevronRight, Trash2, Target, MoreVertical } from "lucide-react";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
