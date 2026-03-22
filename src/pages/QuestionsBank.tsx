@@ -344,7 +344,7 @@ const QuestionsBank = () => {
             Banco de Questões
           </h1>
           <p className="text-muted-foreground">
-            {questions.length} questão(ões) salva(s) no total
+            Mostrando {questions.length} de {totalCount} questão(ões)
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
