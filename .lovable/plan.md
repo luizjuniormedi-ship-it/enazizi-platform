@@ -1,56 +1,44 @@
 
 
-# Plano: Fix Banner de Sessão no Tutor IA + Botões Sobrepostos em Todos os Módulos
+# Plano: Eliminar Sobreposição de Botões nos Headers de Todos os Módulos
 
-## Problemas
+## Problema
+Na viewport ~1020px (tamanho atual do preview), os botões do header dos módulos se sobrepõem porque há muitos elementos visíveis simultaneamente, mesmo após a adição do dropdown. O espaço disponível é limitado pelo sidebar à esquerda.
 
-1. **Banner "Continuar de onde parei" não aparece no Tutor IA**: O banner está no código (linha 851), mas a condição `pendingSession && !studyStarted` pode não estar funcionando corretamente — o `sessionChecked` pode estar `false` durante o render inicial, ou o banner está sendo renderizado mas fica escondido atrás dos cards de performance.
-
-2. **Botões sobrepostos no header**: No Tutor IA (e possivelmente outros módulos), o header tem 5 botões (Como usar, Tela cheia, Finalizar, Nova, Histórico) em `flex-wrap` que se empilham e sobrepõem em viewports menores (~1020px). A screenshot mostra "Tela cheia" e "Buscar" sobrepostos.
+## Estratégia
+Reduzir agressivamente o número de botões visíveis. Em telas menores que `md` (768px), manter apenas 2 botões: Fullscreen + Dropdown (⋮). Todos os outros vão para dentro do dropdown. Em telas `md+`, permitir até 3 botões visíveis.
 
 ## Mudanças
 
-### 1. `src/pages/ChatGPT.tsx` — Reorganizar header e garantir banner
-- Mover botões secundários (Histórico, Nova) para um dropdown menu com ícone `...` (MoreVertical), mantendo apenas os essenciais visíveis: Como usar, Tela cheia, Finalizar
-- Adicionar `sessionChecked &&` à condição do banner para evitar flash
-- Garantir que o banner aparece ACIMA dos cards de performance
+### 1. `src/pages/ChatGPT.tsx`
+- Mover **ModuleHelpButton** para dentro do DropdownMenu como item "Como usar"
+- Mover **Finalizar** para dentro do dropdown (com estilo destructive)
+- Header fica: `[Título] ........... [Tela cheia] [⋮]`
+- Dropdown contém: Finalizar, Nova sessão, Histórico, Como usar
 
-### 2. `src/pages/ClinicalSimulation.tsx` — Mesma limpeza de header
-- Agrupar botões secundários em dropdown para evitar sobreposição
+### 2. `src/pages/Flashcards.tsx`
+- Mover **ModuleHelpButton** para dentro do dropdown
+- Mover **botões Revisão/Todos** para dentro do dropdown como items com checkmark
+- Header fica: `[Título + stats] ........... [Tela cheia] [⋮]`
+- Dropdown contém: Revisão, Todos, Filtrar temas, Sprint, Exportar PDF, Como usar
 
-### 3. `src/pages/AnamnesisTrainer.tsx` — Mesma limpeza
-- Agrupar botões em dropdown
+### 3. `src/pages/StudySession.tsx`
+- Mover **fase/progresso** e **Novo** para dentro de um dropdown (adicionar MoreVertical)
+- Header fica: `[Sidebar toggle] [Título] ........... [Tela cheia] [⋮]`
+- Dropdown contém: Fase atual, Novo, info de progresso
 
-### 4. `src/pages/ExamSimulator.tsx` — Mesma limpeza
-- Agrupar botões em dropdown
+### 4. `src/pages/ClinicalSimulation.tsx`
+- Header já é enxuto (Fullscreen + Encerrar) — apenas esconder texto "Encerrar Plantão" em telas pequenas, manter só ícone
 
-### 5. `src/pages/Flashcards.tsx` — Mesma limpeza
-- Agrupar botões em dropdown
-
-### 6. `src/pages/StudySession.tsx` — Mesma limpeza
-- Agrupar botões em dropdown
-
-## Padrão de Solução (aplicado em todos)
-
-```text
-Header: [Título] .................. [Como usar] [Tela cheia] [Finalizar] [⋮]
-                                                                          └─ Nova sessão
-                                                                             Histórico
-                                                                             Configurações
-```
-
-- Botões primários (máximo 3) ficam visíveis
-- Botões secundários vão para `DropdownMenu` com ícone `MoreVertical`
-- Em mobile, labels de texto ficam `hidden` (só ícones)
+### 5. `src/pages/AnamnesisTrainer.tsx` e `src/pages/ExamSimulator.tsx`
+- Headers já são simples — sem mudança necessária
 
 ## Arquivos Modificados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/pages/ChatGPT.tsx` | Dropdown para botões secundários, fix banner condition |
-| `src/pages/ClinicalSimulation.tsx` | Dropdown para botões secundários |
-| `src/pages/AnamnesisTrainer.tsx` | Dropdown para botões secundários |
-| `src/pages/ExamSimulator.tsx` | Dropdown para botões secundários |
-| `src/pages/Flashcards.tsx` | Dropdown para botões secundários |
-| `src/pages/StudySession.tsx` | Dropdown para botões secundários |
+| `src/pages/ChatGPT.tsx` | ModuleHelp + Finalizar → dropdown |
+| `src/pages/Flashcards.tsx` | ModuleHelp + mode toggles → dropdown |
+| `src/pages/StudySession.tsx` | Adicionar dropdown com Novo + fase |
+| `src/pages/ClinicalSimulation.tsx` | Esconder label "Encerrar Plantão" em telas < sm |
 
