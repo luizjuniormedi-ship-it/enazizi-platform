@@ -6,7 +6,8 @@ import { createPortal } from "react-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
-import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays, Send, CheckCircle, XCircle, GraduationCap, Filter, Download, Zap, Clock, Award, Maximize2, Minimize2 } from "lucide-react";
+import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays, Send, CheckCircle, XCircle, GraduationCap, Filter, Download, Zap, Clock, Award, Maximize2, Minimize2, MoreVertical } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import ModuleEmptyState from "@/components/layout/ModuleEmptyState";
 import { exportToPdf } from "@/lib/exportPdf";
@@ -356,17 +357,17 @@ const Flashcards = () => {
           onDiscard={abandonSession}
         />
       )}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <FlipVertical className="h-6 w-6 text-primary" />
-            Flashcards
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <FlipVertical className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+            <span className="truncate">Flashcards</span>
           </h1>
-          <p className="text-muted-foreground">
-            {allCards.length} total • {dueCards.length} para revisar hoje • {reviewedCount} em dia
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            {allCards.length} total • {dueCards.length} para revisar • {reviewedCount} em dia
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           <ModuleHelpButton moduleKey="flashcards" moduleName="Flashcards" steps={[
             "Vá em 'Gerar Flashcards' no menu lateral para criar cards com IA por tema",
             "Cada card tem frente (pergunta) e verso (resposta) — clique para virar",
@@ -375,42 +376,42 @@ const Flashcards = () => {
             "Use o modo Sprint ⚡ para revisar vários cards com cronômetro",
             "Filtre por tema e exporte cards em PDF para estudo offline",
           ]} />
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+          <Button variant="outline" size="icon" onClick={() => setIsFullscreen(!isFullscreen)} className="h-8 w-8" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            <span className="hidden sm:inline">{isFullscreen ? "Sair" : "Tela cheia"}</span>
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowTopicFilter(!showTopicFilter)}
-            className={selectedTopics.size > 0 ? "border-primary text-primary" : ""}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Temas {selectedTopics.size > 0 && `(${selectedTopics.size})`}
-          </Button>
-          <Button variant={mode === "due" ? "default" : "outline"} size="sm" onClick={() => { setMode("due"); setIdx(0); setFlipped(false); }}>
-            <Brain className="h-4 w-4 mr-2" />
-            Revisão ({dueCards.length})
-          </Button>
-          <Button variant={mode === "all" ? "default" : "outline"} size="sm" onClick={() => { setMode("all"); setIdx(0); setFlipped(false); setSprintActive(false); setSprintFinished(false); }}>
-            Todos ({allCards.length})
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={startSprint}>
-            <Zap className="h-4 w-4" /> Sprint
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportToPdf(
-              filteredCards.map((c) => ({ title: c.question, content: c.answer, subtitle: c.topic || undefined })),
-              "Flashcards_MedStudy_AI"
-            )}
-            disabled={filteredCards.length === 0}
-          >
-            <Download className="h-4 w-4 mr-2" /> PDF
-          </Button>
+          <div className="flex gap-1">
+            <Button variant={mode === "due" ? "default" : "outline"} size="sm" className="h-8 px-2 text-xs" onClick={() => { setMode("due"); setIdx(0); setFlipped(false); }}>
+              <Brain className="h-3.5 w-3.5 mr-1" />
+              <span className="hidden sm:inline">Revisão</span> ({dueCards.length})
+            </Button>
+            <Button variant={mode === "all" ? "default" : "outline"} size="sm" className="h-8 px-2 text-xs" onClick={() => { setMode("all"); setIdx(0); setFlipped(false); setSprintActive(false); setSprintFinished(false); }}>
+              <span className="hidden sm:inline">Todos</span> ({allCards.length})
+            </Button>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setShowTopicFilter(!showTopicFilter)}>
+                <Filter className="h-4 w-4 mr-2" /> Filtrar temas {selectedTopics.size > 0 && `(${selectedTopics.size})`}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={startSprint}>
+                <Zap className="h-4 w-4 mr-2" /> Modo Sprint
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => exportToPdf(
+                  filteredCards.map((c) => ({ title: c.question, content: c.answer, subtitle: c.topic || undefined })),
+                  "Flashcards_MedStudy_AI"
+                )}
+                disabled={filteredCards.length === 0}
+              >
+                <Download className="h-4 w-4 mr-2" /> Exportar PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

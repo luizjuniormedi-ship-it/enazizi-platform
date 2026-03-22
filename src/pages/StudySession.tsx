@@ -435,7 +435,7 @@ const StudySession = () => {
         )}
 
         {/* Resume Session Banner */}
-        {pendingSession && phase === "start" && (
+        {sessionChecked && pendingSession && phase === "start" && (
           <div className="px-4 pt-4">
             <ResumeSessionBanner
               updatedAt={pendingSession.updated_at}
