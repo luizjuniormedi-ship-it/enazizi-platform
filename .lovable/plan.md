@@ -1,44 +1,42 @@
 
 
-# Plano: Eliminar Sobreposição de Botões nos Headers de Todos os Módulos
+# Plano: Mover Notificações/Busca/Tema para fora do conteúdo + Dropdown em todas as telas restantes
 
-## Problema
-Na viewport ~1020px (tamanho atual do preview), os botões do header dos módulos se sobrepõem porque há muitos elementos visíveis simultaneamente, mesmo após a adição do dropdown. O espaço disponível é limitado pelo sidebar à esquerda.
-
-## Estratégia
-Reduzir agressivamente o número de botões visíveis. Em telas menores que `md` (768px), manter apenas 2 botões: Fullscreen + Dropdown (⋮). Todos os outros vão para dentro do dropdown. Em telas `md+`, permitir até 3 botões visíveis.
+## Problemas
+1. **Botão de notificações (desktop)**: O bloco `GlobalSearch + NotificationBell + Tema` está fixado em `fixed top-4 right-4 z-50` dentro do `<main>`, sobrepondo os headers dos módulos. Precisa ser movido para não conflitar.
+2. **Headers com botões sobrepostos**: Módulos que ainda não foram corrigidos têm múltiplos botões visíveis que se empilham: Crônicas Médicas, Discursivas, Banco de Erros, Analytics, Uploads.
 
 ## Mudanças
 
-### 1. `src/pages/ChatGPT.tsx`
-- Mover **ModuleHelpButton** para dentro do DropdownMenu como item "Como usar"
-- Mover **Finalizar** para dentro do dropdown (com estilo destructive)
-- Header fica: `[Título] ........... [Tela cheia] [⋮]`
-- Dropdown contém: Finalizar, Nova sessão, Histórico, Como usar
+### 1. `src/components/layout/DashboardLayout.tsx` — Reposicionar barra superior desktop
+- Mover o bloco `GlobalSearch + NotificationBell + Tema` de `fixed top-4 right-4` para uma barra fixa dentro do header (acima do conteúdo, não sobrepondo)
+- Usar `sticky top-0` em vez de `fixed` para não flutuar sobre os módulos
+- Adicionar padding-top no conteúdo se necessário
 
-### 2. `src/pages/Flashcards.tsx`
-- Mover **ModuleHelpButton** para dentro do dropdown
-- Mover **botões Revisão/Todos** para dentro do dropdown como items com checkmark
-- Header fica: `[Título + stats] ........... [Tela cheia] [⋮]`
-- Dropdown contém: Revisão, Todos, Filtrar temas, Sprint, Exportar PDF, Como usar
+### 2. `src/pages/MedicalChronicles.tsx` — Dropdown para botões
+- Mover Favorito, Nova, Histórico e ModuleHelp para um `DropdownMenu` (⋮)
+- Manter apenas Fullscreen visível
 
-### 3. `src/pages/StudySession.tsx`
-- Mover **fase/progresso** e **Novo** para dentro de um dropdown (adicionar MoreVertical)
-- Header fica: `[Sidebar toggle] [Título] ........... [Tela cheia] [⋮]`
-- Dropdown contém: Fase atual, Novo, info de progresso
+### 3. `src/pages/DiscursiveQuestions.tsx` — Dropdown para botões
+- Mover Nova Questão, Histórico para dropdown
+- Manter apenas Fullscreen visível
 
-### 4. `src/pages/ClinicalSimulation.tsx`
-- Header já é enxuto (Fullscreen + Encerrar) — apenas esconder texto "Encerrar Plantão" em telas pequenas, manter só ícone
+### 4. `src/pages/ErrorBank.tsx` — Dropdown para botões
+- Mover ModuleHelp, Gerar Flashcards, Atualizar para dropdown
+- Manter título limpo
 
-### 5. `src/pages/AnamnesisTrainer.tsx` e `src/pages/ExamSimulator.tsx`
-- Headers já são simples — sem mudança necessária
+### 5. `src/pages/Analytics.tsx` — Dropdown para botões
+- Mover ModuleHelp e PerformanceReport para dropdown
+
+### 6. `src/pages/Uploads.tsx` — Sem mudança necessária (só 1 botão)
 
 ## Arquivos Modificados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/pages/ChatGPT.tsx` | ModuleHelp + Finalizar → dropdown |
-| `src/pages/Flashcards.tsx` | ModuleHelp + mode toggles → dropdown |
-| `src/pages/StudySession.tsx` | Adicionar dropdown com Novo + fase |
-| `src/pages/ClinicalSimulation.tsx` | Esconder label "Encerrar Plantão" em telas < sm |
+| `src/components/layout/DashboardLayout.tsx` | Reposicionar barra de notificações/busca/tema para não sobrepor conteúdo |
+| `src/pages/MedicalChronicles.tsx` | Dropdown (⋮) com ações secundárias |
+| `src/pages/DiscursiveQuestions.tsx` | Dropdown (⋮) com ações secundárias |
+| `src/pages/ErrorBank.tsx` | Dropdown (⋮) com ações secundárias |
+| `src/pages/Analytics.tsx` | Dropdown (⋮) com ações secundárias |
 
