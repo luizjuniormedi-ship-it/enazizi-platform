@@ -97,9 +97,42 @@ const ChatGPT = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  const {
+    pendingSession, checked: sessionChecked, saveSession: persistSession,
+    completeSession, abandonSession, registerAutoSave, clearPending,
+  } = useSessionPersistence({ moduleKey: "chatgpt" });
+
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${FUNCTION_NAME}`;
 
-  // Load performance + enazizi progress from DB
+  // Register auto-save for session persistence
+  useEffect(() => {
+    registerAutoSave(() => {
+      if (!studyStarted || messages.length === 0) return {};
+      return {
+        messages,
+        currentTopic,
+        enaziziStep,
+        performance,
+        selectedUploadIds: Array.from(selectedUploadIds),
+        sessionQuestions,
+        sessionCorrect,
+      };
+    });
+  }, [registerAutoSave, studyStarted, messages, currentTopic, enaziziStep, performance, selectedUploadIds, sessionQuestions, sessionCorrect]);
+
+  const handleRestoreSession = () => {
+    if (!pendingSession) return;
+    const data = pendingSession.session_data as any;
+    if (data.messages) setMessages(data.messages);
+    if (data.currentTopic) { setCurrentTopic(data.currentTopic); setTopic(data.currentTopic); }
+    if (data.enaziziStep) setEnaziziStep(data.enaziziStep);
+    if (data.performance) setPerformance(data.performance);
+    if (data.selectedUploadIds) setSelectedUploadIds(new Set(data.selectedUploadIds));
+    if (data.sessionQuestions) setSessionQuestions(data.sessionQuestions);
+    if (data.sessionCorrect) setSessionCorrect(data.sessionCorrect);
+    setStudyStarted(true);
+    clearPending();
+  };
   useEffect(() => {
     if (!user) return;
     const loadPerformance = async () => {
