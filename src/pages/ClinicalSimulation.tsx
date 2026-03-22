@@ -1084,6 +1084,22 @@ const ClinicalSimulation = () => {
               </div>
             )}
 
+            {/* Modo Real toggle */}
+            <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-muted/30">
+              <div className="space-y-1">
+                <label className="text-sm font-semibold flex items-center gap-2">
+                  🔴 Modo Real
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Paciente piora automaticamente se você demorar para agir (90s de inatividade)
+                </p>
+              </div>
+              <Switch
+                checked={realisticMode}
+                onCheckedChange={setRealisticMode}
+              />
+            </div>
+
             <Button onClick={startSimulation} disabled={loading} className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
               {loading ? "Preparando plantão..." : "🚨 Iniciar Plantão"}
