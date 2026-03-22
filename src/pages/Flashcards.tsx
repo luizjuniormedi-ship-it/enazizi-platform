@@ -138,8 +138,8 @@ const Flashcards = () => {
 
     // Fetch own cards + global cards in parallel
     const [ownRes, globalRes, reviewsRes] = await Promise.all([
-      supabase.from("flashcards").select("id, question, answer, topic, is_global, user_id").eq("user_id", user.id).order("created_at", { ascending: false }),
-      supabase.from("flashcards").select("id, question, answer, topic, is_global, user_id").eq("is_global", true).neq("user_id", user.id).order("created_at", { ascending: false }).limit(500),
+      supabase.from("flashcards").select("id, question, answer, topic, is_global, user_id").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10000),
+      supabase.from("flashcards").select("id, question, answer, topic, is_global, user_id").eq("is_global", true).neq("user_id", user.id).order("created_at", { ascending: false }).limit(10000),
       supabase.from("reviews").select("id, flashcard_id, interval_days, next_review").eq("user_id", user.id),
     ]);
 
