@@ -130,6 +130,10 @@ async function fetchDashboardData(userId: string) {
     clinicalSimulations: totalClinical,
     anamnesisCompleted: anamnesisRes.count || 0,
     summariesCreated: summariesRes.count || 0,
+    chroniclesCompleted: chroniclesRes.count || 0,
+    imageQuizAttempts: imageQuizRes.count || 0,
+    diagnosticCompleted: diagnosticRes.count || 0,
+    chatConversations: chatConvRes.count || 0,
   };
 
   // Build stats
