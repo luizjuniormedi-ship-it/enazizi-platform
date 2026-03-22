@@ -1,33 +1,62 @@
 
 
-# Plano: Corrigir Bugs Estruturais na Simulação Clínica
+# Plano: Redesign do Banco de Erros — UX Intuitiva e Visual
 
-## Problemas Encontrados
-
-### Bug 1: Edge Function (`clinical-simulation/index.ts`)
-O bloco `action === "deteriorate"` (linha 320-381) está **sem fechamento `}`** e a chamada `aiFetch()` está **completamente ausente**. O código pula diretamente do prompt de deterioração para `if (!aiResp.ok)` na linha 384, onde `aiResp` nunca foi definida.
-
-**Correção**: Fechar o bloco deteriorate com `}` e adicionar a chamada `aiFetch` entre os blocos de ação e o parsing da resposta. A chamada provavelmente foi perdida em edições anteriores.
-
-### Bug 2: Frontend (`ClinicalSimulation.tsx`)
-A declaração `const startSimulation = async () => {` foi perdida na linha 582. O corpo da função começa direto com `setLoading(true)` na linha 583, e há uma `}` extra no final (linha 1877).
-
-**Correção**: Restaurar a declaração da função na linha 582.
+## Problemas Atuais
+- Layout denso e pouco visual — parece uma lista genérica
+- Sem gráficos de evolução temporal (o aluno não vê se está melhorando)
+- Sem filtros por tipo de questão ou categoria de erro
+- Deletar erro perde histórico — deveria "marcar como dominado"
+- Cards de erro mostram muitas badges inline, difícil escanear
+- Sem indicador de tendência (melhorando/piorando por tema)
+- Ordenação fixa (só por vezes_errado)
 
 ## Mudanças
 
+### 1. Migração SQL — Colunas `dominado` e `dominado_em`
+- Adicionar `dominado boolean DEFAULT false` e `dominado_em timestamptz` à tabela `error_bank`
+- Permite marcar erros como superados sem perder histórico
+
+### 2. Gráfico de Evolução Semanal (topo da página)
+- Mini line chart (Recharts, já disponível) mostrando erros por semana nas últimas 8 semanas
+- Calculado a partir de `created_at` dos erros
+- Dá feedback visual: "seus erros estão diminuindo"
+
+### 3. Filtros e Ordenação
+- Dropdown para filtrar por `tipo_questao` (objetiva, flashcard, simulado, etc.)
+- Dropdown para filtrar por `categoria_erro` (conceito, fisiopatologia, etc.)
+- Toggle de ordenação: "Mais errado" vs "Mais recente"
+- Chips de filtro ativo com botão de limpar
+
+### 4. Botão "Dominei" em vez de Deletar
+- Substituir botão de lixeira por botão "✓ Dominei"
+- Marca `dominado = true, dominado_em = now()` em vez de deletar
+- Seção colapsável "Erros Dominados" no final (com contagem)
+- Manter botão de deletar como ação secundária dentro do dominado
+
+### 5. Indicador de Tendência por Tema
+- Na lista de temas à esquerda, mostrar seta ↑ (piorando) ou ↓ (melhorando) baseado em: se erros recentes (últimos 7 dias) são menos que antes
+- Badge verde "Melhorando" ou vermelho "Piorando"
+
+### 6. Cards de Erro Redesenhados
+- Layout mais limpo: tema como header, badges abaixo em linha separada
+- Barra de "gravidade" visual (1-5x = amarelo, 5-10x = laranja, 10x+ = vermelho)
+- Ícone de tipo de questão em vez de texto
+- Motivo do erro sempre visível (não só no hover)
+
+### 7. Empty State Melhorado
+- Ilustração + call-to-action direcionando para módulos que geram erros
+
+## Arquivos Modificados
+
 | Arquivo | Mudança |
 |---------|---------|
-| `supabase/functions/clinical-simulation/index.ts` | Fechar bloco deteriorate com `}`, adicionar `const aiResp = await aiFetch(...)` antes da linha 384 |
-| `src/pages/ClinicalSimulation.tsx` | Restaurar `const startSimulation = async () => {` na linha 582 |
+| **Migração SQL** | `dominado` + `dominado_em` na `error_bank` |
+| `src/pages/ErrorBank.tsx` | Redesign completo: gráfico evolução, filtros, dominei, tendência, cards redesenhados |
 
-## Sobre a Deterioração Fisiopatológica
-Sim, **todos os critérios clínicos realistas JÁ estão implementados** no prompt de deterioração (linhas 333-379):
-- Proibições explícitas (verde/amarelo sem parada nos níveis 1-2)
-- Mapa de severidade por triage (verde, amarelo, laranja/vermelho)
-- Exemplos de coerência (pneumonia, sepse, fratura, etc.)
-- Campo obrigatório `deterioration_rationale`
-- Narrativa com justificativa clínica
-
-O problema é que o código **nunca chega a executar** porque falta a chamada à IA. Após a correção, tudo funcionará corretamente.
+## Detalhes Técnicos
+- Gráfico usa `LineChart` do Recharts (já importado em outros componentes)
+- Filtros são estados locais (sem query extra ao banco)
+- Tendência calculada client-side comparando erros dos últimos 7d vs 7d anteriores
+- Seção "dominados" usa query separada com `dominado = true`
 
