@@ -5,7 +5,7 @@ import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import {
   PenLine, Loader2, Send, CheckCircle, Star, AlertTriangle,
-  ChevronDown, History, BookOpen, Target, ArrowRight, Maximize2, Minimize2
+  ChevronDown, History, BookOpen, Target, ArrowRight, Maximize2, Minimize2, MoreVertical, Plus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -196,17 +197,21 @@ const DiscursiveQuestions = () => {
           </h1>
           <p className="text-sm text-muted-foreground">Escreva sua resposta e receba correção detalhada por IA</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+        <div className="flex gap-1.5 items-center">
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setIsFullscreen(!isFullscreen)} title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            <span className="hidden sm:inline">{isFullscreen ? "Sair" : "Tela cheia"}</span>
           </Button>
-          {phase !== "setup" && (
-            <Button variant="outline" size="sm" onClick={reset}>Nova Questão</Button>
-          )}
-          <Button variant="outline" size="sm" onClick={showHistory} className="gap-1.5">
-            <History className="h-3.5 w-3.5" /> Histórico
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {phase !== "setup" && (
+                <DropdownMenuItem onClick={reset}><Plus className="h-4 w-4 mr-2" /> Nova Questão</DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={showHistory}><History className="h-4 w-4 mr-2" /> Histórico</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

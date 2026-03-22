@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { BarChart3, TrendingUp, Target, Clock, BookOpen, CheckCircle2, Loader2, HelpCircle, Stethoscope, Award } from "lucide-react";
+import { BarChart3, TrendingUp, Target, Clock, BookOpen, CheckCircle2, Loader2, HelpCircle, Stethoscope, Award, MoreVertical } from "lucide-react";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import PerformanceReport from "@/components/dashboard/PerformanceReport";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -153,17 +155,18 @@ const Analytics = () => {
           </h1>
           <p className="text-muted-foreground">Seu desempenho real baseado nos dados da plataforma.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <ModuleHelpButton moduleKey="analytics" moduleName="Analytics" steps={[
-            "Os dados se atualizam automaticamente conforme você usa os módulos",
-            "Veja KPIs principais: questões respondidas, taxa de acerto, streak e revisões",
-            "O heatmap mostra seus dias ativos — tente manter consistência semanal",
-            "O gráfico radar compara seu desempenho entre especialidades",
-            "Use o 'Relatório de Performance' para uma visão PDF exportável",
-            "Identifique áreas abaixo de 60% de acerto e priorize no Cronograma",
-          ]} />
-          <PerformanceReport />
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild><div><PerformanceReport /></div></DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => {}}>
+              <HelpCircle className="h-4 w-4 mr-2" /> Como usar
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Stats Cards */}
