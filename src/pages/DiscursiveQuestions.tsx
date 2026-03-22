@@ -198,6 +198,7 @@ const DiscursiveQuestions = () => {
   };
 
   const reset = () => {
+    completeSession();
     setPhase("setup");
     setAttemptId(null);
     setClinicalCase("");
