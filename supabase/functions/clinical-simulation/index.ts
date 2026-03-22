@@ -317,6 +317,35 @@ serve(async (req) => {
         role: "user",
         content: `action="finish". O aluno decidiu encerrar o atendimento. Avalie o desempenho completo com base em toda a interação, incluindo avaliação de prescrição, conduta, diagnóstico e parecer/encaminhamento. Use as 7 categorias de avaliação. Responda APENAS em JSON válido.`,
       });
+    } else if (action === "deteriorate") {
+      const { deterioration_level } = await req.json().catch(() => ({ deterioration_level: 1 }));
+      const level = body?.deterioration_level || deterioration_level || 1;
+      if (conversation_history && Array.isArray(conversation_history)) {
+        messages.push(...conversation_history);
+      }
+      const severityMap: Record<number, string> = {
+        1: "LEVE: Piore levemente os sinais vitais (ex: taquicardia leve, queda discreta de PA). Descreva que o paciente parece mais desconfortável, inquieto. patient_status deve ser 'instável'. score_delta: -2",
+        2: "MODERADA: Piore significativamente os sinais vitais (hipotensão, taquicardia importante, dessaturação). O paciente demonstra sinais de choque ou insuficiência orgânica. patient_status deve ser 'grave'. score_delta: -3",
+        3: "GRAVE/CRÍTICA: O paciente evolui para parada cardiorrespiratória ou choque refratário. Sinais vitais críticos. patient_status deve ser 'crítico'. score_delta: -3",
+      };
+      const severityInstruction = severityMap[Math.min(level, 3)] || severityMap[1];
+      messages.push({
+        role: "user",
+        content: `action="deteriorate". O aluno ficou INATIVO por 90 segundos sem tomar conduta. Nível de deterioração: ${level}/3. 
+
+INSTRUÇÃO DE GRAVIDADE: ${severityInstruction}
+
+Você DEVE:
+1. Piorar os sinais vitais proporcionalmente ao nível
+2. Descrever a evolução clínica como narrador ("O paciente começa a apresentar...")
+3. Incluir "vitals" atualizados com a piora
+4. Incluir "patient_status" atualizado
+5. Incluir "score_delta" negativo conforme instruído
+6. Se nível 3, incluir "critical_action_needed": "Paciente em parada cardiorrespiratória! Iniciar RCP imediatamente!"
+
+Responda em JSON: { "response": "...", "response_type": "deterioration", "patient_status": "...", "vitals": {...}, "time_elapsed_minutes": ..., "score_delta": ..., "critical_action_needed": "..." }
+Responda APENAS em JSON válido.`,
+      });
     } else {
       throw new Error("action inválida");
     }

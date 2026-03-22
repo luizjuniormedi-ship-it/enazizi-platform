@@ -1283,6 +1283,14 @@ const ClinicalSimulation = () => {
                 </div>
               </CardContent>
             </Card>
+            {inactivityWarning && (
+              <Card className="border-amber-500/50 bg-amber-500/10 animate-pulse">
+                <CardContent className="p-3 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">⚠️ Paciente aguardando conduta...</p>
+                </CardContent>
+              </Card>
+            )}
             <Card className={timerExpired ? "border-destructive/50 bg-destructive/5" : countdown <= 120 ? "border-amber-500/50" : ""}>
               <CardContent className="p-3 flex items-center gap-2">
                 <Clock className={`h-4 w-4 ${getTimerColor()}`} />
