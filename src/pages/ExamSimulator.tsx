@@ -37,6 +37,30 @@ const ExamSimulator = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const timerRef = useRef<NodeJS.Timeout>();
 
+  // Session persistence
+  const { pendingSession, checked, saveSession, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "exam-simulator", enabled: phase === "exam" || !!pendingSession });
+
+  // Register auto-save when in exam phase
+  const getExamState = useCallback(() => {
+    if (phase !== "exam") return {};
+    return { phase, questions, selectedAnswers, current, timeLeft, examConfig, sessionId };
+  }, [phase, questions, selectedAnswers, current, timeLeft, examConfig, sessionId]);
+
+  useEffect(() => {
+    registerAutoSave(getExamState);
+  }, [getExamState, registerAutoSave]);
+
+  const restoreSession = useCallback((data: Record<string, any>) => {
+    if (data.questions) setQuestions(data.questions);
+    if (data.selectedAnswers) setSelectedAnswers(data.selectedAnswers);
+    if (typeof data.current === "number") setCurrent(data.current);
+    if (typeof data.timeLeft === "number") setTimeLeft(data.timeLeft);
+    if (data.examConfig) setExamConfig(data.examConfig);
+    if (data.sessionId) setSessionId(data.sessionId);
+    setPhase("exam");
+    clearPending();
+  }, [clearPending]);
+
   // Timer
   useEffect(() => {
     if (phase !== "exam" || timeLeft <= 0) return;
