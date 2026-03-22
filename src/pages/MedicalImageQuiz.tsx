@@ -94,6 +94,28 @@ const MedicalImageQuiz = () => {
 
   const currentImage = images[currentIndex];
 
+  // Auto-save session
+  useEffect(() => {
+    registerAutoSave(() => {
+      if (quizMode !== "quiz" || score.total === 0) return {};
+      return { category, difficulty, currentIndex, score, quizMode };
+    });
+  }, [category, difficulty, currentIndex, score, quizMode, registerAutoSave]);
+
+  const handleResumeSession = () => {
+    if (!pendingSession) return;
+    const d = pendingSession.session_data as any;
+    if (d.category) setCategory(d.category);
+    if (d.difficulty) setDifficulty(d.difficulty);
+    if (typeof d.currentIndex === "number") setCurrentIndex(d.currentIndex);
+    if (d.score) setScore(d.score);
+    if (d.quizMode) setQuizMode(d.quizMode);
+    setSelectedAnswer(null);
+    setShowExplanation(false);
+    setStartTime(Date.now());
+    clearPending();
+  };
+
   const handleAnswer = (index: number) => {
     if (selectedAnswer !== null) return;
     setSelectedAnswer(index);
