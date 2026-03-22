@@ -4,6 +4,8 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
+import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import ReactMarkdown from "react-markdown";
 import {
   Activity, Loader2, Send, Stethoscope, Syringe, FileSearch,
@@ -324,6 +326,36 @@ const ClinicalSimulation = () => {
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Session persistence
+  const { pendingSession, checked, completeSession: completePersistedSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "clinical-simulation" });
+
+  const getClinicalState = useCallback(() => {
+    if (phase !== "active") return {};
+    return { phase, specialty, difficulty, realisticMode, messages: messages.map(m => ({ ...m })), vitals, setting, triageColor, patientStatus, score, timeElapsed, conversationHistory, actionTimeline, examResults, vitalsSnapshots, countdown };
+  }, [phase, specialty, difficulty, realisticMode, messages, vitals, setting, triageColor, patientStatus, score, timeElapsed, conversationHistory, actionTimeline, examResults, vitalsSnapshots, countdown]);
+
+  useEffect(() => { registerAutoSave(getClinicalState); }, [getClinicalState, registerAutoSave]);
+
+  const restoreClinicalSession = useCallback((data: Record<string, any>) => {
+    if (data.specialty) setSpecialty(data.specialty);
+    if (data.difficulty) setDifficulty(data.difficulty);
+    if (data.realisticMode !== undefined) setRealisticMode(data.realisticMode);
+    if (data.messages) setMessages(data.messages);
+    if (data.vitals) setVitals(data.vitals);
+    if (data.setting) setSetting(data.setting);
+    if (data.triageColor) setTriageColor(data.triageColor);
+    if (data.patientStatus) setPatientStatus(data.patientStatus);
+    if (typeof data.score === "number") setScore(data.score);
+    if (typeof data.timeElapsed === "number") setTimeElapsed(data.timeElapsed);
+    if (data.conversationHistory) setConversationHistory(data.conversationHistory);
+    if (data.actionTimeline) setActionTimeline(data.actionTimeline);
+    if (data.examResults) setExamResults(data.examResults);
+    if (data.vitalsSnapshots) setVitalsSnapshots(data.vitalsSnapshots);
+    if (typeof data.countdown === "number") setCountdown(data.countdown);
+    setPhase("active");
+    clearPending();
+  }, [clearPending]);
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/clinical-simulation`;
 
@@ -850,6 +882,7 @@ const ClinicalSimulation = () => {
       });
       setFinalEval(res);
       setPhase("result");
+      await completePersistedSession();
       await addXp(XP_REWARDS.plantao_completed);
       await saveSimulationToHistory(res);
 
@@ -1004,6 +1037,13 @@ const ClinicalSimulation = () => {
       {/* LOBBY */}
       {phase === "lobby" && (
         <div className="space-y-4">
+        {checked && pendingSession && (
+          <ResumeSessionBanner
+            updatedAt={pendingSession.updated_at}
+            onResume={() => restoreClinicalSession(pendingSession.session_data)}
+            onDiscard={() => abandonSession()}
+          />
+        )}
         <Card>
           <CardContent className="p-6 space-y-6">
             <div className="text-center space-y-3">

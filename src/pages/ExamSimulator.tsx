@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 
 interface ExamQuestion {
   id: string;
@@ -34,6 +36,30 @@ const ExamSimulator = () => {
   const [examConfig, setExamConfig] = useState({ questionCount: 50, timeMinutes: 120, areas: ["Clínica Médica", "Cirurgia", "Pediatria", "GO", "Preventiva", "Oncologia"], difficulty: "intermediario" });
   const [sessionId, setSessionId] = useState<string | null>(null);
   const timerRef = useRef<NodeJS.Timeout>();
+
+  // Session persistence
+  const { pendingSession, checked, saveSession, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "exam-simulator" });
+
+  // Register auto-save when in exam phase
+  const getExamState = useCallback(() => {
+    if (phase !== "exam") return {};
+    return { phase, questions, selectedAnswers, current, timeLeft, examConfig, sessionId };
+  }, [phase, questions, selectedAnswers, current, timeLeft, examConfig, sessionId]);
+
+  useEffect(() => {
+    registerAutoSave(getExamState);
+  }, [getExamState, registerAutoSave]);
+
+  const restoreSession = useCallback((data: Record<string, any>) => {
+    if (data.questions) setQuestions(data.questions);
+    if (data.selectedAnswers) setSelectedAnswers(data.selectedAnswers);
+    if (typeof data.current === "number") setCurrent(data.current);
+    if (typeof data.timeLeft === "number") setTimeLeft(data.timeLeft);
+    if (data.examConfig) setExamConfig(data.examConfig);
+    if (data.sessionId) setSessionId(data.sessionId);
+    setPhase("exam");
+    clearPending();
+  }, [clearPending]);
 
   // Timer
   useEffect(() => {
@@ -228,6 +254,7 @@ const ExamSimulator = () => {
       await updateDomainMap(user.id, domainEntries);
     }
 
+    await completeSession();
     setPhase("result");
   };
 
@@ -250,6 +277,13 @@ const ExamSimulator = () => {
   if (phase === "setup") {
     return (
       <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
+        {checked && pendingSession && (
+          <ResumeSessionBanner
+            updatedAt={pendingSession.updated_at}
+            onResume={() => restoreSession(pendingSession.session_data)}
+            onDiscard={() => abandonSession()}
+          />
+        )}
         <div className="text-center py-6">
           <FileText className="h-16 w-16 text-primary mx-auto mb-4" />
           <h1 className="text-3xl font-bold mb-2">Simulado Completo</h1>

@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
+import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import {
   MessageCircle, Send, Loader2, Clock, Award, RotateCcw,
   CheckCircle, XCircle, Star, Trophy, Target, ClipboardCheck,
@@ -126,6 +128,29 @@ const AnamnesisTrainer = () => {
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Session persistence
+  const { pendingSession, checked, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "anamnesis" });
+
+  const getAnamnesisState = useCallback(() => {
+    if (phase !== "active" && phase !== "diagnosis") return {};
+    return { phase, specialty, difficulty, messages: messages.map(m => ({ ...m })), coveredCategories: Array.from(coveredCategories), startTime, hypothesis, differentials, proposedConduct };
+  }, [phase, specialty, difficulty, messages, coveredCategories, startTime, hypothesis, differentials, proposedConduct]);
+
+  useEffect(() => { registerAutoSave(getAnamnesisState); }, [getAnamnesisState, registerAutoSave]);
+
+  const restoreAnamnesisSession = useCallback((data: Record<string, any>) => {
+    if (data.specialty) setSpecialty(data.specialty);
+    if (data.difficulty) setDifficulty(data.difficulty);
+    if (data.messages) setMessages(data.messages);
+    if (data.coveredCategories) setCoveredCategories(new Set(data.coveredCategories));
+    if (data.startTime) setStartTime(data.startTime);
+    if (data.hypothesis) setHypothesis(data.hypothesis);
+    if (data.differentials) setDifferentials(data.differentials);
+    if (data.proposedConduct) setProposedConduct(data.proposedConduct);
+    setPhase(data.phase || "active");
+    clearPending();
+  }, [clearPending]);
 
   useEffect(() => {
     if (phase !== "active") return;
@@ -266,6 +291,7 @@ const AnamnesisTrainer = () => {
         }
       }
 
+      await completeSession();
       setPhase("result");
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -291,6 +317,13 @@ const AnamnesisTrainer = () => {
   if (phase === "lobby") {
     return (
       <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
+        {checked && pendingSession && (
+          <ResumeSessionBanner
+            updatedAt={pendingSession.updated_at}
+            onResume={() => restoreAnamnesisSession(pendingSession.session_data)}
+            onDiscard={() => abandonSession()}
+          />
+        )}
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <MessageCircle className="h-6 w-6 text-primary" />
