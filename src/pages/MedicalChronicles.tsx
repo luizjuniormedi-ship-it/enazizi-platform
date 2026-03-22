@@ -203,6 +203,7 @@ const MedicalChronicles = () => {
   };
 
   const startNewSession = () => {
+    completeSession();
     setActiveConversationId(null);
     setMessages([]);
     setStudyStarted(false);
