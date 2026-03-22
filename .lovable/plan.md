@@ -1,17 +1,26 @@
 
 
-# Plano: Aumentar limite de flashcards para 10.000
+# Plano: Adicionar "Continuar de Onde Parou" no AgentChat
 
 ## Problema
-A query de flashcards globais em `Flashcards.tsx` usa `.limit(500)`, cortando cards. A query de flashcards próprios não tem limite mas depende do default de 1000 do Supabase.
+O `AgentChat` (usado por QuestionGenerator, FlashcardGenerator, MentorMed, MotivationalCoach, MedicalReviewer, InterviewSimulator, ContentSummarizer) não tem `useSessionPersistence`. Os 6 módulos que já têm são páginas independentes (ChatGPT, Flashcards, ExamSimulator, etc.).
 
-## Mudança
+## Solução
+Integrar `useSessionPersistence` diretamente no componente `AgentChat.tsx`, usando `functionName` como `moduleKey`. Isso cobre **7 módulos** de uma vez.
 
-### `src/pages/Flashcards.tsx` (linha 141-142)
-- Remover `.limit(500)` da query de flashcards globais
-- Adicionar `.limit(10000)` em ambas as queries (próprios e globais) para consistência com o banco de questões
+## Mudanças em `src/components/agents/AgentChat.tsx`
+
+1. Importar `useSessionPersistence` e `ResumeSessionBanner`
+2. Chamar `useSessionPersistence({ moduleKey: functionName })` 
+3. Registrar auto-save com `registerAutoSave` — salva `messages` e `activeConversationId`
+4. Mostrar `ResumeSessionBanner` no topo do chat quando:
+   - `pendingSession` existe
+   - Chat está no estado inicial (apenas welcome message)
+5. Ao clicar "Continuar": restaurar `messages` e `activeConversationId` do `session_data`
+6. Ao clicar "Descartar": chamar `abandonSession()`
+7. Ao criar nova conversa ou limpar chat: chamar `completeSession()`
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/pages/Flashcards.tsx` | Aumentar limite de carregamento para 10.000 |
+| `src/components/agents/AgentChat.tsx` | Adicionar persistência de sessão universal |
 
