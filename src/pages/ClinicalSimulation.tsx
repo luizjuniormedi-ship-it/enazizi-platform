@@ -4,6 +4,8 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
+import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import ReactMarkdown from "react-markdown";
 import {
   Activity, Loader2, Send, Stethoscope, Syringe, FileSearch,

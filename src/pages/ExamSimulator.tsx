@@ -254,6 +254,7 @@ const ExamSimulator = () => {
       await updateDomainMap(user.id, domainEntries);
     }
 
+    await completeSession();
     setPhase("result");
   };
 

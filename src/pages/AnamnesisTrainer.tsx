@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
+import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import {
   MessageCircle, Send, Loader2, Clock, Award, RotateCcw,
   CheckCircle, XCircle, Star, Trophy, Target, ClipboardCheck,
