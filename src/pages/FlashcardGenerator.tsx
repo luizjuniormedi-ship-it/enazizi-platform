@@ -78,6 +78,22 @@ const FlashcardGenerator = () => {
     return parsed.length;
   }, [user, addXp]);
 
+  const loadPreviousFlashcards = useCallback(async (): Promise<string> => {
+    if (!user) return "";
+    const { data } = await supabase
+      .from("flashcards")
+      .select("question, topic")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (!data || data.length === 0) return "";
+    const items = data.map((f, i) => {
+      const truncated = f.question?.slice(0, 80) || "";
+      return `${i + 1}. [${f.topic || "Geral"}] ${truncated}`;
+    });
+    return `⛔ FLASHCARDS JÁ GERADOS ANTERIORMENTE (NÃO REPETIR cenários similares — varie diagnóstico, perfil do paciente e abordagem):\n${items.join("\n")}`;
+  }, [user]);
+
   return (
     <AgentChat
       title="Gerador de Flashcards Clínicos"
@@ -91,6 +107,7 @@ const FlashcardGenerator = () => {
       quickActions={quickActions}
       showUploadButton={true}
       autoPromptAfterUpload="Gere 10 flashcards clínicos baseados no material que acabei de enviar: {filename}. Use o conteúdo do material como base para criar casos clínicos variados."
+      previousContentLoader={loadPreviousFlashcards}
     />
   );
 };

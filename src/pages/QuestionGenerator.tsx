@@ -52,6 +52,23 @@ const QuestionGenerator = () => {
     return parsed.length;
   }, [user]);
 
+  const loadPreviousQuestions = useCallback(async (): Promise<string> => {
+    if (!user) return "";
+    const { data } = await supabase
+      .from("questions_bank")
+      .select("statement, topic")
+      .eq("user_id", user.id)
+      .eq("source", "gerador-ia")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (!data || data.length === 0) return "";
+    const items = data.map((q, i) => {
+      const truncated = q.statement?.slice(0, 80) || "";
+      return `${i + 1}. [${q.topic || "Geral"}] ${truncated}`;
+    });
+    return `⛔ QUESTÕES JÁ GERADAS ANTERIORMENTE (NÃO REPETIR cenários similares — varie diagnóstico, perfil do paciente e abordagem):\n${items.join("\n")}`;
+  }, [user]);
+
   const renderInteractive = useCallback((content: string) => (
     <InteractiveQuestionRenderer content={content} />
   ), []);
@@ -70,6 +87,7 @@ const QuestionGenerator = () => {
       renderAssistantMessage={renderInteractive}
       showUploadButton={true}
       autoPromptAfterUpload="Gere 10 questões originais no formato ENARE baseadas no material que acabei de enviar: {filename}. Use o conteúdo do material como base para criar casos clínicos variados."
+      previousContentLoader={loadPreviousQuestions}
     />
   );
 };

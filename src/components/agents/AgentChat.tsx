@@ -52,9 +52,10 @@ interface AgentChatProps {
   showUploadButton?: boolean;
   autoPromptAfterUpload?: string;
   linkToAgent?: LinkToAgent;
+  previousContentLoader?: () => Promise<string>;
 }
 
-const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions, renderAssistantMessage, showUploadButton, autoPromptAfterUpload, linkToAgent }: AgentChatProps) => {
+const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions, renderAssistantMessage, showUploadButton, autoPromptAfterUpload, linkToAgent, previousContentLoader }: AgentChatProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([
@@ -79,7 +80,18 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isUploadingRef = useRef(false);
   const autoPromptFiredRef = useRef(false);
+  const previousContentRef = useRef<string>("");
+  const previousContentLoadedRef = useRef(false);
   const { toast } = useToast();
+
+  // Load previous content for anti-repetition
+  useEffect(() => {
+    if (!user || !previousContentLoader || previousContentLoadedRef.current) return;
+    previousContentLoadedRef.current = true;
+    previousContentLoader().then((content) => {
+      previousContentRef.current = content;
+    }).catch(() => {});
+  }, [user, previousContentLoader]);
 
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`;
 
@@ -126,6 +138,10 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     // Add extra context first (e.g. from a just-uploaded file)
     if (extraContext) {
       ctx += extraContext;
+    }
+    // Add anti-repetition context
+    if (previousContentRef.current) {
+      ctx += "\n\n" + previousContentRef.current;
     }
     if (selectedUploadIds.size === 0) return ctx.trim();
     for (const upload of availableUploads) {
@@ -519,6 +535,12 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
             const lastIdx = messages.length; // index of the assistant message just added
             setSavedMsgIdxs((prev) => new Set(prev).add(lastIdx));
             toast({ title: "✅ Salvo automaticamente!", description: `${count} item(ns) salvo(s) no seu banco.` });
+            // Invalidate previous content cache so next generation includes new items
+            if (previousContentLoader) {
+              previousContentLoader().then((content) => {
+                previousContentRef.current = content;
+              }).catch(() => {});
+            }
           }
         } catch {
           // Silent fail for auto-save - user can still save manually
