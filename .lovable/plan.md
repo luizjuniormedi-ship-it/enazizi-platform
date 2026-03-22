@@ -1,42 +1,46 @@
 
 
-# Plano: Mover Notificações/Busca/Tema para fora do conteúdo + Dropdown em todas as telas restantes
+# Plano: Anti-Repetição de Questões e Flashcards (100+ únicos)
 
-## Problemas
-1. **Botão de notificações (desktop)**: O bloco `GlobalSearch + NotificationBell + Tema` está fixado em `fixed top-4 right-4 z-50` dentro do `<main>`, sobrepondo os headers dos módulos. Precisa ser movido para não conflitar.
-2. **Headers com botões sobrepostos**: Módulos que ainda não foram corrigidos têm múltiplos botões visíveis que se empilham: Crônicas Médicas, Discursivas, Banco de Erros, Analytics, Uploads.
+## Problema
+Ao sair e voltar ao gerador de questões/flashcards, a IA não sabe o que já gerou anteriormente, resultando em repetições.
+
+## Solução
+Adicionar prop `previousContentLoader` ao `AgentChat` que carrega as últimas 100 questões/flashcards do usuário e injeta como contexto anti-repetição no `userContext` enviado à IA.
 
 ## Mudanças
 
-### 1. `src/components/layout/DashboardLayout.tsx` — Reposicionar barra superior desktop
-- Mover o bloco `GlobalSearch + NotificationBell + Tema` de `fixed top-4 right-4` para uma barra fixa dentro do header (acima do conteúdo, não sobrepondo)
-- Usar `sticky top-0` em vez de `fixed` para não flutuar sobre os módulos
-- Adicionar padding-top no conteúdo se necessário
+### 1. `src/components/agents/AgentChat.tsx`
+- Nova prop opcional: `previousContentLoader?: () => Promise<string>`
+- No `useEffect` inicial, chamar o loader e guardar resultado em `useRef`
+- No `buildUserContext`, anexar o conteúdo carregado ao contexto
+- Invalidar cache após `onSaveMessage` bem-sucedido (para incluir novas questões no próximo envio)
 
-### 2. `src/pages/MedicalChronicles.tsx` — Dropdown para botões
-- Mover Favorito, Nova, Histórico e ModuleHelp para um `DropdownMenu` (⋮)
-- Manter apenas Fullscreen visível
+### 2. `src/pages/QuestionGenerator.tsx`
+- Criar função `loadPreviousQuestions` que busca últimas 100 questões do `questions_bank` (onde `source = 'gerador-ia'`)
+- Extrai `statement` (80 chars) + `topic` de cada
+- Formata como: `"⛔ QUESTÕES JÁ GERADAS (NÃO REPETIR):\n1. [Cardiologia] Paciente 45a com dor..."`
+- Passar como `previousContentLoader`
 
-### 3. `src/pages/DiscursiveQuestions.tsx` — Dropdown para botões
-- Mover Nova Questão, Histórico para dropdown
-- Manter apenas Fullscreen visível
+### 3. `src/pages/FlashcardGenerator.tsx`
+- Criar função `loadPreviousFlashcards` que busca últimos 100 flashcards
+- Extrai `question` (80 chars) + `topic`
+- Formata como: `"⛔ FLASHCARDS JÁ GERADOS (NÃO REPETIR):\n1. [Cardiologia] Qual tratamento..."`
+- Passar como `previousContentLoader`
 
-### 4. `src/pages/ErrorBank.tsx` — Dropdown para botões
-- Mover ModuleHelp, Gerar Flashcards, Atualizar para dropdown
-- Manter título limpo
+### 4. `supabase/functions/question-generator/index.ts`
+- Adicionar ao system prompt: se contexto incluir `QUESTÕES JÁ GERADAS`, nunca gerar cenários clínicos similares
 
-### 5. `src/pages/Analytics.tsx` — Dropdown para botões
-- Mover ModuleHelp e PerformanceReport para dropdown
-
-### 6. `src/pages/Uploads.tsx` — Sem mudança necessária (só 1 botão)
+### 5. `supabase/functions/generate-flashcards/index.ts`
+- Adicionar ao system prompt: se contexto incluir `FLASHCARDS JÁ GERADOS`, nunca repetir cenários similares
 
 ## Arquivos Modificados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/components/layout/DashboardLayout.tsx` | Reposicionar barra de notificações/busca/tema para não sobrepor conteúdo |
-| `src/pages/MedicalChronicles.tsx` | Dropdown (⋮) com ações secundárias |
-| `src/pages/DiscursiveQuestions.tsx` | Dropdown (⋮) com ações secundárias |
-| `src/pages/ErrorBank.tsx` | Dropdown (⋮) com ações secundárias |
-| `src/pages/Analytics.tsx` | Dropdown (⋮) com ações secundárias |
+| `src/components/agents/AgentChat.tsx` | Nova prop `previousContentLoader`, injeção no contexto |
+| `src/pages/QuestionGenerator.tsx` | Loader de últimas 100 questões |
+| `src/pages/FlashcardGenerator.tsx` | Loader de últimos 100 flashcards |
+| `supabase/functions/question-generator/index.ts` | Instrução anti-repetição cross-session |
+| `supabase/functions/generate-flashcards/index.ts` | Instrução anti-repetição cross-session |
 
