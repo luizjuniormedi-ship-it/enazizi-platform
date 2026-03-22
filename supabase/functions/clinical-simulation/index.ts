@@ -322,11 +322,8 @@ serve(async (req) => {
       if (conversation_history && Array.isArray(conversation_history)) {
         messages.push(...conversation_history);
       }
-
-      const { triage_color: currentTriageColor, patient_status: currentPatientStatus } = await req.json().catch(() => ({}));
-      // Use values already destructured from req.json above
-      const triageCtx = requestedTriageColor || currentTriageColor || "desconhecido";
-      const statusCtx = currentPatientStatus || "desconhecido";
+      const triageCtx = requestedTriageColor || "desconhecido";
+      const statusCtx = requestedPatientStatus || "desconhecido";
 
       messages.push({
         role: "user",
