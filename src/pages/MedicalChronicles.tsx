@@ -39,6 +39,7 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/medical-chro
 const MedicalChronicles = () => {
   const { user } = useAuth();
   const { addXp } = useGamification();
+  const { pendingSession, checked, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "chronicles" });
   const [specialty, setSpecialty] = useState("Clínica Médica");
   const [subtopic, setSubtopic] = useState("");
   const [difficulty, setDifficulty] = useState("avancado");
