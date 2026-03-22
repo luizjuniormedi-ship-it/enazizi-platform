@@ -108,6 +108,28 @@ const MedicalChronicles = () => {
 
   useEffect(() => { loadConversations(); loadWeakTopics(); }, [loadConversations, loadWeakTopics]);
 
+  // Auto-save session
+  useEffect(() => {
+    registerAutoSave(() => {
+      if (!studyStarted || messages.length === 0) return {};
+      return { messages, activeConversationId, specialty, difficulty, subtopic, currentTopic };
+    });
+  }, [messages, activeConversationId, specialty, difficulty, subtopic, currentTopic, studyStarted, registerAutoSave]);
+
+  const handleResumeSession = () => {
+    if (!pendingSession) return;
+    const d = pendingSession.session_data as any;
+    if (d.messages?.length) setMessages(d.messages);
+    if (d.activeConversationId) setActiveConversationId(d.activeConversationId);
+    if (d.specialty) setSpecialty(d.specialty);
+    if (d.difficulty) setDifficulty(d.difficulty);
+    if (d.subtopic) setSubtopic(d.subtopic);
+    if (d.currentTopic) setCurrentTopic(d.currentTopic);
+    setStudyStarted(true);
+    setXpAwarded(true);
+    clearPending();
+  };
+
   // Smart scroll: only auto-scroll if user is near bottom
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
