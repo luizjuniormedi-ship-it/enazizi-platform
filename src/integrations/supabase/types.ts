@@ -504,6 +504,8 @@ export type Database = {
           conteudo: string | null
           created_at: string
           dificuldade: number | null
+          dominado: boolean | null
+          dominado_em: string | null
           id: string
           motivo_erro: string | null
           subtema: string | null
@@ -518,6 +520,8 @@ export type Database = {
           conteudo?: string | null
           created_at?: string
           dificuldade?: number | null
+          dominado?: boolean | null
+          dominado_em?: string | null
           id?: string
           motivo_erro?: string | null
           subtema?: string | null
@@ -532,6 +536,8 @@ export type Database = {
           conteudo?: string | null
           created_at?: string
           dificuldade?: number | null
+          dominado?: boolean | null
+          dominado_em?: string | null
           id?: string
           motivo_erro?: string | null
           subtema?: string | null
