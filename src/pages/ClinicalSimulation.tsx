@@ -399,7 +399,114 @@ const ClinicalSimulation = () => {
     return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
   }, [phase, countdown > 0]);
 
-  const fetchHistory = useCallback(async () => {
+  // --- Realistic mode: inactivity deterioration ---
+  const triggerDeterioration = useCallback(async (level: number) => {
+    if (loading || phase !== "active") return;
+    setLoading(true);
+    setIsTyping(true);
+    setInactivityWarning(false);
+
+    const doctorMsg: ChatMessage = {
+      role: "doctor",
+      content: `⚠️ [Sistema] Paciente aguardou sem conduta — deterioração automática (nível ${level})`,
+      timestamp: Date.now(),
+    };
+    setMessages((prev) => [...prev, doctorMsg]);
+
+    try {
+      const updatedHistory = [...conversationHistory, { role: "user", content: `[SISTEMA: O aluno ficou inativo por 90 segundos. Nível de deterioração: ${level}/3. Piore o paciente proporcionalmente.]` }];
+      const res = await callAPI({
+        action: "deteriorate",
+        deterioration_level: level,
+        conversation_history: updatedHistory,
+      });
+
+      setIsTyping(false);
+      playSound("worsened");
+
+      const simMsg: ChatMessage = {
+        role: "simulation",
+        content: res.response,
+        type: "deterioration",
+        scoreDelta: res.score_delta,
+        timestamp: Date.now(),
+      };
+      setMessages((prev) => [...prev, simMsg]);
+      addToTimeline(`⚠️ Paciente piorou (inatividade nível ${level})`, "🔻");
+
+      const newScore = Math.max(0, Math.min(100, score + (res.score_delta || -3)));
+      setScoreFlash("red");
+      setPrevScore(score);
+      setScore(newScore);
+
+      if (res.vitals) {
+        setVitals(res.vitals);
+        const newTime = res.time_elapsed_minutes || timeElapsed + 2;
+        setTimeElapsed(newTime);
+        setVitalsSnapshots((prev) => [...prev, parseVitalsToSnapshot(res.vitals, newTime)]);
+      }
+      if (res.patient_status) setPatientStatus(res.patient_status);
+
+      setConversationHistory([
+        ...updatedHistory,
+        { role: "assistant", content: JSON.stringify(res) },
+      ]);
+
+      // After 3 deteriorations, auto-finish
+      if (level >= 3) {
+        toast({
+          title: "💀 Paciente em parada cardíaca!",
+          description: "O paciente evoluiu para parada por falta de conduta. O caso será encerrado.",
+          variant: "destructive",
+        });
+        setTimeout(() => finishSimulation(), 2000);
+      }
+    } catch (e) {
+      setIsTyping(false);
+      console.error("Deterioration error:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, phase, conversationHistory, callAPI, score, timeElapsed, vitals]);
+
+  useEffect(() => {
+    if (!realisticMode || phase !== "active") {
+      if (deteriorationIntervalRef.current) {
+        clearInterval(deteriorationIntervalRef.current);
+        deteriorationIntervalRef.current = null;
+      }
+      setInactivityWarning(false);
+      return;
+    }
+
+    lastActionTimeRef.current = Date.now();
+
+    deteriorationIntervalRef.current = setInterval(() => {
+      const elapsed = (Date.now() - lastActionTimeRef.current) / 1000;
+      if (elapsed >= 60 && elapsed < 90) {
+        setInactivityWarning(true);
+      } else if (elapsed < 60) {
+        setInactivityWarning(false);
+      }
+      if (elapsed >= 90) {
+        setInactivityWarning(false);
+        lastActionTimeRef.current = Date.now(); // reset so we don't re-trigger immediately
+        setDeteriorationCount((prev) => {
+          const next = prev + 1;
+          triggerDeterioration(next);
+          return next;
+        });
+      }
+    }, 10000);
+
+    return () => {
+      if (deteriorationIntervalRef.current) {
+        clearInterval(deteriorationIntervalRef.current);
+        deteriorationIntervalRef.current = null;
+      }
+    };
+  }, [realisticMode, phase, triggerDeterioration]);
+
     if (!user) return;
     setHistoryLoading(true);
     try {
