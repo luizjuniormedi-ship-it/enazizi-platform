@@ -31,6 +31,7 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger
 } from "@/components/ui/sheet";
+import { Switch } from "@/components/ui/switch";
 
 const SPECIALTIES = [
   "Clínica Médica", "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia",
@@ -264,6 +265,7 @@ const ClinicalSimulation = () => {
   const [subtopic, setSubtopic] = useState("");
   const [difficulty, setDifficulty] = useState("intermediário");
   const [pediatricAge, setPediatricAge] = useState("aleatorio");
+  const [realisticMode, setRealisticMode] = useState(false);
 
   const isPediatrics = specialty === "Pediatria";
   const [loading, setLoading] = useState(false);
@@ -314,6 +316,11 @@ const ClinicalSimulation = () => {
 
   // Patient status alert animation
   const [statusAlert, setStatusAlert] = useState(false);
+  // Inactivity / realistic mode
+  const [deteriorationCount, setDeteriorationCount] = useState(0);
+  const [inactivityWarning, setInactivityWarning] = useState(false);
+  const lastActionTimeRef = useRef<number>(Date.now());
+  const deteriorationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -392,6 +399,7 @@ const ClinicalSimulation = () => {
     return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
   }, [phase, countdown > 0]);
 
+
   const fetchHistory = useCallback(async () => {
     if (!user) return;
     setHistoryLoading(true);
@@ -462,7 +470,114 @@ const ClinicalSimulation = () => {
     setActionTimeline((prev) => [...prev, { label, icon, timestamp: Date.now() }]);
   };
 
-  const startSimulation = async () => {
+  // --- Realistic mode: inactivity deterioration ---
+  const triggerDeterioration = useCallback(async (level: number) => {
+    if (loading || phase !== "active") return;
+    setLoading(true);
+    setIsTyping(true);
+    setInactivityWarning(false);
+
+    const doctorMsg: ChatMessage = {
+      role: "doctor",
+      content: `⚠️ [Sistema] Paciente aguardou sem conduta — deterioração automática (nível ${level})`,
+      timestamp: Date.now(),
+    };
+    setMessages((prev) => [...prev, doctorMsg]);
+
+    try {
+      const updatedHistory = [...conversationHistory, { role: "user", content: `[SISTEMA: O aluno ficou inativo por 90 segundos. Nível de deterioração: ${level}/3. Piore o paciente proporcionalmente.]` }];
+      const res = await callAPI({
+        action: "deteriorate",
+        deterioration_level: level,
+        conversation_history: updatedHistory,
+      });
+
+      setIsTyping(false);
+      playSound("worsened");
+
+      const simMsg: ChatMessage = {
+        role: "simulation",
+        content: res.response,
+        type: "deterioration",
+        scoreDelta: res.score_delta,
+        timestamp: Date.now(),
+      };
+      setMessages((prev) => [...prev, simMsg]);
+      addToTimeline(`⚠️ Paciente piorou (inatividade nível ${level})`, "🔻");
+
+      const newScore = Math.max(0, Math.min(100, score + (res.score_delta || -3)));
+      setScoreFlash("red");
+      setPrevScore(score);
+      setScore(newScore);
+
+      if (res.vitals) {
+        setVitals(res.vitals);
+        const newTime = res.time_elapsed_minutes || timeElapsed + 2;
+        setTimeElapsed(newTime);
+        setVitalsSnapshots((prev) => [...prev, parseVitalsToSnapshot(res.vitals, newTime)]);
+      }
+      if (res.patient_status) setPatientStatus(res.patient_status);
+
+      setConversationHistory([
+        ...updatedHistory,
+        { role: "assistant", content: JSON.stringify(res) },
+      ]);
+
+      if (level >= 3) {
+        toast({
+          title: "💀 Paciente em parada cardíaca!",
+          description: "O paciente evoluiu para parada por falta de conduta. O caso será encerrado.",
+          variant: "destructive",
+        });
+        setTimeout(() => finishSimulation(), 2000);
+      }
+    } catch (e) {
+      setIsTyping(false);
+      console.error("Deterioration error:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, phase, conversationHistory, callAPI, score, timeElapsed, vitals]);
+
+  useEffect(() => {
+    if (!realisticMode || phase !== "active") {
+      if (deteriorationIntervalRef.current) {
+        clearInterval(deteriorationIntervalRef.current);
+        deteriorationIntervalRef.current = null;
+      }
+      setInactivityWarning(false);
+      return;
+    }
+
+    lastActionTimeRef.current = Date.now();
+
+    deteriorationIntervalRef.current = setInterval(() => {
+      const elapsed = (Date.now() - lastActionTimeRef.current) / 1000;
+      if (elapsed >= 60 && elapsed < 90) {
+        setInactivityWarning(true);
+      } else if (elapsed < 60) {
+        setInactivityWarning(false);
+      }
+      if (elapsed >= 90) {
+        setInactivityWarning(false);
+        lastActionTimeRef.current = Date.now();
+        setDeteriorationCount((prev) => {
+          const next = prev + 1;
+          triggerDeterioration(next);
+          return next;
+        });
+      }
+    }, 10000);
+
+    return () => {
+      if (deteriorationIntervalRef.current) {
+        clearInterval(deteriorationIntervalRef.current);
+        deteriorationIntervalRef.current = null;
+      }
+    };
+  }, [realisticMode, phase, triggerDeterioration]);
+
+
     setLoading(true);
     try {
       const res = await callAPI({
@@ -518,6 +633,8 @@ const ClinicalSimulation = () => {
     const msg = text || input.trim();
     if (!msg || loading) return;
     setInput("");
+    lastActionTimeRef.current = Date.now();
+    setInactivityWarning(false);
 
     const doctorMsg: ChatMessage = { role: "doctor", content: msg, timestamp: Date.now() };
     setMessages((prev) => [...prev, doctorMsg]);
@@ -771,7 +888,10 @@ const ClinicalSimulation = () => {
     setExamResults([]);
     setActionTimeline([]);
     setStatusAlert(false);
+    setDeteriorationCount(0);
+    setInactivityWarning(false);
     if (countdownRef.current) clearInterval(countdownRef.current);
+    if (deteriorationIntervalRef.current) clearInterval(deteriorationIntervalRef.current);
     fetchHistory();
   };
 
@@ -964,6 +1084,22 @@ const ClinicalSimulation = () => {
               </div>
             )}
 
+            {/* Modo Real toggle */}
+            <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-muted/30">
+              <div className="space-y-1">
+                <label className="text-sm font-semibold flex items-center gap-2">
+                  🔴 Modo Real
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Paciente piora automaticamente se você demorar para agir (90s de inatividade)
+                </p>
+              </div>
+              <Switch
+                checked={realisticMode}
+                onCheckedChange={setRealisticMode}
+              />
+            </div>
+
             <Button onClick={startSimulation} disabled={loading} className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
               {loading ? "Preparando plantão..." : "🚨 Iniciar Plantão"}
@@ -1147,6 +1283,14 @@ const ClinicalSimulation = () => {
                 </div>
               </CardContent>
             </Card>
+            {inactivityWarning && (
+              <Card className="border-amber-500/50 bg-amber-500/10 animate-pulse">
+                <CardContent className="p-3 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">⚠️ Paciente aguardando conduta...</p>
+                </CardContent>
+              </Card>
+            )}
             <Card className={timerExpired ? "border-destructive/50 bg-destructive/5" : countdown <= 120 ? "border-amber-500/50" : ""}>
               <CardContent className="p-3 flex items-center gap-2">
                 <Clock className={`h-4 w-4 ${getTimerColor()}`} />
