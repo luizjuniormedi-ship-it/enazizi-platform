@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useLocation } from "react-router-dom";
 import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap, LogOut, AlertTriangle, Maximize2, Minimize2 } from "lucide-react";
@@ -95,9 +97,42 @@ const ChatGPT = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  const {
+    pendingSession, checked: sessionChecked, saveSession: persistSession,
+    completeSession, abandonSession, registerAutoSave, clearPending,
+  } = useSessionPersistence({ moduleKey: "chatgpt" });
+
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${FUNCTION_NAME}`;
 
-  // Load performance + enazizi progress from DB
+  // Register auto-save for session persistence
+  useEffect(() => {
+    registerAutoSave(() => {
+      if (!studyStarted || messages.length === 0) return {};
+      return {
+        messages,
+        currentTopic,
+        enaziziStep,
+        performance,
+        selectedUploadIds: Array.from(selectedUploadIds),
+        sessionQuestions,
+        sessionCorrect,
+      };
+    });
+  }, [registerAutoSave, studyStarted, messages, currentTopic, enaziziStep, performance, selectedUploadIds, sessionQuestions, sessionCorrect]);
+
+  const handleRestoreSession = () => {
+    if (!pendingSession) return;
+    const data = pendingSession.session_data as any;
+    if (data.messages) setMessages(data.messages);
+    if (data.currentTopic) { setCurrentTopic(data.currentTopic); setTopic(data.currentTopic); }
+    if (data.enaziziStep) setEnaziziStep(data.enaziziStep);
+    if (data.performance) setPerformance(data.performance);
+    if (data.selectedUploadIds) setSelectedUploadIds(new Set(data.selectedUploadIds));
+    if (data.sessionQuestions) setSessionQuestions(data.sessionQuestions);
+    if (data.sessionCorrect) setSessionCorrect(data.sessionCorrect);
+    setStudyStarted(true);
+    clearPending();
+  };
   useEffect(() => {
     if (!user) return;
     const loadPerformance = async () => {
@@ -433,6 +468,7 @@ const ChatGPT = () => {
       await addXp(xpGained);
     }
 
+    await completeSession();
     toast({ title: "Sessão finalizada!", description: `Dados salvos. ${sessionQuestions} questões nesta sessão.` });
   };
 
@@ -810,6 +846,15 @@ const ChatGPT = () => {
           </Button>
         </div>
       </div>
+
+      {/* Resume Session Banner */}
+      {pendingSession && !studyStarted && (
+        <ResumeSessionBanner
+          updatedAt={pendingSession.updated_at}
+          onResume={handleRestoreSession}
+          onDiscard={abandonSession}
+        />
+      )}
 
       {/* Performance Panel */}
       <div className={`grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4 ${isFullscreen ? "hidden" : ""}`}>

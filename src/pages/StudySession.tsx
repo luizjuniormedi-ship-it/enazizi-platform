@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { logErrorToBank } from "@/lib/errorBankLogger";
+import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,6 +87,29 @@ const StudySession = () => {
   const [performance, setPerformance] = useState<PerformanceData>(INITIAL_PERFORMANCE);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const {
+    pendingSession, checked: sessionChecked, saveSession: persistSession,
+    completeSession, abandonSession, registerAutoSave, clearPending,
+  } = useSessionPersistence({ moduleKey: "study-session" });
+
+  // Register auto-save
+  useEffect(() => {
+    registerAutoSave(() => {
+      if (phase === "start" || messages.length === 0) return {};
+      return { messages, phase, topic, performance };
+    });
+  }, [registerAutoSave, messages, phase, topic, performance]);
+
+  const handleRestoreSession = () => {
+    if (!pendingSession) return;
+    const data = pendingSession.session_data as any;
+    if (data.messages) setMessages(data.messages);
+    if (data.phase) setPhase(data.phase);
+    if (data.topic) { setTopic(data.topic); setTopicInput(data.topic); }
+    if (data.performance) setPerformance(data.performance);
+    clearPending();
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -406,6 +431,17 @@ const StudySession = () => {
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* Resume Session Banner */}
+        {pendingSession && phase === "start" && (
+          <div className="px-4 pt-4">
+            <ResumeSessionBanner
+              updatedAt={pendingSession.updated_at}
+              onResume={handleRestoreSession}
+              onDiscard={abandonSession}
+            />
           </div>
         )}
 

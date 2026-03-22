@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { isMedicalContent } from "@/lib/medicalValidation";
+import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { createPortal } from "react-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
@@ -51,6 +53,28 @@ const Flashcards = () => {
   const { toast } = useToast();
   const { addXp } = useGamification();
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const {
+    pendingSession, checked: sessionChecked, saveSession: persistSession,
+    completeSession, abandonSession, registerAutoSave, clearPending,
+  } = useSessionPersistence({ moduleKey: "flashcards" });
+
+  // Register auto-save
+  useEffect(() => {
+    registerAutoSave(() => {
+      if (allCards.length === 0) return {};
+      return { idx, mode, flipped, selectedTopics: Array.from(selectedTopics) };
+    });
+  }, [registerAutoSave, idx, mode, flipped, selectedTopics, allCards.length]);
+
+  const handleRestoreSession = () => {
+    if (!pendingSession) return;
+    const data = pendingSession.session_data as any;
+    if (data.idx != null) setIdx(data.idx);
+    if (data.mode) setMode(data.mode);
+    if (data.selectedTopics) setSelectedTopics(new Set(data.selectedTopics));
+    clearPending();
+  };
 
   // Sprint mode state
   const [sprintConfig, setSprintConfig] = useState({ cardCount: 10, timeMinutes: 5 });
@@ -324,6 +348,14 @@ const Flashcards = () => {
 
   const content = (
     <div className={`animate-fade-in ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4 overflow-auto" : "space-y-6"}`}>
+      {/* Resume Session Banner */}
+      {pendingSession && (
+        <ResumeSessionBanner
+          updatedAt={pendingSession.updated_at}
+          onResume={handleRestoreSession}
+          onDiscard={abandonSession}
+        />
+      )}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
