@@ -82,6 +82,29 @@ const DiscursiveQuestions = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  // Auto-save session
+  useEffect(() => {
+    registerAutoSave(() => {
+      if (phase === "setup") return {};
+      return { phase, specialty, difficulty, attemptId, clinicalCase, question, gradingCriteria, answer, correction };
+    });
+  }, [phase, specialty, difficulty, attemptId, clinicalCase, question, gradingCriteria, answer, correction, registerAutoSave]);
+
+  const handleResumeSession = () => {
+    if (!pendingSession) return;
+    const d = pendingSession.session_data as any;
+    if (d.phase) setPhase(d.phase);
+    if (d.specialty) setSpecialty(d.specialty);
+    if (d.difficulty) setDifficulty(d.difficulty);
+    if (d.attemptId) setAttemptId(d.attemptId);
+    if (d.clinicalCase) setClinicalCase(d.clinicalCase);
+    if (d.question) setQuestion(d.question);
+    if (d.gradingCriteria) setGradingCriteria(d.gradingCriteria);
+    if (d.answer) setAnswer(d.answer);
+    if (d.correction) setCorrection(d.correction);
+    clearPending();
+  };
+
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/discursive-questions`;
 
   const callAPI = useCallback(async (body: Record<string, unknown>) => {
