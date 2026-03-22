@@ -139,6 +139,10 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     if (extraContext) {
       ctx += extraContext;
     }
+    // Add anti-repetition context
+    if (previousContentRef.current) {
+      ctx += "\n\n" + previousContentRef.current;
+    }
     if (selectedUploadIds.size === 0) return ctx.trim();
     for (const upload of availableUploads) {
       if (!selectedUploadIds.has(upload.id)) continue;
