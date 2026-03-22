@@ -1026,7 +1026,7 @@ const ClinicalSimulation = () => {
           {phase === "active" && (
             <Button variant="destructive" size="sm" className="h-8 text-xs gap-1.5" onClick={finishSimulation} disabled={loading}>
               <ClipboardCheck className="h-3.5 w-3.5" />
-              Encerrar Plantão
+              <span className="hidden sm:inline">Encerrar Plantão</span>
             </Button>
           )}
         </div>
