@@ -380,6 +380,14 @@ Responda em JSON:
 }
 Responda APENAS em JSON válido.`,
       });
+    }
+
+    // Call AI
+    const aiResp = await aiFetch({
+      model: "google/gemini-2.5-flash",
+      messages,
+      timeoutMs: 60000,
+    });
 
     if (!aiResp.ok) {
       const errText = await aiResp.text();

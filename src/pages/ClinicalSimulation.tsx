@@ -579,7 +579,7 @@ const ClinicalSimulation = () => {
     };
   }, [realisticMode, phase, triggerDeterioration]);
 
-
+  const startSimulation = async () => {
     setLoading(true);
     try {
       const res = await callAPI({
