@@ -129,6 +129,29 @@ const AnamnesisTrainer = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Session persistence
+  const { pendingSession, checked, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "anamnesis" });
+
+  const getAnamnesisState = useCallback(() => {
+    if (phase !== "active" && phase !== "diagnosis") return {};
+    return { phase, specialty, difficulty, messages: messages.map(m => ({ ...m })), coveredCategories: Array.from(coveredCategories), startTime, hypothesis, differentials, proposedConduct };
+  }, [phase, specialty, difficulty, messages, coveredCategories, startTime, hypothesis, differentials, proposedConduct]);
+
+  useEffect(() => { registerAutoSave(getAnamnesisState); }, [getAnamnesisState, registerAutoSave]);
+
+  const restoreAnamnesisSession = useCallback((data: Record<string, any>) => {
+    if (data.specialty) setSpecialty(data.specialty);
+    if (data.difficulty) setDifficulty(data.difficulty);
+    if (data.messages) setMessages(data.messages);
+    if (data.coveredCategories) setCoveredCategories(new Set(data.coveredCategories));
+    if (data.startTime) setStartTime(data.startTime);
+    if (data.hypothesis) setHypothesis(data.hypothesis);
+    if (data.differentials) setDifferentials(data.differentials);
+    if (data.proposedConduct) setProposedConduct(data.proposedConduct);
+    setPhase(data.phase || "active");
+    clearPending();
+  }, [clearPending]);
+
   useEffect(() => {
     if (phase !== "active") return;
     const interval = setInterval(() => setElapsed(Math.floor((Date.now() - startTime) / 1000)), 1000);

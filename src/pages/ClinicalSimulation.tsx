@@ -327,6 +327,36 @@ const ClinicalSimulation = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Session persistence
+  const { pendingSession, checked, completeSession: completePersistedSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "clinical-simulation" });
+
+  const getClinicalState = useCallback(() => {
+    if (phase !== "active") return {};
+    return { phase, specialty, difficulty, realisticMode, messages: messages.map(m => ({ ...m })), vitals, setting, triageColor, patientStatus, score, timeElapsed, conversationHistory, actionTimeline, examResults, vitalsSnapshots, countdown };
+  }, [phase, specialty, difficulty, realisticMode, messages, vitals, setting, triageColor, patientStatus, score, timeElapsed, conversationHistory, actionTimeline, examResults, vitalsSnapshots, countdown]);
+
+  useEffect(() => { registerAutoSave(getClinicalState); }, [getClinicalState, registerAutoSave]);
+
+  const restoreClinicalSession = useCallback((data: Record<string, any>) => {
+    if (data.specialty) setSpecialty(data.specialty);
+    if (data.difficulty) setDifficulty(data.difficulty);
+    if (data.realisticMode !== undefined) setRealisticMode(data.realisticMode);
+    if (data.messages) setMessages(data.messages);
+    if (data.vitals) setVitals(data.vitals);
+    if (data.setting) setSetting(data.setting);
+    if (data.triageColor) setTriageColor(data.triageColor);
+    if (data.patientStatus) setPatientStatus(data.patientStatus);
+    if (typeof data.score === "number") setScore(data.score);
+    if (typeof data.timeElapsed === "number") setTimeElapsed(data.timeElapsed);
+    if (data.conversationHistory) setConversationHistory(data.conversationHistory);
+    if (data.actionTimeline) setActionTimeline(data.actionTimeline);
+    if (data.examResults) setExamResults(data.examResults);
+    if (data.vitalsSnapshots) setVitalsSnapshots(data.vitalsSnapshots);
+    if (typeof data.countdown === "number") setCountdown(data.countdown);
+    setPhase("active");
+    clearPending();
+  }, [clearPending]);
+
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/clinical-simulation`;
 
   useEffect(() => {
