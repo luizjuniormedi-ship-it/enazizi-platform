@@ -285,6 +285,33 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_generation_log: {
+        Row: {
+          created_at: string
+          id: string
+          questions_generated: number
+          run_date: string
+          specialties_processed: Json
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          questions_generated?: number
+          run_date?: string
+          specialties_processed?: Json
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          questions_generated?: number
+          run_date?: string
+          specialties_processed?: Json
+          status?: string
+        }
+        Relationships: []
+      }
       daily_plans: {
         Row: {
           completed_blocks: Json
