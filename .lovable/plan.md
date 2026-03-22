@@ -1,44 +1,44 @@
 
 
-# Plano: Modo Real com Deterioração Automática por Inatividade
+# Plano: Critérios Clínicos Realistas para Deterioração no Modo Real
 
-## Resumo
-Adicionar um toggle "Modo Real" na tela de configuração do plantão. Quando ativado, o paciente piora automaticamente se o aluno demorar para agir (90s de inatividade). No modo treino (padrão), o paciente aguarda indefinidamente.
+## Problema
+Atualmente, o prompt de deterioração é genérico: simplesmente diz "piore os sinais vitais". Isso pode gerar situações absurdas como um paciente com tosse simples evoluindo para parada cardíaca, quebrando o realismo e prejudicando o aprendizado.
+
+## Solução
+Atualizar o prompt de deterioração na edge function para exigir que a piora seja **fisiopatologicamente coerente** com o diagnóstico oculto do caso. A IA deve justificar clinicamente cada piora.
+
+Além disso, corrigir o erro de build existente no `ClinicalSimulation.tsx`.
 
 ## Mudanças
 
-### 1. Toggle "Modo Real" no Lobby (`ClinicalSimulation.tsx`)
-- Novo state `realisticMode` (boolean, default `false`)
-- Switch com label "🔴 Modo Real" + descrição curta: "Paciente piora se você demorar"
-- Posicionar abaixo do seletor de dificuldade
+### 1. Edge Function — Prompt de Deterioração Realista (`clinical-simulation/index.ts`)
+Substituir o bloco de instruções do `action: "deteriorate"` com regras clínicas:
 
-### 2. Sistema de Deterioração Automática (`ClinicalSimulation.tsx`)
-- `lastActionTime` ref — atualizado a cada mensagem enviada
-- `deteriorationCount` state (0 a 3)
-- `setInterval` a cada 10s checando inatividade (só quando `realisticMode === true` e `phase === "active"`)
-- **60s sem ação**: badge amarelo pulsante "⚠️ Paciente aguardando conduta..."
-- **90s sem ação**: dispara chamada automática à edge function com `action: "deteriorate"`
-  - Vitais pioram progressivamente
-  - Score penalizado (-2 a -3)
-  - Timeline recebe entrada "⚠️ Paciente piorou (inatividade)"
-  - Som `worsened` + animação de alerta
-- **3 deteriorações**: caso encerra automaticamente como "paciente em parada cardíaca"
+- **Regra principal**: A piora DEVE seguir a fisiopatologia do diagnóstico oculto (`hidden_diagnosis`). Exemplo: pneumonia → piora SpO2 e FR; sepse → hipotensão e taquicardia; fratura → dor e edema, sem alteração hemodinâmica drástica.
+- **Proibições explícitas**:
+  - Pacientes verde/amarelo NÃO evoluem para parada no nível 1
+  - Pacientes com queixa menor (tosse, lombalgia, cefaleia) não devem ter piora hemodinâmica severa nos níveis 1-2
+  - A piora deve ser proporcional à classificação de risco inicial (triage_color)
+- **Mapa de severidade por triage**:
+  - Verde: nível 1 = desconforto leve, nível 2 = piora moderada, nível 3 = complicação plausível (não parada)
+  - Amarelo: nível 1 = instabilidade inicial, nível 2 = deterioração, nível 3 = grave mas com chance de reverter
+  - Laranja/Vermelho: progressão rápida conforme a doença de base
+- **Instrução de narrativa**: Descrever a piora com justificativa clínica ("Devido à falta de antibioticoterapia, o paciente evolui com...")
+- **Campo obrigatório na resposta**: `"deterioration_rationale"` — explicação fisiopatológica da piora
 
-### 3. Handler de Deterioração na Edge Function (`clinical-simulation/index.ts`)
-- Reconhecer `action: "deteriorate"` com campo `deterioration_level` (1, 2 ou 3)
-- Prompt específico: "O aluno não agiu. Piore vitais proporcionalmente ao nível. Nível 3 = parada/choque refratário"
-- Retornar vitais atualizados, `patient_status` ajustado, score com penalidade
+### 2. Frontend — Enviar contexto clínico na deterioração (`ClinicalSimulation.tsx`)
+- Incluir `triageColor` e `patientStatus` atual no payload enviado para `action: "deteriorate"`, para que a IA tenha contexto da gravidade inicial
+- Corrigir o erro de build (TS1128) — identificar e resolver a inconsistência sintática
 
 ## Arquivos Modificados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/pages/ClinicalSimulation.tsx` | State `realisticMode`, Switch no lobby, lógica de inatividade com interval, aviso visual, auto-deterioração, auto-encerramento após 3 pioras |
-| `supabase/functions/clinical-simulation/index.ts` | Handler para `action: "deteriorate"` com piora progressiva em 3 níveis |
+| `supabase/functions/clinical-simulation/index.ts` | Prompt de deterioração reescrito com critérios fisiopatológicos, mapa por triage, proibições de piora irreal |
+| `src/pages/ClinicalSimulation.tsx` | Enviar triage_color e patient_status no payload de deterioração; fix build error |
 
 ## Detalhes Técnicos
-- Switch do shadcn para o toggle
-- `useRef` para `lastActionTime` (evita re-renders)
-- Interval com cleanup no unmount e ao encerrar caso
+- O `hidden_diagnosis` já está no contexto da conversa (enviado no `conversation_history`), então a IA tem acesso ao diagnóstico correto para piora coerente
 - Nenhuma mudança no banco de dados
 
