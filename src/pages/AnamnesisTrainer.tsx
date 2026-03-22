@@ -291,6 +291,7 @@ const AnamnesisTrainer = () => {
         }
       }
 
+      await completeSession();
       setPhase("result");
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });

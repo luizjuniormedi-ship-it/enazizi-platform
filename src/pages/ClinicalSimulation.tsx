@@ -882,6 +882,7 @@ const ClinicalSimulation = () => {
       });
       setFinalEval(res);
       setPhase("result");
+      await completePersistedSession();
       await addXp(XP_REWARDS.plantao_completed);
       await saveSimulationToHistory(res);
 
