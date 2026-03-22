@@ -439,6 +439,13 @@ const MedicalChronicles = () => {
       {/* Topic Selection */}
       {!studyStarted && (
         <div className="flex-1 overflow-y-auto space-y-4">
+          {pendingSession && (
+            <ResumeSessionBanner
+              updatedAt={pendingSession.updated_at}
+              onResume={handleResumeSession}
+              onDiscard={abandonSession}
+            />
+          )}
           <div className="glass-card p-4 sm:p-6 text-center space-y-4">
             <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
               <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
