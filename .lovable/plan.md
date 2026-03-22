@@ -1,33 +1,58 @@
 
 
-## Plano: Cadastro obrigatório completo + universidades de todo o Brasil
+# Plano: Melhorar Interacao Paciente-Medico no Plantao
 
-### Problema atual
-1. Usuários com status "pending" veem a tela de "aguardando aprovação" **sem completar o cadastro** — o admin aprova sem saber faculdade/telefone
-2. A lista de universidades tem apenas ~20 do Rio de Janeiro
+## Problema Atual
+A interacao e basicamente um chat de texto simples. O aluno digita texto livre ou clica em botoes genericos (Anamnese, Exame Fisico, etc.) que enviam prompts fixos. Falta imersao, estrutura e guia clinico.
 
-### Mudanças
+## Melhorias
 
-**1. Forçar onboarding ANTES da tela de aprovação**
+### 1. Quick Actions Expandidos e Contextuais
+Substituir os 6 botoes genericos por acoes mais especificas e organizadas em categorias:
 
-No `ProtectedRoute.tsx`, mover o check de `profileIncomplete` para **antes** do check de `profileStatus === "pending"`. Assim, qualquer usuário (pending, active, etc.) precisa completar o cadastro primeiro.
+**Anamnese**: HDA, Antecedentes Pessoais, Antecedentes Familiares, Habitos de Vida, Medicamentos em Uso, Alergias, Revisao de Sistemas
+**Exame Fisico**: Sistemas especificos (Cardiovascular, Respiratorio, Abdome, Neurologico, Musculoesqueletico, Cabeca/Pescoco, Pele/Mucosas)
+**Exames**: Hemograma, Bioquimica, Gasometria, ECG, Rx Torax, TC, USG, RM
+**Conduta**: Acesso Venoso, Monitorizacao, Oxigenoterapia, Sonda, IOT
 
-**2. Expandir lista de universidades para todo o Brasil**
+Implementar como dropdown/popover por categoria em vez de botoes inline.
 
-Atualizar `src/constants/faculdades.ts` com as principais siglas de universidades federais, estaduais e privadas do Brasil (~120 instituições), organizadas alfabeticamente, com "Outra" por último. Incluir:
-- Federais: UFRJ, USP, UNICAMP, UFMG, UFRGS, UFBA, UFC, UFPE, UFPR, UFSC, UnB, UFES, UFPA, UFSM, UFG, etc.
-- Estaduais: UERJ, UNESP, UEPA, UECE, UEL, UEM, UEZO, etc.
-- Privadas: PUC (Rio, SP, MG, PR, RS), Estácio, UniRedentor, Unigranrio, Einstein, Sírio-Libanês, Santo Amaro, Anhembi Morumbi, etc.
+### 2. Painel de Evolucao do Paciente
+Adicionar uma area visivel mostrando:
+- Timeline visual das acoes realizadas (icones + hora)
+- Status do paciente com animacao de transicao (estavel -> instavel -> grave)
+- Alerta visual pulsante quando paciente piora (borda vermelha, shake)
 
-**3. Adicionar busca/filtro no select de faculdade**
+### 3. Chat Imersivo
+- Avatar do paciente nos baloes de mensagem (icone de pessoa)
+- Avatar do medico nos baloes enviados (icone de estetoscopio)
+- Indicador de "paciente digitando..." com dots animados
+- Formatacao markdown basica (negrito, italico) no texto das respostas
+- Destaque visual para sinais vitais mencionados no texto (badge inline)
 
-Com ~120 opções, trocar o `Select` por um componente com campo de busca (usando `Command`/Combobox do shadcn) tanto no onboarding quanto no perfil, para facilitar a seleção.
+### 4. Painel de Sinais Vitais Mobile
+- Substituir `hidden lg:block` por um botao flutuante que abre Sheet/Drawer no mobile
+- Mostrar mini-resumo de vitais sempre visivel (PA e FC no status bar)
 
-### Arquivos afetados
-- `src/constants/faculdades.ts` — lista expandida
-- `src/components/auth/ProtectedRoute.tsx` — reordenar checks (incomplete antes de pending)
-- `src/pages/Profile.tsx` — componente de busca no select de faculdade
+### 5. Feedback Sonoro e Visual por Acao
+- Som sutil diferente para: resposta do paciente, piora do paciente, score positivo, score negativo
+- Animacao de flash verde/vermelho no score quando muda
+- Toast automatico quando paciente muda de status
 
-### Sem mudanças no banco de dados
-O campo `faculdade` é texto livre, aceita qualquer valor.
+### 6. Edge Function: Vitais Dinamicos Obrigatorios
+Atualizar o prompt para que TODA resposta de interacao inclua `vitals` atualizados e campo `critical_action_needed` para alertas de emergencia.
+
+## Arquivos Modificados
+
+| Arquivo | Mudanca |
+|---------|---------|
+| `src/pages/ClinicalSimulation.tsx` | Quick actions expandidos com popovers por categoria, avatares no chat, typing indicator, feedback sonoro/visual, Sheet mobile para vitais, timeline de acoes, alerta de piora |
+| `supabase/functions/clinical-simulation/index.ts` | Prompt atualizado: vitals obrigatorios em toda resposta, campo critical_action_needed, scoring refinado |
+
+## Detalhes Tecnicos
+- Popover do shadcn para categorias de acoes rapidas
+- Sheet do shadcn para painel de vitais no mobile
+- CSS keyframes para animacoes de alerta (pulse, shake)
+- AudioContext para sons sutis diferenciados
+- Nenhuma mudanca no banco de dados
 
