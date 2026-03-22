@@ -276,6 +276,13 @@ const ExamSimulator = () => {
   if (phase === "setup") {
     return (
       <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
+        {checked && pendingSession && (
+          <ResumeSessionBanner
+            updatedAt={pendingSession.updated_at}
+            onResume={() => restoreSession(pendingSession.session_data)}
+            onDiscard={() => abandonSession()}
+          />
+        )}
         <div className="text-center py-6">
           <FileText className="h-16 w-16 text-primary mx-auto mb-4" />
           <h1 className="text-3xl font-bold mb-2">Simulado Completo</h1>
