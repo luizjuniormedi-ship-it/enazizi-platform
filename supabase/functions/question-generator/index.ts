@@ -233,7 +233,10 @@ REGRAS DE ESPAÇAMENTO:
     }
 
     if (userContext) {
-      systemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
+      systemPrompt += `\n\n--- MATERIAL/CONTEXTO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
+      if (userContext.includes("QUESTÕES JÁ GERADAS ANTERIORMENTE")) {
+        systemPrompt += `\n\n⛔ REGRA ANTI-REPETIÇÃO CROSS-SESSION (PRIORIDADE MÁXIMA):\nO contexto acima contém uma lista de questões que o aluno JÁ recebeu em sessões anteriores. NUNCA gere questões com cenário clínico similar, mesmo diagnóstico principal ou mesmo perfil de paciente. Varie OBRIGATORIAMENTE: diagnóstico, faixa etária, sexo, cenário clínico, comorbidades e abordagem terapêutica. Se o tema for o mesmo, use subtópicos e enfoques completamente diferentes dos já listados.`;
+      }
     }
 
     let response: Response;

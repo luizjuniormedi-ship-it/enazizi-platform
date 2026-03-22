@@ -123,7 +123,12 @@ Usar emojis nos títulos de seção para facilitar identificação visual.`;
 
     let fullSystemPrompt = systemPrompt;
     if (userContext) {
-      fullSystemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---\nUse este material como base para gerar os flashcards com casos clínicos relevantes.`;
+      fullSystemPrompt += `\n\n--- MATERIAL/CONTEXTO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
+      if (userContext.includes("FLASHCARDS JÁ GERADOS ANTERIORMENTE")) {
+        fullSystemPrompt += `\n\n⛔ REGRA ANTI-REPETIÇÃO CROSS-SESSION (PRIORIDADE MÁXIMA):\nO contexto acima contém uma lista de flashcards que o aluno JÁ recebeu em sessões anteriores. NUNCA gere flashcards com cenário clínico similar, mesmo diagnóstico principal ou mesmo perfil de paciente. Varie OBRIGATORIAMENTE: diagnóstico, faixa etária, sexo, cenário clínico, comorbidades e abordagem. Se o tema for o mesmo, use subtópicos e enfoques completamente diferentes dos já listados.`;
+      } else {
+        fullSystemPrompt += `\nUse este material como base para gerar os flashcards com casos clínicos relevantes.`;
+      }
     }
 
     const response = await aiFetch({

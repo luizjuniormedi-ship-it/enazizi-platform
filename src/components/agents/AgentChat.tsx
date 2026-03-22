@@ -535,6 +535,12 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
             const lastIdx = messages.length; // index of the assistant message just added
             setSavedMsgIdxs((prev) => new Set(prev).add(lastIdx));
             toast({ title: "✅ Salvo automaticamente!", description: `${count} item(ns) salvo(s) no seu banco.` });
+            // Invalidate previous content cache so next generation includes new items
+            if (previousContentLoader) {
+              previousContentLoader().then((content) => {
+                previousContentRef.current = content;
+              }).catch(() => {});
+            }
           }
         } catch {
           // Silent fail for auto-save - user can still save manually
