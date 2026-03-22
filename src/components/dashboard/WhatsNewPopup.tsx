@@ -52,6 +52,12 @@ const updates: UpdateItem[] = [
   },
 ];
 
+const iconMap = {
+  sparkles: Sparkles,
+  check: CheckCircle2,
+  rocket: Rocket,
+};
+
 const WhatsNewPopup = () => {
   const [open, setOpen] = useState(false);
 
