@@ -857,7 +857,7 @@ const ChatGPT = () => {
       </div>
 
       {/* Resume Session Banner */}
-      {pendingSession && !studyStarted && (
+      {sessionChecked && pendingSession && !studyStarted && (
         <ResumeSessionBanner
           updatedAt={pendingSession.updated_at}
           onResume={handleRestoreSession}
