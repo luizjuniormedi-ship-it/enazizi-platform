@@ -55,7 +55,7 @@ interface AgentChatProps {
   previousContentLoader?: () => Promise<string>;
 }
 
-const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions, renderAssistantMessage, showUploadButton, autoPromptAfterUpload, linkToAgent }: AgentChatProps) => {
+const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions, renderAssistantMessage, showUploadButton, autoPromptAfterUpload, linkToAgent, previousContentLoader }: AgentChatProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([
