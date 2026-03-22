@@ -80,7 +80,18 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isUploadingRef = useRef(false);
   const autoPromptFiredRef = useRef(false);
+  const previousContentRef = useRef<string>("");
+  const previousContentLoadedRef = useRef(false);
   const { toast } = useToast();
+
+  // Load previous content for anti-repetition
+  useEffect(() => {
+    if (!user || !previousContentLoader || previousContentLoadedRef.current) return;
+    previousContentLoadedRef.current = true;
+    previousContentLoader().then((content) => {
+      previousContentRef.current = content;
+    }).catch(() => {});
+  }, [user, previousContentLoader]);
 
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`;
 
