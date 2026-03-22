@@ -888,7 +888,10 @@ const ClinicalSimulation = () => {
     setExamResults([]);
     setActionTimeline([]);
     setStatusAlert(false);
+    setDeteriorationCount(0);
+    setInactivityWarning(false);
     if (countdownRef.current) clearInterval(countdownRef.current);
+    if (deteriorationIntervalRef.current) clearInterval(deteriorationIntervalRef.current);
     fetchHistory();
   };
 
