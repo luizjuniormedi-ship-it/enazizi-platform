@@ -40,6 +40,8 @@ function parseOptions(raw: Json | null): string[] {
   return [];
 }
 
+const PAGE_SIZE = 200;
+
 const QuestionsBank = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -47,9 +49,13 @@ const QuestionsBank = () => {
   const navigate = useNavigate();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [topicFilter, setTopicFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
   // Stats
   const [topicStats, setTopicStats] = useState<TopicStat[]>([]);
