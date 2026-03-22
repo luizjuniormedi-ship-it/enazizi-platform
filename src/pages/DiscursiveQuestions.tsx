@@ -294,6 +294,7 @@ const DiscursiveQuestions = () => {
             </Button>
           </CardContent>
         </Card>
+        </>
       )}
 
       {/* ANSWERING PHASE */}
