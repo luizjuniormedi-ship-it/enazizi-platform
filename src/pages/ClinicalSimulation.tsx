@@ -221,6 +221,37 @@ const playSound = (type: "response" | "worsened" | "positive" | "negative") => {
   } catch {}
 };
 
+// Highlight vital signs inline as badges
+const VITAL_REGEX = /\b(PA|PAS|PAD|FC|FR|SpO2|Temp|Sat)\s*[:=]?\s*(\d{2,3}(?:[\/x]\d{2,3})?)\s*(mmHg|bpm|irpm|rpm|%|°C|ºC)?/gi;
+
+const highlightVitals = (children: React.ReactNode): React.ReactNode => {
+  if (!children) return children;
+  if (typeof children === "string") {
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    const regex = new RegExp(VITAL_REGEX.source, "gi");
+    while ((match = regex.exec(children)) !== null) {
+      if (match.index > lastIndex) parts.push(children.slice(lastIndex, match.index));
+      const label = match[1].toUpperCase();
+      const value = match[2];
+      const unit = match[3] || "";
+      parts.push(
+        <span key={match.index} className="inline-flex items-center gap-0.5 mx-0.5 px-1.5 py-0.5 rounded bg-primary/15 text-primary text-xs font-semibold not-prose">
+          <HeartPulse className="h-3 w-3" />
+          {label} {value}{unit}
+        </span>
+      );
+      lastIndex = regex.lastIndex;
+    }
+    if (parts.length === 0) return children;
+    if (lastIndex < children.length) parts.push(children.slice(lastIndex));
+    return <>{parts}</>;
+  }
+  if (Array.isArray(children)) return children.map((c, i) => <React.Fragment key={i}>{highlightVitals(c)}</React.Fragment>);
+  return children;
+};
+
 const ClinicalSimulation = () => {
   const { session, user } = useAuth();
   const { toast } = useToast();
