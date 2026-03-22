@@ -75,7 +75,6 @@ const Flashcards = () => {
     if (data.selectedTopics) setSelectedTopics(new Set(data.selectedTopics));
     clearPending();
   };
-  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Sprint mode state
   const [sprintConfig, setSprintConfig] = useState({ cardCount: 10, timeMinutes: 5 });
