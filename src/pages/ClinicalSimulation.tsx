@@ -1261,7 +1261,10 @@ const ClinicalSimulation = () => {
                         )}
                         <div className={`leading-relaxed ${msg.role === "simulation" ? "prose prose-sm max-w-none dark:prose-invert" : ""}`}>
                           {msg.role === "simulation" ? (
-                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                            <ReactMarkdown components={{
+                              p: ({ children }) => <p>{highlightVitals(children)}</p>,
+                              li: ({ children }) => <li>{highlightVitals(children)}</li>,
+                            }}>{msg.content}</ReactMarkdown>
                           ) : (
                             <p className="whitespace-pre-wrap">{msg.content}</p>
                           )}
