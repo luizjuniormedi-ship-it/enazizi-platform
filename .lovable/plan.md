@@ -1,38 +1,56 @@
 
 
-# Plano: Integrar Persistência de Sessão no Tutor IA, Flashcards e Sessão de Estudo
+# Plano: Fix Banner de Sessão no Tutor IA + Botões Sobrepostos em Todos os Módulos
 
-## Problema
-A persistência de sessão só foi integrada em 3 módulos (Simulação Clínica, Simulado de Provas, Anamnese). Faltam os 3 restantes: **Tutor IA (ChatGPT)**, **Flashcards** e **Sessão de Estudo**.
+## Problemas
+
+1. **Banner "Continuar de onde parei" não aparece no Tutor IA**: O banner está no código (linha 851), mas a condição `pendingSession && !studyStarted` pode não estar funcionando corretamente — o `sessionChecked` pode estar `false` durante o render inicial, ou o banner está sendo renderizado mas fica escondido atrás dos cards de performance.
+
+2. **Botões sobrepostos no header**: No Tutor IA (e possivelmente outros módulos), o header tem 5 botões (Como usar, Tela cheia, Finalizar, Nova, Histórico) em `flex-wrap` que se empilham e sobrepõem em viewports menores (~1020px). A screenshot mostra "Tela cheia" e "Buscar" sobrepostos.
 
 ## Mudanças
 
-### 1. `src/pages/ChatGPT.tsx`
-- Importar `useSessionPersistence` + `ResumeSessionBanner`
-- module_key: `"chatgpt"`
-- Estado salvo: `messages`, `currentTopic`, `enaziziStep`, `performance`, `selectedUploadIds`
-- Banner no topo da área de chat quando há sessão pendente
-- Auto-save registrado com `registerAutoSave`
-- Ao restaurar: repopular messages, currentTopic, enaziziStep
+### 1. `src/pages/ChatGPT.tsx` — Reorganizar header e garantir banner
+- Mover botões secundários (Histórico, Nova) para um dropdown menu com ícone `...` (MoreVertical), mantendo apenas os essenciais visíveis: Como usar, Tela cheia, Finalizar
+- Adicionar `sessionChecked &&` à condição do banner para evitar flash
+- Garantir que o banner aparece ACIMA dos cards de performance
 
-### 2. `src/pages/Flashcards.tsx`
-- module_key: `"flashcards"`
-- Estado salvo: `idx`, `mode`, `flipped`, `selectedTopics`
-- Banner no topo quando há sessão pendente
-- Marcar `completed` ao terminar revisão
+### 2. `src/pages/ClinicalSimulation.tsx` — Mesma limpeza de header
+- Agrupar botões secundários em dropdown para evitar sobreposição
 
-### 3. `src/pages/StudySession.tsx`
-- module_key: `"study-session"`
-- Estado salvo: `messages`, `phase`, `performanceData`, `currentTopic`
-- Banner no topo quando há sessão pendente
+### 3. `src/pages/AnamnesisTrainer.tsx` — Mesma limpeza
+- Agrupar botões em dropdown
+
+### 4. `src/pages/ExamSimulator.tsx` — Mesma limpeza
+- Agrupar botões em dropdown
+
+### 5. `src/pages/Flashcards.tsx` — Mesma limpeza
+- Agrupar botões em dropdown
+
+### 6. `src/pages/StudySession.tsx` — Mesma limpeza
+- Agrupar botões em dropdown
+
+## Padrão de Solução (aplicado em todos)
+
+```text
+Header: [Título] .................. [Como usar] [Tela cheia] [Finalizar] [⋮]
+                                                                          └─ Nova sessão
+                                                                             Histórico
+                                                                             Configurações
+```
+
+- Botões primários (máximo 3) ficam visíveis
+- Botões secundários vão para `DropdownMenu` com ícone `MoreVertical`
+- Em mobile, labels de texto ficam `hidden` (só ícones)
 
 ## Arquivos Modificados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/pages/ChatGPT.tsx` | Integrar hook + banner + auto-save |
-| `src/pages/Flashcards.tsx` | Integrar hook + banner + auto-save |
-| `src/pages/StudySession.tsx` | Integrar hook + banner + auto-save |
-
-Nenhuma mudança no banco de dados — a tabela `module_sessions` já existe.
+| `src/pages/ChatGPT.tsx` | Dropdown para botões secundários, fix banner condition |
+| `src/pages/ClinicalSimulation.tsx` | Dropdown para botões secundários |
+| `src/pages/AnamnesisTrainer.tsx` | Dropdown para botões secundários |
+| `src/pages/ExamSimulator.tsx` | Dropdown para botões secundários |
+| `src/pages/Flashcards.tsx` | Dropdown para botões secundários |
+| `src/pages/StudySession.tsx` | Dropdown para botões secundários |
 
