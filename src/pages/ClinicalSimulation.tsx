@@ -4,11 +4,13 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
+import ReactMarkdown from "react-markdown";
 import {
   Activity, Loader2, Send, Stethoscope, Syringe, FileSearch,
   Clock, Heart, AlertTriangle, Award, ArrowRight, RotateCcw,
   MessageCircle, Thermometer, Zap, Star, CheckCircle, XCircle,
-  Trophy, Target, HelpCircle, Users, ClipboardCheck, ShieldAlert, History, Eye, Maximize2, Minimize2
+  Trophy, Target, HelpCircle, Users, ClipboardCheck, ShieldAlert, History, Eye, Maximize2, Minimize2,
+  User, Brain, Pill, MonitorCheck, Bone, Scan, HeartPulse, Ear, Hand
 } from "lucide-react";
 import VitalsChart, { parseVitalsToSnapshot } from "@/components/plantao/VitalsChart";
 import ExamsPanel from "@/components/plantao/ExamsPanel";
@@ -23,6 +25,12 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
+import {
+  Popover, PopoverContent, PopoverTrigger
+} from "@/components/ui/popover";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger
+} from "@/components/ui/sheet";
 
 const SPECIALTIES = [
   "Clínica Médica", "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia",
@@ -40,19 +48,69 @@ const PEDIATRIC_AGE_RANGES = [
   { key: "aleatorio", label: "Aleatório", vitalRef: "" },
 ];
 
-const QUICK_ACTIONS = [
-  { label: "Anamnese", icon: MessageCircle, prompt: "Quais são seus sintomas? Quando começou?" },
-  { label: "Exame Físico", icon: Stethoscope, prompt: "Gostaria de realizar exame físico do paciente." },
-  { label: "Exames Lab", icon: FileSearch, prompt: "Gostaria de solicitar exames laboratoriais." },
-  { label: "Imagem", icon: FileSearch, prompt: "Gostaria de solicitar exames de imagem." },
-  { label: "Prescrever", icon: Syringe, prompt: "Prescrever medicação para o paciente" },
-  { label: "Diagnóstico", icon: Target, prompt: "Com base nos achados clínicos e exames, meu diagnóstico é:" },
+// Expanded contextual quick actions organized by category
+const QUICK_ACTION_CATEGORIES = [
+  {
+    label: "Anamnese",
+    icon: MessageCircle,
+    color: "text-blue-500",
+    actions: [
+      { label: "HDA", prompt: "Gostaria de saber mais sobre a história da doença atual. Quando começaram os sintomas? Como evoluíram?" },
+      { label: "Ant. Pessoais", prompt: "Quais são seus antecedentes pessoais? Doenças prévias, cirurgias, internações?" },
+      { label: "Ant. Familiares", prompt: "Há doenças na família? Pais, irmãos?" },
+      { label: "Hábitos de Vida", prompt: "Quais são seus hábitos? Tabagismo, etilismo, atividade física, alimentação?" },
+      { label: "Medicamentos", prompt: "Faz uso de algum medicamento? Quais?" },
+      { label: "Alergias", prompt: "Tem alergia a algum medicamento ou substância?" },
+      { label: "Rev. de Sistemas", prompt: "Gostaria de fazer uma revisão de sistemas. Tem sentido algo diferente em outros órgãos? Febre, perda de peso, alterações urinárias, intestinais?" },
+    ],
+  },
+  {
+    label: "Exame Físico",
+    icon: Stethoscope,
+    color: "text-green-500",
+    actions: [
+      { label: "Cardiovascular", prompt: "Gostaria de realizar exame físico cardiovascular: ausculta cardíaca, pulsos, pressão venosa jugular, perfusão periférica." },
+      { label: "Respiratório", prompt: "Gostaria de realizar exame físico respiratório: inspeção, palpação, percussão e ausculta pulmonar." },
+      { label: "Abdome", prompt: "Gostaria de realizar exame físico abdominal: inspeção, ausculta, palpação superficial e profunda, percussão." },
+      { label: "Neurológico", prompt: "Gostaria de realizar exame neurológico: nível de consciência, pupilas, força muscular, reflexos, sensibilidade, sinais meníngeos." },
+      { label: "Musculoesq.", prompt: "Gostaria de realizar exame do sistema musculoesquelético: inspeção, palpação, amplitude de movimento, testes especiais." },
+      { label: "Cabeça/Pescoço", prompt: "Gostaria de examinar cabeça e pescoço: orofaringe, otoscopia, linfonodos cervicais, tireoide, rigidez de nuca." },
+      { label: "Pele/Mucosas", prompt: "Gostaria de examinar pele e mucosas: coloração, hidratação, lesões, edema, turgor." },
+    ],
+  },
+  {
+    label: "Exames",
+    icon: FileSearch,
+    color: "text-purple-500",
+    actions: [
+      { label: "Hemograma", prompt: "Solicito hemograma completo." },
+      { label: "Bioquímica", prompt: "Solicito exames bioquímicos: glicemia, ureia, creatinina, sódio, potássio, TGO, TGP, bilirrubinas." },
+      { label: "Gasometria", prompt: "Solicito gasometria arterial." },
+      { label: "ECG", prompt: "Solicito eletrocardiograma de 12 derivações." },
+      { label: "Rx Tórax", prompt: "Solicito radiografia de tórax PA e perfil." },
+      { label: "TC", prompt: "Solicito tomografia computadorizada." },
+      { label: "USG", prompt: "Solicito ultrassonografia." },
+      { label: "RM", prompt: "Solicito ressonância magnética." },
+    ],
+  },
+  {
+    label: "Conduta",
+    icon: Syringe,
+    color: "text-red-500",
+    actions: [
+      { label: "Acesso Venoso", prompt: "Providenciar acesso venoso periférico calibroso e iniciar hidratação venosa." },
+      { label: "Monitorização", prompt: "Solicito monitorização cardíaca contínua, oximetria de pulso e PA não-invasiva." },
+      { label: "Oxigenoterapia", prompt: "Iniciar oxigenoterapia suplementar." },
+      { label: "Sonda", prompt: "Solicitar passagem de sonda (nasogástrica/vesical conforme indicação)." },
+      { label: "IOT", prompt: "Preparo para intubação orotraqueal: kit de via aérea, drogas de sequência rápida, posicionamento." },
+    ],
+  },
 ];
 
 const DIFFICULTY_TIMER: Record<string, number> = {
-  "básico": 30 * 60,       // 30 min
-  "intermediário": 20 * 60, // 20 min
-  "avançado": 15 * 60,      // 15 min
+  "básico": 30 * 60,
+  "intermediário": 20 * 60,
+  "avançado": 15 * 60,
 };
 
 type Phase = "lobby" | "active" | "finishing" | "result";
@@ -70,6 +128,12 @@ interface ChatMessage {
   content: string;
   type?: string;
   scoreDelta?: number;
+  timestamp: number;
+}
+
+interface ActionTimelineEntry {
+  label: string;
+  icon: string;
   timestamp: number;
 }
 
@@ -120,6 +184,43 @@ const EVAL_MAX_SCORES: Record<string, number> = {
   referral: 10,
 };
 
+// Sound feedback helper
+const playSound = (type: "response" | "worsened" | "positive" | "negative") => {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.value = 0.15;
+
+    switch (type) {
+      case "response":
+        osc.frequency.value = 520;
+        osc.start();
+        osc.stop(ctx.currentTime + 0.08);
+        break;
+      case "worsened":
+        osc.frequency.value = 220;
+        osc.type = "sawtooth";
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+        break;
+      case "positive":
+        osc.frequency.value = 660;
+        osc.start();
+        osc.stop(ctx.currentTime + 0.12);
+        break;
+      case "negative":
+        osc.frequency.value = 330;
+        osc.type = "square";
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+        break;
+    }
+  } catch {}
+};
+
 const ClinicalSimulation = () => {
   const { session, user } = useAuth();
   const { toast } = useToast();
@@ -141,12 +242,17 @@ const ClinicalSimulation = () => {
   const [setting, setSetting] = useState("");
   const [triageColor, setTriageColor] = useState("");
   const [patientStatus, setPatientStatus] = useState("estável");
+  const [prevPatientStatus, setPrevPatientStatus] = useState("estável");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [score, setScore] = useState(50);
+  const [prevScore, setPrevScore] = useState(50);
+  const [scoreFlash, setScoreFlash] = useState<"green" | "red" | null>(null);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: string; content: string }>>([]);
   const [finalEval, setFinalEval] = useState<FinalEval | null>(null);
+  const [actionTimeline, setActionTimeline] = useState<ActionTimelineEntry[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
 
   // Countdown timer
   const [countdown, setCountdown] = useState(0);
@@ -167,10 +273,16 @@ const ClinicalSimulation = () => {
   const [examResults, setExamResults] = useState<Array<{ type: "lab" | "imaging"; content: string; timestamp: number }>>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Mobile vitals sheet
+  const [mobileVitalsOpen, setMobileVitalsOpen] = useState(false);
+
   // History
   const [history, setHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [selectedHistory, setSelectedHistory] = useState<any | null>(null);
+
+  // Patient status alert animation
+  const [statusAlert, setStatusAlert] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -180,6 +292,34 @@ const ClinicalSimulation = () => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Score flash effect
+  useEffect(() => {
+    if (scoreFlash) {
+      const t = setTimeout(() => setScoreFlash(null), 600);
+      return () => clearTimeout(t);
+    }
+  }, [scoreFlash]);
+
+  // Status alert effect
+  useEffect(() => {
+    if (patientStatus !== prevPatientStatus && phase === "active") {
+      const severity = ["estável", "instável", "grave", "crítico"];
+      const oldIdx = severity.indexOf(prevPatientStatus);
+      const newIdx = severity.indexOf(patientStatus);
+      if (newIdx > oldIdx) {
+        setStatusAlert(true);
+        playSound("worsened");
+        toast({
+          title: `⚠️ Paciente ${patientStatus}!`,
+          description: `Status mudou de ${prevPatientStatus} para ${patientStatus}`,
+          variant: "destructive",
+        });
+        setTimeout(() => setStatusAlert(false), 2000);
+      }
+      setPrevPatientStatus(patientStatus);
+    }
+  }, [patientStatus]);
 
   // Countdown timer effect
   useEffect(() => {
@@ -194,7 +334,6 @@ const ClinicalSimulation = () => {
               description: "O tempo do plantão acabou! Encerre o atendimento agora.",
               variant: "destructive",
             });
-            // Play alert sound
             try {
               const ctx = new AudioContext();
               const osc = ctx.createOscillator();
@@ -208,33 +347,20 @@ const ClinicalSimulation = () => {
             } catch {}
             return 0;
           }
-          // Warning at 2 min remaining
           if (prev === 121) {
-            toast({
-              title: "⚠️ 2 minutos restantes!",
-              description: "Finalize seu atendimento rapidamente.",
-            });
+            toast({ title: "⚠️ 2 minutos restantes!", description: "Finalize seu atendimento rapidamente." });
           }
-          // Warning at 5 min remaining
           if (prev === 301) {
-            toast({
-              title: "⏱️ 5 minutos restantes",
-              description: "Considere fechar seu diagnóstico e prescrição.",
-            });
+            toast({ title: "⏱️ 5 minutos restantes", description: "Considere fechar seu diagnóstico e prescrição." });
           }
           return prev - 1;
         });
       }, 1000);
-      return () => {
-        if (countdownRef.current) clearInterval(countdownRef.current);
-      };
+      return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
     }
-    return () => {
-      if (countdownRef.current) clearInterval(countdownRef.current);
-    };
+    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
   }, [phase, countdown > 0]);
 
-  // Fetch history on mount
   const fetchHistory = useCallback(async () => {
     if (!user) return;
     setHistoryLoading(true);
@@ -254,11 +380,8 @@ const ClinicalSimulation = () => {
     }
   }, [user]);
 
-  useEffect(() => {
-    fetchHistory();
-  }, [fetchHistory]);
+  useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
-  // Auto-start if teacher_case_id is in URL
   useEffect(() => {
     if (teacherCaseId && phase === "lobby" && !loading) {
       startSimulation();
@@ -304,6 +427,10 @@ const ClinicalSimulation = () => {
     return data;
   }, [session, API_URL]);
 
+  const addToTimeline = (label: string, icon: string) => {
+    setActionTimeline((prev) => [...prev, { label, icon, timestamp: Date.now() }]);
+  };
+
   const startSimulation = async () => {
     setLoading(true);
     try {
@@ -320,13 +447,16 @@ const ClinicalSimulation = () => {
       setSetting(res.setting || "Pronto-Socorro");
       setTriageColor(res.triage_color || "amarelo");
       setPatientStatus("estável");
+      setPrevPatientStatus("estável");
       setScore(50);
+      setPrevScore(50);
       setTimeElapsed(0);
       setTimerExpired(false);
       setCountdown(DIFFICULTY_TIMER[difficulty] || 20 * 60);
       setExamResults([]);
+      setActionTimeline([]);
+      setStatusAlert(false);
 
-      // Initial vitals snapshot
       if (res.vitals) {
         setVitalsSnapshots([parseVitalsToSnapshot(res.vitals, 0)]);
       }
@@ -340,12 +470,10 @@ const ClinicalSimulation = () => {
       };
 
       setMessages([simMsg]);
-
-      const startHistory = [
-        { role: "assistant", content: JSON.stringify(res) },
-      ];
+      const startHistory = [{ role: "assistant", content: JSON.stringify(res) }];
       setConversationHistory(startHistory);
       setPhase("active");
+      addToTimeline("Caso iniciado", "🏥");
 
       setTimeout(() => inputRef.current?.focus(), 300);
     } catch (e) {
@@ -355,7 +483,7 @@ const ClinicalSimulation = () => {
     }
   };
 
-  const sendMessage = async (text?: string) => {
+  const sendMessage = async (text?: string, timelineLabel?: string) => {
     const msg = text || input.trim();
     if (!msg || loading) return;
     setInput("");
@@ -363,18 +491,22 @@ const ClinicalSimulation = () => {
     const doctorMsg: ChatMessage = { role: "doctor", content: msg, timestamp: Date.now() };
     setMessages((prev) => [...prev, doctorMsg]);
     setLoading(true);
+    setIsTyping(true);
+
+    if (timelineLabel) {
+      addToTimeline(timelineLabel, "📋");
+    }
 
     try {
-      const updatedHistory = [
-        ...conversationHistory,
-        { role: "user", content: msg },
-      ];
-
+      const updatedHistory = [...conversationHistory, { role: "user", content: msg }];
       const res = await callAPI({
         action: "interact",
         message: msg,
         conversation_history: updatedHistory,
       });
+
+      setIsTyping(false);
+      playSound("response");
 
       const simMsg: ChatMessage = {
         role: "simulation",
@@ -385,20 +517,29 @@ const ClinicalSimulation = () => {
       };
 
       setMessages((prev) => [...prev, simMsg]);
-      setScore((prev) => Math.max(0, Math.min(100, prev + (res.score_delta || 0))));
+
+      // Score with flash
+      const newScore = Math.max(0, Math.min(100, score + (res.score_delta || 0)));
+      if (res.score_delta && res.score_delta !== 0) {
+        setScoreFlash(res.score_delta > 0 ? "green" : "red");
+        playSound(res.score_delta > 0 ? "positive" : "negative");
+      }
+      setPrevScore(score);
+      setScore(newScore);
+
       const newTimeElapsed = res.time_elapsed_minutes || timeElapsed + 5;
       setTimeElapsed(newTimeElapsed);
       if (res.patient_status) setPatientStatus(res.patient_status);
 
-      // Track exam results for side panel - detect by response_type or content patterns
+      // Track exam results
       const rt = (res.response_type || "").toLowerCase();
       const responseText = (res.response || "").toLowerCase();
-      const isLabResult = rt === "lab_result" || rt === "lab_results" || rt === "lab" || 
-        (responseText.includes("g/dl") || responseText.includes("mg/dl") || responseText.includes("mm³") || 
+      const isLabResult = rt === "lab_result" || rt === "lab_results" || rt === "lab" ||
+        (responseText.includes("g/dl") || responseText.includes("mg/dl") || responseText.includes("mm³") ||
          responseText.includes("ref:") || responseText.includes("referência") || responseText.includes("hemograma") && responseText.includes("leucócitos"));
       const isImagingResult = rt === "imaging" || rt === "imaging_result" || rt === "image" ||
         (responseText.includes("laudo") && (responseText.includes("tomografia") || responseText.includes("radiografia") || responseText.includes("ultrassonografia") || responseText.includes("ressonância")));
-      
+
       if (isLabResult && res.response) {
         setExamResults((prev) => [...prev, { type: "lab", content: res.response, timestamp: Date.now() }]);
       }
@@ -406,13 +547,22 @@ const ClinicalSimulation = () => {
         setExamResults((prev) => [...prev, { type: "imaging", content: res.response, timestamp: Date.now() }]);
       }
 
-      // Add vitals snapshot if vitals changed
+      // Vitals snapshots
       if (res.vitals) {
         setVitals(res.vitals);
         setVitalsSnapshots((prev) => [...prev, parseVitalsToSnapshot(res.vitals, newTimeElapsed)]);
       } else if (vitals && res.patient_status && res.patient_status !== patientStatus) {
-        // Status changed - add snapshot with current vitals
         setVitalsSnapshots((prev) => [...prev, parseVitalsToSnapshot(vitals as any, newTimeElapsed)]);
+      }
+
+      // Handle critical action needed
+      if (res.critical_action_needed) {
+        toast({
+          title: "🚨 ALERTA CRÍTICO",
+          description: res.critical_action_needed,
+          variant: "destructive",
+        });
+        playSound("worsened");
       }
 
       setConversationHistory([
@@ -420,6 +570,7 @@ const ClinicalSimulation = () => {
         { role: "assistant", content: JSON.stringify(res) },
       ]);
     } catch (e) {
+      setIsTyping(false);
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
     } finally {
       setLoading(false);
@@ -430,6 +581,8 @@ const ClinicalSimulation = () => {
   const requestPreceptorHint = async () => {
     if (loading) return;
     setLoading(true);
+    setIsTyping(true);
+    addToTimeline("Ajuda preceptor", "🆘");
 
     const doctorMsg: ChatMessage = {
       role: "doctor",
@@ -443,6 +596,8 @@ const ClinicalSimulation = () => {
         action: "hint",
         conversation_history: conversationHistory,
       });
+
+      setIsTyping(false);
 
       let content = res.response || "";
       if (res.clinical_reasoning_tips?.length) {
@@ -467,6 +622,7 @@ const ClinicalSimulation = () => {
         { role: "assistant", content: JSON.stringify(res) },
       ]);
     } catch (e) {
+      setIsTyping(false);
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
     } finally {
       setLoading(false);
@@ -477,6 +633,8 @@ const ClinicalSimulation = () => {
     if (loading || !specialistArea.trim()) return;
     setSpecialistDialogOpen(false);
     setLoading(true);
+    setIsTyping(true);
+    addToTimeline(`Parecer: ${specialistArea}`, "📋");
 
     const doctorMsg: ChatMessage = {
       role: "doctor",
@@ -491,6 +649,8 @@ const ClinicalSimulation = () => {
         specialist_area: specialistArea,
         conversation_history: conversationHistory,
       });
+
+      setIsTyping(false);
 
       let content = `**Parecer - ${res.specialist || specialistArea}**\n\n${res.response || ""}`;
       if (res.recommendations?.length) {
@@ -522,6 +682,7 @@ const ClinicalSimulation = () => {
       ]);
       setSpecialistArea("");
     } catch (e) {
+      setIsTyping(false);
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
     } finally {
       setLoading(false);
@@ -569,6 +730,7 @@ const ClinicalSimulation = () => {
     setMessages([]);
     setConversationHistory([]);
     setScore(50);
+    setPrevScore(50);
     setTimeElapsed(0);
     setFinalEval(null);
     setVitals(null);
@@ -576,6 +738,8 @@ const ClinicalSimulation = () => {
     setTimerExpired(false);
     setVitalsSnapshots([]);
     setExamResults([]);
+    setActionTimeline([]);
+    setStatusAlert(false);
     if (countdownRef.current) clearInterval(countdownRef.current);
     fetchHistory();
   };
@@ -592,8 +756,8 @@ const ClinicalSimulation = () => {
   };
 
   const getTimerColor = () => {
-    if (timerExpired || countdown === 0) return "text-red-500";
-    if (countdown <= 120) return "text-red-500 animate-pulse";
+    if (timerExpired || countdown === 0) return "text-destructive";
+    if (countdown <= 120) return "text-destructive animate-pulse";
     if (countdown <= 300) return "text-amber-500";
     return "text-primary";
   };
@@ -603,13 +767,13 @@ const ClinicalSimulation = () => {
       estável: "text-green-500",
       instável: "text-amber-500",
       grave: "text-orange-500",
-      crítico: "text-red-500",
+      crítico: "text-destructive",
     };
     return map[status] || "text-muted-foreground";
   };
 
   const getGradeColor = (grade: string) => {
-    const map: Record<string, string> = { A: "text-green-500", B: "text-blue-500", C: "text-amber-500", D: "text-orange-500", F: "text-red-500" };
+    const map: Record<string, string> = { A: "text-green-500", B: "text-blue-500", C: "text-amber-500", D: "text-orange-500", F: "text-destructive" };
     return map[grade] || "text-muted-foreground";
   };
 
@@ -625,6 +789,31 @@ const ClinicalSimulation = () => {
       specialist_opinion: Users,
     };
     return map[type || ""] || Activity;
+  };
+
+  const shareResult = () => {
+    if (!finalEval) return;
+    const text = `🏥 Plantão Clínico - ${specialty}\n📊 Nota: ${finalEval.final_score}/100 (${finalEval.grade})\n🎯 Diagnóstico: ${finalEval.correct_diagnosis}\n${finalEval.student_got_diagnosis ? "✅ Acertei!" : "❌ Errei"}\n⏱️ ${finalEval.time_total_minutes} min\n✨ +${finalEval.xp_earned} XP`;
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copiado!", description: "Resultado copiado para a área de transferência." });
+  };
+
+  const retryWithSameConfig = () => {
+    setPhase("lobby");
+    setMessages([]);
+    setConversationHistory([]);
+    setScore(50);
+    setPrevScore(50);
+    setTimeElapsed(0);
+    setFinalEval(null);
+    setVitals(null);
+    setCountdown(0);
+    setTimerExpired(false);
+    setVitalsSnapshots([]);
+    setExamResults([]);
+    setActionTimeline([]);
+    // keep specialty and difficulty, auto-start
+    setTimeout(() => startSimulation(), 300);
   };
 
   const content = (
@@ -657,7 +846,6 @@ const ClinicalSimulation = () => {
         </div>
       </div>
 
-      {/* Content wrapper for fullscreen scroll */}
       <div className={isFullscreen ? "flex-1 overflow-auto p-2 sm:p-4" : ""}>
 
       {/* LOBBY */}
@@ -666,8 +854,8 @@ const ClinicalSimulation = () => {
         <Card>
           <CardContent className="p-6 space-y-6">
             <div className="text-center space-y-3">
-              <div className="h-20 w-20 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto">
-                <Activity className="h-10 w-10 text-red-500" />
+              <div className="h-20 w-20 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
+                <Activity className="h-10 w-10 text-destructive" />
               </div>
               <h2 className="text-xl font-bold">🏥 Plantão Clínico</h2>
               <p className="text-sm text-muted-foreground max-w-lg mx-auto">
@@ -676,7 +864,7 @@ const ClinicalSimulation = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-4 gap-3 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
               {[
                 { icon: MessageCircle, label: "Anamnese", desc: "Interrogue o paciente" },
                 { icon: Stethoscope, label: "Exame Físico", desc: "Examine o paciente" },
@@ -691,7 +879,7 @@ const ClinicalSimulation = () => {
               ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Especialidade do Caso</label>
                 <select
@@ -745,7 +933,7 @@ const ClinicalSimulation = () => {
               </div>
             )}
 
-            <Button onClick={startSimulation} disabled={loading} className="w-full gap-2 bg-red-600 hover:bg-red-700 text-white">
+            <Button onClick={startSimulation} disabled={loading} className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
               {loading ? "Preparando plantão..." : "🚨 Iniciar Plantão"}
             </Button>
@@ -779,7 +967,7 @@ const ClinicalSimulation = () => {
             {history.length > 0 && (
               <div className="space-y-2 max-h-[300px] overflow-y-auto">
                 {history.map((h) => {
-                  const gradeColor: Record<string, string> = { A: "text-green-500", B: "text-blue-500", C: "text-amber-500", D: "text-orange-500", F: "text-red-500" };
+                  const gradeColor: Record<string, string> = { A: "text-green-500", B: "text-blue-500", C: "text-amber-500", D: "text-orange-500", F: "text-destructive" };
                   return (
                     <div
                       key={h.id}
@@ -837,14 +1025,12 @@ const ClinicalSimulation = () => {
               </DialogHeader>
 
               <div className="space-y-4 mt-2">
-                {/* Diagnosis */}
-                <div className={`p-3 rounded-lg border ${selectedHistory.student_got_diagnosis ? "bg-green-500/10 border-green-500/20" : "bg-red-500/10 border-red-500/20"}`}>
+                <div className={`p-3 rounded-lg border ${selectedHistory.student_got_diagnosis ? "bg-green-500/10 border-green-500/20" : "bg-destructive/10 border-destructive/20"}`}>
                   <p className="text-xs font-semibold mb-1">Diagnóstico Correto</p>
                   <p className="text-sm font-bold">{selectedHistory.correct_diagnosis}</p>
                   <p className="text-xs mt-1">{selectedHistory.student_got_diagnosis ? "✅ Você acertou" : "❌ Você não acertou"}</p>
                 </div>
 
-                {/* Differential diagnosis */}
                 {selectedHistory.differential_diagnosis?.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-xs font-semibold flex items-center gap-1.5"><ShieldAlert className="h-3.5 w-3.5 text-purple-500" /> Diferenciais</p>
@@ -861,7 +1047,6 @@ const ClinicalSimulation = () => {
                   </div>
                 )}
 
-                {/* Evaluation categories */}
                 {selectedHistory.evaluation && Object.keys(selectedHistory.evaluation).length > 0 && (
                   <div className="space-y-2">
                     <p className="text-xs font-semibold">📊 Avaliação por Categoria</p>
@@ -871,7 +1056,7 @@ const ClinicalSimulation = () => {
                         <div key={key} className="space-y-1">
                           <div className="flex items-center justify-between text-xs">
                             <span className="font-medium">{EVAL_LABELS[key] || key}</span>
-                            <span className={`font-bold ${val.score >= maxScore * 0.7 ? "text-green-500" : val.score >= maxScore * 0.5 ? "text-amber-500" : "text-red-500"}`}>
+                            <span className={`font-bold ${val.score >= maxScore * 0.7 ? "text-green-500" : val.score >= maxScore * 0.5 ? "text-amber-500" : "text-destructive"}`}>
                               {val.score}/{maxScore}
                             </span>
                           </div>
@@ -883,7 +1068,6 @@ const ClinicalSimulation = () => {
                   </div>
                 )}
 
-                {/* Strengths & Improvements */}
                 <div className="grid grid-cols-2 gap-3">
                   {selectedHistory.strengths?.length > 0 && (
                     <div>
@@ -899,7 +1083,6 @@ const ClinicalSimulation = () => {
                   )}
                 </div>
 
-                {/* Ideal approach */}
                 {selectedHistory.ideal_approach && (
                   <div>
                     <p className="text-xs font-semibold flex items-center gap-1 mb-1"><Award className="h-3 w-3 text-primary" /> Abordagem Ideal</p>
@@ -923,50 +1106,105 @@ const ClinicalSimulation = () => {
       {(phase === "active" || phase === "finishing") && (
         <div className="space-y-3">
           {/* Status bar */}
-          <div className="grid grid-cols-4 gap-2">
-            <Card>
+          <div className={`grid grid-cols-2 sm:grid-cols-4 gap-2 ${statusAlert ? "animate-pulse" : ""}`}>
+            <Card className={`transition-all ${statusAlert ? "border-destructive/50 shadow-destructive/20 shadow-lg" : ""}`}>
               <CardContent className="p-3 flex items-center gap-2">
-                <Heart className={`h-4 w-4 ${getStatusColor(patientStatus)}`} />
+                <Heart className={`h-4 w-4 ${getStatusColor(patientStatus)} ${statusAlert ? "animate-bounce" : ""}`} />
                 <div>
                   <p className="text-xs text-muted-foreground">Paciente</p>
                   <p className={`text-sm font-bold capitalize ${getStatusColor(patientStatus)}`}>{patientStatus}</p>
                 </div>
               </CardContent>
             </Card>
-            <Card className={timerExpired ? "border-red-500/50 bg-red-500/5" : countdown <= 120 ? "border-amber-500/50" : ""}>
+            <Card className={timerExpired ? "border-destructive/50 bg-destructive/5" : countdown <= 120 ? "border-amber-500/50" : ""}>
               <CardContent className="p-3 flex items-center gap-2">
                 <Clock className={`h-4 w-4 ${getTimerColor()}`} />
                 <div>
-                  <p className="text-xs text-muted-foreground">{timerExpired ? "Tempo Esgotado!" : "Tempo Restante"}</p>
+                  <p className="text-xs text-muted-foreground">{timerExpired ? "Tempo Esgotado!" : "Tempo"}</p>
                   <p className={`text-sm font-bold font-mono ${getTimerColor()}`}>
                     {timerExpired ? "00:00" : formatCountdown(countdown)}
                   </p>
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className={`transition-all ${scoreFlash === "green" ? "border-green-500/50 bg-green-500/5" : scoreFlash === "red" ? "border-destructive/50 bg-destructive/5" : ""}`}>
               <CardContent className="p-3 flex items-center gap-2">
-                <Star className="h-4 w-4 text-amber-500" />
+                <Star className={`h-4 w-4 ${scoreFlash === "green" ? "text-green-500" : scoreFlash === "red" ? "text-destructive" : "text-amber-500"}`} />
                 <div>
                   <p className="text-xs text-muted-foreground">Score</p>
                   <p className="text-sm font-bold">{score}/100</p>
                 </div>
               </CardContent>
             </Card>
+            {/* Mobile: vitals summary + Sheet trigger */}
+            <Card className="lg:hidden">
+              <CardContent className="p-3">
+                <Sheet open={mobileVitalsOpen} onOpenChange={setMobileVitalsOpen}>
+                  <SheetTrigger asChild>
+                    <button className="flex items-center gap-2 w-full text-left">
+                      <HeartPulse className="h-4 w-4 text-destructive shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground">Vitais</p>
+                        {vitals ? (
+                          <p className="text-xs font-mono truncate">PA:{vitals.PA} FC:{vitals.FC}</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">—</p>
+                        )}
+                      </div>
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" className="max-h-[70vh] overflow-y-auto">
+                    <SheetHeader>
+                      <SheetTitle className="flex items-center gap-2">
+                        <HeartPulse className="h-5 w-5 text-destructive" /> Sinais Vitais & Exames
+                      </SheetTitle>
+                    </SheetHeader>
+                    <div className="space-y-4 mt-4">
+                      {vitals && (
+                        <div className="grid grid-cols-5 gap-2">
+                          {Object.entries(vitals).map(([k, v]) => (
+                            <div key={k} className="text-center p-2 rounded-lg bg-muted/30 border border-border/50">
+                              <p className="text-[10px] text-muted-foreground font-semibold">{k}</p>
+                              <p className="text-sm font-bold font-mono">{v}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <VitalsChart snapshots={vitalsSnapshots} />
+                      <ExamsPanel exams={examResults} />
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </CardContent>
+            </Card>
+            {/* Desktop: mini vitals */}
             {vitals && (
-              <Card>
+              <Card className="hidden lg:block">
                 <CardContent className="p-3 flex items-center gap-2">
-                  <Thermometer className="h-4 w-4 text-red-400" />
+                  <Thermometer className="h-4 w-4 text-destructive" />
                   <div>
                     <p className="text-xs text-muted-foreground">Sinais Vitais</p>
-                    <p className="text-xs font-mono">
-                      PA:{vitals.PA} FC:{vitals.FC}
-                    </p>
+                    <p className="text-xs font-mono">PA:{vitals.PA} FC:{vitals.FC}</p>
                   </div>
                 </CardContent>
               </Card>
             )}
           </div>
+
+          {/* Action Timeline (collapsible) */}
+          {actionTimeline.length > 0 && (
+            <div className="flex gap-1.5 overflow-x-auto py-1 px-1">
+              {actionTimeline.slice(-8).map((entry, i) => (
+                <Badge key={i} variant="outline" className="text-[10px] shrink-0 gap-1 font-normal">
+                  <span>{entry.icon}</span>
+                  {entry.label}
+                  <span className="text-muted-foreground">
+                    {new Date(entry.timestamp).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </Badge>
+              ))}
+            </div>
+          )}
 
           {/* Main layout: Chat + Side panels */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-3">
@@ -974,16 +1212,28 @@ const ClinicalSimulation = () => {
           {/* Chat area */}
           <Card className="overflow-hidden">
             <CardContent className="p-0">
-              <div className="h-[400px] overflow-y-auto p-4 space-y-3">
+              <div className="h-[50vh] lg:h-[500px] overflow-y-auto p-4 space-y-3">
                 {messages.map((msg, i) => {
                   const TypeIcon = getTypeIcon(msg.type);
                   return (
                     <div
                       key={i}
-                      className={`flex ${msg.role === "doctor" ? "justify-end" : "justify-start"}`}
+                      className={`flex gap-2 ${msg.role === "doctor" ? "justify-end" : "justify-start"}`}
                     >
+                      {/* Patient avatar */}
+                      {msg.role === "simulation" && (
+                        <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0 mt-1">
+                          {msg.type === "preceptor_hint" ? (
+                            <Brain className="h-3.5 w-3.5 text-amber-500" />
+                          ) : msg.type === "specialist_opinion" ? (
+                            <Users className="h-3.5 w-3.5 text-blue-500" />
+                          ) : (
+                            <User className="h-3.5 w-3.5 text-muted-foreground" />
+                          )}
+                        </div>
+                      )}
                       <div
-                        className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
+                        className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm ${
                           msg.role === "doctor"
                             ? "bg-primary text-primary-foreground rounded-br-md"
                             : msg.type === "preceptor_hint"
@@ -1009,16 +1259,34 @@ const ClinicalSimulation = () => {
                             )}
                           </div>
                         )}
-                        <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                        <div className={`leading-relaxed ${msg.role === "simulation" ? "prose prose-sm max-w-none dark:prose-invert" : ""}`}>
+                          {msg.role === "simulation" ? (
+                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                          ) : (
+                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                          )}
+                        </div>
                       </div>
+                      {/* Doctor avatar */}
+                      {msg.role === "doctor" && (
+                        <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-1">
+                          <Stethoscope className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                      )}
                     </div>
                   );
                 })}
 
-                {loading && phase === "active" && (
-                  <div className="flex justify-start">
-                    <div className="bg-muted/50 border border-border/50 rounded-2xl rounded-bl-md px-4 py-3">
-                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                {/* Typing indicator */}
+                {isTyping && phase === "active" && (
+                  <div className="flex gap-2 justify-start">
+                    <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0 mt-1">
+                      <User className="h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
+                    <div className="bg-muted/50 border border-border/50 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: "0ms" }} />
+                      <span className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <span className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: "300ms" }} />
                     </div>
                   </div>
                 )}
@@ -1035,23 +1303,40 @@ const ClinicalSimulation = () => {
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Quick actions + new buttons */}
+              {/* Quick actions with popovers by category */}
               {phase === "active" && (
                 <div className="border-t border-border/50 p-2 space-y-1.5">
-                  {/* Standard clinical actions */}
-                  <div className="flex gap-1.5 overflow-x-auto">
-                    {QUICK_ACTIONS.filter((qa) => qa.label !== "Prescrever").map((qa) => (
-                      <Button
-                        key={qa.label}
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs shrink-0 gap-1.5 h-8"
-                        disabled={loading}
-                        onClick={() => sendMessage(qa.prompt)}
-                      >
-                        <qa.icon className="h-3.5 w-3.5" />
-                        {qa.label}
-                      </Button>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {QUICK_ACTION_CATEGORIES.map((cat) => (
+                      <Popover key={cat.label}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`text-xs shrink-0 gap-1.5 h-8 ${cat.color}`}
+                            disabled={loading}
+                          >
+                            <cat.icon className="h-3.5 w-3.5" />
+                            {cat.label}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-56 p-1.5" align="start">
+                          <div className="space-y-0.5">
+                            {cat.actions.map((action) => (
+                              <button
+                                key={action.label}
+                                className="w-full text-left px-3 py-2 text-xs rounded-md hover:bg-muted/60 transition-colors"
+                                onClick={() => {
+                                  sendMessage(action.prompt, `${cat.label}: ${action.label}`);
+                                }}
+                                disabled={loading}
+                              >
+                                {action.label}
+                              </button>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     ))}
                     <Button
                       variant="ghost"
@@ -1060,12 +1345,22 @@ const ClinicalSimulation = () => {
                       disabled={loading}
                       onClick={() => setPrescriptionDialogOpen(true)}
                     >
-                      <Syringe className="h-3.5 w-3.5" />
+                      <Pill className="h-3.5 w-3.5" />
                       Prescrever
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs shrink-0 gap-1.5 h-8"
+                      disabled={loading}
+                      onClick={() => sendMessage("Com base nos achados clínicos e exames, meu diagnóstico é:", "Diagnóstico")}
+                    >
+                      <Target className="h-3.5 w-3.5" />
+                      Diagnóstico
                     </Button>
                   </div>
                   {/* Pedagogical + finish actions */}
-                  <div className="flex gap-1.5 overflow-x-auto border-t border-border/30 pt-1.5">
+                  <div className="flex gap-1.5 flex-wrap border-t border-border/30 pt-1.5">
                     <Button
                       variant="outline"
                       size="sm"
@@ -1074,7 +1369,7 @@ const ClinicalSimulation = () => {
                       onClick={requestPreceptorHint}
                     >
                       <HelpCircle className="h-3.5 w-3.5" />
-                      Ajuda do Preceptor
+                      Preceptor
                     </Button>
                     <Button
                       variant="outline"
@@ -1084,7 +1379,7 @@ const ClinicalSimulation = () => {
                       onClick={() => setSpecialistDialogOpen(true)}
                     >
                       <Users className="h-3.5 w-3.5" />
-                      Parecer de Especialista
+                      Parecer
                     </Button>
                     <div className="flex-1" />
                     <Button
@@ -1095,7 +1390,7 @@ const ClinicalSimulation = () => {
                       onClick={finishSimulation}
                     >
                       <ClipboardCheck className="h-3.5 w-3.5" />
-                      Encerrar Plantão
+                      Encerrar
                     </Button>
                   </div>
                 </div>
@@ -1121,7 +1416,7 @@ const ClinicalSimulation = () => {
             </CardContent>
           </Card>
 
-            {/* Side panels */}
+            {/* Side panels - desktop only */}
             <div className="space-y-3 hidden lg:block">
               <VitalsChart snapshots={vitalsSnapshots} />
               <ExamsPanel exams={examResults} />
@@ -1134,7 +1429,7 @@ const ClinicalSimulation = () => {
       <PrescriptionDialog
         open={prescriptionDialogOpen}
         onOpenChange={setPrescriptionDialogOpen}
-        onSubmit={(text) => sendMessage(text)}
+        onSubmit={(text) => { sendMessage(text, "Prescrição"); }}
         disabled={loading}
       />
 
@@ -1182,7 +1477,7 @@ const ClinicalSimulation = () => {
         <div className="space-y-4">
           {/* Score header */}
           <Card className="overflow-hidden">
-            <div className={`p-1 ${finalEval.final_score >= 70 ? "bg-green-500/20" : finalEval.final_score >= 50 ? "bg-amber-500/20" : "bg-red-500/20"}`} />
+            <div className={`p-1 ${finalEval.final_score >= 70 ? "bg-green-500/20" : finalEval.final_score >= 50 ? "bg-amber-500/20" : "bg-destructive/20"}`} />
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-4">
@@ -1192,7 +1487,7 @@ const ClinicalSimulation = () => {
                   <div>
                     <h3 className="text-lg font-bold">Plantão Encerrado</h3>
                     <p className="text-sm text-muted-foreground">{specialty} • {difficulty}</p>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
                       {finalEval.student_got_diagnosis ? (
                         <Badge className="bg-green-500/20 text-green-500 text-xs gap-1"><CheckCircle className="h-3 w-3" /> Diagnóstico correto</Badge>
                       ) : (
@@ -1212,7 +1507,7 @@ const ClinicalSimulation = () => {
             </CardContent>
           </Card>
 
-          {/* Correct diagnosis with detailed correction */}
+          {/* Correct diagnosis */}
           <Card className="border-2 border-primary/30">
             <CardContent className="p-5 space-y-3">
               <h4 className="text-base font-bold flex items-center gap-2">
@@ -1226,14 +1521,14 @@ const ClinicalSimulation = () => {
                     <p className="text-sm font-bold">{finalEval.correct_diagnosis}</p>
                   </div>
                 </div>
-                <div className={`flex items-start gap-2 p-3 rounded-lg ${finalEval.student_got_diagnosis ? "bg-green-500/10 border border-green-500/20" : "bg-red-500/10 border border-red-500/20"}`}>
+                <div className={`flex items-start gap-2 p-3 rounded-lg ${finalEval.student_got_diagnosis ? "bg-green-500/10 border border-green-500/20" : "bg-destructive/10 border border-destructive/20"}`}>
                   {finalEval.student_got_diagnosis ? (
                     <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
                   ) : (
-                    <XCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                    <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
                   )}
                   <div>
-                    <p className={`text-xs font-semibold uppercase ${finalEval.student_got_diagnosis ? "text-green-500" : "text-red-500"}`}>
+                    <p className={`text-xs font-semibold uppercase ${finalEval.student_got_diagnosis ? "text-green-500" : "text-destructive"}`}>
                       Seu Diagnóstico
                     </p>
                     <p className="text-sm font-medium">
@@ -1294,7 +1589,7 @@ const ClinicalSimulation = () => {
             </Card>
           )}
 
-          {/* Category scores - dynamic */}
+          {/* Category scores */}
           <Card>
             <CardContent className="p-5 space-y-4">
               <h4 className="text-sm font-semibold">📊 Avaliação por Categoria</h4>
@@ -1306,7 +1601,7 @@ const ClinicalSimulation = () => {
                   <div key={key} className="space-y-1.5">
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium">{EVAL_LABELS[key] || key}</span>
-                      <span className={`font-bold ${val.score >= goodThreshold ? "text-green-500" : val.score >= midThreshold ? "text-amber-500" : "text-red-500"}`}>
+                      <span className={`font-bold ${val.score >= goodThreshold ? "text-green-500" : val.score >= midThreshold ? "text-amber-500" : "text-destructive"}`}>
                         {val.score}/{maxScore}
                       </span>
                     </div>
@@ -1333,7 +1628,7 @@ const ClinicalSimulation = () => {
           )}
 
           {/* Strengths & Improvements */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Card>
               <CardContent className="p-4 space-y-2">
                 <h4 className="text-sm font-semibold flex items-center gap-1.5">
@@ -1377,9 +1672,15 @@ const ClinicalSimulation = () => {
           </Card>
 
           {/* Actions */}
-          <div className="flex gap-3">
-            <Button onClick={reset} className="flex-1 gap-2 bg-red-600 hover:bg-red-700 text-white">
+          <div className="flex gap-3 flex-wrap">
+            <Button onClick={reset} className="flex-1 gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground">
               <RotateCcw className="h-4 w-4" /> Novo Plantão
+            </Button>
+            <Button onClick={retryWithSameConfig} variant="outline" className="gap-2">
+              <Zap className="h-4 w-4" /> Refazer Mesmo
+            </Button>
+            <Button onClick={shareResult} variant="outline" className="gap-2">
+              <ClipboardCheck className="h-4 w-4" /> Compartilhar
             </Button>
           </div>
         </div>
