@@ -38,7 +38,7 @@ const ExamSimulator = () => {
   const timerRef = useRef<NodeJS.Timeout>();
 
   // Session persistence
-  const { pendingSession, checked, saveSession, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "exam-simulator", enabled: phase === "exam" || !!pendingSession });
+  const { pendingSession, checked, saveSession, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "exam-simulator" });
 
   // Register auto-save when in exam phase
   const getExamState = useCallback(() => {
