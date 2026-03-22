@@ -265,6 +265,7 @@ const ClinicalSimulation = () => {
   const [subtopic, setSubtopic] = useState("");
   const [difficulty, setDifficulty] = useState("intermediário");
   const [pediatricAge, setPediatricAge] = useState("aleatorio");
+  const [realisticMode, setRealisticMode] = useState(false);
 
   const isPediatrics = specialty === "Pediatria";
   const [loading, setLoading] = useState(false);
