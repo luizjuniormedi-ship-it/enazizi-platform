@@ -403,6 +403,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   };
 
   const startNewConversation = () => {
+    completeSession();
     setActiveConversationId(null);
     setMessages([{ role: "assistant", content: welcomeMessage }]);
     setShowHistory(false);
