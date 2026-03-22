@@ -316,6 +316,13 @@ const AnamnesisTrainer = () => {
   if (phase === "lobby") {
     return (
       <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
+        {checked && pendingSession && (
+          <ResumeSessionBanner
+            updatedAt={pendingSession.updated_at}
+            onResume={() => restoreAnamnesisSession(pendingSession.session_data)}
+            onDiscard={() => abandonSession()}
+          />
+        )}
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <MessageCircle className="h-6 w-6 text-primary" />

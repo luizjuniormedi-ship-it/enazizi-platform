@@ -1036,6 +1036,13 @@ const ClinicalSimulation = () => {
       {/* LOBBY */}
       {phase === "lobby" && (
         <div className="space-y-4">
+        {checked && pendingSession && (
+          <ResumeSessionBanner
+            updatedAt={pendingSession.updated_at}
+            onResume={() => restoreClinicalSession(pendingSession.session_data)}
+            onDiscard={() => abandonSession()}
+          />
+        )}
         <Card>
           <CardContent className="p-6 space-y-6">
             <div className="text-center space-y-3">
