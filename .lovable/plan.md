@@ -1,62 +1,82 @@
 
 
-# Plano: Redesign do Banco de Erros — UX Intuitiva e Visual
+# Plano: Persistência de Sessão — "Continuar de Onde Parei"
 
-## Problemas Atuais
-- Layout denso e pouco visual — parece uma lista genérica
-- Sem gráficos de evolução temporal (o aluno não vê se está melhorando)
-- Sem filtros por tipo de questão ou categoria de erro
-- Deletar erro perde histórico — deveria "marcar como dominado"
-- Cards de erro mostram muitas badges inline, difícil escanear
-- Sem indicador de tendência (melhorando/piorando por tema)
-- Ordenação fixa (só por vezes_errado)
+## Problema
+Quando o usuário perde conexão ou fecha o navegador durante um módulo interativo (simulação clínica, anamnese, simulado de prova, etc.), todo o progresso é perdido e ele precisa recomeçar do zero.
 
-## Mudanças
+## Solução
+Criar um sistema de auto-save que persiste o estado dos módulos no banco de dados, com banner de recuperação ao reabrir.
 
-### 1. Migração SQL — Colunas `dominado` e `dominado_em`
-- Adicionar `dominado boolean DEFAULT false` e `dominado_em timestamptz` à tabela `error_bank`
-- Permite marcar erros como superados sem perder histórico
+---
 
-### 2. Gráfico de Evolução Semanal (topo da página)
-- Mini line chart (Recharts, já disponível) mostrando erros por semana nas últimas 8 semanas
-- Calculado a partir de `created_at` dos erros
-- Dá feedback visual: "seus erros estão diminuindo"
+## 1. Migração SQL — Tabela `module_sessions`
 
-### 3. Filtros e Ordenação
-- Dropdown para filtrar por `tipo_questao` (objetiva, flashcard, simulado, etc.)
-- Dropdown para filtrar por `categoria_erro` (conceito, fisiopatologia, etc.)
-- Toggle de ordenação: "Mais errado" vs "Mais recente"
-- Chips de filtro ativo com botão de limpar
+```text
+module_sessions
+├── id (uuid, PK)
+├── user_id (uuid, NOT NULL)
+├── module_key (text, NOT NULL) — ex: "clinical-simulation", "anamnesis", "exam-simulator"
+├── session_data (jsonb, NOT NULL, DEFAULT '{}')
+├── status (text, DEFAULT 'active') — "active" | "completed" | "abandoned"
+├── created_at (timestamptz, DEFAULT now())
+├── updated_at (timestamptz, DEFAULT now())
+└── UNIQUE(user_id, module_key, status) WHERE status = 'active'
+```
 
-### 4. Botão "Dominei" em vez de Deletar
-- Substituir botão de lixeira por botão "✓ Dominei"
-- Marca `dominado = true, dominado_em = now()` em vez de deletar
-- Seção colapsável "Erros Dominados" no final (com contagem)
-- Manter botão de deletar como ação secundária dentro do dominado
+RLS: Users can CRUD own sessions (`user_id = auth.uid()`).
 
-### 5. Indicador de Tendência por Tema
-- Na lista de temas à esquerda, mostrar seta ↑ (piorando) ou ↓ (melhorando) baseado em: se erros recentes (últimos 7 dias) são menos que antes
-- Badge verde "Melhorando" ou vermelho "Piorando"
+## 2. Hook `useSessionPersistence` (novo)
 
-### 6. Cards de Erro Redesenhados
-- Layout mais limpo: tema como header, badges abaixo em linha separada
-- Barra de "gravidade" visual (1-5x = amarelo, 5-10x = laranja, 10x+ = vermelho)
-- Ícone de tipo de questão em vez de texto
-- Motivo do erro sempre visível (não só no hover)
+- Recebe `moduleKey` e `getState()` callback
+- Auto-save a cada 30s via `setInterval` + `beforeunload`
+- `checkForSession()` — retorna sessão ativa se existir
+- `saveSession(data)` — upsert na tabela
+- `completeSession()` — marca status = 'completed'
+- `abandonSession()` — marca status = 'abandoned'
 
-### 7. Empty State Melhorado
-- Ilustração + call-to-action direcionando para módulos que geram erros
+## 3. Componente `ResumeSessionBanner` (novo)
 
-## Arquivos Modificados
+- Banner compacto: "📌 Sessão em andamento (salva há X min) — [Continuar] [Descartar]"
+- Exibido no topo do módulo quando há sessão ativa
+- "Continuar" chama callback de restore
+- "Descartar" marca como abandoned
 
-| Arquivo | Mudança |
-|---------|---------|
-| **Migração SQL** | `dominado` + `dominado_em` na `error_bank` |
-| `src/pages/ErrorBank.tsx` | Redesign completo: gráfico evolução, filtros, dominei, tendência, cards redesenhados |
+## 4. Integração nos Módulos
+
+| Módulo | module_key | Estado salvo |
+|--------|-----------|-------------|
+| Simulação Clínica | `clinical-simulation` | phase, messages, vitals, score, specialty, timeline, realisticMode |
+| Treino Anamnese | `anamnesis` | phase, messages, specialty, categories_covered |
+| Simulado de Provas | `exam-simulator` | phase, questions, answers, current, timeLeft, examConfig |
+| Tutor IA (ChatGPT) | `chatgpt` | messages, currentTopic (já tem parcial) |
+| Flashcards | `flashcards` | current index, mode |
+| Sessão de Estudo | `study-session` | messages, performance |
+
+Para cada módulo:
+- Importar hook + banner
+- No `useEffect` inicial, checar sessão existente
+- Exibir banner se houver
+- Auto-save do estado relevante
+- Marcar `completed` ao finalizar normalmente
+
+## Arquivos Criados/Modificados
+
+| Arquivo | Ação |
+|---------|------|
+| **Migração SQL** | Criar `module_sessions` com RLS |
+| `src/hooks/useSessionPersistence.ts` | **NOVO** — hook de auto-save/restore |
+| `src/components/layout/ResumeSessionBanner.tsx` | **NOVO** — banner de retomada |
+| `src/pages/ClinicalSimulation.tsx` | Integrar persistência |
+| `src/pages/AnamnesisTrainer.tsx` | Integrar persistência |
+| `src/pages/ExamSimulator.tsx` | Integrar persistência |
+| `src/pages/ChatGPT.tsx` | Integrar persistência |
+| `src/pages/Flashcards.tsx` | Integrar persistência |
+| `src/pages/StudySession.tsx` | Integrar persistência |
 
 ## Detalhes Técnicos
-- Gráfico usa `LineChart` do Recharts (já importado em outros componentes)
-- Filtros são estados locais (sem query extra ao banco)
-- Tendência calculada client-side comparando erros dos últimos 7d vs 7d anteriores
-- Seção "dominados" usa query separada com `dominado = true`
+- Auto-save via `setInterval(30s)` + `window.addEventListener("beforeunload")`
+- Partial unique index: `CREATE UNIQUE INDEX ON module_sessions (user_id, module_key) WHERE status = 'active'` — garante apenas 1 sessão ativa por módulo
+- Upsert usa `ON CONFLICT` para atualizar sessão existente
+- Dados serializado em JSONB — cada módulo define seu próprio schema
 
