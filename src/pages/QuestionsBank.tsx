@@ -234,10 +234,14 @@ const QuestionsBank = () => {
     }
   };
 
+  const { checkAndReplenish } = useAutoReplenish(topicFilter !== "all" ? topicFilter : null);
+
   const nextQuestion = () => {
     if (practiceIdx + 1 >= filtered.length) {
       setPracticing(false);
-      loadStats(); // Refresh stats after practice
+      loadStats();
+      // Trigger replenish when practice ends for the active topic
+      if (practiceQuestion?.topic) checkAndReplenish(practiceQuestion.topic);
       toast({
         title: "Prática finalizada!",
         description: `Você acertou ${score.correct + (selected === practiceQuestion?.correct_index ? 1 : 0)} de ${score.total + 1} questões.`,
