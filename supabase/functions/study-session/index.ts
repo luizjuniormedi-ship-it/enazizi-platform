@@ -61,11 +61,13 @@ Se não houver dados, informe e sugira começar.`;
 
     case "lesson":
       return `${base}
+${levelPrompt}
 FASE ATUAL: BLOCOS TÉCNICOS (STATES 2-6)
 Tema: "${topic || "solicitado pelo aluno"}"
 
 ENSINE seguindo RIGOROSAMENTE o MARCADOR DE BLOCO.
 NUNCA faça perguntas nesta fase até o final do bloco (active recall).
+ENTREGUE o conteúdo em 4 MENSAGENS conforme a SEQUÊNCIA DE ENTREGA do prompt principal.
 
 REQUISITOS OBRIGATÓRIOS DO BLOCO DE ENSINO:
 
@@ -91,7 +93,9 @@ REGRA DE REPETIÇÃO ESPAÇADA (PRIORIDADE MÁXIMA):
 - QUANDO O ALUNO ERRAR: retome o tema com enfoque diferente nos próximos 3-5 blocos para REFORÇO AUTOMÁTICO
 - Varie exemplos clínicos: NUNCA repita perfil de paciente (idade/sexo/cenário) em exemplos diferentes
 
-Ao final: "Quando estiver pronto, avance para o Active Recall!"`;
+LIMITE: máximo 500-700 palavras por mensagem. Divida em 4 mensagens conforme sequência.
+
+Ao final da Mensagem 4: inclua a primeira pergunta de Active Recall (❓ Pergunta 1/5).`;
 
     case "active-recall":
       return `${base}
