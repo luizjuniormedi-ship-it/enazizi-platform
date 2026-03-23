@@ -59,6 +59,10 @@ const StudentSimulados = () => {
   const [clinicalCases, setClinicalCases] = useState<any[]>([]);
   const [clinicalLoading, setClinicalLoading] = useState(true);
 
+  // Study assignments
+  const [studyAssignments, setStudyAssignments] = useState<any[]>([]);
+  const [assignmentsLoading, setAssignmentsLoading] = useState(true);
+
   // Quiz state
   const [current, setCurrent] = useState<AssignedSimulado | null>(null);
   const [questionIndex, setQuestionIndex] = useState(0);
