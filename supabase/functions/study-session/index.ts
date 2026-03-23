@@ -7,8 +7,39 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function getLevelPrompt(performanceData: unknown): string {
+  const data = performanceData as any;
+  if (!data || !data.totalQuestions || data.totalQuestions < 5) return "";
+  const accuracy = data.totalQuestions > 0 ? (data.correctAnswers / data.totalQuestions) * 100 : 0;
+  if (accuracy < 30) {
+    return `
+NÍVEL DO ALUNO: INICIANTE (taxa de acerto: ${Math.round(accuracy)}%)
+- Use linguagem mais SIMPLES e acessível
+- Inclua mais EXEMPLOS práticos e analogias do dia a dia
+- Reduza profundidade molecular (foque nos conceitos-chave)
+- Explique termos técnicos quando usá-los
+- Seja mais ENCORAJADOR e motivacional`;
+  }
+  if (accuracy < 70) {
+    return `
+NÍVEL DO ALUNO: INTERMEDIÁRIO (taxa de acerto: ${Math.round(accuracy)}%)
+- Equilíbrio entre teoria e prática
+- Pode usar terminologia técnica com explicações pontuais
+- Inclua correlações clínicas mais complexas
+- Comece a introduzir pegadinhas de prova`;
+  }
+  return `
+NÍVEL DO ALUNO: AVANÇADO (taxa de acerto: ${Math.round(accuracy)}%)
+- Foque em PEGADINHAS, diagnósticos diferenciais RAROS e casos ATÍPICOS
+- Use terminologia técnica sem simplificação
+- Apresente discussões de conduta controversas
+- Inclua detalhes moleculares e referências avançadas
+- Desafie com casos de alta complexidade`;
+}
+
 function getPhasePrompt(phase: string, topic: string, performanceData: unknown): string {
   const base = ENAZIZI_PROMPT;
+  const levelPrompt = getLevelPrompt(performanceData);
 
   switch (phase) {
     case "performance":
