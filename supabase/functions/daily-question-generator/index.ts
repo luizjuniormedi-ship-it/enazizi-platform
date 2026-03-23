@@ -57,7 +57,7 @@ async function generateForSpecialty(
 
   let antiRepetitionBlock = "";
   if (existingStatements.length > 0) {
-    antiRepetitionBlock = `\n\n⛔ QUESTÕES JÁ EXISTENTES NESTA ESPECIALIDADE (NÃO REPETIR CENÁRIOS SIMILARES):\n${existingStatements.map((s, i) => `${i + 1}. ${s.slice(0, 100)}`).join("\n")}`;
+    antiRepetitionBlock = `\n\n⛔ NÃO REPITA cenários similares a: ${existingStatements.slice(0, 10).map((s, i) => `${i + 1}. ${s.slice(0, 60)}`).join("; ")}`;
   }
 
   const prompt = `Gere EXATAMENTE 10 questões de múltipla escolha de ${specialty} para Residência Médica.
