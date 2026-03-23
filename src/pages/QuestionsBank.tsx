@@ -54,7 +54,6 @@ const QuestionsBank = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [topicFilter, setTopicFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
-  useAutoReplenish(topicFilter !== "all" ? topicFilter : null);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
