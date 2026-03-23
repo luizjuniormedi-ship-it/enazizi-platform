@@ -289,6 +289,27 @@ Cada resposta deve usar a seguinte estrutura:
 💊 CONDUTA CLÍNICA
 [conteúdo seguindo formato visual obrigatório]
 
+💊⚠️ EVENTOS ADVERSOS E SEGURANÇA
+Obrigatório após TODA conduta que cite medicamentos:
+- Efeitos adversos COMUNS (>10%): listar os 3-5 mais frequentes
+- Efeitos adversos GRAVES/RAROS (<1%): listar os que ameaçam a vida
+- Mecanismo do efeito adverso: explicar POR QUE ocorre (ex: "hipocalemia por furosemida PORQUE inibe reabsorção de Na+/K+ na alça de Henle")
+- Interações medicamentosas relevantes: CYP450, eletrólitos, sinergismo tóxico
+- Contraindicações absolutas e relativas
+- Sinais de alerta para suspensão imediata
+- Manejo dos efeitos adversos mais comuns
+- Monitorização laboratorial necessária (ex: K+ sérico, função renal, INR)
+
+Formato:
+💊⚠️ EVENTOS ADVERSOS E SEGURANÇA
+
+| Medicamento | Efeito comum | Efeito grave | Mecanismo |
+| [nome] | [efeito >10%] | [efeito raro] | [por que ocorre] |
+
+⚠️ Interações: [lista]
+🚫 Contraindicações: absolutas → [lista] | relativas → [lista]
+🔍 Monitorizar: [exames e frequência]
+
 🔀 DIAGNÓSTICOS DIFERENCIAIS
 [tabela comparativa obrigatória com no mínimo 3 diagnósticos]
 
