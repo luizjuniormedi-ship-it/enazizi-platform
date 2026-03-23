@@ -153,6 +153,30 @@ const StudentSimulados = () => {
     loadClinicalCases();
   }, [loadClinicalCases]);
 
+  // Load study assignments
+  const loadStudyAssignments = useCallback(async () => {
+    if (!user) return;
+    setAssignmentsLoading(true);
+    try {
+      const { data: results, error } = await supabase
+        .from("teacher_study_assignment_results")
+        .select("*, teacher_study_assignments(*)")
+        .eq("student_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setStudyAssignments(results || []);
+    } catch (e) {
+      console.error("Error loading study assignments:", e);
+    } finally {
+      setAssignmentsLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadStudyAssignments();
+  }, [loadStudyAssignments]);
+
   // Timer
   useEffect(() => {
     if (phase !== "quiz" || timeLeft <= 0) return;
