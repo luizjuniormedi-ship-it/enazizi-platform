@@ -27,6 +27,8 @@ import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import ErrorReviewCard from "@/components/dashboard/ErrorReviewCard";
 import SmartNotifications from "@/components/dashboard/SmartNotifications";
 import AdminSystemAlerts from "@/components/admin/AdminSystemAlerts";
+import InstallAppBanner from "@/components/dashboard/InstallAppBanner";
+import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { fireCelebration } from "@/lib/celebrations";
@@ -89,6 +91,8 @@ const Dashboard = () => {
           <XpWidget />
         </div>
         <AchievementToast />
+        <InstallAppBanner />
+        <AdminMessagesBanner />
 
         <div className="flex items-center justify-between mt-5">
           <div>
