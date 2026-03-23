@@ -186,9 +186,23 @@ const StudySession = () => {
     loadPerformance();
   }, [user]);
 
-  const savePerformance = useCallback((data: PerformanceData) => {
+  const savePerformance = useCallback(async (data: PerformanceData) => {
     setPerformance(data);
-    if (user) localStorage.setItem(`enazizi-studied-${user.id}`, JSON.stringify(data.studiedTopics));
+    // Persist studied topics to database
+    if (user && data.studiedTopics.length > 0) {
+      const latestTopic = data.studiedTopics[data.studiedTopics.length - 1];
+      try {
+        await supabase.from("temas_estudados").upsert({
+          user_id: user.id,
+          tema: latestTopic,
+          especialidade: "Geral",
+          fonte: "tutor-ia",
+          status: "ativo",
+        }, { onConflict: "user_id,tema" }).select();
+      } catch (err) {
+        console.error("Error saving studied topic:", err);
+      }
+    }
   }, [user]);
 
   // Detect MCQ answers in assistant responses and register practice_attempts
