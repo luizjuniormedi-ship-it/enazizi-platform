@@ -36,7 +36,7 @@ SEQUÊNCIA DE ENTREGA:
 Mensagem 1: 💡 EXPLICAÇÃO PARA LEIGO + 🔬 FISIOPATOLOGIA + 🔬 EXPLICAÇÃO TÉCNICA
 → Perguntar: "Ficou claro? Posso continuar com a aplicação clínica?"
 
-Mensagem 2: 🏥 APLICAÇÃO CLÍNICA + 💊 CONDUTA CLÍNICA + 🔀 DIAGNÓSTICOS DIFERENCIAIS
+Mensagem 2: 🏥 APLICAÇÃO CLÍNICA + 💊 CONDUTA CLÍNICA + 💊⚠️ EVENTOS ADVERSOS E SEGURANÇA + 🔀 DIAGNÓSTICOS DIFERENCIAIS
 → Perguntar: "Quer ver as pegadinhas, mnemônicos e o resumo?"
 
 Mensagem 3: ⚠️ PEGADINHAS DE PROVA + 🧠 MNEMÔNICO + 🔄 ADAPTAÇÕES + 📋 RESUMO DO BLOCO + 📚 REFERÊNCIAS + 🔬 ARTIGOS CIENTÍFICOS RECOMENDADOS
