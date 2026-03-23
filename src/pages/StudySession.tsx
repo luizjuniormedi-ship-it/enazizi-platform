@@ -302,6 +302,11 @@ const StudySession = () => {
           } catch {}
         }
       }
+      // After streaming completes, check if this was an MCQ answer
+      const lastUserMsg = msgs[msgs.length - 1];
+      if (lastUserMsg?.role === "user" && assistantContent && (currentPhase === "questions" || currentPhase === "discussion")) {
+        detectAndRegisterMCQ(assistantContent, lastUserMsg.content);
+      }
     } catch {
       toast({ title: "Erro de conexão", description: "Não foi possível conectar ao servidor.", variant: "destructive" });
     }
