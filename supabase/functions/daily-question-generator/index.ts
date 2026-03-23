@@ -147,7 +147,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
       options: q.options.map(String),
       correct_index: q.correct_index,
       explanation: String(q.explanation || "").trim(),
-      topic: String(q.topic || specialty).trim(),
+      topic: specialty,
       difficulty: q.difficulty || 3,
       source: "daily-auto",
       is_global: true,
