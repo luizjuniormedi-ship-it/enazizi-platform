@@ -79,7 +79,6 @@ const MOBILE_NAV_ROUTES = [
   "/dashboard/flashcards",
   "/dashboard/gerar-flashcards",
   "/dashboard/simulados",
-  "/dashboard/simulado-completo",
   "/dashboard/questoes",
   "/dashboard/banco-questoes",
   "/dashboard/resumos",
