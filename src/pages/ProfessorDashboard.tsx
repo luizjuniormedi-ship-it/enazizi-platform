@@ -16,6 +16,7 @@ import ClassAnalytics from "@/components/professor/ClassAnalytics";
 import ProfessorPlantao from "@/components/professor/ProfessorPlantao";
 import StudentTracker from "@/components/professor/StudentTracker";
 import VideoRoom from "@/components/professor/VideoRoom";
+import TeacherStudyAssignments from "@/components/professor/TeacherStudyAssignments";
 
 const SPECIALTIES = [
   "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia", "Nefrologia",
@@ -264,6 +265,7 @@ const ProfessorDashboard = () => {
           <TabsTrigger value="simulados">📝 Simulados</TabsTrigger>
           <TabsTrigger value="plantao">🏥 Casos Plantão</TabsTrigger>
           <TabsTrigger value="video" className="gap-1"><Video className="h-3.5 w-3.5" /> Sala de Aula</TabsTrigger>
+          <TabsTrigger value="temas">📖 Temas de Estudo</TabsTrigger>
           <TabsTrigger value="alunos">👤 Aluno Individual</TabsTrigger>
           <TabsTrigger value="analytics">📊 Análise da Turma</TabsTrigger>
         </TabsList>
@@ -773,6 +775,10 @@ const ProfessorDashboard = () => {
 
         <TabsContent value="plantao" className="mt-4">
           <ProfessorPlantao />
+        </TabsContent>
+
+        <TabsContent value="temas" className="mt-4">
+          <TeacherStudyAssignments />
         </TabsContent>
 
         <TabsContent value="video" className="mt-4">

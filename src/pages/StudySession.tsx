@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
@@ -78,6 +79,7 @@ const SUGGESTED_TOPICS = [
 
 const StudySession = () => {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -87,7 +89,25 @@ const StudySession = () => {
   const [topicInput, setTopicInput] = useState("");
   const [performance, setPerformance] = useState<PerformanceData>(INITIAL_PERFORMANCE);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [professorContext, setProfessorContext] = useState<{ topics: string; materialUrl?: string; assignmentId?: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Read professor query params
+  useEffect(() => {
+    const paramTopic = searchParams.get("topic");
+    const paramProfessorTopics = searchParams.get("professorTopics");
+    const paramMaterialUrl = searchParams.get("materialUrl");
+    const paramAssignmentId = searchParams.get("assignmentId");
+
+    if (paramTopic && paramProfessorTopics) {
+      setTopicInput(paramTopic);
+      setProfessorContext({
+        topics: paramProfessorTopics,
+        materialUrl: paramMaterialUrl || undefined,
+        assignmentId: paramAssignmentId || undefined,
+      });
+    }
+  }, [searchParams]);
 
   const {
     pendingSession, checked: sessionChecked, saveSession: persistSession,
@@ -349,8 +369,29 @@ const StudySession = () => {
     setPhase("lesson");
     const updated = { ...performance, studiedTopics: [...new Set([...performance.studiedTopics, t])] };
     savePerformance(updated);
-    const userMsg: Msg = { role: "user", content: `Quero estudar: ${t}. Comece pela aula completa.` };
+
+    // Build user message with professor context if available
+    let userContent = `Quero estudar: ${t}. Comece pela aula completa.`;
+    if (professorContext) {
+      userContent += `\n\n[CONTEXTO DO PROFESSOR - TÓPICOS OBRIGATÓRIOS]\n${professorContext.topics}`;
+      if (professorContext.materialUrl) {
+        userContent += `\n[Material de apoio disponível no storage: ${professorContext.materialUrl}]`;
+      }
+    }
+
+    const userMsg: Msg = { role: "user", content: userContent };
     setMessages([userMsg]);
+
+    // Update assignment status to "studying"
+    if (professorContext?.assignmentId && user) {
+      supabase
+        .from("teacher_study_assignment_results")
+        .update({ status: "studying", started_at: new Date().toISOString() })
+        .eq("id", professorContext.assignmentId)
+        .eq("student_id", user.id)
+        .then(() => {});
+    }
+
     await streamChat([userMsg], "lesson", t);
   };
 
