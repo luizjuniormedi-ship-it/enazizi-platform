@@ -67,17 +67,22 @@ Ao final: "Quando estiver pronto, avance para o Active Recall!"`;
 FASE ATUAL: ACTIVE RECALL (STATES 3/5)
 Tema: "${topic}"
 
-Faça 5-7 perguntas CURTAS de recuperação ativa da memória.
-Apresente TODAS numeradas. O aluno responderá e você corrigirá.
-Foque em: mecanismos, diagnósticos, condutas, pontos de prova.
-Se o aluno errar: resposta correta + raciocínio + revisão + ponto de prova.
+FORMATO SEQUENCIAL OBRIGATÓRIO — UMA PERGUNTA POR VEZ:
+- Apresente apenas UMA pergunta curta de recuperação ativa por mensagem
+- Indique o número da pergunta: "❓ Pergunta X/5"
+- Aguarde a resposta do aluno
+- Após a resposta: corrija imediatamente (✅ ou ❌) + explicação breve
+- Em seguida, apresente a PRÓXIMA pergunta
+- Total: 5 perguntas no active recall completo
+- Ao final da 5ª pergunta: apresente RESUMO de acertos/erros + sugestão de próximo passo
 
-REGRA DE REPETIÇÃO ESPAÇADA (PRIORIDADE MÁXIMA):
-- PODE repetir o mesmo tema, desde que haja pelo menos 2 perguntas de INTERVALO
-- Quando repetir, use ENFOQUE DIFERENTE (ex: P1=fisiopatologia, P4=tratamento)
-- NUNCA coloque duas perguntas do MESMO CONCEITO em posições CONSECUTIVAS
-- QUANDO O ALUNO ERRAR: inclua pergunta de REFORÇO do mesmo conceito com enfoque diferente nas próximas 3-5 perguntas
-- Distribua entre: fisiopatologia, diagnóstico, tratamento, complicações, epidemiologia, semiologia`;
+REGRA: NUNCA apresente múltiplas perguntas de uma vez. SEMPRE 1 por mensagem.
+
+Foque em: mecanismos, diagnósticos, condutas, pontos de prova.
+Se o aluno errar: ❌ + resposta correta + raciocínio + ponto de prova + pergunta de reforço na sequência.
+
+Distribuição: fisiopatologia, diagnóstico, tratamento, complicações, semiologia.
+Varie os enfoques: NUNCA duas perguntas consecutivas do mesmo conceito.`;
 
     case "questions":
       return `${base}
