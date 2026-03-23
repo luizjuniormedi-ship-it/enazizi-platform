@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, CheckCircle2, Rocket } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const CURRENT_VERSION = "7.0.0";
+const CURRENT_VERSION = "7.1.0";
 const STORAGE_KEY = "enazizi_last_seen_version_v2";
 
 interface UpdateItem {
@@ -22,33 +22,33 @@ interface UpdateItem {
 const updates: UpdateItem[] = [
   {
     icon: "rocket",
-    title: "📚 +700 Questões Revalida 2011-2024 Comentadas",
+    title: "🧠 Questões Calibradas Nível REVALIDA/ENAMED",
     description:
-      "Banco de questões massivamente expandido com provas oficiais do Revalida de 2011 a 2024.2, todas com gabarito e comentários detalhados. Disponíveis no Banco de Questões, Flashcards e Casos Clínicos.",
+      "Todas as questões geradas por IA agora seguem padrão real de prova: casos clínicos com sinais vitais, exames e raciocínio multi-etapa. Zero questões de definição pura.",
   },
   {
     icon: "sparkles",
-    title: "🏥 Casos Clínicos de Provas Reais",
+    title: "⚡ Geração Automática 3x ao Dia",
     description:
-      "Mais de 600 casos clínicos extraídos de provas reais de residência médica, cobrindo 20+ especialidades com diagnósticos diferenciais.",
+      "O banco de questões agora recebe ~60 novas questões diariamente (6h, 14h e 22h), priorizando especialidades com menor cobertura.",
   },
   {
     icon: "rocket",
-    title: "🆕 Quiz de Imagens Médicas — ECG e RX de Tórax",
+    title: "🩺 Novas Especialidades no Banco",
     description:
-      "Interprete 50+ imagens médicas reais com gabarito comentado. Acesse em Agentes IA → Quiz de Imagens.",
-  },
-  {
-    icon: "sparkles",
-    title: "🆕 Crônicas Médicas — Mente de Residente",
-    description:
-      "Aprenda medicina através de narrativas clínicas imersivas. Você é o médico no plantão!",
+      "Emergência, Semiologia, Otorrinolaringologia, Farmacologia e Oncologia agora têm questões dedicadas com casos clínicos completos.",
   },
   {
     icon: "check",
-    title: "📊 Dashboard e Filtros Aprimorados",
+    title: "🔍 Monitor de Saúde do Sistema",
     description:
-      "Filtros por universidade e período no painel Admin. Dashboard com Streak Calendar e progresso por especialidade.",
+      "Verificação automática diária detecta problemas críticos: déficit de questões, falhas de geração e uploads pendentes. Alertas exibidos ao admin.",
+  },
+  {
+    icon: "sparkles",
+    title: "📱 Atualização Automática no Mobile",
+    description:
+      "O app agora detecta novas versões e oferece atualização instantânea — sem precisar reinstalar.",
   },
 ];
 
