@@ -54,7 +54,7 @@ describe("TopicEvolution", () => {
   it("shows all 22 specialties as not studied when no domain data", async () => {
     renderComponent();
     await waitFor(() => {
-      expect(screen.getByText(/Não estudadas/)).toBeInTheDocument();
+      expect(screen.getByText(/Tópicos ainda não estudados/)).toBeInTheDocument();
     });
   });
 
