@@ -604,6 +604,24 @@ const StudentSimulados = () => {
                               <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                                 <Badge variant="outline" className="text-[10px]">{assignment?.specialty}</Badge>
                                 <span>{item.completed_at ? new Date(item.completed_at).toLocaleDateString("pt-BR") : ""}</span>
+                                {assignment?.material_filename && assignment?.material_url && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-2 text-[11px] gap-1 text-primary"
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      try {
+                                        const { data } = await supabase.storage.from("user-uploads").createSignedUrl(assignment.material_url, 3600);
+                                        if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+                                      } catch {
+                                        toast({ title: "Erro ao abrir material", variant: "destructive" });
+                                      }
+                                    }}
+                                  >
+                                    📎 {assignment.material_filename}
+                                  </Button>
+                                )}
                               </div>
                             </div>
                             <Badge variant="default" className="text-xs">✅ Concluído</Badge>
