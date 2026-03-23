@@ -234,13 +234,21 @@ const Admin = () => {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Shield className="h-6 w-6 text-primary" /> Painel Admin
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Shield className="h-5 w-5 text-primary" />
+            </div>
+            Painel Admin
           </h1>
-          <p className="text-muted-foreground">Gerencie usuários, aprovações, planos e assinaturas.</p>
+          <p className="text-muted-foreground mt-1">Gerencie usuários, aprovações, planos e assinaturas.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={loadData} disabled={loading} className="gap-1.5">
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Atualizar
-        </Button>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs h-7">
+            {users.length} usuários
+          </Badge>
+          <Button variant="outline" size="sm" onClick={loadData} disabled={loading} className="gap-1.5">
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Atualizar
+          </Button>
+        </div>
       </div>
 
       {/* Pending notification */}

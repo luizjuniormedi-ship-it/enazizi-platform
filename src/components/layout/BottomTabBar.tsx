@@ -23,39 +23,77 @@ const BottomTabBar = () => {
     },
   });
 
+  const { data: unreadMessages } = useQuery({
+    queryKey: ["bottom-tab-messages", user?.id],
+    enabled: !!user,
+    staleTime: 60 * 1000,
+    queryFn: async () => {
+      const { data: reads } = await supabase
+        .from("admin_message_reads")
+        .select("message_id")
+        .eq("user_id", user!.id);
+      const readIds = (reads || []).map(r => r.message_id);
+
+      let query = supabase
+        .from("admin_messages")
+        .select("id", { count: "exact", head: true });
+      
+      if (readIds.length > 0) {
+        query = query.not("id", "in", `(${readIds.join(",")})`);
+      }
+      
+      const { count } = await query;
+      return count || 0;
+    },
+  });
+
   const tabs = [
     { to: "/dashboard", icon: LayoutDashboard, label: "Início", badge: 0 },
     { to: "/dashboard/chatgpt", icon: Brain, label: "Tutor IA", badge: 0 },
     { to: "/dashboard/cronicas", icon: BookOpen, label: "Crônicas", badge: 0 },
     { to: "/dashboard/simulados", icon: ClipboardList, label: "Simulados", badge: pendingCount || 0 },
-    { to: "/dashboard/perfil", icon: User, label: "Perfil", badge: 0 },
+    { to: "/dashboard/perfil", icon: User, label: "Perfil", badge: unreadMessages || 0 },
   ];
 
   return (
-    <nav className="landscape-tablet:hidden lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border flex items-center justify-around h-14 safe-area-bottom">
-      {tabs.map((tab) => {
-        const active = location.pathname === tab.to;
-        return (
-          <Link
-            key={tab.to}
-            to={tab.to}
-            className={cn(
-              "flex flex-col items-center justify-center gap-0.5 flex-1 h-full text-[10px] font-medium transition-colors relative",
-              active ? "text-primary" : "text-muted-foreground"
-            )}
-          >
-            <div className="relative">
-              <tab.icon className={cn("h-5 w-5", active && "text-primary")} />
-              {tab.badge > 0 && (
-                <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold">
-                  {tab.badge > 99 ? "99+" : tab.badge}
-                </span>
+    <nav className="landscape-tablet:hidden lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border safe-area-bottom">
+      <div className="flex items-center justify-around h-16">
+        {tabs.map((tab) => {
+          const active = location.pathname === tab.to;
+          return (
+            <Link
+              key={tab.to}
+              to={tab.to}
+              className={cn(
+                "flex flex-col items-center justify-center gap-1 flex-1 h-full text-[10px] font-medium transition-all relative group active:scale-95",
+                active ? "text-primary" : "text-muted-foreground"
               )}
-            </div>
-            {tab.label}
-          </Link>
-        );
-      })}
+            >
+              {/* Active indicator dot */}
+              {active && (
+                <div className="absolute top-1 w-1 h-1 rounded-full bg-primary animate-in fade-in duration-200" />
+              )}
+              <div className="relative mt-1">
+                <tab.icon className={cn(
+                  "h-5 w-5 transition-all duration-200",
+                  active ? "text-primary scale-110" : "group-hover:text-foreground/70"
+                )} />
+                {tab.badge > 0 && (
+                  <span className="absolute -top-1.5 -right-2.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold animate-in zoom-in duration-200 shadow-sm">
+                    {tab.badge > 99 ? "99+" : tab.badge}
+                  </span>
+                )}
+              </div>
+              <span className={cn(
+                "transition-all duration-200",
+                active ? "font-semibold" : ""
+              )}>
+                {tab.label}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 };
