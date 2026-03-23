@@ -777,6 +777,10 @@ const ProfessorDashboard = () => {
           <ProfessorPlantao />
         </TabsContent>
 
+        <TabsContent value="temas" className="mt-4">
+          <TeacherStudyAssignments />
+        </TabsContent>
+
         <TabsContent value="video" className="mt-4">
           <VideoRoom />
         </TabsContent>

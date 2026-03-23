@@ -1,0 +1,397 @@
+import { useState, useEffect, useCallback } from "react";
+import { BookOpen, Plus, Users, Loader2, CheckCircle, AlertTriangle, Upload, Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { FACULDADES } from "@/constants/faculdades";
+import { CheckSquare, Square } from "lucide-react";
+
+const SPECIALTIES = [
+  "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia", "Nefrologia",
+  "Endocrinologia", "Infectologia", "Reumatologia", "Hematologia", "Dermatologia",
+  "Pediatria", "Ginecologia e Obstetrícia", "Cirurgia", "Ortopedia", "Urologia",
+  "Psiquiatria", "Medicina Preventiva", "Oftalmologia", "Otorrinolaringologia",
+  "Semiologia", "Anatomia", "Farmacologia",
+];
+
+const TeacherStudyAssignments = () => {
+  const { session } = useAuth();
+  const { toast } = useToast();
+
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating] = useState(false);
+
+  // Form
+  const [title, setTitle] = useState("");
+  const [specialty, setSpecialty] = useState("");
+  const [topicsToCover, setTopicsToCover] = useState("");
+  const [faculdadeFilter, setFaculdadeFilter] = useState("");
+  const [periodoFilter, setPeriodoFilter] = useState("");
+  const [materialFile, setMaterialFile] = useState<File | null>(null);
+
+  // Students preview
+  const [previewStudents, setPreviewStudents] = useState<any[]>([]);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  // Results dialog
+  const [resultsDialog, setResultsDialog] = useState<{ open: boolean; assignment: any; results: any[] }>({ open: false, assignment: null, results: [] });
+
+  const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/professor-simulado`;
+
+  const callAPI = useCallback(async (body: Record<string, unknown>) => {
+    const resp = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session?.access_token}`,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || "Erro na operação");
+    return data;
+  }, [session, API_URL]);
+
+  const loadAssignments = useCallback(async () => {
+    if (!session) return;
+    setLoading(true);
+    try {
+      const res = await callAPI({ action: "list_study_assignments" });
+      setAssignments(res.assignments || []);
+    } catch (e) {
+      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }, [session, callAPI, toast]);
+
+  useEffect(() => { loadAssignments(); }, [loadAssignments]);
+
+  const previewMatchingStudents = async () => {
+    setPreviewLoading(true);
+    try {
+      const res = await callAPI({
+        action: "get_students",
+        faculdade: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : undefined,
+        periodo: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : undefined,
+      });
+      const students = res.students || [];
+      setPreviewStudents(students);
+      setSelectedStudentIds(students.map((s: any) => s.user_id));
+    } catch {
+      setPreviewStudents([]);
+      setSelectedStudentIds([]);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const toggleStudentSelection = (userId: string) => {
+    setSelectedStudentIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  };
+
+  const toggleAllStudents = () => {
+    if (selectedStudentIds.length === previewStudents.length) {
+      setSelectedStudentIds([]);
+    } else {
+      setSelectedStudentIds(previewStudents.map((s: any) => s.user_id));
+    }
+  };
+
+  const createAssignment = async () => {
+    if (!title.trim() || !specialty || !topicsToCover.trim()) {
+      toast({ title: "Preencha os campos obrigatórios", variant: "destructive" });
+      return;
+    }
+    setCreating(true);
+    try {
+      // Upload material if present
+      let materialUrl: string | null = null;
+      let materialFilename: string | null = null;
+      if (materialFile && session) {
+        const ext = materialFile.name.split(".").pop();
+        const path = `professor-materials/${session.user.id}/${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("user-uploads").upload(path, materialFile);
+        if (upErr) throw new Error("Erro ao enviar material: " + upErr.message);
+        materialUrl = path;
+        materialFilename = materialFile.name;
+      }
+
+      const res = await callAPI({
+        action: "create_study_assignment",
+        title: title.trim(),
+        specialty,
+        topics_to_cover: topicsToCover.trim(),
+        material_url: materialUrl,
+        material_filename: materialFilename,
+        faculdade_filter: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : null,
+        periodo_filter: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : null,
+        student_ids: selectedStudentIds.length > 0 ? selectedStudentIds : undefined,
+      });
+
+      toast({ title: "Tema atribuído!", description: `Enviado para ${res.students_assigned} aluno(s).` });
+      setShowCreate(false);
+      resetForm();
+      loadAssignments();
+    } catch (e) {
+      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const viewResults = async (assignment: any) => {
+    try {
+      const res = await callAPI({ action: "get_study_assignment_results", assignment_id: assignment.id });
+      setResultsDialog({ open: true, assignment, results: res.results || [] });
+    } catch {
+      setResultsDialog({ open: true, assignment, results: [] });
+    }
+  };
+
+  const resetForm = () => {
+    setTitle("");
+    setSpecialty("");
+    setTopicsToCover("");
+    setFaculdadeFilter("");
+    setPeriodoFilter("");
+    setMaterialFile(null);
+    setPreviewStudents([]);
+    setSelectedStudentIds([]);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <BookOpen className="h-5 w-5 text-primary" />
+          Temas de Estudo
+        </h2>
+        <Button onClick={() => setShowCreate(true)} size="sm" className="gap-2">
+          <Plus className="h-4 w-4" /> Novo Tema
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div>
+      ) : assignments.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <BookOpen className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Nenhum tema atribuído</h3>
+            <p className="text-sm text-muted-foreground mb-4">Crie temas de estudo e envie para seus alunos estudarem no Tutor IA.</p>
+            <Button onClick={() => setShowCreate(true)}>Criar Tema</Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {assignments.map((a: any) => (
+            <Card key={a.id} className="hover:border-primary/30 transition-colors">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold truncate">{a.title}</h3>
+                      <Badge variant="outline" className="text-[10px]">{a.specialty}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{a.topics_to_cover}</p>
+                    {a.material_filename && (
+                      <Badge variant="secondary" className="text-[10px] gap-1">
+                        <Upload className="h-3 w-3" /> {a.material_filename}
+                      </Badge>
+                    )}
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
+                      <span className="flex items-center gap-1"><Users className="h-3 w-3" />{a.results_summary?.total || 0} alunos</span>
+                      <span className="flex items-center gap-1"><CheckCircle className="h-3 w-3" />{a.results_summary?.completed || 0} concluídos</span>
+                      <span className="flex items-center gap-1"><AlertTriangle className="h-3 w-3" />{a.results_summary?.studying || 0} estudando</span>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => viewResults(a)} className="gap-1.5 shrink-0">
+                    <Eye className="h-3.5 w-3.5" /> Status
+                  </Button>
+                </div>
+                {(a.results_summary?.total || 0) > 0 && (
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-muted-foreground">Progresso</span>
+                      <span className="font-medium">{a.results_summary?.completed || 0}/{a.results_summary?.total || 0}</span>
+                    </div>
+                    <Progress value={((a.results_summary?.completed || 0) / (a.results_summary?.total || 1)) * 100} className="h-1.5" />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Create Dialog */}
+      <Dialog open={showCreate} onOpenChange={(open) => { if (!open) { setShowCreate(false); resetForm(); } else setShowCreate(true); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><BookOpen className="h-5 w-5 text-primary" /> Atribuir Tema de Estudo</DialogTitle>
+            <DialogDescription>O aluno receberá este tema na Proficiência e poderá estudar diretamente no Tutor IA.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Título do Tema *</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Insuficiência Cardíaca Descompensada" />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Especialidade *</Label>
+              <Select value={specialty} onValueChange={setSpecialty}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {SPECIALTIES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tópicos que o Tutor IA deve abordar *</Label>
+              <Textarea
+                value={topicsToCover}
+                onChange={(e) => setTopicsToCover(e.target.value)}
+                placeholder="Ex: Fisiopatologia da IC com fração de ejeção reduzida, critérios de Framingham, classificação NYHA, manejo com IECA/BRA, betabloqueadores e diuréticos, contraindicações..."
+                rows={4}
+              />
+              <p className="text-[10px] text-muted-foreground">Estas instruções serão enviadas diretamente ao Tutor IA para guiar a sessão de estudo do aluno.</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Material de apoio (opcional)</Label>
+              <Input
+                type="file"
+                accept=".pdf,.txt,.docx,.pptx"
+                onChange={(e) => setMaterialFile(e.target.files?.[0] || null)}
+                className="text-xs"
+              />
+              {materialFile && <p className="text-xs text-muted-foreground">📎 {materialFile.name}</p>}
+            </div>
+
+            {/* Filters */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Filtrar Alunos</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-xs">Faculdade</Label>
+                  <Select value={faculdadeFilter} onValueChange={setFaculdadeFilter}>
+                    <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      {FACULDADES.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Período</Label>
+                  <Select value={periodoFilter} onValueChange={setPeriodoFilter}>
+                    <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((p) => (
+                        <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={previewMatchingStudents} disabled={previewLoading} className="gap-1.5">
+                <Users className="h-3.5 w-3.5" /> {previewLoading ? "Buscando..." : "Ver alunos que receberão"}
+              </Button>
+              {previewStudents.length > 0 && (
+                <div className="bg-secondary/50 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium">{selectedStudentIds.length}/{previewStudents.length} aluno(s)</p>
+                    <button onClick={toggleAllStudents} className="text-[11px] text-primary hover:underline font-medium">
+                      {selectedStudentIds.length === previewStudents.length ? "Desmarcar todos" : "Selecionar todos"}
+                    </button>
+                  </div>
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {previewStudents.map((s: any) => {
+                      const isSelected = selectedStudentIds.includes(s.user_id);
+                      return (
+                        <button
+                          key={s.user_id}
+                          onClick={() => toggleStudentSelection(s.user_id)}
+                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-xs transition-colors ${
+                            isSelected ? "bg-primary/10 border border-primary/30" : "bg-background/50 border border-border hover:border-primary/20"
+                          }`}
+                        >
+                          {isSelected ? <CheckSquare className="h-3.5 w-3.5 text-primary shrink-0" /> : <Square className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
+                          <span className="truncate font-medium">{s.display_name || s.email}</span>
+                          {s.periodo && <span className="text-muted-foreground ml-auto shrink-0">{s.periodo}º</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }}>Cancelar</Button>
+            <Button onClick={createAssignment} disabled={creating || !title.trim() || !specialty || !topicsToCover.trim()} className="gap-2">
+              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookOpen className="h-4 w-4" />}
+              {creating ? "Atribuindo..." : "Atribuir Tema"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Results Dialog */}
+      <Dialog open={resultsDialog.open} onOpenChange={(open) => !open && setResultsDialog({ open: false, assignment: null, results: [] })}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-primary" />
+              Status: {resultsDialog.assignment?.title}
+            </DialogTitle>
+          </DialogHeader>
+          {resultsDialog.results.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">Nenhum aluno atribuído.</p>
+          ) : (
+            <div className="space-y-2">
+              {resultsDialog.results.map((r: any) => (
+                <Card key={r.id}>
+                  <CardContent className="p-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">{r.student_name}</p>
+                      <p className="text-xs text-muted-foreground">{r.student_email}</p>
+                    </div>
+                    <Badge variant={
+                      r.status === "completed" ? "default" :
+                      r.status === "studying" ? "secondary" : "outline"
+                    } className="text-xs">
+                      {r.status === "completed" ? "✅ Concluído" :
+                       r.status === "studying" ? "📖 Estudando" : "⏳ Pendente"}
+                    </Badge>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default TeacherStudyAssignments;
