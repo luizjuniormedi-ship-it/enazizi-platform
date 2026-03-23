@@ -57,10 +57,10 @@ async function generateForSpecialty(
 
   let antiRepetitionBlock = "";
   if (existingStatements.length > 0) {
-    antiRepetitionBlock = `\n\n⛔ QUESTÕES JÁ EXISTENTES NESTA ESPECIALIDADE (NÃO REPETIR CENÁRIOS SIMILARES):\n${existingStatements.map((s, i) => `${i + 1}. ${s.slice(0, 100)}`).join("\n")}`;
+    antiRepetitionBlock = `\n\n⛔ NÃO REPITA cenários similares a: ${existingStatements.slice(0, 10).map((s, i) => `${i + 1}. ${s.slice(0, 60)}`).join("; ")}`;
   }
 
-  const prompt = `Gere EXATAMENTE 20 questões de múltipla escolha de ${specialty} para Residência Médica.
+  const prompt = `Gere EXATAMENTE 10 questões de múltipla escolha de ${specialty} para Residência Médica.
 
 TEMAS: ${selectedTopics.join(", ")}
 
@@ -106,7 +106,8 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
         { role: "system", content: "Você é um professor de medicina especialista em criar questões de residência médica. Responda APENAS com JSON válido, sem markdown." },
         { role: "user", content: prompt },
       ],
-      timeoutMs: 55000,
+      timeoutMs: 90000,
+      maxRetries: 1,
     });
 
     if (!response.ok) {
@@ -184,20 +185,22 @@ serve(async (req) => {
       });
     }
 
-    // Count questions per specialty to find the 4 with fewest
-    // Count questions per specialty using ilike to aggregate subtopics
-    const countBySpecialty: Record<string, number> = {};
-    for (const spec of SPECIALTIES) {
+    // Pick 2 specialties with fewest questions using exact count (head-only, no data transfer)
+    const counts: { spec: string; count: number }[] = [];
+    // Run counts in parallel for speed
+    const countPromises = SPECIALTIES.map(async (spec) => {
       const { count } = await supabaseAdmin
         .from("questions_bank")
         .select("id", { count: "exact", head: true })
         .eq("is_global", true)
-        .ilike("topic", `${spec}%`);
-      countBySpecialty[spec] = count || 0;
-    }
+        .eq("topic", spec);
+      return { spec, count: count || 0 };
+    });
+    const countResults = await Promise.all(countPromises);
+    countResults.sort((a, b) => a.count - b.count);
+    const selected = countResults.slice(0, 2).map(c => c.spec);
 
-    const sorted = [...SPECIALTIES].sort((a, b) => countBySpecialty[a] - countBySpecialty[b]);
-    const selected = sorted.slice(0, 2);
+    console.log(`Daily generation starting for: ${selected.join(", ")} (counts: ${countResults.slice(0, 5).map(c => `${c.spec}:${c.count}`).join(", ")})`);
 
     console.log(`Daily generation starting for: ${selected.join(", ")}`);
 
@@ -205,14 +208,14 @@ serve(async (req) => {
     let totalGenerated = 0;
 
     for (const spec of selected) {
-      // Fetch last 50 statements for anti-repetition
+      // Fetch last 15 statements for anti-repetition
       const { data: existing } = await supabaseAdmin
         .from("questions_bank")
         .select("statement")
         .eq("topic", spec)
         .eq("is_global", true)
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(15);
 
       const existingStatements = (existing || []).map((r: any) => r.statement);
       const topics = TOPICS_BY_SPECIALTY[spec] || [spec];
