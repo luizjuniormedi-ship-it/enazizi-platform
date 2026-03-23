@@ -64,14 +64,23 @@ async function generateForSpecialty(
 
 TEMAS: ${selectedTopics.join(", ")}
 
+CALIBRAÇÃO OBRIGATÓRIA REVALIDA/ENAMED:
+- PROIBIDO: questões de definição pura ("O que é X?", "Defina Y", "Qual o conceito de Z")
+- PROIBIDO: enunciados com menos de 150 caracteres sem caso clínico
+- OBRIGATÓRIO: caso clínico com ≥3 dados clínicos relevantes (sinais vitais, exames, achados semiológicos)
+- OBRIGATÓRIO: ≥2 etapas de raciocínio clínico (ex: diagnóstico → conduta, ou achado → interpretação → tratamento)
+- OBRIGATÓRIO: pelo menos 2 distratores plausíveis baseados em diagnósticos diferenciais REAIS
+- DIFICULDADE MÍNIMA: 3/5 (intermediário = padrão REVALIDA)
+
 REGRAS:
-- Nível de prova de residência médica (ENARE, USP, UNICAMP)
-- Casos clínicos realistas com anamnese, exame físico e exames complementares
-- 4 alternativas (A, B, C, D), apenas 1 correta
-- Explicação detalhada com raciocínio clínico
-- Varie dificuldade: 40% fácil (2), 40% médio (3), 20% difícil (4-5)
+- Nível de prova de residência médica real (REVALIDA INEP, ENAMED, ENARE, USP, UNICAMP)
+- Casos clínicos realistas com anamnese completa (nome, idade, sexo, profissão), exame físico com achados positivos e negativos, sinais vitais completos (PA, FC, FR, Temp, SpO2), exames complementares com valores numéricos e unidades
+- 4 alternativas (A, B, C, D), apenas 1 correta — todas clinicamente PLAUSÍVEIS
+- Explicação detalhada com raciocínio clínico passo a passo e referência a guidelines 2024-2026
+- Distribuição de dificuldade: 50% intermediário (padrão REVALIDA), 50% difícil (padrão ENAMED/ENARE com pegadinhas e apresentações atípicas)
 - NUNCA repita perfil de paciente (nome, idade, sexo, cenário)
 - Distribua subtópicos: diagnóstico, tratamento, fisiopatologia, epidemiologia, complicações
+- Inclua apresentações ATÍPICAS de doenças comuns (ex: IAM sem dor em diabético, apendicite no idoso)
 ${antiRepetitionBlock}
 
 ⛔ CONTEÚDO PROIBIDO: NUNCA gere sobre declarações financeiras, conflitos de interesse, relações com indústria farmacêutica.
@@ -80,10 +89,10 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
 {
   "questions": [
     {
-      "statement": "Caso clínico...",
+      "statement": "Caso clínico completo com ≥150 caracteres...",
       "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
       "correct_index": 0,
-      "explanation": "Explicação...",
+      "explanation": "Raciocínio clínico passo a passo...",
       "topic": "${specialty}",
       "difficulty": 3
     }
@@ -124,6 +133,8 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
     const questions = parsed.questions.filter((q: any) =>
       q.statement && Array.isArray(q.options) && q.options.length >= 2 &&
       typeof q.correct_index === "number" &&
+      String(q.statement).trim().length >= 150 &&
+      (q.difficulty || 3) >= 3 &&
       !INVALID_CONTENT_REGEX.test(q.statement) &&
       !INVALID_CONTENT_REGEX.test(q.explanation || "")
     );

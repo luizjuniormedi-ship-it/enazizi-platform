@@ -126,7 +126,9 @@ CADA QUESTÃO DEVE OBRIGATORIAMENTE:
    - Alternar faixas etárias, sexo, comorbidades, cenários (PS, UTI, UBS, SAMU)
    - Incluir apresentações ATÍPICAS (ex: IAM sem dor em diabético, apendicite no idoso)
    - Priorizar doenças tropicais/negligenciadas quando pertinente
-   - 40% intermediário, 40% difícil, 20% expert
+    - 50% intermediário (padrão REVALIDA), 50% difícil/expert (padrão ENAMED/ENARE)
+    - DIFICULDADE MÍNIMA: 3/5 — PROIBIDO nível fácil (1-2)
+    - PROIBIDO: questões de definição pura ("O que é X?") ou enunciados < 200 caracteres sem caso clínico
 
 5. **ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA)**:
    - NUNCA repita nome, idade, sexo ou perfil de paciente entre questões
@@ -196,7 +198,8 @@ FORMATO JSON PURO (sem markdown):
 
     // Insert questions
     const questions = (parsed.questions || []).filter((q: any) =>
-      q.statement && Array.isArray(q.options) && q.options.length >= 2 && typeof q.correct_index === "number"
+      q.statement && Array.isArray(q.options) && q.options.length >= 2 && typeof q.correct_index === "number" &&
+      String(q.statement).trim().length >= 200 && (q.difficulty || 3) >= 3
     );
     let qCount = 0;
     if (questions.length > 0) {

@@ -55,11 +55,10 @@ const Diagnostic = () => {
 
   const getDifficultyForArea = (area: string, prevAnswers: AnswerRecord[]): string => {
     const areaAnswers = prevAnswers.filter(a => a.topic === area);
-    if (areaAnswers.length === 0) return "intermediário";
+    if (areaAnswers.length === 0) return "intermediário (padrão REVALIDA)";
     const rate = areaAnswers.filter(a => a.correct).length / areaAnswers.length;
-    if (rate >= 0.8) return "avançado";
-    if (rate >= 0.5) return "intermediário";
-    return "básico";
+    if (rate >= 0.8) return "avançado (padrão ENAMED/ENARE com pegadinhas)";
+    return "intermediário (padrão REVALIDA)";
   };
 
   const invokeQuestionGeneratorWithTimeout = async (body: Record<string, unknown>, timeoutMs: number) => {
@@ -95,6 +94,13 @@ const Diagnostic = () => {
             timeoutMs: 18000,
             messages: [{ role: "user", content: `Gere EXATAMENTE ${QUESTIONS_PER_AREA} questões de múltipla escolha de ${area} para simulado diagnóstico de residência médica. Nível: ${difficulty}. Seed: ${seed}.
 
+CALIBRAÇÃO OBRIGATÓRIA REVALIDA/ENAMED:
+- PROIBIDO: questões de definição pura ("O que é X?")
+- PROIBIDO: enunciados < 150 caracteres sem caso clínico
+- OBRIGATÓRIO: caso clínico com ≥3 dados clínicos (sinais vitais, exames, achados semiológicos)
+- OBRIGATÓRIO: ≥2 etapas de raciocínio clínico
+- OBRIGATÓRIO: pelo menos 2 distratores plausíveis (diagnóstico diferencial real)
+
 REGRAS DE DIVERSIDADE OBRIGATÓRIAS:
 - ${hint}
 - Cada questão DEVE abordar um SUBTÓPICO DIFERENTE dentro de ${area}
@@ -108,7 +114,7 @@ REGRA DE GABARITO:
 - Distribua gabaritos entre A(0), B(1), C(2), D(3), E(4) — use pelo menos 4 letras diferentes
 
 FORMATO: Retorne APENAS JSON array:
-[{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"topic":"${area}","explanation":"...","difficulty":"${difficulty}"}]
+[{"statement":"Caso clínico completo com ≥150 chars...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"topic":"${area}","explanation":"Raciocínio clínico passo a passo...","difficulty":"${difficulty}"}]
 NÃO inclua texto extra, APENAS o JSON.` }],
           }, REQUEST_TIMEOUT_MS);
 
