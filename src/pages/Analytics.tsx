@@ -38,153 +38,185 @@ interface AnalyticsData {
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--accent))", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16"];
 
+async function fetchAnalyticsData(userId: string): Promise<AnalyticsData> {
+  const [
+    attemptsRes, flashcardsRes, uploadsRes, tasksRes, examsRes, perfRes,
+    simHistoryRes, anamnesisRes, discursiveRes, chroniclesRes, imageQuizRes, chatConvRes,
+    teacherSimRes, teacherClinicalRes,
+  ] = await Promise.all([
+    supabase.from("practice_attempts").select("correct, created_at, question_id, questions_bank(topic)").eq("user_id", userId),
+    supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("study_tasks").select("completed, created_at").eq("user_id", userId),
+    supabase.from("exam_sessions").select("title, score, finished_at, total_questions").eq("user_id", userId).eq("status", "finished").order("finished_at", { ascending: false }).limit(10),
+    supabase.from("study_performance").select("*").eq("user_id", userId).maybeSingle(),
+    supabase.from("simulation_history").select("final_score, student_got_diagnosis, grade").eq("user_id", userId),
+    supabase.from("anamnesis_results").select("final_score, grade").eq("user_id", userId),
+    supabase.from("discursive_attempts").select("score, max_score").eq("user_id", userId).not("finished_at", "is", null),
+    supabase.from("chat_conversations").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("agent_type", "medical-chronicle"),
+    supabase.from("medical_image_attempts").select("correct").eq("user_id", userId),
+    supabase.from("chat_conversations").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    // Additional sources to match Dashboard
+    supabase.from("teacher_simulado_results").select("total_questions, score, finished_at").eq("student_id", userId),
+    supabase.from("teacher_clinical_case_results").select("id", { count: "exact", head: true }).eq("student_id", userId),
+  ]);
+
+  const attempts = attemptsRes.data || [];
+  const practiceCorrect = attempts.filter(a => a.correct).length;
+  const practiceTotal = attempts.length;
+  const tasks = tasksRes.data || [];
+  const completedTasks = tasks.filter(t => t.completed).length;
+
+  // Unified accuracy: practice_attempts + exam_sessions + teacher_simulado_results (same as Dashboard)
+  const examData = examsRes.data || [];
+  const examQuestionsTotal = examData.reduce((sum, e: any) => sum + (e.total_questions || 0), 0);
+  const examCorrectTotal = examData.reduce((sum, e: any) => {
+    const total = e.total_questions || 0;
+    return sum + Math.round(((e.score || 0) / 100) * total);
+  }, 0);
+
+  const teacherSimData = teacherSimRes.data || [];
+  const teacherQuestionsTotal = teacherSimData.reduce((sum, e: any) => sum + (e.total_questions || 0), 0);
+  const teacherCorrectTotal = teacherSimData.reduce((sum, e: any) => {
+    const total = e.total_questions || 0;
+    return sum + Math.round(((e.score || 0) / 100) * total);
+  }, 0);
+
+  const totalQuestions = practiceTotal + examQuestionsTotal + teacherQuestionsTotal;
+  const totalCorrect = practiceCorrect + examCorrectTotal + teacherCorrectTotal;
+  const accuracy = totalQuestions > 0 ? Math.min(Math.round((totalCorrect / totalQuestions) * 100), 100) : 0;
+
+  // Topic breakdown (practice_attempts only — has topic detail)
+  const topicMap: Record<string, { correct: number; total: number }> = {};
+  for (const a of attempts) {
+    const topic = (a as any).questions_bank?.topic || "Geral";
+    if (!topicMap[topic]) topicMap[topic] = { correct: 0, total: 0 };
+    topicMap[topic].total++;
+    if (a.correct) topicMap[topic].correct++;
+  }
+  const topicBreakdown = Object.entries(topicMap)
+    .map(([topic, v]) => ({ topic, ...v, rate: v.total > 0 ? Math.round((v.correct / v.total) * 100) : 0 }))
+    .sort((a, b) => b.total - a.total);
+
+  // Weekly activity
+  const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  const weeklyActivity = days.map(day => ({ day, tasks: 0 }));
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  for (const t of tasks) {
+    if (!t.completed) continue;
+    const d = new Date(t.created_at);
+    if (d >= weekAgo) weeklyActivity[d.getDay()].tasks++;
+  }
+
+  // Activity dates for heatmap
+  const activityDateSet = new Set<string>();
+  for (const a of attempts) {
+    activityDateSet.add(new Date((a as any).created_at).toISOString().split("T")[0]);
+  }
+  for (const t of tasks) {
+    if (t.completed) activityDateSet.add(new Date(t.created_at).toISOString().split("T")[0]);
+  }
+  const activityDates = Array.from(activityDateSet);
+
+  // Weekly accuracy trend
+  const weekMap: Record<string, { correct: number; total: number }> = {};
+  for (const a of attempts) {
+    const d = new Date((a as any).created_at);
+    const weekStart = new Date(d);
+    weekStart.setDate(d.getDate() - d.getDay());
+    const key = `${String(weekStart.getDate()).padStart(2, "0")}/${String(weekStart.getMonth() + 1).padStart(2, "0")}`;
+    if (!weekMap[key]) weekMap[key] = { correct: 0, total: 0 };
+    weekMap[key].total++;
+    if (a.correct) weekMap[key].correct++;
+  }
+  const weeklyAccuracy = Object.entries(weekMap)
+    .map(([week, v]) => ({ week, accuracy: Math.round((v.correct / v.total) * 100), total: v.total }))
+    .sort((a, b) => a.week.localeCompare(b.week))
+    .slice(-12);
+
+  const radarData = topicBreakdown.slice(0, 8).map(t => ({ specialty: t.topic, score: t.rate }));
+
+  // Exam scores: own simulados + teacher simulados
+  const examScores = (examData).map((e: any) => ({
+    title: e.title || "Simulado",
+    score: Number(e.score) || 0,
+    date: e.finished_at ? new Date(e.finished_at).toLocaleDateString("pt-BR") : "",
+  }));
+  for (const ts of teacherSimData) {
+    if ((ts as any).finished_at) {
+      examScores.push({
+        title: "Simulado do Professor",
+        score: Number((ts as any).score) || 0,
+        date: new Date((ts as any).finished_at).toLocaleDateString("pt-BR"),
+      });
+    }
+  }
+
+  const sessionCount = perfRes.data ? ((perfRes.data.historico_estudo as any[]) || []).length : 0;
+
+  // Clinical simulations (own + teacher)
+  const simHistory = simHistoryRes.data || [];
+  const totalClinicalCount = simHistory.length + (teacherClinicalRes.count || 0);
+  const simAvgScore = simHistory.length > 0 ? Math.round(simHistory.reduce((s, h) => s + (h.final_score || 0), 0) / simHistory.length) : 0;
+  const simDiagRate = simHistory.length > 0 ? Math.round((simHistory.filter(h => h.student_got_diagnosis).length / simHistory.length) * 100) : 0;
+
+  // Anamnesis
+  const anamnesisData = anamnesisRes.data || [];
+  const anamTotal = anamnesisData.length;
+  const anamAvgScore = anamTotal > 0 ? Math.round(anamnesisData.reduce((s, a) => s + (a.final_score || 0), 0) / anamTotal) : 0;
+  const gradeOrder = ["A+", "A", "B", "C", "D", "F"];
+  const anamAvgGrade = anamTotal > 0
+    ? (anamnesisData.map(a => a.grade || "F").sort((a, b) => gradeOrder.indexOf(a) - gradeOrder.indexOf(b))[Math.floor(anamTotal / 2)] || "F")
+    : "-";
+
+  // Discursive
+  const discursiveData = discursiveRes.data || [];
+  const discTotal = discursiveData.length;
+  const discAvgScore = discTotal > 0
+    ? Math.round(discursiveData.reduce((s, d) => s + (Number(d.score) || 0), 0) / discTotal * 10) / 10
+    : 0;
+
+  // Image quiz
+  const imageAttempts = imageQuizRes.data || [];
+  const imageTotal = imageAttempts.length;
+  const imageCorrect = imageAttempts.filter(a => a.correct).length;
+  const imageAccuracy = imageTotal > 0 ? Math.round((imageCorrect / imageTotal) * 100) : 0;
+
+  return {
+    totalQuestions,
+    correctAnswers: totalCorrect,
+    accuracy,
+    totalSessions: sessionCount,
+    totalFlashcards: flashcardsRes.count || 0,
+    totalUploads: uploadsRes.count || 0,
+    completedTasks,
+    totalTasks: tasks.length,
+    topicBreakdown,
+    weeklyActivity,
+    examScores,
+    activityDates,
+    weeklyAccuracy,
+    radarData,
+    clinicalSimulations: { total: totalClinicalCount, avgScore: simAvgScore, diagnosisRate: simDiagRate },
+    anamnesisResults: { total: anamTotal, avgScore: anamAvgScore, avgGrade: anamAvgGrade },
+    discursiveResults: { total: discTotal, avgScore: discAvgScore },
+    chroniclesCount: chroniclesRes.count || 0,
+    imageQuizResults: { total: imageTotal, accuracy: imageAccuracy },
+    chatConversations: chatConvRes.count || 0,
+  };
+}
+
 const Analytics = () => {
   const { user } = useAuth();
-  const [data, setData] = useState<AnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) return;
-    const load = async () => {
-      const [
-        attemptsRes, flashcardsRes, uploadsRes, tasksRes, examsRes, perfRes,
-        simHistoryRes, anamnesisRes, discursiveRes, chroniclesRes, imageQuizRes, chatConvRes,
-      ] = await Promise.all([
-        supabase.from("practice_attempts").select("correct, created_at, question_id, questions_bank(topic)").eq("user_id", user.id),
-        supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("study_tasks").select("completed, created_at").eq("user_id", user.id),
-        supabase.from("exam_sessions").select("title, score, finished_at").eq("user_id", user.id).eq("status", "finished").order("finished_at", { ascending: false }).limit(10),
-        supabase.from("study_performance").select("*").eq("user_id", user.id).maybeSingle(),
-        // New queries
-        supabase.from("simulation_history").select("final_score, student_got_diagnosis, grade").eq("user_id", user.id),
-        supabase.from("anamnesis_results").select("final_score, grade").eq("user_id", user.id),
-        supabase.from("discursive_attempts").select("score, max_score").eq("user_id", user.id).not("finished_at", "is", null),
-        supabase.from("chat_conversations").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("agent_type", "medical-chronicle"),
-        supabase.from("medical_image_attempts").select("correct").eq("user_id", user.id),
-        supabase.from("chat_conversations").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-      ]);
-
-      const attempts = attemptsRes.data || [];
-      const correct = attempts.filter(a => a.correct).length;
-      const tasks = tasksRes.data || [];
-      const completedTasks = tasks.filter(t => t.completed).length;
-
-      // Topic breakdown
-      const topicMap: Record<string, { correct: number; total: number }> = {};
-      for (const a of attempts) {
-        const topic = (a as any).questions_bank?.topic || "Geral";
-        if (!topicMap[topic]) topicMap[topic] = { correct: 0, total: 0 };
-        topicMap[topic].total++;
-        if (a.correct) topicMap[topic].correct++;
-      }
-      const topicBreakdown = Object.entries(topicMap)
-        .map(([topic, v]) => ({ topic, ...v, rate: v.total > 0 ? Math.round((v.correct / v.total) * 100) : 0 }))
-        .sort((a, b) => b.total - a.total);
-
-      // Weekly activity
-      const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-      const weeklyActivity = days.map(day => ({ day, tasks: 0 }));
-      const now = new Date();
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      for (const t of tasks) {
-        if (!t.completed) continue;
-        const d = new Date(t.created_at);
-        if (d >= weekAgo) weeklyActivity[d.getDay()].tasks++;
-      }
-
-      // Activity dates for heatmap
-      const activityDateSet = new Set<string>();
-      for (const a of attempts) {
-        activityDateSet.add(new Date((a as any).created_at).toISOString().split("T")[0]);
-      }
-      for (const t of tasks) {
-        if (t.completed) activityDateSet.add(new Date(t.created_at).toISOString().split("T")[0]);
-      }
-      // Add simulation/anamnesis/discursive dates to heatmap
-      const simHistory = simHistoryRes.data || [];
-      const anamnesisData = anamnesisRes.data || [];
-      const discursiveData = discursiveRes.data || [];
-
-      const activityDates = Array.from(activityDateSet);
-
-      // Weekly accuracy trend
-      const weekMap: Record<string, { correct: number; total: number }> = {};
-      for (const a of attempts) {
-        const d = new Date((a as any).created_at);
-        const weekStart = new Date(d);
-        weekStart.setDate(d.getDate() - d.getDay());
-        const key = `${String(weekStart.getDate()).padStart(2, "0")}/${String(weekStart.getMonth() + 1).padStart(2, "0")}`;
-        if (!weekMap[key]) weekMap[key] = { correct: 0, total: 0 };
-        weekMap[key].total++;
-        if (a.correct) weekMap[key].correct++;
-      }
-      const weeklyAccuracy = Object.entries(weekMap)
-        .map(([week, v]) => ({ week, accuracy: Math.round((v.correct / v.total) * 100), total: v.total }))
-        .sort((a, b) => a.week.localeCompare(b.week))
-        .slice(-12);
-
-      const radarData = topicBreakdown.slice(0, 8).map(t => ({ specialty: t.topic, score: t.rate }));
-
-      const examScores = (examsRes.data || []).map(e => ({
-        title: e.title || "Simulado",
-        score: Number(e.score) || 0,
-        date: e.finished_at ? new Date(e.finished_at).toLocaleDateString("pt-BR") : "",
-      }));
-
-      const sessionCount = perfRes.data ? ((perfRes.data.historico_estudo as any[]) || []).length : 0;
-
-      // Clinical simulations
-      const simTotal = simHistory.length;
-      const simAvgScore = simTotal > 0 ? Math.round(simHistory.reduce((s, h) => s + (h.final_score || 0), 0) / simTotal) : 0;
-      const simDiagRate = simTotal > 0 ? Math.round((simHistory.filter(h => h.student_got_diagnosis).length / simTotal) * 100) : 0;
-
-      // Anamnesis
-      const anamTotal = anamnesisData.length;
-      const anamAvgScore = anamTotal > 0 ? Math.round(anamnesisData.reduce((s, a) => s + (a.final_score || 0), 0) / anamTotal) : 0;
-      const gradeOrder = ["A+", "A", "B", "C", "D", "F"];
-      const anamAvgGrade = anamTotal > 0
-        ? (anamnesisData.map(a => a.grade || "F").sort((a, b) => gradeOrder.indexOf(a) - gradeOrder.indexOf(b))[Math.floor(anamTotal / 2)] || "F")
-        : "-";
-
-      // Discursive
-      const discTotal = discursiveData.length;
-      const discAvgScore = discTotal > 0
-        ? Math.round(discursiveData.reduce((s, d) => s + (Number(d.score) || 0), 0) / discTotal * 10) / 10
-        : 0;
-
-      // Image quiz
-      const imageAttempts = imageQuizRes.data || [];
-      const imageTotal = imageAttempts.length;
-      const imageCorrect = imageAttempts.filter(a => a.correct).length;
-      const imageAccuracy = imageTotal > 0 ? Math.round((imageCorrect / imageTotal) * 100) : 0;
-
-      setData({
-        totalQuestions: attempts.length,
-        correctAnswers: correct,
-        accuracy: attempts.length > 0 ? Math.round((correct / attempts.length) * 100) : 0,
-        totalSessions: sessionCount,
-        totalFlashcards: flashcardsRes.count || 0,
-        totalUploads: uploadsRes.count || 0,
-        completedTasks,
-        totalTasks: tasks.length,
-        topicBreakdown,
-        weeklyActivity,
-        examScores,
-        activityDates,
-        weeklyAccuracy,
-        radarData,
-        clinicalSimulations: { total: simTotal, avgScore: simAvgScore, diagnosisRate: simDiagRate },
-        anamnesisResults: { total: anamTotal, avgScore: anamAvgScore, avgGrade: anamAvgGrade },
-        discursiveResults: { total: discTotal, avgScore: discAvgScore },
-        chroniclesCount: chroniclesRes.count || 0,
-        imageQuizResults: { total: imageTotal, accuracy: imageAccuracy },
-        chatConversations: chatConvRes.count || 0,
-      });
-      setLoading(false);
-    };
-    load();
-  }, [user]);
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["analytics-data", user?.id],
+    queryFn: () => fetchAnalyticsData(user!.id),
+    enabled: !!user,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
+  });
 
   if (loading) {
     return (
