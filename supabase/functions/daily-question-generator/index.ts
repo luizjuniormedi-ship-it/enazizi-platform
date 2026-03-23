@@ -208,14 +208,14 @@ serve(async (req) => {
     let totalGenerated = 0;
 
     for (const spec of selected) {
-      // Fetch last 50 statements for anti-repetition
+      // Fetch last 15 statements for anti-repetition
       const { data: existing } = await supabaseAdmin
         .from("questions_bank")
         .select("statement")
         .eq("topic", spec)
         .eq("is_global", true)
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(15);
 
       const existingStatements = (existing || []).map((r: any) => r.statement);
       const topics = TOPICS_BY_SPECIALTY[spec] || [spec];
