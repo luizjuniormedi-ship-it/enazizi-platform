@@ -79,6 +79,7 @@ const SUGGESTED_TOPICS = [
 
 const StudySession = () => {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -88,7 +89,25 @@ const StudySession = () => {
   const [topicInput, setTopicInput] = useState("");
   const [performance, setPerformance] = useState<PerformanceData>(INITIAL_PERFORMANCE);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [professorContext, setProfessorContext] = useState<{ topics: string; materialUrl?: string; assignmentId?: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Read professor query params
+  useEffect(() => {
+    const paramTopic = searchParams.get("topic");
+    const paramProfessorTopics = searchParams.get("professorTopics");
+    const paramMaterialUrl = searchParams.get("materialUrl");
+    const paramAssignmentId = searchParams.get("assignmentId");
+
+    if (paramTopic && paramProfessorTopics) {
+      setTopicInput(paramTopic);
+      setProfessorContext({
+        topics: paramProfessorTopics,
+        materialUrl: paramMaterialUrl || undefined,
+        assignmentId: paramAssignmentId || undefined,
+      });
+    }
+  }, [searchParams]);
 
   const {
     pendingSession, checked: sessionChecked, saveSession: persistSession,
