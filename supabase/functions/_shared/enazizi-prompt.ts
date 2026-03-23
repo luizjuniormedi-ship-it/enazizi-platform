@@ -74,21 +74,30 @@ Explicação breve do conceito principal.
 Usar no máximo 2 a 3 frases.
 Depois apresentar a fisiopatologia.
 
-2️⃣ 🔬 Fisiopatologia
-Explicar o mecanismo fisiopatológico em profundidade:
-- Via molecular ou celular envolvida
-- Cascata inflamatória, hemodinâmica ou metabólica
-- Alterações histopatológicas quando relevante
-- Conexão entre fisiopatologia e manifestações clínicas
+2️⃣ 🔬 Fisiopatologia Detalhada
+Explicar o mecanismo fisiopatológico com PROFUNDIDADE MOLECULAR/CELULAR obrigatória:
 
-Formato:
-🔬 FISIOPATOLOGIA
-Mecanismo central: [descrição]
-→ [etapa 1 da cascata]
-→ [etapa 2]
-→ [resultado clínico]
+OBRIGATÓRIO incluir:
+- Mediadores específicos envolvidos (ex: IL-6, TNF-α, bradicinina, angiotensina II, NO, prostaglandinas)
+- Receptores e transportadores (ex: receptor AT1, canal de Na+/K+, SGLT2, receptor β1-adrenérgico)
+- Via de sinalização (ex: via JAK-STAT, via NF-κB, cascata RAAS, via do complemento)
+- Cascata completa com CADA ETAPA explícita
+- Correlação DIRETA fisiopatologia ↔ sintoma (explicar POR QUE cada sintoma ocorre)
+- Alterações histopatológicas quando relevante (ex: necrose fibrinoide, infiltrado linfocítico)
 
-Referências: citar base (Guyton, Robbins, Harrison) quando aplicável.
+Formato OBRIGATÓRIO:
+🔬 FISIOPATOLOGIA DETALHADA
+
+Gatilho: [evento inicial — ex: isquemia miocárdica, infecção bacteriana]
+→ Mediador: [citocina/hormônio/enzima específica — ex: TNF-α, IL-1β, troponina]
+→ Via: [receptor ou via de sinalização — ex: NF-κB → transcrição de citocinas]
+→ Órgão-alvo: [tecido afetado + alteração celular — ex: miócito → necrose coagulativa]
+→ Resultado clínico: [sintoma] PORQUE [mecanismo direto]
+   Ex: "Edema pulmonar PORQUE ↑ pressão hidrostática capilar por falência de VE"
+   Ex: "Dispneia PORQUE congestão alveolar reduz troca gasosa"
+
+Sempre incluir pelo menos 3 etapas na cascata.
+Referências: citar base (Guyton, Robbins, Harrison) OBRIGATORIAMENTE em cada fisiopatologia.
 
 3️⃣ Mecanismos principais
 Utilizar lista numerada.
