@@ -1,81 +1,59 @@
 
 
-# Plano: Completar Método Pedagógico — Fisiopatologia Profunda + Eventos Adversos
+# Plano: Implementar Melhorias Restantes no Tutor IA (Mantendo Blocos)
 
-## Problemas Atuais
-
-1. **Fisiopatologia genérica**: O prompt pede "mecanismo central → etapas → resultado clínico" mas não exige vias moleculares, mediadores específicos nem correlação direta sintoma↔mecanismo
-2. **Eventos adversos inexistentes**: Não há seção obrigatória sobre efeitos colaterais, interações medicamentosas e contraindicações na estrutura de ensino
+Os blocos de ensino, fisiopatologia profunda e eventos adversos já estão implementados. Agora implemento as 5 melhorias estruturais restantes.
 
 ## Mudanças
 
-### 1. `supabase/functions/_shared/enazizi-prompt.ts`
+### 1. Active Recall Sequencial (`study-session/index.ts`)
 
-**A) Expandir seção 2️⃣ Fisiopatologia (linhas 77-91)**
+Alterar phase `active-recall` para fazer **1 pergunta por vez** em vez de listar 5-7 de uma vez:
+- Primeira chamada: enviar apenas 1 pergunta
+- Após resposta do aluno: corrigir + enviar próxima
+- Manter contagem (Pergunta 1/5, 2/5...)
+- Ao final: resumo de acertos/erros
 
-Tornar obrigatório:
-- Mediadores específicos (IL-6, TNF-α, bradicinina, etc.)
-- Receptores e transportadores envolvidos
-- Cascata completa com setas: gatilho → mediador → órgão-alvo → manifestação
-- Correlação explícita fisiopatologia ↔ sintoma (ex: "edema PORQUE ↑ pressão hidrostática")
-- Referência a Guyton/Robbins/Harrison obrigatória
+### 2. Reduzir Densidade das Mensagens (`enazizi-prompt.ts`)
 
-Novo formato:
-```text
-🔬 FISIOPATOLOGIA DETALHADA
-Gatilho: [evento inicial]
-→ Mediador: [citocina/hormônio/enzima específica]
-→ Via: [receptor ou via de sinalização]
-→ Órgão-alvo: [tecido afetado + alteração]
-→ Resultado clínico: [sintoma] PORQUE [mecanismo direto]
-```
-
-**B) Adicionar nova seção obrigatória: 💊⚠️ EVENTOS ADVERSOS**
-
-Inserir entre `💊 CONDUTA CLÍNICA` e `🔀 DIAGNÓSTICOS DIFERENCIAIS` no Marcador de Bloco (linha 280-283):
+Reestruturar sequência de entrega em **4 mensagens** (em vez de 3):
 
 ```text
-💊⚠️ EVENTOS ADVERSOS E SEGURANÇA
-- Efeitos adversos COMUNS (>10%) vs GRAVES/RAROS (<1%)
-- Mecanismo do efeito adverso (por que ocorre)
-- Interações medicamentosas relevantes (CYP450, potássio, etc.)
-- Contraindicações absolutas e relativas
-- Sinais de alerta para suspensão
-- Manejo dos efeitos adversos mais comuns
-- Monitorização laboratorial necessária
+Msg 1: 💡 EXPLICAÇÃO PARA LEIGO + 🔬 FISIOPATOLOGIA (máx 600 palavras)
+Msg 2: 🔬 EXPLICAÇÃO TÉCNICA + 🏥 APLICAÇÃO CLÍNICA
+Msg 3: 💊 CONDUTA + 💊⚠️ EVENTOS ADVERSOS + 🔀 DIFERENCIAIS
+Msg 4: ⚠️ PEGADINHAS + 🧠 MNEMÔNICO + 📋 RESUMO + 📚 REFS + 🔬 ARTIGOS → ❓ ACTIVE RECALL
 ```
 
-**C) Atualizar sequência de entrega (linhas 36-43)**
+Reduzir limite de 800-1200 para **500-700 palavras** por mensagem.
 
-Mensagem 2 passa a incluir eventos adversos:
-```text
-Mensagem 2: 🏥 APLICAÇÃO CLÍNICA + 💊 CONDUTA + 💊⚠️ EVENTOS ADVERSOS + 🔀 DIFERENCIAIS
-```
+### 3. Carregar Performance Real do Banco (`StudySession.tsx`)
 
-**D) Atualizar verificação final (linhas 531-544)**
+Substituir dados mock/localStorage por consultas reais:
+- `practice_attempts` → total questões e acertos
+- `medical_domain_map` → scores por especialidade
+- `error_bank` → temas fracos
+- Enviar como `performanceData` na chamada da edge function
 
-Adicionar item 8: "Os eventos adversos dos medicamentos foram listados"
+### 4. Registrar Respostas como Practice Attempts (`StudySession.tsx`)
 
-**E) Atualizar exemplo de formato (linhas 218-259)**
+Detectar quando o aluno responde A/B/C/D/E a uma MCQ no chat:
+- Parsear resposta do tutor para identificar acerto/erro
+- Inserir em `practice_attempts` e atualizar `medical_domain_map`
+- Atualizar `error_bank` quando errar
 
-Adicionar exemplo de eventos adversos após conduta no modelo de IC
+### 5. Adaptação por Nível (`study-session/index.ts`)
 
-### 2. `supabase/functions/study-session/index.ts`
-
-Atualizar o phase prompt `lesson` para incluir:
-- Fisiopatologia com mediadores moleculares obrigatórios
-- Eventos adversos como componente obrigatório do bloco
+Incluir nível do aluno no prompt baseado em `performanceData`:
+- **Iniciante** (<30%): linguagem simples, mais exemplos
+- **Intermediário** (30-70%): equilíbrio teoria/prática
+- **Avançado** (>70%): foco em pegadinhas e casos atípicos
 
 ## Arquivos Modificados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `supabase/functions/_shared/enazizi-prompt.ts` | Fisiopatologia expandida + seção Eventos Adversos + verificação final |
-| `supabase/functions/study-session/index.ts` | Phase prompt `lesson` com novos requisitos |
-
-## Resultado Esperado
-
-- Fisiopatologia com cascatas moleculares claras e correlação direta com sintomas
-- Toda conduta terapêutica seguida de efeitos adversos, interações e contraindicações
-- Aluno aprende "o que tratar" + "o que vigiar" + "por que esse efeito ocorre"
+| `supabase/functions/_shared/enazizi-prompt.ts` | Sequência 4 mensagens, limite 500-700 palavras |
+| `supabase/functions/study-session/index.ts` | Active recall 1-por-vez, adaptação por nível |
+| `src/pages/StudySession.tsx` | Performance real do banco, registro de practice_attempts |
 
