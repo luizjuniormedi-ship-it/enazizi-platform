@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { isMedicalQuestion } from "@/lib/medicalValidation";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import {
   GraduationCap, Clock, FileText, CheckCircle, ArrowRight, ArrowLeft,
