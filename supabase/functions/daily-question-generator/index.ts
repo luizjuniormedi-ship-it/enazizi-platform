@@ -106,7 +106,8 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
         { role: "system", content: "Você é um professor de medicina especialista em criar questões de residência médica. Responda APENAS com JSON válido, sem markdown." },
         { role: "user", content: prompt },
       ],
-      timeoutMs: 55000,
+      timeoutMs: 90000,
+      maxRetries: 1,
     });
 
     if (!response.ok) {
