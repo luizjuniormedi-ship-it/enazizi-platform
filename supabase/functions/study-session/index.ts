@@ -162,10 +162,14 @@ Correção: diagnóstico 0-2, conduta 0-2, justificativa 0-1. Total X/5.
 Depois: resposta esperada, explicação, raciocínio, erros clássicos, reforço.
 Mostrar desempenho atualizado + temas fracos + próximo passo + mensagem motivacional.`;
 
-    default:
+    default: {
+      // Determine student level from performance data
+      const levelPrompt = getLevelPrompt(performanceData);
       return `${base}
+${levelPrompt}
 Siga o fluxo pedagógico dos STATES 0-12.
 REGRA: NUNCA comece com questões. Sempre ensine primeiro. Nunca pule estados.`;
+    }
   }
 }
 
