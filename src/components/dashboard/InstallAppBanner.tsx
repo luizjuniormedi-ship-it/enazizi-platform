@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
-import { Download, X, Share, Plus } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Download, Smartphone, Share, Plus, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-const DISMISS_KEY = "pwa-install-dismissed-at";
-const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -12,81 +10,149 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const InstallAppBanner = () => {
-  const [show, setShow] = useState(false);
+  const [open, setOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isIOS, setIsIOS] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [installed, setInstalled] = useState(false);
 
   useEffect(() => {
-    // Already installed as PWA
-    if (window.matchMedia("(display-mode: standalone)").matches) return;
-    if ((navigator as any).standalone === true) return;
-
-    // Check dismiss
-    const dismissed = localStorage.getItem(DISMISS_KEY);
-    if (dismissed && Date.now() - parseInt(dismissed) < SEVEN_DAYS) return;
+    if (window.matchMedia("(display-mode: standalone)").matches || (navigator as any).standalone === true) {
+      setIsInstalled(true);
+      return;
+    }
 
     const ua = navigator.userAgent;
-    const ios = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
-    setIsIOS(ios);
+    setIsIOS(/iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream);
 
-    if (ios) {
-      setShow(true);
-    } else {
-      const handler = (e: Event) => {
-        e.preventDefault();
-        setDeferredPrompt(e as BeforeInstallPromptEvent);
-        setShow(true);
-      };
-      window.addEventListener("beforeinstallprompt", handler);
-      return () => window.removeEventListener("beforeinstallprompt", handler);
-    }
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") setShow(false);
-    setDeferredPrompt(null);
+    if (outcome === "accepted") {
+      setInstalled(true);
+      setDeferredPrompt(null);
+    }
   };
 
-  const handleDismiss = () => {
-    localStorage.setItem(DISMISS_KEY, String(Date.now()));
-    setShow(false);
-  };
-
-  if (!show) return null;
+  if (isInstalled) return null;
 
   return (
-    <Alert className="relative border-primary/30 bg-primary/5">
-      <Download className="h-5 w-5 text-primary" />
-      <AlertTitle className="text-sm font-semibold">Instale o app no seu celular!</AlertTitle>
-      <AlertDescription className="text-xs text-muted-foreground mt-1">
-        {isIOS ? (
-          <div className="space-y-2">
-            <p>Para instalar no iPhone/iPad:</p>
-            <ol className="list-decimal list-inside space-y-1">
-              <li>Toque no botão <Share className="inline h-3.5 w-3.5 mx-0.5" /> <strong>Compartilhar</strong> na barra do Safari</li>
-              <li>Role para baixo e toque em <Plus className="inline h-3.5 w-3.5 mx-0.5" /> <strong>Adicionar à Tela de Início</strong></li>
-              <li>Confirme tocando em <strong>Adicionar</strong></li>
-            </ol>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between gap-3">
-            <p>Acesse mais rápido direto da tela inicial do seu celular.</p>
-            <Button size="sm" onClick={handleInstall} className="shrink-0 gap-1.5">
-              <Download className="h-3.5 w-3.5" /> Instalar
-            </Button>
-          </div>
-        )}
-      </AlertDescription>
-      <button
-        onClick={handleDismiss}
-        className="absolute top-2 right-2 rounded-sm opacity-70 hover:opacity-100 transition-opacity"
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setOpen(true)}
+        className="gap-2 w-full justify-start border-dashed border-primary/30 hover:bg-primary/5"
       >
-        <X className="h-4 w-4" />
-      </button>
-    </Alert>
+        <Smartphone className="h-4 w-4 text-primary" />
+        <span>📲 Baixar App no Celular</span>
+      </Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Smartphone className="h-5 w-5 text-primary" />
+              Instalar o App
+            </DialogTitle>
+            <DialogDescription>
+              Instale o app direto no seu celular para acesso rápido, offline e notificações.
+            </DialogDescription>
+          </DialogHeader>
+
+          {installed ? (
+            <Card className="border-green-500/30 bg-green-500/5">
+              <CardContent className="flex items-center gap-3 py-4">
+                <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                  <Check className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-green-700">App instalado com sucesso!</p>
+                  <p className="text-xs text-muted-foreground">Procure o ícone na sua tela inicial.</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : isIOS ? (
+            <div className="space-y-4">
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="py-4">
+                  <h3 className="text-sm font-semibold mb-3">📱 No iPhone/iPad (Safari):</h3>
+                  <ol className="space-y-3 text-sm">
+                    <li className="flex items-start gap-2">
+                      <span className="shrink-0 h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">1</span>
+                      <span>Toque no botão <Share className="inline h-4 w-4 mx-0.5 text-primary" /> <strong>Compartilhar</strong> na barra inferior do Safari</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="shrink-0 h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">2</span>
+                      <span>Role para baixo e toque em <Plus className="inline h-4 w-4 mx-0.5 text-primary" /> <strong>Adicionar à Tela de Início</strong></span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="shrink-0 h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">3</span>
+                      <span>Confirme tocando em <strong>Adicionar</strong></span>
+                    </li>
+                  </ol>
+                </CardContent>
+              </Card>
+              <p className="text-xs text-muted-foreground text-center">⚠️ Use o navegador <strong>Safari</strong>. O Chrome no iOS não suporta instalação.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="py-4">
+                  <h3 className="text-sm font-semibold mb-3">📱 No Android (Chrome):</h3>
+                  {deferredPrompt ? (
+                    <div className="space-y-3">
+                      <p className="text-sm text-muted-foreground">Clique no botão abaixo para instalar o app diretamente:</p>
+                      <Button onClick={handleInstall} className="w-full gap-2">
+                        <Download className="h-4 w-4" /> Instalar Agora
+                      </Button>
+                    </div>
+                  ) : (
+                    <ol className="space-y-3 text-sm">
+                      <li className="flex items-start gap-2">
+                        <span className="shrink-0 h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">1</span>
+                        <span>Abra este site no <strong>Google Chrome</strong></span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="shrink-0 h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">2</span>
+                        <span>Toque no menu <strong>⋮</strong> (3 pontinhos) no canto superior direito</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="shrink-0 h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">3</span>
+                        <span>Toque em <strong>"Adicionar à tela inicial"</strong> ou <strong>"Instalar app"</strong></span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="shrink-0 h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">4</span>
+                        <span>Confirme tocando em <strong>Instalar</strong></span>
+                      </li>
+                    </ol>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          <div className="border-t pt-3 mt-2">
+            <h4 className="text-xs font-semibold text-muted-foreground mb-2">✨ Vantagens do app instalado:</h4>
+            <ul className="text-xs text-muted-foreground space-y-1">
+              <li>⚡ Acesso instantâneo pela tela inicial</li>
+              <li>📶 Funciona offline (conteúdo em cache)</li>
+              <li>🔔 Receba notificações de revisões e mensagens</li>
+              <li>📱 Experiência em tela cheia, sem barra do navegador</li>
+            </ul>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
