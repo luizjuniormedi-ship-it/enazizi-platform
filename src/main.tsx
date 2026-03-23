@@ -4,10 +4,11 @@ import App from "./App.tsx";
 import "./index.css";
 
 // Register service worker for PWA (auto-update)
-registerSW({
+const updateSW = registerSW({
   onNeedRefresh() {
-    // Silently update — could show a toast here
     console.log("[PWA] Nova versão disponível, atualizando...");
+    // Auto-apply update immediately
+    updateSW(true);
   },
   onOfflineReady() {
     console.log("[PWA] App pronto para uso offline.");
