@@ -369,8 +369,29 @@ const StudySession = () => {
     setPhase("lesson");
     const updated = { ...performance, studiedTopics: [...new Set([...performance.studiedTopics, t])] };
     savePerformance(updated);
-    const userMsg: Msg = { role: "user", content: `Quero estudar: ${t}. Comece pela aula completa.` };
+
+    // Build user message with professor context if available
+    let userContent = `Quero estudar: ${t}. Comece pela aula completa.`;
+    if (professorContext) {
+      userContent += `\n\n[CONTEXTO DO PROFESSOR - TÓPICOS OBRIGATÓRIOS]\n${professorContext.topics}`;
+      if (professorContext.materialUrl) {
+        userContent += `\n[Material de apoio disponível no storage: ${professorContext.materialUrl}]`;
+      }
+    }
+
+    const userMsg: Msg = { role: "user", content: userContent };
     setMessages([userMsg]);
+
+    // Update assignment status to "studying"
+    if (professorContext?.assignmentId && user) {
+      supabase
+        .from("teacher_study_assignment_results")
+        .update({ status: "studying", started_at: new Date().toISOString() })
+        .eq("id", professorContext.assignmentId)
+        .eq("student_id", user.id)
+        .then(() => {});
+    }
+
     await streamChat([userMsg], "lesson", t);
   };
 

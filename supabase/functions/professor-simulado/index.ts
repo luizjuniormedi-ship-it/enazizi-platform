@@ -503,6 +503,103 @@ REGRAS:
         return ok({ results: enriched });
       }
 
+      // ========== STUDY ASSIGNMENTS ==========
+
+      case "create_study_assignment": {
+        const { title, specialty, topics_to_cover, material_url, material_filename, faculdade_filter, periodo_filter, student_ids } = params;
+
+        if (!title || !specialty || !topics_to_cover) throw new Error("Título, especialidade e tópicos são obrigatórios");
+
+        const { data: assignment, error } = await sb.from("teacher_study_assignments").insert({
+          professor_id: user.id,
+          title,
+          specialty,
+          topics_to_cover,
+          material_url: material_url || null,
+          material_filename: material_filename || null,
+          faculdade_filter: faculdade_filter || null,
+          periodo_filter: periodo_filter || null,
+          status: "active",
+        }).select("id").single();
+
+        if (error) throw new Error(error.message);
+
+        // Find students
+        let studentIds: string[] = student_ids || [];
+        if (studentIds.length === 0) {
+          let studentQuery = sb.from("profiles").select("user_id").eq("status", "active");
+          if (faculdade_filter) studentQuery = studentQuery.eq("faculdade", faculdade_filter);
+          if (periodo_filter) studentQuery = studentQuery.eq("periodo", periodo_filter);
+          const { data: students } = await studentQuery;
+          studentIds = (students || []).map((s: any) => s.user_id);
+        }
+
+        if (studentIds.length > 0) {
+          const results = studentIds.map((sid: string) => ({
+            assignment_id: assignment.id,
+            student_id: sid,
+            status: "pending",
+          }));
+          await sb.from("teacher_study_assignment_results").insert(results);
+        }
+
+        return ok({ success: true, assignment_id: assignment.id, students_assigned: studentIds.length });
+      }
+
+      case "list_study_assignments": {
+        const { data: assignments } = await sb
+          .from("teacher_study_assignments")
+          .select("*")
+          .eq("professor_id", user.id)
+          .order("created_at", { ascending: false });
+
+        const assignmentIds = (assignments || []).map((a: any) => a.id);
+        let resultsByAssignment: Record<string, { total: number; completed: number; studying: number }> = {};
+
+        if (assignmentIds.length > 0) {
+          const { data: results } = await sb
+            .from("teacher_study_assignment_results")
+            .select("assignment_id, status")
+            .in("assignment_id", assignmentIds);
+
+          for (const r of (results || [])) {
+            if (!resultsByAssignment[r.assignment_id]) resultsByAssignment[r.assignment_id] = { total: 0, completed: 0, studying: 0 };
+            resultsByAssignment[r.assignment_id].total++;
+            if (r.status === "completed") resultsByAssignment[r.assignment_id].completed++;
+            if (r.status === "studying") resultsByAssignment[r.assignment_id].studying++;
+          }
+        }
+
+        return ok({
+          assignments: (assignments || []).map((a: any) => ({
+            ...a,
+            results_summary: resultsByAssignment[a.id] || { total: 0, completed: 0, studying: 0 },
+          })),
+        });
+      }
+
+      case "get_study_assignment_results": {
+        const { assignment_id } = params;
+        if (!assignment_id) throw new Error("assignment_id obrigatório");
+
+        const { data: results } = await sb
+          .from("teacher_study_assignment_results")
+          .select("*")
+          .eq("assignment_id", assignment_id);
+
+        const studentIds = (results || []).map((r: any) => r.student_id);
+        const { data: profiles } = await sb.from("profiles")
+          .select("user_id, display_name, email")
+          .in("user_id", studentIds);
+
+        const enriched = (results || []).map((r: any) => {
+          const p = (profiles || []).find((p: any) => p.user_id === r.student_id);
+          return { ...r, student_name: p?.display_name || "Sem nome", student_email: p?.email || "" };
+        });
+
+        return ok({ results: enriched });
+      }
+
       default:
         return new Response(JSON.stringify({ error: `Ação desconhecida: ${action}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
