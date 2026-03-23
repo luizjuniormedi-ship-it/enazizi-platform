@@ -52,7 +52,6 @@ const mobileNavGroups: MobileNavGroup[] = [
     title: "Avaliação",
     items: [
       { to: "/dashboard/simulados", label: "📝 Simulados" },
-      { to: "/dashboard/simulado-completo", label: "🏆 Simulado Completo" },
       { to: "/dashboard/questoes", label: "❓ Gerador Questões" },
       { to: "/dashboard/banco-questoes", label: "🗃️ Banco de Questões" },
       { to: "/dashboard/discursivas", label: "✍️ Discursivas" },

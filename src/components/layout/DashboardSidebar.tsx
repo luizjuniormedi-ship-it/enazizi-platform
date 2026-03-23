@@ -55,7 +55,6 @@ const navGroups: NavGroup[] = [
     defaultOpen: false,
     items: [
       { to: "/dashboard/simulados", icon: FileText, label: "📝 Simulados" },
-      { to: "/dashboard/simulado-completo", icon: Award, label: "🏆 Simulado Completo" },
       
       { to: "/dashboard/questoes", icon: HelpCircle, label: "❓ Gerador Questões" },
       { to: "/dashboard/banco-questoes", icon: Database, label: "🗃️ Banco de Questões" },

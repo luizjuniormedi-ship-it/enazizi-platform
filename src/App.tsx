@@ -104,7 +104,7 @@ const App = () => (
                 <Route path="plano-dia" element={<DailyPlan />} />
                 <Route path="predictor" element={<PerformancePredictor />} />
                 <Route path="diagnostico" element={<Diagnostic />} />
-                <Route path="simulado-completo" element={<ExamSimulator />} />
+                
                 <Route path="banco-erros" element={<ErrorBank />} />
                 <Route path="mapa-dominio" element={<MedicalDomainMap />} />
                 <Route path="proficiencia" element={<StudentSimulados />} />

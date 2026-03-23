@@ -63,7 +63,7 @@ const DashboardMetricsGrid = ({ stats, metrics }: Props) => {
         {showSecondary && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 animate-fade-in">
             {[
-              { to: "/dashboard/simulado-completo", icon: Award, value: metrics.simuladosCompleted, label: "Simulados feitos" },
+              { to: "/dashboard/simulados", icon: Award, value: metrics.simuladosCompleted, label: "Simulados feitos" },
               { to: "/dashboard/banco-erros", icon: AlertTriangle, value: metrics.errorsCount, label: "Erros registrados", iconColor: metrics.errorsCount > 0 ? "text-red-500" : "text-green-500" },
               { to: "/dashboard/flashcards", icon: FlipVertical, value: stats.flashcards, label: "Flashcards" },
               { to: "/dashboard/questoes", icon: PenTool, value: metrics.questionsCreated, label: "Questões criadas" },
