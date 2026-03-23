@@ -49,6 +49,7 @@ const StudentSimulados = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [assigned, setAssigned] = useState<AssignedSimulado[]>([]);
   const [loading, setLoading] = useState(true);
