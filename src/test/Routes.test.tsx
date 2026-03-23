@@ -22,7 +22,6 @@ const VALID_DASHBOARD_ROUTES = [
   "/dashboard/plano-dia",
   "/dashboard/predictor",
   "/dashboard/diagnostico",
-  "/dashboard/simulado-completo",
   "/dashboard/banco-erros",
   "/dashboard/mapa-dominio",
   "/dashboard/proficiencia",
