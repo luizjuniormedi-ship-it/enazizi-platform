@@ -168,9 +168,15 @@ const StudySession = () => {
           .limit(10);
         const weakTopics = (errors || []).map((e) => e.tema);
 
-        // Load studied topics
-        const savedTopics = localStorage.getItem(`enazizi-studied-${user.id}`);
-        const studiedTopics = savedTopics ? JSON.parse(savedTopics) : [];
+        // Load studied topics from database
+        const { data: studiedData } = await supabase
+          .from("temas_estudados")
+          .select("tema")
+          .eq("user_id", user.id)
+          .eq("fonte", "tutor-ia")
+          .order("created_at", { ascending: false })
+          .limit(50);
+        const studiedTopics = (studiedData || []).map((t) => t.tema);
 
         setPerformance({ totalQuestions: total, correctAnswers: correct, level, readiness, specialties, weakTopics, studiedTopics });
       } catch (err) {
