@@ -198,7 +198,8 @@ FORMATO JSON PURO (sem markdown):
 
     // Insert questions
     const questions = (parsed.questions || []).filter((q: any) =>
-      q.statement && Array.isArray(q.options) && q.options.length >= 2 && typeof q.correct_index === "number"
+      q.statement && Array.isArray(q.options) && q.options.length >= 2 && typeof q.correct_index === "number" &&
+      String(q.statement).trim().length >= 200 && (q.difficulty || 3) >= 3
     );
     let qCount = 0;
     if (questions.length > 0) {

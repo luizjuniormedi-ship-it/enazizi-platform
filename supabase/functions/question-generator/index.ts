@@ -224,10 +224,10 @@ REGRAS DE ESPAÇAMENTO:
     // Add difficulty instruction
     if (difficulty) {
       const diffMap: Record<string, string> = {
-        facil: "Gere questões de nível BÁSICO: apresentações TÍPICAS com diagnóstico clássico. Paciente jovem, sem comorbidades, quadro textbook. Ainda assim, INCLUA caso clínico com sinais vitais e exame físico.",
-        intermediario: "Gere questões de nível INTERMEDIÁRIO (padrão ENARE): diagnósticos diferenciais reais, pacientes com comorbidades que modificam apresentação, necessidade de interpretar exames laboratoriais e de imagem. Cada caso deve exigir raciocínio em pelo menos 2 etapas.",
-        dificil: "Gere questões de nível AVANÇADO (padrão USP/UNIFESP): apresentações ATÍPICAS de doenças comuns, múltiplas comorbidades interagindo, diagnósticos raros mas cobrados em prova, dilemas de conduta. Exija raciocínio em múltiplas etapas e conhecimento de guidelines atualizados (2024-2026). Inclua pegadinhas inteligentes baseadas em nuances clínicas.",
-        misto: "Mescle questões: 40% intermediárias (padrão ENARE), 40% avançadas (padrão USP/UNIFESP), 20% expert (dilemas terapêuticos complexos, contraindicações, complicações raras).",
+        facil: "Gere questões de nível INTERMEDIÁRIO BAIXO (padrão REVALIDA básico): apresentações TÍPICAS mas com caso clínico completo contendo sinais vitais, exame físico e exames complementares. Mínimo 2 etapas de raciocínio. PROIBIDO questões de definição pura.",
+        intermediario: "Gere questões de nível INTERMEDIÁRIO (padrão REVALIDA/ENAMED): diagnósticos diferenciais reais, pacientes com comorbidades que modificam apresentação, necessidade de interpretar exames laboratoriais e de imagem. Cada caso deve exigir raciocínio em pelo menos 2 etapas. PROIBIDO enunciados < 150 caracteres.",
+        dificil: "Gere questões de nível AVANÇADO (padrão ENAMED/ENARE com pegadinhas): apresentações ATÍPICAS de doenças comuns, múltiplas comorbidades interagindo, diagnósticos raros mas cobrados em prova, dilemas de conduta. Exija raciocínio em múltiplas etapas e conhecimento de guidelines atualizados (2024-2026). Inclua pegadinhas inteligentes baseadas em nuances clínicas.",
+        misto: "Mescle questões: 50% intermediárias (padrão REVALIDA), 50% avançadas/expert (padrão ENAMED/ENARE com pegadinhas e apresentações atípicas). PROIBIDO nível fácil. DIFICULDADE MÍNIMA: 3/5.",
       };
       systemPrompt += `\n\n=== NÍVEL DE DIFICULDADE ===\n${diffMap[difficulty] || diffMap.intermediario}`;
     }
