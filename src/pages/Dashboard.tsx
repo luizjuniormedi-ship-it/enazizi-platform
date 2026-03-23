@@ -1,28 +1,20 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
-import SpecialtyProgressCard from "@/components/dashboard/SpecialtyProgressCard";
-import StreakCalendar from "@/components/dashboard/StreakCalendar";
 import DashboardWarnings from "@/components/dashboard/DashboardWarnings";
-import TopicEvolution from "@/components/dashboard/TopicEvolution";
 import MotivationalGreeting from "@/components/dashboard/MotivationalGreeting";
 import WhatsNewPopup from "@/components/dashboard/WhatsNewPopup";
 import FeedbackSurveyPopup from "@/components/dashboard/FeedbackSurveyPopup";
 import SystemGuidePopup from "@/components/dashboard/SystemGuidePopup";
-import SpecialtyBenchmark from "@/components/dashboard/SpecialtyBenchmark";
 import OnboardingTour from "@/components/dashboard/OnboardingTour";
-import WeeklyProgressCard from "@/components/dashboard/WeeklyProgressCard";
 import PerformanceReport from "@/components/dashboard/PerformanceReport";
-import MiniLeaderboard from "@/components/dashboard/MiniLeaderboard";
 import DailyPlanWidget from "@/components/dashboard/DailyPlanWidget";
 import DailyGoalWidget from "@/components/dashboard/DailyGoalWidget";
 import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner";
 import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
-import DashboardCharts from "@/components/dashboard/DashboardCharts";
 import QuickStartCard from "@/components/dashboard/QuickStartCard";
 import SmartRecommendations from "@/components/dashboard/SmartRecommendations";
-import ApprovalThermometer from "@/components/dashboard/ApprovalThermometer";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import ErrorReviewCard from "@/components/dashboard/ErrorReviewCard";
 import SmartNotifications from "@/components/dashboard/SmartNotifications";
@@ -32,6 +24,27 @@ import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { fireCelebration } from "@/lib/celebrations";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy load heavy chart/analytics components
+const StreakCalendar = lazy(() => import("@/components/dashboard/StreakCalendar"));
+const SpecialtyProgressCard = lazy(() => import("@/components/dashboard/SpecialtyProgressCard"));
+const DashboardCharts = lazy(() => import("@/components/dashboard/DashboardCharts"));
+const WeeklyProgressCard = lazy(() => import("@/components/dashboard/WeeklyProgressCard"));
+const MiniLeaderboard = lazy(() => import("@/components/dashboard/MiniLeaderboard"));
+const ApprovalThermometer = lazy(() => import("@/components/dashboard/ApprovalThermometer"));
+const TopicEvolution = lazy(() => import("@/components/dashboard/TopicEvolution"));
+const SpecialtyBenchmark = lazy(() => import("@/components/dashboard/SpecialtyBenchmark"));
+
+const ChartFallback = () => (
+  <Card>
+    <CardContent className="p-6">
+      <Skeleton className="h-6 w-40 mb-4" />
+      <Skeleton className="h-48 w-full rounded-lg" />
+    </CardContent>
+  </Card>
+);
 
 const Dashboard = () => {
   useRevisionNotifier();
@@ -141,8 +154,8 @@ const Dashboard = () => {
       />
 
       {!isNewUser && (
-        <>
-          {/* Streak Calendar (Duolingo-style) + Daily Goal */}
+        <Suspense fallback={<div className="space-y-6"><ChartFallback /><ChartFallback /></div>}>
+          {/* Streak Calendar + Daily Goal */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <StreakCalendar />
             <DailyGoalWidget />
@@ -152,7 +165,7 @@ const Dashboard = () => {
           <DashboardMetricsGrid stats={stats} metrics={metrics} />
           <DailyPlanWidget />
 
-          {/* Specialty Progress Bars */}
+          {/* Specialty Progress */}
           <SpecialtyProgressCard />
 
           <DashboardCharts stats={stats} metrics={metrics} />
@@ -168,7 +181,7 @@ const Dashboard = () => {
           </div>
 
           <SpecialtyBenchmark />
-        </>
+        </Suspense>
       )}
     </div>
   );

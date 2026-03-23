@@ -234,25 +234,35 @@ const Admin = () => {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Shield className="h-6 w-6 text-primary" /> Painel Admin
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Shield className="h-5 w-5 text-primary" />
+            </div>
+            Painel Admin
           </h1>
-          <p className="text-muted-foreground">Gerencie usuários, aprovações, planos e assinaturas.</p>
+          <p className="text-muted-foreground mt-1">Gerencie usuários, aprovações, planos e assinaturas.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={loadData} disabled={loading} className="gap-1.5">
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Atualizar
-        </Button>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs h-7">
+            {users.length} usuários
+          </Badge>
+          <Button variant="outline" size="sm" onClick={loadData} disabled={loading} className="gap-1.5">
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Atualizar
+          </Button>
+        </div>
       </div>
 
       {/* Pending notification */}
       {pendingCount > 0 && (
-        <div className="flex items-center gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-          <Bell className="h-5 w-5 text-amber-500 animate-pulse" />
+        <div className="flex items-center gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 animate-in slide-in-from-top duration-300">
+          <div className="h-10 w-10 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+            <Bell className="h-5 w-5 text-amber-500 animate-pulse" />
+          </div>
           <div className="flex-1">
             <p className="text-sm font-semibold">🔔 {pendingCount} novo{pendingCount > 1 ? "s" : ""} usuário{pendingCount > 1 ? "s" : ""} aguardando aprovação</p>
             <p className="text-xs text-muted-foreground">Clique na aba "Novos Usuários" para revisar</p>
           </div>
-          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setActiveTab("pending")}>
-            <UserCheck className="h-4 w-4" /> Revisar
+          <Button size="sm" className="gap-1.5 bg-amber-500 hover:bg-amber-600 text-white" onClick={() => setActiveTab("pending")}>
+            <UserCheck className="h-4 w-4" /> Revisar agora
           </Button>
         </div>
       )}
