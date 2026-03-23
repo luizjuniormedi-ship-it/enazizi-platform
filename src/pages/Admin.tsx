@@ -344,6 +344,9 @@ const Admin = () => {
             <TabsTrigger value="feedbacks" className="gap-1.5">
               <Star className="h-3.5 w-3.5" /> Feedbacks
             </TabsTrigger>
+            <TabsTrigger value="messages" className="gap-1.5">
+              <Mail className="h-3.5 w-3.5" /> Mensagens
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="whatsapp">
