@@ -27,26 +27,40 @@ Deno.serve(async (req) => {
 
     const alerts: HealthAlert[] = [];
 
-    // 1. Check questions_bank count per specialty
-    const { data: questions } = await supabase
-      .from("questions_bank")
-      .select("topic", { count: "exact" });
+    // 1. Check questions_bank count per MAIN specialty (not subtopics)
+    const SPECIALTIES = [
+      "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia",
+      "Gastroenterologia", "Pediatria", "Ginecologia e Obstetrícia",
+      "Cirurgia Geral", "Medicina Preventiva", "Nefrologia",
+      "Infectologia", "Hematologia", "Reumatologia", "Dermatologia",
+      "Ortopedia", "Urologia", "Psiquiatria", "Oftalmologia",
+      "Otorrinolaringologia", "Emergência", "Semiologia", "Anatomia",
+      "Farmacologia", "Oncologia",
+    ];
 
-    const topicCounts: Record<string, number> = {};
-    (questions || []).forEach((q: any) => {
-      const t = q.topic || "Sem tema";
-      topicCounts[t] = (topicCounts[t] || 0) + 1;
-    });
+    // Parallel count per main specialty
+    const countResults = await Promise.all(
+      SPECIALTIES.map(async (spec) => {
+        const { count } = await supabase
+          .from("questions_bank")
+          .select("id", { count: "exact", head: true })
+          .eq("is_global", true)
+          .eq("topic", spec);
+        return { spec, count: count || 0 };
+      })
+    );
 
-    const lowTopics = Object.entries(topicCounts).filter(([, c]) => c < 100);
-    if (lowTopics.length > 0) {
+    const MIN_PER_SPECIALTY = 20;
+    const lowSpecs = countResults.filter((r) => r.count < MIN_PER_SPECIALTY);
+    if (lowSpecs.length > 0) {
+      const severity = lowSpecs.some((s) => s.count === 0) ? "critical" as const : "warning" as const;
       alerts.push({
         id: "low-questions",
-        severity: "critical",
-        title: "Banco de Questões Baixo",
-        message: `${lowTopics.length} especialidade(s) com menos de 100 questões: ${lowTopics.slice(0, 5).map(([t, c]) => `${t} (${c})`).join(", ")}`,
-        metric: lowTopics.length,
-        threshold: 0,
+        severity,
+        title: "Especialidades com Poucas Questões",
+        message: `${lowSpecs.length} especialidade(s) com menos de ${MIN_PER_SPECIALTY} questões: ${lowSpecs.sort((a, b) => a.count - b.count).slice(0, 8).map((s) => `${s.spec} (${s.count})`).join(", ")}`,
+        metric: lowSpecs.length,
+        threshold: MIN_PER_SPECIALTY,
       });
     }
 
