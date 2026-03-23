@@ -116,40 +116,125 @@ const StudySession = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  // Load performance from localStorage
+  // Load performance from real database
   useEffect(() => {
     if (!user) return;
-    const saved = localStorage.getItem(`enazizi-perf-${user.id}`);
-    if (saved) {
-      try { setPerformance(JSON.parse(saved)); } catch {}
-    }
+    const loadPerformance = async () => {
+      try {
+        // Load practice attempts stats
+        const { count: totalCount } = await supabase
+          .from("practice_attempts")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id);
+        const { count: correctCount } = await supabase
+          .from("practice_attempts")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("correct", true);
+
+        const total = totalCount || 0;
+        const correct = correctCount || 0;
+        const accuracy = total > 0 ? (correct / total) * 100 : 0;
+        const level = accuracy < 30 ? "Iniciante" : accuracy < 70 ? "Intermediário" : "Avançado";
+        const readiness = Math.min(100, Math.round(accuracy * 0.7 + Math.min(total, 100) * 0.3));
+
+        // Load domain map
+        const { data: domains } = await supabase
+          .from("medical_domain_map")
+          .select("specialty, domain_score, questions_answered, correct_answers")
+          .eq("user_id", user.id);
+
+        const specialties: SpecialtyScore[] = (domains || []).map((d) => ({
+          name: d.specialty,
+          score: d.correct_answers,
+          total: d.questions_answered,
+        }));
+
+        // Fill missing specialties
+        const defaultSpecialties = ["Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia", "Gastroenterologia", "Pediatria", "Ginecologia/Obstetrícia", "Cirurgia", "Medicina Preventiva"];
+        for (const s of defaultSpecialties) {
+          if (!specialties.find((sp) => sp.name === s)) {
+            specialties.push({ name: s, score: 0, total: 0 });
+          }
+        }
+
+        // Load weak topics from error_bank
+        const { data: errors } = await supabase
+          .from("error_bank")
+          .select("tema")
+          .eq("user_id", user.id)
+          .eq("dominado", false)
+          .order("vezes_errado", { ascending: false })
+          .limit(10);
+        const weakTopics = (errors || []).map((e) => e.tema);
+
+        // Load studied topics
+        const savedTopics = localStorage.getItem(`enazizi-studied-${user.id}`);
+        const studiedTopics = savedTopics ? JSON.parse(savedTopics) : [];
+
+        setPerformance({ totalQuestions: total, correctAnswers: correct, level, readiness, specialties, weakTopics, studiedTopics });
+      } catch (err) {
+        console.error("Error loading performance:", err);
+      }
+    };
+    loadPerformance();
   }, [user]);
 
   const savePerformance = useCallback((data: PerformanceData) => {
-    setPerformance(prev => {
-      // Log new weak topics to ErrorBank
-      if (user && data.weakTopics) {
-        const prevWeakSet = new Set((prev?.weakTopics || []).map((t: any) => typeof t === "string" ? t : t.name));
-        const newWeakTopics = (data.weakTopics as any[]).filter((t: any) => {
-          const name = typeof t === "string" ? t : t.name;
-          return !prevWeakSet.has(name);
-        });
-        for (const t of newWeakTopics) {
-          const topicName = typeof t === "string" ? t : t.name;
-          logErrorToBank({
-            userId: user.id,
-            tema: topicName,
-            tipoQuestao: "active-recall",
-            conteudo: `Tema fraco identificado na sessão de estudo: ${topicName}`,
-            motivoErro: "Identificado como tema fraco pelo tutor IA",
-            categoriaErro: "conceito",
-          });
-        }
-      }
-      return data;
-    });
-    if (user) localStorage.setItem(`enazizi-perf-${user.id}`, JSON.stringify(data));
+    setPerformance(data);
+    if (user) localStorage.setItem(`enazizi-studied-${user.id}`, JSON.stringify(data.studiedTopics));
   }, [user]);
+
+  // Detect MCQ answers in assistant responses and register practice_attempts
+  const detectAndRegisterMCQ = useCallback(async (assistantContent: string, userAnswer: string) => {
+    if (!user || !topic) return;
+    // Check if user sent a single letter answer (A-E)
+    const answerMatch = userAnswer.trim().match(/^[A-Ea-e]$/);
+    if (!answerMatch) return;
+
+    // Check if assistant response contains correction indicators
+    const content = assistantContent.toLowerCase();
+    const isCorrect = content.includes("✅") || content.includes("correta") || content.includes("acertou") || content.includes("parabéns");
+    const isWrong = content.includes("❌") || content.includes("incorreta") || content.includes("errou") || content.includes("não é a alternativa");
+
+    if (!isCorrect && !isWrong) return;
+    const correct = isCorrect && !isWrong;
+
+    try {
+      // We need a question_id — use a generated one based on conversation context
+      // Instead, update domain map and error bank directly
+      const { updateDomainMap } = await import("@/lib/updateDomainMap");
+      await updateDomainMap(user.id, [{ topic, correct }]);
+
+      if (!correct) {
+        await logErrorToBank({
+          userId: user.id,
+          tema: topic,
+          tipoQuestao: "objetiva",
+          conteudo: `Questão MCQ do Tutor IA sobre ${topic}`,
+          motivoErro: "Erro em questão objetiva durante sessão de estudo",
+          categoriaErro: "conceito",
+        });
+      }
+
+      // Update local performance
+      setPerformance(prev => {
+        const newTotal = prev.totalQuestions + 1;
+        const newCorrect = prev.correctAnswers + (correct ? 1 : 0);
+        const accuracy = (newCorrect / newTotal) * 100;
+        return {
+          ...prev,
+          totalQuestions: newTotal,
+          correctAnswers: newCorrect,
+          level: accuracy < 30 ? "Iniciante" : accuracy < 70 ? "Intermediário" : "Avançado",
+          readiness: Math.min(100, Math.round(accuracy * 0.7 + Math.min(newTotal, 100) * 0.3)),
+          weakTopics: !correct && !prev.weakTopics.includes(topic) ? [...prev.weakTopics, topic] : prev.weakTopics,
+        };
+      });
+    } catch (err) {
+      console.error("Error registering MCQ attempt:", err);
+    }
+  }, [user, topic]);
 
   const streamChat = async (msgs: Msg[], currentPhase: Phase, currentTopic: string) => {
     setIsLoading(true);
