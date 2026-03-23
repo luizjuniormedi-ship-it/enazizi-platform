@@ -168,9 +168,15 @@ const StudySession = () => {
           .limit(10);
         const weakTopics = (errors || []).map((e) => e.tema);
 
-        // Load studied topics
-        const savedTopics = localStorage.getItem(`enazizi-studied-${user.id}`);
-        const studiedTopics = savedTopics ? JSON.parse(savedTopics) : [];
+        // Load studied topics from database
+        const { data: studiedData } = await supabase
+          .from("temas_estudados")
+          .select("tema")
+          .eq("user_id", user.id)
+          .eq("fonte", "tutor-ia")
+          .order("created_at", { ascending: false })
+          .limit(50);
+        const studiedTopics = (studiedData || []).map((t) => t.tema);
 
         setPerformance({ totalQuestions: total, correctAnswers: correct, level, readiness, specialties, weakTopics, studiedTopics });
       } catch (err) {
@@ -180,9 +186,32 @@ const StudySession = () => {
     loadPerformance();
   }, [user]);
 
-  const savePerformance = useCallback((data: PerformanceData) => {
+  const savePerformance = useCallback(async (data: PerformanceData) => {
     setPerformance(data);
-    if (user) localStorage.setItem(`enazizi-studied-${user.id}`, JSON.stringify(data.studiedTopics));
+    if (user && data.studiedTopics.length > 0) {
+      const latestTopic = data.studiedTopics[data.studiedTopics.length - 1];
+      try {
+        // Check if topic already exists
+        const { data: existing } = await supabase
+          .from("temas_estudados")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("tema", latestTopic)
+          .eq("fonte", "tutor-ia")
+          .maybeSingle();
+        if (!existing) {
+          await supabase.from("temas_estudados").insert({
+            user_id: user.id,
+            tema: latestTopic,
+            especialidade: "Geral",
+            fonte: "tutor-ia",
+            status: "ativo",
+          });
+        }
+      } catch (err) {
+        console.error("Error saving studied topic:", err);
+      }
+    }
   }, [user]);
 
   // Detect MCQ answers in assistant responses and register practice_attempts

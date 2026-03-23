@@ -37,9 +37,23 @@ NÍVEL DO ALUNO: AVANÇADO (taxa de acerto: ${Math.round(accuracy)}%)
 - Desafie com casos de alta complexidade`;
 }
 
+function getWeakTopicsPrompt(performanceData: unknown): string {
+  const data = performanceData as any;
+  if (!data?.weakTopics?.length) return "";
+  return `
+TEMAS FRACOS DO ALUNO (reforço automático obrigatório):
+${data.weakTopics.map((t: string) => `- ❌ ${t}`).join("\n")}
+
+REGRA DE REFORÇO POR ERRO:
+- Nos próximos 3-5 blocos, RETOME esses temas fracos com ENFOQUE DIFERENTE do que já foi abordado
+- NUNCA ignore os temas fracos — eles devem ser intercalados com o conteúdo novo
+- Ao retomar: use ângulo diferente (se errou diagnóstico → foque em conduta; se errou conduta → foque em complicações)`;
+}
+
 function getPhasePrompt(phase: string, topic: string, performanceData: unknown): string {
   const base = ENAZIZI_PROMPT;
   const levelPrompt = getLevelPrompt(performanceData);
+  const weakTopicsPrompt = getWeakTopicsPrompt(performanceData);
 
   switch (phase) {
     case "performance":
@@ -62,6 +76,7 @@ Se não houver dados, informe e sugira começar.`;
     case "lesson":
       return `${base}
 ${levelPrompt}
+${weakTopicsPrompt}
 FASE ATUAL: BLOCOS TÉCNICOS (STATES 2-6)
 Tema: "${topic || "solicitado pelo aluno"}"
 
@@ -99,6 +114,7 @@ Ao final da Mensagem 4: inclua a primeira pergunta de Active Recall (❓ Pergunt
 
     case "active-recall":
       return `${base}
+${weakTopicsPrompt}
 FASE ATUAL: ACTIVE RECALL (STATES 3/5)
 Tema: "${topic}"
 
@@ -113,6 +129,11 @@ FORMATO SEQUENCIAL OBRIGATÓRIO — UMA PERGUNTA POR VEZ:
 
 REGRA: NUNCA apresente múltiplas perguntas de uma vez. SEMPRE 1 por mensagem.
 
+REGRA DE REFORÇO POR ERRO:
+- Se o aluno errar uma pergunta, adicione uma pergunta EXTRA sobre o mesmo conceito com ângulo diferente
+- Ex: errou mecanismo? → pergunte sobre a consequência clínica
+- Ex: errou conduta? → pergunte sobre o diagnóstico diferencial
+
 Foque em: mecanismos, diagnósticos, condutas, pontos de prova.
 Se o aluno errar: ❌ + resposta correta + raciocínio + ponto de prova + pergunta de reforço na sequência.
 
@@ -121,6 +142,7 @@ Varie os enfoques: NUNCA duas perguntas consecutivas do mesmo conceito.`;
 
     case "questions":
       return `${base}
+${weakTopicsPrompt}
 FASE ATUAL: QUESTÃO OBJETIVA (STATE 7)
 Tema: "${topic}"
 
@@ -158,6 +180,7 @@ Perguntar: 1) continuar, 2) outra questão, 3) revisar conteúdo.`;
 
     case "discursive":
       return `${base}
+${weakTopicsPrompt}
 FASE ATUAL: CASO CLÍNICO DISCURSIVO (STATE 9)
 Tema: "${topic}"
 
@@ -172,11 +195,17 @@ Apresente caso clínico COMPLETO e de ALTO NÍVEL com:
 O caso deve ter complexidade suficiente para exigir raciocínio clínico em etapas.
 Inclua pelo menos uma "armadilha" diagnóstica (apresentação atípica ou comorbidade que confunde).
 
-REGRA DE REPETIÇÃO ESPAÇADA (PRIORIDADE MÁXIMA):
+ANAMNESE ÚNICA — REGRA ABSOLUTA:
+- NUNCA repita perfil de paciente de casos anteriores da sessão
+- Variar: nomes regionais brasileiros, idades de 0 a 95 anos, profissões diversas
+- Alternar cenários: PS, enfermaria, UTI, UBS, SAMU, ambulatório, domicílio
+- Variar comorbidades: DM, HAS, IRC, HIV, tabagismo, etilismo, gestante, imunossuprimido
+- PROIBIDO: repetir a combinação idade+sexo+cenário de paciente já apresentado
+
+REGRA DE REPETIÇÃO ESPAÇADA:
 - PODE retomar temas anteriores, desde que não seja o caso CONSECUTIVO anterior
 - Quando retomar, use ENFOQUE DIFERENTE (diagnóstico → conduta → complicação)
 - QUANDO O ALUNO ERRAR: retome o tema nos próximos 3-5 casos para REFORÇO com ângulo diferente
-- NUNCA repita perfil de paciente: varie nome, idade, sexo, profissão, cenário, comorbidades
 
 Pergunte:
 1. Qual o diagnóstico mais provável? Justifique com base nos achados.
@@ -198,10 +227,10 @@ Depois: resposta esperada, explicação, raciocínio, erros clássicos, reforço
 Mostrar desempenho atualizado + temas fracos + próximo passo + mensagem motivacional.`;
 
     default: {
-      // Determine student level from performance data
       const levelPrompt = getLevelPrompt(performanceData);
       return `${base}
 ${levelPrompt}
+${getWeakTopicsPrompt(performanceData)}
 Siga o fluxo pedagógico dos STATES 0-12.
 REGRA: NUNCA comece com questões. Sempre ensine primeiro. Nunca pule estados.`;
     }
