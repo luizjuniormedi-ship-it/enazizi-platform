@@ -48,6 +48,7 @@ const QuestionsBank = () => {
   const { toast } = useToast();
   const { addXp } = useGamification();
   const navigate = useNavigate();
+  useAutoReplenish(topicFilter !== "all" ? topicFilter : null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
