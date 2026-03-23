@@ -26,6 +26,7 @@ import ApprovalThermometer from "@/components/dashboard/ApprovalThermometer";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import ErrorReviewCard from "@/components/dashboard/ErrorReviewCard";
 import SmartNotifications from "@/components/dashboard/SmartNotifications";
+import AdminSystemAlerts from "@/components/admin/AdminSystemAlerts";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { fireCelebration } from "@/lib/celebrations";
