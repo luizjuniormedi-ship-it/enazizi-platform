@@ -1,70 +1,54 @@
 
 
-# Plano: Verificação Diária Automática de Saúde do Sistema
+# Plano: Calibrar Questões IA ao Nível REVALIDA/ENAMED
 
-## Objetivo
-Criar uma Edge Function que roda diariamente via cron job, verifica problemas críticos da plataforma, salva os resultados numa tabela, e exibe um popup para o admin no Dashboard com os alertas detectados.
-
-## Arquitetura
-
-```text
-pg_cron (diário 6h) → Edge Function "system-health-check"
-                            ↓
-                    Consulta tabelas do sistema
-                            ↓
-                    Salva em "system_health_reports"
-                            ↓
-            Admin abre Dashboard → popup com alertas
-```
-
-## Verificações Automáticas
-
-| Check | Fonte | Severidade |
-|-------|-------|------------|
-| Questões no banco < 100 por especialidade | `questions_bank` | Crítico |
-| Geração diária falhou (últimas 24h) | `daily_generation_log` | Crítico |
-| Edge Functions com timeout/erro | Logs da AI (ai-fetch errors) | Crítico |
-| Uploads pendentes > 24h | `uploads` where status='pending' | Aviso |
-| Usuários com cota esgotada (>80%) | `user_quotas` | Aviso |
-| Feedbacks não lidos (últimos 7 dias) | `user_feedback` | Info |
-| Usuários pendentes de aprovação | `profiles` where status='pending' | Aviso |
-| Flashcards sem revisão (banco estagnado) | `reviews` | Info |
+## Problema Atual
+- O `daily-question-generator` pede "40% fácil, 40% médio, 20% difícil" — muito abaixo do nível REVALIDA
+- Falta validação pós-geração para rejeitar questões simples demais
+- Os prompts mencionam ENARE/REVALIDA mas não definem critérios objetivos de calibração
 
 ## Mudanças
 
-### 1. Nova tabela `system_health_reports`
-- `id`, `check_date` (date), `alerts` (jsonb array), `total_critical`, `total_warning`, `total_info`, `created_at`
-- RLS: apenas admins podem ler
+### 1. `supabase/functions/daily-question-generator/index.ts`
+- Alterar distribuição: **0% fácil, 50% intermediário (padrão REVALIDA), 50% difícil (padrão ENAMED/ENARE)**
+- Adicionar bloco de calibração no prompt com critérios objetivos do REVALIDA:
+  - Obrigatório caso clínico com ≥3 dados clínicos relevantes
+  - Mínimo 2 etapas de raciocínio (ex: diagnóstico → conduta)
+  - Distratores baseados em diagnósticos diferenciais reais
+  - Proibido questões diretas de "definição" ou "conceito puro"
+- Adicionar validação pós-geração: rejeitar questões com enunciado < 150 caracteres (indica questão simples demais)
 
-### 2. Nova Edge Function `system-health-check`
-- Consulta todas as tabelas relevantes usando service_role
-- Gera array de alertas com severidade, título, descrição, dados numéricos
-- Insere na tabela `system_health_reports`
-- Chamada via pg_cron diariamente às 6h
+### 2. `supabase/functions/enamed-generator/index.ts`
+- Reforçar calibração: eliminar nível "fácil", mínimo dificuldade 3
+- Adicionar critérios de validação: rejeitar questões sem caso clínico (enunciado < 200 chars)
 
-### 3. Novo componente `AdminSystemAlerts.tsx`
-- Consulta `system_health_reports` mais recente
-- Exibe popup/dialog ao admin no Dashboard
-- Cards coloridos por severidade (vermelho/amarelo/azul)
-- Botão "Dispensar" com localStorage
-- Botão "Ver detalhes" que abre o painel Admin
+### 3. `supabase/functions/question-generator/index.ts`
+- Ajustar nível padrão (quando sem difficulty): de "intermediário" para "padrão REVALIDA/ENAMED"
+- Atualizar `diffMap` para que "intermediario" = nível REVALIDA real e "dificil" = nível ENAMED com pegadinhas
+- Adicionar bloco de calibração com exemplos de padrão esperado
 
-### 4. Integração no Dashboard
-- Importar `AdminSystemAlerts` no `Dashboard.tsx`
-- Renderizar apenas para admins (usa `useAdminCheck`)
+### 4. `src/pages/Diagnostic.tsx`
+- Ajustar prompt de geração para exigir nível REVALIDA explicitamente
+- Remover nível "básico" da adaptação dinâmica
 
-## Arquivos
+## Critérios de Calibração REVALIDA/ENAMED (adicionados aos prompts)
+
+```text
+CALIBRAÇÃO OBRIGATÓRIA REVALIDA/ENAMED:
+- PROIBIDO: questões de definição pura ("O que é X?")
+- PROIBIDO: enunciados < 150 caracteres sem caso clínico
+- OBRIGATÓRIO: caso clínico com ≥3 dados clínicos (vitais, exames, achados)
+- OBRIGATÓRIO: ≥2 etapas de raciocínio clínico
+- OBRIGATÓRIO: pelo menos 2 distratores plausíveis (diagnóstico diferencial real)
+- DIFICULDADE MÍNIMA: 3/5 (intermediário = padrão REVALIDA)
+```
+
+## Arquivos Modificados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `supabase/migrations/...` | Criar tabela `system_health_reports` |
-| `supabase/functions/system-health-check/index.ts` | **Novo** — Edge Function de verificação |
-| `src/components/admin/AdminSystemAlerts.tsx` | **Novo** — popup de alertas |
-| `src/pages/Dashboard.tsx` | Integrar popup |
-
-## Detalhes Técnicos
-- pg_cron + pg_net para agendar chamada diária à Edge Function
-- Edge Function usa `SUPABASE_SERVICE_ROLE_KEY` para queries sem RLS
-- Alertas armazenados como JSONB: `[{id, severity, title, message, metric, threshold}]`
-- Frontend filtra alertas por severidade e mostra badge com contagem no ícone de sino
+| `supabase/functions/daily-question-generator/index.ts` | Calibração REVALIDA + validação |
+| `supabase/functions/enamed-generator/index.ts` | Reforçar nível mínimo + validação |
+| `supabase/functions/question-generator/index.ts` | Ajustar diffMap e nível padrão |
+| `src/pages/Diagnostic.tsx` | Nível mínimo REVALIDA |
 
