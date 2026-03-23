@@ -506,6 +506,101 @@ const StudentSimulados = () => {
               </>
             )}
           </TabsContent>
+
+          <TabsContent value="temas" className="space-y-4 mt-4">
+            {assignmentsLoading ? (
+              <div className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div>
+            ) : studyAssignments.length === 0 ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <BookOpen className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Nenhum tema atribuído</h3>
+                  <p className="text-sm text-muted-foreground mb-6">Quando seu professor atribuir temas de estudo, eles aparecerão aqui.</p>
+                  <Button variant="outline" onClick={() => navigate("/dashboard/sessao-estudo")} className="gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Estudar por conta própria
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {studyAssignments.filter((a: any) => a.status !== "completed").length > 0 && (
+                  <div className="space-y-3">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-amber-500" />
+                      Pendentes
+                    </h2>
+                    {studyAssignments.filter((a: any) => a.status !== "completed").map((item: any) => {
+                      const assignment = item.teacher_study_assignments;
+                      return (
+                        <Card key={item.id} className="border-primary/30 hover:border-primary/60 transition-colors">
+                          <CardContent className="p-4 flex items-center justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <BookOpen className="h-4 w-4 text-primary" />
+                                <h3 className="font-semibold">{assignment?.title || "Tema"}</h3>
+                              </div>
+                              <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{assignment?.topics_to_cover}</p>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
+                                <Badge variant="outline" className="text-[10px]">{assignment?.specialty}</Badge>
+                                {assignment?.material_filename && (
+                                  <Badge variant="secondary" className="text-[10px] gap-1">📎 Material</Badge>
+                                )}
+                              </div>
+                            </div>
+                            <Button
+                              onClick={() => {
+                                const params = new URLSearchParams({
+                                  topic: assignment?.title || "",
+                                  professorTopics: assignment?.topics_to_cover || "",
+                                  assignmentId: item.id,
+                                });
+                                if (assignment?.material_url) params.set("materialUrl", assignment.material_url);
+                                navigate(`/dashboard/sessao-estudo?${params.toString()}`);
+                              }}
+                              className="gap-2 shrink-0"
+                            >
+                              <Play className="h-4 w-4" />
+                              {item.status === "studying" ? "Continuar" : "Estudar com Tutor IA"}
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {studyAssignments.filter((a: any) => a.status === "completed").length > 0 && (
+                  <div className="space-y-3">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5 text-emerald-500" />
+                      Concluídos
+                    </h2>
+                    {studyAssignments.filter((a: any) => a.status === "completed").map((item: any) => {
+                      const assignment = item.teacher_study_assignments;
+                      return (
+                        <Card key={item.id}>
+                          <CardContent className="p-4 flex items-center justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle className="h-4 w-4 text-emerald-500" />
+                                <h3 className="font-semibold">{assignment?.title || "Tema"}</h3>
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                                <Badge variant="outline" className="text-[10px]">{assignment?.specialty}</Badge>
+                                <span>{item.completed_at ? new Date(item.completed_at).toLocaleDateString("pt-BR") : ""}</span>
+                              </div>
+                            </div>
+                            <Badge variant="default" className="text-xs">✅ Concluído</Badge>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
     );
