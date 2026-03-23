@@ -55,11 +55,10 @@ const Diagnostic = () => {
 
   const getDifficultyForArea = (area: string, prevAnswers: AnswerRecord[]): string => {
     const areaAnswers = prevAnswers.filter(a => a.topic === area);
-    if (areaAnswers.length === 0) return "intermediário";
+    if (areaAnswers.length === 0) return "intermediário (padrão REVALIDA)";
     const rate = areaAnswers.filter(a => a.correct).length / areaAnswers.length;
-    if (rate >= 0.8) return "avançado";
-    if (rate >= 0.5) return "intermediário";
-    return "básico";
+    if (rate >= 0.8) return "avançado (padrão ENAMED/ENARE com pegadinhas)";
+    return "intermediário (padrão REVALIDA)";
   };
 
   const invokeQuestionGeneratorWithTimeout = async (body: Record<string, unknown>, timeoutMs: number) => {
