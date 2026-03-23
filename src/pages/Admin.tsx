@@ -17,6 +17,7 @@ import AdminAuditLog from "@/components/admin/AdminAuditLog";
 import AdminDialogs from "@/components/admin/AdminDialogs";
 import AdminUserRow from "@/components/admin/AdminUserRow";
 import AdminFeedbackPanel from "@/components/admin/AdminFeedbackPanel";
+import AdminMessagesPanel from "@/components/admin/AdminMessagesPanel";
 import type { AdminUser, Stats } from "@/components/admin/AdminTypes";
 
 const Admin = () => {
