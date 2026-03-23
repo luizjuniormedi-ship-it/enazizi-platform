@@ -245,14 +245,16 @@ const Admin = () => {
 
       {/* Pending notification */}
       {pendingCount > 0 && (
-        <div className="flex items-center gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-          <Bell className="h-5 w-5 text-amber-500 animate-pulse" />
+        <div className="flex items-center gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 animate-in slide-in-from-top duration-300">
+          <div className="h-10 w-10 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+            <Bell className="h-5 w-5 text-amber-500 animate-pulse" />
+          </div>
           <div className="flex-1">
             <p className="text-sm font-semibold">🔔 {pendingCount} novo{pendingCount > 1 ? "s" : ""} usuário{pendingCount > 1 ? "s" : ""} aguardando aprovação</p>
             <p className="text-xs text-muted-foreground">Clique na aba "Novos Usuários" para revisar</p>
           </div>
-          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setActiveTab("pending")}>
-            <UserCheck className="h-4 w-4" /> Revisar
+          <Button size="sm" className="gap-1.5 bg-amber-500 hover:bg-amber-600 text-white" onClick={() => setActiveTab("pending")}>
+            <UserCheck className="h-4 w-4" /> Revisar agora
           </Button>
         </div>
       )}
