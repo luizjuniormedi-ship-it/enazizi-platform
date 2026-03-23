@@ -1762,6 +1762,89 @@ export type Database = {
         }
         Relationships: []
       }
+      teacher_study_assignment_results: {
+        Row: {
+          assignment_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          questions_generated: boolean | null
+          started_at: string | null
+          status: string
+          student_id: string
+        }
+        Insert: {
+          assignment_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          questions_generated?: boolean | null
+          started_at?: string | null
+          status?: string
+          student_id: string
+        }
+        Update: {
+          assignment_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          questions_generated?: boolean | null
+          started_at?: string | null
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_study_assignment_results_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_study_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_study_assignments: {
+        Row: {
+          created_at: string
+          faculdade_filter: string | null
+          id: string
+          material_filename: string | null
+          material_url: string | null
+          periodo_filter: number | null
+          professor_id: string
+          specialty: string
+          status: string
+          title: string
+          topics_to_cover: string
+        }
+        Insert: {
+          created_at?: string
+          faculdade_filter?: string | null
+          id?: string
+          material_filename?: string | null
+          material_url?: string | null
+          periodo_filter?: number | null
+          professor_id: string
+          specialty: string
+          status?: string
+          title: string
+          topics_to_cover: string
+        }
+        Update: {
+          created_at?: string
+          faculdade_filter?: string | null
+          id?: string
+          material_filename?: string | null
+          material_url?: string | null
+          periodo_filter?: number | null
+          professor_id?: string
+          specialty?: string
+          status?: string
+          title?: string
+          topics_to_cover?: string
+        }
+        Relationships: []
+      }
       temas_estudados: {
         Row: {
           created_at: string
@@ -2149,6 +2232,10 @@ export type Database = {
       }
       student_has_simulado_result: {
         Args: { _simulado_id: string; _user_id: string }
+        Returns: boolean
+      }
+      student_has_study_assignment_result: {
+        Args: { _assignment_id: string; _user_id: string }
         Returns: boolean
       }
     }
