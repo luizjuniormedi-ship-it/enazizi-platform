@@ -1,86 +1,136 @@
 
+# Conferência: Todas as Funcionalidades Implementadas Hoje
 
-# Plano: Atribuição de Temas pelo Professor → Tutor IA do Aluno
+## ✅ 1. Fisiopatologia Profunda + Eventos Adversos (`enazizi-prompt.ts`)
 
-## Resumo
+**Status: Implementado** (667 linhas)
 
-O professor cria "Atribuições de Estudo" com tema, tópicos obrigatórios para o Tutor IA e material de apoio (upload opcional). O aluno vê na Proficiência e clica para ir direto ao Tutor IA com tema pré-carregado. Após o estudo, questões são geradas automaticamente.
+- Fisiopatologia com mediadores moleculares obrigatórios (IL-6, TNF-α, bradicinina, etc.)
+- Formato cascata: Gatilho → Mediador → Via → Órgão-alvo → Resultado clínico
+- Correlação direta sintoma↔mecanismo ("PORQUE...")
+- Seção 💊⚠️ EVENTOS ADVERSOS com tabela (medicamento, efeito comum, efeito grave, mecanismo)
+- Interações, contraindicações, monitorização laboratorial
+- Exemplo completo com IC (furosemida, enalapril, carvedilol)
 
-## Mudanças
+## ✅ 2. Verificações Obrigatórias no TOPO do Prompt
 
-### 1. Migração SQL — Novas tabelas
+**Status: Implementado** (linhas 19-33 + reforço final linhas 654-662)
 
-```sql
--- teacher_study_assignments: atribuições do professor
-CREATE TABLE public.teacher_study_assignments (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  professor_id uuid NOT NULL,
-  title text NOT NULL,
-  specialty text NOT NULL,
-  topics_to_cover text NOT NULL,        -- instruções para o Tutor IA
-  material_url text,                     -- URL do storage (opcional)
-  material_filename text,
-  faculdade_filter text,
-  periodo_filter integer,
-  status text NOT NULL DEFAULT 'active',
-  created_at timestamptz NOT NULL DEFAULT now()
-);
+- 9 verificações pré-resposta movidas para logo após identidade do tutor
+- Cópia resumida no final como reforço ("primacy + recency effect")
 
--- Resultados individuais por aluno
-CREATE TABLE public.teacher_study_assignment_results (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  assignment_id uuid REFERENCES teacher_study_assignments(id) ON DELETE CASCADE NOT NULL,
-  student_id uuid NOT NULL,
-  status text NOT NULL DEFAULT 'pending',  -- pending | studying | completed
-  started_at timestamptz,
-  completed_at timestamptz,
-  questions_generated boolean DEFAULT false,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-```
+## ✅ 3. Repetição Espaçada (linhas 43-54)
 
-RLS: professor CRUD own assignments, aluno SELECT own results, admin SELECT all. Security definer function para aluno ler o assignment via result.
+**Status: Implementado**
 
-### 2. Painel do Professor (`ProfessorDashboard.tsx`)
+- Intervalo mínimo de 2 blocos entre repetições do mesmo tema
+- Enfoque diferente obrigatório (diagnóstico → tratamento → complicações → prevenção)
+- Reforço automático por erro nos próximos 3-5 blocos
 
-Nova aba **"📖 Temas de Estudo"** na TabsList existente:
-- Formulário: Título, Especialidade (select), **Tópicos a abordar** (textarea com instruções livres para o Tutor IA), Upload de material (opcional → storage `user-uploads`)
-- Filtro de faculdade/período + seleção de alunos (reutiliza padrão existente)
-- Botão "Atribuir Tema"
-- Lista de atribuições criadas com status dos alunos
+## ✅ 4. Anamnese Única por Questão (linhas 56-66)
 
-### 3. Área do Aluno — Proficiência (`StudentSimulados.tsx`)
+**Status: Implementado**
 
-Nova aba **"📖 Temas Atribuídos"**:
-- Cards com título, especialidade, tópicos e status (pendente/estudando/concluído)
-- Botão **"Estudar com Tutor IA"** → navega para `/dashboard/sessao-estudo?topic=X&professorTopics=Y&materialUrl=Z&assignmentId=ID`
+- Proibido repetir perfil idade+sexo+cenário na sessão
+- Variação obrigatória: nomes regionais, idades 0-95, profissões diversas
+- Alternância de cenários: PS, UTI, UBS, SAMU, ambulatório, etc.
 
-### 4. Tutor IA (`StudySession.tsx`)
+## ✅ 5. Redução de Densidade — 4 Mensagens (linhas 77-96)
 
-- Ler query params na inicialização
-- Se `professorTopics` presente: pré-preencher tema e incluir instruções do professor no `userContext`
-- Atualizar status do assignment para `studying` ao iniciar
-- Ao concluir sessão com `assignmentId`: marcar `completed` e disparar geração de questões
+**Status: Implementado**
 
-### 5. Edge Function (`professor-simulado/index.ts`)
+- Sequência em 4 mensagens (antes eram 3)
+- Limite de 500-700 palavras por mensagem (antes 800-1200)
+- Cada mensagem termina com pergunta para avançar
 
-Novas actions:
-- `create_study_assignment`: cria assignment + results para alunos filtrados
-- `list_study_assignments`: lista atribuições do professor com contagem de status
+## ✅ 6. Active Recall Sequencial 1-por-vez (`study-session/index.ts`, linhas 115-141)
 
-## Arquivos Modificados
+**Status: Implementado**
 
-| Arquivo | Mudança |
-|---------|---------|
-| Migration SQL | 2 tabelas + RLS + security definer |
-| `src/pages/ProfessorDashboard.tsx` | Nova aba "Temas de Estudo" |
-| `src/pages/StudentSimulados.tsx` | Nova aba "Temas Atribuídos" + botão Tutor IA |
-| `src/pages/StudySession.tsx` | Ler query params, pré-carregar contexto do professor |
-| `supabase/functions/professor-simulado/index.ts` | Actions create/list study assignments |
+- 1 pergunta por mensagem (antes listava 5-7 de uma vez)
+- Contagem "Pergunta X/5"
+- Reforço por erro: pergunta extra sobre conceito errado
+- Resumo final de acertos/erros
 
-## Resultado Esperado
+## ✅ 7. Performance Real do Banco (`StudySession.tsx`, linhas 139-207)
 
-- Professor indica tema + tópicos + material → alunos recebem na Proficiência
-- Aluno clica "Estudar" → Tutor IA abre com tema e instruções do professor pré-carregados
-- Após estudo, questões são geradas automaticamente sobre o assunto indicado
+**Status: Implementado**
 
+- `practice_attempts` → total questões e acertos
+- `medical_domain_map` → scores por especialidade
+- `error_bank` → temas fracos (weakTopics)
+- `temas_estudados` → histórico persistido no banco (substituiu localStorage)
+
+## ✅ 8. Registro de MCQ no Chat (`StudySession.tsx`, linhas 238-280)
+
+**Status: Implementado**
+
+- Detecta respostas A-E no chat
+- Parseia ✅/❌ da resposta do tutor
+- Atualiza `medical_domain_map` e `error_bank` automaticamente
+
+## ✅ 9. Adaptação por Nível (`study-session/index.ts`, linhas 10-38)
+
+**Status: Implementado**
+
+- Iniciante (<30%): linguagem simples, mais exemplos
+- Intermediário (30-70%): equilíbrio teoria/prática
+- Avançado (>70%): pegadinhas, casos atípicos
+
+## ✅ 10. Reforço Automático por Erro (`study-session/index.ts`, linhas 40-51)
+
+**Status: Implementado**
+
+- `getWeakTopicsPrompt()` injeta temas fracos no prompt
+- Obriga retomada nos próximos 3-5 blocos com ângulo diferente
+
+## ✅ 11. Atribuição de Temas pelo Professor → Tutor IA
+
+**Status: Implementado**
+
+- **Tabelas**: `teacher_study_assignments` + `teacher_study_assignment_results` com RLS
+- **Professor** (`ProfessorDashboard.tsx`): aba "Temas de Estudo" com formulário completo
+  - Título, especialidade, tópicos para o Tutor IA, upload de material
+  - Filtro faculdade/período + seleção individual de alunos
+  - Lista de atribuições com progresso (pendente/estudando/concluído)
+- **Aluno** (`StudentSimulados.tsx`): aba "Temas" com cards de atribuições
+  - Botão "Estudar com Tutor IA" → navega com query params
+  - Link para download do PDF/material do professor (signed URL)
+- **Tutor IA** (`StudySession.tsx`): lê query params e injeta contexto do professor
+- **Edge Function** (`professor-simulado`): actions create/list/get study assignments
+
+## ✅ 12. Variação de Casos Discursivos (`study-session/index.ts`, linhas 181-210)
+
+**Status: Implementado**
+
+- Mesma regra de anamnese única aplicada a casos discursivos
+- Variação de cenários clínicos e comorbidades
+
+## ✅ 13. Artigos Científicos Recomendados (`enazizi-prompt.ts`, linhas 617-651)
+
+**Status: Implementado**
+
+- 2-4 artigos PubMed/DOI obrigatórios por bloco
+- Formato com título, autores, journal, link, resumo
+
+---
+
+## Resumo: 13 funcionalidades implementadas
+
+| # | Funcionalidade | Arquivo Principal |
+|---|---|---|
+| 1 | Fisiopatologia molecular profunda | enazizi-prompt.ts |
+| 2 | Verificações no topo do prompt | enazizi-prompt.ts |
+| 3 | Repetição espaçada | enazizi-prompt.ts |
+| 4 | Anamnese única por questão | enazizi-prompt.ts + study-session |
+| 5 | 4 mensagens (500-700 palavras) | enazizi-prompt.ts |
+| 6 | Active recall 1-por-vez | study-session/index.ts |
+| 7 | Performance real do banco | StudySession.tsx |
+| 8 | Registro MCQ no chat | StudySession.tsx |
+| 9 | Adaptação por nível | study-session/index.ts |
+| 10 | Reforço automático por erro | study-session/index.ts |
+| 11 | Atribuição professor → aluno | 5 arquivos + migração SQL |
+| 12 | Variação casos discursivos | study-session/index.ts |
+| 13 | Artigos científicos obrigatórios | enazizi-prompt.ts |
+
+Todas as funcionalidades estão no código e deployadas. Recomendo testar o fluxo completo de ponta a ponta.
