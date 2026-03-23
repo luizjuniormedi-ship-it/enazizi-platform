@@ -7,8 +7,39 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function getLevelPrompt(performanceData: unknown): string {
+  const data = performanceData as any;
+  if (!data || !data.totalQuestions || data.totalQuestions < 5) return "";
+  const accuracy = data.totalQuestions > 0 ? (data.correctAnswers / data.totalQuestions) * 100 : 0;
+  if (accuracy < 30) {
+    return `
+NÍVEL DO ALUNO: INICIANTE (taxa de acerto: ${Math.round(accuracy)}%)
+- Use linguagem mais SIMPLES e acessível
+- Inclua mais EXEMPLOS práticos e analogias do dia a dia
+- Reduza profundidade molecular (foque nos conceitos-chave)
+- Explique termos técnicos quando usá-los
+- Seja mais ENCORAJADOR e motivacional`;
+  }
+  if (accuracy < 70) {
+    return `
+NÍVEL DO ALUNO: INTERMEDIÁRIO (taxa de acerto: ${Math.round(accuracy)}%)
+- Equilíbrio entre teoria e prática
+- Pode usar terminologia técnica com explicações pontuais
+- Inclua correlações clínicas mais complexas
+- Comece a introduzir pegadinhas de prova`;
+  }
+  return `
+NÍVEL DO ALUNO: AVANÇADO (taxa de acerto: ${Math.round(accuracy)}%)
+- Foque em PEGADINHAS, diagnósticos diferenciais RAROS e casos ATÍPICOS
+- Use terminologia técnica sem simplificação
+- Apresente discussões de conduta controversas
+- Inclua detalhes moleculares e referências avançadas
+- Desafie com casos de alta complexidade`;
+}
+
 function getPhasePrompt(phase: string, topic: string, performanceData: unknown): string {
   const base = ENAZIZI_PROMPT;
+  const levelPrompt = getLevelPrompt(performanceData);
 
   switch (phase) {
     case "performance":
@@ -30,11 +61,13 @@ Se não houver dados, informe e sugira começar.`;
 
     case "lesson":
       return `${base}
+${levelPrompt}
 FASE ATUAL: BLOCOS TÉCNICOS (STATES 2-6)
 Tema: "${topic || "solicitado pelo aluno"}"
 
 ENSINE seguindo RIGOROSAMENTE o MARCADOR DE BLOCO.
 NUNCA faça perguntas nesta fase até o final do bloco (active recall).
+ENTREGUE o conteúdo em 4 MENSAGENS conforme a SEQUÊNCIA DE ENTREGA do prompt principal.
 
 REQUISITOS OBRIGATÓRIOS DO BLOCO DE ENSINO:
 
@@ -60,24 +93,31 @@ REGRA DE REPETIÇÃO ESPAÇADA (PRIORIDADE MÁXIMA):
 - QUANDO O ALUNO ERRAR: retome o tema com enfoque diferente nos próximos 3-5 blocos para REFORÇO AUTOMÁTICO
 - Varie exemplos clínicos: NUNCA repita perfil de paciente (idade/sexo/cenário) em exemplos diferentes
 
-Ao final: "Quando estiver pronto, avance para o Active Recall!"`;
+LIMITE: máximo 500-700 palavras por mensagem. Divida em 4 mensagens conforme sequência.
+
+Ao final da Mensagem 4: inclua a primeira pergunta de Active Recall (❓ Pergunta 1/5).`;
 
     case "active-recall":
       return `${base}
 FASE ATUAL: ACTIVE RECALL (STATES 3/5)
 Tema: "${topic}"
 
-Faça 5-7 perguntas CURTAS de recuperação ativa da memória.
-Apresente TODAS numeradas. O aluno responderá e você corrigirá.
-Foque em: mecanismos, diagnósticos, condutas, pontos de prova.
-Se o aluno errar: resposta correta + raciocínio + revisão + ponto de prova.
+FORMATO SEQUENCIAL OBRIGATÓRIO — UMA PERGUNTA POR VEZ:
+- Apresente apenas UMA pergunta curta de recuperação ativa por mensagem
+- Indique o número da pergunta: "❓ Pergunta X/5"
+- Aguarde a resposta do aluno
+- Após a resposta: corrija imediatamente (✅ ou ❌) + explicação breve
+- Em seguida, apresente a PRÓXIMA pergunta
+- Total: 5 perguntas no active recall completo
+- Ao final da 5ª pergunta: apresente RESUMO de acertos/erros + sugestão de próximo passo
 
-REGRA DE REPETIÇÃO ESPAÇADA (PRIORIDADE MÁXIMA):
-- PODE repetir o mesmo tema, desde que haja pelo menos 2 perguntas de INTERVALO
-- Quando repetir, use ENFOQUE DIFERENTE (ex: P1=fisiopatologia, P4=tratamento)
-- NUNCA coloque duas perguntas do MESMO CONCEITO em posições CONSECUTIVAS
-- QUANDO O ALUNO ERRAR: inclua pergunta de REFORÇO do mesmo conceito com enfoque diferente nas próximas 3-5 perguntas
-- Distribua entre: fisiopatologia, diagnóstico, tratamento, complicações, epidemiologia, semiologia`;
+REGRA: NUNCA apresente múltiplas perguntas de uma vez. SEMPRE 1 por mensagem.
+
+Foque em: mecanismos, diagnósticos, condutas, pontos de prova.
+Se o aluno errar: ❌ + resposta correta + raciocínio + ponto de prova + pergunta de reforço na sequência.
+
+Distribuição: fisiopatologia, diagnóstico, tratamento, complicações, semiologia.
+Varie os enfoques: NUNCA duas perguntas consecutivas do mesmo conceito.`;
 
     case "questions":
       return `${base}
@@ -157,10 +197,14 @@ Correção: diagnóstico 0-2, conduta 0-2, justificativa 0-1. Total X/5.
 Depois: resposta esperada, explicação, raciocínio, erros clássicos, reforço.
 Mostrar desempenho atualizado + temas fracos + próximo passo + mensagem motivacional.`;
 
-    default:
+    default: {
+      // Determine student level from performance data
+      const levelPrompt = getLevelPrompt(performanceData);
       return `${base}
+${levelPrompt}
 Siga o fluxo pedagógico dos STATES 0-12.
 REGRA: NUNCA comece com questões. Sempre ensine primeiro. Nunca pule estados.`;
+    }
   }
 }
 
