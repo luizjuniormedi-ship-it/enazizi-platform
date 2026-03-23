@@ -1,71 +1,86 @@
 
 
-# Plano: 6 Melhorias Estruturais no Tutor IA
+# Plano: Atribuição de Temas pelo Professor → Tutor IA do Aluno
 
-## Problemas Identificados
+## Resumo
 
-1. **Repetição espaçada inexistente**: O tutor não tem memória de temas já ensinados — pode repetir o mesmo conteúdo da mesma forma
-2. **Questões objetivas sem variação de paciente**: O prompt não proíbe repetir perfil demográfico nos casos clínicos
-3. **Sem controle de profundidade por nível**: O `getLevelPrompt` existe mas não ajusta a ESTRUTURA do bloco (apenas linguagem)
-4. **Active recall não alimenta repetição futura**: Erros no recall não geram reforço nos blocos seguintes
-5. **Histórico de sessão não persiste temas**: `studiedTopics` usa localStorage em vez do banco
-6. **Prompt muito longo** (~630 linhas): Risco de a IA ignorar instruções no final — as verificações obrigatórias ficam nas últimas linhas
+O professor cria "Atribuições de Estudo" com tema, tópicos obrigatórios para o Tutor IA e material de apoio (upload opcional). O aluno vê na Proficiência e clica para ir direto ao Tutor IA com tema pré-carregado. Após o estudo, questões são geradas automaticamente.
 
-## Mudanças Propostas
+## Mudanças
 
-### 1. Repetição Espaçada no Prompt (`enazizi-prompt.ts`)
+### 1. Migração SQL — Novas tabelas
 
-Adicionar regra de espaçamento entre blocos:
-- PODE repetir tema, mas com pelo menos 2 blocos de intervalo
-- Quando repetir, OBRIGATORIAMENTE usar enfoque diferente (diagnóstico → tratamento → complicações)
-- NUNCA repetir o mesmo conceito em blocos consecutivos
+```sql
+-- teacher_study_assignments: atribuições do professor
+CREATE TABLE public.teacher_study_assignments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  professor_id uuid NOT NULL,
+  title text NOT NULL,
+  specialty text NOT NULL,
+  topics_to_cover text NOT NULL,        -- instruções para o Tutor IA
+  material_url text,                     -- URL do storage (opcional)
+  material_filename text,
+  faculdade_filter text,
+  periodo_filter integer,
+  status text NOT NULL DEFAULT 'active',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 
-### 2. Anamnese Única por Questão (`enazizi-prompt.ts` + `study-session/index.ts`)
+-- Resultados individuais por aluno
+CREATE TABLE public.teacher_study_assignment_results (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  assignment_id uuid REFERENCES teacher_study_assignments(id) ON DELETE CASCADE NOT NULL,
+  student_id uuid NOT NULL,
+  status text NOT NULL DEFAULT 'pending',  -- pending | studying | completed
+  started_at timestamptz,
+  completed_at timestamptz,
+  questions_generated boolean DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+```
 
-Adicionar no phase `questions`:
-- NUNCA repetir perfil de paciente (idade/sexo/cenário) em questões da mesma sessão
-- Variar: nomes regionais brasileiros, idades de 0-95 anos, profissões diversas
-- Alternar cenários: PS, enfermaria, UTI, UBS, SAMU, ambulatório
+RLS: professor CRUD own assignments, aluno SELECT own results, admin SELECT all. Security definer function para aluno ler o assignment via result.
 
-### 3. Reforço Automático por Erro no Recall (`study-session/index.ts`)
+### 2. Painel do Professor (`ProfessorDashboard.tsx`)
 
-Quando o aluno errar no active recall:
-- Incluir no prompt da próxima fase que o aluno errou conceito X
-- Nos próximos 3-5 blocos, o tema deve reaparecer com enfoque diferente
-- Enviar `weakTopics` atualizado em tempo real no `performanceData`
+Nova aba **"📖 Temas de Estudo"** na TabsList existente:
+- Formulário: Título, Especialidade (select), **Tópicos a abordar** (textarea com instruções livres para o Tutor IA), Upload de material (opcional → storage `user-uploads`)
+- Filtro de faculdade/período + seleção de alunos (reutiliza padrão existente)
+- Botão "Atribuir Tema"
+- Lista de atribuições criadas com status dos alunos
 
-### 4. Migrar `studiedTopics` para `temas_estudados` (`StudySession.tsx`)
+### 3. Área do Aluno — Proficiência (`StudentSimulados.tsx`)
 
-- Substituir `localStorage.getItem('enazizi-studied-...')` por INSERT/SELECT em `temas_estudados`
-- Ao iniciar tema: inserir registro com `fonte: 'tutor-ia'`
-- Ao carregar: buscar temas do banco em vez do localStorage
+Nova aba **"📖 Temas Atribuídos"**:
+- Cards com título, especialidade, tópicos e status (pendente/estudando/concluído)
+- Botão **"Estudar com Tutor IA"** → navega para `/dashboard/sessao-estudo?topic=X&professorTopics=Y&materialUrl=Z&assignmentId=ID`
 
-### 5. Reorganizar Prompt — Verificações no Topo (`enazizi-prompt.ts`)
+### 4. Tutor IA (`StudySession.tsx`)
 
-Mover as 9 verificações obrigatórias (linhas 576-590) para LOGO APÓS a identidade do tutor:
-- Modelos de IA tendem a seguir melhor instruções no início do prompt
-- Manter uma cópia resumida no final como reforço
+- Ler query params na inicialização
+- Se `professorTopics` presente: pré-preencher tema e incluir instruções do professor no `userContext`
+- Atualizar status do assignment para `studying` ao iniciar
+- Ao concluir sessão com `assignmentId`: marcar `completed` e disparar geração de questões
 
-### 6. Casos Discursivos com Não-Repetição (`study-session/index.ts`)
+### 5. Edge Function (`professor-simulado/index.ts`)
 
-Atualizar phase `discursive` com mesma regra de variação:
-- Nunca repetir perfil de paciente do caso anterior
-- Variar cenários clínicos e comorbidades
-- Quando aluno errou tema: retomar nos próximos 3-5 casos com ângulo diferente
+Novas actions:
+- `create_study_assignment`: cria assignment + results para alunos filtrados
+- `list_study_assignments`: lista atribuições do professor com contagem de status
 
 ## Arquivos Modificados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `supabase/functions/_shared/enazizi-prompt.ts` | Regras de repetição espaçada, anamnese única, reorganização do prompt |
-| `supabase/functions/study-session/index.ts` | Reforço por erro, variação de pacientes em MCQ e discursivas |
-| `src/pages/StudySession.tsx` | Migrar studiedTopics de localStorage para banco `temas_estudados` |
+| Migration SQL | 2 tabelas + RLS + security definer |
+| `src/pages/ProfessorDashboard.tsx` | Nova aba "Temas de Estudo" |
+| `src/pages/StudentSimulados.tsx` | Nova aba "Temas Atribuídos" + botão Tutor IA |
+| `src/pages/StudySession.tsx` | Ler query params, pré-carregar contexto do professor |
+| `supabase/functions/professor-simulado/index.ts` | Actions create/list study assignments |
 
 ## Resultado Esperado
 
-- Aprendizado com repetição inteligente (não repete igual, varia o ângulo)
-- Questões com pacientes únicos (sem "sempre homem 55 anos hipertenso")
-- Erros no recall geram reforço automático nos blocos seguintes
-- Histórico de estudo persistido no banco (não perde ao limpar cache)
-- Prompt mais eficiente (verificações no início = mais compliance da IA)
+- Professor indica tema + tópicos + material → alunos recebem na Proficiência
+- Aluno clica "Estudar" → Tutor IA abre com tema e instruções do professor pré-carregados
+- Após estudo, questões são geradas automaticamente sobre o assunto indicado
 
