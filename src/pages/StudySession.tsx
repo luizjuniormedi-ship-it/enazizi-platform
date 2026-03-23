@@ -188,17 +188,26 @@ const StudySession = () => {
 
   const savePerformance = useCallback(async (data: PerformanceData) => {
     setPerformance(data);
-    // Persist studied topics to database
     if (user && data.studiedTopics.length > 0) {
       const latestTopic = data.studiedTopics[data.studiedTopics.length - 1];
       try {
-        await supabase.from("temas_estudados").upsert({
-          user_id: user.id,
-          tema: latestTopic,
-          especialidade: "Geral",
-          fonte: "tutor-ia",
-          status: "ativo",
-        }, { onConflict: "user_id,tema" }).select();
+        // Check if topic already exists
+        const { data: existing } = await supabase
+          .from("temas_estudados")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("tema", latestTopic)
+          .eq("fonte", "tutor-ia")
+          .maybeSingle();
+        if (!existing) {
+          await supabase.from("temas_estudados").insert({
+            user_id: user.id,
+            tema: latestTopic,
+            especialidade: "Geral",
+            fonte: "tutor-ia",
+            status: "ativo",
+          });
+        }
       } catch (err) {
         console.error("Error saving studied topic:", err);
       }
