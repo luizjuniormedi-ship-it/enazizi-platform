@@ -1530,6 +1530,36 @@ export type Database = {
           },
         ]
       }
+      system_health_reports: {
+        Row: {
+          alerts: Json
+          check_date: string
+          created_at: string
+          id: string
+          total_critical: number
+          total_info: number
+          total_warning: number
+        }
+        Insert: {
+          alerts?: Json
+          check_date?: string
+          created_at?: string
+          id?: string
+          total_critical?: number
+          total_info?: number
+          total_warning?: number
+        }
+        Update: {
+          alerts?: Json
+          check_date?: string
+          created_at?: string
+          id?: string
+          total_critical?: number
+          total_info?: number
+          total_warning?: number
+        }
+        Relationships: []
+      }
       teacher_clinical_case_results: {
         Row: {
           case_id: string

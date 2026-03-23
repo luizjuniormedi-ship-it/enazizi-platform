@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.daily-question-generator]
 verify_jwt = false
+
+[functions.system-health-check]
+verify_jwt = false
