@@ -84,7 +84,7 @@ describe("TopicEvolution", () => {
     ];
     renderComponent();
     await waitFor(() => {
-      expect(screen.getByText(/Estudadas/)).toBeInTheDocument();
+      expect(screen.getByText("Cardiologia")).toBeInTheDocument();
     });
   });
 
