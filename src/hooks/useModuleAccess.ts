@@ -19,7 +19,7 @@ export const ALL_MODULES = [
   { key: "entrevista", label: "🎤 Entrevista" },
 
   { key: "simulados", label: "📝 Simulados" },
-  { key: "simulado-completo", label: "🏆 Simulado Completo" },
+  
   { key: "questoes", label: "❓ Gerador Questões" },
   { key: "banco-questoes", label: "🗃️ Banco de Questões" },
   { key: "discursivas", label: "✍️ Discursivas" },
