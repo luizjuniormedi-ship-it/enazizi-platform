@@ -361,7 +361,11 @@ const Admin = () => {
             <AdminFeedbackPanel />
           </TabsContent>
 
-          <TabsContent value={activeTab === "whatsapp" || activeTab === "telegram" || activeTab === "feedbacks" ? "__none__" : activeTab}>
+          <TabsContent value="messages">
+            <AdminMessagesPanel />
+          </TabsContent>
+
+          <TabsContent value={activeTab === "whatsapp" || activeTab === "telegram" || activeTab === "feedbacks" || activeTab === "messages" ? "__none__" : activeTab}>
             {loading ? (
               <div className="flex justify-center py-12">
                 <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />

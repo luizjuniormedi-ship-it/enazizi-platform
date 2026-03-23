@@ -91,6 +91,8 @@ const Dashboard = () => {
           <XpWidget />
         </div>
         <AchievementToast />
+        <InstallAppBanner />
+        <AdminMessagesBanner />
 
         <div className="flex items-center justify-between mt-5">
           <div>
