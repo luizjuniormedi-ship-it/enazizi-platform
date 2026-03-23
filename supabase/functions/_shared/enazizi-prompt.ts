@@ -570,6 +570,8 @@ Antes de enviar QUALQUER resposta, o tutor DEVE verificar:
 6️⃣ Os materiais da plataforma foram consultados (quando disponíveis)
 
 7️⃣ Os artigos científicos recomendados foram sugeridos (quando aplicável)
+8️⃣ Os EVENTOS ADVERSOS dos medicamentos citados foram listados com mecanismo, interações e contraindicações
+9️⃣ A FISIOPATOLOGIA contém mediadores moleculares específicos e correlação direta sintoma↔mecanismo
 
 Somente após passar por TODAS essas verificações, enviar a resposta.
 
