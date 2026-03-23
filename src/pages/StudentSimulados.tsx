@@ -308,10 +308,11 @@ const StudentSimulados = () => {
           <p className="text-muted-foreground text-sm">Simulados e plantões atribuídos pelo seu professor.</p>
         </div>
 
-        <Tabs defaultValue="simulados">
+        <Tabs defaultValue={searchParams.get("tab") === "temas" ? "temas" : "simulados"}>
           <TabsList>
             <TabsTrigger value="simulados">📝 Simulados ({assigned.length})</TabsTrigger>
             <TabsTrigger value="plantao">🏥 Plantões ({clinicalCases.length})</TabsTrigger>
+            <TabsTrigger value="temas">📖 Temas ({studyAssignments.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="simulados" className="space-y-4 mt-4">
