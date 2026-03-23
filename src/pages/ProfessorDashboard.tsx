@@ -16,6 +16,7 @@ import ClassAnalytics from "@/components/professor/ClassAnalytics";
 import ProfessorPlantao from "@/components/professor/ProfessorPlantao";
 import StudentTracker from "@/components/professor/StudentTracker";
 import VideoRoom from "@/components/professor/VideoRoom";
+import TeacherStudyAssignments from "@/components/professor/TeacherStudyAssignments";
 
 const SPECIALTIES = [
   "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia", "Nefrologia",
