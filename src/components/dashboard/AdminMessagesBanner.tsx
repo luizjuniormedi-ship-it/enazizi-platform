@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Mail, AlertTriangle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Mail, AlertTriangle, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
 
 interface AdminMessage {
   id: string;
@@ -22,6 +23,7 @@ const AdminMessagesBanner = () => {
   const [messages, setMessages] = useState<AdminMessage[]>([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState(false);
+  const hasNotifiedRef = useRef(false);
 
   useEffect(() => {
     if (!user) return;
@@ -39,6 +41,24 @@ const AdminMessagesBanner = () => {
 
       if (msgs) setMessages(msgs);
       if (reads) setReadIds(new Set(reads.map((r: any) => r.message_id)));
+
+      // Show toast alert for unread messages
+      if (msgs && reads && !hasNotifiedRef.current) {
+        const readSet = new Set(reads?.map((r: any) => r.message_id) || []);
+        const unread = msgs.filter((m: any) => !readSet.has(m.id));
+        if (unread.length > 0) {
+          hasNotifiedRef.current = true;
+          const urgent = unread.find((m: any) => m.priority === "urgent");
+          toast(urgent ? `🔴 ${urgent.title}` : `📬 Você tem ${unread.length} mensagem(ns) nova(s)`, {
+            description: urgent ? urgent.content.slice(0, 80) + "..." : "Toque para ver suas mensagens.",
+            duration: 8000,
+            action: {
+              label: "Ver",
+              onClick: () => setOpen(true),
+            },
+          });
+        }
+      }
     };
     load();
   }, [user]);
@@ -75,24 +95,29 @@ const AdminMessagesBanner = () => {
     <>
       {/* Urgent messages as top alert */}
       {urgentUnread.map((m) => (
-        <Alert key={m.id} variant="destructive" className="cursor-pointer" onClick={handleOpen}>
+        <Alert key={m.id} variant="destructive" className="cursor-pointer animate-pulse" onClick={handleOpen}>
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle className="text-sm font-semibold">{m.title}</AlertTitle>
           <AlertDescription className="text-xs line-clamp-1">{m.content}</AlertDescription>
         </Alert>
       ))}
 
-      {/* Inbox button */}
+      {/* Inbox button with notification indicator */}
       <Button
         variant="outline"
         size="sm"
         onClick={handleOpen}
-        className="gap-2 w-full justify-start border-dashed"
+        className={`gap-2 w-full justify-start ${unreadMessages.length > 0 ? "border-primary/50 bg-primary/5" : "border-dashed"}`}
       >
-        <Mail className="h-4 w-4 text-primary" />
+        <div className="relative">
+          <Mail className="h-4 w-4 text-primary" />
+          {unreadMessages.length > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 h-2.5 w-2.5 rounded-full bg-destructive animate-ping" />
+          )}
+        </div>
         <span>Mensagens do Sistema</span>
         {unreadMessages.length > 0 && (
-          <Badge variant="destructive" className="ml-auto text-xs">
+          <Badge variant="destructive" className="ml-auto text-xs animate-bounce">
             {unreadMessages.length} nova{unreadMessages.length > 1 ? "s" : ""}
           </Badge>
         )}
