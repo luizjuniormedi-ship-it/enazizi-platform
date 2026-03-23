@@ -185,17 +185,23 @@ serve(async (req) => {
       });
     }
 
-    // Count questions per specialty to find the 4 with fewest
-    // Count questions per specialty using ilike to aggregate subtopics
+    // Count questions per specialty efficiently with a single query
+    const { data: allTopics } = await supabaseAdmin
+      .from("questions_bank")
+      .select("topic")
+      .eq("is_global", true);
+
     const countBySpecialty: Record<string, number> = {};
-    for (const spec of SPECIALTIES) {
-      const { count } = await supabaseAdmin
-        .from("questions_bank")
-        .select("id", { count: "exact", head: true })
-        .eq("is_global", true)
-        .ilike("topic", `${spec}%`);
-      countBySpecialty[spec] = count || 0;
-    }
+    SPECIALTIES.forEach(s => { countBySpecialty[s] = 0; });
+    (allTopics || []).forEach((r: any) => {
+      const t = String(r.topic || "");
+      for (const spec of SPECIALTIES) {
+        if (t === spec || t.startsWith(spec + " ") || t.startsWith(spec + " -")) {
+          countBySpecialty[spec]++;
+          break;
+        }
+      }
+    });
 
     const sorted = [...SPECIALTIES].sort((a, b) => countBySpecialty[a] - countBySpecialty[b]);
     const selected = sorted.slice(0, 2);
