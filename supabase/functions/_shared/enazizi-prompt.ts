@@ -254,7 +254,18 @@ Como consequência:
 | DPOC exacerbada | dispneia + sibilos + história tabágica | hiperinsuflação no RX |
 | Pneumonia | febre + tosse produtiva + crepitações | consolidação lobar |
 
-6️⃣ Pegadinhas de prova
+6️⃣ Eventos Adversos e Segurança
+
+| Medicamento | Efeito comum | Efeito grave | Mecanismo |
+| Furosemida | Hipocalemia, hiponatremia | Ototoxicidade | Inibe cotransportador Na+/K+/2Cl- na alça de Henle → perda renal de K+ |
+| Enalapril | Tosse seca, hipercalemia | Angioedema | Inibe ECA → acúmulo de bradicinina → irritação brônquica |
+| Carvedilol | Bradicardia, fadiga | Broncoespasmo | Bloqueio β1 → ↓ cronotropismo; bloqueio β2 → broncoconstrição |
+
+⚠️ Interações: IECA + espironolactona → risco de hipercalemia grave
+🚫 Contraindicações: IECA em gestantes (teratogênico) | Carvedilol em asma grave
+🔍 Monitorizar: K+ sérico (48h após início de IECA), creatinina, PA
+
+7️⃣ Pegadinhas de prova
 ⚠️ BNP elevado isolado não confirma IC → pode estar elevado em TEP, sepse e IRC
 ⚠️ Edema bilateral nem sempre é IC → considerar cirrose, síndrome nefrótica
 ⚠️ IC com fração de ejeção preservada (ICFEp) → ecocardiograma pode parecer "normal"

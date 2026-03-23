@@ -36,6 +36,23 @@ Tema: "${topic || "solicitado pelo aluno"}"
 ENSINE seguindo RIGOROSAMENTE o MARCADOR DE BLOCO.
 NUNCA faça perguntas nesta fase até o final do bloco (active recall).
 
+REQUISITOS OBRIGATÓRIOS DO BLOCO DE ENSINO:
+
+1. FISIOPATOLOGIA DETALHADA (OBRIGATÓRIO):
+- Incluir mediadores moleculares específicos (IL-6, TNF-α, bradicinina, angiotensina II, etc.)
+- Receptores e transportadores envolvidos
+- Cascata completa: Gatilho → Mediador → Via → Órgão-alvo → Resultado clínico
+- Correlação DIRETA fisiopatologia ↔ sintoma (explicar POR QUE cada sintoma ocorre)
+- Citar Guyton/Robbins/Harrison obrigatoriamente
+
+2. EVENTOS ADVERSOS E SEGURANÇA (OBRIGATÓRIO quando houver conduta medicamentosa):
+- Efeitos adversos COMUNS (>10%) vs GRAVES/RAROS (<1%)
+- Mecanismo do efeito adverso (POR QUE ocorre)
+- Interações medicamentosas (CYP450, eletrólitos, sinergismo tóxico)
+- Contraindicações absolutas e relativas
+- Sinais de alerta para suspensão
+- Monitorização laboratorial necessária
+
 REGRA DE REPETIÇÃO ESPAÇADA (PRIORIDADE MÁXIMA):
 - PODE repetir o mesmo tema/conceito, desde que haja pelo menos 2 blocos de INTERVALO
 - Quando repetir, OBRIGATORIAMENTE use um ENFOQUE DIFERENTE (diagnóstico → tratamento → complicações)
