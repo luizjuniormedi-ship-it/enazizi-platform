@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
 import { BarChart3, TrendingUp, Target, Clock, BookOpen, CheckCircle2, Loader2, HelpCircle, Stethoscope, Award, MoreVertical, Brain, Heart, PenLine, MessageCircle, ImageIcon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
