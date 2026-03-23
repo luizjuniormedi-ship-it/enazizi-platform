@@ -185,26 +185,22 @@ serve(async (req) => {
       });
     }
 
-    // Count questions per specialty efficiently with a single query
-    const { data: allTopics } = await supabaseAdmin
-      .from("questions_bank")
-      .select("topic")
-      .eq("is_global", true);
-
-    const countBySpecialty: Record<string, number> = {};
-    SPECIALTIES.forEach(s => { countBySpecialty[s] = 0; });
-    (allTopics || []).forEach((r: any) => {
-      const t = String(r.topic || "");
-      for (const spec of SPECIALTIES) {
-        if (t === spec || t.startsWith(spec + " ") || t.startsWith(spec + " -")) {
-          countBySpecialty[spec]++;
-          break;
-        }
-      }
+    // Pick 2 specialties with fewest questions using exact count (head-only, no data transfer)
+    const counts: { spec: string; count: number }[] = [];
+    // Run counts in parallel for speed
+    const countPromises = SPECIALTIES.map(async (spec) => {
+      const { count } = await supabaseAdmin
+        .from("questions_bank")
+        .select("id", { count: "exact", head: true })
+        .eq("is_global", true)
+        .eq("topic", spec);
+      return { spec, count: count || 0 };
     });
+    const countResults = await Promise.all(countPromises);
+    countResults.sort((a, b) => a.count - b.count);
+    const selected = countResults.slice(0, 2).map(c => c.spec);
 
-    const sorted = [...SPECIALTIES].sort((a, b) => countBySpecialty[a] - countBySpecialty[b]);
-    const selected = sorted.slice(0, 2);
+    console.log(`Daily generation starting for: ${selected.join(", ")} (counts: ${countResults.slice(0, 5).map(c => `${c.spec}:${c.count}`).join(", ")})`);
 
     console.log(`Daily generation starting for: ${selected.join(", ")}`);
 
