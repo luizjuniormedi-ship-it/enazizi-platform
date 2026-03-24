@@ -350,6 +350,22 @@ const ClinicalSimulation = () => {
   const lastActionTimeRef = useRef<number>(Date.now());
   const deteriorationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // NEW: ABCDE Checklist
+  const [abcdeChecklist, setAbcdeChecklist] = useState<Record<string, boolean>>({ A: false, B: false, C: false, D: false, E: false });
+
+  // NEW: Mini-Prontuário
+  const [medicalRecord, setMedicalRecord] = useState<MedicalRecordEntry[]>([]);
+  const [medRecordOpen, setMedRecordOpen] = useState(false);
+
+  // NEW: Learner Mode
+  const [learnerMode, setLearnerMode] = useState(false);
+
+  // NEW: Category Scores (real-time)
+  const [categoryScores, setCategoryScores] = useState<CategoryScores>({ anamnesis: 0, physical_exam: 0, complementary_exams: 0, management: 0 });
+
+  // NEW: ABCDE panel open
+  const [abcdeOpen, setAbcdeOpen] = useState(true);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
