@@ -8,6 +8,7 @@ import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
 import { mapTopicToSpecialty } from "@/lib/mapTopicToSpecialty";
+import { getFallbackQuestionsForArea, getAllFallbackQuestions } from "@/lib/diagnosticFallbackQuestions";
 import DiagnosticIntro from "@/components/diagnostic/DiagnosticIntro";
 import DiagnosticExam from "@/components/diagnostic/DiagnosticExam";
 import DiagnosticReview from "@/components/diagnostic/DiagnosticReview";
