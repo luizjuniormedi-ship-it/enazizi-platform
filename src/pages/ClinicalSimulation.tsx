@@ -669,12 +669,16 @@ const ClinicalSimulation = () => {
 
   const startSimulation = async () => {
     setLoading(true);
+    setAbcdeChecklist({ A: false, B: false, C: false, D: false, E: false });
+    setMedicalRecord([]);
+    setCategoryScores({ anamnesis: 0, physical_exam: 0, complementary_exams: 0, management: 0 });
     try {
       const res = await callAPI({
         action: "start",
         specialty,
         subtopic: subtopic.trim() || undefined,
         difficulty,
+        learner_mode: learnerMode,
         ...(teacherCaseId ? { teacher_case_id: teacherCaseId } : {}),
         ...(isPediatrics && pediatricAge !== "aleatorio" ? { pediatric_age_range: pediatricAge } : {}),
       });
