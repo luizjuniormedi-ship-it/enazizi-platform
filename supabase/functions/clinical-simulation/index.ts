@@ -114,7 +114,19 @@ Responda em JSON:
   "time_elapsed_minutes": número de minutos que se passaram,
   "hint": "dica sutil se o aluno estiver perdido (opcional)",
   "score_delta": pontuação delta (-3 a +3) baseado na qualidade da ação,
-  "critical_action_needed": "string descrevendo ação urgente necessária, se houver (opcional, null se não houver)"
+  "critical_action_needed": "string descrevendo ação urgente necessária, se houver (opcional, null se não houver)",
+  "category_scores": {
+    "anamnesis": 0-15,
+    "physical_exam": 0-15,
+    "complementary_exams": 0-15,
+    "management": 0-15
+  },
+  "structured_data": {
+    "type": "anamnesis|physical_exam|lab|imaging|prescription|other",
+    "summary": "resumo curto do achado principal (1 frase)",
+    "system": "sistema examinado se physical_exam (cardiovascular, respiratório, etc), null caso contrário"
+  },
+  "teaching_tip": "dica didática contextual se learner_mode estiver ativo (opcional, null se não)"
 }
 
 Critérios de score_delta:
@@ -229,7 +241,7 @@ serve(async (req) => {
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user) throw new Error("Não autenticado");
 
-    const { action, specialty, subtopic, difficulty, message, conversation_history, specialist_area, teacher_case_id, triage_color: requestedTriageColor, pediatric_age_range, deterioration_level, patient_status: requestedPatientStatus } = await req.json();
+    const { action, specialty, subtopic, difficulty, message, conversation_history, specialist_area, teacher_case_id, triage_color: requestedTriageColor, pediatric_age_range, deterioration_level, patient_status: requestedPatientStatus, learner_mode } = await req.json();
 
     let messages: Array<{ role: string; content: string }> = [
       { role: "system", content: SYSTEM_PROMPT },
@@ -289,9 +301,12 @@ serve(async (req) => {
       if (conversation_history && Array.isArray(conversation_history)) {
         messages.push(...conversation_history);
       }
+      const learnerInstruction = learner_mode
+        ? ` OBRIGATÓRIO: inclua o campo "teaching_tip" com uma dica didática contextual relacionada à ação do aluno (ex: após ausculta pulmonar, explique técnica de ausculta simétrica). A dica deve ser educativa e curta (1-2 frases). Inclua também "category_scores" com scores parciais acumulados por categoria (anamnesis, physical_exam, complementary_exams, management), cada um de 0-15.`
+        : ` Inclua "category_scores" com scores parciais acumulados por categoria (anamnesis, physical_exam, complementary_exams, management), cada um de 0-15.`;
       messages.push({
         role: "user",
-        content: `action="interact". Mensagem do médico plantonista: "${message}". OBRIGATÓRIO: inclua o campo "vitals" com sinais vitais atualizados na resposta. Responda APENAS em JSON válido.`,
+        content: `action="interact". Mensagem do médico plantonista: "${message}". OBRIGATÓRIO: inclua o campo "vitals" com sinais vitais atualizados na resposta. Inclua "structured_data" com tipo, resumo e sistema examinado.${learnerInstruction} Responda APENAS em JSON válido.`,
       });
     } else if (action === "hint") {
       if (conversation_history && Array.isArray(conversation_history)) {

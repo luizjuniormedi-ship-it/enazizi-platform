@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { logErrorToBank } from "@/lib/errorBankLogger";
+import { exportToPdf } from "@/lib/exportPdf";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
@@ -12,7 +13,8 @@ import {
   Clock, Heart, AlertTriangle, Award, ArrowRight, RotateCcw,
   MessageCircle, Thermometer, Zap, Star, CheckCircle, XCircle,
   Trophy, Target, HelpCircle, Users, ClipboardCheck, ShieldAlert, History, Eye, Maximize2, Minimize2,
-  User, Brain, Pill, MonitorCheck, Bone, Scan, HeartPulse, Ear, Hand
+  User, Brain, Pill, MonitorCheck, Bone, Scan, HeartPulse, Ear, Hand,
+  Wind, Droplets, Shield, BookOpen, FileText, ChevronDown, ChevronUp, GraduationCap, Download, Clipboard
 } from "lucide-react";
 import VitalsChart, { parseVitalsToSnapshot } from "@/components/plantao/VitalsChart";
 import ExamsPanel from "@/components/plantao/ExamsPanel";
@@ -34,7 +36,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 const SPECIALTIES = [
   "Clínica Médica", "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia",
   "Nefrologia", "Infectologia", "Pediatria", "Cirurgia", "Ginecologia e Obstetrícia",
@@ -118,6 +120,30 @@ const DIFFICULTY_TIMER: Record<string, number> = {
 
 type Phase = "lobby" | "active" | "finishing" | "result";
 
+// ABCDE Checklist definitions
+const ABCDE_STEPS = [
+  { key: "A", label: "Vias Aéreas", icon: Wind, keywords: ["via aérea", "vias aéreas", "airway", "orofaringe", "cânula", "guedel", "intub", "iot", "traqueo", "aspirar via"] },
+  { key: "B", label: "Respiração", icon: Wind, keywords: ["ausculta pulmonar", "respiratório", "pulmão", "pulmões", "murmúrio", "sibilos", "estertores", "crepitações", "oxigên", "spo2", "ventil", "ambu", "nebuliz"] },
+  { key: "C", label: "Circulação", icon: Droplets, keywords: ["acesso venoso", "hidratação", "soro", "cristaloide", "volume", "pulso", "perfusão", "enchimento capilar", "hemorrag", "sangr", "droga vasoativa", "noradrenalina", "ausculta cardíaca", "cardiovascular"] },
+  { key: "D", label: "Neurológico", icon: Brain, keywords: ["neurológico", "consciência", "glasgow", "pupilas", "reflexo", "força muscular", "sensibilidade", "meníngeo", "nível de consciência", "confuso", "orientado"] },
+  { key: "E", label: "Exposição", icon: Eye, keywords: ["exposição", "despir", "temperatura", "hipotermia", "pele", "mucosa", "dorso", "região lombar", "extremidades", "membros", "edema", "cianose", "turgor"] },
+] as const;
+
+// Medical record types
+interface MedicalRecordEntry {
+  category: "anamnesis" | "physical_exam" | "lab" | "imaging" | "prescription" | "other";
+  summary: string;
+  system?: string;
+  timestamp: number;
+}
+
+interface CategoryScores {
+  anamnesis: number;
+  physical_exam: number;
+  complementary_exams: number;
+  management: number;
+}
+
 interface Vitals {
   PA: string;
   FC: string;
@@ -132,6 +158,7 @@ interface ChatMessage {
   type?: string;
   scoreDelta?: number;
   timestamp: number;
+  teachingTip?: string;
 }
 
 interface ActionTimelineEntry {
@@ -324,6 +351,22 @@ const ClinicalSimulation = () => {
   const lastActionTimeRef = useRef<number>(Date.now());
   const deteriorationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // NEW: ABCDE Checklist
+  const [abcdeChecklist, setAbcdeChecklist] = useState<Record<string, boolean>>({ A: false, B: false, C: false, D: false, E: false });
+
+  // NEW: Mini-Prontuário
+  const [medicalRecord, setMedicalRecord] = useState<MedicalRecordEntry[]>([]);
+  const [medRecordOpen, setMedRecordOpen] = useState(false);
+
+  // NEW: Learner Mode
+  const [learnerMode, setLearnerMode] = useState(false);
+
+  // NEW: Category Scores (real-time)
+  const [categoryScores, setCategoryScores] = useState<CategoryScores>({ anamnesis: 0, physical_exam: 0, complementary_exams: 0, management: 0 });
+
+  // NEW: ABCDE panel open
+  const [abcdeOpen, setAbcdeOpen] = useState(true);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -332,8 +375,22 @@ const ClinicalSimulation = () => {
 
   const getClinicalState = useCallback(() => {
     if (phase !== "active") return {};
-    return { phase, specialty, difficulty, realisticMode, messages: messages.map(m => ({ ...m })), vitals, setting, triageColor, patientStatus, score, timeElapsed, conversationHistory, actionTimeline, examResults, vitalsSnapshots, countdown };
-  }, [phase, specialty, difficulty, realisticMode, messages, vitals, setting, triageColor, patientStatus, score, timeElapsed, conversationHistory, actionTimeline, examResults, vitalsSnapshots, countdown]);
+    return { phase, specialty, difficulty, realisticMode, learnerMode, messages: messages.map(m => ({ ...m })), vitals, setting, triageColor, patientStatus, score, timeElapsed, conversationHistory, actionTimeline, examResults, vitalsSnapshots, countdown, abcdeChecklist, medicalRecord, categoryScores };
+  }, [phase, specialty, difficulty, realisticMode, learnerMode, messages, vitals, setting, triageColor, patientStatus, score, timeElapsed, conversationHistory, actionTimeline, examResults, vitalsSnapshots, countdown, abcdeChecklist, medicalRecord, categoryScores]);
+
+  // ABCDE auto-detection
+  const detectABCDE = useCallback((text: string) => {
+    const lower = text.toLowerCase();
+    setAbcdeChecklist(prev => {
+      const next = { ...prev };
+      ABCDE_STEPS.forEach(step => {
+        if (!next[step.key] && step.keywords.some(kw => lower.includes(kw))) {
+          next[step.key] = true;
+        }
+      });
+      return next;
+    });
+  }, []);
 
   useEffect(() => { registerAutoSave(getClinicalState); }, [getClinicalState, registerAutoSave]);
 
@@ -613,12 +670,16 @@ const ClinicalSimulation = () => {
 
   const startSimulation = async () => {
     setLoading(true);
+    setAbcdeChecklist({ A: false, B: false, C: false, D: false, E: false });
+    setMedicalRecord([]);
+    setCategoryScores({ anamnesis: 0, physical_exam: 0, complementary_exams: 0, management: 0 });
     try {
       const res = await callAPI({
         action: "start",
         specialty,
         subtopic: subtopic.trim() || undefined,
         difficulty,
+        learner_mode: learnerMode,
         ...(teacherCaseId ? { teacher_case_id: teacherCaseId } : {}),
         ...(isPediatrics && pediatricAge !== "aleatorio" ? { pediatric_age_range: pediatricAge } : {}),
       });
@@ -685,7 +746,11 @@ const ClinicalSimulation = () => {
         action: "interact",
         message: msg,
         conversation_history: updatedHistory,
+        learner_mode: learnerMode,
       });
+
+      // ABCDE detection from user message
+      detectABCDE(msg);
 
       setIsTyping(false);
       playSound("response");
@@ -696,6 +761,7 @@ const ClinicalSimulation = () => {
         type: res.response_type,
         scoreDelta: res.score_delta,
         timestamp: Date.now(),
+        teachingTip: res.teaching_tip || undefined,
       };
 
       setMessages((prev) => [...prev, simMsg]);
@@ -745,6 +811,26 @@ const ClinicalSimulation = () => {
           variant: "destructive",
         });
         playSound("worsened");
+      }
+
+      // Update category scores
+      if (res.category_scores) {
+        setCategoryScores(res.category_scores);
+      }
+
+      // Update medical record from structured_data
+      if (res.structured_data?.summary) {
+        const sd = res.structured_data;
+        const categoryMap: Record<string, MedicalRecordEntry["category"]> = {
+          anamnesis: "anamnesis", physical_exam: "physical_exam", lab: "lab",
+          imaging: "imaging", prescription: "prescription",
+        };
+        setMedicalRecord(prev => [...prev, {
+          category: categoryMap[sd.type] || "other",
+          summary: sd.summary,
+          system: sd.system || undefined,
+          timestamp: Date.now(),
+        }]);
       }
 
       setConversationHistory([
@@ -925,9 +1011,36 @@ const ClinicalSimulation = () => {
     setStatusAlert(false);
     setDeteriorationCount(0);
     setInactivityWarning(false);
+    setAbcdeChecklist({ A: false, B: false, C: false, D: false, E: false });
+    setMedicalRecord([]);
+    setCategoryScores({ anamnesis: 0, physical_exam: 0, complementary_exams: 0, management: 0 });
     if (countdownRef.current) clearInterval(countdownRef.current);
     if (deteriorationIntervalRef.current) clearInterval(deteriorationIntervalRef.current);
     fetchHistory();
+  };
+
+  // PDF Export
+  const exportCasePdf = () => {
+    if (!finalEval) return;
+    const items = [
+      { title: "Diagnóstico Correto", content: finalEval.correct_diagnosis, subtitle: finalEval.student_got_diagnosis ? "✅ Você acertou" : "❌ Você não acertou" },
+      ...Object.entries(finalEval.evaluation).map(([key, val]) => ({
+        title: EVAL_LABELS[key] || key,
+        content: val.feedback,
+        subtitle: `Score: ${val.score}/${EVAL_MAX_SCORES[key] || 25}`,
+      })),
+      ...(finalEval.differential_diagnosis || []).map(dd => ({
+        title: `Diferencial: ${dd.diagnosis}`,
+        content: `Razão: ${dd.reasoning}\nDescartar: ${dd.how_to_rule_out}`,
+        subtitle: dd.student_considered ? "Considerado pelo aluno" : "Não considerado",
+      })),
+      { title: "Abordagem Ideal", content: finalEval.ideal_approach },
+      ...(finalEval.ideal_prescription ? [{ title: "Prescrição Modelo", content: finalEval.ideal_prescription }] : []),
+      { title: "Pontos Fortes", content: finalEval.strengths.join("\n") },
+      { title: "Pontos a Melhorar", content: finalEval.improvements.join("\n") },
+    ];
+    exportToPdf(items, `Plantão ${specialty} - ${finalEval.grade} (${finalEval.final_score}pts)`);
+    toast({ title: "PDF gerado!", description: "O arquivo foi baixado." });
   };
 
   const getTriageEmoji = (color: string) => {
@@ -1142,6 +1255,21 @@ const ClinicalSimulation = () => {
               />
             </div>
 
+            {/* Modo Aprendiz toggle */}
+            <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-muted/30">
+              <div className="space-y-1">
+                <label className="text-sm font-semibold flex items-center gap-2">
+                  <GraduationCap className="h-4 w-4 text-primary" /> Modo Aprendiz
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Receba dicas didáticas contextuais após cada ação clínica
+                </p>
+              </div>
+              <Switch
+                checked={learnerMode}
+                onCheckedChange={setLearnerMode}
+              />
+            </div>
             <Button onClick={startSimulation} disabled={loading} className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
               {loading ? "Preparando plantão..." : "🚨 Iniciar Plantão"}
@@ -1408,6 +1536,95 @@ const ClinicalSimulation = () => {
             )}
           </div>
 
+          {/* ABCDE Checklist + Category Scores + Prontuário */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            {/* ABCDE Checklist */}
+            <Collapsible open={abcdeOpen} onOpenChange={setAbcdeOpen} className="flex-1">
+              <CollapsibleTrigger className="flex items-center gap-2 text-xs font-semibold w-full p-2 rounded-lg bg-muted/30 border border-border/50 hover:bg-muted/50 transition-colors">
+                <Shield className="h-3.5 w-3.5 text-primary" />
+                ABCDE
+                <div className="flex gap-1 ml-1">
+                  {ABCDE_STEPS.map(step => (
+                    <span key={step.key} className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${abcdeChecklist[step.key] ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"}`}>
+                      {step.key}
+                    </span>
+                  ))}
+                </div>
+                <span className="text-muted-foreground ml-1">{Object.values(abcdeChecklist).filter(Boolean).length}/5</span>
+                {abcdeOpen ? <ChevronUp className="h-3 w-3 ml-auto" /> : <ChevronDown className="h-3 w-3 ml-auto" />}
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-1">
+                <div className="grid grid-cols-5 gap-1 p-2 rounded-lg bg-muted/20 border border-border/30">
+                  {ABCDE_STEPS.map(step => (
+                    <div key={step.key} className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all ${abcdeChecklist[step.key] ? "bg-green-500/10 border border-green-500/30" : "bg-muted/30 border border-border/30 opacity-50"}`}>
+                      <step.icon className={`h-4 w-4 ${abcdeChecklist[step.key] ? "text-green-500" : "text-muted-foreground"}`} />
+                      <span className="text-[10px] font-semibold text-center leading-tight">{step.label}</span>
+                      {abcdeChecklist[step.key] && <CheckCircle className="h-3 w-3 text-green-500" />}
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Category Scores Mini Bars */}
+            <div className="flex-1 p-2 rounded-lg bg-muted/30 border border-border/50 space-y-1">
+              <p className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1"><Target className="h-3 w-3" /> Score por Categoria</p>
+              {[
+                { key: "anamnesis", label: "Anam.", max: 15 },
+                { key: "physical_exam", label: "Ex.Fís.", max: 15 },
+                { key: "complementary_exams", label: "Exames", max: 15 },
+                { key: "management", label: "Conduta", max: 15 },
+              ].map(cat => (
+                <div key={cat.key} className="flex items-center gap-1.5">
+                  <span className="text-[10px] w-12 truncate">{cat.label}</span>
+                  <Progress value={(categoryScores[cat.key as keyof CategoryScores] / cat.max) * 100} className="h-1.5 flex-1" />
+                  <span className="text-[10px] font-mono w-8 text-right">{categoryScores[cat.key as keyof CategoryScores]}/{cat.max}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Mini-Prontuário Trigger */}
+            <Sheet open={medRecordOpen} onOpenChange={setMedRecordOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm" className="h-full min-h-[60px] gap-1.5 text-xs border-primary/30">
+                  <Clipboard className="h-4 w-4 text-primary" />
+                  <span className="hidden sm:inline">Prontuário</span>
+                  {medicalRecord.length > 0 && (
+                    <Badge className="text-[10px] px-1 h-4">{medicalRecord.length}</Badge>
+                  )}
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[340px] sm:w-[400px]">
+                <SheetHeader>
+                  <SheetTitle className="flex items-center gap-2">
+                    <Clipboard className="h-5 w-5 text-primary" /> Mini-Prontuário
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="mt-4 space-y-3 overflow-y-auto max-h-[80vh]">
+                  {medicalRecord.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-8">Nenhuma informação coletada ainda. As informações aparecerão aqui conforme você interage.</p>
+                  )}
+                  {(["anamnesis", "physical_exam", "lab", "imaging", "prescription"] as const).map(cat => {
+                    const entries = medicalRecord.filter(e => e.category === cat);
+                    if (entries.length === 0) return null;
+                    const catLabels: Record<string, string> = { anamnesis: "📋 Anamnese", physical_exam: "🩺 Exame Físico", lab: "🔬 Laboratório", imaging: "📷 Imagem", prescription: "💊 Prescrição" };
+                    return (
+                      <div key={cat} className="space-y-1">
+                        <p className="text-xs font-semibold">{catLabels[cat]}</p>
+                        {entries.map((e, i) => (
+                          <div key={i} className="text-xs text-muted-foreground p-2 rounded bg-muted/30 border border-border/30">
+                            {e.system && <Badge variant="outline" className="text-[10px] mb-1">{e.system}</Badge>}
+                            <p>{e.summary}</p>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+
           {/* Action Timeline (collapsible) */}
           {actionTimeline.length > 0 && (
             <div className="flex gap-1.5 overflow-x-auto py-1 px-1">
@@ -1486,6 +1703,13 @@ const ClinicalSimulation = () => {
                             <p className="whitespace-pre-wrap">{msg.content}</p>
                           )}
                         </div>
+                        {/* Teaching Tip (Learner Mode) */}
+                        {msg.teachingTip && (
+                          <div className="mt-2 p-2 rounded-lg bg-primary/5 border border-primary/20 flex items-start gap-1.5">
+                            <GraduationCap className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                            <p className="text-[11px] text-primary/80">{msg.teachingTip}</p>
+                          </div>
+                        )}
                       </div>
                       {/* Doctor avatar */}
                       {msg.role === "doctor" && (
@@ -1898,6 +2122,9 @@ const ClinicalSimulation = () => {
             </Button>
             <Button onClick={retryWithSameConfig} variant="outline" className="gap-2">
               <Zap className="h-4 w-4" /> Refazer Mesmo
+            </Button>
+            <Button onClick={exportCasePdf} variant="outline" className="gap-2">
+              <Download className="h-4 w-4" /> Exportar PDF
             </Button>
             <Button onClick={shareResult} variant="outline" className="gap-2">
               <ClipboardCheck className="h-4 w-4" /> Compartilhar
