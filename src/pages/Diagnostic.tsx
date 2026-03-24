@@ -75,25 +75,21 @@ const Diagnostic = () => {
     }
   };
 
-  const startExam = async () => {
-    setPhase("loading");
-    try {
-      const results = await Promise.allSettled(
-        AREAS.map(async (area) => {
-          const hint = SCENARIO_HINTS[area] || "";
-          const difficulty = getDifficultyForArea(area, answers);
-          const seed = Math.floor(Math.random() * 99999);
-          const usedTopics = questions
-            .filter(q => q.topic === area)
-            .map(q => q.statement.slice(0, 40))
-            .slice(-3)
-            .join("; ");
+  const generateAreaQuestions = async (area: string): Promise<DiagQuestion[]> => {
+    const hint = SCENARIO_HINTS[area] || "";
+    const difficulty = getDifficultyForArea(area, answers);
+    const seed = Math.floor(Math.random() * 99999);
+    const usedTopics = questions
+      .filter(q => q.topic === area)
+      .map(q => q.statement.slice(0, 40))
+      .slice(-3)
+      .join("; ");
 
-          const res = await invokeQuestionGeneratorWithTimeout({
-            stream: false,
-            maxRetries: 0,
-            timeoutMs: 18000,
-            messages: [{ role: "user", content: `Gere EXATAMENTE ${QUESTIONS_PER_AREA} questões de múltipla escolha de ${area} para simulado diagnóstico de residência médica. Nível: ${difficulty}. Seed: ${seed}.
+    const res = await invokeQuestionGeneratorWithTimeout({
+      stream: false,
+      maxRetries: 0,
+      timeoutMs: 30000,
+      messages: [{ role: "user", content: `Gere EXATAMENTE ${QUESTIONS_PER_AREA} questões de múltipla escolha de ${area} para simulado diagnóstico de residência médica. Nível: ${difficulty}. Seed: ${seed}.
 
 CALIBRAÇÃO OBRIGATÓRIA REVALIDA/ENAMED:
 - PROIBIDO: questões de definição pura ("O que é X?")
@@ -117,30 +113,41 @@ REGRA DE GABARITO:
 FORMATO: Retorne APENAS JSON array:
 [{"statement":"Caso clínico completo com ≥150 chars...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"topic":"${area}","explanation":"Raciocínio clínico passo a passo...","difficulty":"${difficulty}"}]
 NÃO inclua texto extra, APENAS o JSON.` }],
-          }, REQUEST_TIMEOUT_MS);
+    }, REQUEST_TIMEOUT_MS);
 
-          if (res.error) throw res.error;
+    if (res.error) throw res.error;
 
-          const raw = res.data;
-          let content = "";
-          if (typeof raw === "string") content = raw;
-          else if (raw?.choices?.[0]?.message?.content) content = raw.choices[0].message.content;
-          else content = JSON.stringify(raw);
+    const raw = res.data;
+    let content = "";
+    if (typeof raw === "string") content = raw;
+    else if (raw?.choices?.[0]?.message?.content) content = raw.choices[0].message.content;
+    else content = JSON.stringify(raw);
 
-          const parsed = parseQuestions(content, area, difficulty).filter(q => isMedicalQuestion(q));
-          return parsed.slice(0, QUESTIONS_PER_AREA);
-        })
-      );
+    const parsed = parseQuestions(content, area, difficulty).filter(q => isMedicalQuestion(q));
+    return parsed.slice(0, QUESTIONS_PER_AREA);
+  };
 
+  const startExam = async () => {
+    setPhase("loading");
+    try {
+      const allQuestions: DiagQuestion[] = [];
       const failedAreas: string[] = [];
-      const allQuestions = results.flatMap((result, idx) => {
-        const area = AREAS[idx];
-        if (result.status === "fulfilled" && result.value.length > 0) {
-          return result.value;
-        }
-        failedAreas.push(area);
-        return generateFallbackQuestionsForArea(area, QUESTIONS_PER_AREA);
-      });
+
+      // Process areas in batches of 2 to reduce server load
+      for (let i = 0; i < AREAS.length; i += 2) {
+        const batch = AREAS.slice(i, i + 2);
+        const results = await Promise.allSettled(batch.map(area => generateAreaQuestions(area)));
+
+        results.forEach((result, idx) => {
+          const area = batch[idx];
+          if (result.status === "fulfilled" && result.value.length > 0) {
+            allQuestions.push(...result.value);
+          } else {
+            failedAreas.push(area);
+            allQuestions.push(...getFallbackQuestionsForArea(area, QUESTIONS_PER_AREA));
+          }
+        });
+      }
 
       if (failedAreas.length > 0) {
         toast({
@@ -149,11 +156,11 @@ NÃO inclua texto extra, APENAS o JSON.` }],
         });
       }
 
-      setQuestions(allQuestions.length > 0 ? allQuestions : generateFallbackQuestions());
+      setQuestions(allQuestions.length > 0 ? allQuestions : getAllFallbackQuestions());
       setPhase("exam");
     } catch (err: any) {
       toast({ title: "Erro ao gerar diagnóstico", description: err.message, variant: "destructive" });
-      setQuestions(generateFallbackQuestions());
+      setQuestions(getAllFallbackQuestions());
       setPhase("exam");
     }
   };
