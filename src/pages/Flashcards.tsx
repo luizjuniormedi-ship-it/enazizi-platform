@@ -393,7 +393,7 @@ const Flashcards = () => {
               <DropdownMenuItem
                 onClick={() => exportToPdf(
                   filteredCards.map((c) => ({ title: c.question, content: c.answer, subtitle: c.topic || undefined })),
-                  "Flashcards_MedStudy_AI"
+                  "Flashcards_ENAZIZI"
                 )}
                 disabled={filteredCards.length === 0}
               >
