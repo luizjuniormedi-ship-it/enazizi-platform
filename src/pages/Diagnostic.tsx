@@ -34,7 +34,7 @@ const SCENARIO_HINTS: Record<string, string> = {
 type Phase = "intro" | "loading" | "exam" | "review" | "result";
 
 const QUESTIONS_PER_AREA = 5;
-const REQUEST_TIMEOUT_MS = 22000;
+const REQUEST_TIMEOUT_MS = 35000;
 
 const Diagnostic = () => {
   const { user } = useAuth();
