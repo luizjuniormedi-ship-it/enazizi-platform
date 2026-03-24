@@ -1,35 +1,29 @@
 
 
-# Plano: Sincronizar Analytics com Dashboard
+# Plano: Questões Diagnósticas Todas Iguais — Correção
 
-## Problema
+## Problema Raiz
 
-A página Analytics usa lógica de dados **separada e incompleta** comparada ao Dashboard:
+Os logs mostram que a IA está dando **timeout em TODAS as 8 áreas** (`AI_SERVICE_UNAVAILABLE`). Quando isso acontece, o sistema cai no `generateFallbackQuestionsForArea` que gera a **mesma questão genérica** para todas as áreas — "Paciente de 45 anos com dor torácica no PS". Resultado: 40 questões praticamente idênticas.
 
-| Métrica | Dashboard (`useDashboardData`) | Analytics |
-|---------|------|-----------|
-| Questões respondidas | `practice_attempts` + `exam_sessions` + `teacher_simulado_results` | Apenas `practice_attempts` |
-| Taxa de acerto | Combinada das 3 fontes | Apenas `practice_attempts` |
-| Sessões de estudo | `study_performance.historico_estudo` | Idem (ok) |
-| Dados de módulos | Contagens via count | Queries completas (ok) |
+## Solução (2 frentes)
 
-Além disso, Analytics usa `useEffect` + `setState` raw, sem cache nem revalidação, enquanto o Dashboard usa `useQuery` com staleTime de 30s.
+### 1. Fallback diversificado por área
 
-## Solução
+Reescrever `generateFallbackQuestionsForArea` com um **banco de questões hardcoded distintas por área** (5 questões únicas para cada uma das 8 áreas = 40 questões diferentes). Cada questão terá caso clínico próprio, cenário, paciente e gabarito diferentes.
 
-Refatorar `Analytics.tsx` para:
+### 2. Melhorar resiliência da geração IA
 
-1. **Unificar contagem de questões e acurácia** — incluir `exam_sessions` e `teacher_simulado_results` na contagem total, replicando a lógica do `useDashboardData`
-2. **Migrar para `useQuery`** — usar React Query com staleTime para cache e revalidação automática, consistente com o Dashboard
-3. **Incluir dados de simulados do professor** — `teacher_simulado_results` nos exam scores e na contagem total
+- Aumentar `REQUEST_TIMEOUT_MS` de 22s para **35s** (a IA precisa gerar 5 questões complexas)
+- Aumentar `timeoutMs` no body de 18s para **30s**
+- Fazer chamadas **sequenciais em lotes de 2** ao invés de 8 paralelas (reduz sobrecarga)
+- Se a IA falhar para uma área, usar o fallback diversificado
 
-## Mudanças
+## Arquivo
 
-**Arquivo:** `src/pages/Analytics.tsx`
+**`src/pages/Diagnostic.tsx`**
 
-- Adicionar queries para `exam_sessions` (score + total_questions) e `teacher_simulado_results` no bloco de fetching
-- Recalcular `totalQuestions` = `practice_attempts.length` + soma de `total_questions` dos exam_sessions + soma de `total_questions` dos teacher_simulado_results
-- Recalcular `accuracy` combinando acertos das 3 fontes (mesma fórmula do `useDashboardData`)
-- Migrar `useEffect` + `useState` para `useQuery` com `queryKey: ["analytics-data", user?.id]`
-- Incluir teacher simulados na lista de `examScores`
+- Substituir `generateFallbackQuestionsForArea` por banco com 40 questões únicas (5 por área)
+- Ajustar timeouts
+- Fazer chamadas em batches de 2 áreas paralelas
 
