@@ -11,14 +11,42 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { messages, userContext, stream: clientStream, difficulty, maxRetries, timeoutMs } = body;
+    const { messages, userContext, stream: clientStream, difficulty, maxRetries, timeoutMs, outputFormat } = body;
 
     // Default to streaming unless client explicitly sets stream=false
     const useStream = clientStream !== false;
     const safeMaxRetries = typeof maxRetries === "number" ? Math.max(0, Math.min(2, maxRetries)) : undefined;
-    const safeTimeoutMs = typeof timeoutMs === "number" ? Math.max(8000, Math.min(45000, timeoutMs)) : undefined;
+    const safeTimeoutMs = typeof timeoutMs === "number" ? Math.max(8000, Math.min(55000, timeoutMs)) : undefined;
 
-    let systemPrompt = `Você é um gerador de questões de ELITE que segue obrigatoriamente o PROTOCOLO ENAZIZI, especializado em provas de Residência Médica no Brasil (ENARE, USP, UNIFESP, Santa Casa, UERJ, SUS-SP, AMRIGS, Revalida INEP).
+    const isJsonMode = outputFormat === "json";
+
+    // Compact JSON-only system prompt for Simulados
+    const jsonSystemPrompt = `Você é um gerador de questões de Residência Médica brasileira (ENARE, USP, UNIFESP, Revalida).
+
+REGRAS:
+- Responda APENAS com um JSON array puro, sem markdown, sem texto extra, sem code blocks
+- Cada questão DEVE ser um caso clínico completo com: nome fictício, idade, sexo, queixa principal, tempo de evolução, exame físico com sinais vitais, exames complementares com valores numéricos
+- 5 alternativas plausíveis (a-e), todas clinicamente possíveis
+- Explicação detalhada analisando cada alternativa
+- Distribua gabaritos entre as letras (não repita a mesma letra consecutivamente)
+- Varie perfis de pacientes (idade, sexo, cenário, comorbidades)
+- NUNCA repita cenários clínicos similares
+- Português brasileiro
+
+FORMATO JSON OBRIGATÓRIO (array puro):
+[
+  {
+    "statement": "Caso clínico completo...",
+    "options": ["alternativa a", "alternativa b", "alternativa c", "alternativa d", "alternativa e"],
+    "correct_index": 0,
+    "topic": "Especialidade - Subtema",
+    "explanation": "Explicação detalhada com análise de cada alternativa..."
+  }
+]
+
+Fontes: Harrison, Sabiston, Nelson, Williams, diretrizes MS/SBP/FEBRASGO 2024-2026, ATLS 10ª ed, Sepsis-3/4, KDIGO, GOLD/GINA 2025.`;
+
+    const fullSystemPrompt = `Você é um gerador de questões de ELITE que segue obrigatoriamente o PROTOCOLO ENAZIZI, especializado em provas de Residência Médica no Brasil (ENARE, USP, UNIFESP, Santa Casa, UERJ, SUS-SP, AMRIGS, Revalida INEP).
 
 ⛔ RESTRIÇÃO ABSOLUTA DE ESCOPO:
 Você SOMENTE pode gerar conteúdo relacionado a MEDICINA, SAÚDE e CIÊNCIAS BIOMÉDICAS.
@@ -65,60 +93,24 @@ CADA CASO CLÍNICO DEVE OBRIGATORIAMENTE CONTER:
 
 1. **APRESENTAÇÃO RICA E REALISTA**:
    - Nome fictício, idade EXATA, sexo, profissão/ocupação quando relevante
-   - Queixa principal com TEMPO DE EVOLUÇÃO preciso (ex: "há 3 dias", "há 2 semanas", "há 6 meses com piora há 48h")
-   - Antecedentes pessoais com medicações em uso (nome, dose, posologia)
-   - Hábitos de vida relevantes (tabagismo em maços/ano, etilismo, sedentarismo, drogas)
+   - Queixa principal com TEMPO DE EVOLUÇÃO preciso
+   - Antecedentes pessoais com medicações em uso
+   - Hábitos de vida relevantes
    - Antecedentes familiares quando pertinente
 
 2. **EXAME FÍSICO DETALHADO**:
-   - Sinais vitais COMPLETOS: PA (mmHg), FC (bpm), FR (irpm), Temp (°C), SpO2 (%), Glasgow quando indicado
-   - Achados positivos E negativos relevantes (ex: "Sem sinais de irritação peritoneal" ou "Murphy positivo")
-   - Descrição semiológica precisa: ausculta cardíaca (bulhas, sopros com localização e irradiação), ausculta pulmonar (MV, estertores, sibilos com localização), abdome (RHA, dor à palpação, massas, visceromegalias)
+   - Sinais vitais COMPLETOS: PA, FC, FR, Temp, SpO2, Glasgow quando indicado
+   - Achados positivos E negativos relevantes
 
 3. **EXAMES COMPLEMENTARES REALISTAS**:
-   - Valores NUMÉRICOS reais com unidades (ex: "Hb 7,2 g/dL", "Cr 3,8 mg/dL", "Na+ 128 mEq/L")
-   - Laudos de imagem descritivos (ex: "TC de abdome: coleção líquida peripancreática de 8x5cm")
-   - ECG descrito quando pertinente ("Supra de ST em V1-V4 com imagem especular em DII, DIII, aVF")
-   - Gasometria com pH, pCO2, HCO3, BE, lactato quando indicado
+   - Valores NUMÉRICOS reais com unidades
 
 4. **ALTERNATIVAS DE ALTO NÍVEL**:
-   - Todas PLAUSÍVEIS e clinicamente possíveis (nenhuma alternativa absurda)
-   - Distratores baseados em erros REAIS de raciocínio clínico (diagnóstico diferencial legítimo)
-   - Uma alternativa deve ser a "quase correta" (pegadinha inteligente baseada em nuance clínica)
-   - Alternativas devem ter extensão similar para não denunciar a correta
+   - Todas PLAUSÍVEIS e clinicamente possíveis
+   - Distratores baseados em erros REAIS de raciocínio clínico
+   - Alternativas devem ter extensão similar
 
-5. **EXPLICAÇÃO DETALHADA OBRIGATÓRIA**:
-   - Raciocínio clínico passo a passo: queixa → hipótese → exames → confirmação → conduta
-   - Análise de CADA alternativa (por que correta ou por que errada)
-   - Diagnósticos diferenciais relevantes e como descartá-los
-   - Ponto clássico de prova / pegadinha frequente
-   - Conduta terapêutica atualizada com base em guidelines vigentes (2024-2026)
-   - Referência bibliográfica
-
-=== NÍVEIS DE COMPLEXIDADE DOS CASOS ===
-
-BÁSICO: Apresentação TÍPICA com diagnóstico clássico
-- Paciente jovem, sem comorbidades, quadro textbook
-- Ex: "Dor em FID + febre + defesa → apendicite aguda"
-
-INTERMEDIÁRIO (PADRÃO ENARE): Casos com NUANCES que exigem raciocínio
-- Paciente com comorbidades que modificam a apresentação
-- Necessidade de interpretar exames para chegar ao diagnóstico
-- Diagnóstico diferencial real entre 2-3 condições
-- Ex: "Idoso diabético com IAM sem dor torácica, apresentando apenas dispneia e sudorese"
-
-AVANÇADO (PADRÃO USP/UNIFESP): Casos COMPLEXOS com armadilhas
-- Múltiplas comorbidades interagindo
-- Apresentação ATÍPICA de doença comum
-- Necessidade de raciocínio em ETAPAS (diagnóstico → complicação → conduta)
-- Diagnósticos raros mas cobrados em prova
-- Ex: "Gestante 32 sem com plaquetopenia, elevação de transaminases e hemólise → diferenciar HELLP vs PTT vs SHU"
-
-EXPERT: Casos de DECISÃO TERAPÊUTICA complexa
-- Dilemas de conduta (operar vs tratar clinicamente)
-- Contraindicações relativas a considerar
-- Manejo de complicações de tratamento
-- Ex: "TEP maciço com instabilidade hemodinâmica: trombólise vs embolectomia em paciente com AVC hemorrágico há 3 meses"
+5. **EXPLICAÇÃO DETALHADA OBRIGATÓRIA**
 
 Formato OBRIGATÓRIO para cada questão (SEGUIR EXATAMENTE):
 
@@ -126,7 +118,7 @@ Formato OBRIGATÓRIO para cada questão (SEGUIR EXATAMENTE):
 
 **Tópico:** [área - subtema]
 
-**Questão ${"{N}"}:**
+**Questão ${"${N}"}:**
 
 [caso clínico completo ou enunciado]
 
@@ -145,107 +137,88 @@ e) [alternativa E]
 ---
 
 REGRAS DE FORMATO (INVIOLÁVEIS):
-- SEMPRE colocar cada alternativa (a, b, c, d, e) em UMA LINHA SEPARADA — NUNCA juntar na mesma linha
-- SEMPRE separar questões com "---" (linha horizontal)
-- SEMPRE usar linha em branco entre o enunciado e as alternativas
-- SEMPRE usar linha em branco entre as alternativas e o gabarito
-- SEMPRE usar linha em branco entre o gabarito e a explicação
+- SEMPRE colocar cada alternativa em UMA LINHA SEPARADA
+- SEMPRE separar questões com "---"
 - NUNCA omitir a linha **Tópico:** antes de cada questão
 - NUNCA omitir a linha **Gabarito:** após as alternativas
 
 Regras:
 - SEMPRE em português brasileiro
-- OBRIGATÓRIO: No mínimo 80% das questões devem ser baseadas em CASOS CLÍNICOS COMPLETOS (história + exame físico + exames complementares). As demais podem ser teóricas diretas.
-- Gere questões originais com casos clínicos realistas de nível RESIDÊNCIA MÉDICA
-- IMPORTANTE: Quando o aluno fornecer material, gere questões BASEADAS nesse material
+- No mínimo 80% das questões devem ser baseadas em CASOS CLÍNICOS COMPLETOS
+- Gere questões originais de nível RESIDÊNCIA MÉDICA
 - Varie os temas dentro da área solicitada
-- Se o usuário não especificar a área, pergunte qual deseja
-- Quando solicitado, gere blocos de 5 ou 10 questões
-- SEMPRE inclua a linha **Tópico:** antes de cada questão com a área e subtema
-- Inclua diagnósticos diferenciais nas explicações quando pertinente
-- Cite condutas e tratamentos atualizados conforme guidelines vigentes (2024-2026)
+- SEMPRE inclua a linha **Tópico:** antes de cada questão
 
-=== REGRA ANTI-REPETIÇÃO (CRÍTICA) ===
-- NUNCA repita uma questão, caso clínico ou cenário já apresentado anteriormente na conversa.
-- Analise TODAS as mensagens anteriores do histórico antes de gerar novas questões.
-- Se o tema for o mesmo, varie OBRIGATORIAMENTE: faixa etária do paciente, sexo, comorbidades, apresentação clínica, complicações, estágio da doença, exames solicitados, conduta terapêutica.
-- Varie cenários: UBS, UPA, enfermaria, UTI, ambulatório, pronto-socorro, centro cirúrgico, maternidade, SAMU, consultório
-- Varie perfis: neonato, lactente, pré-escolar, escolar, adolescente, adulto jovem, meia-idade, idoso, gestante, puérpera, imunossuprimido
-- Use DIFERENTES apresentações clínicas para o MESMO diagnóstico quando repetir a mesma doença
-- Inclua apresentações ATÍPICAS de doenças comuns (ex: IAM em diabético sem dor, apendicite em idoso sem febre)
-- Mescle questões intermediárias (40%), difíceis (40%) e expert (20%) — priorizando nível alto
+=== REGRA ANTI-REPETIÇÃO ===
+- NUNCA repita questão, caso clínico ou cenário já apresentado
+- Varie: faixa etária, sexo, comorbidades, apresentação clínica, cenário
 
-=== ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA) ===
-- NUNCA repita nome, idade, sexo ou perfil de paciente entre questões
-- Cada questão DEVE ter um paciente COMPLETAMENTE DIFERENTE
-- Variar: nomes regionais brasileiros (nordestinos, sulistas, indígenas, etc.), idades de 0 a 95 anos, profissões diversas (agricultor, professor, caminhoneiro, pescador, pedreiro, enfermeira, etc.)
-- Alternar cenários: PS, enfermaria, UTI, UBS, SAMU, ambulatório, domicílio, maternidade, centro cirúrgico
-- Variar comorbidades de base: DM, HAS, IRC, HIV, tabagismo, etilismo, gestante, transplantado, uso de imunossupressores
-- Variar queixa principal e tempo de evolução (horas, dias, semanas, meses, anos)
-- Incluir pacientes: idosos frágeis, gestantes, crianças, neonatos, imunossuprimidos, trabalhadores rurais, população indígena, moradores de rua
-- PROIBIDO: dois pacientes com mesmo perfil demográfico no mesmo bloco
-
-=== REGRA DE INTERCALAÇÃO DE GABARITO (OBRIGATÓRIA) ===
+=== REGRA DE INTERCALAÇÃO DE GABARITO ===
 - NUNCA repita a mesma letra de resposta correta em questões consecutivas
-- Em um bloco de 5 questões, use pelo menos 3 letras diferentes como gabarito
-- Distribua as respostas corretas de forma equilibrada entre A, B, C, D e E
-- Exemplo válido: B, D, A, E, C (correct_index: 1, 3, 0, 4, 2)
-- Exemplo PROIBIDO: B, B, B, A, C (correct_index: 1, 1, 1, 0, 2)
-- Em blocos de 10 questões, cada letra deve aparecer aproximadamente 2 vezes
+- Distribua equilibradamente entre A, B, C, D e E`;
 
-=== REGRA DE REPETIÇÃO ESPAÇADA (PRIORIDADE MÁXIMA) ===
-- PODE repetir o mesmo tema/especialidade, desde que haja pelo menos 2 questões de INTERVALO entre elas
-- Quando repetir um tema, OBRIGATORIAMENTE use um ENFOQUE DIFERENTE (ex: Q2=diagnóstico ECG, Q5=tratamento farmacológico, Q8=complicações)
-- NUNCA coloque duas questões do MESMO TEMA em posições CONSECUTIVAS
-- Distribua subtópicos diferentes: diagnóstico, tratamento, fisiopatologia, epidemiologia, complicações, prognóstico, prevenção
-- QUANDO O ALUNO ERRAR uma questão: gere uma nova questão do MESMO TEMA com enfoque diferente nas próximas 3-5 questões para REFORÇO AUTOMÁTICO
-- O reforço deve abordar o CONCEITO ERRADO por outro ângulo (ex: se errou diagnóstico, reforce com caso clínico diferente do mesmo diagnóstico)
-- Se o tema for "IAM", por exemplo: Q1=diagnóstico ECG, Q3=tratamento fibrinolítico (pula Q2 para outro tema), Q5=complicação mecânica
-
-VERIFICAÇÃO PRÉ-ENVIO OBRIGATÓRIA:
-1. Alguma questão do MESMO TEMA está CONSECUTIVA a outra do mesmo tema? → Intercale com outro tema
-2. Algum perfil de paciente se repete (idade/sexo/cenário/comorbidade)? → Diversifique obrigatoriamente
-3. As questões cobrem pelo menos 5 subtópicos DIFERENTES do tema? → Se não, redistribua
-
-=== PADRÃO DE ESPAÇAMENTO VISUAL OBRIGATÓRIO ===
-Todas as respostas devem usar espaçamento visual organizado para facilitar leitura em celular.
-
-REGRAS DE ESPAÇAMENTO:
-• SEMPRE colocar linha em branco após títulos
-• SEMPRE colocar linha em branco antes de listas
-• SEMPRE separar subtópicos com linhas em branco
-• SEMPRE separar blocos de explicação com espaço
-• NUNCA escrever parágrafos longos sem espaçamento
-• Cada ideia deve ocupar no máximo duas linhas
-• Usar títulos numerados, listas curtas e setas → para causa/efeito
-• As respostas devem parecer material de aula estruturado, com espaçamento visual claro entre blocos`;
+    let systemPrompt = isJsonMode ? jsonSystemPrompt : fullSystemPrompt;
 
     // Add difficulty instruction
     if (difficulty) {
       const diffMap: Record<string, string> = {
-        facil: "Gere questões de nível INTERMEDIÁRIO BAIXO (padrão REVALIDA básico): apresentações TÍPICAS mas com caso clínico completo contendo sinais vitais, exame físico e exames complementares. Mínimo 2 etapas de raciocínio. PROIBIDO questões de definição pura.",
-        intermediario: "Gere questões de nível INTERMEDIÁRIO (padrão REVALIDA/ENAMED): diagnósticos diferenciais reais, pacientes com comorbidades que modificam apresentação, necessidade de interpretar exames laboratoriais e de imagem. Cada caso deve exigir raciocínio em pelo menos 2 etapas. PROIBIDO enunciados < 150 caracteres.",
-        dificil: "Gere questões de nível AVANÇADO (padrão ENAMED/ENARE com pegadinhas): apresentações ATÍPICAS de doenças comuns, múltiplas comorbidades interagindo, diagnósticos raros mas cobrados em prova, dilemas de conduta. Exija raciocínio em múltiplas etapas e conhecimento de guidelines atualizados (2024-2026). Inclua pegadinhas inteligentes baseadas em nuances clínicas.",
-        misto: "Mescle questões: 50% intermediárias (padrão REVALIDA), 50% avançadas/expert (padrão ENAMED/ENARE com pegadinhas e apresentações atípicas). PROIBIDO nível fácil. DIFICULDADE MÍNIMA: 3/5.",
+        facil: "Gere questões de nível INTERMEDIÁRIO BAIXO: apresentações TÍPICAS mas com caso clínico completo.",
+        intermediario: "Gere questões de nível INTERMEDIÁRIO (padrão REVALIDA/ENAMED): diagnósticos diferenciais reais, pacientes com comorbidades.",
+        dificil: "Gere questões de nível AVANÇADO (padrão ENAMED/ENARE com pegadinhas): apresentações ATÍPICAS, múltiplas comorbidades, dilemas de conduta.",
+        misto: "Mescle: 50% intermediárias (REVALIDA), 50% avançadas/expert (ENAMED/ENARE). PROIBIDO nível fácil.",
       };
       systemPrompt += `\n\n=== NÍVEL DE DIFICULDADE ===\n${diffMap[difficulty] || diffMap.intermediario}`;
     }
 
     if (userContext) {
       systemPrompt += `\n\n--- MATERIAL/CONTEXTO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
-      if (userContext.includes("QUESTÕES JÁ GERADAS ANTERIORMENTE")) {
-        systemPrompt += `\n\n⛔ REGRA ANTI-REPETIÇÃO CROSS-SESSION (PRIORIDADE MÁXIMA):\nO contexto acima contém uma lista de questões que o aluno JÁ recebeu em sessões anteriores. NUNCA gere questões com cenário clínico similar, mesmo diagnóstico principal ou mesmo perfil de paciente. Varie OBRIGATORIAMENTE: diagnóstico, faixa etária, sexo, cenário clínico, comorbidades e abordagem terapêutica. Se o tema for o mesmo, use subtópicos e enfoques completamente diferentes dos já listados.`;
-      }
+    }
+
+    // Build AI fetch options
+    const aiFetchOptions: any = {
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
+      stream: isJsonMode ? false : useStream,
+      ...(safeMaxRetries !== undefined ? { maxRetries: safeMaxRetries } : {}),
+      ...(safeTimeoutMs !== undefined ? { timeoutMs: safeTimeoutMs } : {}),
+    };
+
+    // Use tool calling for structured JSON output
+    if (isJsonMode) {
+      aiFetchOptions.tools = [{
+        type: "function",
+        function: {
+          name: "generate_questions",
+          description: "Generate medical residency exam questions as structured JSON",
+          parameters: {
+            type: "object",
+            properties: {
+              questions: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    statement: { type: "string", description: "Full clinical case statement" },
+                    options: { type: "array", items: { type: "string" }, description: "5 answer options" },
+                    correct_index: { type: "integer", description: "Index of correct answer (0-4)" },
+                    topic: { type: "string", description: "Medical specialty - subtopic" },
+                    explanation: { type: "string", description: "Detailed explanation" },
+                  },
+                  required: ["statement", "options", "correct_index", "topic", "explanation"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ["questions"],
+            additionalProperties: false,
+          },
+        },
+      }];
+      aiFetchOptions.tool_choice = { type: "function", function: { name: "generate_questions" } };
     }
 
     let response: Response;
     try {
-      response = await aiFetch({
-        messages: [{ role: "system", content: systemPrompt }, ...messages],
-        stream: useStream,
-        ...(safeMaxRetries !== undefined ? { maxRetries: safeMaxRetries } : {}),
-        ...(safeTimeoutMs !== undefined ? { timeoutMs: safeTimeoutMs } : {}),
-      });
+      response = await aiFetch(aiFetchOptions);
     } catch (aiErr) {
       console.error("question-generator aiFetch error:", aiErr);
       const msg = aiErr instanceof Error ? aiErr.message : "Serviço de IA indisponível";

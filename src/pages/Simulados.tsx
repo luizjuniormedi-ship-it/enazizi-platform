@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
 import { isMedicalQuestion } from "@/lib/medicalValidation";
+import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +16,103 @@ import SimuladoResult from "@/components/simulados/SimuladoResult";
 
 type Phase = "setup" | "loading" | "exam" | "finished";
 
+const BATCH_SIZE = 10;
+
+/** Generate a single batch of questions via the edge function */
+async function generateBatch(
+  topics: string[],
+  count: number,
+  difficulty: string,
+  accessToken: string | undefined,
+): Promise<SimQuestion[]> {
+  const topicsStr = topics.join(", ");
+  const difficultyInstruction = difficulty === "misto"
+    ? "Mescle questões fáceis (30%), intermediárias (50%) e difíceis (20%)."
+    : `Nível de dificuldade: ${difficulty}.`;
+
+  const res = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({
+        stream: false,
+        outputFormat: "json",
+        difficulty,
+        timeoutMs: 55000,
+        messages: [{
+          role: "user",
+          content: `Gere exatamente ${count} questões de múltipla escolha para simulado de residência médica sobre: ${topicsStr}. ${difficultyInstruction} Distribua igualmente entre os temas solicitados. Com casos clínicos completos.`,
+        }],
+      }),
+    },
+  );
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({ error: "Erro desconhecido" }));
+    throw new Error(errBody.error || `Erro ${res.status}`);
+  }
+
+  const json = await res.json();
+
+  // Try tool_calls first (structured output)
+  const toolCall = json.choices?.[0]?.message?.tool_calls?.[0];
+  if (toolCall?.function?.arguments) {
+    try {
+      const parsed = JSON.parse(toolCall.function.arguments);
+      if (Array.isArray(parsed.questions)) {
+        return mapQuestions(parsed.questions, topics);
+      }
+    } catch { /* fall through */ }
+  }
+
+  // Try content as JSON
+  const content = json.choices?.[0]?.message?.content || "";
+  
+  // Try JSON array extraction
+  const jsonMatch = content.match(/\[[\s\S]*\]/);
+  if (jsonMatch) {
+    try {
+      return mapQuestions(JSON.parse(jsonMatch[0]), topics);
+    } catch { /* fall through */ }
+  }
+
+  // Fallback: parse markdown format
+  const parsed = parseQuestionsFromText(content);
+  if (parsed.length > 0) {
+    return parsed.map((q) => ({
+      statement: q.statement,
+      options: q.options,
+      correct: q.correctIndex,
+      topic: q.topic || topics[0],
+      explanation: q.explanation,
+    }));
+  }
+
+  return [];
+}
+
+function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
+  return (Array.isArray(arr) ? arr : [])
+    .map((q: any) => ({
+      statement: String(q.statement || ""),
+      options: Array.isArray(q.options) ? q.options.map(String) : [],
+      correct: Number.isInteger(q.correct_index) ? q.correct_index : 0,
+      topic: String(q.topic || topics[0]),
+      explanation: String(q.explanation || ""),
+    }))
+    .filter(
+      (q) =>
+        q.options.length >= 4 &&
+        q.statement.length > 10 &&
+        isMedicalQuestion({ statement: q.statement, topic: q.topic, options: q.options }),
+    );
+}
+
 const Simulados = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -25,6 +123,7 @@ const Simulados = () => {
   const [finalAnswers, setFinalAnswers] = useState<Record<number, number>>({});
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [restoredState, setRestoredState] = useState<any>(null);
+  const [loadingProgress, setLoadingProgress] = useState("");
   const startTimeRef = useRef<Date>();
 
   // Session persistence
@@ -66,80 +165,60 @@ const Simulados = () => {
     setPhase("loading");
 
     try {
-      const topicsStr = config.topics.join(", ");
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
 
-      const difficultyInstruction = config.difficulty === "misto"
-        ? "Mescle questões fáceis (30%), intermediárias (50%) e difíceis (20%)."
-        : `Nível de dificuldade: ${config.difficulty}.`;
+      let allQuestions: SimQuestion[] = [];
 
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({
-            stream: false,
-            difficulty: config.difficulty,
-            messages: [{
-              role: "user",
-              content: `Gere exatamente ${config.count} questões de múltipla escolha para simulado de residência médica sobre: ${topicsStr}. 
-${difficultyInstruction}
-Formato OBRIGATÓRIO: JSON array puro, sem markdown, sem texto extra.
-[{"statement":"caso clínico...", "options":["a","b","c","d","e"], "correct_index": 0, "topic":"Área", "explanation":"explicação detalhada"}]
-Distribua igualmente entre os temas solicitados. Com casos clínicos.`
-            }],
-          }),
+      if (config.count <= BATCH_SIZE) {
+        // Single batch
+        setLoadingProgress("Gerando questões...");
+        allQuestions = await generateBatch(config.topics, config.count, config.difficulty, accessToken);
+
+        // Retry once if no questions parsed
+        if (allQuestions.length === 0) {
+          setLoadingProgress("Tentando novamente...");
+          allQuestions = await generateBatch(config.topics, config.count, config.difficulty, accessToken);
         }
-      );
+      } else {
+        // Parallel batches
+        const batchCount = Math.ceil(config.count / BATCH_SIZE);
+        const batchSizes = Array.from({ length: batchCount }, (_, i) => {
+          const remaining = config.count - i * BATCH_SIZE;
+          return Math.min(BATCH_SIZE, remaining);
+        });
 
-      if (!res.ok) throw new Error("Erro ao conectar com o gerador de questões");
+        setLoadingProgress(`Gerando ${batchCount} lotes...`);
 
-      let parsed: SimQuestion[] = [];
-      const contentType = res.headers.get("content-type") || "";
+        const results = await Promise.allSettled(
+          batchSizes.map((size) => generateBatch(config.topics, size, config.difficulty, accessToken)),
+        );
 
-      if (contentType.includes("text/event-stream")) {
-        let fullText = "";
-        const reader = res.body?.getReader();
-        const decoder = new TextDecoder();
-        if (reader) {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            const chunk = decoder.decode(value, { stream: true });
-            for (const line of chunk.split("\n")) {
-              if (!line.startsWith("data: ")) continue;
-              const jsonStr = line.slice(6).trim();
-              if (jsonStr === "[DONE]") continue;
-              try {
-                const p = JSON.parse(jsonStr);
-                const content = p.choices?.[0]?.delta?.content || p.choices?.[0]?.message?.content;
-                if (content) fullText += content;
-              } catch {}
-            }
+        for (const result of results) {
+          if (result.status === "fulfilled") {
+            allQuestions.push(...result.value);
           }
         }
-        const match = fullText.match(/\[[\s\S]*\]/);
-        if (match) parsed = mapQuestions(JSON.parse(match[0]), config.topics);
-      } else {
-        const json = await res.json();
-        const content = json.choices?.[0]?.message?.content || JSON.stringify(json);
-        const match = content.match(/\[[\s\S]*\]/);
-        if (match) parsed = mapQuestions(JSON.parse(match[0]), config.topics);
+
+        // Retry failed batches once
+        const failedCount = results.filter((r) => r.status === "rejected" || (r.status === "fulfilled" && r.value.length === 0)).length;
+        if (failedCount > 0 && allQuestions.length < config.count) {
+          setLoadingProgress(`Recuperando ${failedCount} lotes...`);
+          const retrySize = Math.min(config.count - allQuestions.length, BATCH_SIZE);
+          try {
+            const retry = await generateBatch(config.topics, retrySize, config.difficulty, accessToken);
+            allQuestions.push(...retry);
+          } catch { /* accept partial */ }
+        }
       }
 
-      if (parsed.length === 0) {
+      if (allQuestions.length === 0) {
         toast({ title: "Erro ao gerar questões. Tente novamente.", variant: "destructive" });
         setPhase("setup");
         return;
       }
 
-      const finalQuestions = parsed.slice(0, config.count);
+      const finalQuestions = allQuestions.slice(0, config.count);
       setQuestions(finalQuestions);
       setRestoredState({ timeLeft: config.count * config.timePerQuestion * 60 });
       startTimeRef.current = new Date();
@@ -149,15 +228,6 @@ Distribua igualmente entre os temas solicitados. Com casos clínicos.`
       setPhase("setup");
     }
   };
-
-  const mapQuestions = (arr: any[], topics: string[]): SimQuestion[] =>
-    (Array.isArray(arr) ? arr : []).map((q: any) => ({
-      statement: String(q.statement || ""),
-      options: Array.isArray(q.options) ? q.options.map(String) : [],
-      correct: Number.isInteger(q.correct_index) ? q.correct_index : 0,
-      topic: String(q.topic || topics[0]),
-      explanation: String(q.explanation || ""),
-    })).filter((q) => q.options.length >= 4 && q.statement.length > 10 && isMedicalQuestion({ statement: q.statement, topic: q.topic, options: q.options }));
 
   const handleFinish = async (answers: Record<number, number>) => {
     setFinalAnswers(answers);
@@ -215,7 +285,6 @@ Distribua igualmente entre os temas solicitados. Com casos clínicos.`
   };
 
   const handleRetryErrors = async (sessionIdOrVoid?: string) => {
-    // If called from history with a session ID, load that session's data
     if (sessionIdOrVoid) {
       const { data } = await supabase
         .from("exam_sessions")
@@ -227,13 +296,10 @@ Distribua igualmente entre os temas solicitados. Com casos clínicos.`
         toast({ title: "Sessão não encontrada", variant: "destructive" });
         return;
       }
-      // For history-based retry, we don't have the original questions stored
-      // Show a toast explaining this limitation
-      toast({ title: "Funcionalidade em breve", description: "A revisão de erros do histórico estará disponível em breve. Use 'Refazer só os erros' na tela de resultado logo após finalizar.", variant: "default" });
+      toast({ title: "Funcionalidade em breve", description: "A revisão de erros do histórico estará disponível em breve.", variant: "default" });
       return;
     }
 
-    // Retry from current result screen
     const errorQuestions = questions.filter((q, i) => finalAnswers[i] !== q.correct);
     if (errorQuestions.length === 0) return;
 
@@ -268,7 +334,7 @@ Distribua igualmente entre os temas solicitados. Com casos clínicos.`
     return (
       <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
         <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-        <p className="text-muted-foreground">Gerando questões...</p>
+        <p className="text-muted-foreground">{loadingProgress || "Gerando questões..."}</p>
         <p className="text-xs text-muted-foreground mt-2">Isso pode levar alguns segundos</p>
       </div>
     );
@@ -285,7 +351,6 @@ Distribua igualmente entre os temas solicitados. Com casos clínicos.`
     );
   }
 
-  // Exam phase
   return (
     <SimuladoExam
       questions={questions}
