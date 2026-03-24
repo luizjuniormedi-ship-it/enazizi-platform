@@ -374,8 +374,22 @@ const ClinicalSimulation = () => {
 
   const getClinicalState = useCallback(() => {
     if (phase !== "active") return {};
-    return { phase, specialty, difficulty, realisticMode, messages: messages.map(m => ({ ...m })), vitals, setting, triageColor, patientStatus, score, timeElapsed, conversationHistory, actionTimeline, examResults, vitalsSnapshots, countdown };
-  }, [phase, specialty, difficulty, realisticMode, messages, vitals, setting, triageColor, patientStatus, score, timeElapsed, conversationHistory, actionTimeline, examResults, vitalsSnapshots, countdown]);
+    return { phase, specialty, difficulty, realisticMode, learnerMode, messages: messages.map(m => ({ ...m })), vitals, setting, triageColor, patientStatus, score, timeElapsed, conversationHistory, actionTimeline, examResults, vitalsSnapshots, countdown, abcdeChecklist, medicalRecord, categoryScores };
+  }, [phase, specialty, difficulty, realisticMode, learnerMode, messages, vitals, setting, triageColor, patientStatus, score, timeElapsed, conversationHistory, actionTimeline, examResults, vitalsSnapshots, countdown, abcdeChecklist, medicalRecord, categoryScores]);
+
+  // ABCDE auto-detection
+  const detectABCDE = useCallback((text: string) => {
+    const lower = text.toLowerCase();
+    setAbcdeChecklist(prev => {
+      const next = { ...prev };
+      ABCDE_STEPS.forEach(step => {
+        if (!next[step.key] && step.keywords.some(kw => lower.includes(kw))) {
+          next[step.key] = true;
+        }
+      });
+      return next;
+    });
+  }, []);
 
   useEffect(() => { registerAutoSave(getClinicalState); }, [getClinicalState, registerAutoSave]);
 
