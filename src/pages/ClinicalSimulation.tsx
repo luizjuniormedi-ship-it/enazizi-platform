@@ -120,6 +120,30 @@ const DIFFICULTY_TIMER: Record<string, number> = {
 
 type Phase = "lobby" | "active" | "finishing" | "result";
 
+// ABCDE Checklist definitions
+const ABCDE_STEPS = [
+  { key: "A", label: "Vias Aéreas", icon: Wind, keywords: ["via aérea", "vias aéreas", "airway", "orofaringe", "cânula", "guedel", "intub", "iot", "traqueo", "aspirar via"] },
+  { key: "B", label: "Respiração", icon: Wind, keywords: ["ausculta pulmonar", "respiratório", "pulmão", "pulmões", "murmúrio", "sibilos", "estertores", "crepitações", "oxigên", "spo2", "ventil", "ambu", "nebuliz"] },
+  { key: "C", label: "Circulação", icon: Droplets, keywords: ["acesso venoso", "hidratação", "soro", "cristaloide", "volume", "pulso", "perfusão", "enchimento capilar", "hemorrag", "sangr", "droga vasoativa", "noradrenalina", "ausculta cardíaca", "cardiovascular"] },
+  { key: "D", label: "Neurológico", icon: Brain, keywords: ["neurológico", "consciência", "glasgow", "pupilas", "reflexo", "força muscular", "sensibilidade", "meníngeo", "nível de consciência", "confuso", "orientado"] },
+  { key: "E", label: "Exposição", icon: Eye, keywords: ["exposição", "despir", "temperatura", "hipotermia", "pele", "mucosa", "dorso", "região lombar", "extremidades", "membros", "edema", "cianose", "turgor"] },
+] as const;
+
+// Medical record types
+interface MedicalRecordEntry {
+  category: "anamnesis" | "physical_exam" | "lab" | "imaging" | "prescription" | "other";
+  summary: string;
+  system?: string;
+  timestamp: number;
+}
+
+interface CategoryScores {
+  anamnesis: number;
+  physical_exam: number;
+  complementary_exams: number;
+  management: number;
+}
+
 interface Vitals {
   PA: string;
   FC: string;
