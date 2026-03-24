@@ -1,0 +1,182 @@
+import { useState } from "react";
+import { FileText, Play, History, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
+import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
+import SimuladoHistory from "./SimuladoHistory";
+
+const ALL_TOPICS = [
+  "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia", "Gastroenterologia",
+  "Nefrologia", "Infectologia", "Hematologia", "Reumatologia", "Dermatologia",
+  "Pediatria", "Ginecologia e Obstetrícia", "Cirurgia Geral", "Cirurgia do Trauma",
+  "Ortopedia", "Urologia", "Psiquiatria", "Oftalmologia", "Otorrinolaringologia",
+  "Medicina Preventiva", "Medicina de Emergência", "Terapia Intensiva",
+  "Clínica Médica", "Saúde da Família", "Semiologia", "Anatomia", "Farmacologia", "Oncologia",
+];
+
+const DIFFICULTY_OPTIONS = [
+  { value: "facil", label: "Fácil" },
+  { value: "intermediario", label: "Intermediário" },
+  { value: "dificil", label: "Difícil" },
+  { value: "misto", label: "Misto" },
+];
+
+interface SimuladoSetupProps {
+  onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number }) => void;
+  onResumeSession: () => void;
+  onRetryErrors: (sessionId: string) => void;
+  pendingSession: any;
+  checkedSession: boolean;
+  userId?: string;
+}
+
+const SimuladoSetup = ({ onStart, onResumeSession, onRetryErrors, pendingSession, checkedSession, userId }: SimuladoSetupProps) => {
+  const [tab, setTab] = useState<"novo" | "historico">("novo");
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [questionCount, setQuestionCount] = useState(10);
+  const [customCount, setCustomCount] = useState("");
+  const [difficulty, setDifficulty] = useState("intermediario");
+  const [timePerQuestion, setTimePerQuestion] = useState(3);
+
+  const toggleTopic = (topic: string) => {
+    setSelectedTopics(prev =>
+      prev.includes(topic) ? prev.filter(t => t !== topic) : [...prev, topic]
+    );
+  };
+
+  const handleStart = () => {
+    const count = customCount ? parseInt(customCount) : questionCount;
+    onStart({ topics: selectedTopics, count, difficulty, timePerQuestion });
+  };
+
+  const totalTime = (customCount ? parseInt(customCount) || questionCount : questionCount) * timePerQuestion;
+
+  return (
+    <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
+      {checkedSession && pendingSession && (
+        <ResumeSessionBanner
+          updatedAt={pendingSession.updated_at}
+          onResume={onResumeSession}
+          onDiscard={() => {}}
+        />
+      )}
+
+      <div className="text-center py-4 relative">
+        <div className="absolute top-4 right-0">
+          <ModuleHelpButton moduleKey="simulados" moduleName="Simulados" steps={[
+            "Selecione uma ou mais especialidades clicando nos chips de tema",
+            "Defina a quantidade de questões (5 a 100) e o nível de dificuldade",
+            "Clique 'Iniciar Simulado' — o cronômetro começa automaticamente",
+            "Navegue livremente entre as questões pelo painel numérico",
+            "Ao finalizar, veja resultado por especialidade com % de acerto",
+            "Erros são salvos automaticamente no Banco de Erros para revisão",
+          ]} />
+        </div>
+        <FileText className="h-12 w-12 text-primary mx-auto mb-3" />
+        <h1 className="text-2xl font-bold">Simulados</h1>
+        <p className="text-muted-foreground text-sm">Configure seu simulado com dificuldade, cronômetro e relatório detalhado.</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-border pb-0">
+        <button
+          onClick={() => setTab("novo")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            tab === "novo" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Play className="h-4 w-4 inline mr-1.5" />Novo Simulado
+        </button>
+        <button
+          onClick={() => setTab("historico")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            tab === "historico" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <History className="h-4 w-4 inline mr-1.5" />Histórico
+        </button>
+      </div>
+
+      {tab === "historico" ? (
+        <SimuladoHistory userId={userId} onRetryErrors={onRetryErrors} />
+      ) : (
+        <div className="glass-card p-6 space-y-6">
+          {/* Topic selection */}
+          <div>
+            <label className="text-sm font-semibold mb-3 block">Selecione os assuntos</label>
+            <div className="flex flex-wrap gap-2">
+              {ALL_TOPICS.map(topic => (
+                <button
+                  key={topic}
+                  onClick={() => toggleTopic(topic)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                    selectedTopics.includes(topic)
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/30"
+                  }`}
+                >
+                  {topic}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2 mt-2">
+              <Button variant="ghost" size="sm" className="text-xs" onClick={() => setSelectedTopics([...ALL_TOPICS])}>
+                Selecionar todos
+              </Button>
+              <Button variant="ghost" size="sm" className="text-xs" onClick={() => setSelectedTopics([])}>
+                Limpar
+              </Button>
+            </div>
+          </div>
+
+          {/* Difficulty */}
+          <div>
+            <label className="text-sm font-semibold mb-3 block">Nível de dificuldade</label>
+            <div className="flex gap-2 flex-wrap">
+              {DIFFICULTY_OPTIONS.map(d => (
+                <Button key={d.value} variant={difficulty === d.value ? "default" : "outline"} size="sm" onClick={() => setDifficulty(d.value)}>
+                  {d.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Question count */}
+          <div>
+            <label className="text-sm font-semibold mb-3 block">Quantas questões?</label>
+            <div className="flex gap-2 flex-wrap">
+              {[5, 10, 15, 20, 30].map(n => (
+                <Button key={n} variant={questionCount === n && !customCount ? "default" : "outline"} size="sm" onClick={() => { setQuestionCount(n); setCustomCount(""); }}>
+                  {n}
+                </Button>
+              ))}
+              <Input type="number" placeholder="Outro..." className="w-24 h-9" min={1} max={100} value={customCount} onChange={e => setCustomCount(e.target.value)} />
+            </div>
+          </div>
+
+          {/* Timer */}
+          <div>
+            <label className="text-sm font-semibold mb-2 block">Tempo por questão</label>
+            <div className="flex gap-2 flex-wrap">
+              {[2, 3, 4, 5].map(m => (
+                <Button key={m} variant={timePerQuestion === m ? "default" : "outline"} size="sm" onClick={() => setTimePerQuestion(m)}>
+                  {m} min
+                </Button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Total: {totalTime} minutos</p>
+          </div>
+
+          <Button size="lg" className="w-full" onClick={handleStart} disabled={selectedTopics.length === 0}>
+            <Play className="h-4 w-4 mr-2" />
+            Iniciar Simulado ({customCount || questionCount} questões)
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export { ALL_TOPICS };
+export default SimuladoSetup;
