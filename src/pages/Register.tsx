@@ -36,7 +36,7 @@ const Register = () => {
             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center glow">
               <Brain className="h-6 w-6 text-primary" />
             </div>
-            <span className="text-xl font-bold">MedStudy AI</span>
+            <span className="text-xl font-bold">ENAZIZI</span>
           </Link>
           <h1 className="text-2xl font-bold">Crie sua conta</h1>
           <p className="text-muted-foreground mt-1">Comece sua preparação agora</p>

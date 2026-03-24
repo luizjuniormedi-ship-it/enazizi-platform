@@ -13,7 +13,7 @@ const MedicalReviewer = () => (
     title="Revisor de Redação Médica"
     subtitle="Correção e orientação para provas discursivas de residência."
     icon={<PenTool className="h-6 w-6 text-primary" />}
-    welcomeMessage="Olá! Sou o Revisor de Redação Médica do MedStudy AI. ✍️ Posso corrigir suas respostas discursivas como uma banca real, gerar questões para treino, e ensinar técnicas de escrita para provas. Cole sua resposta ou escolha uma ação abaixo! 👇"
+    welcomeMessage="Olá! Sou o Revisor de Redação Médica do ENAZIZI. ✍️ Posso corrigir suas respostas discursivas como uma banca real, gerar questões para treino, e ensinar técnicas de escrita para provas. Cole sua resposta ou escolha uma ação abaixo! 👇"
     welcomeMessageWithUploads="📚 Detectei {count} material(is): {materiais}. Posso gerar questões discursivas baseadas neles! Escolha uma ação abaixo. 👇"
     placeholder="Cole aqui sua resposta discursiva ou peça uma questão para treinar..."
     functionName="medical-reviewer"

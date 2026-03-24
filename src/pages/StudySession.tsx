@@ -535,7 +535,7 @@ const StudySession = () => {
             </Button>
             <div className="flex items-center gap-2">
               <GraduationCap className="h-5 w-5 text-primary" />
-              <h1 className="text-base font-bold">MedStudy AI</h1>
+              <h1 className="text-base font-bold">ENAZIZI</h1>
               {topic && (
                 <Badge variant="secondary" className="text-xs">{topic}</Badge>
               )}
@@ -621,7 +621,7 @@ const StudySession = () => {
                 </div>
                 <h2 className="text-2xl font-bold">Vamos estudar! 🎯</h2>
                 <p className="text-muted-foreground text-sm">
-                  O MedStudy AI segue o protocolo pedagógico completo:
+                  O ENAZIZI segue o protocolo pedagógico completo:
                 </p>
                 <div className="flex flex-wrap justify-center gap-1.5 text-xs">
                   {FLOW_PHASES.map((p) => (

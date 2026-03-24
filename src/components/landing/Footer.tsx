@@ -5,10 +5,10 @@ const Footer = () => (
     <div className="container flex flex-col md:flex-row items-center justify-between gap-4">
       <div className="flex items-center gap-2">
         <Brain className="h-5 w-5 text-primary" />
-        <span className="font-bold">MedStudy AI</span>
+        <span className="font-bold">ENAZIZI</span>
       </div>
       <p className="text-sm text-muted-foreground">
-        © 2026 MedStudy AI. Todos os direitos reservados.
+        © 2026 ENAZIZI. Todos os direitos reservados.
       </p>
     </div>
   </footer>

@@ -64,7 +64,7 @@ Dados do aluno:
 ${JSON.stringify(performanceData || {}, null, 2)}
 
 Mostre o painel organizado:
-## 📊 Painel MedStudy AI
+## 📊 Painel ENAZIZI
 - Questões respondidas, Taxa de acerto, Pontuação discursiva
 - Raciocínio clínico, Conduta terapêutica
 - Nível estimado, Estimativa de preparo para residência

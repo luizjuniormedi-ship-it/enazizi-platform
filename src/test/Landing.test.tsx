@@ -11,14 +11,14 @@ vi.mock("@/hooks/useAuth", () => ({
 }));
 
 describe("Landing Page Components", () => {
-  it("renders Navbar with MedStudy AI branding", async () => {
+  it("renders Navbar with ENAZIZI branding", async () => {
     const Navbar = (await import("@/components/landing/Navbar")).default;
     render(
       <MemoryRouter>
         <Navbar />
       </MemoryRouter>
     );
-    expect(screen.getByText("MedStudy AI")).toBeInTheDocument();
+    expect(screen.getByText("ENAZIZI")).toBeInTheDocument();
     // There are two "Entrar" buttons (desktop + mobile), use getAllByText
     expect(screen.getAllByText("Entrar").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Começar grátis")).toBeInTheDocument();
@@ -36,7 +36,7 @@ describe("Landing Page Components", () => {
     expect(screen.getByText(/começa aqui/)).toBeInTheDocument();
   });
 
-  it("renders FeaturesSection with MedStudy AI methodology", async () => {
+  it("renders FeaturesSection with ENAZIZI methodology", async () => {
     const FeaturesSection = (await import("@/components/landing/FeaturesSection")).default;
     render(
       <MemoryRouter>
@@ -44,6 +44,6 @@ describe("Landing Page Components", () => {
       </MemoryRouter>
     );
     expect(screen.getByText("Ensino Profundo com IA")).toBeInTheDocument();
-    expect(screen.getByText("Protocolo MedStudy")).toBeInTheDocument();
+    expect(screen.getByText("Protocolo ENAZIZI")).toBeInTheDocument();
   });
 });

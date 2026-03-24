@@ -21,7 +21,7 @@ export function exportToPdf(items: ExportItem[], docTitle: string) {
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(120);
-  doc.text(`Exportado em ${new Date().toLocaleDateString("pt-BR")} — MedStudy AI`, margin, y);
+  doc.text(`Exportado em ${new Date().toLocaleDateString("pt-BR")} — ENAZIZI`, margin, y);
   doc.setTextColor(0);
   y += 10;
 

@@ -12,7 +12,7 @@ serve(async (req) => {
   try {
     const { messages, userContext } = await req.json();
 
-    const systemPrompt = `Você é o GERADOR OFICIAL DE FLASHCARDS CLÍNICOS do sistema MedStudy AI.
+    const systemPrompt = `Você é o GERADOR OFICIAL DE FLASHCARDS CLÍNICOS do sistema ENAZIZI.
 
 ⛔ RESTRIÇÃO ABSOLUTA DE ESCOPO:
 Você SOMENTE pode gerar flashcards relacionados a MEDICINA, SAÚDE e CIÊNCIAS BIOMÉDICAS.

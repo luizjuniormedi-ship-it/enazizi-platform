@@ -43,7 +43,7 @@ describe("StudySession Page", () => {
       </MemoryRouter>
     );
     expect(screen.getByText("Vamos estudar! 🎯")).toBeInTheDocument();
-    expect(screen.getByText("MedStudy AI")).toBeInTheDocument();
+    expect(screen.getByText("ENAZIZI")).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Digite o tema/)).toBeInTheDocument();
   });
 

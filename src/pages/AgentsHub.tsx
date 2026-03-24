@@ -6,7 +6,7 @@ const agents = [
     to: "/dashboard/chatgpt",
     icon: Sparkles,
     title: "🤖 Tutor IA — Agente Principal",
-    description: "Seu professor particular com GPT-5.4. Aulas completas pelo Protocolo MedStudy: explicação → fisiopatologia → clínica → questões → caso discursivo. Use para ESTUDAR qualquer tema.",
+    description: "Seu professor particular com GPT-5.4. Aulas completas pelo Protocolo ENAZIZI: explicação → fisiopatologia → clínica → questões → caso discursivo. Use para ESTUDAR qualquer tema.",
     color: "text-green-400",
     bgColor: "bg-green-500/10",
     highlight: true,
