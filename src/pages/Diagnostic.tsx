@@ -176,21 +176,7 @@ NÃO inclua texto extra, APENAS o JSON.` }],
     return [];
   };
 
-  const generateFallbackQuestionsForArea = (area: string, count = 1): DiagQuestion[] => {
-    const focuses = ["diagnóstico inicial", "conduta imediata", "exame complementar", "fisiopatologia", "tratamento"];
-    return Array.from({ length: count }, (_, idx) => ({
-      statement: `Questão de ${area} (${idx + 1}/${count}): Paciente de 45 anos apresenta dor torácica há 2 horas no pronto-socorro. Qual a melhor ${focuses[idx % focuses.length]}?`,
-      options: ["A) ECG em até 10 minutos", "B) Solicitar troponina e aguardar", "C) Prescrever analgésico", "D) Encaminhar para enfermaria", "E) Solicitar raio-X de tórax primeiro"],
-      correct_index: 0,
-      topic: area,
-      explanation: "O ECG deve ser realizado em até 10 minutos da chegada em casos com suspeita de síndrome coronariana aguda.",
-      difficulty: "intermediário",
-    }));
-  };
-
-  const generateFallbackQuestions = (): DiagQuestion[] => {
-    return AREAS.flatMap(area => generateFallbackQuestionsForArea(area, QUESTIONS_PER_AREA));
-  };
+  // Fallback questions are now in src/lib/diagnosticFallbackQuestions.ts
 
   const updateMedicalDomainMap = async (finalAnswers: AnswerRecord[]) => {
     if (!user) return;
