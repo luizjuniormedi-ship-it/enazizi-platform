@@ -745,7 +745,11 @@ const ClinicalSimulation = () => {
         action: "interact",
         message: msg,
         conversation_history: updatedHistory,
+        learner_mode: learnerMode,
       });
+
+      // ABCDE detection from user message
+      detectABCDE(msg);
 
       setIsTyping(false);
       playSound("response");
