@@ -1,61 +1,60 @@
 
 
-# Plano: Corrigir Geração de Questões no Simulados
+# Plano: Simulados mais Didatico e Eficiente
 
-## Problema Raiz
+## Problemas atuais
 
-Existe um **conflito de formato** entre o que o cliente pede e o que o sistema prompt da Edge Function instrui:
+1. **Zero feedback durante o exame** — o aluno responde e não sabe se acertou até o final
+2. **Explicações só no resultado final** — e mesmo assim, apenas o campo `explanation` curto
+3. **Sem modo estudo** — só existe modo "prova cronometrada", sem opção de aprender enquanto pratica
+4. **Resultado superficial** — mostra % por area mas não oferece plano de ação
+5. **Sem marcação de questões** — não dá para marcar dúvidas para revisão posterior
 
-| Componente | Formato esperado | Formato instruído |
-|---|---|---|
-| `Simulados.tsx` (cliente) | JSON array: `[{"statement":"...", "correct_index": 0, ...}]` | -- |
-| `question-generator` system prompt | Markdown: `**Tópico:** ... **Questão:** ... **Gabarito:** a` | -- |
+## Melhorias propostas
 
-O cliente envia no body da mensagem: *"Formato OBRIGATÓRIO: JSON array puro"*, mas o system prompt da Edge Function tem **222 linhas** instruindo a IA a responder em **formato markdown** com `**Tópico:**`, `**Questão:**`, `a)`, `b)`, etc.
+### 1. Modo Estudo vs Modo Prova (SimuladoSetup)
+Adicionar toggle na configuração:
+- **Modo Prova** (atual): cronômetro, sem feedback, resultado no final
+- **Modo Estudo**: sem cronômetro, ao responder mostra imediatamente se acertou/errou com explicação detalhada, botão "Estudar com Tutor IA" em cada questão
 
-O system prompt **sobrepõe** a instrução do usuário. A IA gera em markdown, o cliente tenta fazer `match(/\[[\s\S]*\]/)` para extrair JSON, não encontra nada, e retorna 0 questões.
+### 2. Feedback imediato no Modo Estudo (SimuladoExam)
+Após selecionar uma alternativa no modo estudo:
+- Alternativa correta fica verde, errada fica vermelha
+- Exibe a explicação da questão abaixo das opções
+- Botão "Estudar com Tutor IA" para aprofundar
+- Só permite avançar após responder (lock de alternativas)
+- Contador de acertos/erros visível no header
 
-Agravantes:
-- Logs mostram `[LovableAI] Attempt 1/3 failed: TIMEOUT` -- o prompt é enorme (222 linhas de system prompt + a mensagem do user), o que aumenta latência
-- Quando faz streaming, o parser SSE tenta extrair JSON de chunks markdown, falhando silenciosamente
+### 3. Marcar questões para revisão (SimuladoExam)
+- Botão de bookmark/flag em cada questão (ambos os modos)
+- Questões marcadas ficam com indicador amarelo na grade numérica
+- No resultado, seção separada "Questões Marcadas para Revisão"
 
-## Solução
+### 4. Resultado com plano de ação (SimuladoResult)
+- **Diagnóstico por area**: abaixo de 60% = "Crítico — estude urgente", 60-80% = "Revisar", 80%+ = "Dominado"
+- **Recomendação automática**: botão "Gerar Guia de Estudo" para cada area fraca (chama a edge function `generate-study-guide`)
+- **Tempo médio por questão**: mostrar se o aluno foi rápido demais ou lento demais
+- **Comparação com média**: se houver histórico, mostrar evolução
 
-### 1. Adicionar modo JSON explícito na Edge Function
+### 5. Explicação expandida nos erros (SimuladoResult)
+- Cada erro mostra explicação completa (não truncada)
+- Mostra qual alternativa estava errada e por que cada distrator é incorreto
+- Botão "Estudar com Tutor IA" já presente, manter
 
-Quando o cliente enviar `stream: false` (como o Simulados faz), adicionar uma instrução de **override de formato** no system prompt que force saída em JSON array puro. Isso será um parâmetro `outputFormat: "json"` no body.
-
-**Arquivo:** `supabase/functions/question-generator/index.ts`
-- Aceitar novo campo `outputFormat` do body
-- Quando `outputFormat === "json"`, **substituir** a seção de formato do system prompt por instruções de JSON puro
-- Adicionar `response_format: { type: "json_object" }` no body enviado à IA (quando disponível)
-
-### 2. Simplificar o prompt para modo Simulados
-
-Quando `outputFormat === "json"`, usar um system prompt **compacto** (~50 linhas vs 222) focado em:
-- Gerar JSON array puro
-- Manter qualidade clínica (casos clínicos, alternativas plausíveis)
-- Remover instruções de formatação visual markdown (desnecessárias para JSON)
-
-Isso reduz latência e risco de timeout.
-
-### 3. Melhorar parsing no cliente
-
-**Arquivo:** `src/pages/Simulados.tsx`
-- Enviar `outputFormat: "json"` no body
-- Adicionar fallback de parsing: se JSON array falhar, tentar parsear formato markdown via `parseQuestionsFromText`
-- Adicionar retry automático (1x) se 0 questões forem parseadas
-- Gerar em lotes de 10 quando count > 10 (ex: 30 questões = 3 chamadas paralelas de 10)
-
-### 4. Timeout adequado
-
-- Enviar `timeoutMs: 55000` para blocos de 10 questões (vs default 45s)
-- O prompt compacto deve reduzir significativamente os timeouts
-
-## Resumo das mudanças
+## Arquivos a alterar
 
 | Arquivo | Mudança |
 |---|---|
-| `supabase/functions/question-generator/index.ts` | Aceitar `outputFormat`, prompt compacto JSON, `response_format` |
-| `src/pages/Simulados.tsx` | Enviar `outputFormat: "json"`, gerar em lotes, retry, fallback parsing |
+| `SimuladoSetup.tsx` | Toggle Modo Estudo/Prova |
+| `SimuladoExam.tsx` | Feedback imediato (modo estudo), flag de questões, timer condicional |
+| `SimuladoResult.tsx` | Diagnóstico por area, recomendações, tempo médio, questões marcadas |
+| `Simulados.tsx` | Passar `mode` para os componentes, ajustar fluxo |
+
+## Detalhes tecnicoss
+
+- Nova prop `mode: "prova" | "estudo"` passada do Setup ao Exam e Result
+- No modo estudo, `timeSeconds` = 0 (sem timer)
+- Estado `flaggedQuestions: Set<number>` no Exam, persistido no auto-save
+- No Result, calcular `timePerQuestion = totalTime / answeredCount`
+- Chamar `generate-study-guide` (edge function existente) para areas com <60%
 
