@@ -34,7 +34,7 @@ const mobileNavGroups: MobileNavGroup[] = [
       { to: "/dashboard", label: "📊 Dashboard" },
       { to: "/dashboard/chatgpt", label: "🤖 Tutor IA" },
       { to: "/dashboard/plano-dia", label: "⚡ Plano do Dia" },
-      { to: "/dashboard/diagnostico", label: "🩺 Diagnóstico" },
+      { to: "/dashboard/diagnostico", label: "🩺 Nivelamento" },
     ],
   },
   {

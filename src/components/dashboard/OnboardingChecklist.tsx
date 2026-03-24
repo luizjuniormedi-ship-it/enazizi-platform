@@ -34,7 +34,7 @@ export default function OnboardingChecklist({ stats, metrics, hasCompletedDiagno
     {
       id: "diagnostic",
       day: 1,
-      title: "Faça o Diagnóstico Inicial",
+      title: "Faça o Nivelamento Inicial",
       description: "Descubra seu nível em cada especialidade médica",
       xp: 50,
       path: "/dashboard/diagnostico",

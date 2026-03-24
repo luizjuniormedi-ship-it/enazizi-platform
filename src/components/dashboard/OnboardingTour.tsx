@@ -29,9 +29,9 @@ const steps: Step[] = [
   },
   {
     icon: <Stethoscope className="h-8 w-8 text-primary" />,
-    title: "🩺 Diagnóstico Inicial",
-    description: "Faça um diagnóstico do seu nível atual respondendo questões de todas as especialidades. O sistema vai identificar seus pontos fortes e fracos.",
-    tip: "Recomendado: Faça o diagnóstico assim que começar para personalizar seu plano de estudos.",
+    title: "🩺 Nivelamento Inicial",
+    description: "Faça um nivelamento do seu nível atual respondendo questões de todas as especialidades. O sistema vai identificar seus pontos fortes e fracos.",
+    tip: "Recomendado: Faça o nivelamento assim que começar para personalizar seu plano de estudos.",
     route: "/dashboard/diagnostico",
   },
   {

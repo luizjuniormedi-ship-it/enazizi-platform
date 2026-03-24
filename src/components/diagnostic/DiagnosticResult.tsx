@@ -51,7 +51,7 @@ const DiagnosticResult = ({ questions, answers, xpEarned = 0 }: DiagnosticResult
         <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/10">
           <Award className="h-10 w-10 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold mb-2">Resultado do Diagnóstico</h1>
+        <h1 className="text-2xl font-bold mb-2">Resultado do Nivelamento</h1>
         <div className={cn("text-6xl font-black", getScoreColor(score))}>{score}%</div>
         <p className={cn("text-lg font-semibold mt-1", getScoreColor(score))}>{getScoreLabel(score)}</p>
         <p className="text-muted-foreground text-sm mt-1">
@@ -64,7 +64,7 @@ const DiagnosticResult = ({ questions, answers, xpEarned = 0 }: DiagnosticResult
         <div className="glass-card p-4 flex items-center justify-center gap-3 border-primary/30 bg-primary/5">
           <Zap className="h-6 w-6 text-primary" />
           <span className="text-lg font-bold text-primary">+{xpEarned} XP</span>
-          <span className="text-sm text-muted-foreground">ganhos neste diagnóstico</span>
+          <span className="text-sm text-muted-foreground">ganhos neste nivelamento</span>
         </div>
       )}
 
@@ -132,7 +132,7 @@ const DiagnosticResult = ({ questions, answers, xpEarned = 0 }: DiagnosticResult
                 className="gap-1.5 text-xs"
                 onClick={() => navigate("/dashboard/chatgpt", {
                   state: {
-                    initialMessage: `No diagnóstico inicial, tive dificuldade em "${area}" (${Math.round((correct / total) * 100)}% de acerto). Me dê uma aula completa seguindo o protocolo ENAZIZI para reforçar este tema.`,
+                    initialMessage: `No nivelamento inicial, tive dificuldade em "${area}" (${Math.round((correct / total) * 100)}% de acerto). Me dê uma aula completa seguindo o protocolo ENAZIZI para reforçar este tema.`,
                     fromErrorBank: true,
                   },
                 })}

@@ -34,7 +34,7 @@ const navGroups: NavGroup[] = [
       { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
       { to: "/dashboard/chatgpt", icon: Sparkles, label: "🤖 Tutor IA" },
       { to: "/dashboard/plano-dia", icon: Zap, label: "⚡ Plano do Dia" },
-      { to: "/dashboard/diagnostico", icon: Stethoscope, label: "🩺 Diagnóstico" },
+      { to: "/dashboard/diagnostico", icon: Stethoscope, label: "🩺 Nivelamento" },
     ],
   },
   {

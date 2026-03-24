@@ -17,10 +17,10 @@ const QuickStartCard = ({ questionsAnswered, flashcards, hasCompletedDiagnostic 
     {
       done: hasCompletedDiagnostic,
       icon: Target,
-      label: "Fazer diagnóstico inicial",
+      label: "Fazer nivelamento inicial",
       description: "Descubra seus pontos fortes e fracos",
       to: "/dashboard/diagnostico",
-      cta: "Começar diagnóstico",
+      cta: "Começar nivelamento",
     },
     {
       done: questionsAnswered > 0,
