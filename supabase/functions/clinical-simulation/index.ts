@@ -114,7 +114,19 @@ Responda em JSON:
   "time_elapsed_minutes": número de minutos que se passaram,
   "hint": "dica sutil se o aluno estiver perdido (opcional)",
   "score_delta": pontuação delta (-3 a +3) baseado na qualidade da ação,
-  "critical_action_needed": "string descrevendo ação urgente necessária, se houver (opcional, null se não houver)"
+  "critical_action_needed": "string descrevendo ação urgente necessária, se houver (opcional, null se não houver)",
+  "category_scores": {
+    "anamnesis": 0-15,
+    "physical_exam": 0-15,
+    "complementary_exams": 0-15,
+    "management": 0-15
+  },
+  "structured_data": {
+    "type": "anamnesis|physical_exam|lab|imaging|prescription|other",
+    "summary": "resumo curto do achado principal (1 frase)",
+    "system": "sistema examinado se physical_exam (cardiovascular, respiratório, etc), null caso contrário"
+  },
+  "teaching_tip": "dica didática contextual se learner_mode estiver ativo (opcional, null se não)"
 }
 
 Critérios de score_delta:
