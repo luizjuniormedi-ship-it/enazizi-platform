@@ -1703,6 +1703,13 @@ const ClinicalSimulation = () => {
                             <p className="whitespace-pre-wrap">{msg.content}</p>
                           )}
                         </div>
+                        {/* Teaching Tip (Learner Mode) */}
+                        {msg.teachingTip && (
+                          <div className="mt-2 p-2 rounded-lg bg-primary/5 border border-primary/20 flex items-start gap-1.5">
+                            <GraduationCap className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                            <p className="text-[11px] text-primary/80">{msg.teachingTip}</p>
+                          </div>
+                        )}
                       </div>
                       {/* Doctor avatar */}
                       {msg.role === "doctor" && (
