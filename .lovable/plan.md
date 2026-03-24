@@ -1,60 +1,40 @@
 
 
-# Plano: Simulados mais Didatico e Eficiente
+# Plano: Melhorias no Modo Plantao
 
-## Problemas atuais
+## O que ja existe
 
-1. **Zero feedback durante o exame** — o aluno responde e não sabe se acertou até o final
-2. **Explicações só no resultado final** — e mesmo assim, apenas o campo `explanation` curto
-3. **Sem modo estudo** — só existe modo "prova cronometrada", sem opção de aprender enquanto pratica
-4. **Resultado superficial** — mostra % por area mas não oferece plano de ação
-5. **Sem marcação de questões** — não dá para marcar dúvidas para revisão posterior
+O modulo e bastante completo: chat imersivo com paciente, quick actions categorizadas (Anamnese, Exame Fisico, Exames, Conduta), sinais vitais com grafico temporal, painel de exames, prescricao estruturada, pedido de parecer especialista, dica do preceptor, modo realista com deterioracao por inatividade, suporte pediatrico, historico de simulacoes, fullscreen, persistencia de sessao.
 
 ## Melhorias propostas
 
-### 1. Modo Estudo vs Modo Prova (SimuladoSetup)
-Adicionar toggle na configuração:
-- **Modo Prova** (atual): cronômetro, sem feedback, resultado no final
-- **Modo Estudo**: sem cronômetro, ao responder mostra imediatamente se acertou/errou com explicação detalhada, botão "Estudar com Tutor IA" em cada questão
+### 1. Checklist ABCDE de Atendimento Inicial
+Adicionar um checklist visual colapsavel no topo da simulacao com os passos do atendimento sistematizado (A-Vias aereas, B-Respiracao, C-Circulacao, D-Neurologico, E-Exposicao). Cada item marca automaticamente quando o aluno realiza a acao correspondente (detectado pelo tipo de mensagem). Isso ensina o metodo sistematico e mostra visualmente o que falta.
 
-### 2. Feedback imediato no Modo Estudo (SimuladoExam)
-Após selecionar uma alternativa no modo estudo:
-- Alternativa correta fica verde, errada fica vermelha
-- Exibe a explicação da questão abaixo das opções
-- Botão "Estudar com Tutor IA" para aprofundar
-- Só permite avançar após responder (lock de alternativas)
-- Contador de acertos/erros visível no header
+### 2. Mini-Prontuario Lateral
+Criar um painel "prontuario" que acumula automaticamente as informacoes coletadas durante o caso: dados do paciente (nome, idade, queixa), achados de anamnese, achados de exame fisico por sistema, resultados de exames. Hoje essas informacoes ficam perdidas no chat. O prontuario funciona como uma "cola organizada" que o aluno consultaria num caso real.
 
-### 3. Marcar questões para revisão (SimuladoExam)
-- Botão de bookmark/flag em cada questão (ambos os modos)
-- Questões marcadas ficam com indicador amarelo na grade numérica
-- No resultado, seção separada "Questões Marcadas para Revisão"
+### 3. Score Detalhado em Tempo Real
+Ao inves de mostrar apenas "Score: 72/100", exibir um breakdown por categoria (Anamnese, Exame Fisico, Exames, Conduta) em mini barras de progresso na barra de status. O aluno ve em tempo real onde esta indo bem e onde esta falhando, sem esperar o resultado final.
 
-### 4. Resultado com plano de ação (SimuladoResult)
-- **Diagnóstico por area**: abaixo de 60% = "Crítico — estude urgente", 60-80% = "Revisar", 80%+ = "Dominado"
-- **Recomendação automática**: botão "Gerar Guia de Estudo" para cada area fraca (chama a edge function `generate-study-guide`)
-- **Tempo médio por questão**: mostrar se o aluno foi rápido demais ou lento demais
-- **Comparação com média**: se houver histórico, mostrar evolução
+### 4. Modo Tutorial com Dicas Contextuais
+Adicionar um toggle "Modo Aprendiz" no lobby. Quando ativo, apos cada resposta do paciente, o sistema mostra um card colapsavel com uma dica didatica contextual (ex: apos exame fisico respiratorio, mostra "Lembre-se: na ausculta pulmonar, compare os campos simetricamente"). Isso transforma o plantao de avaliacao pura em ferramenta de ensino.
 
-### 5. Explicação expandida nos erros (SimuladoResult)
-- Cada erro mostra explicação completa (não truncada)
-- Mostra qual alternativa estava errada e por que cada distrator é incorreto
-- Botão "Estudar com Tutor IA" já presente, manter
+### 5. Exportar Caso como PDF de Estudo
+Adicionar botao na tela de resultado para gerar um PDF com o caso completo: apresentacao, condutas do aluno, condutas ideais, diagnosticos diferenciais, pontos fortes/fracos. O aluno pode revisar offline.
 
 ## Arquivos a alterar
 
-| Arquivo | Mudança |
+| Arquivo | Mudanca |
 |---|---|
-| `SimuladoSetup.tsx` | Toggle Modo Estudo/Prova |
-| `SimuladoExam.tsx` | Feedback imediato (modo estudo), flag de questões, timer condicional |
-| `SimuladoResult.tsx` | Diagnóstico por area, recomendações, tempo médio, questões marcadas |
-| `Simulados.tsx` | Passar `mode` para os componentes, ajustar fluxo |
+| `src/pages/ClinicalSimulation.tsx` | Checklist ABCDE, mini-prontuario, score detalhado, toggle modo aprendiz, botao exportar PDF |
+| `supabase/functions/clinical-simulation/index.ts` | Retornar `category_scores` parciais em cada interacao, dicas contextuais no modo aprendiz, dados estruturados para prontuario |
 
-## Detalhes tecnicoss
+## Detalhes tecnicos
 
-- Nova prop `mode: "prova" | "estudo"` passada do Setup ao Exam e Result
-- No modo estudo, `timeSeconds` = 0 (sem timer)
-- Estado `flaggedQuestions: Set<number>` no Exam, persistido no auto-save
-- No Result, calcular `timePerQuestion = totalTime / answeredCount`
-- Chamar `generate-study-guide` (edge function existente) para areas com <60%
+- **Checklist ABCDE**: Estado `abcdeChecklist: Record<string, boolean>`. Deteccao automatica via keywords na mensagem do aluno (ex: "via aerea" marca A, "ausculta" marca B). Exibido como 5 icones coloridos no status bar.
+- **Mini-Prontuario**: Estado `medicalRecord: { demographics, anamnesis[], physicalExam[], exams[], prescriptions[] }`. Populado automaticamente parseando `response_type` da API. Renderizado num painel lateral colapsavel (desktop) ou Sheet (mobile).
+- **Score por categoria**: A API ja retorna `evaluation` com categorias no `finish`. Adicionar campo `partial_scores` na resposta de `interact` para tracking incremental. Exibir 4 mini barras no status bar.
+- **Modo Aprendiz**: Novo campo `learner_mode: true` enviado na API. O prompt da edge function adiciona instrucao para incluir `teaching_tip` na resposta. Exibido como card colapsavel abaixo de cada mensagem da simulacao.
+- **Export PDF**: Reutilizar `src/lib/exportPdf.ts` existente, montando HTML com os dados do `finalEval` + mensagens do chat.
 
