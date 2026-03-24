@@ -47,15 +47,21 @@ const InstallAppBanner = () => {
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
+      <button
         onClick={() => setOpen(true)}
-        className="gap-2 w-full justify-start border-dashed border-primary/30 hover:bg-primary/5"
+        className="w-full group relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-3 transition-all hover:border-primary/40 hover:shadow-md hover:shadow-primary/5"
       >
-        <Smartphone className="h-4 w-4 text-primary" />
-        <span>📲 Baixar App no Celular</span>
-      </Button>
+        <div className="flex items-center gap-3">
+          <div className="shrink-0 h-10 w-10 rounded-lg bg-primary/15 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Smartphone className="h-5 w-5 text-primary" />
+          </div>
+          <div className="text-left">
+            <p className="text-sm font-semibold text-foreground">Baixar App</p>
+            <p className="text-[11px] text-muted-foreground">Instale no celular para acesso rápido</p>
+          </div>
+          <Download className="h-4 w-4 text-primary/60 ml-auto shrink-0 group-hover:translate-y-0.5 transition-transform" />
+        </div>
+      </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
