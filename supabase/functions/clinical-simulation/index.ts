@@ -301,9 +301,12 @@ serve(async (req) => {
       if (conversation_history && Array.isArray(conversation_history)) {
         messages.push(...conversation_history);
       }
+      const learnerInstruction = learner_mode
+        ? ` OBRIGATÓRIO: inclua o campo "teaching_tip" com uma dica didática contextual relacionada à ação do aluno (ex: após ausculta pulmonar, explique técnica de ausculta simétrica). A dica deve ser educativa e curta (1-2 frases). Inclua também "category_scores" com scores parciais acumulados por categoria (anamnesis, physical_exam, complementary_exams, management), cada um de 0-15.`
+        : ` Inclua "category_scores" com scores parciais acumulados por categoria (anamnesis, physical_exam, complementary_exams, management), cada um de 0-15.`;
       messages.push({
         role: "user",
-        content: `action="interact". Mensagem do médico plantonista: "${message}". OBRIGATÓRIO: inclua o campo "vitals" com sinais vitais atualizados na resposta. Responda APENAS em JSON válido.`,
+        content: `action="interact". Mensagem do médico plantonista: "${message}". OBRIGATÓRIO: inclua o campo "vitals" com sinais vitais atualizados na resposta. Inclua "structured_data" com tipo, resumo e sistema examinado.${learnerInstruction} Responda APENAS em JSON válido.`,
       });
     } else if (action === "hint") {
       if (conversation_history && Array.isArray(conversation_history)) {
