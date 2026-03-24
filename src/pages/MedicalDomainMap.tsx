@@ -258,7 +258,7 @@ const MedicalDomainMap = () => {
     const topic = subtopic ? `${subtopic} (${specialty})` : specialty;
     navigate("/dashboard/chatgpt", {
       state: {
-        initialMessage: `Quero estudar o tópico "${topic}". Me dê uma aula completa seguindo o protocolo MedStudy.`,
+        initialMessage: `Quero estudar o tópico "${topic}". Me dê uma aula completa seguindo o protocolo ENAZIZI.`,
         fromErrorBank: true,
       },
     });

@@ -84,15 +84,15 @@ const SystemGuidePopup = () => {
         className="fixed bottom-5 left-5 z-40 h-12 w-12 rounded-full shadow-lg bg-primary hover:bg-primary/90 transition-transform hover:scale-110 flex items-center justify-center"
         title="Guia do sistema"
       >
-        <img src={mascot} alt="MedStudy AI" className="h-9 w-9 object-contain" />
+        <img src={mascot} alt="ENAZIZI" className="h-9 w-9 object-contain" />
       </button>
 
       <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else setOpen(true); }}>
         <DialogContent className="sm:max-w-lg border-primary/20 p-0 overflow-hidden">
           <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-6 pt-5 pb-3 flex items-center gap-4">
-            <img src={mascot} alt="MedStudy AI" className="h-16 w-16 object-contain drop-shadow-md" />
+            <img src={mascot} alt="ENAZIZI" className="h-16 w-16 object-contain drop-shadow-md" />
             <DialogHeader className="space-y-0.5 text-left">
-              <DialogTitle className="text-lg">Olá! Eu sou o MedStudy AI 🐊</DialogTitle>
+              <DialogTitle className="text-lg">Olá! Eu sou o ENAZIZI 🐊</DialogTitle>
               <DialogDescription className="text-xs">
                 Clique em cada módulo para ver como usar!
               </DialogDescription>

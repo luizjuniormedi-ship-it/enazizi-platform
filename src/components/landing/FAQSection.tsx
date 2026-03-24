@@ -7,8 +7,8 @@ import {
 
 const faqs = [
   {
-    q: "O MedStudy AI substitui meu cursinho?",
-    a: "O MedStudy AI é um complemento inteligente à sua preparação. Ele potencializa qualquer método de estudo com IA, active recall e repetição espaçada — acelerando sua fixação e identificando lacunas que cursinhos tradicionais não detectam.",
+    q: "O ENAZIZI substitui meu cursinho?",
+    a: "O ENAZIZI é um complemento inteligente à sua preparação. Ele potencializa qualquer método de estudo com IA, active recall e repetição espaçada — acelerando sua fixação e identificando lacunas que cursinhos tradicionais não detectam.",
   },
   {
     q: "As questões são confiáveis? Seguem o padrão das provas?",

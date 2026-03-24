@@ -16,7 +16,7 @@ interface Step {
 const steps: Step[] = [
   {
     icon: <Sparkles className="h-8 w-8 text-primary" />,
-    title: "Bem-vindo ao MedStudy AI! 🎉",
+    title: "Bem-vindo ao ENAZIZI! 🎉",
     description: "Sua plataforma completa de estudos para Residência Médica e Revalida com Inteligência Artificial.",
     tip: "Vamos fazer um tour rápido pelas principais funcionalidades!",
   },

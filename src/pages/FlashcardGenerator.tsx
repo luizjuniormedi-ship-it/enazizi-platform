@@ -99,7 +99,7 @@ const FlashcardGenerator = () => {
       title="Gerador de Flashcards Clínicos"
       subtitle="Flashcards com casos clínicos para residência médica e Revalida."
       icon={<FlipVertical className="h-6 w-6 text-primary" />}
-      welcomeMessage="Olá! Sou o Gerador de Flashcards Clínicos MedStudy AI. 🏥 Crio flashcards baseados em **casos clínicos** para treinar seu raciocínio diagnóstico. Me diga: qual **especialidade** você quer treinar? Exemplo: 'Cardiologia', 'Pediatria', 'Cirurgia'. Ou clique em uma opção abaixo! 👇"
+      welcomeMessage="Olá! Sou o Gerador de Flashcards Clínicos ENAZIZI. 🏥 Crio flashcards baseados em **casos clínicos** para treinar seu raciocínio diagnóstico. Me diga: qual **especialidade** você quer treinar? Exemplo: 'Cardiologia', 'Pediatria', 'Cirurgia'. Ou clique em uma opção abaixo! 👇"
       welcomeMessageWithUploads="📚 Detectei {count} material(is) do seu acervo: {materiais}. Vou usar como base para gerar flashcards clínicos! Escolha o tema abaixo ou me diga o que prefere. 👇"
       placeholder="Ex: Gere 10 flashcards de Cardiologia sobre IAM..."
       functionName="generate-flashcards"

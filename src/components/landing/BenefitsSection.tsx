@@ -14,7 +14,7 @@ const benefits = [
   {
     icon: ShieldCheck,
     title: "Método comprovado",
-    desc: "Protocolo MedStudy: Ensinar → Avaliar → Discutir → Analisar. Active Recall + Repetição Espaçada validados pela neurociência.",
+    desc: "Protocolo ENAZIZI: Ensinar → Avaliar → Discutir → Analisar. Active Recall + Repetição Espaçada validados pela neurociência.",
   },
   {
     icon: Sparkles,
@@ -40,7 +40,7 @@ const BenefitsSection = () => (
     <div className="container relative z-10 px-4">
       <div className="text-center mb-10 sm:mb-16">
         <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-          Por que escolher o MedStudy AI?
+          Por que escolher o ENAZIZI?
         </span>
         <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold mb-3 sm:mb-4">
           Sua vantagem <span className="gradient-text">competitiva</span>

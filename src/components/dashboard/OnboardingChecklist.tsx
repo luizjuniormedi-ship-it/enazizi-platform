@@ -89,7 +89,7 @@ export default function OnboardingChecklist({ stats, metrics, hasCompletedDiagno
       id: "tutor",
       day: 7,
       title: "Estude com o Tutor IA",
-      description: "Aprofunde um tema com o protocolo MedStudy",
+      description: "Aprofunde um tema com o protocolo ENAZIZI",
       xp: 40,
       path: "/dashboard/agentes",
       isComplete: metrics.summariesCreated > 0 || metrics.anamnesisCompleted > 0,

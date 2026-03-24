@@ -14,7 +14,7 @@ const NotificationBell = () => {
     if (permission === "granted") {
       // Send test notification
       setAnimating(true);
-      sendNotification("🎓 MedStudy AI", {
+      sendNotification("🎓 ENAZIZI", {
         body: "Notificações ativas! Você receberá lembretes de estudo e conquistas.",
         tag: "test",
       });
@@ -34,7 +34,7 @@ const NotificationBell = () => {
     const result = await requestPermission();
     if (result === "granted") {
       toast({ title: "Notificações ativadas! 🔔", description: "Você receberá lembretes de estudo." });
-      sendNotification("🎓 MedStudy AI", { body: "Notificações configuradas com sucesso!", tag: "welcome" });
+      sendNotification("🎓 ENAZIZI", { body: "Notificações configuradas com sucesso!", tag: "welcome" });
     } else {
       toast({ title: "Notificações negadas", description: "Você pode ativar depois nas configurações.", variant: "destructive" });
     }

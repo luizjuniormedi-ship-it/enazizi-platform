@@ -12,7 +12,7 @@ serve(async (req) => {
   try {
     const { messages, userContext } = await req.json();
 
-    let systemPrompt = `Você é o SIMULADOR DE ENTREVISTA para Residência Médica do sistema MedStudy AI.
+    let systemPrompt = `Você é o SIMULADOR DE ENTREVISTA para Residência Médica do sistema ENAZIZI.
 
 ⛔ RESTRIÇÃO ABSOLUTA DE ESCOPO:
 Você SOMENTE simula entrevistas e avaliações de processos seletivos de Residência Médica e Revalida.

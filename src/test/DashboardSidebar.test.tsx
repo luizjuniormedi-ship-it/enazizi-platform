@@ -32,14 +32,14 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 describe("DashboardSidebar", () => {
-  it("renders MedStudy AI branding", async () => {
+  it("renders ENAZIZI branding", async () => {
     const DashboardSidebar = (await import("@/components/layout/DashboardSidebar")).default;
     render(
       <MemoryRouter>
         <DashboardSidebar />
       </MemoryRouter>
     );
-    expect(screen.getByText("MedStudy AI")).toBeInTheDocument();
+    expect(screen.getByText("ENAZIZI")).toBeInTheDocument();
   });
 
   it("renders tutor IA link as priority item", async () => {

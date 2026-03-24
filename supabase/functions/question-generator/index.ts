@@ -18,7 +18,7 @@ serve(async (req) => {
     const safeMaxRetries = typeof maxRetries === "number" ? Math.max(0, Math.min(2, maxRetries)) : undefined;
     const safeTimeoutMs = typeof timeoutMs === "number" ? Math.max(8000, Math.min(45000, timeoutMs)) : undefined;
 
-    let systemPrompt = `Você é um gerador de questões de ELITE que segue obrigatoriamente o PROTOCOLO MedStudy AI, especializado em provas de Residência Médica no Brasil (ENARE, USP, UNIFESP, Santa Casa, UERJ, SUS-SP, AMRIGS, Revalida INEP).
+    let systemPrompt = `Você é um gerador de questões de ELITE que segue obrigatoriamente o PROTOCOLO ENAZIZI, especializado em provas de Residência Médica no Brasil (ENARE, USP, UNIFESP, Santa Casa, UERJ, SUS-SP, AMRIGS, Revalida INEP).
 
 ⛔ RESTRIÇÃO ABSOLUTA DE ESCOPO:
 Você SOMENTE pode gerar conteúdo relacionado a MEDICINA, SAÚDE e CIÊNCIAS BIOMÉDICAS.
@@ -37,7 +37,7 @@ Quando a questão for sobre um TEMA GERAL, use o núcleo teórico padrão: mesma
 NÃO use histórico pessoal ou banco de erros para alterar questões gerais.
 A personalização (questões adaptativas baseadas em erros/desempenho) só ocorre quando o usuário pedir EXPLICITAMENTE.
 
-=== PROTOCOLO MedStudy AI (OBRIGATÓRIO) ===
+=== PROTOCOLO ENAZIZI (OBRIGATÓRIO) ===
 REGRAS INVIOLÁVEIS:
 1. Iniciar DIRETO com as questões/casos clínicos. NÃO fornecer revisão antes das questões.
 2. A mini-revisão do tema deve aparecer SOMENTE APÓS o aluno responder, dentro da explicação.

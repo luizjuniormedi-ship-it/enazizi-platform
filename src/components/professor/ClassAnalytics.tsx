@@ -74,7 +74,7 @@ const ClassAnalytics = () => {
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(100);
-    doc.text(`MedStudy AI — ${new Date().toLocaleDateString("pt-BR")}${faculdade && faculdade !== "all" ? ` — ${faculdade}` : ""}${periodo && periodo !== "all" ? ` — ${periodo}º período` : ""}`, M, y);
+    doc.text(`ENAZIZI — ${new Date().toLocaleDateString("pt-BR")}${faculdade && faculdade !== "all" ? ` — ${faculdade}` : ""}${periodo && periodo !== "all" ? ` — ${periodo}º período` : ""}`, M, y);
     doc.setTextColor(0); y += 10;
 
     // Summary

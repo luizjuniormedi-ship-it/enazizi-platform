@@ -607,7 +607,7 @@ const Flashcards = () => {
                   className="gap-1.5 text-xs"
                   onClick={() => navigate("/dashboard/chatgpt", {
                     state: {
-                      initialMessage: `Errei um flashcard sobre "${card.topic}". A pergunta era: "${card.question}". A resposta correta era: "${card.answer}". Me explique este tema seguindo o protocolo MedStudy.`,
+                      initialMessage: `Errei um flashcard sobre "${card.topic}". A pergunta era: "${card.question}". A resposta correta era: "${card.answer}". Me explique este tema seguindo o protocolo ENAZIZI.`,
                       fromErrorBank: true,
                     },
                   })}
