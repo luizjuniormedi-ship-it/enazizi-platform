@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { FileText, Play, History, RotateCcw } from "lucide-react";
+import { FileText, Play, History, BookOpen, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import SimuladoHistory from "./SimuladoHistory";
@@ -22,8 +23,10 @@ const DIFFICULTY_OPTIONS = [
   { value: "misto", label: "Misto" },
 ];
 
+export type SimuladoMode = "prova" | "estudo";
+
 interface SimuladoSetupProps {
-  onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number }) => void;
+  onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode }) => void;
   onResumeSession: () => void;
   onRetryErrors: (sessionId: string) => void;
   pendingSession: any;
@@ -38,6 +41,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onRetryErrors, pendingSession
   const [customCount, setCustomCount] = useState("");
   const [difficulty, setDifficulty] = useState("intermediario");
   const [timePerQuestion, setTimePerQuestion] = useState(3);
+  const [mode, setMode] = useState<SimuladoMode>("estudo");
 
   const toggleTopic = (topic: string) => {
     setSelectedTopics(prev =>
@@ -47,7 +51,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onRetryErrors, pendingSession
 
   const handleStart = () => {
     const count = customCount ? parseInt(customCount) : questionCount;
-    onStart({ topics: selectedTopics, count, difficulty, timePerQuestion });
+    onStart({ topics: selectedTopics, count, difficulty, timePerQuestion, mode });
   };
 
   const totalTime = (customCount ? parseInt(customCount) || questionCount : questionCount) * timePerQuestion;
@@ -65,12 +69,12 @@ const SimuladoSetup = ({ onStart, onResumeSession, onRetryErrors, pendingSession
       <div className="text-center py-4 relative">
         <div className="absolute top-4 right-0">
           <ModuleHelpButton moduleKey="simulados" moduleName="Simulados" steps={[
+            "Escolha entre Modo Estudo (feedback imediato) ou Modo Prova (cronômetro)",
             "Selecione uma ou mais especialidades clicando nos chips de tema",
             "Defina a quantidade de questões (5 a 100) e o nível de dificuldade",
-            "Clique 'Iniciar Simulado' — o cronômetro começa automaticamente",
-            "Navegue livremente entre as questões pelo painel numérico",
-            "Ao finalizar, veja resultado por especialidade com % de acerto",
-            "Erros são salvos automaticamente no Banco de Erros para revisão",
+            "No Modo Estudo: veja explicação após cada resposta e aprenda em tempo real",
+            "No Modo Prova: cronômetro, sem feedback, resultado completo no final",
+            "Marque questões com a flag para revisão posterior em ambos os modos",
           ]} />
         </div>
         <FileText className="h-12 w-12 text-primary mx-auto mb-3" />
@@ -102,6 +106,41 @@ const SimuladoSetup = ({ onStart, onResumeSession, onRetryErrors, pendingSession
         <SimuladoHistory userId={userId} onRetryErrors={onRetryErrors} />
       ) : (
         <div className="glass-card p-6 space-y-6">
+          {/* Mode toggle */}
+          <div>
+            <label className="text-sm font-semibold mb-3 block">Modo do Simulado</label>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setMode("estudo")}
+                className={`flex-1 p-4 rounded-xl border-2 transition-all text-left ${
+                  mode === "estudo"
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-secondary/30 hover:border-primary/30"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  <span className="font-semibold text-sm">Modo Estudo</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Feedback imediato após cada resposta. Sem cronômetro. Ideal para aprender.</p>
+              </button>
+              <button
+                onClick={() => setMode("prova")}
+                className={`flex-1 p-4 rounded-xl border-2 transition-all text-left ${
+                  mode === "prova"
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-secondary/30 hover:border-primary/30"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <Timer className="h-5 w-5 text-primary" />
+                  <span className="font-semibold text-sm">Modo Prova</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Cronômetro ativo. Resultado só no final. Simula condições reais.</p>
+              </button>
+            </div>
+          </div>
+
           {/* Topic selection */}
           <div>
             <label className="text-sm font-semibold mb-3 block">Selecione os assuntos</label>
@@ -155,22 +194,24 @@ const SimuladoSetup = ({ onStart, onResumeSession, onRetryErrors, pendingSession
             </div>
           </div>
 
-          {/* Timer */}
-          <div>
-            <label className="text-sm font-semibold mb-2 block">Tempo por questão</label>
-            <div className="flex gap-2 flex-wrap">
-              {[2, 3, 4, 5].map(m => (
-                <Button key={m} variant={timePerQuestion === m ? "default" : "outline"} size="sm" onClick={() => setTimePerQuestion(m)}>
-                  {m} min
-                </Button>
-              ))}
+          {/* Timer - only in prova mode */}
+          {mode === "prova" && (
+            <div>
+              <label className="text-sm font-semibold mb-2 block">Tempo por questão</label>
+              <div className="flex gap-2 flex-wrap">
+                {[2, 3, 4, 5].map(m => (
+                  <Button key={m} variant={timePerQuestion === m ? "default" : "outline"} size="sm" onClick={() => setTimePerQuestion(m)}>
+                    {m} min
+                  </Button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Total: {totalTime} minutos</p>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Total: {totalTime} minutos</p>
-          </div>
+          )}
 
           <Button size="lg" className="w-full" onClick={handleStart} disabled={selectedTopics.length === 0}>
             <Play className="h-4 w-4 mr-2" />
-            Iniciar Simulado ({customCount || questionCount} questões)
+            {mode === "estudo" ? "Iniciar Modo Estudo" : "Iniciar Simulado"} ({customCount || questionCount} questões)
           </Button>
         </div>
       )}

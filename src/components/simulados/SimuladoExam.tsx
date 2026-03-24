@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { FileText, Clock, ArrowRight, ArrowLeft, Flag } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { FileText, Clock, ArrowRight, ArrowLeft, Flag, Bookmark, GraduationCap, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { SimuladoMode } from "./SimuladoSetup";
 
 export interface SimQuestion {
   statement: string;
@@ -13,26 +15,32 @@ export interface SimQuestion {
 interface SimuladoExamProps {
   questions: SimQuestion[];
   timeSeconds: number;
-  onFinish: (answers: Record<number, number>) => void;
+  onFinish: (answers: Record<number, number>, flagged: number[]) => void;
   onAutoSaveState: () => { current: number; selectedAnswers: Record<number, number>; timeLeft: number };
   initialState?: { current?: number; selectedAnswers?: Record<number, number>; timeLeft?: number };
+  mode: SimuladoMode;
 }
 
-const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState }: SimuladoExamProps) => {
+const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode }: SimuladoExamProps) => {
+  const navigate = useNavigate();
   const [current, setCurrent] = useState(initialState?.current ?? 0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>(initialState?.selectedAnswers ?? {});
   const [timeLeft, setTimeLeft] = useState(initialState?.timeLeft ?? timeSeconds);
   const [showConfirmFinish, setShowConfirmFinish] = useState(false);
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
+  const [revealedQuestions, setRevealedQuestions] = useState<Set<number>>(new Set());
   const timerRef = useRef<NodeJS.Timeout>();
 
-  // Timer
+  const isStudyMode = mode === "estudo";
+
+  // Timer - only in prova mode
   useEffect(() => {
-    if (timeLeft <= 0) return;
+    if (isStudyMode || timeLeft <= 0) return;
     timerRef.current = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
-          onFinish(selectedAnswers);
+          onFinish(selectedAnswers, Array.from(flaggedQuestions));
           return 0;
         }
         return prev - 1;
@@ -49,29 +57,67 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState }: Simula
   };
 
   const selectAnswer = (questionIdx: number, optionIdx: number) => {
+    if (isStudyMode && revealedQuestions.has(questionIdx)) return; // locked after reveal
     setSelectedAnswers(prev => ({ ...prev, [questionIdx]: optionIdx }));
+    if (isStudyMode) {
+      setRevealedQuestions(prev => new Set(prev).add(questionIdx));
+    }
+  };
+
+  const toggleFlag = (idx: number) => {
+    setFlaggedQuestions(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
   };
 
   const handleFinish = () => {
     clearInterval(timerRef.current);
-    onFinish(selectedAnswers);
+    onFinish(selectedAnswers, Array.from(flaggedQuestions));
+  };
+
+  const handleStudyWithTutor = (q: SimQuestion) => {
+    navigate("/dashboard/chatgpt", {
+      state: {
+        initialMessage: `Errei uma questão sobre "${q.topic}". O enunciado era: "${q.statement.slice(0, 200)}". A resposta correta era "${q.options[q.correct]}". Me explique este tema em detalhes seguindo o protocolo ENAZIZI.`,
+        fromErrorBank: true,
+      },
+    });
   };
 
   const answeredCount = Object.keys(selectedAnswers).length;
   const unansweredCount = questions.length - answeredCount;
-  const timeWarning = timeLeft < 300;
+  const timeWarning = !isStudyMode && timeLeft < 300;
   const q = questions[current];
 
+  // Study mode counters
+  const correctCount = isStudyMode
+    ? Object.entries(selectedAnswers).filter(([i]) => selectedAnswers[Number(i)] === questions[Number(i)]?.correct).length
+    : 0;
+  const wrongCount = isStudyMode ? answeredCount - correctCount : 0;
+
   if (!q) return null;
+
+  const isRevealed = isStudyMode && revealedQuestions.has(current);
+  const userAnswer = selectedAnswers[current];
 
   return (
     <div className="space-y-4 animate-fade-in max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur py-2">
         <span className="text-sm font-medium">{current + 1}/{questions.length}</span>
-        <span className={`flex items-center gap-1 text-sm font-mono font-bold ${timeWarning ? "text-destructive animate-pulse" : "text-muted-foreground"}`}>
-          <Clock className="h-4 w-4" /> {formatTime(timeLeft)}
-        </span>
+        {isStudyMode ? (
+          <div className="flex items-center gap-3 text-sm font-medium">
+            <span className="text-green-500 flex items-center gap-1"><CheckCircle2 className="h-4 w-4" />{correctCount}</span>
+            <span className="text-destructive flex items-center gap-1"><XCircle className="h-4 w-4" />{wrongCount}</span>
+          </div>
+        ) : (
+          <span className={`flex items-center gap-1 text-sm font-mono font-bold ${timeWarning ? "text-destructive animate-pulse" : "text-muted-foreground"}`}>
+            <Clock className="h-4 w-4" /> {formatTime(timeLeft)}
+          </span>
+        )}
         <span className="text-xs text-muted-foreground">{answeredCount}/{questions.length} respondidas</span>
       </div>
 
@@ -82,27 +128,67 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState }: Simula
 
       {/* Question */}
       <div className="glass-card p-6">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">{q.topic}</span>
-          {selectedAnswers[current] === undefined && (
-            <span className="text-xs px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-600">Não respondida</span>
-          )}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">{q.topic}</span>
+            {!isRevealed && userAnswer === undefined && (
+              <span className="text-xs px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-600">Não respondida</span>
+            )}
+          </div>
+          <button
+            onClick={() => toggleFlag(current)}
+            className={`p-1.5 rounded-lg transition-all ${flaggedQuestions.has(current) ? "text-yellow-500 bg-yellow-500/10" : "text-muted-foreground hover:text-yellow-500"}`}
+            title="Marcar para revisão"
+          >
+            <Bookmark className={`h-5 w-5 ${flaggedQuestions.has(current) ? "fill-current" : ""}`} />
+          </button>
         </div>
         <p className="text-base font-medium mb-6">{q.statement}</p>
         <div className="space-y-3">
-          {q.options.map((opt, i) => (
-            <button
-              key={i}
-              onClick={() => selectAnswer(current, i)}
-              className={`w-full text-left p-4 rounded-lg border text-sm transition-all ${
-                selectedAnswers[current] === i ? "border-primary bg-primary/10" : "border-border bg-secondary/50 hover:border-primary/30"
-              }`}
-            >
-              <span className="font-semibold mr-2">{String.fromCharCode(65 + i)})</span>
-              {opt}
-            </button>
-          ))}
+          {q.options.map((opt, i) => {
+            let optionClass = "border-border bg-secondary/50 hover:border-primary/30";
+            if (isRevealed) {
+              if (i === q.correct) optionClass = "border-green-500 bg-green-500/10";
+              else if (i === userAnswer) optionClass = "border-destructive bg-destructive/10";
+              else optionClass = "border-border bg-secondary/30 opacity-60";
+            } else if (userAnswer === i) {
+              optionClass = "border-primary bg-primary/10";
+            }
+
+            return (
+              <button
+                key={i}
+                onClick={() => selectAnswer(current, i)}
+                disabled={isRevealed}
+                className={`w-full text-left p-4 rounded-lg border text-sm transition-all ${optionClass} ${isRevealed ? "cursor-default" : ""}`}
+              >
+                <div className="flex items-center gap-2">
+                  {isRevealed && i === q.correct && <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />}
+                  {isRevealed && i === userAnswer && i !== q.correct && <XCircle className="h-4 w-4 text-destructive shrink-0" />}
+                  <span>
+                    <span className="font-semibold mr-2">{String.fromCharCode(65 + i)})</span>
+                    {opt}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
+
+        {/* Study mode: explanation after answer */}
+        {isRevealed && (
+          <div className="mt-4 space-y-3 animate-fade-in">
+            {q.explanation && (
+              <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                <p className="text-sm font-medium mb-1 text-primary">📖 Explicação</p>
+                <p className="text-sm text-muted-foreground">{q.explanation}</p>
+              </div>
+            )}
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handleStudyWithTutor(q)}>
+              <GraduationCap className="h-3.5 w-3.5" /> Aprofundar com Tutor IA
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Navigation */}
@@ -135,21 +221,41 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState }: Simula
       {/* Question grid */}
       <div className="glass-card p-3">
         <div className="flex flex-wrap gap-1">
-          {questions.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrent(i)}
-              className={`h-7 w-7 rounded text-xs font-medium transition-all ${
-                i === current
-                  ? "bg-primary text-primary-foreground"
-                  : selectedAnswers[i] !== undefined
-                  ? "bg-primary/20 text-primary"
-                  : "bg-secondary text-muted-foreground"
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
+          {questions.map((_, i) => {
+            const isFlagged = flaggedQuestions.has(i);
+            const isAnswered = selectedAnswers[i] !== undefined;
+            const isCurrent = i === current;
+
+            let bgClass = "bg-secondary text-muted-foreground";
+            if (isCurrent) bgClass = "bg-primary text-primary-foreground";
+            else if (isStudyMode && revealedQuestions.has(i)) {
+              bgClass = selectedAnswers[i] === questions[i]?.correct
+                ? "bg-green-500/20 text-green-700"
+                : "bg-destructive/20 text-destructive";
+            } else if (isAnswered) bgClass = "bg-primary/20 text-primary";
+
+            return (
+              <button
+                key={i}
+                onClick={() => setCurrent(i)}
+                className={`h-7 w-7 rounded text-xs font-medium transition-all relative ${bgClass}`}
+              >
+                {i + 1}
+                {isFlagged && (
+                  <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-yellow-500" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-4 mt-2 text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-500 inline-block" /> Marcada</span>
+          {isStudyMode && (
+            <>
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500 inline-block" /> Correta</span>
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive inline-block" /> Errada</span>
+            </>
+          )}
         </div>
       </div>
     </div>

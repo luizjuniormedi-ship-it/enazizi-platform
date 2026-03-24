@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import SimuladoSetup from "@/components/simulados/SimuladoSetup";
+import type { SimuladoMode } from "@/components/simulados/SimuladoSetup";
 import SimuladoExam from "@/components/simulados/SimuladoExam";
 import type { SimQuestion } from "@/components/simulados/SimuladoExam";
 import SimuladoResult from "@/components/simulados/SimuladoResult";
@@ -18,7 +19,6 @@ type Phase = "setup" | "loading" | "exam" | "finished";
 
 const BATCH_SIZE = 10;
 
-/** Generate a single batch of questions via the edge function */
 async function generateBatch(
   topics: string[],
   count: number,
@@ -59,7 +59,6 @@ async function generateBatch(
 
   const json = await res.json();
 
-  // Try tool_calls first (structured output)
   const toolCall = json.choices?.[0]?.message?.tool_calls?.[0];
   if (toolCall?.function?.arguments) {
     try {
@@ -70,10 +69,7 @@ async function generateBatch(
     } catch { /* fall through */ }
   }
 
-  // Try content as JSON
   const content = json.choices?.[0]?.message?.content || "";
-  
-  // Try JSON array extraction
   const jsonMatch = content.match(/\[[\s\S]*\]/);
   if (jsonMatch) {
     try {
@@ -81,7 +77,6 @@ async function generateBatch(
     } catch { /* fall through */ }
   }
 
-  // Fallback: parse markdown format
   const parsed = parseQuestionsFromText(content);
   if (parsed.length > 0) {
     return parsed.map((q) => ({
@@ -124,17 +119,19 @@ const Simulados = () => {
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [restoredState, setRestoredState] = useState<any>(null);
   const [loadingProgress, setLoadingProgress] = useState("");
+  const [mode, setMode] = useState<SimuladoMode>("estudo");
+  const [flaggedQuestions, setFlaggedQuestions] = useState<number[]>([]);
   const startTimeRef = useRef<Date>();
+  const elapsedSecondsRef = useRef<number>(0);
 
-  // Session persistence
   const { pendingSession, checked, saveSession, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "simulados" });
 
   const examStateRef = useRef<any>(null);
 
   const getExamState = useCallback(() => {
     if (phase !== "exam") return {};
-    return { phase, questions, selectedTopics, examState: examStateRef.current };
-  }, [phase, questions, selectedTopics]);
+    return { phase, questions, selectedTopics, mode, examState: examStateRef.current };
+  }, [phase, questions, selectedTopics, mode]);
 
   useEffect(() => {
     registerAutoSave(getExamState);
@@ -145,13 +142,14 @@ const Simulados = () => {
     const data = pendingSession.session_data as Record<string, any>;
     if (data.questions) setQuestions(data.questions);
     if (data.selectedTopics) setSelectedTopics(data.selectedTopics);
+    if (data.mode) setMode(data.mode);
     if (data.examState) setRestoredState(data.examState);
     startTimeRef.current = new Date();
     setPhase("exam");
     clearPending();
   }, [pendingSession, clearPending]);
 
-  const handleStart = async (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number }) => {
+  const handleStart = async (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode }) => {
     if (config.topics.length === 0) {
       toast({ title: "Selecione pelo menos um assunto", variant: "destructive" });
       return;
@@ -162,6 +160,7 @@ const Simulados = () => {
     }
 
     setSelectedTopics(config.topics);
+    setMode(config.mode);
     setPhase("loading");
 
     try {
@@ -171,17 +170,13 @@ const Simulados = () => {
       let allQuestions: SimQuestion[] = [];
 
       if (config.count <= BATCH_SIZE) {
-        // Single batch
         setLoadingProgress("Gerando questões...");
         allQuestions = await generateBatch(config.topics, config.count, config.difficulty, accessToken);
-
-        // Retry once if no questions parsed
         if (allQuestions.length === 0) {
           setLoadingProgress("Tentando novamente...");
           allQuestions = await generateBatch(config.topics, config.count, config.difficulty, accessToken);
         }
       } else {
-        // Parallel batches
         const batchCount = Math.ceil(config.count / BATCH_SIZE);
         const batchSizes = Array.from({ length: batchCount }, (_, i) => {
           const remaining = config.count - i * BATCH_SIZE;
@@ -200,7 +195,6 @@ const Simulados = () => {
           }
         }
 
-        // Retry failed batches once
         const failedCount = results.filter((r) => r.status === "rejected" || (r.status === "fulfilled" && r.value.length === 0)).length;
         if (failedCount > 0 && allQuestions.length < config.count) {
           setLoadingProgress(`Recuperando ${failedCount} lotes...`);
@@ -220,7 +214,8 @@ const Simulados = () => {
 
       const finalQuestions = allQuestions.slice(0, config.count);
       setQuestions(finalQuestions);
-      setRestoredState({ timeLeft: config.count * config.timePerQuestion * 60 });
+      const timeLeft = config.mode === "prova" ? config.count * config.timePerQuestion * 60 : 0;
+      setRestoredState({ timeLeft });
       startTimeRef.current = new Date();
       setPhase("exam");
     } catch (err: any) {
@@ -229,8 +224,13 @@ const Simulados = () => {
     }
   };
 
-  const handleFinish = async (answers: Record<number, number>) => {
+  const handleFinish = async (answers: Record<number, number>, flagged: number[]) => {
     setFinalAnswers(answers);
+    setFlaggedQuestions(flagged);
+
+    if (startTimeRef.current) {
+      elapsedSecondsRef.current = Math.round((Date.now() - startTimeRef.current.getTime()) / 1000);
+    }
 
     if (user) {
       const areaResults: Record<string, { correct: number; total: number }> = {};
@@ -248,7 +248,7 @@ const Simulados = () => {
         user_id: user.id,
         title: `Simulado - ${selectedTopics.slice(0, 3).join(", ")}${selectedTopics.length > 3 ? "..." : ""}`,
         total_questions: questions.length,
-        time_limit_minutes: Math.round((new Date().getTime() - (startTimeRef.current?.getTime() || Date.now())) / 60000),
+        time_limit_minutes: Math.round(elapsedSecondsRef.current / 60),
         status: "finished",
         finished_at: new Date().toISOString(),
         answers_json: answers,
@@ -256,7 +256,6 @@ const Simulados = () => {
         score: finalScore,
       });
 
-      // Log errors
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i];
         if (answers[i] !== undefined && answers[i] !== q.correct) {
@@ -305,7 +304,8 @@ const Simulados = () => {
 
     setQuestions(errorQuestions);
     setFinalAnswers({});
-    setRestoredState({ timeLeft: errorQuestions.length * 3 * 60 });
+    setFlaggedQuestions([]);
+    setRestoredState({ timeLeft: mode === "prova" ? errorQuestions.length * 3 * 60 : 0 });
     startTimeRef.current = new Date();
     setPhase("exam");
   };
@@ -314,6 +314,7 @@ const Simulados = () => {
     setPhase("setup");
     setQuestions([]);
     setFinalAnswers({});
+    setFlaggedQuestions([]);
     setRestoredState(null);
   };
 
@@ -347,6 +348,9 @@ const Simulados = () => {
         selectedAnswers={finalAnswers}
         onNewSimulado={handleNewSimulado}
         onRetryErrors={() => handleRetryErrors()}
+        flaggedQuestions={flaggedQuestions}
+        mode={mode}
+        elapsedSeconds={elapsedSecondsRef.current}
       />
     );
   }
@@ -354,7 +358,7 @@ const Simulados = () => {
   return (
     <SimuladoExam
       questions={questions}
-      timeSeconds={restoredState?.timeLeft ?? questions.length * 3 * 60}
+      timeSeconds={restoredState?.timeLeft ?? (mode === "prova" ? questions.length * 3 * 60 : 0)}
       onFinish={handleFinish}
       onAutoSaveState={() => ({ current: 0, selectedAnswers: {}, timeLeft: 0 })}
       initialState={restoredState ? {
@@ -362,6 +366,7 @@ const Simulados = () => {
         selectedAnswers: restoredState.selectedAnswers ?? {},
         timeLeft: restoredState.timeLeft,
       } : undefined}
+      mode={mode}
     />
   );
 };
