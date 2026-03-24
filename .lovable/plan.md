@@ -1,29 +1,42 @@
 
 
-# Plano: Questões Diagnósticas Todas Iguais — Correção
+# Plano: Renomear "MedStudy AI" → "ENAZIZI"
 
-## Problema Raiz
+Trocar todas as referências visíveis de "MedStudy AI" para "ENAZIZI" em toda a aplicação. Chaves internas de localStorage e nomes de arquivo técnicos permanecem inalterados para não quebrar sessões existentes.
 
-Os logs mostram que a IA está dando **timeout em TODAS as 8 áreas** (`AI_SERVICE_UNAVAILABLE`). Quando isso acontece, o sistema cai no `generateFallbackQuestionsForArea` que gera a **mesma questão genérica** para todas as áreas — "Paciente de 45 anos com dor torácica no PS". Resultado: 40 questões praticamente idênticas.
+## Arquivos a alterar
 
-## Solução (2 frentes)
+| Arquivo | Mudança |
+|---------|---------|
+| `index.html` | Title, meta description, og:tags, apple-mobile-web-app-title |
+| `public/manifest.json` | `name` e `short_name` |
+| `capacitor.config.ts` | `appName` e `scheme` |
+| `vite.config.ts` | PWA manifest `name` e `short_name` |
+| `src/components/landing/Navbar.tsx` | Texto "MedStudy AI" → "ENAZIZI" |
+| `src/components/landing/Footer.tsx` | Nome e copyright |
+| `src/components/layout/DashboardSidebar.tsx` | Logo alt e texto |
+| `src/components/layout/DashboardLayout.tsx` | Logo alt, texto e SheetDescription |
+| `src/pages/Login.tsx` | Nome no header |
+| `src/pages/Register.tsx` | Nome no header |
+| `src/pages/Install.tsx` | Todos os textos "MedStudy AI" |
+| `src/components/dashboard/OnboardingTour.tsx` | Mensagem de boas-vindas |
+| `src/components/dashboard/SystemGuidePopup.tsx` | Título do mascot |
+| `src/lib/exportPdf.ts` | Rodapé do PDF |
+| `src/pages/Flashcards.tsx` | Nome no export PDF e mensagens |
+| `src/pages/QuestionsBank.tsx` | Nome no export PDF e mensagens |
+| `src/pages/ExamSimulator.tsx` | Texto "protocolo MedStudy" |
+| `src/pages/MedicalReviewer.tsx` | Welcome message |
+| `supabase/functions/_shared/enazizi-prompt.ts` | Identidade do tutor |
+| `supabase/functions/medical-reviewer/index.ts` | System prompt |
+| `supabase/functions/anamnesis-trainer/index.ts` | System prompt |
+| + demais edge functions com referência "MedStudy AI" |
 
-### 1. Fallback diversificado por área
+## Regra
 
-Reescrever `generateFallbackQuestionsForArea` com um **banco de questões hardcoded distintas por área** (5 questões únicas para cada uma das 8 áreas = 40 questões diferentes). Cada questão terá caso clínico próprio, cenário, paciente e gabarito diferentes.
+- "MedStudy AI" → "ENAZIZI" em todo texto visível ao usuário
+- "protocolo MedStudy" → "protocolo ENAZIZI"
+- Alt texts das imagens → "ENAZIZI"
+- Manter chaves de localStorage e nomes de arquivo internos inalterados
 
-### 2. Melhorar resiliência da geração IA
-
-- Aumentar `REQUEST_TIMEOUT_MS` de 22s para **35s** (a IA precisa gerar 5 questões complexas)
-- Aumentar `timeoutMs` no body de 18s para **30s**
-- Fazer chamadas **sequenciais em lotes de 2** ao invés de 8 paralelas (reduz sobrecarga)
-- Se a IA falhar para uma área, usar o fallback diversificado
-
-## Arquivo
-
-**`src/pages/Diagnostic.tsx`**
-
-- Substituir `generateFallbackQuestionsForArea` por banco com 40 questões únicas (5 por área)
-- Ajustar timeouts
-- Fazer chamadas em batches de 2 áreas paralelas
+Total: ~48 arquivos, substituição direta de strings.
 
