@@ -22,8 +22,8 @@ const DiagnosticIntro = ({ alreadyDone, onStart }: DiagnosticIntroProps) => {
           <Stethoscope className="h-12 w-12 text-primary" />
         </div>
         <div className="flex justify-center mb-3">
-          <ModuleHelpButton moduleKey="diagnostic" moduleName="Diagnóstico Inicial" steps={[
-            "Clique em 'Iniciar Diagnóstico' para começar a avaliação",
+          <ModuleHelpButton moduleKey="diagnostic" moduleName="Nivelamento Inicial" steps={[
+            "Clique em 'Iniciar Nivelamento' para começar a avaliação",
             "São 40 questões em 8 especialidades — cada uma com 1 minuto de tempo",
             "A dificuldade se adapta: acertou? Próxima será mais difícil",
             "Ao finalizar, veja seu desempenho por área e um mapa de domínio",
@@ -31,10 +31,10 @@ const DiagnosticIntro = ({ alreadyDone, onStart }: DiagnosticIntroProps) => {
             "Erros vão para o Banco de Erros para revisão futura",
           ]} />
         </div>
-        <h1 className="text-3xl font-bold mb-3">Diagnóstico Inicial</h1>
+        <h1 className="text-3xl font-bold mb-3">Nivelamento Inicial</h1>
         <p className="text-muted-foreground text-lg mb-2">
           {alreadyDone
-            ? "Você já realizou o diagnóstico. Deseja refazer para atualizar seu perfil?"
+            ? "Você já realizou o nivelamento. Deseja refazer para atualizar seu perfil?"
             : "Antes de começar, precisamos avaliar seu nível atual em cada especialidade."}
         </p>
         <p className="text-sm text-muted-foreground">
@@ -58,7 +58,7 @@ const DiagnosticIntro = ({ alreadyDone, onStart }: DiagnosticIntroProps) => {
 
       <div className="text-center">
         <Button size="lg" onClick={onStart} className="gap-2 px-8">
-          {alreadyDone ? "Refazer diagnóstico" : "Iniciar diagnóstico"}
+          {alreadyDone ? "Refazer nivelamento" : "Iniciar nivelamento"}
           <ArrowRight className="h-4 w-4" />
         </Button>
       </div>

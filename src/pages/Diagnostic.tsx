@@ -159,7 +159,7 @@ NÃO inclua texto extra, APENAS o JSON.` }],
       setQuestions(allQuestions.length > 0 ? allQuestions : getAllFallbackQuestions());
       setPhase("exam");
     } catch (err: any) {
-      toast({ title: "Erro ao gerar diagnóstico", description: err.message, variant: "destructive" });
+      toast({ title: "Erro ao gerar nivelamento", description: err.message, variant: "destructive" });
       setQuestions(getAllFallbackQuestions());
       setPhase("exam");
     }
@@ -252,7 +252,7 @@ NÃO inclua texto extra, APENAS o JSON.` }],
     return (
       <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
         <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-        <p className="text-muted-foreground">Gerando questões diagnósticas personalizadas...</p>
+        <p className="text-muted-foreground">Gerando questões de nivelamento personalizadas...</p>
         <p className="text-xs text-muted-foreground mt-2">Isso pode levar até 1 minuto</p>
       </div>
     );

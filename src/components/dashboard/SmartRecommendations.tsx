@@ -42,7 +42,7 @@ export default function SmartRecommendations({ stats, metrics, hasCompletedDiagn
       recs.push({
         id: "diagnostic",
         icon: <Target className="h-5 w-5 text-primary" />,
-        title: "Faça o Diagnóstico Inicial",
+        title: "Faça o Nivelamento Inicial",
         description: "Descubra seus pontos fortes e fracos antes de estudar.",
         path: "/dashboard/diagnostico",
         priority: "alta",

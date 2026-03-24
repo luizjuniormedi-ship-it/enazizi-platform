@@ -7,7 +7,7 @@ export const ALL_MODULES = [
   { key: "dashboard", label: "Dashboard" },
   { key: "chatgpt", label: "🤖 Tutor IA" },
   { key: "plano-dia", label: "⚡ Plano do Dia" },
-  { key: "diagnostico", label: "🩺 Diagnóstico" },
+  { key: "diagnostico", label: "🩺 Nivelamento" },
   { key: "cronograma", label: "📅 Cronograma" },
   { key: "flashcards", label: "🃏 Flashcards" },
   { key: "gerar-flashcards", label: "🃏 Gerador Flashcards" },
