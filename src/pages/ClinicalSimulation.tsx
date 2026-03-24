@@ -158,6 +158,7 @@ interface ChatMessage {
   type?: string;
   scoreDelta?: number;
   timestamp: number;
+  teachingTip?: string;
 }
 
 interface ActionTimelineEntry {
