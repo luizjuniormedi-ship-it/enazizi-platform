@@ -1009,9 +1009,36 @@ const ClinicalSimulation = () => {
     setStatusAlert(false);
     setDeteriorationCount(0);
     setInactivityWarning(false);
+    setAbcdeChecklist({ A: false, B: false, C: false, D: false, E: false });
+    setMedicalRecord([]);
+    setCategoryScores({ anamnesis: 0, physical_exam: 0, complementary_exams: 0, management: 0 });
     if (countdownRef.current) clearInterval(countdownRef.current);
     if (deteriorationIntervalRef.current) clearInterval(deteriorationIntervalRef.current);
     fetchHistory();
+  };
+
+  // PDF Export
+  const exportCasePdf = () => {
+    if (!finalEval) return;
+    const items = [
+      { title: "Diagnóstico Correto", content: finalEval.correct_diagnosis, subtitle: finalEval.student_got_diagnosis ? "✅ Você acertou" : "❌ Você não acertou" },
+      ...Object.entries(finalEval.evaluation).map(([key, val]) => ({
+        title: EVAL_LABELS[key] || key,
+        content: val.feedback,
+        subtitle: `Score: ${val.score}/${EVAL_MAX_SCORES[key] || 25}`,
+      })),
+      ...(finalEval.differential_diagnosis || []).map(dd => ({
+        title: `Diferencial: ${dd.diagnosis}`,
+        content: `Razão: ${dd.reasoning}\nDescartar: ${dd.how_to_rule_out}`,
+        subtitle: dd.student_considered ? "Considerado pelo aluno" : "Não considerado",
+      })),
+      { title: "Abordagem Ideal", content: finalEval.ideal_approach },
+      ...(finalEval.ideal_prescription ? [{ title: "Prescrição Modelo", content: finalEval.ideal_prescription }] : []),
+      { title: "Pontos Fortes", content: finalEval.strengths.join("\n") },
+      { title: "Pontos a Melhorar", content: finalEval.improvements.join("\n") },
+    ];
+    exportToPdf(items, `Plantão ${specialty} - ${finalEval.grade} (${finalEval.final_score}pts)`);
+    toast({ title: "PDF gerado!", description: "O arquivo foi baixado." });
   };
 
   const getTriageEmoji = (color: string) => {
