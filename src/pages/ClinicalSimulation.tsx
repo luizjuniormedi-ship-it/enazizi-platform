@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { logErrorToBank } from "@/lib/errorBankLogger";
+import { exportToPdf } from "@/lib/exportPdf";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
@@ -12,7 +13,8 @@ import {
   Clock, Heart, AlertTriangle, Award, ArrowRight, RotateCcw,
   MessageCircle, Thermometer, Zap, Star, CheckCircle, XCircle,
   Trophy, Target, HelpCircle, Users, ClipboardCheck, ShieldAlert, History, Eye, Maximize2, Minimize2,
-  User, Brain, Pill, MonitorCheck, Bone, Scan, HeartPulse, Ear, Hand
+  User, Brain, Pill, MonitorCheck, Bone, Scan, HeartPulse, Ear, Hand,
+  Wind, Droplets, Shield, BookOpen, FileText, ChevronDown, ChevronUp, GraduationCap, Download, Clipboard
 } from "lucide-react";
 import VitalsChart, { parseVitalsToSnapshot } from "@/components/plantao/VitalsChart";
 import ExamsPanel from "@/components/plantao/ExamsPanel";
