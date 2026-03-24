@@ -2114,6 +2114,9 @@ const ClinicalSimulation = () => {
             <Button onClick={retryWithSameConfig} variant="outline" className="gap-2">
               <Zap className="h-4 w-4" /> Refazer Mesmo
             </Button>
+            <Button onClick={exportCasePdf} variant="outline" className="gap-2">
+              <Download className="h-4 w-4" /> Exportar PDF
+            </Button>
             <Button onClick={shareResult} variant="outline" className="gap-2">
               <ClipboardCheck className="h-4 w-4" /> Compartilhar
             </Button>
