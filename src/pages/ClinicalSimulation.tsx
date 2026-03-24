@@ -811,6 +811,26 @@ const ClinicalSimulation = () => {
         playSound("worsened");
       }
 
+      // Update category scores
+      if (res.category_scores) {
+        setCategoryScores(res.category_scores);
+      }
+
+      // Update medical record from structured_data
+      if (res.structured_data?.summary) {
+        const sd = res.structured_data;
+        const categoryMap: Record<string, MedicalRecordEntry["category"]> = {
+          anamnesis: "anamnesis", physical_exam: "physical_exam", lab: "lab",
+          imaging: "imaging", prescription: "prescription",
+        };
+        setMedicalRecord(prev => [...prev, {
+          category: categoryMap[sd.type] || "other",
+          summary: sd.summary,
+          system: sd.system || undefined,
+          timestamp: Date.now(),
+        }]);
+      }
+
       setConversationHistory([
         ...updatedHistory,
         { role: "assistant", content: JSON.stringify(res) },
