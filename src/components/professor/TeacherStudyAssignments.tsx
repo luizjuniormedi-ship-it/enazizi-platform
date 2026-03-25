@@ -15,13 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FACULDADES } from "@/constants/faculdades";
 import { CheckSquare, Square } from "lucide-react";
 
-const SPECIALTIES = [
-  "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia", "Nefrologia",
-  "Endocrinologia", "Infectologia", "Reumatologia", "Hematologia", "Dermatologia",
-  "Pediatria", "Ginecologia e Obstetrícia", "Cirurgia", "Ortopedia", "Urologia",
-  "Psiquiatria", "Medicina Preventiva", "Oftalmologia", "Otorrinolaringologia",
-  "Semiologia", "Anatomia", "Farmacologia", "Fisiologia", "Bioquímica",
-];
+import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
 
 const TeacherStudyAssignments = () => {
   const { session } = useAuth();

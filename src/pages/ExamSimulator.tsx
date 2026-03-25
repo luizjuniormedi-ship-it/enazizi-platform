@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { ALL_SPECIALTIES } from "@/constants/specialties";
 import { useNavigate } from "react-router-dom";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
@@ -258,14 +259,7 @@ const ExamSimulator = () => {
     setPhase("result");
   };
 
-  const ALL_AREAS = [
-    "Clínica Médica", "Cirurgia", "Pediatria", "GO", "Preventiva", "Oncologia",
-    "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia", "Gastroenterologia",
-    "Nefrologia", "Infectologia", "Hematologia", "Reumatologia", "Dermatologia",
-    "Urologia", "Ortopedia", "Psiquiatria", "Oftalmologia", "Otorrinolaringologia",
-    "Medicina de Emergência", "Terapia Intensiva", "Semiologia", "Anatomia", "Farmacologia",
-    "Fisiologia", "Bioquímica",
-  ];
+  const ALL_AREAS = ALL_SPECIALTIES;
 
   const toggleArea = (area: string) => {
     setExamConfig(prev => ({

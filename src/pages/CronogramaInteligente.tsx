@@ -97,16 +97,8 @@ export type TabCronograma = "visao" | "hoje" | "novo" | "temas" | "criticos" | "
 
 /* ======================== CONSTANTS ======================== */
 
-export const SPECIALTIES = [
-  "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia",
-  "Gastroenterologia", "Nefrologia", "Infectologia", "Pediatria",
-  "Ginecologia e Obstetrícia", "Cirurgia", "Medicina Preventiva",
-  "Hematologia", "Reumatologia", "Dermatologia", "Urologia",
-  "Ortopedia", "Otorrinolaringologia", "Oftalmologia", "Psiquiatria",
-  "Semiologia", "Anatomia", "Farmacologia",
-  "Medicina de Emergência", "Terapia Intensiva", "Oncologia",
-  "Fisiologia", "Bioquímica",
-];
+import { ALL_SPECIALTIES } from "@/constants/specialties";
+export const SPECIALTIES = ALL_SPECIALTIES;
 
 export const REVIEW_DAYS: Record<string, number> = {
   D1: 1, D2: 2, D3: 3, D4: 4, D5: 5, D7: 7, D15: 15, D30: 30,

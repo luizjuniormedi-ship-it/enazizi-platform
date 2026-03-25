@@ -9,15 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const SPECIALTIES = [
-  "Cardiologia", "Pediatria", "Cirurgia", "Neurologia", "Infectologia",
-  "Ginecologia e Obstetrícia", "Medicina de Emergência", "Medicina Preventiva",
-  "Endocrinologia", "Reumatologia", "Psiquiatria", "Hematologia",
-  "Gastroenterologia", "Pneumologia", "Nefrologia", "Dermatologia",
-  "Ortopedia", "Urologia", "Oftalmologia", "Otorrinolaringologia",
-  "Farmacologia", "Semiologia", "Anatomia", "Oncologia", "Terapia Intensiva",
-  "Fisiologia", "Bioquímica",
-];
+import { SPECIALTY_CYCLES, ALL_SPECIALTIES } from "@/constants/specialties";
 
 const DIFFICULTY_OPTIONS = [
   { value: "facil", label: "Fácil", emoji: "🟢", desc: "Apresentações típicas" },
@@ -185,7 +177,7 @@ const QuestionGenerator = () => {
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
                   <SelectItem value="all">Todas (misto)</SelectItem>
-                  {SPECIALTIES.map(s => (
+                  {ALL_SPECIALTIES.map(s => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
                 </SelectContent>
