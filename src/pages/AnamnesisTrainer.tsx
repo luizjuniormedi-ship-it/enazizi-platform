@@ -926,7 +926,102 @@ const AnamnesisTrainer = () => {
     );
   }
 
-  // === ACTIVE ===
+  // === REVIEW MODE ===
+  if (phase === "review" && evalData) {
+    return (
+      <div className="space-y-4 animate-fade-in max-w-3xl mx-auto">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-primary" /> Revisão com Anotações
+          </h1>
+          <div className="flex gap-2">
+            <Button onClick={() => setPhase("result")} variant="outline" size="sm">
+              <RotateCcw className="h-4 w-4 mr-1" /> Voltar ao Resultado
+            </Button>
+          </div>
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          Revise cada pergunta e resposta com feedback do professor IA sobre técnica semiológica.
+        </p>
+
+        <div className="space-y-3">
+          {messages.map((msg, i) => {
+            const qualityLevel = msg.quality !== undefined ? Math.min(3, Math.max(0, Math.round(msg.quality))) : null;
+            const coaching = qualityLevel !== null ? COACHING_TIPS[qualityLevel] : null;
+            const touchedCats = msg.categories || [];
+            return (
+              <div key={i} className={`rounded-xl border p-4 space-y-2 ${
+                msg.role === "doctor"
+                  ? "border-primary/20 bg-primary/5"
+                  : "border-border bg-card"
+              }`}>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {msg.role === "doctor" ? (
+                    <><Stethoscope className="h-3.5 w-3.5 text-primary" /> <span className="font-medium text-primary">Você (Médico)</span></>
+                  ) : (
+                    <><User className="h-3.5 w-3.5 text-accent" /> <span className="font-medium text-accent">Paciente</span></>
+                  )}
+                  <span className="ml-auto">{new Date(msg.timestamp).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                </div>
+                <p className="text-sm">{msg.content}</p>
+
+                {/* Annotations for patient messages */}
+                {msg.role === "patient" && (
+                  <div className="border-t pt-2 mt-2 space-y-1.5">
+                    {touchedCats.length > 0 && (
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <span className="text-[10px] text-muted-foreground">Categorias tocadas:</span>
+                        {touchedCats.map((c, j) => (
+                          <Badge key={j} variant="secondary" className="text-[10px] py-0">
+                            {CATEGORIES.find(cat => cat.key === c)?.label || c}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    {coaching && (
+                      <div className="flex items-start gap-1.5">
+                        <Lightbulb className="h-3.5 w-3.5 text-accent flex-shrink-0 mt-0.5" />
+                        <p className={`text-[11px] ${coaching.color}`}>{coaching.text}</p>
+                      </div>
+                    )}
+                    {qualityLevel !== null && <QualityStars quality={msg.quality} />}
+                  </div>
+                )}
+
+                {/* Annotation for doctor: what category they were targeting */}
+                {msg.role === "doctor" && i + 1 < messages.length && messages[i + 1].categories && messages[i + 1].categories!.length > 0 && (
+                  <div className="border-t pt-2 mt-2">
+                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3 text-green-400" />
+                      Esta pergunta cobriu: {messages[i + 1].categories!.map(c => CATEGORIES.find(cat => cat.key === c)?.label || c).join(", ")}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Summary at bottom */}
+        <Card className="glass-card border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="text-2xl font-bold text-primary">{evalData.final_score}/100</div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Categorias cobertas: {coveredCategories.size}/{CATEGORIES.length}</p>
+                <p className="text-xs text-muted-foreground">Tempo total: {Math.round(elapsed / 60)} minutos</p>
+              </div>
+              <Button onClick={handleReset} size="sm" className="glow">
+                <RotateCcw className="h-4 w-4 mr-1" /> Novo Caso
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const progressPercent = (coveredCategories.size / CATEGORIES.length) * 100;
   const suggestions = getSuggestions();
   const timerMins = elapsed / 60;
