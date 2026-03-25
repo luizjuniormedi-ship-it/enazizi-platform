@@ -779,7 +779,7 @@ const ChatGPT = () => {
             <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-base sm:text-xl font-bold truncate">Tutor IA Médico</h1>
+            <h1 className="text-base sm:text-xl font-bold truncate">TutorZizi</h1>
             <p className="text-[10px] sm:text-xs text-muted-foreground">Protocolo ENAZIZI • GPT-4o</p>
           </div>
         </div>
