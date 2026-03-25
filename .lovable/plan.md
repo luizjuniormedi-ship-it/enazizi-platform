@@ -1,40 +1,33 @@
 
 
-# Plano: Melhorias no Modo Plantao
+# Plano: Corrigir seletor de materiais de contexto
 
-## O que ja existe
+## Problema
 
-O modulo e bastante completo: chat imersivo com paciente, quick actions categorizadas (Anamnese, Exame Fisico, Exames, Conduta), sinais vitais com grafico temporal, painel de exames, prescricao estruturada, pedido de parecer especialista, dica do preceptor, modo realista com deterioracao por inatividade, suporte pediatrico, historico de simulacoes, fullscreen, persistencia de sessao.
+1. Query carrega uploads de **todos os usuarios** (sem filtro `user_id`)
+2. **Auto-seleciona todos** (ate 50), gerando "50 de 50 materiais como contexto"
+3. Envia texto desnecessario a IA, aumentando latencia/custo
+4. UI do seletor e pequena e pouco clara
 
-## Melhorias propostas
+## Mudancas
 
-### 1. Checklist ABCDE de Atendimento Inicial
-Adicionar um checklist visual colapsavel no topo da simulacao com os passos do atendimento sistematizado (A-Vias aereas, B-Respiracao, C-Circulacao, D-Neurologico, E-Exposicao). Cada item marca automaticamente quando o aluno realiza a acao correspondente (detectado pelo tipo de mensagem). Isso ensina o metodo sistematico e mostra visualmente o que falta.
+### Arquivo: `src/components/agents/AgentChat.tsx`
 
-### 2. Mini-Prontuario Lateral
-Criar um painel "prontuario" que acumula automaticamente as informacoes coletadas durante o caso: dados do paciente (nome, idade, queixa), achados de anamnese, achados de exame fisico por sistema, resultados de exames. Hoje essas informacoes ficam perdidas no chat. O prontuario funciona como uma "cola organizada" que o aluno consultaria num caso real.
-
-### 3. Score Detalhado em Tempo Real
-Ao inves de mostrar apenas "Score: 72/100", exibir um breakdown por categoria (Anamnese, Exame Fisico, Exames, Conduta) em mini barras de progresso na barra de status. O aluno ve em tempo real onde esta indo bem e onde esta falhando, sem esperar o resultado final.
-
-### 4. Modo Tutorial com Dicas Contextuais
-Adicionar um toggle "Modo Aprendiz" no lobby. Quando ativo, apos cada resposta do paciente, o sistema mostra um card colapsavel com uma dica didatica contextual (ex: apos exame fisico respiratorio, mostra "Lembre-se: na ausculta pulmonar, compare os campos simetricamente"). Isso transforma o plantao de avaliacao pura em ferramenta de ensino.
-
-### 5. Exportar Caso como PDF de Estudo
-Adicionar botao na tela de resultado para gerar um PDF com o caso completo: apresentacao, condutas do aluno, condutas ideais, diagnosticos diferenciais, pontos fortes/fracos. O aluno pode revisar offline.
-
-## Arquivos a alterar
-
-| Arquivo | Mudanca |
+| Mudanca | Detalhe |
 |---|---|
-| `src/pages/ClinicalSimulation.tsx` | Checklist ABCDE, mini-prontuario, score detalhado, toggle modo aprendiz, botao exportar PDF |
-| `supabase/functions/clinical-simulation/index.ts` | Retornar `category_scores` parciais em cada interacao, dicas contextuais no modo aprendiz, dados estruturados para prontuario |
+| Filtrar por usuario | Adicionar `.eq("user_id", user.id)` na query (linha 142-148) |
+| Limitar a 20 | Reduzir `.limit(50)` para `.limit(20)` |
+| Iniciar com nenhum selecionado | `setSelectedUploadIds(new Set())` ao inves de selecionar todos |
+| Melhorar UI do indicador | Redesenhar o botao de contexto: icone mais claro, badge com contagem, cores distintas para 0 vs N selecionados |
+| Melhorar lista expandida | Adicionar barra de busca simples (filtro local por nome), limitar altura visivel, mostrar tamanho do texto extraido por arquivo |
+| Esconder indicador quando 0 uploads | Quando nao ha materiais e `showUploadButton` e false, nao mostrar o indicador vazio |
+| Welcome message condicional | So mostrar welcome com uploads quando usuario selecionar materiais manualmente |
 
-## Detalhes tecnicos
+### Detalhes visuais
 
-- **Checklist ABCDE**: Estado `abcdeChecklist: Record<string, boolean>`. Deteccao automatica via keywords na mensagem do aluno (ex: "via aerea" marca A, "ausculta" marca B). Exibido como 5 icones coloridos no status bar.
-- **Mini-Prontuario**: Estado `medicalRecord: { demographics, anamnesis[], physicalExam[], exams[], prescriptions[] }`. Populado automaticamente parseando `response_type` da API. Renderizado num painel lateral colapsavel (desktop) ou Sheet (mobile).
-- **Score por categoria**: A API ja retorna `evaluation` com categorias no `finish`. Adicionar campo `partial_scores` na resposta de `interact` para tracking incremental. Exibir 4 mini barras no status bar.
-- **Modo Aprendiz**: Novo campo `learner_mode: true` enviado na API. O prompt da edge function adiciona instrucao para incluir `teaching_tip` na resposta. Exibido como card colapsavel abaixo de cada mensagem da simulacao.
-- **Export PDF**: Reutilizar `src/lib/exportPdf.ts` existente, montando HTML com os dados do `finalEval` + mensagens do chat.
+- Indicador compacto: `📎 3 materiais selecionados` com badge colorido
+- Quando 0 selecionados: texto cinza `Nenhum material como contexto`
+- Lista com campo de filtro no topo para achar materiais rapidamente
+- Cada item mostra nome truncado + badge de categoria + indicador de tamanho (ex: "2.1k chars")
+- Botao "Selecionar todos / Nenhum" mais visivel
 
