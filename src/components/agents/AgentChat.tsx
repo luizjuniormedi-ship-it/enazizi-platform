@@ -622,6 +622,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     }
   }, [initialPrompt, user]);
 
+  const handleSaveMessage = async (idx: number, content: string) => {
     if (!onSaveMessage || savingMsgIdx !== null) return;
     setSavingMsgIdx(idx);
     try {
