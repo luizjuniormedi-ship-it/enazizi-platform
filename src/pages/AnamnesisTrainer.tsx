@@ -1194,7 +1194,20 @@ const AnamnesisTrainer = () => {
 
       {/* Chat Area */}
       <div className="flex-1 overflow-y-auto space-y-3 rounded-xl p-3 sm:p-4 mb-2 bg-gradient-to-b from-muted/10 to-muted/20">
-        {messages.map((msg, i) => (
+        {messages.map((msg, i) => {
+          // System message (category completion / milestone)
+          if (msg.role === "system") {
+            return (
+              <div key={i} className="flex justify-center animate-fade-in">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/20 text-success text-xs font-medium">
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  <span>{msg.content}</span>
+                </div>
+              </div>
+            );
+          }
+
+          return (
           <div key={i} className={`flex gap-2 ${msg.role === "doctor" ? "justify-end" : "justify-start"}`}>
             {msg.role === "patient" && (
               <div className="h-8 w-8 rounded-full bg-gradient-to-br from-accent/30 to-primary/20 flex items-center justify-center flex-shrink-0 mt-1">
@@ -1236,7 +1249,8 @@ const AnamnesisTrainer = () => {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
         {loading && (
           <div className="flex gap-2 justify-start">
             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-accent/30 to-primary/20 flex items-center justify-center flex-shrink-0">
