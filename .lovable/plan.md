@@ -1,48 +1,44 @@
 
 
-# Plano: Botoes de Filtro por Ciclo (Basico / Clinico / Internato)
+# Plano: Adicionar Angiologia/Cirurgia Vascular
 
-## O que sera feito
+Referências: Harrison's Principles of Internal Medicine, Tratado de Clínica Médica (USP), Manual de Angiologia e Cirurgia Vascular (SBACV).
 
-Adicionar botoes de filtro "Ciclo Basico", "Ciclo Clinico" e "Internato" como primeiro nivel de filtragem antes da lista de especialidades. Ao clicar num ciclo, apenas as especialidades daquele ciclo aparecem. Botao "Todos" mostra tudo.
+## Mudanças
 
-## Componente reutilizavel
+### 1. `src/constants/specialties.ts`
+Adicionar `"Angiologia"` no array do Ciclo Clínico (entre as especialidades em ordem alfabética).
 
-Criar `src/components/CycleFilter.tsx` — um componente que renderiza os botoes de ciclo e filtra as especialidades exibidas. Sera importado em todos os modulos que precisam.
-
-```text
-┌──────────────────────────────────────────────────┐
-│  [Todos] [Ciclo Básico] [Ciclo Clínico] [Internato]  │
-│                                                        │
-│  (especialidades filtradas aparecem abaixo)            │
-└──────────────────────────────────────────────────┘
+### 2. `src/lib/mapTopicToSpecialty.ts`
+Nova entrada de keywords:
+```
+[["angiolog", "vascular", "varizes", "trombose venosa", "insuficiência venosa", "aneurisma de aorta", 
+  "doença arterial periférica", "claudicação", "isquemia de membro", "pé diabético", "linfedema", 
+  "fístula arteriovenosa", "endarterectomia", "safena", "doppler vascular"], "Angiologia"]
 ```
 
-## Arquivos a alterar
+### 3. `src/lib/medicalTerms.ts`
+Adicionar ~15 termos: trombose venosa profunda (já existe), insuficiência venosa crônica, doença arterial periférica, aneurisma de aorta abdominal, claudicação intermitente, isquemia crítica de membro, úlcera venosa, varizes de membros inferiores, linfedema, fístula arteriovenosa, endarterectomia de carótida, índice tornozelo-braquial, doppler vascular.
 
-| Arquivo | Tipo de seletor atual | Mudanca |
-|---|---|---|
-| **Novo:** `src/components/CycleFilter.tsx` | — | Componente com botoes de ciclo + callback de filtro |
-| `src/pages/QuestionGenerator.tsx` | `<Select>` flat | Adicionar CycleFilter acima do Select, filtrar opcoes |
-| `src/pages/ExamSimulator.tsx` | Chips toggle (flat) | Adicionar CycleFilter acima dos chips |
-| `src/components/simulados/SimuladoSetup.tsx` | Chips agrupados por ciclo (headers) | Adicionar botoes de ciclo para mostrar/esconder grupos |
-| `src/pages/DiscursiveQuestions.tsx` | `<Select>` flat | Adicionar CycleFilter acima do Select |
-| `src/pages/ClinicalSimulation.tsx` | `<select>` nativo flat | Adicionar CycleFilter acima do select |
-| `src/pages/ProfessorDashboard.tsx` | Chips toggle (flat) + Select | Adicionar CycleFilter em ambos os seletores |
-| `src/components/professor/TeacherStudyAssignments.tsx` | `<Select>` flat | Adicionar CycleFilter acima do Select |
-| `src/components/dashboard/TopicEvolution.tsx` | `<Select>` flat | Adicionar CycleFilter acima do Select |
-| `src/pages/CronogramaInteligente.tsx` | Usa ALL_SPECIALTIES internamente | Adicionar CycleFilter onde aplicavel |
+### 4. `supabase/functions/daily-question-generator/index.ts`
+Adicionar em SPECIALTIES e TOPICS_BY_SPECIALTY:
+```
+"Angiologia": [
+  "Doença Arterial Periférica", "Aneurisma de Aorta", "Trombose Venosa Profunda",
+  "Insuficiência Venosa Crônica", "Varizes", "Isquemia Crítica de Membro",
+  "Pé Diabético Vascular", "Linfedema", "Claudicação Intermitente",
+  "Endarterectomia de Carótida", "Dissecção de Aorta", "Síndrome Compartimental"
+]
+```
 
-## Detalhes tecnicos
+### 5. `supabase/functions/bulk-generate-content/index.ts`
+Adicionar `"Angiologia"` no array SPECIALTIES e subtemas equivalentes no objeto TOPICS_BY_SPECIALTY.
 
-**CycleFilter component:**
-- Props: `activeCycle: string | null`, `onCycleChange: (cycle: string | null) => void`
-- Renderiza 4 botoes: "Todos" (null), e um por cada `SPECIALTY_CYCLES[].label`
-- Estilo: botoes compactos pill/chip, destaque no ativo
-- Exporta helper `getFilteredSpecialties(cycle: string | null): string[]` para uso nos modulos
+### 6. Edge functions de validação
+`generate-flashcards/index.ts` já lista "Angiologia" como área válida no prompt — sem mudança necessária.
 
-**Integracao nos seletores:**
-- **Select dropdown** (QuestionGenerator, Discursive, etc.): estado `cycleFilter`, filtra as opcoes do `<SelectContent>`
-- **Chips toggle** (ExamSimulator, ProfessorDashboard): filtra os chips visiveis, mantem selecao mesmo quando filtro muda
-- **SimuladoSetup**: ja tem agrupamento visual; os botoes de ciclo vao mostrar/esconder os grupos inteiros
+## Resumo
+- **6 arquivos** editados
+- **0 migrações** — campos são string livre
+- Angiologia aparecerá automaticamente em todos os seletores que usam `SPECIALTY_CYCLES` / `ALL_SPECIALTIES`
 
