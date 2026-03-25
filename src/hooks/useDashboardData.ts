@@ -85,6 +85,7 @@ async function fetchDashboardData(userId: string) {
   ]);
 
   const displayName = profileRes.data?.display_name || null;
+  const hasCompletedDiagnostic = profileRes.data?.has_completed_diagnostic || false;
 
   // Calculate accuracy
   const practiceAttempts = practiceRes.data || [];
