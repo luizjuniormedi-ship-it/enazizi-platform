@@ -983,19 +983,19 @@ const ChatGPT = () => {
           )}
 
           {/* Quick Topics — Horizontal scroll on mobile, grid on desktop */}
-          <div className="mb-4">
-            <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+          <div className="mb-3">
+            <h3 className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1.5">
               <Zap className="h-3.5 w-3.5 text-primary" /> Temas Populares
             </h3>
-            <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 sm:overflow-x-visible sm:pb-0 scrollbar-hide">
+            <div className="flex gap-1.5 overflow-x-auto pb-1.5 sm:grid sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 sm:overflow-x-visible sm:pb-0 scrollbar-hide">
               {QUICK_TOPICS.map((qt) => (
                 <button
                   key={qt.label}
                   onClick={() => handleStartStudy(qt.label)}
-                  className={`card-3d flex flex-col items-center gap-1 p-2.5 sm:p-3 rounded-xl bg-gradient-to-br ${qt.color} border backdrop-blur-sm hover:border-primary/30 transition-all group flex-shrink-0 w-20 sm:w-auto`}
+                  className={`card-3d flex items-center gap-1.5 p-1.5 sm:p-2.5 sm:flex-col rounded-lg sm:rounded-xl bg-gradient-to-br ${qt.color} border backdrop-blur-sm hover:border-primary/30 transition-all group flex-shrink-0`}
                 >
-                  <span className="text-lg sm:text-xl group-hover:scale-110 transition-transform drop-shadow-sm">{qt.emoji}</span>
-                  <span className="text-[9px] sm:text-xs font-medium text-foreground truncate w-full text-center">{qt.label}</span>
+                  <span className="text-sm sm:text-lg group-hover:scale-110 transition-transform drop-shadow-sm">{qt.emoji}</span>
+                  <span className="text-[9px] sm:text-xs font-medium text-foreground whitespace-nowrap sm:truncate sm:w-full sm:text-center">{qt.label}</span>
                 </button>
               ))}
             </div>
