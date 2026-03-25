@@ -80,6 +80,14 @@ ${weakTopicsPrompt}
 FASE ATUAL: BLOCOS TÉCNICOS (STATES 2-6)
 Tema: "${topic || "solicitado pelo aluno"}"
 
+⚡ FLASH REVIEW (AQUECIMENTO OBRIGATÓRIO):
+ANTES de iniciar o bloco técnico, SE houver temas fracos listados acima (weakTopics), apresentar 2-3 perguntas RÁPIDAS de aquecimento sobre esses temas:
+- Formato: "⚡ AQUECIMENTO RÁPIDO — Antes de começarmos, vamos revisar:"
+- Pergunta 1: sobre o tema fraco mais recente (resposta em 1 linha)
+- Pergunta 2: sobre outro tema fraco (resposta em 1 linha)
+- Após as respostas do aluno: corrigir brevemente (✅/❌ + 1 frase) e SEGUIR para o bloco técnico
+- Se NÃO houver temas fracos: pular o aquecimento e ir direto ao bloco
+
 ENSINE seguindo RIGOROSAMENTE o MARCADOR DE BLOCO.
 NUNCA faça perguntas nesta fase até o final do bloco (active recall).
 ENTREGUE o conteúdo em 4 MENSAGENS conforme a SEQUÊNCIA DE ENTREGA do prompt principal.
@@ -128,6 +136,15 @@ FORMATO SEQUENCIAL OBRIGATÓRIO — UMA PERGUNTA POR VEZ:
 - Ao final da 5ª pergunta: apresente RESUMO de acertos/erros + sugestão de próximo passo
 
 REGRA: NUNCA apresente múltiplas perguntas de uma vez. SEMPRE 1 por mensagem.
+
+VARIAÇÃO OBRIGATÓRIA DE FORMATOS (distribuir entre as 5 perguntas):
+📝 Formato 1 — PERGUNTA ABERTA: "Qual o mecanismo de...?"
+✅❌ Formato 2 — VERDADEIRO OU FALSO com justificativa: "V ou F: [afirmação]. Justifique."
+📋 Formato 3 — COMPLETE A LACUNA: "O tratamento de primeira linha para ___ é ___"
+🔗 Formato 4 — ASSOCIAÇÃO DE COLUNAS: "Associe: (1) Medicamento A → (a) Mecanismo X"
+❓ Formato 5 — PERGUNTA DIRETA: "Cite 3 diagnósticos diferenciais de..."
+
+REGRA: usar pelo menos 3 formatos DIFERENTES nas 5 perguntas. NUNCA 5 perguntas do mesmo formato.
 
 REGRA DE REFORÇO POR ERRO:
 - Se o aluno errar uma pergunta, adicione uma pergunta EXTRA sobre o mesmo conceito com ângulo diferente
@@ -224,7 +241,43 @@ ${JSON.stringify(performanceData || {}, null, 2)}
 
 Correção: diagnóstico 0-2, conduta 0-2, justificativa 0-1. Total X/5.
 Depois: resposta esperada, explicação, raciocínio, erros clássicos, reforço.
-Mostrar desempenho atualizado + temas fracos + próximo passo + mensagem motivacional.`;
+Mostrar desempenho atualizado + temas fracos + próximo passo + mensagem motivacional.
+
+🗺️ RESUMO VISUAL DE CONSOLIDAÇÃO (OBRIGATÓRIO):
+Ao final da correção, gerar um FLUXOGRAMA TEXTUAL do tema estudado usando ASCII:
+
+Formato:
+🗺️ MAPA DE CONSOLIDAÇÃO — [Tema]
+
+┌─────────────────┐
+│  GATILHO/CAUSA   │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ FISIOPATOLOGIA   │
+│ (mecanismo-chave)│
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ QUADRO CLÍNICO   │
+│ (achados-chave)  │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│   DIAGNÓSTICO    │
+│ (exame-chave)    │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│    CONDUTA       │
+│ (1ª linha)       │
+└─────────────────┘
+
+REGRAS do mapa:
+- Preencher cada caixa com dados ESPECÍFICOS do tema (não genéricos)
+- Incluir bifurcações quando houver decisão clínica (ex: "Se X → A | Se Y → B")
+- Máximo 8 caixas para manter legibilidade
+- O mapa deve servir como RESUMO VISUAL para revisão rápida`;
 
     default: {
       const levelPrompt = getLevelPrompt(performanceData);
