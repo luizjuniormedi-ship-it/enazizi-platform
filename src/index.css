@@ -160,11 +160,97 @@
   .tutor-pulse {
     animation: tutor-pulse-anim 2s ease-in-out infinite;
   }
+
+  .float-gentle {
+    animation: float-gentle-anim 3s ease-in-out infinite;
+  }
+
+  .shimmer {
+    background: linear-gradient(90deg, transparent 0%, hsl(var(--primary) / 0.08) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer-anim 2s ease-in-out infinite;
+  }
+
+  .card-3d {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transform-style: preserve-3d;
+    perspective: 800px;
+  }
+  .card-3d:hover {
+    transform: translateY(-4px) rotateX(2deg) rotateY(-2deg);
+    box-shadow: 0 12px 40px hsl(var(--primary) / 0.15);
+  }
+
+  .gradient-shift {
+    background-size: 200% 200%;
+    animation: gradient-shift-anim 6s ease infinite;
+  }
+
+  .pattern-dots {
+    background-image: radial-gradient(circle, hsl(var(--border) / 0.3) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  .bot-breathing {
+    animation: bot-breathing-anim 3s ease-in-out infinite;
+  }
+
+  .gradient-border-subtle::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.4), hsl(var(--accent) / 0.4));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .timeline-connector {
+    position: relative;
+  }
+  .timeline-connector::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    width: 100%;
+    height: 2px;
+    background: hsl(var(--border));
+    transform: translateY(-50%);
+  }
+  .timeline-connector.completed::after {
+    background: hsl(var(--primary));
+  }
+}
+
+@keyframes float-gentle-anim {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes shimmer-anim {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes gradient-shift-anim {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes bot-breathing-anim {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
 }
 
 @keyframes tutor-pulse-anim {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
+}
 
   .gradient-border {
     position: relative;
