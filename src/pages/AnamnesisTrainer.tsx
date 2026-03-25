@@ -392,7 +392,57 @@ const AnamnesisTrainer = () => {
       if (data.categories_touched?.length) {
         setCoveredCategories(prev => {
           const next = new Set(prev);
-          data.categories_touched.forEach((c: string) => next.add(c));
+          const newlyAdded: string[] = [];
+          data.categories_touched.forEach((c: string) => {
+            if (!prev.has(c)) newlyAdded.push(c);
+            next.add(c);
+          });
+
+          // Insert system messages for newly completed categories
+          if (newlyAdded.length > 0) {
+            addRecentlyCompleted(newlyAdded);
+            const systemMessages: ChatMessage[] = newlyAdded.map(catKey => {
+              const catLabel = CATEGORIES.find(cat => cat.key === catKey)?.label || catKey;
+              return {
+                role: "system" as const,
+                content: `✅ ${catLabel} concluída!`,
+                timestamp: Date.now(),
+              };
+            });
+
+            // Check milestones
+            const totalCats = CATEGORIES.length;
+            const newSize = next.size;
+            const prevSize = prev.size;
+            const halfMark = Math.ceil(totalCats / 2);
+            const threeQuarterMark = Math.ceil(totalCats * 0.75);
+
+            if (prevSize < halfMark && newSize >= halfMark) {
+              systemMessages.push({
+                role: "system",
+                content: "🏅 Metade da anamnese coberta! Continue assim!",
+                timestamp: Date.now() + 1,
+              });
+            }
+            if (prevSize < threeQuarterMark && newSize >= threeQuarterMark) {
+              const remaining = totalCats - newSize;
+              systemMessages.push({
+                role: "system",
+                content: `🔥 Quase lá! ${remaining > 0 ? `Faltam ${remaining} categorias` : "Todas cobertas!"}`,
+                timestamp: Date.now() + 1,
+              });
+            }
+            if (newSize >= totalCats && prevSize < totalCats) {
+              systemMessages.push({
+                role: "system",
+                content: "🎉 Anamnese completa! Todas as categorias foram abordadas. Hora do diagnóstico!",
+                timestamp: Date.now() + 2,
+              });
+            }
+
+            setMessages(prevMsgs => [...prevMsgs, ...systemMessages]);
+          }
+
           return next;
         });
       }
