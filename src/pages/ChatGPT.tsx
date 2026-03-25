@@ -111,7 +111,7 @@ const ChatGPT = () => {
   const [changingTopic, setChangingTopic] = useState(false);
   const [newTopic, setNewTopic] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [metricsCollapsed, setMetricsCollapsed] = useState(false);
+  const [metricsCollapsed, setMetricsCollapsed] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -927,28 +927,20 @@ const ChatGPT = () => {
       {!studyStarted && (
         <>
           {/* Hero + Input — Immersive */}
-          <div className="relative overflow-hidden rounded-2xl border border-primary/10 p-5 sm:p-8 mb-4 text-center bg-gradient-to-br from-primary/5 via-card to-accent/5 gradient-shift">
+          <div className="relative overflow-hidden rounded-2xl border border-primary/10 p-3 sm:p-8 mb-3 sm:mb-4 text-center bg-gradient-to-br from-primary/5 via-card to-accent/5 gradient-shift">
             <div className="absolute inset-0 pattern-dots opacity-30 pointer-events-none" />
-            <div className="relative z-10 space-y-4">
-              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-3xl bg-gradient-to-br from-primary/25 to-accent/25 flex items-center justify-center mx-auto tutor-glow float-gentle border border-primary/15">
-                <GraduationCap className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
+            <div className="relative z-10 space-y-2 sm:space-y-4">
+              <div className="hidden sm:flex h-20 w-20 rounded-3xl bg-gradient-to-br from-primary/25 to-accent/25 items-center justify-center mx-auto tutor-glow float-gentle border border-primary/15">
+                <GraduationCap className="h-10 w-10 text-primary" />
               </div>
               <div>
-                <h2 className="text-lg sm:text-2xl font-bold">
+                <h2 className="text-base sm:text-2xl font-bold">
                   Olá, <span className="gradient-text">{displayName}</span>! 👋
                 </h2>
-                <p className="text-sm sm:text-base text-muted-foreground mt-1">
-                  Pronto para evoluir? Escolha um tema para começar.
+                <p className="text-xs sm:text-base text-muted-foreground mt-0.5 sm:mt-1">
+                  Escolha um tema para começar.
                 </p>
               </div>
-              {performance.historico_estudo.length > 0 && (
-                <div className="flex items-center justify-center gap-2 text-xs">
-                  <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-warning/10 border border-warning/20">
-                    <Flame className="h-3.5 w-3.5 text-warning" />
-                    <span className="text-warning font-semibold">{performance.historico_estudo.length} sessões completadas</span>
-                  </div>
-                </div>
-              )}
               <div className="flex gap-2 max-w-lg mx-auto">
                 <div className="relative flex-1">
                   <Input
@@ -956,10 +948,10 @@ const ChatGPT = () => {
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleStartStudy()}
-                    className="bg-background/60 backdrop-blur-sm border-border/60 text-sm sm:text-base h-11 sm:h-12 rounded-xl pl-4 pr-4"
+                    className="bg-background/60 backdrop-blur-sm border-border/60 text-sm h-10 sm:h-12 rounded-xl pl-4 pr-4"
                   />
                 </div>
-                <Button onClick={() => handleStartStudy()} className="glow gap-2 px-4 sm:px-8 flex-shrink-0 text-sm sm:text-base h-11 sm:h-12 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 font-semibold" disabled={!topic.trim()}>
+                <Button onClick={() => handleStartStudy()} className="glow gap-2 px-4 sm:px-8 flex-shrink-0 text-sm h-10 sm:h-12 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 font-semibold" disabled={!topic.trim()}>
                   <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span className="hidden sm:inline">Estudar</span>
                   <ArrowRight className="h-4 w-4 sm:hidden" />
@@ -991,19 +983,19 @@ const ChatGPT = () => {
           )}
 
           {/* Quick Topics — Horizontal scroll on mobile, grid on desktop */}
-          <div className="mb-4">
-            <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+          <div className="mb-3">
+            <h3 className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1.5">
               <Zap className="h-3.5 w-3.5 text-primary" /> Temas Populares
             </h3>
-            <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 sm:overflow-x-visible sm:pb-0 scrollbar-hide">
+            <div className="flex gap-1.5 overflow-x-auto pb-1.5 sm:grid sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 sm:overflow-x-visible sm:pb-0 scrollbar-hide">
               {QUICK_TOPICS.map((qt) => (
                 <button
                   key={qt.label}
                   onClick={() => handleStartStudy(qt.label)}
-                  className={`card-3d flex flex-col items-center gap-1 p-2.5 sm:p-3 rounded-xl bg-gradient-to-br ${qt.color} border backdrop-blur-sm hover:border-primary/30 transition-all group flex-shrink-0 w-20 sm:w-auto`}
+                  className={`card-3d flex items-center gap-1.5 p-1.5 sm:p-2.5 sm:flex-col rounded-lg sm:rounded-xl bg-gradient-to-br ${qt.color} border backdrop-blur-sm hover:border-primary/30 transition-all group flex-shrink-0`}
                 >
-                  <span className="text-lg sm:text-xl group-hover:scale-110 transition-transform drop-shadow-sm">{qt.emoji}</span>
-                  <span className="text-[9px] sm:text-xs font-medium text-foreground truncate w-full text-center">{qt.label}</span>
+                  <span className="text-sm sm:text-lg group-hover:scale-110 transition-transform drop-shadow-sm">{qt.emoji}</span>
+                  <span className="text-[9px] sm:text-xs font-medium text-foreground whitespace-nowrap sm:truncate sm:w-full sm:text-center">{qt.label}</span>
                 </button>
               ))}
             </div>
