@@ -1181,6 +1181,7 @@ const ChatGPT = () => {
                 </div>
               );
             })()}
+          </div>
 
           {/* Chat Messages — Premium */}
           <div ref={scrollRef} className="flex-1 rounded-xl border border-border/50 bg-card/50 p-2 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 mb-2 sm:mb-3 min-h-0 pattern-dots">
