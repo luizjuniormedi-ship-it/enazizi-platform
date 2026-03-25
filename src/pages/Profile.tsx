@@ -119,6 +119,10 @@ const Profile = () => {
         updateData.periodo = periodo ? parseInt(periodo) : null;
         updateData.faculdade = faculdade || null;
       }
+      if (userType === "medico") {
+        updateData.target_specialty = targetSpecialty || null;
+        updateData.faculdade = faculdade || null;
+      }
       const { error } = await supabase
         .from("profiles")
         .update(updateData)
