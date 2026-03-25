@@ -241,7 +241,43 @@ ${JSON.stringify(performanceData || {}, null, 2)}
 
 Correção: diagnóstico 0-2, conduta 0-2, justificativa 0-1. Total X/5.
 Depois: resposta esperada, explicação, raciocínio, erros clássicos, reforço.
-Mostrar desempenho atualizado + temas fracos + próximo passo + mensagem motivacional.`;
+Mostrar desempenho atualizado + temas fracos + próximo passo + mensagem motivacional.
+
+🗺️ RESUMO VISUAL DE CONSOLIDAÇÃO (OBRIGATÓRIO):
+Ao final da correção, gerar um FLUXOGRAMA TEXTUAL do tema estudado usando ASCII:
+
+Formato:
+🗺️ MAPA DE CONSOLIDAÇÃO — [Tema]
+
+┌─────────────────┐
+│  GATILHO/CAUSA   │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ FISIOPATOLOGIA   │
+│ (mecanismo-chave)│
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ QUADRO CLÍNICO   │
+│ (achados-chave)  │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│   DIAGNÓSTICO    │
+│ (exame-chave)    │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│    CONDUTA       │
+│ (1ª linha)       │
+└─────────────────┘
+
+REGRAS do mapa:
+- Preencher cada caixa com dados ESPECÍFICOS do tema (não genéricos)
+- Incluir bifurcações quando houver decisão clínica (ex: "Se X → A | Se Y → B")
+- Máximo 8 caixas para manter legibilidade
+- O mapa deve servir como RESUMO VISUAL para revisão rápida`;
 
     default: {
       const levelPrompt = getLevelPrompt(performanceData);
