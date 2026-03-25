@@ -16,7 +16,7 @@ const SPECIALTIES = [
   "Infectologia", "Hematologia", "Reumatologia", "Dermatologia",
   "Ortopedia", "Urologia", "Psiquiatria", "Oftalmologia",
   "Otorrinolaringologia", "Emergência", "Semiologia", "Anatomia", "Farmacologia",
-  "Oncologia", "Fisiologia", "Bioquímica",
+  "Oncologia", "Fisiologia", "Bioquímica", "Angiologia",
   "Histologia", "Embriologia", "Microbiologia", "Imunologia",
   "Parasitologia", "Genética Médica", "Patologia",
 ];
@@ -48,6 +48,7 @@ const TOPICS_BY_SPECIALTY: Record<string, string[]> = {
   "Oncologia": ["Câncer de Mama", "Câncer de Pulmão", "Câncer Colorretal", "Estadiamento TNM", "Síndromes Paraneoplásicas", "Marcadores Tumorais", "Quimioterapia", "Imunoterapia", "Cuidados Paliativos", "Emergências Oncológicas"],
   "Fisiologia": ["Fisiologia Cardiovascular", "Fisiologia Respiratória", "Fisiologia Renal", "Fisiologia do Sistema Nervoso", "Fisiologia Endócrina", "Fisiologia Gastrointestinal", "Fisiologia Muscular", "Neurofisiologia", "Potencial de Ação e Transmissão Sináptica", "Equilíbrio Ácido-Base", "Regulação da Pressão Arterial", "Hemodinâmica", "Termorregulação", "Fisiologia do Exercício"],
   "Bioquímica": ["Metabolismo de Carboidratos", "Metabolismo de Lipídios", "Metabolismo de Aminoácidos", "Ciclo de Krebs", "Cadeia Transportadora de Elétrons", "Glicólise e Gliconeogênese", "Beta-Oxidação", "Síntese de Ácidos Graxos", "Biologia Molecular do DNA e RNA", "Enzimologia Clínica", "Vitaminas e Coenzimas", "Bioenergética", "Erros Inatos do Metabolismo", "Integração Metabólica"],
+  "Angiologia": ["Doença Arterial Periférica", "Aneurisma de Aorta", "Trombose Venosa Profunda", "Insuficiência Venosa Crônica", "Varizes", "Isquemia Crítica de Membro", "Pé Diabético Vascular", "Linfedema", "Claudicação Intermitente", "Endarterectomia de Carótida", "Dissecção de Aorta", "Síndrome Compartimental"],
   "Histologia": ["Tecido Epitelial", "Tecido Conjuntivo", "Tecido Muscular", "Tecido Nervoso", "Sangue e Hematopoese", "Sistema Tegumentar", "Histologia do Trato Gastrointestinal", "Histologia do Sistema Respiratório", "Histologia Renal", "Histologia do Sistema Reprodutor"],
   "Embriologia": ["Gametogênese", "Fecundação e Implantação", "Gastrulação", "Neurulação", "Organogênese", "Desenvolvimento Cardiovascular", "Desenvolvimento do Sistema Nervoso", "Placenta e Membranas Fetais", "Teratogênese", "Malformações Congênitas"],
   "Microbiologia": ["Bacteriologia Geral", "Cocos Gram-Positivos", "Bacilos Gram-Negativos", "Micobactérias", "Virologia Geral", "Vírus Respiratórios", "Retrovírus e HIV", "Micologia Médica", "Resistência Antimicrobiana", "Microbiota e Infecções Hospitalares"],

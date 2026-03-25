@@ -358,6 +358,21 @@ export const MEDICAL_TERMS: string[] = [
   "sequenciamento genético",
   "epigenética",
 
+  // Angiologia
+  "insuficiência venosa crônica",
+  "doença arterial periférica",
+  "aneurisma de aorta abdominal",
+  "claudicação intermitente",
+  "isquemia crítica de membro",
+  "úlcera venosa",
+  "varizes de membros inferiores",
+  "linfedema",
+  "fístula arteriovenosa",
+  "endarterectomia de carótida",
+  "índice tornozelo-braquial",
+  "doppler vascular",
+  "pé diabético vascular",
+
   // Patologia
   "necrose coagulativa",
   "necrose liquefativa",
