@@ -1,0 +1,1 @@
+UPDATE profiles SET faculdade = 'UNIG – Universidade Iguaçu' WHERE faculdade = 'UNIG';
