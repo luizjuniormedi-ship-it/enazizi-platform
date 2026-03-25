@@ -28,6 +28,13 @@ export function mapTopicToSpecialty(topic: string): string | null {
     [["oncolog", "câncer", "tumor", "neoplasia", "metástase", "quimioterapia", "radioterapia", "imunoterapia", "estadiamento", "tnm", "carcinoma", "sarcoma", "rastreamento oncológico", "cuidados paliativos", "marcador tumoral"], "Oncologia"],
     [["fisiologi", "guyton", "ganong", "costanzo", "potencial de ação", "hemodinâmica", "termorregulação", "débito cardíaco", "volume sistólico", "filtração glomerular", "equilíbrio ácido-base", "pressão oncótica", "difusão alveolar", "contração muscular", "sinapse"], "Fisiologia"],
     [["bioquímic", "lehninger", "lippincott", "marks", "metabolismo", "glicólise", "krebs", "enzima", "fosforilação oxidativa", "beta-oxidação", "gliconeogênese", "cetogênese", "ciclo da ureia", "ácido graxo", "coenzima", "vitamina b", "bioenergética", "erro inato"], "Bioquímica"],
+    [["histolog", "tecido", "lâmina", "corte histológico", "epitélio", "conjuntivo", "muscular", "nervoso", "coloração", "hematoxilina", "eosina"], "Histologia"],
+    [["embriolog", "embrião", "organogênese", "gastrulação", "neurulação", "blastocisto", "somito", "tubo neural", "placenta", "teratogênese", "malformação congênita"], "Embriologia"],
+    [["microbiolog", "bactéria", "fungo", "vírus", "gram positivo", "gram negativo", "cultura", "antibiograma", "biofilme", "virulência", "bacteremia"], "Microbiologia"],
+    [["imunolog", "anticorpo", "linfócito", "citocina", "complemento", "imunoglobulina", "hipersensibilidade", "autoimunidade", "imunodeficiência", "mhc", "hla", "resposta imune"], "Imunologia"],
+    [["parasitolog", "helminto", "protozoário", "vetor", "ciclo biológico", "esquistossomose", "giárdia", "amebíase", "toxoplasmose", "leishmaniose", "malária", "ancilostomíase"], "Parasitologia"],
+    [["genétic", "cromossomo", "mutação", "cariótipo", "herança", "autossômico", "ligado ao x", "pcr", "sequenciamento", "epigenética", "aconselhamento genético", "trissomia", "síndrome de down", "síndrome de turner"], "Genética Médica"],
+    [["patologi", "necrose", "inflamação aguda", "inflamação crônica", "displasia", "metaplasia", "hiperplasia", "atrofia", "apoptose", "granuloma", "amiloidose", "trombo", "êmbolo", "infarto"], "Patologia"],
   ];
   for (const [keywords, specialty] of map) {
     if (keywords.some((k) => t.includes(k))) return specialty;

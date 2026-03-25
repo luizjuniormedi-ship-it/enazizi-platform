@@ -134,24 +134,29 @@ const SimuladoSetup = ({ onStart, onResumeSession, onRetryErrors, pendingSession
             </div>
           </div>
 
-          {/* Topic selection */}
+          {/* Topic selection grouped by cycle */}
           <div>
             <label className="text-sm font-semibold mb-3 block">Selecione os assuntos</label>
-            <div className="flex flex-wrap gap-2">
-              {ALL_TOPICS.map(topic => (
-                <button
-                  key={topic}
-                  onClick={() => toggleTopic(topic)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                    selectedTopics.includes(topic)
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/30"
-                  }`}
-                >
-                  {topic}
-                </button>
-              ))}
-            </div>
+            {SPECIALTY_CYCLES.map(cycle => (
+              <div key={cycle.label} className="mb-4">
+                <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">{cycle.label}</p>
+                <div className="flex flex-wrap gap-2">
+                  {cycle.specialties.map(topic => (
+                    <button
+                      key={topic}
+                      onClick={() => toggleTopic(topic)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                        selectedTopics.includes(topic)
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/30"
+                      }`}
+                    >
+                      {topic}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
             <div className="flex gap-2 mt-2">
               <Button variant="ghost" size="sm" className="text-xs" onClick={() => setSelectedTopics([...ALL_TOPICS])}>
                 Selecionar todos
