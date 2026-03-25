@@ -11,7 +11,8 @@ import {
   MessageCircle, Send, Loader2, Clock, Award, RotateCcw,
   CheckCircle, XCircle, Star, Trophy, Target, ClipboardCheck,
   User, Heart, Pill, AlertTriangle, Users as UsersIcon, Activity,
-  Stethoscope, Baby, Brain, ListChecks, FileText, ChevronDown, ChevronUp, Sparkles, History
+  Stethoscope, Baby, Brain, ListChecks, FileText, ChevronDown, ChevronUp, Sparkles, History,
+  Eye, Lightbulb, BookOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -66,8 +67,8 @@ const DIAGNOSIS_CATEGORIES = [
   { key: "conduct", label: "Conduta", icon: FileText },
 ];
 
-// Contextual quick-question suggestions
-const SUGGESTION_MAP: Record<string, string[]> = {
+// Contextual quick-question suggestions — ADAPTIVE by difficulty
+const SUGGESTION_MAP_BASICO: Record<string, string[]> = {
   _start: ["Qual o seu nome completo?", "O que o trouxe aqui hoje?", "Há quanto tempo sente isso?"],
   identification: ["Qual sua idade?", "O que o trouxe aqui?", "Há quanto tempo está assim?"],
   chief_complaint: ["Quando começou?", "Como é a dor?", "O que piora ou melhora?"],
@@ -79,7 +80,52 @@ const SUGGESTION_MAP: Record<string, string[]> = {
   social_history: ["Tem sentido febre?", "Perdeu peso recentemente?", "Algum sintoma urinário?"],
 };
 
-type Phase = "lobby" | "active" | "diagnosis" | "finishing" | "result";
+const SUGGESTION_MAP_INTERMEDIARIO: Record<string, string[]> = {
+  _start: ["Identificação do paciente", "Investigue a queixa principal", "Caracterize a cronologia"],
+  identification: ["Explore a queixa principal", "Pergunte sobre início dos sintomas"],
+  chief_complaint: ["Aprofunde a HDA", "Caractere LIQCTSDA", "Fatores de melhora/piora"],
+  hda: ["Investigue antecedentes patológicos", "Pergunte sobre comorbidades"],
+  past_medical: ["Investigue medicações em uso", "Explore alergias"],
+  medications: ["Investigue alergias", "Pergunte reações adversas prévias"],
+  allergies: ["Explore história familiar", "Doenças hereditárias relevantes"],
+  family_history: ["Investigue hábitos de vida", "Explore fatores de risco"],
+  social_history: ["Faça revisão de sistemas", "Investigue sintomas associados"],
+};
+
+const SUGGESTION_MAP_AVANCADO: Record<string, string[]> = {
+  _start: ["💡 Inicie pela identificação", "💡 Explore a queixa"],
+  identification: ["💡 Siga para a QP"],
+  chief_complaint: ["💡 Aprofunde com HDA"],
+  hda: ["💡 Antecedentes relevantes?"],
+  past_medical: ["💡 Medicações e alergias"],
+  medications: ["💡 Alergias?"],
+  allergies: ["💡 Hist. familiar"],
+  family_history: ["💡 Hábitos de vida"],
+  social_history: ["💡 Revisão de sistemas"],
+};
+
+// Mini-caso gatilho templates per specialty
+const MINI_CASES: Record<string, string[]> = {
+  "Clínica Médica": ["Paciente 58a, dispneia aos esforços há 3 semanas", "Homem 42a, cefaleia intensa há 2 dias com rigidez de nuca"],
+  "Cardiologia": ["Mulher 65a, dor torácica em aperto há 4 horas irradiando para MSE", "Homem 50a, palpitações e síncope ao esforço"],
+  "Pneumologia": ["Paciente 30a, tosse produtiva há 3 semanas com hemoptise", "Idoso 70a, dispneia progressiva e chiado no peito"],
+  "Gastroenterologia": ["Mulher 35a, dor epigástrica pós-prandial há 2 meses", "Homem 55a, icterícia progressiva e perda ponderal"],
+  "Neurologia": ["Paciente 28a, cefaleia pulsátil unilateral com aura visual", "Mulher 60a, fraqueza súbita em hemicorpo direito"],
+  "Pediatria": ["Lactente 8m, febre há 3 dias e irritabilidade", "Criança 5a, dor abdominal recorrente e vômitos"],
+  "Cirurgia": ["Homem 40a, dor em FID há 12h com náusea e febre", "Mulher 65a, massa palpável em mama direita"],
+  "Ginecologia e Obstetrícia": ["Gestante 32s, pressão alta e edema de membros inferiores", "Mulher 45a, sangramento uterino anormal há 2 meses"],
+  "Emergência": ["Paciente 25a, trauma torácico em acidente automobilístico", "Homem 55a, rebaixamento de consciência súbito"],
+};
+
+// Coaching feedback based on quality
+const COACHING_TIPS: Record<number, { text: string; color: string }> = {
+  0: { text: "💡 Tente ser mais específico na sua pergunta — use termos semiológicos", color: "text-red-400" },
+  1: { text: "📝 Pergunta razoável — tente explorar mais detalhes (início, duração, fatores)", color: "text-yellow-400" },
+  2: { text: "👍 Boa pergunta! Continue investigando essa linha", color: "text-blue-400" },
+  3: { text: "⭐ Excelente técnica semiológica! Pergunta precisa e relevante", color: "text-green-400" },
+};
+
+type Phase = "lobby" | "active" | "diagnosis" | "finishing" | "result" | "review";
 
 interface ChatMessage {
   role: "doctor" | "patient";
@@ -249,13 +295,23 @@ const AnamnesisTrainer = () => {
     return "bg-red-500";
   };
 
-  // Contextual suggestions based on covered categories
+  // Contextual suggestions based on covered categories AND difficulty level
   const getSuggestions = (): string[] => {
-    if (coveredCategories.size === 0) return SUGGESTION_MAP._start;
+    const map = difficulty === "básico" ? SUGGESTION_MAP_BASICO
+      : difficulty === "avançado" ? SUGGESTION_MAP_AVANCADO
+      : SUGGESTION_MAP_INTERMEDIARIO;
+    if (coveredCategories.size === 0) return map._start;
     const catKeys = Array.from(coveredCategories);
     const lastCovered = catKeys[catKeys.length - 1];
-    return SUGGESTION_MAP[lastCovered] || SUGGESTION_MAP._start;
+    return map[lastCovered] || map._start;
   };
+
+  // Get mini-case for lobby
+  const getMiniCase = (): string => {
+    const cases = MINI_CASES[specialty] || MINI_CASES["Clínica Médica"];
+    return cases[Math.floor(Math.random() * cases.length)];
+  };
+  const [miniCase] = useState(() => getMiniCase());
 
   const callEdgeFunction = async (body: any) => {
     const { data, error } = await supabase.functions.invoke("anamnesis-trainer", { body });
@@ -530,14 +586,28 @@ const AnamnesisTrainer = () => {
               </div>
             </div>
 
+            {/* Mini-caso gatilho */}
+            <div className="rounded-xl border border-accent/20 bg-gradient-to-r from-accent/5 to-primary/5 p-4">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
+                  <Lightbulb className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-accent mb-1">🏥 Cenário Clínico</p>
+                  <p className="text-sm text-foreground">{miniCase}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Você receberá um caso similar ao iniciar a consulta</p>
+                </div>
+              </div>
+            </div>
+
             <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-2">
               <p className="font-medium">📋 Como funciona:</p>
               <ul className="space-y-1 text-muted-foreground">
                 <li>• A IA simula um paciente real — só responde ao que você perguntar</li>
                 <li>• Conduza a anamnese completa: identificação, QP, HDA, antecedentes...</li>
-                <li>• O checklist mostra quais categorias você já cobriu</li>
-                <li>• Ao finalizar, proponha hipótese diagnóstica e conduta</li>
-                <li>• Receba avaliação detalhada com radar de desempenho</li>
+                <li>• Receba coaching em tempo real sobre a qualidade das suas perguntas</li>
+                <li>• Sugestões adaptativas ao seu nível de dificuldade</li>
+                <li>• Após avaliação, revise a conversa com anotações do professor IA</li>
               </ul>
             </div>
 
@@ -659,6 +729,9 @@ const AnamnesisTrainer = () => {
             <Trophy className="h-6 w-6 text-yellow-400" /> Resultado da Anamnese
           </h1>
           <div className="flex gap-2">
+            <Button onClick={() => setPhase("review")} variant="outline" size="sm">
+              <Eye className="h-4 w-4 mr-1" /> Revisar Conversa
+            </Button>
             <Button onClick={handleExportPdf} variant="outline" size="sm">
               <FileText className="h-4 w-4 mr-1" /> PDF
             </Button>
@@ -853,7 +926,102 @@ const AnamnesisTrainer = () => {
     );
   }
 
-  // === ACTIVE ===
+  // === REVIEW MODE ===
+  if (phase === "review" && evalData) {
+    return (
+      <div className="space-y-4 animate-fade-in max-w-3xl mx-auto">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-primary" /> Revisão com Anotações
+          </h1>
+          <div className="flex gap-2">
+            <Button onClick={() => setPhase("result")} variant="outline" size="sm">
+              <RotateCcw className="h-4 w-4 mr-1" /> Voltar ao Resultado
+            </Button>
+          </div>
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          Revise cada pergunta e resposta com feedback do professor IA sobre técnica semiológica.
+        </p>
+
+        <div className="space-y-3">
+          {messages.map((msg, i) => {
+            const qualityLevel = msg.quality !== undefined ? Math.min(3, Math.max(0, Math.round(msg.quality))) : null;
+            const coaching = qualityLevel !== null ? COACHING_TIPS[qualityLevel] : null;
+            const touchedCats = msg.categories || [];
+            return (
+              <div key={i} className={`rounded-xl border p-4 space-y-2 ${
+                msg.role === "doctor"
+                  ? "border-primary/20 bg-primary/5"
+                  : "border-border bg-card"
+              }`}>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {msg.role === "doctor" ? (
+                    <><Stethoscope className="h-3.5 w-3.5 text-primary" /> <span className="font-medium text-primary">Você (Médico)</span></>
+                  ) : (
+                    <><User className="h-3.5 w-3.5 text-accent" /> <span className="font-medium text-accent">Paciente</span></>
+                  )}
+                  <span className="ml-auto">{new Date(msg.timestamp).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                </div>
+                <p className="text-sm">{msg.content}</p>
+
+                {/* Annotations for patient messages */}
+                {msg.role === "patient" && (
+                  <div className="border-t pt-2 mt-2 space-y-1.5">
+                    {touchedCats.length > 0 && (
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <span className="text-[10px] text-muted-foreground">Categorias tocadas:</span>
+                        {touchedCats.map((c, j) => (
+                          <Badge key={j} variant="secondary" className="text-[10px] py-0">
+                            {CATEGORIES.find(cat => cat.key === c)?.label || c}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    {coaching && (
+                      <div className="flex items-start gap-1.5">
+                        <Lightbulb className="h-3.5 w-3.5 text-accent flex-shrink-0 mt-0.5" />
+                        <p className={`text-[11px] ${coaching.color}`}>{coaching.text}</p>
+                      </div>
+                    )}
+                    {qualityLevel !== null && <QualityStars quality={msg.quality} />}
+                  </div>
+                )}
+
+                {/* Annotation for doctor: what category they were targeting */}
+                {msg.role === "doctor" && i + 1 < messages.length && messages[i + 1].categories && messages[i + 1].categories!.length > 0 && (
+                  <div className="border-t pt-2 mt-2">
+                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3 text-green-400" />
+                      Esta pergunta cobriu: {messages[i + 1].categories!.map(c => CATEGORIES.find(cat => cat.key === c)?.label || c).join(", ")}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Summary at bottom */}
+        <Card className="glass-card border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="text-2xl font-bold text-primary">{evalData.final_score}/100</div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Categorias cobertas: {coveredCategories.size}/{CATEGORIES.length}</p>
+                <p className="text-xs text-muted-foreground">Tempo total: {Math.round(elapsed / 60)} minutos</p>
+              </div>
+              <Button onClick={handleReset} size="sm" className="glow">
+                <RotateCcw className="h-4 w-4 mr-1" /> Novo Caso
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const progressPercent = (coveredCategories.size / CATEGORIES.length) * 100;
   const suggestions = getSuggestions();
   const timerMins = elapsed / 60;
@@ -983,7 +1151,17 @@ const AnamnesisTrainer = () => {
                   </div>
                 )}
               </div>
-              {msg.role === "patient" && <QualityStars quality={msg.quality} />}
+              {/* Quality stars + coaching feedback */}
+              {msg.role === "patient" && (
+                <div className="space-y-0.5">
+                  <QualityStars quality={msg.quality} />
+                  {msg.quality !== undefined && msg.quality !== null && COACHING_TIPS[Math.min(3, Math.max(0, Math.round(msg.quality)))] && (
+                    <p className={`text-[10px] ${COACHING_TIPS[Math.min(3, Math.max(0, Math.round(msg.quality)))].color} animate-fade-in`}>
+                      {COACHING_TIPS[Math.min(3, Math.max(0, Math.round(msg.quality)))].text}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
             {msg.role === "doctor" && (
               <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
