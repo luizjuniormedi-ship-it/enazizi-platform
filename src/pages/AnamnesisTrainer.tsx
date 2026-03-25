@@ -729,6 +729,9 @@ const AnamnesisTrainer = () => {
             <Trophy className="h-6 w-6 text-yellow-400" /> Resultado da Anamnese
           </h1>
           <div className="flex gap-2">
+            <Button onClick={() => setPhase("review")} variant="outline" size="sm">
+              <Eye className="h-4 w-4 mr-1" /> Revisar Conversa
+            </Button>
             <Button onClick={handleExportPdf} variant="outline" size="sm">
               <FileText className="h-4 w-4 mr-1" /> PDF
             </Button>
