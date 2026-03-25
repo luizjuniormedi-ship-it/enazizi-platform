@@ -12,8 +12,9 @@ import {
   CheckCircle, XCircle, Star, Trophy, Target, ClipboardCheck,
   User, Heart, Pill, AlertTriangle, Users as UsersIcon, Activity,
   Stethoscope, Baby, Brain, ListChecks, FileText, ChevronDown, ChevronUp, Sparkles, History,
-  Eye, Lightbulb, BookOpen
+  Eye, Lightbulb, BookOpen, ClipboardList
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
