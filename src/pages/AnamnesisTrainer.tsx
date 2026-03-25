@@ -1093,6 +1093,8 @@ const AnamnesisTrainer = () => {
   const suggestions = getSuggestions();
   const timerMins = elapsed / 60;
 
+  const doctorQuestions = messages.filter(m => m.role === "doctor");
+
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] animate-fade-in">
       {/* Compact header bar */}
