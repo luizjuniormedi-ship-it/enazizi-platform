@@ -1,33 +1,56 @@
 
 
-# Plano: Forcar atualizacao PWA em todos os dispositivos (incluindo tablets)
+# Plano: Adicionar Bibliografia por Especialidade aos Geradores
 
-## Problema
+## Objetivo
 
-Tablets tendem a manter o PWA em segundo plano por longos periodos, impedindo que o Service Worker detecte novas versoes. O `SKIP_WAITING` enviado no login nao funciona porque o SW gerado pelo vite-plugin-pwa com `registerType: "autoUpdate"` nao escuta essa mensagem por padrao.
+Incorporar a tabela de livros por especialidade (Braunwald, Murray & Nadel, Adams & Victor, etc.) em todos os pontos de geracao de conteudo: question-generator, generate-flashcards, daily-question-generator, diagnostic, e o prompt compartilhado enazizi-prompt.
 
-## Solucao
+## Implementacao
 
-Tres mudancas para garantir que todos os dispositivos recebam atualizacoes:
+### 1. Criar mapa de bibliografia em `supabase/functions/_shared/specialty-bibliography.ts`
 
-### 1. Ativar `skipWaiting` no Service Worker (`vite.config.ts`)
-- Adicionar `skipWaiting: true` e `clientsClaim: true` na configuracao do workbox
-- Isso faz o novo SW assumir controle imediatamente sem esperar mensagem
+Novo arquivo exportando um `Record<string, string>` mapeando cada especialidade aos seus livros de referencia. Centraliza a informacao para ser reutilizada por todas as edge functions.
 
-### 2. Verificacao periodica de atualizacao (`src/main.tsx`)
-- Adicionar intervalo que chama `updateSW()` a cada 10 minutos (ao inves de depender apenas do evento `onNeedRefresh`)
-- Tablets que ficam abertos em background receberao a atualizacao na proxima verificacao
+Conteudo: as 22 especialidades da tabela enviada (Cardiologia → Braunwald + SOCESP, Pneumologia → Murray & Nadel + Tarantino, etc.).
 
-### 3. Verificacao ao voltar ao foco (`src/main.tsx`)
-- Adicionar listener `visibilitychange` que verifica atualizacoes quando o usuario volta ao app
-- Cenario tipico: tablet fica na mochila, usuario abre novamente → verifica e atualiza
+Funcao utilitaria `getBibliographyForSpecialty(specialty: string): string` que retorna a linha de referencia ou string vazia se nao encontrar.
+
+### 2. Atualizar `supabase/functions/_shared/enazizi-prompt.ts`
+
+Na secao "FONTES PERMITIDAS" (linhas 609-634), adicionar um novo bloco **CICLO CLINICO POR ESPECIALIDADE** com todas as 22 areas e seus livros, entre o bloco "CICLO CLINICO E INTERNATO" e "DIRETRIZES".
+
+### 3. Atualizar `supabase/functions/daily-question-generator/index.ts`
+
+No prompt de geracao (linha ~72), adicionar apos as regras:
+```
+BIBLIOGRAFIA DE REFERÊNCIA OBRIGATÓRIA para ${specialty}:
+${getBibliographyForSpecialty(specialty)}
+Use estes livros como base para o conteudo e cite-os nas explicacoes.
+```
+
+### 4. Atualizar `supabase/functions/question-generator/index.ts`
+
+Na secao "FONTES DE REFERENCIA" (linhas 83-88), expandir com o bloco completo de bibliografia por especialidade, instruindo a IA a usar os livros especificos da area solicitada.
+
+### 5. Atualizar `supabase/functions/generate-flashcards/index.ts`
+
+Na secao "FONTES DE REFERENCIA" (linhas 111-115), adicionar o mesmo bloco expandido de bibliografia por especialidade.
+
+### 6. Atualizar `src/pages/Diagnostic.tsx`
+
+No prompt do diagnostico (linha ~92), adicionar instrucao de referencia bibliografica importando o mapa inline (ja que e frontend, sera uma const local com o mesmo mapeamento).
 
 ## Arquivos modificados
 
-- `vite.config.ts` — adicionar `skipWaiting: true`, `clientsClaim: true` no bloco workbox
-- `src/main.tsx` — adicionar intervalo periodico (10min) + listener de visibilidade para forcar check de SW
+- **Criado**: `supabase/functions/_shared/specialty-bibliography.ts`
+- **Editado**: `supabase/functions/_shared/enazizi-prompt.ts`
+- **Editado**: `supabase/functions/daily-question-generator/index.ts`
+- **Editado**: `supabase/functions/question-generator/index.ts`
+- **Editado**: `supabase/functions/generate-flashcards/index.ts`
+- **Editado**: `src/pages/Diagnostic.tsx`
 
 ## Impacto
 
-Apenas configuracao PWA. Nenhuma mudanca em banco ou edge functions.
+Apenas prompts de IA. Nenhuma migracao de banco. Todas as edge functions modificadas serao redeployadas automaticamente.
 
