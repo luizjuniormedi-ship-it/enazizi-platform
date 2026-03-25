@@ -213,7 +213,7 @@ async function fetchDashboardData(userId: string) {
     todayTotal,
   };
 
-  return { stats, metrics, displayName };
+  return { stats, metrics, displayName, hasCompletedDiagnostic };
 }
 
 export const useDashboardData = () => {

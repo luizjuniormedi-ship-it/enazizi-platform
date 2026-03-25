@@ -153,7 +153,7 @@ const Dashboard = () => {
         hasCompletedDiagnostic={hasCompletedDiagnostic}
       />
 
-      {!isNewUser && (
+    {!isNewUser && (
         <Suspense fallback={<div className="space-y-6"><ChartFallback /><ChartFallback /></div>}>
           {/* Streak Calendar + Daily Goal */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -163,6 +163,10 @@ const Dashboard = () => {
 
           {/* KPIs */}
           <DashboardMetricsGrid stats={stats} metrics={metrics} />
+
+          {/* Approval Thermometer — higher visibility */}
+          <ApprovalThermometer metrics={metrics} />
+
           <DailyPlanWidget />
 
           {/* Specialty Progress */}
@@ -175,10 +179,7 @@ const Dashboard = () => {
             <MiniLeaderboard />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ApprovalThermometer metrics={metrics} />
-            <TopicEvolution />
-          </div>
+          <TopicEvolution />
 
           <SpecialtyBenchmark />
         </Suspense>

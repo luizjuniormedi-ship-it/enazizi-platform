@@ -15,13 +15,16 @@ const DailyGoalWidget = () => {
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
 
-      const [configRes, attemptsRes] = await Promise.all([
+      const [configRes, attemptsRes, examRes] = await Promise.all([
         supabase.from("cronograma_config").select("meta_questoes_dia").eq("user_id", user!.id).maybeSingle(),
         supabase.from("practice_attempts").select("id", { count: "exact", head: true }).eq("user_id", user!.id).gte("created_at", `${today}T00:00:00`),
+        supabase.from("exam_sessions").select("total_questions").eq("user_id", user!.id).eq("status", "finished").gte("finished_at", `${today}T00:00:00`),
       ]);
 
       const goal = configRes.data?.meta_questoes_dia || 30;
-      const done = attemptsRes.count || 0;
+      const practiceCount = attemptsRes.count || 0;
+      const examQuestions = (examRes.data || []).reduce((sum: number, e: any) => sum + (e.total_questions || 0), 0);
+      const done = practiceCount + examQuestions;
 
       return { goal, done };
     },
