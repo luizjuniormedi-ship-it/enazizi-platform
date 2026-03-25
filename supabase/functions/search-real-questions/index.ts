@@ -268,12 +268,35 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
   }
 }
 
+const SPECIALTIES_POOL = [
+  "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia",
+  "Gastroenterologia", "Pediatria", "Ginecologia e Obstetrícia",
+  "Cirurgia Geral", "Medicina Preventiva", "Nefrologia",
+  "Infectologia", "Hematologia", "Reumatologia", "Dermatologia",
+];
+
+async function pickSpecialtyWithFewest(supabaseAdmin: any): Promise<string> {
+  // Pick the specialty with fewest global web-scrape questions
+  const counts: { specialty: string; count: number }[] = [];
+  for (const sp of SPECIALTIES_POOL) {
+    const { count } = await supabaseAdmin
+      .from("questions_bank")
+      .select("id", { count: "exact", head: true })
+      .eq("topic", sp)
+      .eq("is_global", true)
+      .eq("source", "web-scrape");
+    counts.push({ specialty: sp, count: count || 0 });
+  }
+  counts.sort((a, b) => a.count - b.count);
+  // Pick randomly from the 3 lowest to add variety
+  const bottom = counts.slice(0, 3);
+  return bottom[Math.floor(Math.random() * bottom.length)].specialty;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Verify admin
-    const authHeader = req.headers.get("Authorization");
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -281,11 +304,16 @@ serve(async (req) => {
 
     // Parse request
     const body = await req.json().catch(() => ({}));
-    const specialty = body.specialty || "Cardiologia";
+    const autoMode = body.auto === true;
     const banca = body.banca || null;
     const ano = body.ano || null;
 
-    console.log(`search-real-questions: specialty=${specialty}, banca=${banca}, ano=${ano}`);
+    // In auto mode, pick the specialty with fewest web-scrape questions
+    const specialty = autoMode
+      ? await pickSpecialtyWithFewest(supabaseAdmin)
+      : (body.specialty || "Cardiologia");
+
+    console.log(`search-real-questions: specialty=${specialty}, auto=${autoMode}, banca=${banca}, ano=${ano}`);
 
     // Get admin user_id for ownership
     const { data: adminRole } = await supabaseAdmin
@@ -318,6 +346,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       specialty,
+      auto: autoMode,
       questions_inserted: result.inserted,
       sources_used: result.sources,
       pages_scraped: scrapedContent.length,
