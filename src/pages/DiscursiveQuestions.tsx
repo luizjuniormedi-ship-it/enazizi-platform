@@ -145,7 +145,13 @@ const DiscursiveQuestions = () => {
   };
 
   const submitAnswer = async () => {
-    if (!answer.trim() || !attemptId) return;
+    const combinedAnswer = answers.map((a, i) => `Pergunta ${i + 1}:\n${a.trim()}`).join("\n\n");
+    if (!combinedAnswer.trim() || !attemptId) return;
+    const allFilled = answers.every(a => a.trim().length >= 20);
+    if (!allFilled) {
+      toast({ title: "Responda todas as perguntas", description: "Cada resposta precisa ter pelo menos 20 caracteres.", variant: "destructive" });
+      return;
+    }
     setCorrecting(true);
     setPhase("correcting");
     try {
