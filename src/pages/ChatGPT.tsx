@@ -776,8 +776,8 @@ const ChatGPT = () => {
       {/* Header */}
       <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1 flex items-center gap-3">
-          <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 tutor-glow float-gentle">
-            <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+          <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl overflow-hidden flex-shrink-0 tutor-glow float-gentle ring-2 ring-primary/20">
+            <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-cover" />
           </div>
           <div className="min-w-0">
             <h1 className="text-base sm:text-xl font-bold truncate">TutorZizi</h1>
