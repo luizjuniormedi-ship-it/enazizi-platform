@@ -128,12 +128,28 @@ const COACHING_TIPS: Record<number, { text: string; color: string }> = {
 type Phase = "lobby" | "active" | "diagnosis" | "finishing" | "result" | "review";
 
 interface ChatMessage {
-  role: "doctor" | "patient";
+  role: "doctor" | "patient" | "system";
   content: string;
   categories?: string[];
   quality?: number;
   timestamp: number;
 }
+
+// Track recently animated categories for bounce effect
+const useRecentlyCompleted = () => {
+  const [recent, setRecent] = useState<Set<string>>(new Set());
+  const addRecent = (keys: string[]) => {
+    setRecent(prev => new Set([...prev, ...keys]));
+    setTimeout(() => {
+      setRecent(prev => {
+        const next = new Set(prev);
+        keys.forEach(k => next.delete(k));
+        return next;
+      });
+    }, 1500);
+  };
+  return { recent, addRecent };
+};
 
 interface EvalCategory {
   score: number;
@@ -209,6 +225,7 @@ const AnamnesisTrainer = () => {
   const [difficulty, setDifficulty] = useState("intermediário");
   const [pediatricAge, setPediatricAge] = useState("aleatorio");
 
+  const { recent: recentlyCompleted, addRecent: addRecentlyCompleted } = useRecentlyCompleted();
   const isPediatrics = specialty === "Pediatria";
   const CATEGORIES = isPediatrics
     ? [...BASE_CATEGORIES.filter(c => c.key !== "gynecological" && c.key !== "social_history"), ...PEDIATRIC_EXTRA_CATEGORIES]
@@ -376,7 +393,57 @@ const AnamnesisTrainer = () => {
       if (data.categories_touched?.length) {
         setCoveredCategories(prev => {
           const next = new Set(prev);
-          data.categories_touched.forEach((c: string) => next.add(c));
+          const newlyAdded: string[] = [];
+          data.categories_touched.forEach((c: string) => {
+            if (!prev.has(c)) newlyAdded.push(c);
+            next.add(c);
+          });
+
+          // Insert system messages for newly completed categories
+          if (newlyAdded.length > 0) {
+            addRecentlyCompleted(newlyAdded);
+            const systemMessages: ChatMessage[] = newlyAdded.map(catKey => {
+              const catLabel = CATEGORIES.find(cat => cat.key === catKey)?.label || catKey;
+              return {
+                role: "system" as const,
+                content: `✅ ${catLabel} concluída!`,
+                timestamp: Date.now(),
+              };
+            });
+
+            // Check milestones
+            const totalCats = CATEGORIES.length;
+            const newSize = next.size;
+            const prevSize = prev.size;
+            const halfMark = Math.ceil(totalCats / 2);
+            const threeQuarterMark = Math.ceil(totalCats * 0.75);
+
+            if (prevSize < halfMark && newSize >= halfMark) {
+              systemMessages.push({
+                role: "system",
+                content: "🏅 Metade da anamnese coberta! Continue assim!",
+                timestamp: Date.now() + 1,
+              });
+            }
+            if (prevSize < threeQuarterMark && newSize >= threeQuarterMark) {
+              const remaining = totalCats - newSize;
+              systemMessages.push({
+                role: "system",
+                content: `🔥 Quase lá! ${remaining > 0 ? `Faltam ${remaining} categorias` : "Todas cobertas!"}`,
+                timestamp: Date.now() + 1,
+              });
+            }
+            if (newSize >= totalCats && prevSize < totalCats) {
+              systemMessages.push({
+                role: "system",
+                content: "🎉 Anamnese completa! Todas as categorias foram abordadas. Hora do diagnóstico!",
+                timestamp: Date.now() + 2,
+              });
+            }
+
+            setMessages(prevMsgs => [...prevMsgs, ...systemMessages]);
+          }
+
           return next;
         });
       }
@@ -1085,9 +1152,9 @@ const AnamnesisTrainer = () => {
                     <TooltipProvider key={cat.key}>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] ${
-                            covered ? "bg-green-500/10 text-green-400" : "bg-muted/50 text-muted-foreground"
-                          }`}>
+                          <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] transition-all ${
+                            covered ? "bg-success/10 text-success" : "bg-muted/50 text-muted-foreground"
+                          } ${recentlyCompleted.has(cat.key) ? "animate-bounce scale-110" : ""}`}>
                             {covered ? <CheckCircle className="h-3 w-3" /> : <Icon className="h-3 w-3 opacity-50" />}
                             <span>{cat.label}</span>
                           </div>
@@ -1109,9 +1176,9 @@ const AnamnesisTrainer = () => {
                 <TooltipProvider key={cat.key}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] transition-colors ${
-                        covered ? "bg-green-500/10 text-green-400" : "bg-muted/50 text-muted-foreground"
-                      }`}>
+                      <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] transition-all ${
+                        covered ? "bg-success/10 text-success" : "bg-muted/50 text-muted-foreground"
+                      } ${recentlyCompleted.has(cat.key) ? "animate-bounce scale-110" : ""}`}>
                         {covered ? <CheckCircle className="h-3 w-3" /> : <Icon className="h-3 w-3 opacity-50" />}
                         <span>{cat.label}</span>
                       </div>
@@ -1127,7 +1194,20 @@ const AnamnesisTrainer = () => {
 
       {/* Chat Area */}
       <div className="flex-1 overflow-y-auto space-y-3 rounded-xl p-3 sm:p-4 mb-2 bg-gradient-to-b from-muted/10 to-muted/20">
-        {messages.map((msg, i) => (
+        {messages.map((msg, i) => {
+          // System message (category completion / milestone)
+          if (msg.role === "system") {
+            return (
+              <div key={i} className="flex justify-center animate-fade-in">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/20 text-success text-xs font-medium">
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  <span>{msg.content}</span>
+                </div>
+              </div>
+            );
+          }
+
+          return (
           <div key={i} className={`flex gap-2 ${msg.role === "doctor" ? "justify-end" : "justify-start"}`}>
             {msg.role === "patient" && (
               <div className="h-8 w-8 rounded-full bg-gradient-to-br from-accent/30 to-primary/20 flex items-center justify-center flex-shrink-0 mt-1">
@@ -1169,7 +1249,8 @@ const AnamnesisTrainer = () => {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
         {loading && (
           <div className="flex gap-2 justify-start">
             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-accent/30 to-primary/20 flex items-center justify-center flex-shrink-0">
