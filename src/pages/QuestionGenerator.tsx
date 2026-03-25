@@ -141,7 +141,6 @@ const QuestionGenerator = () => {
     initialPromptRef.current = buildPrompt();
   };
 
-  const initialPromptRef = useRef<string>("");
 
   const handleResetSession = () => {
     setSessionStats({ total: 0, correct: 0, bySpecialty: {} });
