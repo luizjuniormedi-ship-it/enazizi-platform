@@ -177,7 +177,7 @@ const QuestionGenerator = () => {
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
                   <SelectItem value="all">Todas (misto)</SelectItem>
-                  {SPECIALTIES.map(s => (
+                  {ALL_SPECIALTIES.map(s => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
                 </SelectContent>

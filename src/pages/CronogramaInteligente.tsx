@@ -97,7 +97,8 @@ export type TabCronograma = "visao" | "hoje" | "novo" | "temas" | "criticos" | "
 
 /* ======================== CONSTANTS ======================== */
 
-export { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
+import { ALL_SPECIALTIES } from "@/constants/specialties";
+export const SPECIALTIES = ALL_SPECIALTIES;
 
 export const REVIEW_DAYS: Record<string, number> = {
   D1: 1, D2: 2, D3: 3, D4: 4, D5: 5, D7: 7, D15: 15, D30: 30,
