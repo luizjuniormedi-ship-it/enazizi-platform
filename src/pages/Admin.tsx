@@ -274,6 +274,7 @@ const Admin = () => {
       <AdminOnlineUsers stats={stats} />
       <AdminPlanDistribution stats={stats} />
       <AdminDailyGenerationAlert />
+      <AdminWebScrapingPanel />
 
       {/* Users with tabs */}
       <div className="glass-card p-6">
