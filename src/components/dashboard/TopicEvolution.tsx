@@ -20,6 +20,7 @@ interface DomainEntry {
 const TopicEvolution = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [cycleFilter, setCycleFilter] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["topic-evolution", user?.id],
