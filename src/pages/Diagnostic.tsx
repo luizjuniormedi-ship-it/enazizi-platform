@@ -83,6 +83,14 @@ const Diagnostic = () => {
   const [alreadyDone, setAlreadyDone] = useState(false);
   const [resumeIdx, setResumeIdx] = useState(0);
   const [xpEarned, setXpEarned] = useState(0);
+  const [userPeriodo, setUserPeriodo] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("periodo").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      if (data?.periodo) setUserPeriodo(data.periodo);
+    });
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
