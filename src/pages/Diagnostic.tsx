@@ -15,6 +15,18 @@ import DiagnosticReview from "@/components/diagnostic/DiagnosticReview";
 import DiagnosticResult from "@/components/diagnostic/DiagnosticResult";
 import type { DiagQuestion, AnswerRecord } from "@/components/diagnostic/DiagnosticExam";
 
+const DIAGNOSTIC_BIBLIOGRAPHY: Record<string, string> = {
+  "Clínica Médica": "Harrison Principles of Internal Medicine",
+  "Cirurgia": "Schwartz Principles of Surgery / Sabiston Textbook of Surgery",
+  "Pediatria": "Nelson Textbook of Pediatrics / Tratado de Pediatria SBP",
+  "Ginecologia e Obstetrícia": "Williams Obstetrics / Ginecologia e Obstetrícia FEBRASGO",
+  "Medicina Preventiva": "Medicina Preventiva e Social Rouquayrol / Epidemiology Gordis",
+  "Oncologia": "DeVita Cancer Principles & Practice of Oncology / Manual de Oncologia Clínica SBOC",
+  "Neurologia": "Adams and Victor's Principles of Neurology / DeJong's The Neurologic Examination",
+  "Cardiologia": "Braunwald's Heart Disease / Manual de Cardiologia SOCESP",
+};
+const getBibRefForDiagnostic = (area: string) => DIAGNOSTIC_BIBLIOGRAPHY[area] || "Harrison / Sabiston / Nelson / Williams";
+
 const AREAS = [
   "Clínica Médica", "Cirurgia", "Pediatria", "Ginecologia e Obstetrícia",
   "Medicina Preventiva", "Oncologia", "Neurologia", "Cardiologia",
@@ -95,6 +107,11 @@ CALIBRAÇÃO OBRIGATÓRIA REVALIDA/ENAMED:
 - PROIBIDO: questões de definição pura ("O que é X?")
 - PROIBIDO: enunciados < 150 caracteres sem caso clínico
 - OBRIGATÓRIO: caso clínico com ≥3 dados clínicos (sinais vitais, exames, achados semiológicos)
+- OBRIGATÓRIO: ≥2 etapas de raciocínio clínico
+- OBRIGATÓRIO: pelo menos 2 distratores plausíveis (diagnóstico diferencial real)
+- OBRIGATÓRIO: Cite a referência bibliográfica específica da especialidade na explicação
+
+BIBLIOGRAFIA DE REFERÊNCIA para ${area}: ${getBibRefForDiagnostic(area)}
 - OBRIGATÓRIO: ≥2 etapas de raciocínio clínico
 - OBRIGATÓRIO: pelo menos 2 distratores plausíveis (diagnóstico diferencial real)
 
