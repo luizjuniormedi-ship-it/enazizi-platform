@@ -272,6 +272,7 @@ const Admin = () => {
       <AdminStatsCards stats={stats} pendingCount={pendingCount} activeCount={activeCount} blockedCount={blockedCount} />
       <AdminOnlineUsers stats={stats} />
       <AdminPlanDistribution stats={stats} />
+      <AdminDailyGenerationAlert />
 
       {/* Users with tabs */}
       <div className="glass-card p-6">
