@@ -1124,99 +1124,63 @@ const ChatGPT = () => {
               </div>
             )}
 
-            {/* Timeline Stepper */}
-            <div className="flex items-center gap-0 overflow-x-auto pb-1">
-              {MEDSTUDY_STEPS.map((s, idx) => (
-                <TooltipProvider key={s.num} delayDuration={200}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center flex-shrink-0">
-                        <div
-                          className={`relative flex items-center justify-center rounded-full transition-all cursor-default ${
-                            s.num < enaziziStep
-                              ? "h-5 w-5 sm:h-6 sm:w-6 bg-primary text-primary-foreground"
-                              : s.num === enaziziStep
-                              ? "h-7 w-7 sm:h-8 sm:w-8 bg-gradient-to-br from-primary to-accent text-primary-foreground animate-pulse-glow ring-2 ring-primary/30"
-                              : "h-5 w-5 sm:h-6 sm:w-6 bg-muted text-muted-foreground border border-border"
-                          }`}
+            {/* Compact Progress Bar + Next Phase */}
+            {(() => {
+              const nextPhase = getNextPhaseInfo();
+              const progressPercent = Math.round((enaziziStep / 14) * 100);
+              return (
+                <div className="mb-2">
+                  {/* Thin progress bar */}
+                  <div className="h-1 w-full rounded-full bg-muted mb-1.5 overflow-hidden">
+                    <div className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-500" style={{ width: `${progressPercent}%` }} />
+                  </div>
+                  {/* Compact info row */}
+                  <div className="flex items-center gap-1.5 flex-wrap text-[10px] sm:text-xs">
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="font-semibold text-primary cursor-default">
+                            {nextPhase ? `${nextPhase.icon} ${nextPhase.label}` : `✅ Completo`}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-xs max-w-[200px]">
+                          {nextPhase ? (
+                            <>
+                              <p className="font-semibold">{nextPhase.icon} Etapa {enaziziStep}/14</p>
+                              <p className="text-muted-foreground">{nextPhase.desc}</p>
+                            </>
+                          ) : <p>Todas as etapas concluídas!</p>}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <span className="text-muted-foreground">•</span>
+                    <span className="text-muted-foreground">{enaziziStep}/14 ({progressPercent}%)</span>
+                    {nextPhase && (
+                      <>
+                        <Button
+                          size="sm"
+                          className="ml-auto h-6 px-2.5 text-[10px] sm:text-xs gap-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 font-semibold"
+                          onClick={() => handlePhaseAction(nextPhase.key)}
+                          disabled={isLoading}
                         >
-                          {s.num < enaziziStep ? (
-                            <Check className="h-3 w-3" />
-                          ) : s.num === enaziziStep ? (
-                            <span className="text-[10px] sm:text-xs font-bold">{s.icon}</span>
-                          ) : (
-                            <span className="text-[8px] sm:text-[9px]">{s.num}</span>
-                          )}
-                        </div>
-                        {idx < MEDSTUDY_STEPS.length - 1 && (
-                          <div className={`w-1 sm:w-2 h-0.5 ${s.num < enaziziStep ? "bg-primary" : "bg-border"}`} />
+                          Avançar <ArrowRight className="h-3 w-3" />
+                        </Button>
+                        {enaziziStep < 8 && (
+                          <>
+                            <button onClick={() => handlePhaseAction("questions")} disabled={isLoading} className="text-[10px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-0.5">
+                              <Zap className="h-2.5 w-2.5" /> Questões
+                            </button>
+                            <button onClick={() => handlePhaseAction("consolidation")} disabled={isLoading} className="text-[10px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-0.5">
+                              <RefreshCw className="h-2.5 w-2.5" /> Consolidar
+                            </button>
+                          </>
                         )}
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs">
-                      <p className="font-semibold">{s.icon} {s.num}. {s.label}</p>
-                      <p className="text-muted-foreground">{s.desc}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ))}
-            </div>
-            {/* Mobile: show current step label */}
-            <p className="sm:hidden text-[10px] text-muted-foreground text-center mt-1">
-              {MEDSTUDY_STEPS.find(s => s.num === enaziziStep)?.icon} {MEDSTUDY_STEPS.find(s => s.num === enaziziStep)?.label} ({enaziziStep}/14)
-            </p>
-          </div>
-
-          {/* Next Phase Card — Enhanced */}
-          {(() => {
-            const nextPhase = getNextPhaseInfo();
-            if (!nextPhase) return null;
-            const progressPercent = Math.round((enaziziStep / 14) * 100);
-            return (
-              <div className="relative overflow-hidden rounded-xl border border-primary/20 p-3 sm:p-4 mb-2 sm:mb-3 animate-fade-in bg-gradient-to-r from-primary/5 via-card to-accent/5">
-                <div className="absolute inset-0 shimmer pointer-events-none opacity-50" />
-                <div className="flex items-center gap-3 relative z-10">
-                  <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary/25 to-accent/25 flex items-center justify-center flex-shrink-0 text-xl float-gentle border border-primary/15">
-                    {nextPhase.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] text-muted-foreground">Próxima etapa</p>
-                    <p className="text-sm font-bold">{nextPhase.label}</p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{nextPhase.desc}</p>
-                  </div>
-                  <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                    <div className="relative h-10 w-10">
-                      <svg className="h-10 w-10 -rotate-90" viewBox="0 0 36 36">
-                        <circle cx="18" cy="18" r="16" fill="none" className="stroke-muted" strokeWidth="2" />
-                        <circle cx="18" cy="18" r="16" fill="none" className="stroke-primary" strokeWidth="2" strokeDasharray={`${progressPercent} 100`} strokeLinecap="round" />
-                      </svg>
-                      <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-primary">{progressPercent}%</span>
-                    </div>
-                    <Button
-                      size="sm"
-                      className="glow text-xs h-8 px-4 flex-shrink-0 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 gap-1.5 font-semibold"
-                      onClick={() => handlePhaseAction(nextPhase.key)}
-                      disabled={isLoading}
-                    >
-                      Avançar <ArrowRight className="h-3.5 w-3.5" />
-                    </Button>
+                      </>
+                    )}
                   </div>
                 </div>
-                {/* Shortcut buttons */}
-                {enaziziStep < 8 && (
-                  <div className="flex gap-1.5 mt-2 pt-2 border-t border-border/50 relative z-10">
-                    <button onClick={() => handlePhaseAction("questions")} disabled={isLoading} className="text-[10px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-1">
-                      <Zap className="h-3 w-3" /> Pular para Questões
-                    </button>
-                    <span className="text-border">•</span>
-                    <button onClick={() => handlePhaseAction("consolidation")} disabled={isLoading} className="text-[10px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-1">
-                      <RefreshCw className="h-3 w-3" /> Ir para Consolidação
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
+              );
+            })()}
 
           {/* Chat Messages — Premium */}
           <div ref={scrollRef} className="flex-1 rounded-xl border border-border/50 bg-card/50 p-2 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 mb-2 sm:mb-3 min-h-0 pattern-dots">
