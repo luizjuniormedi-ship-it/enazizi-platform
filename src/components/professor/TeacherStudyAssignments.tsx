@@ -30,6 +30,7 @@ const TeacherStudyAssignments = () => {
   // Form
   const [title, setTitle] = useState("");
   const [specialty, setSpecialty] = useState("");
+  const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [topicsToCover, setTopicsToCover] = useState("");
   const [faculdadeFilter, setFaculdadeFilter] = useState("");
   const [periodoFilter, setPeriodoFilter] = useState("");
