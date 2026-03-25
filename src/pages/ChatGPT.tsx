@@ -4,12 +4,13 @@ import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useLocation } from "react-router-dom";
-import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap, LogOut, AlertTriangle, Maximize2, Minimize2, MoreVertical } from "lucide-react";
+import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap, LogOut, AlertTriangle, Maximize2, Minimize2, MoreVertical, Copy, ChevronUp, Zap, Brain, Heart, Bone, Eye, Pill, Baby, Microscope, Activity, X } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,20 +42,35 @@ interface EnaziziProgress {
 }
 
 const MEDSTUDY_STEPS = [
-  { num: 1, label: "Painel", icon: "📊" },
-  { num: 2, label: "Tema", icon: "📚" },
-  { num: 3, label: "Técnico 1", icon: "🔬" },
-  { num: 4, label: "Leigo 1", icon: "💡" },
-  { num: 5, label: "Técnico 2", icon: "🔬" },
-  { num: 6, label: "Leigo 2", icon: "💡" },
-  { num: 7, label: "Técnico 3", icon: "🏥" },
-  { num: 8, label: "Leigo 3", icon: "💡" },
-  { num: 9, label: "Questão", icon: "❓" },
-  { num: 10, label: "Discussão", icon: "💬" },
-  { num: 11, label: "Discursivo", icon: "✍️" },
-  { num: 12, label: "Correção", icon: "✅" },
-  { num: 13, label: "Atualizar", icon: "📈" },
-  { num: 14, label: "Consolidação", icon: "🔁" },
+  { num: 1, label: "Painel", icon: "📊", desc: "Visão geral do seu desempenho" },
+  { num: 2, label: "Tema", icon: "📚", desc: "Escolha do tema de estudo" },
+  { num: 3, label: "Técnico 1", icon: "🔬", desc: "Conceito e definição técnica" },
+  { num: 4, label: "Leigo 1", icon: "💡", desc: "Tradução para linguagem simples" },
+  { num: 5, label: "Técnico 2", icon: "🔬", desc: "Fisiopatologia profunda" },
+  { num: 6, label: "Leigo 2", icon: "💡", desc: "Simplificação da fisiopatologia" },
+  { num: 7, label: "Técnico 3", icon: "🏥", desc: "Clínica, diagnóstico e tratamento" },
+  { num: 8, label: "Leigo 3", icon: "💡", desc: "Simplificação da clínica" },
+  { num: 9, label: "Questão", icon: "❓", desc: "Questão objetiva com caso clínico" },
+  { num: 10, label: "Discussão", icon: "💬", desc: "Análise detalhada da questão" },
+  { num: 11, label: "Discursivo", icon: "✍️", desc: "Caso clínico discursivo" },
+  { num: 12, label: "Correção", icon: "✅", desc: "Correção com nota 0-5" },
+  { num: 13, label: "Atualizar", icon: "📈", desc: "Atualização do desempenho" },
+  { num: 14, label: "Consolidação", icon: "🔁", desc: "5 questões de consolidação" },
+];
+
+const QUICK_TOPICS = [
+  { label: "Sepse", emoji: "🩸", color: "from-red-500/20 to-red-600/10 border-red-500/30" },
+  { label: "IAM", emoji: "🫀", color: "from-rose-500/20 to-rose-600/10 border-rose-500/30" },
+  { label: "Pneumonia", emoji: "🫁", color: "from-blue-500/20 to-blue-600/10 border-blue-500/30" },
+  { label: "AVC", emoji: "🧠", color: "from-purple-500/20 to-purple-600/10 border-purple-500/30" },
+  { label: "Diabetes", emoji: "💉", color: "from-amber-500/20 to-amber-600/10 border-amber-500/30" },
+  { label: "Insuficiência Renal", emoji: "🫘", color: "from-orange-500/20 to-orange-600/10 border-orange-500/30" },
+  { label: "Fraturas", emoji: "🦴", color: "from-slate-500/20 to-slate-600/10 border-slate-500/30" },
+  { label: "Glaucoma", emoji: "👁", color: "from-teal-500/20 to-teal-600/10 border-teal-500/30" },
+  { label: "Asma", emoji: "💨", color: "from-cyan-500/20 to-cyan-600/10 border-cyan-500/30" },
+  { label: "Hipertensão", emoji: "❤️‍🔥", color: "from-red-400/20 to-red-500/10 border-red-400/30" },
+  { label: "Anemia", emoji: "🔴", color: "from-pink-500/20 to-pink-600/10 border-pink-500/30" },
+  { label: "Meningite", emoji: "🧬", color: "from-violet-500/20 to-violet-600/10 border-violet-500/30" },
 ];
 
 const FUNCTION_NAME = "chatgpt-agent";
@@ -95,6 +111,8 @@ const ChatGPT = () => {
   const [changingTopic, setChangingTopic] = useState(false);
   const [newTopic, setNewTopic] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [metricsCollapsed, setMetricsCollapsed] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -104,6 +122,17 @@ const ChatGPT = () => {
   } = useSessionPersistence({ moduleKey: "chatgpt" });
 
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${FUNCTION_NAME}`;
+
+  // Check onboarding
+  useEffect(() => {
+    const dismissed = localStorage.getItem("tutor-onboarding-dismissed");
+    if (!dismissed) setShowOnboarding(true);
+  }, []);
+
+  const dismissOnboarding = () => {
+    setShowOnboarding(false);
+    localStorage.setItem("tutor-onboarding-dismissed", "true");
+  };
 
   // Register auto-save for session persistence
   useEffect(() => {
@@ -132,8 +161,10 @@ const ChatGPT = () => {
     if (data.sessionQuestions) setSessionQuestions(data.sessionQuestions);
     if (data.sessionCorrect) setSessionCorrect(data.sessionCorrect);
     setStudyStarted(true);
+    setMetricsCollapsed(true);
     clearPending();
   };
+
   useEffect(() => {
     if (!user) return;
     const loadPerformance = async () => {
@@ -152,7 +183,6 @@ const ChatGPT = () => {
           historico_estudo: (data.historico_estudo as StudyPerformance["historico_estudo"]) || [],
         });
       }
-      // Load enazizi step
       const { data: progress } = await supabase
         .from("enazizi_progress")
         .select("*")
@@ -161,7 +191,6 @@ const ChatGPT = () => {
       if (progress) {
         setEnaziziStep(progress.estado_atual || 1);
         if (progress.tema_atual && progress.estado_atual > 2) {
-          // Resume session
           setCurrentTopic(progress.tema_atual);
         }
       }
@@ -188,7 +217,6 @@ const ChatGPT = () => {
     load();
   }, [user]);
 
-  // Load questions from bank for context
   const [bankQuestions, setBankQuestions] = useState<Array<{ statement: string; options: any; correct_index: number | null; explanation: string | null; topic: string | null }>>([]);
   const [errorBankData, setErrorBankData] = useState<Array<{ tema: string; subtema: string | null; tipo_questao: string; categoria_erro: string | null; vezes_errado: number }>>([]);
 
@@ -207,7 +235,6 @@ const ChatGPT = () => {
     loadQuestions();
   }, [user, currentTopic]);
 
-  // Load error bank data
   useEffect(() => {
     if (!user) return;
     const loadErrorBank = async () => {
@@ -224,16 +251,12 @@ const ChatGPT = () => {
 
   const buildUserContext = useCallback(() => {
     let ctx = "";
-
-    // Add uploaded materials
     for (const upload of availableUploads) {
       if (!selectedUploadIds.has(upload.id)) continue;
       const snippet = upload.extracted_text?.slice(0, 2000) || "";
       if (ctx.length + snippet.length > 6000) break;
       ctx += `\n\n📄 ${upload.filename} (${upload.category || "material"}):\n${snippet}`;
     }
-
-    // Add questions bank
     if (bankQuestions.length > 0) {
       ctx += `\n\n📋 BANCO DE QUESTÕES DO ALUNO (${bankQuestions.length} questões sobre "${currentTopic}"):\n`;
       bankQuestions.slice(0, 5).forEach((q, i) => {
@@ -248,7 +271,6 @@ const ChatGPT = () => {
       });
       ctx += `\n\nUSE estas questões como referência para o estilo, dificuldade e temas. Priorize CASOS CLÍNICOS.`;
     }
-
     return ctx.trim();
   }, [availableUploads, selectedUploadIds, bankQuestions, currentTopic]);
 
@@ -275,7 +297,6 @@ const ChatGPT = () => {
 
   useEffect(() => { loadConversations(); }, [loadConversations]);
 
-  // Handle navigation from ErrorBank with initialMessage
   const errorBankHandled = useRef(false);
   const summaryHandled = useRef(false);
   useEffect(() => {
@@ -284,35 +305,31 @@ const ChatGPT = () => {
       errorBankHandled.current = true;
       const initialMessage = ensureSequentialInitialMessage(state.initialMessage);
       setStudyStarted(true);
+      setMetricsCollapsed(true);
       setCurrentTopic("Revisão Inteligente de Erros");
-      setTimeout(() => {
-        sendMessage(initialMessage);
-      }, 500);
+      setTimeout(() => { sendMessage(initialMessage); }, 500);
       window.history.replaceState({}, document.title);
     }
     if (state?.fromErrorBank && state?.initialMessage && !errorBankHandled.current && user) {
       errorBankHandled.current = true;
       const initialMessage = ensureSequentialInitialMessage(state.initialMessage);
       setStudyStarted(true);
+      setMetricsCollapsed(true);
       setCurrentTopic("Revisão do Banco de Erros");
-      setTimeout(() => {
-        sendMessage(initialMessage);
-      }, 500);
+      setTimeout(() => { sendMessage(initialMessage); }, 500);
       window.history.replaceState({}, document.title);
     }
     if (state?.fromSimulado && state?.initialMessage && !errorBankHandled.current && user) {
       errorBankHandled.current = true;
       const initialMessage = ensureSequentialInitialMessage(state.initialMessage);
       setStudyStarted(true);
+      setMetricsCollapsed(true);
       setCurrentTopic("Revisão de Simulado — Proficiência");
-      setTimeout(() => {
-        sendMessage(initialMessage);
-      }, 500);
+      setTimeout(() => { sendMessage(initialMessage); }, 500);
       window.history.replaceState({}, document.title);
     }
     if (state?.fromSummary && !summaryHandled.current && user) {
       summaryHandled.current = true;
-      // Pre-select shared uploads from the Resumidor
       if (state.sharedUploadIds && state.sharedUploadIds.length > 0) {
         setSelectedUploadIds(new Set(state.sharedUploadIds));
       }
@@ -321,10 +338,9 @@ const ChatGPT = () => {
         `Com base neste resumo, continue a explicação aprofundada seguindo o Protocolo ENAZIZI. Aprofunde os pontos mais importantes, faça perguntas de active recall e proponha questões clínicas:\n\n${summaryText}`
       );
       setStudyStarted(true);
+      setMetricsCollapsed(true);
       setCurrentTopic("Aprofundamento de Resumo");
-      setTimeout(() => {
-        sendMessage(prompt);
-      }, 500);
+      setTimeout(() => { sendMessage(prompt); }, 500);
       window.history.replaceState({}, document.title);
     }
   }, [user, location.state]);
@@ -338,6 +354,7 @@ const ChatGPT = () => {
     if (data && data.length > 0) {
       setMessages(data.map(m => ({ role: m.role as "user" | "assistant", content: m.content })));
       setStudyStarted(true);
+      setMetricsCollapsed(true);
       setCurrentTopic("Sessão anterior");
     }
     setActiveConversationId(convId);
@@ -348,7 +365,6 @@ const ChatGPT = () => {
     if (!user) return;
     const newPerf = { ...performance, ...updates };
     setPerformance(newPerf);
-
     const dbData = {
       user_id: user.id,
       tema_atual: newPerf.tema_atual,
@@ -358,13 +374,11 @@ const ChatGPT = () => {
       temas_fracos: newPerf.temas_fracos as any,
       historico_estudo: newPerf.historico_estudo as any,
     };
-
     const { data: existing } = await supabase
       .from("study_performance")
       .select("id")
       .eq("user_id", user.id)
       .maybeSingle();
-
     if (existing) {
       await supabase.from("study_performance").update(dbData).eq("user_id", user.id);
     } else {
@@ -402,7 +416,6 @@ const ChatGPT = () => {
     const totalQuestions = performance.questoes_respondidas + sessionQuestions;
     const totalCorrect = Math.round((performance.taxa_acerto / 100) * performance.questoes_respondidas) + sessionCorrect;
     const newAccuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
-
     const sessionEntry = {
       tema: currentTopic,
       data: new Date().toISOString(),
@@ -410,17 +423,13 @@ const ChatGPT = () => {
       acerto: sessionQuestions > 0 ? Math.round((sessionCorrect / sessionQuestions) * 100) : 0,
       discursiva: null as number | null,
     };
-
     const newHistory = [...performance.historico_estudo, sessionEntry].slice(-50);
-
     await savePerformance({
       tema_atual: null,
       questoes_respondidas: totalQuestions,
       taxa_acerto: newAccuracy,
       historico_estudo: newHistory,
     });
-
-    // Update medical_domain_map for the studied specialty
     if (user && currentTopic) {
       const specialty = mapTopicToSpecialty(currentTopic);
       if (specialty) {
@@ -431,13 +440,11 @@ const ChatGPT = () => {
             .eq("user_id", user.id)
             .eq("specialty", specialty)
             .maybeSingle();
-
           const newQuestionsAnswered = (existing?.questions_answered || 0) + sessionQuestions;
           const newCorrectAnswers = (existing?.correct_answers || 0) + sessionCorrect;
           const newReviews = (existing?.reviews_count || 0) + 1;
           const accuracy = newQuestionsAnswered > 0 ? (newCorrectAnswers / newQuestionsAnswered) * 100 : 0;
           const domainScore = Math.max(0, Math.min(100, Math.round(accuracy)));
-
           if (existing) {
             await supabase.from("medical_domain_map").update({
               questions_answered: newQuestionsAnswered,
@@ -463,7 +470,6 @@ const ChatGPT = () => {
         }
       }
     }
-
     setSessionQuestions(0);
     setSessionCorrect(0);
     setStudyStarted(false);
@@ -471,14 +477,12 @@ const ChatGPT = () => {
     setMessages([]);
     setActiveConversationId(null);
     setEnaziziStep(1);
+    setMetricsCollapsed(false);
     await saveEnaziziStep(1, null);
-
-    // Award XP for questions answered in session
     if (sessionQuestions > 0) {
       const xpGained = (sessionCorrect * XP_REWARDS.question_correct) + ((sessionQuestions - sessionCorrect) * XP_REWARDS.question_answered);
       await addXp(xpGained);
     }
-
     await completeSession();
     toast({ title: "Sessão finalizada!", description: `Dados salvos. ${sessionQuestions} questões nesta sessão.` });
   };
@@ -492,6 +496,7 @@ const ChatGPT = () => {
     setShowHistory(false);
     setSessionQuestions(0);
     setSessionCorrect(0);
+    setMetricsCollapsed(false);
   };
 
   const deleteConversation = async (convId: string, e: React.MouseEvent) => {
@@ -507,8 +512,6 @@ const ChatGPT = () => {
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading || !user) return;
-
-    // Auto-detect topic change from chat input
     const topicChangeMatch = text.match(/(?:quero estudar|vamos estudar|mudar (?:tema|assunto) (?:para)?|agora (?:quero|vamos) (?:estudar)?)\s+(.+)/i);
     if (topicChangeMatch && studyStarted) {
       const detectedTopic = topicChangeMatch[1].replace(/[.!?]+$/, "").trim();
@@ -520,13 +523,11 @@ const ChatGPT = () => {
         savePerformance({ tema_atual: detectedTopic });
       }
     }
-
     const userMsg: Msg = { role: "user", content: text };
     const allMessages = [...messages, userMsg];
     setMessages(allMessages);
     setInput("");
     setIsLoading(true);
-
     let convId = activeConversationId;
     if (!convId) {
       const convTitle = text.slice(0, 60);
@@ -540,17 +541,14 @@ const ChatGPT = () => {
         setActiveConversationId(convId);
       }
     }
-
     if (convId) {
       await supabase.from("chat_messages").insert({
         conversation_id: convId, user_id: user.id, role: "user", content: text,
       });
       await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
     }
-
     let assistantSoFar = "";
     const contextToSend = buildUserContext();
-
     try {
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -572,21 +570,17 @@ const ChatGPT = () => {
           error_bank: errorBankData.length > 0 ? errorBankData : undefined,
         }),
       });
-
       if (!resp.ok) {
         const errData = await resp.json().catch(() => ({}));
         toast({ title: "Erro", description: errData.error || "Erro ao conectar com o ChatGPT", variant: "destructive" });
         setIsLoading(false);
         return;
       }
-
       if (!resp.body) throw new Error("No response body");
-
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let textBuffer = "";
       let streamDone = false;
-
       const appendAssistantChunk = (content: string) => {
         if (!content) return;
         assistantSoFar += content;
@@ -598,16 +592,13 @@ const ChatGPT = () => {
           return [...prev, { role: "assistant", content: assistantSoFar }];
         });
       };
-
       const processSseLine = (rawLine: string): "ok" | "done" | "incomplete" => {
         let line = rawLine;
         if (line.endsWith("\r")) line = line.slice(0, -1);
         if (line.startsWith(":") || line.trim() === "") return "ok";
         if (!line.startsWith("data: ")) return "ok";
-
         const jsonStr = line.slice(6).trim();
         if (jsonStr === "[DONE]") return "done";
-
         try {
           const parsed = JSON.parse(jsonStr);
           const content = parsed.choices?.[0]?.delta?.content as string | undefined;
@@ -617,33 +608,20 @@ const ChatGPT = () => {
           return "incomplete";
         }
       };
-
       while (!streamDone) {
         const { done, value } = await reader.read();
         if (done) break;
-
         textBuffer += decoder.decode(value, { stream: true });
-
         let newlineIndex: number;
         while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
           const line = textBuffer.slice(0, newlineIndex);
           textBuffer = textBuffer.slice(newlineIndex + 1);
-
           const result = processSseLine(line);
-          if (result === "done") {
-            streamDone = true;
-            break;
-          }
-          if (result === "incomplete") {
-            textBuffer = `${line}\n${textBuffer}`;
-            break;
-          }
+          if (result === "done") { streamDone = true; break; }
+          if (result === "incomplete") { textBuffer = `${line}\n${textBuffer}`; break; }
         }
       }
-
-      // Flush final UTF-8 bytes + remaining buffered lines
       textBuffer += decoder.decode();
-
       if (textBuffer.trim()) {
         const remainingLines = textBuffer.split("\n");
         for (const line of remainingLines) {
@@ -652,14 +630,11 @@ const ChatGPT = () => {
           if (result === "done") break;
         }
       }
-
       if (convId && assistantSoFar) {
         await supabase.from("chat_messages").insert({
           conversation_id: convId, user_id: user.id, role: "assistant", content: assistantSoFar,
         });
         loadConversations();
-
-        // Auto-detect errors and save to error_bank
         if (user && currentTopic) {
           const errorPatterns = [
             /(?:incorret|errad|não está corret|resposta errada|infelizmente|não é essa)/i,
@@ -668,12 +643,10 @@ const ChatGPT = () => {
           ];
           const hasError = errorPatterns.some((p) => p.test(assistantSoFar));
           if (hasError) {
-            // Extract error details from the response
             const subtemaMatch = assistantSoFar.match(/(?:subtema|tópico|sobre):\s*([^\n.]+)/i);
             const categoriaMatch = assistantSoFar.match(/\[ERRO_TIPO:(\w+)\]/i);
             const motivoMatch = assistantSoFar.match(/\[ERRO_MOTIVO:([^\]]+)\]/i);
             const conteudoSnippet = assistantSoFar.slice(0, 300);
-
             const errorData = {
               user_id: user.id,
               tema: currentTopic,
@@ -685,8 +658,6 @@ const ChatGPT = () => {
               dificuldade: 3,
               vezes_errado: 1,
             };
-
-            // Check if similar error exists (same tema + subtema + tipo)
             const { data: existing } = await supabase
               .from("error_bank")
               .select("id, vezes_errado")
@@ -694,12 +665,8 @@ const ChatGPT = () => {
               .eq("tema", errorData.tema)
               .eq("tipo_questao", errorData.tipo_questao)
               .maybeSingle();
-
             if (existing) {
-              await supabase
-                .from("error_bank")
-                .update({ vezes_errado: (existing.vezes_errado || 1) + 1, updated_at: new Date().toISOString(), conteudo: conteudoSnippet })
-                .eq("id", existing.id);
+              await supabase.from("error_bank").update({ vezes_errado: (existing.vezes_errado || 1) + 1, updated_at: new Date().toISOString(), conteudo: conteudoSnippet }).eq("id", existing.id);
             } else {
               await supabase.from("error_bank").insert(errorData);
             }
@@ -728,6 +695,7 @@ const ChatGPT = () => {
       return;
     }
     setStudyStarted(true);
+    setMetricsCollapsed(true);
     setCurrentTopic(t);
     setSessionQuestions(0);
     setSessionCorrect(0);
@@ -737,24 +705,15 @@ const ChatGPT = () => {
     sendMessage(`Quero estudar o tema: ${t}. Comece com o Bloco Técnico 1 (conceito e definição — explicação técnica baseada na literatura). Estou na etapa 3/13 do Protocolo ENAZIZI.`);
   };
 
-
   const handleChangeTopic = () => {
     if (!newTopic.trim()) return;
     if (NON_MEDICAL_KEYWORDS.test(newTopic)) {
-      toast({
-        title: "⛔ Tema não médico",
-        description: "Esta plataforma é exclusiva para Residência Médica.",
-        variant: "destructive",
-      });
+      toast({ title: "⛔ Tema não médico", description: "Esta plataforma é exclusiva para Residência Médica.", variant: "destructive" });
       return;
     }
     setChangingTopic(false);
     setTopic(newTopic);
-    // Reset flow to STATE 2 (concept) with new topic
-    setMessages((prev) => [
-      ...prev,
-      { role: "user" as const, content: `--- MUDANÇA DE TEMA ---\nNovo tema: ${newTopic}` },
-    ]);
+    setMessages((prev) => [...prev, { role: "user" as const, content: `--- MUDANÇA DE TEMA ---\nNovo tema: ${newTopic}` }]);
     setCurrentTopic(newTopic);
     setEnaziziStep(3);
     saveEnaziziStep(3, newTopic);
@@ -765,50 +724,17 @@ const ChatGPT = () => {
 
   const handlePhaseAction = (phase: string) => {
     const phaseMap: Record<string, { prompt: string; step: number }> = {
-      "leigo1": {
-        prompt: `Agora traduza o bloco técnico 1 sobre ${currentTopic} para linguagem leiga e faça UMA pergunta curta de active recall.`,
-        step: 4,
-      },
-      "tecnico2": {
-        prompt: `Agora avance para o Bloco Técnico 2 (fisiopatologia) sobre ${currentTopic}. Base: Guyton, Robbins, Harrison. Explicação técnica profunda.`,
-        step: 5,
-      },
-      "leigo2": {
-        prompt: `Agora traduza o bloco técnico 2 (fisiopatologia) sobre ${currentTopic} para linguagem leiga e faça UMA pergunta curta.`,
-        step: 6,
-      },
-      "tecnico3": {
-        prompt: `Agora avance para o Bloco Técnico 3 (aplicação clínica) sobre ${currentTopic}. Sinais, sintomas, exames, tratamento, diagnósticos diferenciais. Explicação técnica.`,
-        step: 7,
-      },
-      "leigo3": {
-        prompt: `Agora traduza o bloco técnico 3 (aplicação clínica) sobre ${currentTopic} para linguagem leiga e faça UMA pergunta curta.`,
-        step: 8,
-      },
-      "questions": {
-        prompt: `Agora crie 1 questão objetiva estilo prova médica com caso clínico e alternativas A–E sobre ${currentTopic}. Não revele a resposta, espere eu responder.`,
-        step: 9,
-      },
-      "discussion": {
-        prompt: `Agora faça a discussão completa da questão sobre ${currentTopic}: alternativa correta, explicação simples+técnica, raciocínio clínico, diferenciais, análise de todas alternativas, ponto de prova, mini resumo.`,
-        step: 10,
-      },
-      "discursive": {
-        prompt: `Agora crie um caso clínico discursivo sobre ${currentTopic}. Pergunte: diagnóstico provável, conduta inicial, exames necessários, justificativa clínica.`,
-        step: 11,
-      },
-      "correction": {
-        prompt: `Corrija minha resposta discursiva com nota de 0-5 (Diagnóstico 0-2, Conduta 0-2, Justificativa 0-1). Depois apresente: resposta esperada, explicação simples+técnica, raciocínio clínico completo, pontos obrigatórios, erros clássicos, mini aula de reforço.`,
-        step: 12,
-      },
-      "update": {
-        prompt: `Atualize meu painel de desempenho com base nesta sessão sobre ${currentTopic}. Mostre: questões respondidas, taxa de acerto, temas fracos, desempenho clínico e discursivo.`,
-        step: 13,
-      },
-      "consolidation": {
-        prompt: `Agora inicie o BLOCO DE CONSOLIDAÇÃO sobre ${currentTopic}. Gere 5 questões objetivas sequenciais (uma por vez, espere minha resposta antes de enviar a próxima). Cada questão deve ter caso clínico curto + alternativas A–E. Após cada resposta, diga se acertou ou errou com breve explicação. Ao final das 5, apresente um resumo: acertos/erros, taxa, pontos fracos detectados e recomendação de próximo tema.`,
-        step: 14,
-      },
+      "leigo1": { prompt: `Agora traduza o bloco técnico 1 sobre ${currentTopic} para linguagem leiga e faça UMA pergunta curta de active recall.`, step: 4 },
+      "tecnico2": { prompt: `Agora avance para o Bloco Técnico 2 (fisiopatologia) sobre ${currentTopic}. Base: Guyton, Robbins, Harrison. Explicação técnica profunda.`, step: 5 },
+      "leigo2": { prompt: `Agora traduza o bloco técnico 2 (fisiopatologia) sobre ${currentTopic} para linguagem leiga e faça UMA pergunta curta.`, step: 6 },
+      "tecnico3": { prompt: `Agora avance para o Bloco Técnico 3 (aplicação clínica) sobre ${currentTopic}. Sinais, sintomas, exames, tratamento, diagnósticos diferenciais. Explicação técnica.`, step: 7 },
+      "leigo3": { prompt: `Agora traduza o bloco técnico 3 (aplicação clínica) sobre ${currentTopic} para linguagem leiga e faça UMA pergunta curta.`, step: 8 },
+      "questions": { prompt: `Agora crie 1 questão objetiva estilo prova médica com caso clínico e alternativas A–E sobre ${currentTopic}. Não revele a resposta, espere eu responder.`, step: 9 },
+      "discussion": { prompt: `Agora faça a discussão completa da questão sobre ${currentTopic}: alternativa correta, explicação simples+técnica, raciocínio clínico, diferenciais, análise de todas alternativas, ponto de prova, mini resumo.`, step: 10 },
+      "discursive": { prompt: `Agora crie um caso clínico discursivo sobre ${currentTopic}. Pergunte: diagnóstico provável, conduta inicial, exames necessários, justificativa clínica.`, step: 11 },
+      "correction": { prompt: `Corrija minha resposta discursiva com nota de 0-5 (Diagnóstico 0-2, Conduta 0-2, Justificativa 0-1). Depois apresente: resposta esperada, explicação simples+técnica, raciocínio clínico completo, pontos obrigatórios, erros clássicos, mini aula de reforço.`, step: 12 },
+      "update": { prompt: `Atualize meu painel de desempenho com base nesta sessão sobre ${currentTopic}. Mostre: questões respondidas, taxa de acerto, temas fracos, desempenho clínico e discursivo.`, step: 13 },
+      "consolidation": { prompt: `Agora inicie o BLOCO DE CONSOLIDAÇÃO sobre ${currentTopic}. Gere 5 questões objetivas sequenciais (uma por vez, espere minha resposta antes de enviar a próxima). Cada questão deve ter caso clínico curto + alternativas A–E. Após cada resposta, diga se acertou ou errou com breve explicação. Ao final das 5, apresente um resumo: acertos/erros, taxa, pontos fracos detectados e recomendação de próximo tema.`, step: 14 },
     };
     const action = phaseMap[phase];
     if (action) {
@@ -818,20 +744,49 @@ const ChatGPT = () => {
     }
   };
 
+  const getNextPhaseInfo = (): { key: string; label: string; icon: string; desc: string } | null => {
+    const phaseByStep: Record<number, { key: string; label: string; icon: string; desc: string }> = {
+      3: { key: "leigo1", label: "Tradução Leiga", icon: "💡", desc: "O tutor vai simplificar o conteúdo técnico para linguagem do dia-a-dia" },
+      4: { key: "tecnico2", label: "Fisiopatologia", icon: "🔬", desc: "Aprofundamento na fisiopatologia com base em Guyton e Robbins" },
+      5: { key: "leigo2", label: "Tradução Leiga 2", icon: "💡", desc: "Simplificação da fisiopatologia para fixação" },
+      6: { key: "tecnico3", label: "Aplicação Clínica", icon: "🏥", desc: "Sinais, sintomas, exames, diagnóstico e tratamento" },
+      7: { key: "leigo3", label: "Tradução Leiga 3", icon: "💡", desc: "Simplificação da aplicação clínica" },
+      8: { key: "questions", label: "Questão Objetiva", icon: "❓", desc: "Caso clínico com alternativas A-E para testar seu conhecimento" },
+      9: { key: "discussion", label: "Discussão", icon: "💬", desc: "Análise detalhada da questão com raciocínio clínico" },
+      10: { key: "discursive", label: "Caso Discursivo", icon: "✍️", desc: "Caso clínico aberto para diagnóstico e conduta" },
+      11: { key: "correction", label: "Correção", icon: "✅", desc: "Correção detalhada com nota e feedback" },
+      12: { key: "update", label: "Atualizar Painel", icon: "📈", desc: "Revisão do seu desempenho na sessão" },
+      13: { key: "consolidation", label: "Consolidação", icon: "🔁", desc: "5 questões rápidas para consolidar o aprendizado" },
+    };
+    return phaseByStep[enaziziStep] || null;
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copiado!", description: "Texto copiado para a área de transferência." });
+  };
+
   const recentHistory = performance.historico_estudo.slice(-5).reverse();
 
   const content = (
     <div className={`flex flex-col animate-fade-in min-w-0 ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-[calc(100vh-7rem)] sm:h-[calc(100vh-4rem)]"}`}>
       {/* Header */}
-      <div className="mb-2 sm:mb-4 flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2 truncate">
-            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
-            <span className="truncate">ChatGPT Médico</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground truncate">Protocolo ENAZIZI com GPT-4o</p>
+      <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1 flex items-center gap-3">
+          <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 tutor-glow">
+            <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-xl font-bold truncate">Tutor IA Médico</h1>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Protocolo ENAZIZI • GPT-4o</p>
+          </div>
         </div>
         <div className="flex gap-1.5 flex-shrink-0 items-center">
+          {studyStarted && (
+            <span className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-medium">
+              <Check className="h-3 w-3" /> {performance.taxa_acerto}%
+            </span>
+          )}
           <Button variant="outline" size="icon" onClick={() => setIsFullscreen(!isFullscreen)} className="h-8 w-8" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
@@ -853,7 +808,7 @@ const ChatGPT = () => {
               <DropdownMenuItem onClick={() => setShowHistory(!showHistory)}>
                 <History className="h-4 w-4 mr-2" /> Histórico
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {}}>
+              <DropdownMenuItem onClick={() => setShowOnboarding(true)}>
                 <HelpCircle className="h-4 w-4 mr-2" /> Como usar
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -870,127 +825,198 @@ const ChatGPT = () => {
         />
       )}
 
-      {/* Performance Panel */}
-      <div className={`grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4 ${isFullscreen ? "hidden" : ""}`}>
-        <div className="glass-card p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
-          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] sm:text-xs text-muted-foreground">Questões</p>
-            <p className="text-base sm:text-lg font-bold">{performance.questoes_respondidas}</p>
-          </div>
-        </div>
-        <div className="glass-card p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
-          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-            <Check className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] sm:text-xs text-muted-foreground">Acerto</p>
-            <p className="text-base sm:text-lg font-bold">{performance.taxa_acerto}%</p>
-          </div>
-        </div>
-        <div className="glass-card p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
-          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-violet-500/10 flex items-center justify-center flex-shrink-0">
-            <Stethoscope className="h-4 w-4 sm:h-5 sm:w-5 text-violet-500" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] sm:text-xs text-muted-foreground">Discursiva</p>
-            <p className="text-base sm:text-lg font-bold">{performance.pontuacao_discursiva != null ? `${performance.pontuacao_discursiva}/10` : "—"}</p>
-          </div>
-        </div>
-        <div className="glass-card p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
-          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-            <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] sm:text-xs text-muted-foreground">Sessões</p>
-            <p className="text-base sm:text-lg font-bold">{performance.historico_estudo.length}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Weak topics & recent history (only on start screen) */}
-      {!studyStarted && !isFullscreen && (performance.temas_fracos.length > 0 || recentHistory.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-          {performance.temas_fracos.length > 0 && (
-            <div className="glass-card p-4">
-              <h3 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
-                <AlertTriangle className="h-4 w-4 text-amber-500" />
-                Temas Fracos
-              </h3>
-              <div className="flex flex-wrap gap-1.5">
-                {performance.temas_fracos.map((t, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setTopic(t)}
-                    className="px-2.5 py-1 rounded-full text-xs bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-colors"
-                  >
-                    {t}
-                  </button>
-                ))}
+      {/* Onboarding Card */}
+      {showOnboarding && !studyStarted && (
+        <div className="glass-card p-4 mb-3 border-primary/20 animate-fade-in relative">
+          <button onClick={dismissOnboarding} className="absolute top-2 right-2 text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" /> Como funciona o Tutor IA
+          </h3>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center space-y-1.5">
+              <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center mx-auto">
+                <BookOpen className="h-4 w-4 text-primary" />
               </div>
+              <p className="text-[10px] sm:text-xs font-medium">1. Escolha um tema</p>
+              <p className="text-[9px] sm:text-[10px] text-muted-foreground">Digite ou clique nas sugestões</p>
             </div>
-          )}
-          {recentHistory.length > 0 && (
-            <div className="glass-card p-4">
-              <h3 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
-                <History className="h-4 w-4 text-muted-foreground" />
-                Últimas Sessões
-              </h3>
-              <div className="space-y-1.5">
-                {recentHistory.map((h, i) => (
-                  <div key={i} className="flex items-center justify-between text-xs">
-                    <button
-                      onClick={() => setTopic(h.tema)}
-                      className="text-foreground hover:text-primary transition-colors truncate mr-2"
-                    >
-                      {h.tema}
-                    </button>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-muted-foreground">{new Date(h.data).toLocaleDateString("pt-BR")}</span>
-                      <span className={`font-medium ${h.acerto >= 70 ? "text-emerald-500" : h.acerto >= 50 ? "text-amber-500" : "text-destructive"}`}>
-                        {h.acerto}%
-                      </span>
-                    </div>
-                  </div>
-                ))}
+            <div className="text-center space-y-1.5">
+              <div className="h-9 w-9 rounded-xl bg-accent/10 flex items-center justify-center mx-auto">
+                <Brain className="h-4 w-4 text-accent" />
               </div>
+              <p className="text-[10px] sm:text-xs font-medium">2. Aprenda em blocos</p>
+              <p className="text-[9px] sm:text-[10px] text-muted-foreground">Técnico → Leigo → Recall</p>
             </div>
-          )}
+            <div className="text-center space-y-1.5">
+              <div className="h-9 w-9 rounded-xl bg-emerald-500/10 flex items-center justify-center mx-auto">
+                <Zap className="h-4 w-4 text-emerald-500" />
+              </div>
+              <p className="text-[10px] sm:text-xs font-medium">3. Teste e consolide</p>
+              <p className="text-[9px] sm:text-[10px] text-muted-foreground">Questões + casos clínicos</p>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Topic Input */}
+      {/* Collapsible Performance Panel */}
+      <div className="mb-3">
+        <button
+          onClick={() => setMetricsCollapsed(!metricsCollapsed)}
+          className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors w-full"
+        >
+          <BarChart3 className="h-3.5 w-3.5" />
+          <span>Métricas</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary">{performance.questoes_respondidas}Q • {performance.taxa_acerto}%</span>
+          {metricsCollapsed ? <ChevronDown className="h-3.5 w-3.5 ml-auto" /> : <ChevronUp className="h-3.5 w-3.5 ml-auto" />}
+        </button>
+        {!metricsCollapsed && (
+          <div className="grid grid-cols-4 gap-2 mt-2 animate-fade-in">
+            <div className="glass-card p-2 sm:p-3 flex items-center gap-2">
+              <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <BarChart3 className="h-4 w-4 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[9px] text-muted-foreground">Questões</p>
+                <p className="text-sm font-bold">{performance.questoes_respondidas}</p>
+              </div>
+            </div>
+            <div className="glass-card p-2 sm:p-3 flex items-center gap-2">
+              <div className="h-8 w-8 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                <Check className="h-4 w-4 text-emerald-500" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[9px] text-muted-foreground">Acerto</p>
+                <p className="text-sm font-bold">{performance.taxa_acerto}%</p>
+              </div>
+            </div>
+            <div className="glass-card p-2 sm:p-3 flex items-center gap-2">
+              <div className="h-8 w-8 rounded-xl bg-violet-500/10 flex items-center justify-center flex-shrink-0">
+                <Stethoscope className="h-4 w-4 text-violet-500" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[9px] text-muted-foreground">Discursiva</p>
+                <p className="text-sm font-bold">{performance.pontuacao_discursiva != null ? `${performance.pontuacao_discursiva}/10` : "—"}</p>
+              </div>
+            </div>
+            <div className="glass-card p-2 sm:p-3 flex items-center gap-2">
+              <div className="h-8 w-8 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                <GraduationCap className="h-4 w-4 text-amber-500" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[9px] text-muted-foreground">Sessões</p>
+                <p className="text-sm font-bold">{performance.historico_estudo.length}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Start Screen */}
       {!studyStarted && (
-        <div className="glass-card p-4 sm:p-6 mb-3 sm:mb-4 text-center space-y-3 sm:space-y-4">
-          <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-            <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-lg sm:text-xl font-semibold">O que você quer estudar?</h2>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              Digite o tema e o ChatGPT seguirá o Protocolo ENAZIZI
-            </p>
-          </div>
-          <div className="flex gap-2 max-w-lg mx-auto">
-            <Input
-              placeholder="Ex: Sepse, IAM, Pneumonia..."
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleStartStudy()}
-              className="bg-secondary border-border text-sm sm:text-base"
-            />
-            <Button onClick={() => handleStartStudy()} className="glow gap-1.5 px-3 sm:px-6 flex-shrink-0 text-xs sm:text-sm" disabled={!topic.trim()}>
-              <GraduationCap className="h-4 w-4" />
-              <span className="hidden sm:inline">Vamos estudar</span>
-              <span className="sm:hidden">Ir</span>
-            </Button>
+        <>
+          {/* Hero + Input */}
+          <div className="glass-card p-4 sm:p-6 mb-3 text-center space-y-4 border-primary/10">
+            <div className="h-14 w-14 sm:h-18 sm:w-18 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mx-auto tutor-glow">
+              <GraduationCap className="h-7 w-7 sm:h-9 sm:w-9 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold">O que você quer estudar hoje?</h2>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                Escolha um tema abaixo ou digite para começar
+              </p>
+            </div>
+            <div className="flex gap-2 max-w-lg mx-auto">
+              <Input
+                placeholder="Ex: Sepse, IAM, Pneumonia..."
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleStartStudy()}
+                className="bg-secondary border-border text-sm sm:text-base"
+              />
+              <Button onClick={() => handleStartStudy()} className="glow gap-1.5 px-3 sm:px-6 flex-shrink-0 text-xs sm:text-sm" disabled={!topic.trim()}>
+                <GraduationCap className="h-4 w-4" />
+                <span className="hidden sm:inline">Estudar</span>
+                <span className="sm:hidden">Ir</span>
+              </Button>
+            </div>
           </div>
 
+          {/* Quick Topics Grid */}
+          <div className="mb-3">
+            <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+              <Zap className="h-3.5 w-3.5" /> Temas Populares
+            </h3>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-1.5 sm:gap-2">
+              {QUICK_TOPICS.map((qt) => (
+                <button
+                  key={qt.label}
+                  onClick={() => handleStartStudy(qt.label)}
+                  className={`flex flex-col items-center gap-1 p-2.5 sm:p-3 rounded-xl bg-gradient-to-br ${qt.color} border hover:scale-[1.03] transition-all duration-200 group`}
+                >
+                  <span className="text-lg sm:text-xl group-hover:scale-110 transition-transform">{qt.emoji}</span>
+                  <span className="text-[10px] sm:text-xs font-medium text-foreground truncate w-full text-center">{qt.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Weak Topics + Recent History */}
+          {(performance.temas_fracos.length > 0 || recentHistory.length > 0) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              {performance.temas_fracos.length > 0 && (
+                <div className="glass-card p-3 sm:p-4 border-amber-500/20">
+                  <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                    <span className="text-amber-500">Temas Fracos</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 ml-auto">{performance.temas_fracos.length}</span>
+                  </h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {performance.temas_fracos.map((t, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleStartStudy(t)}
+                        className="px-2.5 py-1.5 rounded-lg text-xs bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all hover:scale-105 font-medium"
+                      >
+                        🔴 {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {recentHistory.length > 0 && (
+                <div className="glass-card p-3 sm:p-4">
+                  <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
+                    <History className="h-3.5 w-3.5 text-muted-foreground" />
+                    Continuar Estudando
+                  </h3>
+                  <div className="space-y-1.5">
+                    {recentHistory.map((h, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleStartStudy(h.tema)}
+                        className="flex items-center justify-between text-xs w-full px-2 py-1.5 rounded-lg hover:bg-secondary transition-colors"
+                      >
+                        <span className="text-foreground truncate mr-2">{h.tema}</span>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-[10px] text-muted-foreground">{new Date(h.data).toLocaleDateString("pt-BR")}</span>
+                          <span className={`font-semibold px-1.5 py-0.5 rounded text-[10px] ${h.acerto >= 70 ? "bg-emerald-500/10 text-emerald-500" : h.acerto >= 50 ? "bg-amber-500/10 text-amber-500" : "bg-destructive/10 text-destructive"}`}>
+                            {h.acerto}%
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Materials */}
           <button
             onClick={() => availableUploads.length > 0 && setShowUploads(!showUploads)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors mx-auto ${
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors mx-auto mb-3 ${
               availableUploads.length > 0
                 ? selectedUploadIds.size > 0
                   ? "bg-primary/10 text-primary hover:bg-primary/15"
@@ -1008,9 +1034,8 @@ const ChatGPT = () => {
               </>
             )}
           </button>
-
           {showUploads && availableUploads.length > 0 && (
-            <div className="glass-card p-3 max-h-40 overflow-y-auto space-y-1 max-w-lg mx-auto text-left">
+            <div className="glass-card p-3 max-h-40 overflow-y-auto space-y-1 max-w-lg mx-auto text-left mb-3">
               {availableUploads.map((u) => (
                 <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-secondary cursor-pointer text-xs">
                   <Checkbox checked={selectedUploadIds.has(u.id)} onCheckedChange={() => toggleUpload(u.id)} className="h-3.5 w-3.5" />
@@ -1020,12 +1045,12 @@ const ChatGPT = () => {
               ))}
             </div>
           )}
-        </div>
+        </>
       )}
 
       {/* History panel */}
       {showHistory && (
-        <div className="glass-card p-3 mb-4 max-h-48 overflow-y-auto space-y-1">
+        <div className="glass-card p-3 mb-3 max-h-48 overflow-y-auto space-y-1">
           {conversations.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-2">Nenhuma conversa salva.</p>
           ) : conversations.map((c) => (
@@ -1051,165 +1076,153 @@ const ChatGPT = () => {
       {/* Chat area */}
       {studyStarted && (
         <>
-          {/* Step Progress Indicator */}
+          {/* Visual Step Tracker */}
           <div className="mb-2 sm:mb-3">
             <div className="flex items-center gap-1.5 sm:gap-2 mb-2 flex-wrap">
               <span className="px-2 sm:px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] sm:text-xs font-medium truncate max-w-[40%]">
                 📚 {currentTopic}
               </span>
-              <span className="px-2 sm:px-3 py-1 rounded-full bg-secondary text-muted-foreground text-[10px] sm:text-xs">
-                {enaziziStep}/13
+              <span className="px-2 py-1 rounded-full bg-secondary text-muted-foreground text-[10px] sm:text-xs font-medium">
+                Etapa {enaziziStep}/14
               </span>
               {sessionQuestions > 0 && (
-                <span className="px-2 sm:px-3 py-1 rounded-full bg-secondary text-muted-foreground text-[10px] sm:text-xs">
+                <span className="px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] sm:text-xs font-medium">
                   {sessionQuestions}Q • {Math.round((sessionCorrect / sessionQuestions) * 100)}%
                 </span>
               )}
               <Button variant="ghost" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 ml-auto px-2" onClick={() => setChangingTopic(!changingTopic)} disabled={isLoading}>
-                <RefreshCw className="h-3 w-3" /> <span className="hidden sm:inline">Mudar</span> Tema
+                <RefreshCw className="h-3 w-3" /> Tema
               </Button>
             </div>
             {changingTopic && (
               <div className="flex gap-2 mb-2">
-                <Input
-                  placeholder="Novo tema médico..."
-                  value={newTopic}
-                  onChange={(e) => setNewTopic(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleChangeTopic()}
-                  className="bg-secondary border-border text-sm h-8"
-                  autoFocus
-                />
-                <Button size="sm" className="h-8 text-xs flex-shrink-0" onClick={handleChangeTopic} disabled={!newTopic.trim()}>
-                  Iniciar
-                </Button>
+                <Input placeholder="Novo tema médico..." value={newTopic} onChange={(e) => setNewTopic(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleChangeTopic()} className="bg-secondary border-border text-sm h-8" autoFocus />
+                <Button size="sm" className="h-8 text-xs flex-shrink-0" onClick={handleChangeTopic} disabled={!newTopic.trim()}>Iniciar</Button>
               </div>
             )}
-            <div className="flex gap-0.5">
-              {MEDSTUDY_STEPS.map((s) => (
-                <div
-                  key={s.num}
-                  title={`${s.num}. ${s.label}`}
-                  className={`flex-1 h-1.5 sm:h-2 rounded-full transition-colors ${
-                    s.num < enaziziStep
-                      ? "bg-primary"
-                      : s.num === enaziziStep
-                      ? "bg-primary/60 animate-pulse"
-                      : "bg-muted"
-                  }`}
-                />
-              ))}
-            </div>
+
+            {/* Step Progress with tooltips */}
+            <TooltipProvider delayDuration={200}>
+              <div className="flex gap-0.5">
+                {MEDSTUDY_STEPS.map((s) => (
+                  <Tooltip key={s.num}>
+                    <TooltipTrigger asChild>
+                      <div
+                        className={`flex-1 h-2 sm:h-2.5 rounded-full transition-all cursor-default ${
+                          s.num < enaziziStep
+                            ? "bg-primary"
+                            : s.num === enaziziStep
+                            ? "bg-primary/60 tutor-pulse"
+                            : "bg-muted"
+                        }`}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">
+                      <p className="font-semibold">{s.icon} {s.num}. {s.label}</p>
+                      <p className="text-muted-foreground">{s.desc}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
+            </TooltipProvider>
             <div className="hidden sm:flex justify-between mt-1">
               {MEDSTUDY_STEPS.map((s) => (
-                <span
-                  key={s.num}
-                  className={`text-[9px] ${
-                    s.num === enaziziStep ? "text-primary font-bold" : "text-muted-foreground"
-                  }`}
-                >
-                  {s.icon}
+                <span key={s.num} className={`text-[9px] ${s.num === enaziziStep ? "text-primary font-bold" : s.num < enaziziStep ? "text-primary/50" : "text-muted-foreground"}`}>
+                  {s.num < enaziziStep ? "✓" : s.icon}
                 </span>
               ))}
             </div>
           </div>
 
-          {/* Phase action buttons */}
-          <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-2 sm:mb-3 overflow-x-auto">
-            {enaziziStep === 3 && (
-              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("leigo1")} disabled={isLoading}>
-                💡 Tradução Leiga
-              </Button>
-            )}
-            {enaziziStep === 4 && (
-              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("tecnico2")} disabled={isLoading}>
-                🔬 Fisiopatologia
-              </Button>
-            )}
-            {enaziziStep === 5 && (
-              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("leigo2")} disabled={isLoading}>
-                💡 Tradução 2
-              </Button>
-            )}
-            {enaziziStep === 6 && (
-              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("tecnico3")} disabled={isLoading}>
-                🏥 Clínica
-              </Button>
-            )}
-            {enaziziStep === 7 && (
-              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("leigo3")} disabled={isLoading}>
-                💡 Tradução 3
-              </Button>
-            )}
-            {enaziziStep === 8 && (
-              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("questions")} disabled={isLoading}>
-                ❓ Questão
-              </Button>
-            )}
-            {enaziziStep === 9 && (
-              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("discussion")} disabled={isLoading}>
-                💬 Discussão
-              </Button>
-            )}
-            {enaziziStep === 10 && (
-              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("discursive")} disabled={isLoading}>
-                ✍️ Discursivo
-              </Button>
-            )}
-            {enaziziStep === 11 && (
-              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("correction")} disabled={isLoading}>
-                ✅ Correção
-              </Button>
-            )}
-            {enaziziStep === 12 && (
-              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("update")} disabled={isLoading}>
-                📈 Atualizar
-              </Button>
-            )}
-            {enaziziStep === 13 && (
-              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0" onClick={() => handlePhaseAction("consolidation")} disabled={isLoading}>
-                🔁 Consolidação
-              </Button>
-            )}
-          </div>
+          {/* Next Phase Card */}
+          {(() => {
+            const nextPhase = getNextPhaseInfo();
+            if (!nextPhase) return null;
+            return (
+              <div className="glass-card p-3 mb-2 sm:mb-3 border-primary/20 animate-fade-in">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 text-lg">
+                    {nextPhase.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground">Próxima etapa</p>
+                    <p className="text-sm font-semibold">{nextPhase.label}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{nextPhase.desc}</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="glow text-xs h-8 px-3 flex-shrink-0"
+                    onClick={() => handlePhaseAction(nextPhase.key)}
+                    disabled={isLoading}
+                  >
+                    Avançar
+                  </Button>
+                </div>
+                {/* Shortcut buttons */}
+                {enaziziStep < 8 && (
+                  <div className="flex gap-1.5 mt-2 pt-2 border-t border-border/50">
+                    <button onClick={() => handlePhaseAction("questions")} disabled={isLoading} className="text-[10px] text-muted-foreground hover:text-primary transition-colors">⚡ Pular para Questões</button>
+                    <span className="text-border">•</span>
+                    <button onClick={() => handlePhaseAction("consolidation")} disabled={isLoading} className="text-[10px] text-muted-foreground hover:text-primary transition-colors">🔁 Ir para Consolidação</button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
-          <div ref={scrollRef} className="flex-1 glass-card p-2 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 mb-2 sm:mb-4 min-h-0">
+          {/* Chat Messages */}
+          <div ref={scrollRef} className="flex-1 glass-card p-2 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 mb-2 sm:mb-3 min-h-0">
             {messages.map((msg, i) => (
-              <div key={i} className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
+              <div key={i} className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""} animate-fade-in`}>
                 {msg.role === "assistant" && (
-                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 tutor-glow">
                     <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                   </div>
                 )}
-                <div className={`rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm leading-relaxed ${
+                <div className={`rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm leading-relaxed relative group ${
                   msg.role === "user" ? "max-w-[85%] sm:max-w-[75%] bg-primary text-primary-foreground" : "w-full bg-secondary text-secondary-foreground"
                 }`}>
                   {msg.role === "assistant" ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-xs sm:text-sm prose-p:my-3 prose-headings:mt-5 prose-headings:mb-2 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 [&_p:has(+ul)]:mb-1 [&_p:has(+ol)]:mb-1 [&>p+p]:mt-4 [&_strong]:text-foreground [&_hr]:my-4 [&_blockquote]:my-3">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
-                    </div>
+                    <>
+                      <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-xs sm:text-sm prose-p:my-3 prose-headings:mt-5 prose-headings:mb-2 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 [&_p:has(+ul)]:mb-1 [&_p:has(+ol)]:mb-1 [&>p+p]:mt-4 [&_strong]:text-foreground [&_hr]:my-4 [&_blockquote]:my-3">
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(msg.content)}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-background/50"
+                        title="Copiar"
+                      >
+                        <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                    </>
                   ) : (
                     <span className="whitespace-pre-wrap">{msg.content}</span>
                   )}
                 </div>
                 {msg.role === "user" && (
-                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0">
+                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
                     <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
                   </div>
                 )}
               </div>
             ))}
             {isLoading && messages[messages.length - 1]?.role === "user" && (
-              <div className="flex gap-2 sm:gap-3">
-                <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <div className="flex gap-2 sm:gap-3 animate-fade-in">
+                <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 tutor-glow">
                   <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                 </div>
                 <div className="rounded-xl px-4 py-3 bg-secondary">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <div className="flex gap-1.5 items-center">
+                    <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+                  </div>
                 </div>
               </div>
             )}
           </div>
 
+          {/* Input */}
           <div className="flex gap-2">
             <Input
               placeholder="Sua resposta ou dúvida..."
