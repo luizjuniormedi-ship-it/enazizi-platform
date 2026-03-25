@@ -19,6 +19,7 @@ import VideoRoom from "@/components/professor/VideoRoom";
 import TeacherStudyAssignments from "@/components/professor/TeacherStudyAssignments";
 
 import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
+import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 
 import { FACULDADES } from "@/constants/faculdades";
 

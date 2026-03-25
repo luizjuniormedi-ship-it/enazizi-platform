@@ -38,6 +38,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
+import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 
 const PEDIATRIC_AGE_RANGES = [
   { key: "neonato", label: "Neonato (0-28 dias)", vitalRef: "FC 120-160, FR 40-60, PA 60-80/30-45, Temp 36.5-37.5, SpO2 ≥95%" },

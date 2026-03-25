@@ -8,6 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
+import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 
 interface DomainEntry {
   specialty: string;

@@ -16,6 +16,7 @@ import { FACULDADES } from "@/constants/faculdades";
 import { CheckSquare, Square } from "lucide-react";
 
 import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
+import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 
 const TeacherStudyAssignments = () => {
   const { session } = useAuth();

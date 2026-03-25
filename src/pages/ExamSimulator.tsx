@@ -291,8 +291,9 @@ const ExamSimulator = () => {
           {/* Area/Topic selection */}
           <div>
             <label className="text-sm font-semibold mb-3 block">Selecione as áreas/assuntos</label>
+            <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-3" />
             <div className="flex flex-wrap gap-2">
-              {ALL_AREAS.map(area => (
+              {getFilteredSpecialties(cycleFilter).map(area => (
                 <button
                   key={area}
                   onClick={() => toggleArea(area)}
