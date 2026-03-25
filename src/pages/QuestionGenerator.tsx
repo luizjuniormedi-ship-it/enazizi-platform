@@ -16,6 +16,7 @@ const SPECIALTIES = [
   "Gastroenterologia", "Pneumologia", "Nefrologia", "Dermatologia",
   "Ortopedia", "Urologia", "Oftalmologia", "Otorrinolaringologia",
   "Farmacologia", "Semiologia", "Anatomia", "Oncologia", "Terapia Intensiva",
+  "Fisiologia", "Bioquímica",
 ];
 
 const DIFFICULTY_OPTIONS = [
