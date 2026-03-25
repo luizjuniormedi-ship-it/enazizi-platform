@@ -108,9 +108,11 @@ const TopicEvolution = () => {
         </div>
       </div>
 
+      <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} />
+
       {studied.length > 0 && (
         <div className="space-y-3">
-          {SPECIALTIES.filter((s) => domainMap.get(s)?.questions_answered).map((s) => {
+          {filteredSpecialties.filter((s) => domainMap.get(s)?.questions_answered).map((s) => {
             const d = domainMap.get(s)!;
             return (
               <div key={s}>
