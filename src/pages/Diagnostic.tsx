@@ -156,9 +156,12 @@ REGRAS DE DIVERSIDADE OBRIGATÓRIAS:
 - Cada paciente deve ter idade, sexo e contexto clínico DISTINTOS
 - ${usedTopics ? `NÃO repita temas similares a: ${usedTopics}` : ""}
 
-REGRA DE GABARITO:
-- NUNCA repita mesma letra consecutiva
-- Distribua gabaritos entre A(0), B(1), C(2), D(3), E(4) — use pelo menos 4 letras diferentes
+REGRA DE GABARITO (CRÍTICA — SIGA EXATAMENTE):
+- Distribua gabaritos UNIFORMEMENTE entre A(0), B(1), C(2), D(3), E(4)
+- Para ${QUESTIONS_PER_AREA} questões, cada letra DEVE aparecer pelo menos 1 vez
+- NUNCA repita mesma letra mais que 2 vezes consecutivas
+- Exemplo válido para 5 questões: correct_index = [0, 2, 4, 1, 3]
+- Exemplo INVÁLIDO: correct_index = [0, 0, 1, 0, 1]
 
 FORMATO: Retorne APENAS JSON array:
 [{"statement":"Caso clínico completo com ≥150 chars...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"topic":"${area}","explanation":"Raciocínio clínico passo a passo...","difficulty":"${difficulty}"}]
