@@ -155,7 +155,7 @@ const DiscursiveQuestions = () => {
     setCorrecting(true);
     setPhase("correcting");
     try {
-      const res = await callAPI({ action: "correct", attempt_id: attemptId, answer: answer.trim() });
+      const res = await callAPI({ action: "correct", attempt_id: attemptId, answer: combinedAnswer });
       setCorrection(res.correction);
       setPhase("result");
       // Award XP for discursive completion
