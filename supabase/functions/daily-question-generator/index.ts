@@ -16,7 +16,7 @@ const SPECIALTIES = [
   "Infectologia", "Hematologia", "Reumatologia", "Dermatologia",
   "Ortopedia", "Urologia", "Psiquiatria", "Oftalmologia",
   "Otorrinolaringologia", "Emergência", "Semiologia", "Anatomia", "Farmacologia",
-  "Oncologia", "Fisiologia", "Bioquímica",
+  "Oncologia", "Fisiologia", "Bioquímica", "Angiologia",
   "Histologia", "Embriologia", "Microbiologia", "Imunologia",
   "Parasitologia", "Genética Médica", "Patologia",
 ];
