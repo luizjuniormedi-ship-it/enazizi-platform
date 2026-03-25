@@ -3,8 +3,10 @@ import { createPortal } from "react-dom";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useNavigate } from "react-router-dom";
-import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Save, Upload, GraduationCap, Maximize2, Minimize2, Search, Paperclip } from "lucide-react";
+import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Save, Upload, GraduationCap, Maximize2, Minimize2, Search, Paperclip, MoreVertical, Copy, ArrowRight } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
+import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -639,158 +641,67 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const selectedCount = selectedUploadIds.size;
   const totalUploads = availableUploads.length;
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copiado!", description: "Texto copiado para a área de transferência." });
+  };
+
   const content = (
-    <div className={`flex flex-col animate-fade-in min-w-0 ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)]"}`}>
-      <div className="mb-2 sm:mb-4 flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2 truncate">
-            {icon}
-            {title}
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground truncate">{subtitle}</p>
+    <div className={`flex flex-col animate-fade-in min-w-0 w-full ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-full"}`}>
+      {/* Header — TutorZizi style */}
+      <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1 flex items-center gap-3">
+          <div className="h-14 w-11 sm:h-[4.5rem] sm:w-14 rounded-2xl overflow-hidden flex-shrink-0 tutor-glow float-gentle ring-2 ring-primary/30 shadow-lg">
+            <img src={tutorAvatar} alt={title} className="h-full w-full object-contain" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-xl font-bold truncate">{title}</h1>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">{subtitle}</p>
+          </div>
         </div>
-        <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
-          <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="gap-1 h-8 px-2 text-xs" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+        <div className="flex gap-1.5 flex-shrink-0 items-center">
+          {selectedCount > 0 && (
+            <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-primary/15 to-accent/15 text-primary text-[10px] font-semibold border border-primary/20">
+              <Paperclip className="h-3 w-3" /> {selectedCount} material(is)
+            </span>
+          )}
+          <Button variant="outline" size="icon" onClick={() => setIsFullscreen(!isFullscreen)} className="h-8 w-8" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            <span className="hidden sm:inline">{isFullscreen ? "Sair" : "Tela cheia"}</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={startNewConversation} className="gap-1 h-8 px-2 sm:px-3 text-xs sm:text-sm">
-            <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nova</span>
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)} className="gap-1 h-8 px-2 sm:px-3 text-xs sm:text-sm">
-            <History className="h-4 w-4" /> <span className="hidden sm:inline">Histórico</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={startNewConversation}>
+                <Plus className="h-4 w-4 mr-2" /> Nova conversa
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowHistory(!showHistory)}>
+                <History className="h-4 w-4 mr-2" /> Histórico
+              </DropdownMenuItem>
+              {showUploadButton && (
+                <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                  <Upload className="h-4 w-4 mr-2" /> {isUploading ? "Enviando..." : "Enviar material"}
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
       {/* Hidden file input */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept=".pdf,.txt,.docx"
-        className="hidden"
-        onChange={handleFileUpload}
-      />
+      <input type="file" ref={fileInputRef} accept=".pdf,.txt,.docx" className="hidden" onChange={handleFileUpload} />
 
-      {/* Upload progress indicator */}
+      {/* Upload progress */}
       {isUploading && (
-        <div className="mb-3 px-3 py-2.5 rounded-lg bg-primary/10 border border-primary/20">
-          <div className="flex items-center gap-2 text-xs font-medium text-primary mb-1.5">
+        <div className="mb-2 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20">
+          <div className="flex items-center gap-2 text-xs font-medium text-primary mb-1">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             <span>{uploadStep}</span>
           </div>
-          <Progress value={uploadProgress} className="h-1.5" />
-        </div>
-      )}
-
-      {/* Context indicator - only show when uploads exist or upload button is shown */}
-      {(totalUploads > 0 || showUploadButton) && (
-        <div className="mb-3">
-          <div className="flex gap-2">
-            <button
-              onClick={() => totalUploads > 0 && setShowUploads(!showUploads)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors flex-1 ${
-                totalUploads > 0
-                  ? selectedCount > 0
-                    ? "bg-primary/10 text-primary hover:bg-primary/15 border border-primary/20"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  : "bg-muted text-muted-foreground"
-              }`}
-              disabled={totalUploads === 0}
-            >
-              <Paperclip className="h-3.5 w-3.5 flex-shrink-0" />
-              {totalUploads === 0 ? (
-                <span>Nenhum material — faça upload para enriquecer respostas</span>
-              ) : selectedCount > 0 ? (
-                <>
-                  <span>📎 {selectedCount} {selectedCount === 1 ? "material selecionado" : "materiais selecionados"}</span>
-                  <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px] font-bold">{selectedCount}</span>
-                  <ChevronDown className={`h-3.5 w-3.5 ml-auto transition-transform ${showUploads ? "rotate-180" : ""}`} />
-                </>
-              ) : (
-                <>
-                  <span>Nenhum material como contexto</span>
-                  <span className="text-[10px] ml-1 opacity-60">({totalUploads} disponíveis)</span>
-                  <ChevronDown className={`h-3.5 w-3.5 ml-auto transition-transform ${showUploads ? "rotate-180" : ""}`} />
-                </>
-              )}
-            </button>
-            {showUploadButton && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 px-3 gap-1.5 text-xs flex-shrink-0"
-                disabled={isUploading}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                <span className="hidden sm:inline">{isUploading ? "Enviando..." : "Enviar"}</span>
-              </Button>
-            )}
-          </div>
-
-          {showUploads && totalUploads > 0 && (
-            <div className="glass-card p-3 mt-2 space-y-2">
-              {/* Search filter */}
-              {totalUploads > 5 && (
-                <div className="relative">
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder="Buscar material..."
-                    value={uploadSearch}
-                    onChange={(e) => setUploadSearch(e.target.value)}
-                    className="w-full pl-7 pr-3 py-1.5 rounded-md border border-input bg-background text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                  />
-                </div>
-              )}
-
-              {/* Select all / none */}
-              <button
-                onClick={toggleAll}
-                className="flex items-center gap-2 px-2 py-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors w-full rounded-md hover:bg-primary/5"
-              >
-                <Checkbox
-                  checked={selectedCount === totalUploads}
-                  className="h-3.5 w-3.5"
-                  onCheckedChange={toggleAll}
-                />
-                {selectedCount === totalUploads ? "Desmarcar todos" : `Selecionar todos (${totalUploads})`}
-              </button>
-
-              {/* File list */}
-              <div className="max-h-36 overflow-y-auto space-y-0.5">
-                {availableUploads
-                  .filter(u => !uploadSearch || u.filename.toLowerCase().includes(uploadSearch.toLowerCase()))
-                  .map((u) => {
-                    const charCount = u.extracted_text?.length || 0;
-                    const sizeLabel = charCount > 1000 ? `${(charCount / 1000).toFixed(1)}k` : `${charCount}`;
-                    return (
-                      <label
-                        key={u.id}
-                        className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-xs transition-colors ${
-                          selectedUploadIds.has(u.id) ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-secondary"
-                        }`}
-                      >
-                        <Checkbox
-                          checked={selectedUploadIds.has(u.id)}
-                          onCheckedChange={() => toggleUpload(u.id)}
-                          className="h-3.5 w-3.5"
-                        />
-                        <FileText className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                        <span className="truncate flex-1">{u.filename}</span>
-                        {u.category && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground flex-shrink-0">
-                            {u.category}
-                          </span>
-                        )}
-                        <span className="text-[10px] text-muted-foreground flex-shrink-0 font-mono">{sizeLabel}</span>
-                      </label>
-                    );
-                  })}
-              </div>
-            </div>
-          )}
+          <Progress value={uploadProgress} className="h-1" />
         </div>
       )}
 
@@ -803,142 +714,179 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
         />
       )}
 
+      {/* Materials selector — compact */}
+      {(totalUploads > 0 || showUploadButton) && (
+        <div className="mb-2">
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => totalUploads > 0 && setShowUploads(!showUploads)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors flex-1 ${
+                selectedCount > 0
+                  ? "bg-gradient-to-r from-primary/10 to-accent/10 text-primary border border-primary/20"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+              disabled={totalUploads === 0}
+            >
+              <Paperclip className="h-3 w-3 flex-shrink-0" />
+              {totalUploads === 0 ? "Nenhum material" : selectedCount > 0 ? `${selectedCount} material(is) selecionado(s)` : `Selecionar materiais (${totalUploads})`}
+              {totalUploads > 0 && <ChevronDown className={`h-3 w-3 ml-auto transition-transform ${showUploads ? "rotate-180" : ""}`} />}
+            </button>
+            {showUploadButton && (
+              <Button variant="outline" size="sm" className="h-7 px-2.5 gap-1 text-[10px] sm:text-xs flex-shrink-0" disabled={isUploading} onClick={() => fileInputRef.current?.click()}>
+                {isUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                Enviar
+              </Button>
+            )}
+          </div>
+
+          {showUploads && totalUploads > 0 && (
+            <div className="glass-card p-2.5 mt-1.5 space-y-1.5">
+              {totalUploads > 5 && (
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                  <input type="text" placeholder="Buscar..." value={uploadSearch} onChange={(e) => setUploadSearch(e.target.value)}
+                    className="w-full pl-6 pr-3 py-1 rounded-md border border-input bg-background text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+                </div>
+              )}
+              <button onClick={toggleAll} className="flex items-center gap-2 px-2 py-1 text-[10px] font-medium text-primary hover:text-primary/80 transition-colors w-full rounded-md hover:bg-primary/5">
+                <Checkbox checked={selectedCount === totalUploads} className="h-3 w-3" onCheckedChange={toggleAll} />
+                {selectedCount === totalUploads ? "Desmarcar todos" : `Selecionar todos (${totalUploads})`}
+              </button>
+              <div className="max-h-28 overflow-y-auto space-y-0.5">
+                {availableUploads
+                  .filter(u => !uploadSearch || u.filename.toLowerCase().includes(uploadSearch.toLowerCase()))
+                  .map((u) => (
+                    <label key={u.id} className={`flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer text-[10px] sm:text-xs transition-colors ${selectedUploadIds.has(u.id) ? "bg-primary/5" : "hover:bg-secondary"}`}>
+                      <Checkbox checked={selectedUploadIds.has(u.id)} onCheckedChange={() => toggleUpload(u.id)} className="h-3 w-3" />
+                      <FileText className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                      <span className="truncate flex-1">{u.filename}</span>
+                    </label>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* History panel */}
       {showHistory && (
-        <div className="glass-card p-3 mb-4 max-h-48 overflow-y-auto space-y-1">
+        <div className="glass-card p-3 mb-2 max-h-48 overflow-y-auto space-y-1">
           {conversations.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-2">Nenhuma conversa salva.</p>
           ) : conversations.map((c) => (
-            <div
-              key={c.id}
-              onClick={() => loadConversation(c.id)}
-              className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors ${
-                activeConversationId === c.id ? "bg-primary/10 text-primary" : "hover:bg-secondary"
-              }`}
-            >
+            <div key={c.id} onClick={() => loadConversation(c.id)}
+              className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors ${activeConversationId === c.id ? "bg-primary/10 text-primary" : "hover:bg-secondary"}`}>
               <span className="truncate flex-1 mr-2">{c.title}</span>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-xs text-muted-foreground">
-                  {new Date(c.created_at).toLocaleDateString("pt-BR")}
-                </span>
-                <button onClick={(e) => deleteConversation(c.id, e)} className="text-muted-foreground hover:text-destructive">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                <span className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleDateString("pt-BR")}</span>
+                <button onClick={(e) => deleteConversation(c.id, e)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      <div ref={scrollRef} className="flex-1 glass-card p-2 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 mb-2 sm:mb-4 min-h-0">
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
-            {msg.role === "assistant" && (
-              <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
-              </div>
-            )}
-            <div
-              className={`rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-sm leading-relaxed ${
-                msg.role === "user"
-                  ? "max-w-[85%] sm:max-w-[75%] bg-primary text-primary-foreground"
-                  : "max-w-full bg-secondary text-secondary-foreground"
-              }`}
-            >
-              {msg.role === "assistant" ? (
-                renderAssistantMessage ? (
-                  renderAssistantMessage(msg.content)
-                ) : (
-                  <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 prose-p:my-3 prose-headings:mt-5 prose-headings:mb-2 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 [&>p+p]:mt-4 [&_strong]:text-foreground [&_hr]:my-4 [&_blockquote]:my-3">
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
-                  </div>
-                )
-              ) : (
-                <span className="whitespace-pre-wrap">{msg.content}</span>
-              )}
-              {msg.role === "assistant" && onSaveMessage && i > 0 && !isLoading && (
-                <div className="mt-2 pt-2 border-t border-border/50">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs gap-1.5"
-                    disabled={savingMsgIdx === i || savedMsgIdxs.has(i)}
-                    onClick={() => handleSaveMessage(i, msg.content)}
-                  >
-                    {savedMsgIdxs.has(i) ? (
-                      <><Check className="h-3.5 w-3.5 text-green-500" /> Salvo</>
-                    ) : savingMsgIdx === i ? (
-                      <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Salvando...</>
-                    ) : (
-                      <><Save className="h-3.5 w-3.5" /> Salvar questões</>
-                    )}
-                  </Button>
-                </div>
-              )}
-              {msg.role === "assistant" && linkToAgent && i > 0 && !isLoading && (
-                <div className={`mt-2 pt-2 ${!onSaveMessage ? "border-t border-border/50" : ""}`}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs gap-1.5"
-                    onClick={() => {
-                      const truncated = msg.content.slice(0, 10000);
-                      const uploadIds = Array.from(selectedUploadIds);
-                      navigate(linkToAgent.path, { state: { [linkToAgent.stateKey]: truncated, sharedUploadIds: uploadIds } });
-                    }}
-                  >
-                    <GraduationCap className="h-3.5 w-3.5" />
-                    {linkToAgent.label}
-                  </Button>
-                </div>
-              )}
-            </div>
-            {msg.role === "user" && (
-              <div className="h-8 w-8 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0">
-                <User className="h-4 w-4 text-accent" />
-              </div>
-            )}
-          </div>
-        ))}
-        {isLoading && messages[messages.length - 1]?.role === "user" && (
-          <div className="flex gap-3">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Bot className="h-4 w-4 text-primary" />
-            </div>
-            <div className="rounded-xl px-4 py-3 bg-secondary">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Quick action buttons */}
+      {/* Quick actions — pill style */}
       {quickActions && quickActions.length > 0 && messages.length <= 2 && !isLoading && (
-        <div className="flex flex-wrap gap-2 mb-2">
+        <div className="flex gap-1.5 overflow-x-auto pb-1.5 mb-2 scrollbar-hide">
           {quickActions.map((action, idx) => (
-            <button
-              key={idx}
-              onClick={() => {
-                handleSend(action.prompt);
-              }}
-              className="px-3 py-2 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
-            >
-              {action.icon && <span className="mr-1">{action.icon}</span>}
-              {action.label}
+            <button key={idx} onClick={() => handleSend(action.prompt)}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium bg-gradient-to-br from-primary/10 to-accent/10 text-primary hover:from-primary/20 hover:to-accent/20 transition-colors border border-primary/20 flex-shrink-0 whitespace-nowrap">
+              {action.icon && <span>{action.icon}</span>}
+              {action.label.replace(/^[^\s]+\s/, '')}
             </button>
           ))}
         </div>
       )}
 
+      {/* Chat Messages — Premium */}
+      <div ref={scrollRef} className="flex-1 rounded-xl border border-border/50 bg-card/50 p-2 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 mb-2 sm:mb-3 min-h-0 pattern-dots">
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""} animate-fade-in`}>
+            {msg.role === "assistant" && (
+              <div className="h-12 w-9 sm:h-14 sm:w-11 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/25 shadow-md">
+                <img src={tutorAvatar} alt={title} className="h-full w-full object-contain" />
+              </div>
+            )}
+            <div className={`rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm leading-relaxed relative group ${
+              msg.role === "user"
+                ? "max-w-[85%] sm:max-w-[75%] bg-gradient-to-br from-primary to-primary/80 text-primary-foreground"
+                : "w-full bg-secondary/80 backdrop-blur-sm text-secondary-foreground relative gradient-border-subtle"
+            }`}>
+              {msg.role === "assistant" ? (
+                <>
+                  {renderAssistantMessage ? renderAssistantMessage(msg.content) : (
+                    <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-xs sm:text-sm prose-p:my-3 prose-headings:mt-5 prose-headings:mb-2 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 [&_p:has(+ul)]:mb-1 [&_p:has(+ol)]:mb-1 [&>p+p]:mt-4 [&_strong]:text-foreground [&_hr]:my-4 [&_blockquote]:my-3">
+                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    </div>
+                  )}
+                  <button onClick={() => copyToClipboard(msg.content)}
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-background/50 backdrop-blur-sm" title="Copiar">
+                    <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                  {/* Save & Link buttons */}
+                  <div className="flex gap-2 mt-2 pt-2 border-t border-border/30 empty:hidden">
+                    {onSaveMessage && i > 0 && !isLoading && (
+                      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5"
+                        disabled={savingMsgIdx === i || savedMsgIdxs.has(i)}
+                        onClick={() => handleSaveMessage(i, msg.content)}>
+                        {savedMsgIdxs.has(i) ? <><Check className="h-3.5 w-3.5 text-success" /> Salvo</> :
+                         savingMsgIdx === i ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Salvando...</> :
+                         <><Save className="h-3.5 w-3.5" /> Salvar</>}
+                      </Button>
+                    )}
+                    {linkToAgent && i > 0 && !isLoading && (
+                      <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
+                        onClick={() => {
+                          const truncated = msg.content.slice(0, 10000);
+                          const uploadIds = Array.from(selectedUploadIds);
+                          navigate(linkToAgent.path, { state: { [linkToAgent.stateKey]: truncated, sharedUploadIds: uploadIds } });
+                        }}>
+                        <GraduationCap className="h-3.5 w-3.5" /> {linkToAgent.label}
+                      </Button>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <span className="whitespace-pre-wrap">{msg.content}</span>
+              )}
+            </div>
+            {msg.role === "user" && (
+              <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
+                <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
+              </div>
+            )}
+          </div>
+        ))}
+        {isLoading && messages[messages.length - 1]?.role === "user" && (
+          <div className="flex gap-2 sm:gap-3 animate-fade-in">
+            <div className="h-12 w-9 sm:h-14 sm:w-11 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/25 shadow-md">
+              <img src={tutorAvatar} alt={title} className="h-full w-full object-contain" />
+            </div>
+            <div className="rounded-xl px-4 py-3 bg-secondary/80 backdrop-blur-sm">
+              <div className="flex gap-1.5 items-center">
+                <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+                <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+                <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Input — Enhanced */}
       <div className="flex gap-2">
         <Input
           placeholder={placeholder}
-          className="bg-secondary border-border"
+          className="bg-background/60 backdrop-blur-sm border-border/60 text-sm h-10 sm:h-11 rounded-xl"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           disabled={isLoading}
         />
-        <Button onClick={() => handleSend()} size="icon" className="glow flex-shrink-0" disabled={isLoading}>
+        <Button onClick={() => handleSend()} size="icon"
+          className="glow flex-shrink-0 h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+          disabled={isLoading || !input.trim()}>
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </Button>
       </div>
