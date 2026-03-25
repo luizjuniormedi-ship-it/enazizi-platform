@@ -5,6 +5,7 @@ import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useLocation } from "react-router-dom";
 import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap, LogOut, AlertTriangle, Maximize2, Minimize2, MoreVertical, Copy, ChevronUp, Zap, Brain, Heart, Bone, Eye, Pill, Baby, Microscope, Activity, X, Flame, ArrowRight, Target, TrendingUp } from "lucide-react";
+import tutorAvatar from "@/assets/tutor-avatar.png";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { Button } from "@/components/ui/button";
@@ -775,8 +776,8 @@ const ChatGPT = () => {
       {/* Header */}
       <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1 flex items-center gap-3">
-          <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 tutor-glow float-gentle">
-            <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+          <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl overflow-hidden flex-shrink-0 tutor-glow float-gentle ring-2 ring-primary/20">
+            <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-cover" />
           </div>
           <div className="min-w-0">
             <h1 className="text-base sm:text-xl font-bold truncate">TutorZizi</h1>
@@ -1180,8 +1181,8 @@ const ChatGPT = () => {
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""} animate-fade-in`}>
                 {msg.role === "assistant" && (
-                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 tutor-glow bot-breathing">
-                    <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/20">
+                    <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-cover" />
                   </div>
                 )}
                 <div className={`rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm leading-relaxed relative group ${
@@ -1215,8 +1216,8 @@ const ChatGPT = () => {
             ))}
             {isLoading && messages[messages.length - 1]?.role === "user" && (
               <div className="flex gap-2 sm:gap-3 animate-fade-in">
-                <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 tutor-glow bot-breathing">
-                  <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/20">
+                  <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-cover" />
                 </div>
                 <div className="rounded-xl px-4 py-3 bg-secondary/80 backdrop-blur-sm">
                   <div className="flex gap-1.5 items-center">
