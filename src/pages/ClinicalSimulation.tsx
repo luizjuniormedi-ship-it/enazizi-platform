@@ -14,7 +14,7 @@ import {
   MessageCircle, Thermometer, Zap, Star, CheckCircle, XCircle,
   Trophy, Target, HelpCircle, Users, ClipboardCheck, ShieldAlert, History, Eye, Maximize2, Minimize2,
   User, Brain, Pill, MonitorCheck, Bone, Scan, HeartPulse, Ear, Hand,
-  Wind, Droplets, Shield, BookOpen, FileText, ChevronDown, ChevronUp, GraduationCap, Download, Clipboard
+  Wind, Droplets, Shield, BookOpen, FileText, ChevronDown, ChevronUp, GraduationCap, Download, Clipboard, Trash2
 } from "lucide-react";
 import VitalsChart, { parseVitalsToSnapshot } from "@/components/plantao/VitalsChart";
 import ExamsPanel from "@/components/plantao/ExamsPanel";
@@ -504,6 +504,16 @@ const ClinicalSimulation = () => {
       setHistoryLoading(false);
     }
   }, [user]);
+
+  const deleteHistoryItem = useCallback(async (id: string) => {
+    try {
+      await supabase.from("simulation_history").delete().eq("id", id).eq("user_id", user!.id);
+      setHistory(prev => prev.filter(h => h.id !== id));
+      toast({ title: "Plantão removido do histórico" });
+    } catch {
+      toast({ title: "Erro ao excluir", variant: "destructive" });
+    }
+  }, [user, toast]);
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
@@ -1331,6 +1341,15 @@ const ClinicalSimulation = () => {
                         ) : (
                           <Badge variant="destructive" className="text-[10px] gap-0.5"><XCircle className="h-2.5 w-2.5" /> ✗</Badge>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          onClick={(e) => { e.stopPropagation(); deleteHistoryItem(h.id); }}
+                          title="Excluir"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                         <Eye className="h-4 w-4 text-muted-foreground" />
                       </div>
                     </div>

@@ -56,7 +56,11 @@ ANAMNESE ÚNICA (REGRA ABSOLUTA):
 Retorne APENAS um JSON válido:
 {
   "case": "Texto completo do caso clínico",
-  "question": "A pergunta discursiva",
+  "questions": [
+    "Primeira pergunta (ex: Qual o diagnóstico mais provável? Justifique.)",
+    "Segunda pergunta (ex: Cite 3 diagnósticos diferenciais relevantes.)",
+    "Terceira pergunta (ex: Descreva a conduta terapêutica inicial.)"
+  ],
   "expected_topics": ["tópico 1 esperado na resposta", "tópico 2", "tópico 3"],
   "grading_criteria": [
     {"criterion": "Diagnóstico correto", "max_points": 3},
@@ -64,7 +68,9 @@ Retorne APENAS um JSON válido:
     {"criterion": "Conduta adequada", "max_points": 3},
     {"criterion": "Justificativa e raciocínio clínico", "max_points": 2}
   ]
-}`;
+}
+
+REGRA: Gere SEMPRE entre 2 e 4 sub-perguntas separadas, cada uma focada em um aspecto diferente do caso.`;
 
         const response = await aiFetch({
           messages: [{ role: "user", content: prompt }],
@@ -82,8 +88,13 @@ Retorne APENAS um JSON válido:
 
         const questionData = JSON.parse(jsonMatch[0]);
 
+        // Normalize: support both old "question" (string) and new "questions" (array) formats
+        const questions: string[] = Array.isArray(questionData.questions)
+          ? questionData.questions
+          : [questionData.question || ""];
+
         // Save to DB
-        const fullText = `${questionData.case}\n\n${questionData.question}`;
+        const fullText = `${questionData.case}\n\n${questions.join("\n\n")}`;
         const { data: attempt, error: insertErr } = await sb.from("discursive_attempts").insert({
           user_id: user.id,
           specialty,
@@ -95,7 +106,7 @@ Retorne APENAS um JSON válido:
 
         if (insertErr) throw new Error(insertErr.message);
 
-        return ok({ id: attempt.id, case: questionData.case, question: questionData.question, grading_criteria: questionData.grading_criteria });
+        return ok({ id: attempt.id, case: questionData.case, questions, grading_criteria: questionData.grading_criteria });
       }
 
       case "correct": {

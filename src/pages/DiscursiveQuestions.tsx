@@ -68,9 +68,9 @@ const DiscursiveQuestions = () => {
   // Question state
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [clinicalCase, setClinicalCase] = useState("");
-  const [question, setQuestion] = useState("");
+  const [questions, setQuestions] = useState<string[]>([]);
   const [gradingCriteria, setGradingCriteria] = useState<any[]>([]);
-  const [answer, setAnswer] = useState("");
+  const [answers, setAnswers] = useState<string[]>([]);
 
   // Correction
   const [correction, setCorrection] = useState<Correction | null>(null);
@@ -83,9 +83,9 @@ const DiscursiveQuestions = () => {
   useEffect(() => {
     registerAutoSave(() => {
       if (phase === "setup") return {};
-      return { phase, specialty, difficulty, attemptId, clinicalCase, question, gradingCriteria, answer, correction };
+      return { phase, specialty, difficulty, attemptId, clinicalCase, questions, gradingCriteria, answers, correction };
     });
-  }, [phase, specialty, difficulty, attemptId, clinicalCase, question, gradingCriteria, answer, correction, registerAutoSave]);
+  }, [phase, specialty, difficulty, attemptId, clinicalCase, questions, gradingCriteria, answers, correction, registerAutoSave]);
 
   const handleResumeSession = () => {
     if (!pendingSession) return;
@@ -95,9 +95,11 @@ const DiscursiveQuestions = () => {
     if (d.difficulty) setDifficulty(d.difficulty);
     if (d.attemptId) setAttemptId(d.attemptId);
     if (d.clinicalCase) setClinicalCase(d.clinicalCase);
-    if (d.question) setQuestion(d.question);
+    if (d.questions) setQuestions(d.questions);
+    if (d.question) setQuestions([d.question]); // legacy
     if (d.gradingCriteria) setGradingCriteria(d.gradingCriteria);
-    if (d.answer) setAnswer(d.answer);
+    if (d.answers) setAnswers(d.answers);
+    if (d.answer) setAnswers([d.answer]); // legacy
     if (d.correction) setCorrection(d.correction);
     clearPending();
   };
@@ -128,9 +130,11 @@ const DiscursiveQuestions = () => {
       const res = await callAPI({ action: "generate", specialty, difficulty });
       setAttemptId(res.id);
       setClinicalCase(res.case);
-      setQuestion(res.question);
+      // Support both old "question" (string) and new "questions" (array)
+      const qs: string[] = Array.isArray(res.questions) ? res.questions : [res.question || ""];
+      setQuestions(qs);
       setGradingCriteria(res.grading_criteria || []);
-      setAnswer("");
+      setAnswers(qs.map(() => ""));
       setCorrection(null);
       setPhase("answering");
     } catch (e) {
@@ -141,11 +145,17 @@ const DiscursiveQuestions = () => {
   };
 
   const submitAnswer = async () => {
-    if (!answer.trim() || !attemptId) return;
+    const combinedAnswer = answers.map((a, i) => `Pergunta ${i + 1}:\n${a.trim()}`).join("\n\n");
+    if (!combinedAnswer.trim() || !attemptId) return;
+    const allFilled = answers.every(a => a.trim().length >= 20);
+    if (!allFilled) {
+      toast({ title: "Responda todas as perguntas", description: "Cada resposta precisa ter pelo menos 20 caracteres.", variant: "destructive" });
+      return;
+    }
     setCorrecting(true);
     setPhase("correcting");
     try {
-      const res = await callAPI({ action: "correct", attempt_id: attemptId, answer: answer.trim() });
+      const res = await callAPI({ action: "correct", attempt_id: attemptId, answer: combinedAnswer });
       setCorrection(res.correction);
       setPhase("result");
       // Award XP for discursive completion
@@ -164,7 +174,7 @@ const DiscursiveQuestions = () => {
           userId: user.id,
           tema: specialty,
           tipoQuestao: "discursiva",
-          conteudo: question?.slice(0, 500) || clinicalCase?.slice(0, 500),
+          conteudo: questions.join(" | ").slice(0, 500) || clinicalCase?.slice(0, 500),
           motivoErro: weaknesses.length > 0 
             ? `Pontos fracos: ${weaknesses.join("; ")}` 
             : `Nota ${res.correction.total_score}/${res.correction.max_score}`,
@@ -199,8 +209,8 @@ const DiscursiveQuestions = () => {
     setPhase("setup");
     setAttemptId(null);
     setClinicalCase("");
-    setQuestion("");
-    setAnswer("");
+    setQuestions([]);
+    setAnswers([]);
     setCorrection(null);
   };
 
@@ -314,15 +324,6 @@ const DiscursiveQuestions = () => {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm flex items-center gap-1.5">
-                  <Target className="h-4 w-4 text-primary" /> Pergunta
-                </h3>
-                <p className="text-sm font-medium bg-primary/5 rounded-lg p-3 border border-primary/20">
-                  {question}
-                </p>
-              </div>
-
               {gradingCriteria.length > 0 && (
                 <div className="text-xs text-muted-foreground">
                   <span className="font-medium">Critérios de avaliação: </span>
@@ -332,24 +333,31 @@ const DiscursiveQuestions = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-5 space-y-3">
-              <h3 className="font-semibold text-sm">✍️ Sua Resposta</h3>
-              <Textarea
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                placeholder="Escreva sua resposta discursiva aqui. Inclua diagnóstico, diagnósticos diferenciais, conduta e justificativa..."
-                rows={10}
-                className="text-sm"
-              />
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{answer.length} caracteres</span>
-                <Button onClick={submitAnswer} disabled={!answer.trim() || answer.length < 50} className="gap-2">
-                  <Send className="h-4 w-4" /> Enviar para Correção
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Separate card for each question */}
+          {questions.map((q, idx) => (
+            <Card key={idx}>
+              <CardContent className="p-5 space-y-3">
+                <h3 className="font-semibold text-sm flex items-center gap-1.5">
+                  <Target className="h-4 w-4 text-primary" /> Pergunta {questions.length > 1 ? idx + 1 : ""}
+                </h3>
+                <p className="text-sm font-medium bg-primary/5 rounded-lg p-3 border border-primary/20">
+                  {q}
+                </p>
+                <Textarea
+                  value={answers[idx] || ""}
+                  onChange={(e) => setAnswers(prev => { const next = [...prev]; next[idx] = e.target.value; return next; })}
+                  placeholder={`Responda a pergunta ${idx + 1} aqui...`}
+                  rows={6}
+                  className="text-sm"
+                />
+                <span className="text-xs text-muted-foreground">{(answers[idx] || "").length} caracteres</span>
+              </CardContent>
+            </Card>
+          ))}
+
+          <Button onClick={submitAnswer} disabled={answers.some(a => a.trim().length < 20)} className="w-full gap-2">
+            <Send className="h-4 w-4" /> Enviar para Correção
+          </Button>
         </div>
       )}
 
