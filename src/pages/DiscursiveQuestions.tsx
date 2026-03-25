@@ -83,9 +83,9 @@ const DiscursiveQuestions = () => {
   useEffect(() => {
     registerAutoSave(() => {
       if (phase === "setup") return {};
-      return { phase, specialty, difficulty, attemptId, clinicalCase, question, gradingCriteria, answer, correction };
+      return { phase, specialty, difficulty, attemptId, clinicalCase, questions, gradingCriteria, answers, correction };
     });
-  }, [phase, specialty, difficulty, attemptId, clinicalCase, question, gradingCriteria, answer, correction, registerAutoSave]);
+  }, [phase, specialty, difficulty, attemptId, clinicalCase, questions, gradingCriteria, answers, correction, registerAutoSave]);
 
   const handleResumeSession = () => {
     if (!pendingSession) return;
