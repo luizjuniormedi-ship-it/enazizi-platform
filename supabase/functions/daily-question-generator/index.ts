@@ -79,6 +79,24 @@ function isDuplicate(statement: string, existingStatements: string[]): boolean {
   return existingStatements.some(ex => ex.slice(0, 80).toLowerCase() === prefix);
 }
 
+const CLINICAL_CONTENT_MARKERS = [
+  /\b\d{1,3}\s*(anos?|meses?|dias?)\b/i,
+  /\b(masculino|feminino|homem|mulher|paciente|gestante|idoso|criança|lactente|neonato|recém-nascido)\b/i,
+  /\b(PA|FC|FR|SpO2|temperatura|pressão arterial|frequência cardíaca|saturação)\b/i,
+  /\b(exame físico|ao exame|ausculta|palpação|inspeção|percussão)\b/i,
+  /\b(hemograma|glicemia|creatinina|ureia|PCR|VHS|TSH|T4|ECG|tomografia|ressonância|radiografia|ultrassonografia)\b/i,
+  /\b(queixa|refere|relata|apresenta|evolui|procura|admitido|internado|dá entrada)\b/i,
+];
+
+function hasClinicalContent(text: string): boolean {
+  let matches = 0;
+  for (const marker of CLINICAL_CONTENT_MARKERS) {
+    if (marker.test(text)) matches++;
+    if (matches >= 2) return true;
+  }
+  return false;
+}
+
 async function searchRealQuestionsViaAI(
   specialty: string,
   topics: string[],
@@ -95,38 +113,44 @@ async function searchRealQuestionsViaAI(
   const bibRef = (await import("../_shared/specialty-bibliography.ts")).getBibliographyForSpecialty(specialty);
   const bibBlock = bibRef ? `\nREFERÊNCIA BIBLIOGRÁFICA: ${bibRef}\n` : "";
 
-  const prompt = `Você é um banco de dados vivo de provas de residência médica brasileiras. Sua tarefa é REPRODUZIR FIELMENTE questões REAIS que já foram aplicadas em provas oficiais.
+  const prompt = `Você é um professor de medicina especialista em criar questões no ESTILO e NÍVEL de provas oficiais de residência médica brasileira.
 
 ESPECIALIDADE: ${specialty}
 TEMAS PRIORITÁRIOS: ${selectedTopics.join(", ")}
 ${bibBlock}
-BANCAS E ANOS PARA BUSCAR: ${selectedSources.join(", ")}
+BANCAS DE REFERÊNCIA (use como padrão de dificuldade e estilo): ${selectedSources.join(", ")}
 
 INSTRUÇÕES CRÍTICAS:
-1. Reproduza questões REAIS de provas oficiais brasileiras de residência médica
-2. Cada questão DEVE ter o campo "exam_source" com a identificação EXATA da prova (ex: "REVALIDA INEP 2023 - Prova Objetiva")
-3. Reproduza o enunciado o mais fielmente possível ao original
-4. Mantenha as 4 alternativas originais (A, B, C, D)
-5. A explicação deve ser detalhada com raciocínio clínico
-6. NÃO INVENTE questões - reproduza apenas questões que você tem certeza que existiram
-7. Se não tiver certeza sobre uma questão específica, NÃO a inclua
-8. Priorize questões com caso clínico completo (≥150 caracteres no enunciado)
+1. Gere questões NO ESTILO e NÍVEL das bancas listadas acima — NÃO tente reproduzir questões específicas
+2. O campo "exam_style_ref" deve indicar qual banca/estilo você usou como referência (ex: "Estilo REVALIDA INEP")
+3. OBRIGATÓRIO: CADA questão DEVE ter um CASO CLÍNICO COMPLETO com:
+   - Paciente com idade, sexo e contexto (profissão, antecedentes)
+   - Anamnese com queixa principal e história da doença atual
+   - Exame físico com achados positivos E negativos relevantes
+   - Sinais vitais completos (PA, FC, FR, Temp, SpO2)
+   - Pelo menos um exame complementar com valores numéricos e unidades
+4. MÍNIMO 250 caracteres no enunciado
+5. 4 alternativas (A, B, C, D), apenas 1 correta — TODAS clinicamente plausíveis
+6. Explicação detalhada com raciocínio clínico passo a passo
+7. Dificuldade MÍNIMA: 3/5 (padrão REVALIDA). Distribua: 50% nível 3, 50% nível 4-5
+8. PROIBIDO: questões puramente conceituais ("O que é X?", "Defina Y", "Qual a função de Z?")
+9. PROIBIDO: enunciados sem dados de paciente real
 
 ⛔ CONTEÚDO PROIBIDO: NUNCA gere sobre declarações financeiras, conflitos de interesse, relações com indústria farmacêutica.
 
-Gere EXATAMENTE 6 questões reais de ${specialty}.
+Gere EXATAMENTE 6 questões de ${specialty}.
 
 FORMATO JSON OBRIGATÓRIO (sem markdown):
 {
   "questions": [
     {
-      "statement": "Enunciado completo da questão real...",
+      "statement": "Caso clínico completo com ≥250 caracteres...",
       "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
       "correct_index": 0,
       "explanation": "Raciocínio clínico passo a passo...",
       "topic": "${specialty}",
       "difficulty": 3,
-      "exam_source": "REVALIDA INEP 2023 - Prova Objetiva"
+      "exam_style_ref": "Estilo REVALIDA INEP"
     }
   ]
 }`;
@@ -135,7 +159,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
     const response = await aiFetch({
       model: "google/gemini-2.5-flash",
       messages: [
-        { role: "system", content: "Você é um sistema de recuperação de questões de provas reais de residência médica brasileira. Responda APENAS com JSON válido, sem markdown. Reproduza apenas questões que você tem alta confiança de que são reais." },
+        { role: "system", content: "Você é um professor de medicina que cria questões de altíssima qualidade no estilo de provas reais de residência médica brasileira. Responda APENAS com JSON válido, sem markdown. Cada questão DEVE ter caso clínico completo." },
         { role: "user", content: prompt },
       ],
       timeoutMs: 90000,
@@ -143,7 +167,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
     });
 
     if (!response.ok) {
-      console.error(`Real questions AI error for ${specialty}:`, await response.text());
+      console.error(`Exam-style AI error for ${specialty}:`, await response.text());
       return 0;
     }
 
@@ -166,8 +190,9 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
     const questions = parsed.questions.filter((q: any) =>
       q.statement && Array.isArray(q.options) && q.options.length >= 2 &&
       typeof q.correct_index === "number" &&
-      String(q.statement).trim().length >= 150 &&
-      q.exam_source && String(q.exam_source).trim().length >= 10 &&
+      String(q.statement).trim().length >= 250 &&
+      (q.difficulty || 3) >= 3 &&
+      hasClinicalContent(String(q.statement)) &&
       !INVALID_CONTENT_REGEX.test(q.statement) &&
       !INVALID_CONTENT_REGEX.test(q.explanation || "") &&
       !isDuplicate(q.statement, existingStatements)
@@ -180,25 +205,24 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
       statement: String(q.statement).trim(),
       options: q.options.map(String),
       correct_index: q.correct_index,
-      explanation: `[Fonte: ${String(q.exam_source).trim()}]\n\n${String(q.explanation || "").trim()}`,
+      explanation: `[Ref. estilo: ${String(q.exam_style_ref || specialty).trim()}]\n\n${String(q.explanation || "").trim()}`,
       topic: specialty,
       difficulty: q.difficulty || 3,
-      source: "real-exam-ai",
+      source: "ai-exam-style",
       is_global: true,
     }));
 
     const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
     if (error) {
-      console.error("Insert real questions error:", error);
+      console.error("Insert exam-style questions error:", error);
       return 0;
     }
 
-    // Add inserted statements to existing list for dedup
     rows.forEach((r: any) => existingStatements.push(r.statement));
 
     return rows.length;
   } catch (e) {
-    console.error(`Error searching real questions for ${specialty}:`, e);
+    console.error(`Error generating exam-style questions for ${specialty}:`, e);
     return 0;
   }
 }
@@ -380,7 +404,7 @@ serve(async (req) => {
 
       // Phase 1: Search real exam questions (target: 6)
       const realCount = await searchRealQuestionsViaAI(spec, topics, existingStatements, supabaseAdmin, userId);
-      console.log(`${spec}: ${realCount} real questions found`);
+      console.log(`${spec}: ${realCount} exam-style questions generated`);
 
       // Phase 2: Generate complementary questions to reach 10 total
       const remaining = Math.max(0, 10 - realCount);
