@@ -324,15 +324,6 @@ const DiscursiveQuestions = () => {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm flex items-center gap-1.5">
-                  <Target className="h-4 w-4 text-primary" /> Pergunta
-                </h3>
-                <p className="text-sm font-medium bg-primary/5 rounded-lg p-3 border border-primary/20">
-                  {question}
-                </p>
-              </div>
-
               {gradingCriteria.length > 0 && (
                 <div className="text-xs text-muted-foreground">
                   <span className="font-medium">Critérios de avaliação: </span>
@@ -342,24 +333,31 @@ const DiscursiveQuestions = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-5 space-y-3">
-              <h3 className="font-semibold text-sm">✍️ Sua Resposta</h3>
-              <Textarea
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                placeholder="Escreva sua resposta discursiva aqui. Inclua diagnóstico, diagnósticos diferenciais, conduta e justificativa..."
-                rows={10}
-                className="text-sm"
-              />
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{answer.length} caracteres</span>
-                <Button onClick={submitAnswer} disabled={!answer.trim() || answer.length < 50} className="gap-2">
-                  <Send className="h-4 w-4" /> Enviar para Correção
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Separate card for each question */}
+          {questions.map((q, idx) => (
+            <Card key={idx}>
+              <CardContent className="p-5 space-y-3">
+                <h3 className="font-semibold text-sm flex items-center gap-1.5">
+                  <Target className="h-4 w-4 text-primary" /> Pergunta {questions.length > 1 ? idx + 1 : ""}
+                </h3>
+                <p className="text-sm font-medium bg-primary/5 rounded-lg p-3 border border-primary/20">
+                  {q}
+                </p>
+                <Textarea
+                  value={answers[idx] || ""}
+                  onChange={(e) => setAnswers(prev => { const next = [...prev]; next[idx] = e.target.value; return next; })}
+                  placeholder={`Responda a pergunta ${idx + 1} aqui...`}
+                  rows={6}
+                  className="text-sm"
+                />
+                <span className="text-xs text-muted-foreground">{(answers[idx] || "").length} caracteres</span>
+              </CardContent>
+            </Card>
+          ))}
+
+          <Button onClick={submitAnswer} disabled={answers.some(a => a.trim().length < 20)} className="w-full gap-2">
+            <Send className="h-4 w-4" /> Enviar para Correção
+          </Button>
         </div>
       )}
 
