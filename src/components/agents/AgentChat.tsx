@@ -135,20 +135,24 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
 
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`;
 
-  // Load user uploads
+  const [uploadSearch, setUploadSearch] = useState("");
+
+  // Load user uploads (filtered by user_id, limited to 20, none selected by default)
   useEffect(() => {
     if (!user) return;
     const loadUploads = async () => {
       const { data } = await supabase
         .from("uploads")
         .select("id, filename, extracted_text, category")
+        .eq("user_id", user.id)
         .eq("status", "processed")
         .not("extracted_text", "is", null)
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(20);
       if (data && data.length > 0) {
         setAvailableUploads(data);
-        setSelectedUploadIds(new Set(data.map((u) => u.id)));
+        // Start with none selected — user chooses manually
+        setSelectedUploadIds(new Set());
       }
     };
     loadUploads();
