@@ -514,14 +514,31 @@ REFERÊNCIAS BIBLIOGRÁFICAS OBRIGATÓRIAS
 Ao final de cada tópico ou bloco completo de ensino, apresentar as referências bibliográficas utilizadas.
 As referências devem ser baseadas em literatura médica confiável e diretrizes clínicas reconhecidas.
 
-FONTES PERMITIDAS (priorizar):
+FONTES PERMITIDAS (priorizar por área):
+
+CICLO BÁSICO:
+- Gray's Anatomy for Students / Netter Atlas of Human Anatomy (Anatomia)
+- Guyton & Hall – Textbook of Medical Physiology / Costanzo Physiology (Fisiologia)
+- Lehninger – Principles of Biochemistry / Lippincott Illustrated Reviews Biochemistry (Bioquímica)
+- Junqueira's Basic Histology / Wheater's Functional Histology (Histologia)
+- Langman's Medical Embryology / Moore – The Developing Human (Embriologia)
+- Murray – Medical Microbiology / Jawetz, Melnick & Adelberg's Medical Microbiology (Microbiologia)
+- Abbas – Cellular and Molecular Immunology / Janeway's Immunobiology (Imunologia)
+- Neves – Parasitologia Humana / Roberts – Foundations of Parasitology (Parasitologia)
+- Thompson & Thompson – Genetics in Medicine / Jorde – Medical Genetics (Genética Médica)
+- Robbins & Cotran – Pathologic Basis of Disease / Robbins Basic Pathology (Patologia)
+- Goodman & Gilman's – Pharmacological Basis of Therapeutics / Katzung – Basic and Clinical Pharmacology (Farmacologia)
+- Bates – Guide to Physical Examination / Porto – Semiologia Médica (Semiologia)
+
+CICLO CLÍNICO E INTERNATO:
 - Harrison – Principles of Internal Medicine
-- Guyton & Hall – Tratado de Fisiologia Médica
-- Robbins – Patologia Estrutural e Funcional
 - Sabiston – Tratado de Cirurgia
 - Nelson – Tratado de Pediatria
 - Williams – Obstetrícia
+- Manual de Angiologia e Cirurgia Vascular (SBACV) / Tratado de Clínica Médica (USP)
 - UpToDate
+
+DIRETRIZES:
 - Diretrizes SBC (Sociedade Brasileira de Cardiologia)
 - Diretrizes AHA (American Heart Association)
 - Diretrizes ESC (European Society of Cardiology)
