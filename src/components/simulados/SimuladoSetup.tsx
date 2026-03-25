@@ -22,13 +22,14 @@ export type SimuladoMode = "prova" | "estudo";
 interface SimuladoSetupProps {
   onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode }) => void;
   onResumeSession: () => void;
+  onDiscardSession: () => void;
   onRetryErrors: (sessionId: string) => void;
   pendingSession: any;
   checkedSession: boolean;
   userId?: string;
 }
 
-const SimuladoSetup = ({ onStart, onResumeSession, onRetryErrors, pendingSession, checkedSession, userId }: SimuladoSetupProps) => {
+const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErrors, pendingSession, checkedSession, userId }: SimuladoSetupProps) => {
   const [tab, setTab] = useState<"novo" | "historico">("novo");
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
@@ -57,7 +58,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onRetryErrors, pendingSession
         <ResumeSessionBanner
           updatedAt={pendingSession.updated_at}
           onResume={onResumeSession}
-          onDiscard={() => {}}
+          onDiscard={onDiscardSession}
         />
       )}
 

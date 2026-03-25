@@ -323,6 +323,7 @@ const Simulados = () => {
       <SimuladoSetup
         onStart={handleStart}
         onResumeSession={handleResumeSession}
+        onDiscardSession={abandonSession}
         onRetryErrors={handleRetryErrors}
         pendingSession={pendingSession}
         checkedSession={checked}

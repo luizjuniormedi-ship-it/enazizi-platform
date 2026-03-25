@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import FaculdadeCombobox from "@/components/FaculdadeCombobox";
 import { isValidPhone, isValidName } from "@/lib/profileValidation";
+import { ALL_SPECIALTIES } from "@/constants/specialties";
 
 const Profile = () => {
   const { user } = useAuth();
@@ -22,6 +23,7 @@ const Profile = () => {
   const [faculdade, setFaculdade] = useState("");
   const [phone, setPhone] = useState("");
   const [userType, setUserType] = useState("estudante");
+  const [targetSpecialty, setTargetSpecialty] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -31,7 +33,7 @@ const Profile = () => {
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, email, periodo, faculdade, phone")
+        .select("display_name, avatar_url, email, periodo, faculdade, phone, user_type, target_specialty")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -41,7 +43,8 @@ const Profile = () => {
         setPeriodo(data.periodo ? String(data.periodo) : "");
         setFaculdade(data.faculdade || "");
         setPhone(data.phone || "");
-        setUserType((data as any).user_type || "estudante");
+        setUserType(data.user_type || "estudante");
+        setTargetSpecialty(data.target_specialty || "");
       }
       setLoading(false);
     };
@@ -114,6 +117,10 @@ const Profile = () => {
       };
       if (userType === "estudante") {
         updateData.periodo = periodo ? parseInt(periodo) : null;
+        updateData.faculdade = faculdade || null;
+      }
+      if (userType === "medico") {
+        updateData.target_specialty = targetSpecialty || null;
         updateData.faculdade = faculdade || null;
       }
       const { error } = await supabase
@@ -242,6 +249,34 @@ const Profile = () => {
               <Label className="flex items-center gap-1.5">
                 <Building className="h-3.5 w-3.5 text-muted-foreground" />
                 Faculdade
+              </Label>
+              <FaculdadeCombobox value={faculdade} onChange={setFaculdade} />
+            </div>
+          </div>
+        )}
+
+        {userType === "medico" && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Stethoscope className="h-3.5 w-3.5 text-muted-foreground" />
+                Especialidade
+              </Label>
+              <Select value={targetSpecialty} onValueChange={setTargetSpecialty}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ALL_SPECIALTIES.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Building className="h-3.5 w-3.5 text-muted-foreground" />
+                Onde formou
               </Label>
               <FaculdadeCombobox value={faculdade} onChange={setFaculdade} />
             </div>

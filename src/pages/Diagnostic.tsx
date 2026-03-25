@@ -24,13 +24,38 @@ const DIAGNOSTIC_BIBLIOGRAPHY: Record<string, string> = {
   "Oncologia": "DeVita Cancer Principles & Practice of Oncology / Manual de Oncologia Clínica SBOC",
   "Neurologia": "Adams and Victor's Principles of Neurology / DeJong's The Neurologic Examination",
   "Cardiologia": "Braunwald's Heart Disease / Manual de Cardiologia SOCESP",
+  "Anatomia": "Gray's Anatomy for Students / Netter Atlas of Human Anatomy",
+  "Fisiologia": "Guyton & Hall Textbook of Medical Physiology / Costanzo Physiology",
+  "Bioquímica": "Lehninger Principles of Biochemistry",
+  "Histologia": "Junqueira's Basic Histology / Wheater's Functional Histology",
+  "Farmacologia": "Goodman & Gilman's Pharmacological Basis of Therapeutics / Katzung",
+  "Patologia": "Robbins & Cotran Pathologic Basis of Disease",
+  "Semiologia": "Bates Guide to Physical Examination / Porto Semiologia Médica",
+  "Microbiologia": "Murray Medical Microbiology",
+  "Imunologia": "Abbas Cellular and Molecular Immunology",
 };
 const getBibRefForDiagnostic = (area: string) => DIAGNOSTIC_BIBLIOGRAPHY[area] || "Harrison / Sabiston / Nelson / Williams";
 
-const AREAS = [
+// Areas organized by academic cycle
+const AREAS_BASICO = [
+  "Anatomia", "Fisiologia", "Bioquímica", "Histologia",
+  "Farmacologia", "Patologia", "Microbiologia", "Imunologia",
+];
+const AREAS_CLINICO = [
+  "Clínica Médica", "Cirurgia", "Pediatria", "Ginecologia e Obstetrícia",
+  "Medicina Preventiva", "Cardiologia", "Neurologia", "Semiologia",
+];
+const AREAS_INTERNATO = [
   "Clínica Médica", "Cirurgia", "Pediatria", "Ginecologia e Obstetrícia",
   "Medicina Preventiva", "Oncologia", "Neurologia", "Cardiologia",
 ];
+
+function getAreasForPeriodo(periodo: number | null): string[] {
+  if (!periodo) return AREAS_CLINICO; // default
+  if (periodo <= 4) return AREAS_BASICO;
+  if (periodo <= 8) return AREAS_CLINICO;
+  return AREAS_INTERNATO;
+}
 
 const SCENARIO_HINTS: Record<string, string> = {
   "Clínica Médica": "Varie: UBS, enfermaria, UTI, ambulatório. Pacientes 20-90 anos, diferentes comorbidades. Emergência hipertensiva, ICC descompensada, pneumonia, cetoacidose, TEP.",
@@ -58,6 +83,14 @@ const Diagnostic = () => {
   const [alreadyDone, setAlreadyDone] = useState(false);
   const [resumeIdx, setResumeIdx] = useState(0);
   const [xpEarned, setXpEarned] = useState(0);
+  const [userPeriodo, setUserPeriodo] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("periodo").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      if (data?.periodo) setUserPeriodo(data.periodo);
+    });
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -123,9 +156,12 @@ REGRAS DE DIVERSIDADE OBRIGATÓRIAS:
 - Cada paciente deve ter idade, sexo e contexto clínico DISTINTOS
 - ${usedTopics ? `NÃO repita temas similares a: ${usedTopics}` : ""}
 
-REGRA DE GABARITO:
-- NUNCA repita mesma letra consecutiva
-- Distribua gabaritos entre A(0), B(1), C(2), D(3), E(4) — use pelo menos 4 letras diferentes
+REGRA DE GABARITO (CRÍTICA — SIGA EXATAMENTE):
+- Distribua gabaritos UNIFORMEMENTE entre A(0), B(1), C(2), D(3), E(4)
+- Para ${QUESTIONS_PER_AREA} questões, cada letra DEVE aparecer pelo menos 1 vez
+- NUNCA repita mesma letra mais que 2 vezes consecutivas
+- Exemplo válido para 5 questões: correct_index = [0, 2, 4, 1, 3]
+- Exemplo INVÁLIDO: correct_index = [0, 0, 1, 0, 1]
 
 FORMATO: Retorne APENAS JSON array:
 [{"statement":"Caso clínico completo com ≥150 chars...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"topic":"${area}","explanation":"Raciocínio clínico passo a passo...","difficulty":"${difficulty}"}]
@@ -150,6 +186,7 @@ NÃO inclua texto extra, APENAS o JSON.` }],
       const allQuestions: DiagQuestion[] = [];
       const failedAreas: string[] = [];
 
+      const AREAS = getAreasForPeriodo(userPeriodo);
       // Process areas in batches of 2 to reduce server load
       for (let i = 0; i < AREAS.length; i += 2) {
         const batch = AREAS.slice(i, i + 2);

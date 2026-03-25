@@ -76,7 +76,7 @@ const Dashboard = () => {
     );
   }
 
-  const { stats, metrics, displayName } = data;
+  const { stats, metrics, displayName, hasCompletedDiagnostic } = data;
   const taskPercent = stats.totalTasks > 0 ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0;
   const isNewUser = metrics.questionsAnswered === 0 && stats.flashcards === 0;
 
@@ -136,24 +136,24 @@ const Dashboard = () => {
       <QuickStartCard
         questionsAnswered={metrics.questionsAnswered}
         flashcards={stats.flashcards}
-        hasCompletedDiagnostic={false}
+        hasCompletedDiagnostic={hasCompletedDiagnostic}
       />
 
       {/* Onboarding Checklist */}
       <OnboardingChecklist
         stats={stats}
         metrics={metrics}
-        hasCompletedDiagnostic={false}
+        hasCompletedDiagnostic={hasCompletedDiagnostic}
       />
 
       {/* Smart Recommendations */}
       <SmartRecommendations
         stats={stats}
         metrics={metrics}
-        hasCompletedDiagnostic={false}
+        hasCompletedDiagnostic={hasCompletedDiagnostic}
       />
 
-      {!isNewUser && (
+    {!isNewUser && (
         <Suspense fallback={<div className="space-y-6"><ChartFallback /><ChartFallback /></div>}>
           {/* Streak Calendar + Daily Goal */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -163,6 +163,10 @@ const Dashboard = () => {
 
           {/* KPIs */}
           <DashboardMetricsGrid stats={stats} metrics={metrics} />
+
+          {/* Approval Thermometer — higher visibility */}
+          <ApprovalThermometer metrics={metrics} />
+
           <DailyPlanWidget />
 
           {/* Specialty Progress */}
@@ -175,10 +179,7 @@ const Dashboard = () => {
             <MiniLeaderboard />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ApprovalThermometer metrics={metrics} />
-            <TopicEvolution />
-          </div>
+          <TopicEvolution />
 
           <SpecialtyBenchmark />
         </Suspense>
