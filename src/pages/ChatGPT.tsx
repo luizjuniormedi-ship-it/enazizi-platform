@@ -776,8 +776,8 @@ const ChatGPT = () => {
       {/* Header */}
       <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1 flex items-center gap-3">
-          <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl overflow-hidden flex-shrink-0 tutor-glow float-gentle ring-2 ring-primary/30 shadow-lg">
-            <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-cover object-top" />
+          <div className="h-14 w-11 sm:h-[4.5rem] sm:w-14 rounded-2xl overflow-hidden flex-shrink-0 tutor-glow float-gentle ring-2 ring-primary/30 shadow-lg">
+            <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-contain" />
           </div>
           <div className="min-w-0">
             <h1 className="text-base sm:text-xl font-bold truncate">TutorZizi</h1>
@@ -1181,8 +1181,8 @@ const ChatGPT = () => {
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""} animate-fade-in`}>
                 {msg.role === "assistant" && (
-                  <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/25 shadow-md">
-                    <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-cover object-top" />
+                  <div className="h-12 w-9 sm:h-14 sm:w-11 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/25 shadow-md">
+                    <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-contain" />
                   </div>
                 )}
                 <div className={`rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm leading-relaxed relative group ${
@@ -1216,8 +1216,8 @@ const ChatGPT = () => {
             ))}
             {isLoading && messages[messages.length - 1]?.role === "user" && (
               <div className="flex gap-2 sm:gap-3 animate-fade-in">
-                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/25 shadow-md">
-                  <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-cover object-top" />
+                <div className="h-12 w-9 sm:h-14 sm:w-11 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/25 shadow-md">
+                  <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-contain" />
                 </div>
                 <div className="rounded-xl px-4 py-3 bg-secondary/80 backdrop-blur-sm">
                   <div className="flex gap-1.5 items-center">
