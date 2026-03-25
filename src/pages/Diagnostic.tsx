@@ -126,15 +126,42 @@ const Diagnostic = () => {
     }
   };
 
-  const generateAreaQuestions = async (area: string): Promise<DiagQuestion[]> => {
+  /** Collect pathologies/diagnoses already used across all accumulated questions */
+  const getUsedPathologies = (allQ: DiagQuestion[]): string[] => {
+    const pathologies: string[] = [];
+    for (const q of allQ) {
+      // Extract from explanation (most likely mentions the pathology)
+      const explMatch = q.explanation?.match(/^([^.—:]+)/);
+      if (explMatch) pathologies.push(explMatch[1].trim().slice(0, 60));
+      // Also use first 80 chars of statement to identify scenario
+    }
+    return [...new Set(pathologies)];
+  };
+
+  /** Check if two questions are too similar (first 80 chars of statement) */
+  const isDuplicate = (q: DiagQuestion, existing: DiagQuestion[]): boolean => {
+    const snippet = q.statement.slice(0, 80).toLowerCase();
+    return existing.some(e => {
+      const eSnippet = e.statement.slice(0, 80).toLowerCase();
+      // Check if >60% of chars overlap
+      let matches = 0;
+      for (let i = 0; i < Math.min(snippet.length, eSnippet.length); i++) {
+        if (snippet[i] === eSnippet[i]) matches++;
+      }
+      return matches / Math.max(snippet.length, eSnippet.length) > 0.6;
+    });
+  };
+
+  const generateAreaQuestions = async (area: string, allQuestionsSoFar: DiagQuestion[]): Promise<DiagQuestion[]> => {
     const hint = SCENARIO_HINTS[area] || "";
     const difficulty = getDifficultyForArea(area, answers);
     const seed = Math.floor(Math.random() * 99999);
-    const usedTopics = questions
-      .filter(q => q.topic === area)
-      .map(q => q.statement.slice(0, 40))
-      .slice(-3)
-      .join("; ");
+
+    // Collect used pathologies from all questions generated so far
+    const usedPathologies = getUsedPathologies(allQuestionsSoFar);
+    const usedPathologiesStr = usedPathologies.length > 0
+      ? `\nPATOLOGIAS/DIAGNÓSTICOS JÁ USADOS NESTE EXAME (PROIBIDO REPETIR): ${usedPathologies.join(", ")}`
+      : "";
 
     const res = await invokeQuestionGeneratorWithTimeout({
       stream: false,
