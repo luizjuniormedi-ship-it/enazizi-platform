@@ -187,7 +187,7 @@ REGRAS DE DIVERSIDADE OBRIGATÓRIAS:
 - PROIBIDO repetir cenário, perfil de paciente, faixa etária ou queixa principal
 - Varie o TIPO de pergunta: 1 diagnóstico, 1 conduta, 1 exame complementar, 1 fisiopatologia, 1 tratamento
 - Cada paciente deve ter idade, sexo e contexto clínico DISTINTOS
-- ${usedTopics ? `NÃO repita temas similares a: ${usedTopics}` : ""}
+- PROIBIDO repetir a mesma patologia/diagnóstico principal já usada em outra questão deste exame${usedPathologiesStr}
 
 REGRA DE GABARITO (CRÍTICA — SIGA EXATAMENTE):
 - Distribua gabaritos UNIFORMEMENTE entre A(0), B(1), C(2), D(3), E(4)
