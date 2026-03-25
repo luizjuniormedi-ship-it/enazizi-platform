@@ -5,7 +5,7 @@ import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useLocation } from "react-router-dom";
 import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap, LogOut, AlertTriangle, Maximize2, Minimize2, MoreVertical, Copy, ChevronUp, Zap, Brain, Heart, Bone, Eye, Pill, Baby, Microscope, Activity, X, Flame, ArrowRight, Target, TrendingUp } from "lucide-react";
-import tutorAvatar from "@/assets/tutor-avatar.png";
+import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { Button } from "@/components/ui/button";
@@ -776,8 +776,8 @@ const ChatGPT = () => {
       {/* Header */}
       <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1 flex items-center gap-3">
-          <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl overflow-hidden flex-shrink-0 tutor-glow float-gentle ring-2 ring-primary/20">
-            <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-cover" />
+          <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl overflow-hidden flex-shrink-0 tutor-glow float-gentle ring-2 ring-primary/30 shadow-lg">
+            <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-cover object-top" />
           </div>
           <div className="min-w-0">
             <h1 className="text-base sm:text-xl font-bold truncate">TutorZizi</h1>
@@ -1181,8 +1181,8 @@ const ChatGPT = () => {
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""} animate-fade-in`}>
                 {msg.role === "assistant" && (
-                  <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/20">
-                    <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-cover" />
+                  <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/25 shadow-md">
+                    <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-cover object-top" />
                   </div>
                 )}
                 <div className={`rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm leading-relaxed relative group ${
@@ -1216,8 +1216,8 @@ const ChatGPT = () => {
             ))}
             {isLoading && messages[messages.length - 1]?.role === "user" && (
               <div className="flex gap-2 sm:gap-3 animate-fade-in">
-                <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/20">
-                  <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-cover" />
+                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/25 shadow-md">
+                  <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-cover object-top" />
                 </div>
                 <div className="rounded-xl px-4 py-3 bg-secondary/80 backdrop-blur-sm">
                   <div className="flex gap-1.5 items-center">
