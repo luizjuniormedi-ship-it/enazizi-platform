@@ -256,7 +256,7 @@ const QuestionGenerator = () => {
             >
               <HelpCircle className="h-5 w-5" />
               Gerar {quantity} Questões
-              {specialty && specialty !== "all" ? ` de ${specialty}` : ""}
+              {effectiveSpecialty ? ` de ${effectiveSpecialty}` : ""}
             </Button>
           </div>
         </div>
