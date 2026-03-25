@@ -505,6 +505,16 @@ const ClinicalSimulation = () => {
     }
   }, [user]);
 
+  const deleteHistoryItem = useCallback(async (id: string) => {
+    try {
+      await supabase.from("simulation_history").delete().eq("id", id).eq("user_id", user!.id);
+      setHistory(prev => prev.filter(h => h.id !== id));
+      toast({ title: "Plantão removido do histórico" });
+    } catch {
+      toast({ title: "Erro ao excluir", variant: "destructive" });
+    }
+  }, [user, toast]);
+
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
   useEffect(() => {
