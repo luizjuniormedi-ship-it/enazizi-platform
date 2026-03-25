@@ -1,56 +1,87 @@
 
 
-# Plano: Adicionar Bibliografia por Especialidade aos Geradores
+# Plano: Pacote de Melhorias e Correções (16 itens)
 
-## Objetivo
+## Prioridade Alta (Bugs/Correções)
 
-Incorporar a tabela de livros por especialidade (Braunwald, Murray & Nadel, Adams & Victor, etc.) em todos os pontos de geracao de conteudo: question-generator, generate-flashcards, daily-question-generator, diagnostic, e o prompt compartilhado enazizi-prompt.
+### 1. Dashboard — Streak não reconhece simulado/plantão
+**Problema**: O `addXp` em `useGamification.ts` atualiza o streak, mas módulos como Simulados e Plantão podem não estar chamando `addXp` consistentemente. Além disso, o streak só conta `practice_attempts`, ignorando `exam_sessions` e `simulation_history`.
+**Correção**: Garantir que `addXp` é chamado em todos os módulos (simulados, plantão, anamnese) e que o DailyGoalWidget conta questões de simulados (`exam_sessions`) além de `practice_attempts`.
 
-## Implementacao
+### 2. Dashboard — Meta diária não evolui
+**Problema**: `DailyGoalWidget` conta apenas `practice_attempts`. Questões respondidas em simulados (`exam_sessions.answers_json`) e questões interativas em chat não são contabilizadas.
+**Correção**: Somar `practice_attempts` + questões de `exam_sessions` finalizadas hoje na query do widget.
 
-### 1. Criar mapa de bibliografia em `supabase/functions/_shared/specialty-bibliography.ts`
+### 3. Jornada 7 dias — Não reconhece Nivelamento
+**Problema**: `OnboardingChecklist` usa `hasCompletedDiagnostic` que é passado como `false` hardcoded no Dashboard.
+**Correção**: No `useDashboardData`, buscar `profiles.has_completed_diagnostic` e passá-lo para o componente.
 
-Novo arquivo exportando um `Record<string, string>` mapeando cada especialidade aos seus livros de referencia. Centraliza a informacao para ser reutilizada por todas as edge functions.
+### 4. Simulados — Botão descartar sessão não funciona
+**Problema**: O `abandonSession` do `useSessionPersistence` é chamado mas o `SimuladoSetup` pode não estar conectando o `onDiscard` ao `abandonSession` corretamente.
+**Correção**: Verificar e corrigir o fluxo de discard no `SimuladoSetup`, garantindo que chama `abandonSession` + `clearPending`.
 
-Conteudo: as 22 especialidades da tabela enviada (Cardiologia → Braunwald + SOCESP, Pneumologia → Murray & Nadel + Tarantino, etc.).
+### 5. Nivelamento — Só responde A ou B
+**Problema**: O prompt do Diagnostic não intercala gabaritos suficientemente. O `correct_index` gerado pela IA tende a ser 0 ou 1.
+**Correção**: Adicionar instrução explícita no prompt para distribuir `correct_index` entre 0-4 uniformemente, e validar no parse que os gabaritos estão distribuídos.
 
-Funcao utilitaria `getBibliographyForSpecialty(specialty: string): string` que retorna a linha de referencia ou string vazia se nao encontrar.
+### 6. Gerador de questões — Erro na contagem BI
+**Problema**: A contagem de questões por usuário no painel admin BI pode estar usando a tabela errada ou não filtrando corretamente.
+**Correção**: Investigar `AdminBIPanel` e corrigir a query de contagem.
 
-### 2. Atualizar `supabase/functions/_shared/enazizi-prompt.ts`
+## Prioridade Média (Melhorias de UX)
 
-Na secao "FONTES PERMITIDAS" (linhas 609-634), adicionar um novo bloco **CICLO CLINICO POR ESPECIALIDADE** com todas as 22 areas e seus livros, entre o bloco "CICLO CLINICO E INTERNATO" e "DIRETRIZES".
+### 7. Termômetro de aprovação — Mover para cima
+**Correção**: No `Dashboard.tsx`, mover o `ApprovalThermometer` para logo após o `DashboardMetricsGrid`, antes dos charts pesados.
 
-### 3. Atualizar `supabase/functions/daily-question-generator/index.ts`
+### 8. Nivelamento — Condizente com ciclo acadêmico
+**Problema**: O Diagnostic usa 8 áreas fixas independente do período do aluno.
+**Correção**: Buscar `profiles.periodo` e filtrar AREAS por ciclo (1-4 período = Ciclo Básico; 5-8 = Clínico; 9-12 = Internato). Usar áreas condizentes com cada ciclo.
 
-No prompt de geracao (linha ~72), adicionar apos as regras:
-```
-BIBLIOGRAFIA DE REFERÊNCIA OBRIGATÓRIA para ${specialty}:
-${getBibliographyForSpecialty(specialty)}
-Use estes livros como base para o conteudo e cite-os nas explicacoes.
-```
+### 9. Resumidor — Padronizar com TutorZizi
+**Correção**: Alinhar o prompt do `content-summarizer` com o protocolo ENAZIZI do `enazizi-prompt.ts`, incluindo mesma estrutura de referências e formato de resposta.
 
-### 4. Atualizar `supabase/functions/question-generator/index.ts`
+### 10. TutorZizi — Diminuir área de checkpoints
+**Correção**: Reduzir o tamanho visual dos checkpoints no componente de chat do agente (provavelmente em `AgentChat.tsx`), usando padding/font menores.
 
-Na secao "FONTES DE REFERENCIA" (linhas 83-88), expandir com o bloco completo de bibliografia por especialidade, instruindo a IA a usar os livros especificos da area solicitada.
+### 11. Gerador de questões — Gabarito comentado + repetir caso + explicação leigo
+**Correção**: Atualizar o prompt do `question-generator` para incluir: (a) explicação detalhada citando o livro de referência, (b) repetição do caso clínico no gabarito, (c) seção "Explicação Simplificada" em linguagem acessível.
 
-### 5. Atualizar `supabase/functions/generate-flashcards/index.ts`
+### 12. Discursivas — Separar perguntas
+**Correção**: No módulo de discursivas, apresentar cada sub-pergunta em card/seção separada em vez de bloco único.
 
-Na secao "FONTES DE REFERENCIA" (linhas 111-115), adicionar o mesmo bloco expandido de bibliografia por especialidade.
+### 13. Anamnese — Mostrar perguntas feitas
+**Correção**: Adicionar painel lateral (similar ao prontuário do Plantão) que lista todas as perguntas já feitas pelo aluno durante a anamnese.
 
-### 6. Atualizar `src/pages/Diagnostic.tsx`
+### 14. Plantão — Intervenções externas
+**Correção**: Adicionar no prompt do `clinical-simulation` instruções para inserir intervenções externas (enfermagem interrompe, familiar chega, resultado de exame inesperado) para aumentar realismo.
 
-No prompt do diagnostico (linha ~92), adicionar instrucao de referencia bibliografica importando o mapa inline (ja que e frontend, sera uma const local com o mesmo mapeamento).
+### 15. Plantão — Excluir histórico individual
+**Correção**: Adicionar botão de exclusão individual em cada item do histórico de plantões (`simulation_history`).
 
-## Arquivos modificados
+### 16. Cadastro — Médico: especialidade + onde formou
+**Problema**: Quando `user_type = "medico"`, o perfil não pede especialidade nem faculdade de formação.
+**Correção**: No `Profile.tsx`, quando `userType === "medico"`, mostrar campo de especialidade médica (Select com lista de especialidades) e campo "Onde formou" (FaculdadeCombobox). Adicionar colunas `specialty` (já existe como `target_specialty`) e reutilizar `faculdade` para médicos também.
 
-- **Criado**: `supabase/functions/_shared/specialty-bibliography.ts`
-- **Editado**: `supabase/functions/_shared/enazizi-prompt.ts`
-- **Editado**: `supabase/functions/daily-question-generator/index.ts`
-- **Editado**: `supabase/functions/question-generator/index.ts`
-- **Editado**: `supabase/functions/generate-flashcards/index.ts`
-- **Editado**: `src/pages/Diagnostic.tsx`
+## Arquivos a modificar
 
-## Impacto
+- `src/hooks/useDashboardData.ts` — buscar `has_completed_diagnostic` do perfil
+- `src/pages/Dashboard.tsx` — passar diagnostic flag, reposicionar termômetro
+- `src/components/dashboard/DailyGoalWidget.tsx` — somar exam_sessions na meta
+- `src/components/dashboard/OnboardingChecklist.tsx` — usar flag real
+- `src/hooks/useGamification.ts` — garantir contagem correta
+- `src/pages/Simulados.tsx` — corrigir discard session
+- `src/pages/Diagnostic.tsx` — filtrar áreas por ciclo, melhorar distribuição gabarito
+- `src/pages/Profile.tsx` — campos médico (especialidade + faculdade)
+- `src/components/admin/AdminBIPanel.tsx` — corrigir contagem questões
+- `supabase/functions/question-generator/index.ts` — gabarito comentado
+- `supabase/functions/content-summarizer/index.ts` — padronizar com TutorZizi
+- `supabase/functions/clinical-simulation/index.ts` — intervenções externas
+- `src/components/agents/AgentChat.tsx` — reduzir checkpoints
+- `src/pages/DiscursiveQuestions.tsx` — separar perguntas
+- `src/pages/ClinicalSimulation.tsx` — excluir histórico individual
+- `src/pages/AnamnesisTrainer.tsx` — painel de perguntas feitas
 
-Apenas prompts de IA. Nenhuma migracao de banco. Todas as edge functions modificadas serao redeployadas automaticamente.
+## Sugestão de execução
+
+Dividir em 3-4 sprints por prioridade. Recomendo começar pelos itens 1-6 (bugs) que impactam a experiência direta do usuário.
 
