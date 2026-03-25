@@ -1341,6 +1341,15 @@ const ClinicalSimulation = () => {
                         ) : (
                           <Badge variant="destructive" className="text-[10px] gap-0.5"><XCircle className="h-2.5 w-2.5" /> ✗</Badge>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          onClick={(e) => { e.stopPropagation(); deleteHistoryItem(h.id); }}
+                          title="Excluir"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                         <Eye className="h-4 w-4 text-muted-foreground" />
                       </div>
                     </div>
