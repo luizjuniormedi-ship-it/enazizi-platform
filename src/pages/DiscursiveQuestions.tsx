@@ -68,9 +68,9 @@ const DiscursiveQuestions = () => {
   // Question state
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [clinicalCase, setClinicalCase] = useState("");
-  const [question, setQuestion] = useState("");
+  const [questions, setQuestions] = useState<string[]>([]);
   const [gradingCriteria, setGradingCriteria] = useState<any[]>([]);
-  const [answer, setAnswer] = useState("");
+  const [answers, setAnswers] = useState<string[]>([]);
 
   // Correction
   const [correction, setCorrection] = useState<Correction | null>(null);
