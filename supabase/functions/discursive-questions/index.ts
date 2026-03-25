@@ -100,7 +100,7 @@ Retorne APENAS um JSON válido:
 
         if (insertErr) throw new Error(insertErr.message);
 
-        return ok({ id: attempt.id, case: questionData.case, question: questionData.question, grading_criteria: questionData.grading_criteria });
+        return ok({ id: attempt.id, case: questionData.case, questions, grading_criteria: questionData.grading_criteria });
       }
 
       case "correct": {
