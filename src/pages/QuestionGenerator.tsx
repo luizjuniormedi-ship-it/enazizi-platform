@@ -45,6 +45,7 @@ const QuestionGenerator = () => {
   const marathonAnsweredRef = useRef(0);
   const marathonTotalRef = useRef(0);
   const sendPromptRef = useRef<((prompt: string) => void) | null>(null);
+  const initialPromptRef = useRef<string>("");
 
   // Listen to InteractiveQuestionCard answers via custom event
   useEffect(() => {
