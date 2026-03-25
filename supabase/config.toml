@@ -59,3 +59,6 @@ verify_jwt = false
 
 [functions.system-health-check]
 verify_jwt = false
+
+[functions.search-real-questions]
+verify_jwt = false

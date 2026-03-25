@@ -14,6 +14,7 @@ import AdminStatsCards from "@/components/admin/AdminStatsCards";
 import AdminOnlineUsers from "@/components/admin/AdminOnlineUsers";
 import AdminPlanDistribution from "@/components/admin/AdminPlanDistribution";
 import AdminDailyGenerationAlert from "@/components/admin/AdminDailyGenerationAlert";
+import AdminWebScrapingPanel from "@/components/admin/AdminWebScrapingPanel";
 import AdminAuditLog from "@/components/admin/AdminAuditLog";
 import AdminDialogs from "@/components/admin/AdminDialogs";
 import AdminUserRow from "@/components/admin/AdminUserRow";
@@ -273,6 +274,7 @@ const Admin = () => {
       <AdminOnlineUsers stats={stats} />
       <AdminPlanDistribution stats={stats} />
       <AdminDailyGenerationAlert />
+      <AdminWebScrapingPanel />
 
       {/* Users with tabs */}
       <div className="glass-card p-6">
