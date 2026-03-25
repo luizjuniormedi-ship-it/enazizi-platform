@@ -771,7 +771,7 @@ const ChatGPT = () => {
   const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Estudante";
 
   const content = (
-    <div className={`flex flex-col animate-fade-in min-w-0 ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-full max-h-[calc(100dvh-8rem)] sm:max-h-[calc(100dvh-6rem)] lg:max-h-[calc(100dvh-5rem)]"}`}>
+    <div className={`flex flex-col animate-fade-in min-w-0 w-full ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-full max-h-[calc(100dvh-8rem)] sm:max-h-[calc(100dvh-6rem)] lg:max-h-[calc(100dvh-5rem)]"}`}>
       {/* Header */}
       <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1 flex items-center gap-3">
@@ -882,7 +882,7 @@ const ChatGPT = () => {
           {metricsCollapsed ? <ChevronDown className="h-3.5 w-3.5 ml-auto" /> : <ChevronUp className="h-3.5 w-3.5 ml-auto" />}
         </button>
         {!metricsCollapsed && (
-          <div className="grid grid-cols-4 gap-2 mt-2 animate-fade-in">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2 animate-fade-in">
             <div className="glass-card p-2 sm:p-3 flex items-center gap-2 card-3d">
               <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                 <BarChart3 className="h-4 w-4 text-primary" />
@@ -975,7 +975,7 @@ const ChatGPT = () => {
                 <Target className="h-3.5 w-3.5 text-warning" />
                 <span className="text-warning">Recomendado para você</span>
               </h3>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
                 {performance.temas_fracos.map((t, i) => (
                   <button
                     key={i}
@@ -995,7 +995,7 @@ const ChatGPT = () => {
             <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
               <Zap className="h-3.5 w-3.5 text-primary" /> Temas Populares
             </h3>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
               {QUICK_TOPICS.map((qt) => (
                 <button
                   key={qt.label}
