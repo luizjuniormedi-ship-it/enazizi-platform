@@ -308,9 +308,9 @@ const QuestionGenerator = () => {
 
       <AgentChat
         title="Gerador de Questões"
-        subtitle={`${specialty && specialty !== "all" ? specialty + " • " : ""}${DIFFICULTY_OPTIONS.find(d => d.value === difficulty)?.label || "Intermediário"} • ${quantity} questões${marathonMode ? " • 🔥 Maratona" : ""}`}
+        subtitle={`${effectiveSpecialty ? effectiveSpecialty + " • " : ""}${DIFFICULTY_OPTIONS.find(d => d.value === difficulty)?.label || "Intermediário"} • ${quantity} questões${marathonMode ? " • 🔥 Maratona" : ""}`}
         icon={<HelpCircle className="h-6 w-6 text-primary" />}
-        welcomeMessage={`Gerando ${quantity} questões${specialty && specialty !== "all" ? ` de ${specialty}` : " mistas"} (${DIFFICULTY_OPTIONS.find(d => d.value === difficulty)?.label})... Aguarde! 🧠`}
+        welcomeMessage={`Gerando ${quantity} questões${effectiveSpecialty ? ` de ${effectiveSpecialty}` : " mistas"} (${DIFFICULTY_OPTIONS.find(d => d.value === difficulty)?.label})... Aguarde! 🧠`}
         welcomeMessageWithUploads="📚 Detectei {count} material(is) do seu acervo: {materiais}. Vou usar como base para gerar questões! 👇"
         placeholder="Ex: Gere mais 5 de Cardiologia sobre IAM..."
         functionName="question-generator"
