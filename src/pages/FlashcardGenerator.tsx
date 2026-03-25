@@ -1,27 +1,17 @@
-import { FlipVertical } from "lucide-react";
+import { FlipVertical, Target, Zap } from "lucide-react";
 import AgentChat from "@/components/agents/AgentChat";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useCallback } from "react";
+import { useCallback, useState, useRef } from "react";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 
-const quickActions = [
-  { label: "🎯 Escolher tema", prompt: "Quero gerar flashcards clínicos. Me pergunte sobre qual tema/especialidade eu quero antes de começar.", icon: "🎯" },
-  { label: "🫀 Cardiologia (10)", prompt: "Gere 10 flashcards clínicos de Cardiologia com casos clínicos variados, cobrindo IAM, IC, arritmias e valvopatias.", icon: "🫀" },
-  { label: "🧒 Pediatria (10)", prompt: "Gere 10 flashcards clínicos de Pediatria com casos clínicos variados, cobrindo reanimação neonatal, bronquiolite, meningite e desidratação.", icon: "🧒" },
-  { label: "🔪 Cirurgia (10)", prompt: "Gere 10 flashcards clínicos de Cirurgia com casos clínicos variados, cobrindo abdome agudo, trauma e hérnias.", icon: "🔪" },
-  { label: "🤰 GO (10)", prompt: "Gere 10 flashcards clínicos de Ginecologia e Obstetrícia com casos clínicos variados, cobrindo pré-eclâmpsia, DMG, SOP e endometriose.", icon: "🩷" },
-  { label: "🧠 Neurologia (10)", prompt: "Gere 10 flashcards clínicos de Neurologia com casos clínicos variados, cobrindo AVC, epilepsia, meningite e Guillain-Barré.", icon: "🧠" },
-  { label: "🦠 Infectologia (10)", prompt: "Gere 10 flashcards clínicos de Infectologia com casos clínicos variados, cobrindo HIV, sepse, tuberculose e hepatites virais.", icon: "🦠" },
-  { label: "💊 Endocrinologia (10)", prompt: "Gere 10 flashcards clínicos de Endocrinologia com casos clínicos variados, cobrindo DM, hipotireoidismo, Cushing e CAD.", icon: "💊" },
-  { label: "🛡️ Preventiva (10)", prompt: "Gere 10 flashcards clínicos de Medicina Preventiva com casos variados, cobrindo rastreamento, vacinação, epidemiologia e SUS.", icon: "🛡️" },
-  { label: "🎗️ Oncologia (10)", prompt: "Gere 10 flashcards clínicos de Oncologia com casos clínicos variados, cobrindo câncer de mama, pulmão, colorretal, estadiamento TNM, síndromes paraneoplásicas e emergências oncológicas.", icon: "🎗️" },
-  { label: "⚡ 20 Mistas", prompt: "Gere 20 flashcards clínicos mistos cobrindo Clínica Médica, Cirurgia, Pediatria, GO, Preventiva e Oncologia. Varie os subtemas.", icon: "⚡" },
-];
+const QUANTITY_OPTIONS = [5, 10, 15, 20];
 
 function parseFlashcardsFromText(content: string): Array<{ question: string; answer: string; topic: string }> {
   const flashcards: Array<{ question: string; answer: string; topic: string }> = [];
-
   const blocks = content.split(/\*\*FLASHCARD\s+\d+/i).filter(b => b.trim());
 
   for (const block of blocks) {
@@ -56,6 +46,22 @@ function parseFlashcardsFromText(content: string): Array<{ question: string; ans
 const FlashcardGenerator = () => {
   const { user } = useAuth();
   const { addXp } = useGamification();
+  const [specialty, setSpecialty] = useState<string>("");
+  const [cycleFilter, setCycleFilter] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(10);
+  const [showSetup, setShowSetup] = useState(true);
+  const initialPromptRef = useRef<string>("");
+
+  const effectiveSpecialty = specialty && specialty !== "all" ? specialty : "";
+
+  const buildPrompt = () => {
+    const specPart = effectiveSpecialty || "várias especialidades médicas (variando)";
+    return `Gere ${quantity} flashcards clínicos de ${specPart} com casos clínicos variados, cobrindo subtemas diferentes. Formato com caso clínico, pergunta, resposta, explicação e ponto de prova.`;
+  };
+
+  const quickActions = showSetup ? [] : [
+    { label: "🔄 Gerar mais", prompt: buildPrompt(), icon: "🔄" },
+  ];
 
   const handleSaveFlashcards = useCallback(async (content: string): Promise<number> => {
     if (!user) throw new Error("Usuário não autenticado");
@@ -94,20 +100,94 @@ const FlashcardGenerator = () => {
     return `⛔ FLASHCARDS JÁ GERADOS ANTERIORMENTE (NÃO REPETIR cenários similares — varie diagnóstico, perfil do paciente e abordagem):\n${items.join("\n")}`;
   }, [user]);
 
+  const handleStartGenerating = () => {
+    setShowSetup(false);
+    initialPromptRef.current = buildPrompt();
+  };
+
+  if (showSetup) {
+    return (
+      <div className="flex flex-col animate-fade-in h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)]">
+        <div className="mb-4">
+          <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
+            <FlipVertical className="h-6 w-6 text-primary" />
+            Gerador de Flashcards Clínicos
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Configure e gere flashcards com casos clínicos para residência.</p>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center">
+          <div className="glass-card p-6 sm:p-8 max-w-lg w-full space-y-6">
+            {/* Specialty */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-1.5">
+                <Target className="h-4 w-4 text-primary" />
+                Especialidade
+              </label>
+              <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-2" />
+              <Select value={specialty} onValueChange={setSpecialty}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas (misto)" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  <SelectItem value="all">Todas (misto)</SelectItem>
+                  {getFilteredSpecialties(cycleFilter).map(s => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Quantity */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Quantidade</label>
+              <div className="flex gap-2">
+                {QUANTITY_OPTIONS.map(q => (
+                  <button
+                    key={q}
+                    onClick={() => setQuantity(q)}
+                    className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-all ${
+                      quantity === q
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card hover:bg-secondary"
+                    }`}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Start button */}
+            <Button
+              className="w-full gap-2 h-12 text-base"
+              onClick={handleStartGenerating}
+            >
+              <FlipVertical className="h-5 w-5" />
+              Gerar {quantity} Flashcards
+              {effectiveSpecialty ? ` de ${effectiveSpecialty}` : ""}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <AgentChat
       title="Gerador de Flashcards Clínicos"
-      subtitle="Flashcards com casos clínicos para residência médica e Revalida."
+      subtitle={`${effectiveSpecialty ? effectiveSpecialty + " • " : ""}${quantity} flashcards`}
       icon={<FlipVertical className="h-6 w-6 text-primary" />}
-      welcomeMessage="Olá! Sou o Gerador de Flashcards Clínicos ENAZIZI. 🏥 Crio flashcards baseados em **casos clínicos** para treinar seu raciocínio diagnóstico. Me diga: qual **especialidade** você quer treinar? Exemplo: 'Cardiologia', 'Pediatria', 'Cirurgia'. Ou clique em uma opção abaixo! 👇"
-      welcomeMessageWithUploads="📚 Detectei {count} material(is) do seu acervo: {materiais}. Vou usar como base para gerar flashcards clínicos! Escolha o tema abaixo ou me diga o que prefere. 👇"
-      placeholder="Ex: Gere 10 flashcards de Cardiologia sobre IAM..."
+      welcomeMessage={`Gerando ${quantity} flashcards${effectiveSpecialty ? ` de ${effectiveSpecialty}` : " mistos"}... Aguarde! 🏥`}
+      welcomeMessageWithUploads="📚 Detectei {count} material(is) do seu acervo: {materiais}. Vou usar como base para gerar flashcards clínicos! 👇"
+      placeholder="Ex: Gere mais 5 de Cardiologia sobre IAM..."
       functionName="generate-flashcards"
       onSaveMessage={handleSaveFlashcards}
       quickActions={quickActions}
       showUploadButton={true}
       autoPromptAfterUpload="Gere 10 flashcards clínicos baseados no material que acabei de enviar: {filename}. Use o conteúdo do material como base para criar casos clínicos variados."
       previousContentLoader={loadPreviousFlashcards}
+      initialPrompt={initialPromptRef.current}
     />
   );
 };
