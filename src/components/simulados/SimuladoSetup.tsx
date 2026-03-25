@@ -58,12 +58,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
         <ResumeSessionBanner
           updatedAt={pendingSession.updated_at}
           onResume={onResumeSession}
-          onDiscard={() => {
-            // Call parent's abandonSession through the hook
-            if (typeof (window as any).__simuladoAbandon === 'function') {
-              (window as any).__simuladoAbandon();
-            }
-          }}
+          onDiscard={onDiscardSession}
         />
       )}
 
