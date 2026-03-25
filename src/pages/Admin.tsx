@@ -233,17 +233,17 @@ const Admin = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
               <Shield className="h-5 w-5 text-primary" />
             </div>
             Painel Admin
           </h1>
-          <p className="text-muted-foreground mt-1">Gerencie usuários, aprovações, planos e assinaturas.</p>
+          <p className="text-sm text-muted-foreground mt-1">Gerencie usuários, aprovações, planos e assinaturas.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Badge variant="outline" className="text-xs h-7">
             {users.length} usuários
           </Badge>

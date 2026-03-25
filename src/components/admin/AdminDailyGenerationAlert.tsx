@@ -86,13 +86,15 @@ const AdminDailyGenerationAlert = () => {
       : <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />;
 
   return (
-    <div className="glass-card p-5 border border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
-      <div className="flex items-center gap-2 mb-3">
-        <div className="p-1.5 rounded-lg bg-primary/10">
-          <Sparkles className="h-5 w-5 text-primary" />
+    <div className="glass-card p-4 sm:p-5 border border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-primary/10 flex-shrink-0">
+            <Sparkles className="h-5 w-5 text-primary" />
+          </div>
+          <h2 className="text-sm sm:text-base font-semibold">Questões Geradas Hoje</h2>
         </div>
-        <h2 className="text-base font-semibold">Questões Geradas Hoje</h2>
-        <div className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="sm:ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
           {statusIcon}
           <span className="capitalize">{lastStatus === "success" ? "Concluído" : lastStatus === "error" ? "Erro" : lastStatus === "pending" ? "Pendente" : "Sem execução"}</span>
         </div>
