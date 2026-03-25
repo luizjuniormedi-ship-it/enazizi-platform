@@ -128,12 +128,28 @@ const COACHING_TIPS: Record<number, { text: string; color: string }> = {
 type Phase = "lobby" | "active" | "diagnosis" | "finishing" | "result" | "review";
 
 interface ChatMessage {
-  role: "doctor" | "patient";
+  role: "doctor" | "patient" | "system";
   content: string;
   categories?: string[];
   quality?: number;
   timestamp: number;
 }
+
+// Track recently animated categories for bounce effect
+const useRecentlyCompleted = () => {
+  const [recent, setRecent] = useState<Set<string>>(new Set());
+  const addRecent = (keys: string[]) => {
+    setRecent(prev => new Set([...prev, ...keys]));
+    setTimeout(() => {
+      setRecent(prev => {
+        const next = new Set(prev);
+        keys.forEach(k => next.delete(k));
+        return next;
+      });
+    }, 1500);
+  };
+  return { recent, addRecent };
+};
 
 interface EvalCategory {
   score: number;
