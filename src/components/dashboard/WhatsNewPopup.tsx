@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, CheckCircle2, Rocket } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const CURRENT_VERSION = "7.1.0";
+const CURRENT_VERSION = "7.2.0";
 const STORAGE_KEY = "enazizi_last_seen_version_v2";
 
 interface UpdateItem {
