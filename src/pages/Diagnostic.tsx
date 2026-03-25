@@ -50,11 +50,17 @@ const AREAS_INTERNATO = [
   "Medicina Preventiva", "Oncologia", "Neurologia", "Cardiologia",
 ];
 
-function getAreasForPeriodo(periodo: number | null): string[] {
-  if (!periodo) return AREAS_CLINICO; // default
-  if (periodo <= 4) return AREAS_BASICO;
-  if (periodo <= 8) return AREAS_CLINICO;
-  return AREAS_INTERNATO;
+function getAreasForCycle(cycle: string): string[] {
+  if (cycle === "basico") return AREAS_BASICO;
+  if (cycle === "internato") return AREAS_INTERNATO;
+  return AREAS_CLINICO; // default / clinico
+}
+
+function periodoToDefaultCycle(periodo: number | null): string {
+  if (!periodo) return "";
+  if (periodo <= 4) return "basico";
+  if (periodo <= 8) return "clinico";
+  return "internato";
 }
 
 const SCENARIO_HINTS: Record<string, string> = {
