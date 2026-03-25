@@ -183,6 +183,7 @@ NÃO inclua texto extra, APENAS o JSON.` }],
       const allQuestions: DiagQuestion[] = [];
       const failedAreas: string[] = [];
 
+      const AREAS = getAreasForPeriodo(userPeriodo);
       // Process areas in batches of 2 to reduce server load
       for (let i = 0; i < AREAS.length; i += 2) {
         const batch = AREAS.slice(i, i + 2);
