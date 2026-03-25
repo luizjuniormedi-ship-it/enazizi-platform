@@ -11,7 +11,8 @@ import {
   MessageCircle, Send, Loader2, Clock, Award, RotateCcw,
   CheckCircle, XCircle, Star, Trophy, Target, ClipboardCheck,
   User, Heart, Pill, AlertTriangle, Users as UsersIcon, Activity,
-  Stethoscope, Baby, Brain, ListChecks, FileText, ChevronDown, ChevronUp, Sparkles, History
+  Stethoscope, Baby, Brain, ListChecks, FileText, ChevronDown, ChevronUp, Sparkles, History,
+  Eye, Lightbulb, BookOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
