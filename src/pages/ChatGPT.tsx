@@ -771,7 +771,7 @@ const ChatGPT = () => {
   const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Estudante";
 
   const content = (
-    <div className={`flex flex-col animate-fade-in min-w-0 ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-full max-h-[calc(100dvh-8rem)] sm:max-h-[calc(100dvh-6rem)] lg:max-h-[calc(100dvh-5rem)]"}`}>
+    <div className={`flex flex-col animate-fade-in min-w-0 w-full ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-full max-h-[calc(100dvh-8rem)] sm:max-h-[calc(100dvh-6rem)] lg:max-h-[calc(100dvh-5rem)]"}`}>
       {/* Header */}
       <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1 flex items-center gap-3">
