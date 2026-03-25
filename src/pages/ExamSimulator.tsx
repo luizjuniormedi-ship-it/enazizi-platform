@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ALL_SPECIALTIES } from "@/constants/specialties";
+import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 import { useNavigate } from "react-router-dom";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
