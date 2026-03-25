@@ -56,7 +56,11 @@ ANAMNESE ÚNICA (REGRA ABSOLUTA):
 Retorne APENAS um JSON válido:
 {
   "case": "Texto completo do caso clínico",
-  "question": "A pergunta discursiva",
+  "questions": [
+    "Primeira pergunta (ex: Qual o diagnóstico mais provável? Justifique.)",
+    "Segunda pergunta (ex: Cite 3 diagnósticos diferenciais relevantes.)",
+    "Terceira pergunta (ex: Descreva a conduta terapêutica inicial.)"
+  ],
   "expected_topics": ["tópico 1 esperado na resposta", "tópico 2", "tópico 3"],
   "grading_criteria": [
     {"criterion": "Diagnóstico correto", "max_points": 3},
@@ -64,7 +68,9 @@ Retorne APENAS um JSON válido:
     {"criterion": "Conduta adequada", "max_points": 3},
     {"criterion": "Justificativa e raciocínio clínico", "max_points": 2}
   ]
-}`;
+}
+
+REGRA: Gere SEMPRE entre 2 e 4 sub-perguntas separadas, cada uma focada em um aspecto diferente do caso.`;
 
         const response = await aiFetch({
           messages: [{ role: "user", content: prompt }],
