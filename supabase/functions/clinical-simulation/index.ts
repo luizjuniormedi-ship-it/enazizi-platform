@@ -98,6 +98,17 @@ Responda em JSON:
 - Se o aluno prescreve MEDICAÇÃO → descreva a resposta do paciente
 - Se o aluno propõe DIAGNÓSTICO → NÃO confirme nem negue diretamente, deixe-o justificar
 
+## INTERVENÇÕES EXTERNAS (OBRIGATÓRIO — insira ALEATORIAMENTE durante o caso)
+A cada 3-5 interações, INSIRA uma intervenção externa para testar a capacidade do aluno de lidar com múltiplas demandas simultâneas. Escolha ALEATORIAMENTE entre:
+- **Enfermagem**: "Doutor, a enfermeira informa que [evento]: soro terminou / bomba de infusão alarme / paciente do leito ao lado dessaturando / familiar pedindo informações / técnica perguntando se pode administrar [medicação]"
+- **Resultado inesperado**: "Doutor, acabou de chegar o resultado de [exame]: [valor alterado inesperado que muda ou confirma o raciocínio]"
+- **Familiar**: "Doutor, a família do paciente chegou e quer saber o diagnóstico e prognóstico"
+- **Intercorrência**: "Doutor, o paciente [piora/evento súbito]: começou a vomitar / apresentou convulsão / PA caiu subitamente / SpO2 caindo"
+- **Outro paciente**: "Doutor, tem um paciente na sala de espera classificado como [cor] com [queixa] — o que faz?"
+
+Inclua na resposta JSON o campo "external_intervention": true quando houver intervenção.
+O aluno deve lidar com a intervenção E continuar o caso principal. Avalie na nota final.
+
 ## REGRA CRÍTICA: SINAIS VITAIS DINÂMICOS
 Em TODA resposta de interação (action="interact"), você DEVE incluir o campo "vitals" com os sinais vitais ATUALIZADOS do paciente. Os sinais vitais devem mudar dinamicamente conforme:
 - A conduta do aluno (ex: hidratação melhora PA, oxigênio melhora SpO2)

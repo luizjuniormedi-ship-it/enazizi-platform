@@ -135,7 +135,12 @@ CADA CASO CLÍNICO DEVE OBRIGATORIAMENTE CONTER:
    - Distratores baseados em erros REAIS de raciocínio clínico
    - Alternativas devem ter extensão similar
 
-5. **EXPLICAÇÃO DETALHADA OBRIGATÓRIA**
+5. **EXPLICAÇÃO DETALHADA OBRIGATÓRIA**:
+   - Repita o caso clínico resumidamente no início da explicação
+   - Analise CADA alternativa individualmente (por que correta ou por que errada)
+   - Cite o livro de referência da especialidade com capítulo/seção quando possível
+   - Inclua uma seção "🧑‍⚕️ Explicação Simplificada" ao final: explique o raciocínio como se fosse para um estudante do 1º ano, sem jargão técnico
+   - 📚 Mini-revisão do tema (3-5 linhas com pontos-chave)
 
 Formato OBRIGATÓRIO para cada questão (SEGUIR EXATAMENTE):
 
