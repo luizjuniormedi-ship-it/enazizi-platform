@@ -353,6 +353,123 @@ Deno.serve(async (req) => {
         return ok({ success: true });
       }
 
+      case "get_bi_data": {
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
+        const [
+          { data: allProfiles },
+          { data: recentAttempts },
+          { count: totalAttempts },
+          { data: correctAttemptsData },
+          { count: simulations },
+          { count: anamnesis },
+          { count: discursives },
+          { count: summariesCount },
+          { count: uploadsCount },
+          { data: presenceData },
+          { count: activeUsersCount },
+          { data: examSessionsData },
+          { data: teacherResults },
+        ] = await Promise.all([
+          supabaseAuth.from("profiles").select("user_id, display_name, email, faculdade, periodo, status, created_at"),
+          supabaseAuth.from("practice_attempts").select("user_id, correct, created_at").gte("created_at", thirtyDaysAgo),
+          supabaseAuth.from("practice_attempts").select("id", { count: "exact", head: true }),
+          supabaseAuth.from("practice_attempts").select("id", { count: "exact", head: true }).eq("correct", true),
+          supabaseAuth.from("simulation_history").select("id", { count: "exact", head: true }),
+          supabaseAuth.from("anamnesis_results").select("id", { count: "exact", head: true }),
+          supabaseAuth.from("discursive_attempts").select("id", { count: "exact", head: true }).not("finished_at", "is", null),
+          supabaseAuth.from("summaries").select("id", { count: "exact", head: true }),
+          supabaseAuth.from("uploads").select("id", { count: "exact", head: true }),
+          supabaseAuth.from("user_presence").select("user_id, last_seen_at, current_page"),
+          supabaseAuth.from("user_presence").select("user_id", { count: "exact", head: true }).gte("last_seen_at", sevenDaysAgo),
+          supabaseAuth.from("exam_sessions").select("id, user_id, score, total_questions, status").eq("status", "finished"),
+          supabaseAuth.from("teacher_simulado_results").select("id, student_id, score, total_questions").not("score", "is", null),
+        ]);
+
+        // KPIs
+        const totalQuestions = (totalAttempts || 0) + (examSessionsData?.length || 0) + (teacherResults?.length || 0);
+        const correctCount = correctAttemptsData || 0;
+        const avgAccuracy = (totalAttempts || 0) > 0 ? Math.round(((correctCount as number) / (totalAttempts as number)) * 100) : 0;
+        const totalUsers = (allProfiles || []).length;
+        const retention = totalUsers > 0 ? Math.round(((activeUsersCount || 0) / totalUsers) * 100) : 0;
+
+        // Daily activity (last 30 days)
+        const dailyMap: Record<string, number> = {};
+        (recentAttempts || []).forEach((a: any) => {
+          const day = a.created_at.substring(0, 10);
+          dailyMap[day] = (dailyMap[day] || 0) + 1;
+        });
+        const dailyActivity = Object.entries(dailyMap).sort(([a], [b]) => a.localeCompare(b)).map(([date, count]) => ({ date, count }));
+
+        // Module engagement
+        const moduleEngagement = [
+          { module: "Questões", count: totalAttempts || 0 },
+          { module: "Simulações", count: simulations || 0 },
+          { module: "Anamneses", count: anamnesis || 0 },
+          { module: "Discursivas", count: discursives || 0 },
+          { module: "Resumos", count: summariesCount || 0 },
+          { module: "Uploads", count: uploadsCount || 0 },
+        ];
+
+        // Users by faculdade
+        const faculdadeMap: Record<string, number> = {};
+        (allProfiles || []).forEach((p: any) => {
+          const f = p.faculdade || "Não informado";
+          faculdadeMap[f] = (faculdadeMap[f] || 0) + 1;
+        });
+        const byFaculdade = Object.entries(faculdadeMap).sort(([, a], [, b]) => b - a).slice(0, 15).map(([name, value]) => ({ name, value }));
+
+        // Users by periodo
+        const periodoMap: Record<string, number> = {};
+        (allProfiles || []).forEach((p: any) => {
+          const per = p.periodo ? `${p.periodo}º` : "N/I";
+          periodoMap[per] = (periodoMap[per] || 0) + 1;
+        });
+        const byPeriodo = Object.entries(periodoMap).sort(([a], [b]) => a.localeCompare(b)).map(([name, value]) => ({ name, value }));
+
+        // Top 10 users by attempts
+        const userAttemptsMap: Record<string, { total: number; correct: number }> = {};
+        (recentAttempts || []).forEach((a: any) => {
+          if (!userAttemptsMap[a.user_id]) userAttemptsMap[a.user_id] = { total: 0, correct: 0 };
+          userAttemptsMap[a.user_id].total++;
+          if (a.correct) userAttemptsMap[a.user_id].correct++;
+        });
+        const topUsers = Object.entries(userAttemptsMap)
+          .sort(([, a], [, b]) => b.total - a.total)
+          .slice(0, 10)
+          .map(([userId, stats]) => {
+            const profile = (allProfiles || []).find((p: any) => p.user_id === userId);
+            const presence = (presenceData || []).find((p: any) => p.user_id === userId);
+            return {
+              user_id: userId,
+              name: profile?.display_name || profile?.email || "Anônimo",
+              questions: stats.total,
+              accuracy: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
+              last_seen: presence?.last_seen_at || null,
+            };
+          });
+
+        // Peak hours from presence
+        const hourMap: Record<number, number> = {};
+        (presenceData || []).forEach((p: any) => {
+          const hour = new Date(p.last_seen_at).getHours();
+          hourMap[hour] = (hourMap[hour] || 0) + 1;
+        });
+        const peakHours = Array.from({ length: 24 }, (_, i) => ({ hour: `${String(i).padStart(2, "0")}h`, count: hourMap[i] || 0 }));
+
+        return ok({
+          kpis: { totalQuestions, avgAccuracy, activeUsers7d: activeUsersCount || 0, retention, totalUsers },
+          dailyActivity,
+          moduleEngagement,
+          byFaculdade,
+          byPeriodo,
+          topUsers,
+          peakHours,
+        });
+      }
+
       case "force_logout": {
         const { target_user_id } = params;
         if (!target_user_id) throw new Error("target_user_id obrigatório");

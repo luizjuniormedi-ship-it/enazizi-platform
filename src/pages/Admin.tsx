@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail } from "lucide-react";
+import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,6 +18,7 @@ import AdminDialogs from "@/components/admin/AdminDialogs";
 import AdminUserRow from "@/components/admin/AdminUserRow";
 import AdminFeedbackPanel from "@/components/admin/AdminFeedbackPanel";
 import AdminMessagesPanel from "@/components/admin/AdminMessagesPanel";
+import AdminBIPanel from "@/components/admin/AdminBIPanel";
 import type { AdminUser, Stats } from "@/components/admin/AdminTypes";
 
 const Admin = () => {
@@ -357,6 +358,9 @@ const Admin = () => {
             <TabsTrigger value="messages" className="gap-1.5">
               <Mail className="h-3.5 w-3.5" /> Mensagens
             </TabsTrigger>
+            <TabsTrigger value="bi" className="gap-1.5">
+              <BarChart3 className="h-3.5 w-3.5" /> BI
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="whatsapp">
@@ -375,7 +379,11 @@ const Admin = () => {
             <AdminMessagesPanel />
           </TabsContent>
 
-          <TabsContent value={activeTab === "whatsapp" || activeTab === "telegram" || activeTab === "feedbacks" || activeTab === "messages" ? "__none__" : activeTab}>
+          <TabsContent value="bi">
+            <AdminBIPanel callAdmin={callAdmin} />
+          </TabsContent>
+
+          <TabsContent value={activeTab === "whatsapp" || activeTab === "telegram" || activeTab === "feedbacks" || activeTab === "messages" || activeTab === "bi" ? "__none__" : activeTab}>
             {loading ? (
               <div className="flex justify-center py-12">
                 <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
