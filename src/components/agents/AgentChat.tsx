@@ -601,7 +601,27 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     }
   };
 
-  const handleSaveMessage = async (idx: number, content: string) => {
+  // Expose handleSend to parent via ref
+  useEffect(() => {
+    if (onSendRef) {
+      onSendRef.current = (prompt: string) => handleSend(prompt);
+    }
+    return () => {
+      if (onSendRef) onSendRef.current = null;
+    };
+  }, [onSendRef, messages, user, isLoading, activeConversationId]);
+
+  // Auto-fire initialPrompt once on mount
+  const initialPromptFiredRef = useRef(false);
+  useEffect(() => {
+    if (initialPrompt && !initialPromptFiredRef.current && user && !isLoading) {
+      initialPromptFiredRef.current = true;
+      // Small delay to ensure component is fully mounted
+      const timer = setTimeout(() => handleSend(initialPrompt), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [initialPrompt, user]);
+
     if (!onSaveMessage || savingMsgIdx !== null) return;
     setSavingMsgIdx(idx);
     try {
