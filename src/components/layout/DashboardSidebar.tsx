@@ -32,7 +32,7 @@ const navGroups: NavGroup[] = [
     defaultOpen: true,
     items: [
       { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-      { to: "/dashboard/chatgpt", icon: Sparkles, label: "🤖 Tutor IA" },
+      { to: "/dashboard/chatgpt", icon: Sparkles, label: "🤖 TutorZizi" },
       { to: "/dashboard/plano-dia", icon: Zap, label: "⚡ Plano do Dia" },
       { to: "/dashboard/diagnostico", icon: Stethoscope, label: "🩺 Nivelamento" },
     ],

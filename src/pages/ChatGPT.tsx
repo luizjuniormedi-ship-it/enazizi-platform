@@ -779,7 +779,7 @@ const ChatGPT = () => {
             <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-base sm:text-xl font-bold truncate">Tutor IA Médico</h1>
+            <h1 className="text-base sm:text-xl font-bold truncate">TutorZizi</h1>
             <p className="text-[10px] sm:text-xs text-muted-foreground">Protocolo ENAZIZI • GPT-4o</p>
           </div>
         </div>
@@ -835,7 +835,7 @@ const ChatGPT = () => {
             <X className="h-4 w-4" />
           </button>
           <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 relative z-10">
-            <Sparkles className="h-4 w-4 text-primary" /> Como funciona o Tutor IA
+            <Sparkles className="h-4 w-4 text-primary" /> Como funciona o TutorZizi
           </h3>
           <div className="grid grid-cols-3 gap-3 relative z-10">
             <div className="text-center space-y-1.5">
