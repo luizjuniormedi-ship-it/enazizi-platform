@@ -137,6 +137,15 @@ FORMATO SEQUENCIAL OBRIGATÓRIO — UMA PERGUNTA POR VEZ:
 
 REGRA: NUNCA apresente múltiplas perguntas de uma vez. SEMPRE 1 por mensagem.
 
+VARIAÇÃO OBRIGATÓRIA DE FORMATOS (distribuir entre as 5 perguntas):
+📝 Formato 1 — PERGUNTA ABERTA: "Qual o mecanismo de...?"
+✅❌ Formato 2 — VERDADEIRO OU FALSO com justificativa: "V ou F: [afirmação]. Justifique."
+📋 Formato 3 — COMPLETE A LACUNA: "O tratamento de primeira linha para ___ é ___"
+🔗 Formato 4 — ASSOCIAÇÃO DE COLUNAS: "Associe: (1) Medicamento A → (a) Mecanismo X"
+❓ Formato 5 — PERGUNTA DIRETA: "Cite 3 diagnósticos diferenciais de..."
+
+REGRA: usar pelo menos 3 formatos DIFERENTES nas 5 perguntas. NUNCA 5 perguntas do mesmo formato.
+
 REGRA DE REFORÇO POR ERRO:
 - Se o aluno errar uma pergunta, adicione uma pergunta EXTRA sobre o mesmo conceito com ângulo diferente
 - Ex: errou mecanismo? → pergunte sobre a consequência clínica
