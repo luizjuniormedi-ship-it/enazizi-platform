@@ -1053,7 +1053,17 @@ const AnamnesisTrainer = () => {
                   </div>
                 )}
               </div>
-              {msg.role === "patient" && <QualityStars quality={msg.quality} />}
+              {/* Quality stars + coaching feedback */}
+              {msg.role === "patient" && (
+                <div className="space-y-0.5">
+                  <QualityStars quality={msg.quality} />
+                  {msg.quality !== undefined && msg.quality !== null && COACHING_TIPS[Math.min(3, Math.max(0, Math.round(msg.quality)))] && (
+                    <p className={`text-[10px] ${COACHING_TIPS[Math.min(3, Math.max(0, Math.round(msg.quality)))].color} animate-fade-in`}>
+                      {COACHING_TIPS[Math.min(3, Math.max(0, Math.round(msg.quality)))].text}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
             {msg.role === "doctor" && (
               <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
