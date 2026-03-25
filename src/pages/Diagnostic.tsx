@@ -15,7 +15,18 @@ import DiagnosticReview from "@/components/diagnostic/DiagnosticReview";
 import DiagnosticResult from "@/components/diagnostic/DiagnosticResult";
 import type { DiagQuestion, AnswerRecord } from "@/components/diagnostic/DiagnosticExam";
 
-const AREAS = [
+const DIAGNOSTIC_BIBLIOGRAPHY: Record<string, string> = {
+  "Clínica Médica": "Harrison Principles of Internal Medicine",
+  "Cirurgia": "Schwartz Principles of Surgery / Sabiston Textbook of Surgery",
+  "Pediatria": "Nelson Textbook of Pediatrics / Tratado de Pediatria SBP",
+  "Ginecologia e Obstetrícia": "Williams Obstetrics / Ginecologia e Obstetrícia FEBRASGO",
+  "Medicina Preventiva": "Medicina Preventiva e Social Rouquayrol / Epidemiology Gordis",
+  "Oncologia": "DeVita Cancer Principles & Practice of Oncology / Manual de Oncologia Clínica SBOC",
+  "Neurologia": "Adams and Victor's Principles of Neurology / DeJong's The Neurologic Examination",
+  "Cardiologia": "Braunwald's Heart Disease / Manual de Cardiologia SOCESP",
+};
+const getBibRefForDiagnostic = (area: string) => DIAGNOSTIC_BIBLIOGRAPHY[area] || "Harrison / Sabiston / Nelson / Williams";
+
   "Clínica Médica", "Cirurgia", "Pediatria", "Ginecologia e Obstetrícia",
   "Medicina Preventiva", "Oncologia", "Neurologia", "Cardiologia",
 ];
