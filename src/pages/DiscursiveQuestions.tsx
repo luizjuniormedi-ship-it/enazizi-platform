@@ -130,9 +130,11 @@ const DiscursiveQuestions = () => {
       const res = await callAPI({ action: "generate", specialty, difficulty });
       setAttemptId(res.id);
       setClinicalCase(res.case);
-      setQuestion(res.question);
+      // Support both old "question" (string) and new "questions" (array)
+      const qs: string[] = Array.isArray(res.questions) ? res.questions : [res.question || ""];
+      setQuestions(qs);
       setGradingCriteria(res.grading_criteria || []);
-      setAnswer("");
+      setAnswers(qs.map(() => ""));
       setCorrection(null);
       setPhase("answering");
     } catch (e) {
