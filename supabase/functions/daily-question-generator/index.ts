@@ -58,12 +58,158 @@ const TOPICS_BY_SPECIALTY: Record<string, string[]> = {
   "Patologia": ["Lesão e Morte Celular", "Inflamação Aguda e Crônica", "Reparo Tecidual", "Distúrbios Hemodinâmicos", "Neoplasias Benignas e Malignas", "Patologia Ambiental", "Imunopatologia", "Patologia Cardiovascular", "Patologia Pulmonar", "Patologia do Trato GI"],
 };
 
+const REAL_EXAM_SOURCES = [
+  "REVALIDA INEP 2015", "REVALIDA INEP 2016", "REVALIDA INEP 2017",
+  "REVALIDA INEP 2018", "REVALIDA INEP 2019", "REVALIDA INEP 2020",
+  "REVALIDA INEP 2021", "REVALIDA INEP 2022", "REVALIDA INEP 2023",
+  "REVALIDA INEP 2024", "REVALIDA INEP 2025",
+  "ENAMED 2024", "ENAMED 2025",
+  "ENARE 2020", "ENARE 2021", "ENARE 2022", "ENARE 2023", "ENARE 2024",
+  "USP-SP Residência 2020", "USP-SP Residência 2021", "USP-SP Residência 2022",
+  "USP-SP Residência 2023", "USP-SP Residência 2024",
+  "UNICAMP Residência 2020", "UNICAMP Residência 2021", "UNICAMP Residência 2022",
+  "UNICAMP Residência 2023", "UNICAMP Residência 2024",
+  "SUS-SP 2020", "SUS-SP 2021", "SUS-SP 2022", "SUS-SP 2023", "SUS-SP 2024",
+  "Santa Casa SP 2022", "Santa Casa SP 2023", "Santa Casa SP 2024",
+  "AMRIGS 2022", "AMRIGS 2023", "AMRIGS 2024",
+];
+
+function isDuplicate(statement: string, existingStatements: string[]): boolean {
+  const prefix = statement.slice(0, 80).toLowerCase();
+  return existingStatements.some(ex => ex.slice(0, 80).toLowerCase() === prefix);
+}
+
+async function searchRealQuestionsViaAI(
+  specialty: string,
+  topics: string[],
+  existingStatements: string[],
+  supabaseAdmin: any,
+  userId: string,
+): Promise<number> {
+  const selectedSources = REAL_EXAM_SOURCES
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 8);
+
+  const selectedTopics = topics.sort(() => Math.random() - 0.5).slice(0, 4);
+
+  const bibRef = (await import("../_shared/specialty-bibliography.ts")).getBibliographyForSpecialty(specialty);
+  const bibBlock = bibRef ? `\nREFERÊNCIA BIBLIOGRÁFICA: ${bibRef}\n` : "";
+
+  const prompt = `Você é um banco de dados vivo de provas de residência médica brasileiras. Sua tarefa é REPRODUZIR FIELMENTE questões REAIS que já foram aplicadas em provas oficiais.
+
+ESPECIALIDADE: ${specialty}
+TEMAS PRIORITÁRIOS: ${selectedTopics.join(", ")}
+${bibBlock}
+BANCAS E ANOS PARA BUSCAR: ${selectedSources.join(", ")}
+
+INSTRUÇÕES CRÍTICAS:
+1. Reproduza questões REAIS de provas oficiais brasileiras de residência médica
+2. Cada questão DEVE ter o campo "exam_source" com a identificação EXATA da prova (ex: "REVALIDA INEP 2023 - Prova Objetiva")
+3. Reproduza o enunciado o mais fielmente possível ao original
+4. Mantenha as 4 alternativas originais (A, B, C, D)
+5. A explicação deve ser detalhada com raciocínio clínico
+6. NÃO INVENTE questões - reproduza apenas questões que você tem certeza que existiram
+7. Se não tiver certeza sobre uma questão específica, NÃO a inclua
+8. Priorize questões com caso clínico completo (≥150 caracteres no enunciado)
+
+⛔ CONTEÚDO PROIBIDO: NUNCA gere sobre declarações financeiras, conflitos de interesse, relações com indústria farmacêutica.
+
+Gere EXATAMENTE 6 questões reais de ${specialty}.
+
+FORMATO JSON OBRIGATÓRIO (sem markdown):
+{
+  "questions": [
+    {
+      "statement": "Enunciado completo da questão real...",
+      "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
+      "correct_index": 0,
+      "explanation": "Raciocínio clínico passo a passo...",
+      "topic": "${specialty}",
+      "difficulty": 3,
+      "exam_source": "REVALIDA INEP 2023 - Prova Objetiva"
+    }
+  ]
+}`;
+
+  try {
+    const response = await aiFetch({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: "Você é um sistema de recuperação de questões de provas reais de residência médica brasileira. Responda APENAS com JSON válido, sem markdown. Reproduza apenas questões que você tem alta confiança de que são reais." },
+        { role: "user", content: prompt },
+      ],
+      timeoutMs: 90000,
+      maxRetries: 1,
+    });
+
+    if (!response.ok) {
+      console.error(`Real questions AI error for ${specialty}:`, await response.text());
+      return 0;
+    }
+
+    const data = await response.json();
+    const rawContent = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
+    const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+
+    let parsed: any = null;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      const jsonMatch = cleaned.match(/\{[\s\S]*"questions"[\s\S]*\}/);
+      if (jsonMatch) {
+        try { parsed = JSON.parse(jsonMatch[0]); } catch { return 0; }
+      }
+    }
+
+    if (!parsed?.questions) return 0;
+
+    const questions = parsed.questions.filter((q: any) =>
+      q.statement && Array.isArray(q.options) && q.options.length >= 2 &&
+      typeof q.correct_index === "number" &&
+      String(q.statement).trim().length >= 150 &&
+      q.exam_source && String(q.exam_source).trim().length >= 10 &&
+      !INVALID_CONTENT_REGEX.test(q.statement) &&
+      !INVALID_CONTENT_REGEX.test(q.explanation || "") &&
+      !isDuplicate(q.statement, existingStatements)
+    );
+
+    if (questions.length === 0) return 0;
+
+    const rows = questions.map((q: any) => ({
+      user_id: userId,
+      statement: String(q.statement).trim(),
+      options: q.options.map(String),
+      correct_index: q.correct_index,
+      explanation: `[Fonte: ${String(q.exam_source).trim()}]\n\n${String(q.explanation || "").trim()}`,
+      topic: specialty,
+      difficulty: q.difficulty || 3,
+      source: "real-exam-ai",
+      is_global: true,
+    }));
+
+    const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
+    if (error) {
+      console.error("Insert real questions error:", error);
+      return 0;
+    }
+
+    // Add inserted statements to existing list for dedup
+    rows.forEach((r: any) => existingStatements.push(r.statement));
+
+    return rows.length;
+  } catch (e) {
+    console.error(`Error searching real questions for ${specialty}:`, e);
+    return 0;
+  }
+}
+
 async function generateForSpecialty(
   specialty: string,
   topics: string[],
   userId: string,
   supabaseAdmin: any,
   existingStatements: string[],
+  targetCount: number = 10,
 ): Promise<number> {
   const selectedTopics = topics.sort(() => Math.random() - 0.5).slice(0, 5);
 
@@ -75,7 +221,7 @@ async function generateForSpecialty(
   const bibRef = (await import("../_shared/specialty-bibliography.ts")).getBibliographyForSpecialty(specialty);
   const bibBlock = bibRef ? `\nBIBLIOGRAFIA DE REFERÊNCIA OBRIGATÓRIA para ${specialty}: ${bibRef}\nUse estes livros como base para o conteúdo e cite-os nas explicações.\n` : "";
 
-  const prompt = `Gere EXATAMENTE 10 questões de múltipla escolha de ${specialty} para Residência Médica.
+  const prompt = `Gere EXATAMENTE ${targetCount} questões de múltipla escolha de ${specialty} para Residência Médica.
 
 TEMAS: ${selectedTopics.join(", ")}
 ${bibBlock}
@@ -201,9 +347,7 @@ serve(async (req) => {
       });
     }
 
-    // Pick 2 specialties with fewest questions using exact count (head-only, no data transfer)
-    const counts: { spec: string; count: number }[] = [];
-    // Run counts in parallel for speed
+    // Pick 2 specialties with fewest questions
     const countPromises = SPECIALTIES.map(async (spec) => {
       const { count } = await supabaseAdmin
         .from("questions_bank")
@@ -218,9 +362,7 @@ serve(async (req) => {
 
     console.log(`Daily generation starting for: ${selected.join(", ")} (counts: ${countResults.slice(0, 5).map(c => `${c.spec}:${c.count}`).join(", ")})`);
 
-    console.log(`Daily generation starting for: ${selected.join(", ")}`);
-
-    const results: Record<string, number> = {};
+    const results: Record<string, { real: number; generated: number }> = {};
     let totalGenerated = 0;
 
     for (const spec of selected) {
@@ -236,10 +378,20 @@ serve(async (req) => {
       const existingStatements = (existing || []).map((r: any) => r.statement);
       const topics = TOPICS_BY_SPECIALTY[spec] || [spec];
 
-      const count = await generateForSpecialty(spec, topics, userId, supabaseAdmin, existingStatements);
-      results[spec] = count;
-      totalGenerated += count;
-      console.log(`${spec}: ${count} questions generated`);
+      // Phase 1: Search real exam questions (target: 6)
+      const realCount = await searchRealQuestionsViaAI(spec, topics, existingStatements, supabaseAdmin, userId);
+      console.log(`${spec}: ${realCount} real questions found`);
+
+      // Phase 2: Generate complementary questions to reach 10 total
+      const remaining = Math.max(0, 10 - realCount);
+      let genCount = 0;
+      if (remaining > 0) {
+        genCount = await generateForSpecialty(spec, topics, userId, supabaseAdmin, existingStatements, remaining);
+        console.log(`${spec}: ${genCount} generated questions added`);
+      }
+
+      results[spec] = { real: realCount, generated: genCount };
+      totalGenerated += realCount + genCount;
     }
 
     // Log the run
@@ -251,7 +403,7 @@ serve(async (req) => {
     });
 
     return new Response(JSON.stringify({
-      message: `Geração diária concluída: ${totalGenerated} questões`,
+      message: `Geração diária concluída: ${totalGenerated} questões (reais + geradas)`,
       results,
       total_generated: totalGenerated,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
