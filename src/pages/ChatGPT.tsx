@@ -111,7 +111,7 @@ const ChatGPT = () => {
   const [changingTopic, setChangingTopic] = useState(false);
   const [newTopic, setNewTopic] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [metricsCollapsed, setMetricsCollapsed] = useState(false);
+  const [metricsCollapsed, setMetricsCollapsed] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
