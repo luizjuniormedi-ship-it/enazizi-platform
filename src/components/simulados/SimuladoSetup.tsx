@@ -29,7 +29,7 @@ interface SimuladoSetupProps {
   userId?: string;
 }
 
-const SimuladoSetup = ({ onStart, onResumeSession, onRetryErrors, pendingSession, checkedSession, userId }: SimuladoSetupProps) => {
+const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErrors, pendingSession, checkedSession, userId }: SimuladoSetupProps) => {
   const [tab, setTab] = useState<"novo" | "historico">("novo");
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
