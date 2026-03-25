@@ -209,8 +209,8 @@ const DiscursiveQuestions = () => {
     setPhase("setup");
     setAttemptId(null);
     setClinicalCase("");
-    setQuestion("");
-    setAnswer("");
+    setQuestions([]);
+    setAnswers([]);
     setCorrection(null);
   };
 
