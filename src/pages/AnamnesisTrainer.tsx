@@ -1194,6 +1194,29 @@ const AnamnesisTrainer = () => {
         )}
       </div>
 
+      {/* Doctor Questions Panel */}
+      {doctorQuestions.length > 0 && (
+        <Collapsible>
+          <CollapsibleTrigger asChild>
+            <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full px-2 py-1.5 rounded-lg bg-muted/30">
+              <Clipboard className="h-3.5 w-3.5" />
+              <span>Suas perguntas ({doctorQuestions.length})</span>
+              <ChevronDown className="h-3 w-3 ml-auto" />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="max-h-32 overflow-y-auto mt-1 space-y-1 px-1">
+              {doctorQuestions.map((msg, i) => (
+                <div key={i} className="flex items-start gap-1.5 text-xs text-muted-foreground py-1 px-2 rounded bg-muted/20">
+                  <span className="text-primary font-semibold shrink-0">{i + 1}.</span>
+                  <span className="line-clamp-2">{msg.content}</span>
+                </div>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
       {/* Chat Area */}
       <div className="flex-1 overflow-y-auto space-y-3 rounded-xl p-3 sm:p-4 mb-2 bg-gradient-to-b from-muted/10 to-muted/20">
         {messages.map((msg, i) => {
