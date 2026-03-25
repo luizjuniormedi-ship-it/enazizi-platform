@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import FaculdadeCombobox from "@/components/FaculdadeCombobox";
 import { isValidPhone, isValidName } from "@/lib/profileValidation";
+import { ALL_SPECIALTIES } from "@/constants/specialties";
 
 const Profile = () => {
   const { user } = useAuth();
