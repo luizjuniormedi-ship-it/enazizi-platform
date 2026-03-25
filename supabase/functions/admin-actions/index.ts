@@ -362,7 +362,7 @@ Deno.serve(async (req) => {
           { data: allProfiles },
           { data: recentAttempts },
           { count: totalAttempts },
-          { data: correctAttemptsData },
+          { count: correctAttemptsCount },
           { count: simulations },
           { count: anamnesis },
           { count: discursives },
