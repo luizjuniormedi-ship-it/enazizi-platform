@@ -255,6 +255,34 @@ const Profile = () => {
           </div>
         )}
 
+        {userType === "medico" && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Stethoscope className="h-3.5 w-3.5 text-muted-foreground" />
+                Especialidade
+              </Label>
+              <Select value={targetSpecialty} onValueChange={setTargetSpecialty}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ALL_SPECIALTIES.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Building className="h-3.5 w-3.5 text-muted-foreground" />
+                Onde formou
+              </Label>
+              <FaculdadeCombobox value={faculdade} onChange={setFaculdade} />
+            </div>
+          </div>
+        )
+
         <div className="space-y-2">
           <Label className="flex items-center gap-1.5">
             <Phone className="h-3.5 w-3.5 text-muted-foreground" />
