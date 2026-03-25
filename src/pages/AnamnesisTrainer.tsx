@@ -295,13 +295,23 @@ const AnamnesisTrainer = () => {
     return "bg-red-500";
   };
 
-  // Contextual suggestions based on covered categories
+  // Contextual suggestions based on covered categories AND difficulty level
   const getSuggestions = (): string[] => {
-    if (coveredCategories.size === 0) return SUGGESTION_MAP._start;
+    const map = difficulty === "básico" ? SUGGESTION_MAP_BASICO
+      : difficulty === "avançado" ? SUGGESTION_MAP_AVANCADO
+      : SUGGESTION_MAP_INTERMEDIARIO;
+    if (coveredCategories.size === 0) return map._start;
     const catKeys = Array.from(coveredCategories);
     const lastCovered = catKeys[catKeys.length - 1];
-    return SUGGESTION_MAP[lastCovered] || SUGGESTION_MAP._start;
+    return map[lastCovered] || map._start;
   };
+
+  // Get mini-case for lobby
+  const getMiniCase = (): string => {
+    const cases = MINI_CASES[specialty] || MINI_CASES["Clínica Médica"];
+    return cases[Math.floor(Math.random() * cases.length)];
+  };
+  const [miniCase] = useState(() => getMiniCase());
 
   const callEdgeFunction = async (body: any) => {
     const { data, error } = await supabase.functions.invoke("anamnesis-trainer", { body });
