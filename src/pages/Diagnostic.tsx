@@ -27,6 +27,7 @@ const DIAGNOSTIC_BIBLIOGRAPHY: Record<string, string> = {
 };
 const getBibRefForDiagnostic = (area: string) => DIAGNOSTIC_BIBLIOGRAPHY[area] || "Harrison / Sabiston / Nelson / Williams";
 
+const AREAS = [
   "Clínica Médica", "Cirurgia", "Pediatria", "Ginecologia e Obstetrícia",
   "Medicina Preventiva", "Oncologia", "Neurologia", "Cardiologia",
 ];
