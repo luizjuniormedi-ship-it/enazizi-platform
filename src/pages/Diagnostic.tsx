@@ -97,6 +97,11 @@ CALIBRAÇÃO OBRIGATÓRIA REVALIDA/ENAMED:
 - OBRIGATÓRIO: caso clínico com ≥3 dados clínicos (sinais vitais, exames, achados semiológicos)
 - OBRIGATÓRIO: ≥2 etapas de raciocínio clínico
 - OBRIGATÓRIO: pelo menos 2 distratores plausíveis (diagnóstico diferencial real)
+- OBRIGATÓRIO: Cite a referência bibliográfica específica da especialidade na explicação
+
+BIBLIOGRAFIA DE REFERÊNCIA para ${area}: ${getBibRefForDiagnostic(area)}
+- OBRIGATÓRIO: ≥2 etapas de raciocínio clínico
+- OBRIGATÓRIO: pelo menos 2 distratores plausíveis (diagnóstico diferencial real)
 
 REGRAS DE DIVERSIDADE OBRIGATÓRIAS:
 - ${hint}
