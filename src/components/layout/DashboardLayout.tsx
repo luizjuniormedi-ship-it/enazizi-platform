@@ -256,9 +256,9 @@ const DashboardLayout = () => {
           <span className="hidden xl:inline">{theme === "dark" ? "Claro" : "Escuro"}</span>
         </button>
       </div>
-      <main className="dashboard-main flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-x-hidden overflow-y-auto relative w-full">
+      <main className="dashboard-main flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-x-hidden overflow-y-auto relative w-full min-h-0">
         <ActiveVideoRoomPopup />
-        <div className="relative z-10 w-full max-w-full pb-16 lg:pb-0">
+        <div className="relative z-10 w-full max-w-full pb-16 lg:pb-0 h-full">
           <Outlet />
         </div>
       </main>
