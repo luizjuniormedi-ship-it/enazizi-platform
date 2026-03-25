@@ -468,8 +468,9 @@ const ProfessorDashboard = () => {
             {/* Topics */}
             <div className="space-y-3">
               <Label className="text-base font-semibold">Temas ({selectedTopics.length} selecionados)</Label>
+              <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-2" />
               <div className="flex flex-wrap gap-1.5">
-                {SPECIALTIES.map((topic) => (
+                {getFilteredSpecialties(cycleFilter).map((topic) => (
                   <button
                     key={topic}
                     onClick={() => {

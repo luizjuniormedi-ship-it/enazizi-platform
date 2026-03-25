@@ -1185,12 +1185,13 @@ const ClinicalSimulation = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Especialidade do Caso</label>
+                <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-2" />
                 <select
                   value={specialty}
                   onChange={(e) => setSpecialty(e.target.value)}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                 >
-                   {SPECIALTIES.map((s) => <option key={s} value={s}>{s}</option>)}
+                   {getFilteredSpecialties(cycleFilter).map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
                 <Input
                   value={subtopic}

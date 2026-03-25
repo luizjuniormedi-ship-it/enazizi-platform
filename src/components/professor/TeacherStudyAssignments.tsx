@@ -251,10 +251,11 @@ const TeacherStudyAssignments = () => {
 
             <div className="space-y-2">
               <Label>Especialidade *</Label>
+              <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-2" />
               <Select value={specialty} onValueChange={setSpecialty}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
-                  {SPECIALTIES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  {getFilteredSpecialties(cycleFilter).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

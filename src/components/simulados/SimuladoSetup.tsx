@@ -139,7 +139,11 @@ const SimuladoSetup = ({ onStart, onResumeSession, onRetryErrors, pendingSession
           {/* Topic selection grouped by cycle */}
           <div>
             <label className="text-sm font-semibold mb-3 block">Selecione os assuntos</label>
-            {SPECIALTY_CYCLES.map(cycle => (
+            <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-3" />
+            {(cycleFilter
+              ? [{ label: cycleFilter, specialties: getFilteredSpecialties(cycleFilter) }]
+              : SPECIALTY_CYCLES
+            ).map(cycle => (
               <div key={cycle.label} className="mb-4">
                 <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">{cycle.label}</p>
                 <div className="flex flex-wrap gap-2">
