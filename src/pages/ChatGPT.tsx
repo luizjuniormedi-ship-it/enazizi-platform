@@ -882,7 +882,7 @@ const ChatGPT = () => {
           {metricsCollapsed ? <ChevronDown className="h-3.5 w-3.5 ml-auto" /> : <ChevronUp className="h-3.5 w-3.5 ml-auto" />}
         </button>
         {!metricsCollapsed && (
-          <div className="grid grid-cols-4 gap-2 mt-2 animate-fade-in">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2 animate-fade-in">
             <div className="glass-card p-2 sm:p-3 flex items-center gap-2 card-3d">
               <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                 <BarChart3 className="h-4 w-4 text-primary" />
