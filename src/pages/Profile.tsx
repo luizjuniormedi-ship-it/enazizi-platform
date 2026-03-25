@@ -23,6 +23,7 @@ const Profile = () => {
   const [faculdade, setFaculdade] = useState("");
   const [phone, setPhone] = useState("");
   const [userType, setUserType] = useState("estudante");
+  const [targetSpecialty, setTargetSpecialty] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
