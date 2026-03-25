@@ -24,13 +24,38 @@ const DIAGNOSTIC_BIBLIOGRAPHY: Record<string, string> = {
   "Oncologia": "DeVita Cancer Principles & Practice of Oncology / Manual de Oncologia Clínica SBOC",
   "Neurologia": "Adams and Victor's Principles of Neurology / DeJong's The Neurologic Examination",
   "Cardiologia": "Braunwald's Heart Disease / Manual de Cardiologia SOCESP",
+  "Anatomia": "Gray's Anatomy for Students / Netter Atlas of Human Anatomy",
+  "Fisiologia": "Guyton & Hall Textbook of Medical Physiology / Costanzo Physiology",
+  "Bioquímica": "Lehninger Principles of Biochemistry",
+  "Histologia": "Junqueira's Basic Histology / Wheater's Functional Histology",
+  "Farmacologia": "Goodman & Gilman's Pharmacological Basis of Therapeutics / Katzung",
+  "Patologia": "Robbins & Cotran Pathologic Basis of Disease",
+  "Semiologia": "Bates Guide to Physical Examination / Porto Semiologia Médica",
+  "Microbiologia": "Murray Medical Microbiology",
+  "Imunologia": "Abbas Cellular and Molecular Immunology",
 };
 const getBibRefForDiagnostic = (area: string) => DIAGNOSTIC_BIBLIOGRAPHY[area] || "Harrison / Sabiston / Nelson / Williams";
 
-const AREAS = [
+// Areas organized by academic cycle
+const AREAS_BASICO = [
+  "Anatomia", "Fisiologia", "Bioquímica", "Histologia",
+  "Farmacologia", "Patologia", "Microbiologia", "Imunologia",
+];
+const AREAS_CLINICO = [
+  "Clínica Médica", "Cirurgia", "Pediatria", "Ginecologia e Obstetrícia",
+  "Medicina Preventiva", "Cardiologia", "Neurologia", "Semiologia",
+];
+const AREAS_INTERNATO = [
   "Clínica Médica", "Cirurgia", "Pediatria", "Ginecologia e Obstetrícia",
   "Medicina Preventiva", "Oncologia", "Neurologia", "Cardiologia",
 ];
+
+function getAreasForPeriodo(periodo: number | null): string[] {
+  if (!periodo) return AREAS_CLINICO; // default
+  if (periodo <= 4) return AREAS_BASICO;
+  if (periodo <= 8) return AREAS_CLINICO;
+  return AREAS_INTERNATO;
+}
 
 const SCENARIO_HINTS: Record<string, string> = {
   "Clínica Médica": "Varie: UBS, enfermaria, UTI, ambulatório. Pacientes 20-90 anos, diferentes comorbidades. Emergência hipertensiva, ICC descompensada, pneumonia, cetoacidose, TEP.",
