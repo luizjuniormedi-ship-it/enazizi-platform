@@ -125,7 +125,7 @@ const COACHING_TIPS: Record<number, { text: string; color: string }> = {
   3: { text: "⭐ Excelente técnica semiológica! Pergunta precisa e relevante", color: "text-green-400" },
 };
 
-type Phase = "lobby" | "active" | "diagnosis" | "finishing" | "result";
+type Phase = "lobby" | "active" | "diagnosis" | "finishing" | "result" | "review";
 
 interface ChatMessage {
   role: "doctor" | "patient";
