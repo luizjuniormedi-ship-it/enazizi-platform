@@ -358,6 +358,9 @@ const Admin = () => {
             <TabsTrigger value="messages" className="gap-1.5">
               <Mail className="h-3.5 w-3.5" /> Mensagens
             </TabsTrigger>
+            <TabsTrigger value="bi" className="gap-1.5">
+              <BarChart3 className="h-3.5 w-3.5" /> BI
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="whatsapp">
