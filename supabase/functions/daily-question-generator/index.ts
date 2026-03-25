@@ -404,7 +404,7 @@ serve(async (req) => {
 
       // Phase 1: Search real exam questions (target: 6)
       const realCount = await searchRealQuestionsViaAI(spec, topics, existingStatements, supabaseAdmin, userId);
-      console.log(`${spec}: ${realCount} real questions found`);
+      console.log(`${spec}: ${realCount} exam-style questions generated`);
 
       // Phase 2: Generate complementary questions to reach 10 total
       const remaining = Math.max(0, 10 - realCount);
