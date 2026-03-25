@@ -1,29 +1,53 @@
 
 
-# Plano: Ampliar base de questões do Nivelamento com anti-repetição
+# Plano: Busca diaria de questoes reais da internet
 
-## Problema
-- O banco de fallback tem apenas ~5 questões por área (40 total), causando repetição
-- O prompt da IA não envia lista de patologias/enunciados já usados para evitar duplicatas
-- Não há validação pós-geração contra repetição de patologia
+## Conceito
 
-## Solução
+Adicionar ao `daily-question-generator` uma etapa que busca questoes reais de provas de residencia medica na internet usando o conector **Perplexity** (busca com IA), parseando o conteudo e inserindo no banco global antes da geracao por IA. A IA so complementa o que faltar.
 
-### 1. Expandir banco de fallback (`diagnosticFallbackQuestions.ts`)
-- Ampliar de 5 para **10 questões por área** no `FALLBACK_BANK`, cobrindo patologias distintas
-- Cada área terá 10 casos clínicos com patologias únicas (ex: Clínica Médica — ICC, CAD, PAC, AVC, TEP, DPOC exacerbada, ITU complicada, crise tireotóxica, hemorragia digestiva, LRA)
-- `getFallbackQuestionsForArea` fará shuffle aleatório e retornará o número solicitado, evitando a mesma ordem
+## Fluxo proposto
 
-### 2. Anti-repetição no prompt da IA (`Diagnostic.tsx`)
-- Ao gerar questões por área, coletar lista de **patologias/diagnósticos** já presentes em `allQuestions` (não apenas 3 trechos de enunciado)
-- Enviar ao prompt uma lista explícita: `PATOLOGIAS JÁ USADAS (PROIBIDO REPETIR): ICC, CAD, PAC...`
-- Adicionar regra: `PROIBIDO repetir a mesma patologia/diagnóstico principal em qualquer questão deste exame`
+```text
+Cron job dispara
+  → 1. Perplexity busca "questoes prova residencia medica [especialidade] 2024 2025"
+  → 2. Parseia questoes encontradas (statement, options, correct_index)
+  → 3. Deduplica contra banco existente (similaridade de enunciado)
+  → 4. Insere questoes reais com source="web-scrape"
+  → 5. Se nao atingiu 10 questoes, IA complementa (fluxo atual)
+```
 
-### 3. Validação pós-parse
-- Após parsear as questões da IA, filtrar duplicatas por similaridade de enunciado (primeiros 80 chars) contra questões já acumuladas em `allQuestions`
-- Se duplicata detectada, descartar e preencher com fallback
+## Pre-requisito
+
+Conectar o **Perplexity** ao projeto (conector disponivel). Isso injeta `PERPLEXITY_API_KEY` nas edge functions automaticamente.
+
+## Alteracoes
+
+### 1. Edge Function `daily-question-generator/index.ts`
+
+- Nova funcao `searchRealQuestions(specialty, topics)`:
+  - Chama Perplexity API com query em portugues focada em provas reais (REVALIDA, ENARE, USP, UNICAMP, IDOMED)
+  - Pede resposta estruturada com questoes no formato JSON
+  - Filtra e valida: enunciado >= 150 chars, 4 alternativas, tem indice correto
+  - Remove duplicatas contra `existingStatements` (primeiros 80 chars)
+- Modificar `generateForSpecialty`:
+  - Primeiro chama `searchRealQuestions` para obter questoes reais
+  - Insere as reais com `source: "web-real"`
+  - Calcula quantas faltam para chegar a 10
+  - So gera via IA o complemento necessario
+- Adicionar campo `source` no log para distinguir questoes reais vs geradas
+
+### 2. Prompt Perplexity
+
+Busca academica (`search_mode: "academic"`) com filtro de data recente, pedindo questoes no formato JSON estruturado com caso clinico, alternativas, resposta correta e explicacao.
+
+## Limitacoes
+
+- Sites de provas podem nao ter questoes em formato facilmente parseavel — a IA do Perplexity ajuda a estruturar
+- Nem toda busca retornara questoes validas — o fallback para geracao IA garante que sempre atingimos a meta
+- Creditos Perplexity serao consumidos (1 chamada por especialidade = 2 chamadas por execucao do cron)
 
 ## Arquivos a modificar
-- `src/lib/diagnosticFallbackQuestions.ts` — expandir para 10 questões/área + shuffle
-- `src/pages/Diagnostic.tsx` — anti-repetição no prompt + validação pós-parse
+
+- `supabase/functions/daily-question-generator/index.ts` — adicionar busca Perplexity + logica de complemento
 
