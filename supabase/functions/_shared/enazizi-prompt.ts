@@ -633,6 +633,24 @@ CICLO CLÍNICO E INTERNATO:
 - Manual de Angiologia e Cirurgia Vascular (SBACV) / Tratado de Clínica Médica (USP)
 - UpToDate
 
+CICLO CLÍNICO POR ESPECIALIDADE (REFERÊNCIAS ESPECÍFICAS):
+- Cardiologia: Braunwald's Heart Disease / Manual de Cardiologia SOCESP
+- Pneumologia: Murray & Nadel Textbook of Respiratory Medicine / Tarantino Pneumologia
+- Neurologia: Adams and Victor's Principles of Neurology / DeJong's The Neurologic Examination
+- Gastroenterologia: Sleisenger and Fordtran Gastrointestinal Disease / Tratado de Gastroenterologia SBAD
+- Endocrinologia: Williams Textbook of Endocrinology / Endocrinologia Clínica Vilar
+- Nefrologia: Brenner and Rector The Kidney / Nefrologia Clínica Riella
+- Hematologia: Williams Hematology / Hoffbrand Essential Haematology
+- Reumatologia: Kelley and Firestein's Textbook of Rheumatology / Reumatologia SBR
+- Infectologia: Mandell Douglas and Bennett Infectious Diseases / Veronesi Tratado de Infectologia
+- Dermatologia: Fitzpatrick Dermatology / Sampaio Dermatologia
+- Psiquiatria: Kaplan & Sadock Synopsis of Psychiatry / DSM-5-TR
+- Ortopedia: Campbell's Operative Orthopaedics / Ortopedia SBOT
+- Urologia: Campbell-Walsh Urology / Urologia SBU
+- Oftalmologia: Kanski Clinical Ophthalmology / Yanoff & Duker Ophthalmology
+- Otorrinolaringologia: Cummings Otolaryngology / Tratado de Otorrinolaringologia ABORL
+- Oncologia: DeVita Cancer Principles & Practice of Oncology / Manual de Oncologia Clínica SBOC
+
 DIRETRIZES:
 - Diretrizes SBC (Sociedade Brasileira de Cardiologia)
 - Diretrizes AHA (American Heart Association)

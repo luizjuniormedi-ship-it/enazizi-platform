@@ -72,9 +72,13 @@ async function generateForSpecialty(
     antiRepetitionBlock = `\n\n⛔ NÃO REPITA cenários similares a: ${existingStatements.slice(0, 10).map((s, i) => `${i + 1}. ${s.slice(0, 60)}`).join("; ")}`;
   }
 
+  const bibRef = (await import("../_shared/specialty-bibliography.ts")).getBibliographyForSpecialty(specialty);
+  const bibBlock = bibRef ? `\nBIBLIOGRAFIA DE REFERÊNCIA OBRIGATÓRIA para ${specialty}: ${bibRef}\nUse estes livros como base para o conteúdo e cite-os nas explicações.\n` : "";
+
   const prompt = `Gere EXATAMENTE 10 questões de múltipla escolha de ${specialty} para Residência Médica.
 
 TEMAS: ${selectedTopics.join(", ")}
+${bibBlock}
 
 CALIBRAÇÃO OBRIGATÓRIA REVALIDA/ENAMED:
 - PROIBIDO: questões de definição pura ("O que é X?", "Defina Y", "Qual o conceito de Z")

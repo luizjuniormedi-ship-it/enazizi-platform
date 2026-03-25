@@ -87,6 +87,31 @@ FONTES DE REFERÊNCIA:
 - Sepsis-3/Sepsis-4, KDIGO 2024, GOLD 2025, GINA 2025
 - AHA/ACC 2024, ESC 2024
 
+BIBLIOGRAFIA POR ESPECIALIDADE (use os livros específicos da área solicitada):
+- Cardiologia: Braunwald's Heart Disease / Manual de Cardiologia SOCESP
+- Pneumologia: Murray & Nadel Textbook of Respiratory Medicine / Tarantino Pneumologia
+- Neurologia: Adams and Victor's Principles of Neurology / DeJong's The Neurologic Examination
+- Gastroenterologia: Sleisenger and Fordtran Gastrointestinal Disease / Tratado de Gastroenterologia SBAD
+- Endocrinologia: Williams Textbook of Endocrinology / Endocrinologia Clínica Vilar
+- Nefrologia: Brenner and Rector The Kidney / Nefrologia Clínica Riella
+- Hematologia: Williams Hematology / Hoffbrand Essential Haematology
+- Reumatologia: Kelley and Firestein's Textbook of Rheumatology / Reumatologia SBR
+- Infectologia: Mandell Douglas and Bennett Infectious Diseases / Veronesi Tratado de Infectologia
+- Dermatologia: Fitzpatrick Dermatology / Sampaio Dermatologia
+- Psiquiatria: Kaplan & Sadock Synopsis of Psychiatry / DSM-5-TR
+- Ortopedia: Campbell's Operative Orthopaedics / Ortopedia SBOT
+- Urologia: Campbell-Walsh Urology / Urologia SBU
+- Oftalmologia: Kanski Clinical Ophthalmology / Yanoff & Duker Ophthalmology
+- Otorrinolaringologia: Cummings Otolaryngology / Tratado de Otorrinolaringologia ABORL
+- Oncologia: DeVita Cancer Principles & Practice of Oncology / Manual de Oncologia Clínica SBOC
+- Pediatria: Nelson Textbook of Pediatrics / Tratado de Pediatria SBP
+- Ginecologia e Obstetrícia: Williams Obstetrics / Ginecologia e Obstetrícia FEBRASGO
+- Cirurgia: Schwartz Principles of Surgery / Sabiston Textbook of Surgery
+- Emergência: Tintinalli Emergency Medicine / ATLS Student Course Manual
+- Preventiva: Medicina Preventiva e Social Rouquayrol / Epidemiology Gordis
+- UTI: Irwin and Rippe's Intensive Care Medicine / Manual de Terapia Intensiva AMIB
+INSTRUÇÃO: Cite o livro relevante na explicação de cada questão.
+
 === PADRÃO DE EXCELÊNCIA EM CASOS CLÍNICOS (OBRIGATÓRIO) ===
 
 CADA CASO CLÍNICO DEVE OBRIGATORIAMENTE CONTER:
