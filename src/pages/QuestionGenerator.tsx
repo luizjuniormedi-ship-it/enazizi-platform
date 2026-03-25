@@ -78,8 +78,10 @@ const QuestionGenerator = () => {
     return () => window.removeEventListener("question-answered" as any, handler);
   }, [marathonMode, specialty, difficulty]);
 
+  const effectiveSpecialty = specialty && specialty !== "all" ? specialty : "";
+
   const buildPrompt = () => {
-    const specPart = specialty || "qualquer área médica (variando especialidades)";
+    const specPart = effectiveSpecialty || "qualquer área médica (variando especialidades)";
     return `Gere ${quantity} questões ORIGINAIS de ${specPart} nível ${difficulty}. Formato ENARE com casos clínicos variados, alternativas plausíveis e explicação detalhada. Varie subtemas, perfis de pacientes e cenários.`;
   };
 
