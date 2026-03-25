@@ -95,9 +95,11 @@ const DiscursiveQuestions = () => {
     if (d.difficulty) setDifficulty(d.difficulty);
     if (d.attemptId) setAttemptId(d.attemptId);
     if (d.clinicalCase) setClinicalCase(d.clinicalCase);
-    if (d.question) setQuestion(d.question);
+    if (d.questions) setQuestions(d.questions);
+    if (d.question) setQuestions([d.question]); // legacy
     if (d.gradingCriteria) setGradingCriteria(d.gradingCriteria);
-    if (d.answer) setAnswer(d.answer);
+    if (d.answers) setAnswers(d.answers);
+    if (d.answer) setAnswers([d.answer]); // legacy
     if (d.correction) setCorrection(d.correction);
     clearPending();
   };
