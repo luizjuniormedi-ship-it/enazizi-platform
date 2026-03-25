@@ -31,6 +31,7 @@ interface SimuladoSetupProps {
 const SimuladoSetup = ({ onStart, onResumeSession, onRetryErrors, pendingSession, checkedSession, userId }: SimuladoSetupProps) => {
   const [tab, setTab] = useState<"novo" | "historico">("novo");
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [questionCount, setQuestionCount] = useState(10);
   const [customCount, setCustomCount] = useState("");
   const [difficulty, setDifficulty] = useState("intermediario");
