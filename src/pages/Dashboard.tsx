@@ -136,21 +136,21 @@ const Dashboard = () => {
       <QuickStartCard
         questionsAnswered={metrics.questionsAnswered}
         flashcards={stats.flashcards}
-        hasCompletedDiagnostic={false}
+        hasCompletedDiagnostic={hasCompletedDiagnostic}
       />
 
       {/* Onboarding Checklist */}
       <OnboardingChecklist
         stats={stats}
         metrics={metrics}
-        hasCompletedDiagnostic={false}
+        hasCompletedDiagnostic={hasCompletedDiagnostic}
       />
 
       {/* Smart Recommendations */}
       <SmartRecommendations
         stats={stats}
         metrics={metrics}
-        hasCompletedDiagnostic={false}
+        hasCompletedDiagnostic={hasCompletedDiagnostic}
       />
 
       {!isNewUser && (
