@@ -1,54 +1,57 @@
 
 
-# Revisao de Qualidade: Questoes "real-exam-ai"
+# Plano: Busca de Questoes Reais via Firecrawl + Web Scraping
 
-## Diagnostico Atual
+## Problema
+A IA generativa nao tem acesso a bancos de provas reais e fabrica fontes. Precisamos buscar conteudo de fontes oficiais publicadas na web.
 
-| Metrica | real-exam-ai | daily-auto |
-|---------|-------------|------------|
-| Total | 12 | 340 |
-| Tamanho medio enunciado | 330 chars | 713 chars |
-| Dificuldade media | 3.3 | 3.6 |
+## Abordagem
+Usar o conector **Firecrawl** (ja disponivel no workspace) para scraping de sites que publicam provas de residencia medica com acesso publico, e processar o conteudo extraido via IA para estruturar as questoes.
 
-## Problemas Identificados
+## Fontes Publicas Conhecidas
+- **INEP/REVALIDA**: Provas disponibilizadas publicamente pelo governo
+- **Residenciamedicasp.com.br**: Agregador de provas de SP
+- **Sites de universidades**: USP, UNICAMP, UNIFESP publicam gabaritos e cadernos de prova
+- **SUS-SP (Acesso Direto)**: Provas disponiveis no portal oficial
 
-### 1. Questoes NAO sao reais — sao genericas disfarçadas
-As questoes marcadas como "real-exam-ai" **nao reproduzem provas reais**. Exemplos:
-- "Um estudante observa uma lamina de tecido muscular... fibras longas, multinucleadas..." → questao basica de livro-texto, nao de ENARE 2020
-- "Qual a principal funcao destas estruturas no ovario?" → pergunta conceitual pura, **violando** a regra de proibir "O que e X?"
-- Fontes como "REVALIDA INEP 2016" e "UNICAMP 2023" sao **fabricadas** pela IA
+## Implementacao
 
-### 2. Enunciados curtos demais (330 vs 713 chars)
-Questoes de residencia real tem caso clinico completo. As geradas sao 2x mais curtas que as do `daily-auto`.
+### 1. Linkar Firecrawl ao projeto
+Conectar o conector Firecrawl ja existente no workspace.
 
-### 3. Dificuldade abaixo do padrao
-Questao com `difficulty: 2` passou pelo filtro (o codigo exige `≥ 3` para daily-auto mas NAO filtra dificuldade para real-exam-ai).
+### 2. Criar Edge Function `search-real-questions`
+- Recebe: especialidade, banca (opcional), ano (opcional)
+- Usa Firecrawl Search para buscar PDFs/paginas com questoes reais
+- Usa Firecrawl Scrape para extrair o conteudo das paginas encontradas
+- Passa o conteudo extraido para a IA estruturar em formato `questions_bank`
+- Salva com `source: "web-scrape"` e metadata real (URL de origem, banca, ano)
 
-### 4. Falta de caso clinico
-As questoes de Histologia e Genetica sao quase todas conceituais — sem anamnese, sinais vitais, exames complementares.
+### 3. Integrar no `daily-question-generator`
+- Fase 1 (nova): chamar `search-real-questions` para buscar questoes reais da web
+- Fase 2 (existente): complementar com `ai-exam-style` para atingir a meta
 
-## Plano de Correcao
+### 4. Adicionar botao no Admin
+- Botao "Buscar Questoes Reais" no painel admin para disparar buscas manuais por especialidade/banca
 
-### Arquivo: `supabase/functions/daily-question-generator/index.ts`
+## Detalhes Tecnicos
 
-**Correcoes na funcao `searchRealQuestionsViaAI`:**
+**Edge Function `search-real-questions/index.ts`:**
+```text
+1. Firecrawl Search: query = "prova residencia medica {especialidade} {banca} questoes"
+2. Filtrar resultados por dominio confiavel
+3. Firecrawl Scrape: extrair markdown das paginas encontradas
+4. IA: estruturar texto bruto em JSON de questoes (statement, options, answer, explanation)
+5. Validar: difficulty >= 3, tamanho >= 250 chars, conteudo clinico
+6. Inserir em questions_bank com source = "web-scrape", metadata = { url, banca, ano }
+```
 
-1. **Adicionar filtro de dificuldade >= 3** (igual ao daily-auto) na validacao pos-geracao
-2. **Aumentar exigencia de tamanho do enunciado para >= 250 chars** (vs 150 atual)
-3. **Reforcar prompt** para exigir caso clinico completo mesmo em questoes "reais" — eliminar questoes puramente conceituais
-4. **Adicionar validacao de conteudo clinico**: rejeitar questoes que nao contenham pelo menos 2 de: idade/sexo do paciente, achado clinico, exame complementar
-5. **Renomear source para `"ai-exam-style"`** para ser honesto sobre a origem (nao sao questoes reais reproduzidas)
+**Metadados de rastreabilidade:**
+- `source`: `"web-scrape"`
+- `exam_source`: URL real de onde foi extraido
+- Sem fontes inventadas — tudo rastreavel
 
-**Correcao no prompt:**
-- Remover instrucao de "reproduzir fielmente" (a IA inventa fontes)
-- Substituir por: "Gere questoes NO ESTILO e NIVEL de provas reais, citando a banca como referencia de nivel"
-- Exigir obrigatoriamente caso clinico com dados de paciente
-
-**Limpeza de dados existentes:**
-- Marcar as 12 questoes atuais com `review_status = 'needs_review'` para revisao manual ou exclusao
-
-### Resultado Esperado
-- Questoes "exam-style" terao mesma qualidade e profundidade que as `daily-auto`
-- Diferencial: prompt otimizado para replicar o estilo especifico de cada banca
-- Sem mais fontes fabricadas enganando o usuario
+## Resultado Esperado
+- Questoes com origem verificavel (URL real)
+- Conteudo autentico de provas publicadas
+- Complemento honesto ao gerador diario
 
