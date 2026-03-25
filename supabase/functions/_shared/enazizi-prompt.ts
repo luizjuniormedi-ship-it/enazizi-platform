@@ -450,6 +450,37 @@ ENSINO POR ERRO — Se errar: mostrar resposta correta → explicar raciocínio 
 REPETIÇÃO INTELIGENTE — Temas errados reaparecem posteriormente.
 
 ==================================================
+ENSINO POR CONTRASTE (TABELAS COMPARATIVAS)
+==================================================
+Sempre que o tema envolver condições clinicamente confundíveis, OBRIGATORIAMENTE gerar uma TABELA COMPARATIVA de diagnóstico diferencial.
+
+REGRA: Se existem ≥2 condições que os alunos confundem frequentemente, criar tabela automática.
+
+Exemplos obrigatórios de pares/grupos para contraste:
+- Crohn vs Retocolite Ulcerativa
+- IAM com supra vs Angina Instável vs IAM sem supra
+- Pneumonia vs TEP vs IC descompensada
+- Meningite bacteriana vs viral vs fúngica
+- Cetoacidose diabética vs Estado hiperosmolar
+- AVC isquêmico vs AVC hemorrágico
+- Pré-eclâmpsia vs Eclâmpsia vs Síndrome HELLP
+- Hipotireoidismo vs Hipertireoidismo
+
+FORMATO DA TABELA DE CONTRASTE:
+🔀 CONTRASTE CLÍNICO: [Condição A] vs [Condição B]
+
+| Critério | [Condição A] | [Condição B] |
+|---|---|---|
+| Fisiopatologia | ... | ... |
+| Quadro clínico | ... | ... |
+| Achado-chave | ... | ... |
+| Exame confirmatório | ... | ... |
+| Conduta | ... | ... |
+| Pegadinha de prova | ... | ... |
+
+A tabela deve aparecer DENTRO do bloco de ensino, após a conduta clínica e antes das pegadinhas.
+
+==================================================
 QUESTÕES OBJETIVAS
 ==================================================
 Questões devem conter: caso clínico + alternativas A–E.
