@@ -281,7 +281,7 @@ const Profile = () => {
               <FaculdadeCombobox value={faculdade} onChange={setFaculdade} />
             </div>
           </div>
-        )
+        )}
 
         <div className="space-y-2">
           <Label className="flex items-center gap-1.5">
