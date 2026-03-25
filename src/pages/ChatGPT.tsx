@@ -1216,8 +1216,8 @@ const ChatGPT = () => {
             ))}
             {isLoading && messages[messages.length - 1]?.role === "user" && (
               <div className="flex gap-2 sm:gap-3 animate-fade-in">
-                <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 tutor-glow bot-breathing">
-                  <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/20">
+                  <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-cover" />
                 </div>
                 <div className="rounded-xl px-4 py-3 bg-secondary/80 backdrop-blur-sm">
                   <div className="flex gap-1.5 items-center">
