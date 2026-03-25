@@ -32,7 +32,7 @@ const mobileNavGroups: MobileNavGroup[] = [
     title: "Principal",
     items: [
       { to: "/dashboard", label: "📊 Dashboard" },
-      { to: "/dashboard/chatgpt", label: "🤖 Tutor IA" },
+      { to: "/dashboard/chatgpt", label: "🤖 TutorZizi" },
       { to: "/dashboard/plano-dia", label: "⚡ Plano do Dia" },
       { to: "/dashboard/diagnostico", label: "🩺 Nivelamento" },
     ],

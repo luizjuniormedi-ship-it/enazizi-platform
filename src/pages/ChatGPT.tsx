@@ -835,7 +835,7 @@ const ChatGPT = () => {
             <X className="h-4 w-4" />
           </button>
           <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 relative z-10">
-            <Sparkles className="h-4 w-4 text-primary" /> Como funciona o Tutor IA
+            <Sparkles className="h-4 w-4 text-primary" /> Como funciona o TutorZizi
           </h3>
           <div className="grid grid-cols-3 gap-3 relative z-10">
             <div className="text-center space-y-1.5">

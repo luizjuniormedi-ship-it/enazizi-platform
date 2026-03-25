@@ -5,7 +5,7 @@ import { useAuth } from "./useAuth";
 // All available module keys matching sidebar routes
 export const ALL_MODULES = [
   { key: "dashboard", label: "Dashboard" },
-  { key: "chatgpt", label: "🤖 Tutor IA" },
+  { key: "chatgpt", label: "🤖 TutorZizi" },
   { key: "plano-dia", label: "⚡ Plano do Dia" },
   { key: "diagnostico", label: "🩺 Nivelamento" },
   { key: "cronograma", label: "📅 Cronograma" },
