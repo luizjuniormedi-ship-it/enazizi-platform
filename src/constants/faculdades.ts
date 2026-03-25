@@ -102,7 +102,7 @@ export const FACULDADES = [
   "PUC-RS – Pontifícia Universidade Católica do Rio Grande do Sul",
   "PUC-SP – Pontifícia Universidade Católica de São Paulo",
   "Santa Casa de SP – Faculdade de Ciências Médicas da Santa Casa de SP",
-  "Souza Marques – Centro Universitário Serra dos Órgãos",
+  "Souza Marques – Fundação Técnico-Educacional Souza Marques",
   "UCB – Universidade Católica de Brasília",
   "UCPEL – Universidade Católica de Pelotas",
   "UCS – Universidade de Caxias do Sul",
