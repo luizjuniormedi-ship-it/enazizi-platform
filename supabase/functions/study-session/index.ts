@@ -80,6 +80,14 @@ ${weakTopicsPrompt}
 FASE ATUAL: BLOCOS TÉCNICOS (STATES 2-6)
 Tema: "${topic || "solicitado pelo aluno"}"
 
+⚡ FLASH REVIEW (AQUECIMENTO OBRIGATÓRIO):
+ANTES de iniciar o bloco técnico, SE houver temas fracos listados acima (weakTopics), apresentar 2-3 perguntas RÁPIDAS de aquecimento sobre esses temas:
+- Formato: "⚡ AQUECIMENTO RÁPIDO — Antes de começarmos, vamos revisar:"
+- Pergunta 1: sobre o tema fraco mais recente (resposta em 1 linha)
+- Pergunta 2: sobre outro tema fraco (resposta em 1 linha)
+- Após as respostas do aluno: corrigir brevemente (✅/❌ + 1 frase) e SEGUIR para o bloco técnico
+- Se NÃO houver temas fracos: pular o aquecimento e ir direto ao bloco
+
 ENSINE seguindo RIGOROSAMENTE o MARCADOR DE BLOCO.
 NUNCA faça perguntas nesta fase até o final do bloco (active recall).
 ENTREGUE o conteúdo em 4 MENSAGENS conforme a SEQUÊNCIA DE ENTREGA do prompt principal.
