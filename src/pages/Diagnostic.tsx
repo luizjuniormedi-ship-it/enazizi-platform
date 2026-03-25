@@ -186,13 +186,13 @@ NÃO inclua texto extra, APENAS o JSON.` }],
     return parsed.slice(0, QUESTIONS_PER_AREA);
   };
 
-  const startExam = async () => {
+  const startExam = async (cycle: string) => {
     setPhase("loading");
     try {
       const allQuestions: DiagQuestion[] = [];
       const failedAreas: string[] = [];
 
-      const AREAS = getAreasForPeriodo(userPeriodo);
+      const AREAS = getAreasForCycle(cycle);
       // Process areas in batches of 2 to reduce server load
       for (let i = 0; i < AREAS.length; i += 2) {
         const batch = AREAS.slice(i, i + 2);
