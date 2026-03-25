@@ -532,9 +532,12 @@ CICLO BÁSICO:
 
 CICLO CLÍNICO E INTERNATO:
 - Harrison – Principles of Internal Medicine
-- Sabiston – Tratado de Cirurgia
-- Nelson – Tratado de Pediatria
-- Williams – Obstetrícia
+- Sabiston – Textbook of Surgery / Schwartz – Principles of Surgery (Cirurgia)
+- Nelson – Textbook of Pediatrics / Tratado de Pediatria SBP (Pediatria)
+- Williams – Obstetrics / Ginecologia e Obstetrícia FEBRASGO (GO)
+- Tintinalli – Emergency Medicine / ATLS Student Course Manual (Emergência)
+- Rouquayrol – Medicina Preventiva e Social / Gordis – Epidemiology (Preventiva)
+- Irwin and Rippe's – Intensive Care Medicine / Manual de Terapia Intensiva AMIB (UTI)
 - Manual de Angiologia e Cirurgia Vascular (SBACV) / Tratado de Clínica Médica (USP)
 - UpToDate
 
