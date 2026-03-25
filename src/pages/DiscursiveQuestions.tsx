@@ -174,7 +174,7 @@ const DiscursiveQuestions = () => {
           userId: user.id,
           tema: specialty,
           tipoQuestao: "discursiva",
-          conteudo: question?.slice(0, 500) || clinicalCase?.slice(0, 500),
+          conteudo: questions.join(" | ").slice(0, 500) || clinicalCase?.slice(0, 500),
           motivoErro: weaknesses.length > 0 
             ? `Pontos fracos: ${weaknesses.join("; ")}` 
             : `Nota ${res.correction.total_score}/${res.correction.max_score}`,
