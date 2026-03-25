@@ -1,40 +1,100 @@
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, Zap, BarChart3, Target, Trophy, XCircle, CheckCircle2, RotateCcw } from "lucide-react";
 import AgentChat from "@/components/agents/AgentChat";
 import InteractiveQuestionRenderer from "@/components/agents/InteractiveQuestionRenderer";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
-import { useCallback } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const quickActions = [
-  { label: "📝 Escolher tema e quantidade", prompt: "Quero gerar questões. Me pergunte sobre qual tema/especialidade e quantas questões eu quero antes de começar.", icon: "🎯" },
-  { label: "🫀 Cardiologia (10)", prompt: "Gere 10 questões ORIGINAIS de Cardiologia nível intermediário. Varie os subtemas: IAM, IC, arritmias, valvopatias, HAS, endocardite, pericardite. Formato ENARE com casos clínicos variados.", icon: "🟢" },
-  { label: "🧒 Pediatria (10)", prompt: "Gere 10 questões ORIGINAIS de Pediatria nível intermediário. Varie os subtemas: bronquiolite, convulsão febril, desidratação, vacinação, icterícia neonatal, pneumonia infantil. Formato ENARE com casos clínicos variados.", icon: "🟡" },
-  { label: "🔪 Cirurgia (10)", prompt: "Gere 10 questões ORIGINAIS de Cirurgia nível intermediário. Varie os subtemas: abdome agudo, politrauma, hérnias, apendicite, colecistite, obstrução intestinal. Formato ENARE com casos clínicos variados.", icon: "🔴" },
-  { label: "🧠 Neurologia (10)", prompt: "Gere 10 questões ORIGINAIS de Neurologia nível intermediário. Varie os subtemas: AVC, epilepsia, meningite, cefaleia, Guillain-Barré, esclerose múltipla. Formato ENARE com casos clínicos variados.", icon: "🔵" },
-  { label: "🦠 Infectologia (10)", prompt: "Gere 10 questões ORIGINAIS de Infectologia nível intermediário. Varie os subtemas: HIV, sepse, dengue, tuberculose, sífilis, hepatites virais, meningite bacteriana. Formato ENARE com casos clínicos variados.", icon: "🟠" },
-  { label: "🤰 GO (10)", prompt: "Gere 10 questões ORIGINAIS de Ginecologia e Obstetrícia nível intermediário. Varie os subtemas: pré-eclâmpsia, DMG, placenta prévia, SOP, endometriose, câncer de colo uterino. Formato ENARE com casos clínicos variados.", icon: "🩷" },
-  { label: "🏥 Emergência (10)", prompt: "Gere 10 questões ORIGINAIS de Medicina de Emergência nível intermediário. Varie os subtemas: PCR, choque, intoxicações, politrauma ATLS, crise hipertensiva, anafilaxia. Formato ENARE com casos clínicos variados.", icon: "🚑" },
-  { label: "🛡️ Preventiva (10)", prompt: "Gere 10 questões ORIGINAIS de Medicina Preventiva nível intermediário. Varie os subtemas: rastreamento, vacinação, epidemiologia, bioestatística, SUS, APS. Formato ENARE com casos clínicos variados.", icon: "🟤" },
-  { label: "💊 Endocrinologia (10)", prompt: "Gere 10 questões ORIGINAIS de Endocrinologia nível intermediário. Varie os subtemas: DM1/DM2, hipotireoidismo, hipertireoidismo, Cushing, Addison, CAD. Formato ENARE com casos clínicos variados.", icon: "💜" },
-  { label: "🦴 Reumatologia (10)", prompt: "Gere 10 questões ORIGINAIS de Reumatologia nível intermediário. Varie os subtemas: LES, artrite reumatoide, gota, febre reumática, vasculites, esclerose sistêmica. Formato ENARE com casos clínicos variados.", icon: "🦴" },
-  { label: "🧠 Psiquiatria (10)", prompt: "Gere 10 questões ORIGINAIS de Psiquiatria nível intermediário. Varie os subtemas: depressão, esquizofrenia, transtorno bipolar, ansiedade, dependência química, emergências psiquiátricas. Formato ENARE com casos clínicos variados.", icon: "🧩" },
-  { label: "🩸 Hematologia (10)", prompt: "Gere 10 questões ORIGINAIS de Hematologia nível intermediário. Varie os subtemas: anemia ferropriva, anemia falciforme, leucemias, linfomas, PTI, CIVD. Formato ENARE com casos clínicos variados.", icon: "🩸" },
-  { label: "💊 Farmacologia (10)", prompt: "Gere 10 questões ORIGINAIS de Farmacologia Médica nível intermediário. Varie os subtemas: farmacocinética, farmacodinâmica, antibióticos, anti-hipertensivos, anticoagulantes, analgésicos, anti-inflamatórios, interações medicamentosas. Formato ENARE com casos clínicos variados.", icon: "💊" },
-  { label: "🔍 Semiologia (10)", prompt: "Gere 10 questões ORIGINAIS de Semiologia Médica nível intermediário. Varie os subtemas: ausculta cardíaca, ausculta pulmonar, exame abdominal, exame neurológico, sinais semiológicos clássicos, propedêutica. Formato ENARE com casos clínicos variados.", icon: "🔍" },
-  { label: "🦴 Anatomia (10)", prompt: "Gere 10 questões ORIGINAIS de Anatomia Médica nível intermediário. Varie os subtemas: anatomia cardíaca, anatomia do sistema nervoso, anatomia abdominal, anatomia do aparelho locomotor, anatomia cirúrgica, correlações clínico-anatômicas. Formato ENARE com casos clínicos variados.", icon: "🦴" },
-  { label: "🔥 5 Questões Difíceis", prompt: "Gere 5 questões DIFÍCEIS de múltipla escolha sobre qualquer área da Medicina para residência. Nível alto com casos clínicos complexos, diagnósticos diferenciais e condutas avançadas.", icon: "🔥" },
-  { label: "⚡ 20 Questões Mistas", prompt: "Gere 20 questões ORIGINAIS mistas cobrindo: Clínica Médica, Cirurgia, Pediatria, GO, Preventiva e Oncologia. Nível intermediário a difícil. Formato ENARE com casos clínicos variados.", icon: "⚡" },
+const SPECIALTIES = [
+  "Cardiologia", "Pediatria", "Cirurgia", "Neurologia", "Infectologia",
+  "Ginecologia e Obstetrícia", "Medicina de Emergência", "Medicina Preventiva",
+  "Endocrinologia", "Reumatologia", "Psiquiatria", "Hematologia",
+  "Gastroenterologia", "Pneumologia", "Nefrologia", "Dermatologia",
+  "Ortopedia", "Urologia", "Oftalmologia", "Otorrinolaringologia",
+  "Farmacologia", "Semiologia", "Anatomia", "Oncologia", "Terapia Intensiva",
 ];
+
+const DIFFICULTY_OPTIONS = [
+  { value: "facil", label: "Fácil", emoji: "🟢", desc: "Apresentações típicas" },
+  { value: "intermediario", label: "Intermediário", emoji: "🟡", desc: "Padrão REVALIDA" },
+  { value: "dificil", label: "Difícil", emoji: "🔴", desc: "Pegadinhas ENARE" },
+  { value: "misto", label: "Misto", emoji: "🔀", desc: "50% médio + 50% difícil" },
+];
+
+const QUANTITY_OPTIONS = [5, 10, 15, 20];
+
+interface SessionStats {
+  total: number;
+  correct: number;
+  bySpecialty: Record<string, { total: number; correct: number }>;
+}
 
 const QuestionGenerator = () => {
   const { user } = useAuth();
+  const [specialty, setSpecialty] = useState<string>("");
+  const [difficulty, setDifficulty] = useState("intermediario");
+  const [quantity, setQuantity] = useState(10);
+  const [marathonMode, setMarathonMode] = useState(false);
+  const [sessionStats, setSessionStats] = useState<SessionStats>({ total: 0, correct: 0, bySpecialty: {} });
+  const [showSetup, setShowSetup] = useState(true);
+  const marathonAnsweredRef = useRef(0);
+  const marathonTotalRef = useRef(0);
+  const sendPromptRef = useRef<((prompt: string) => void) | null>(null);
+
+  // Listen to InteractiveQuestionCard answers via custom event
+  useEffect(() => {
+    const handler = (e: CustomEvent) => {
+      const { correct, topic } = e.detail;
+      setSessionStats(prev => {
+        const spec = topic || "Geral";
+        const existing = prev.bySpecialty[spec] || { total: 0, correct: 0 };
+        return {
+          total: prev.total + 1,
+          correct: prev.correct + (correct ? 1 : 0),
+          bySpecialty: {
+            ...prev.bySpecialty,
+            [spec]: { total: existing.total + 1, correct: existing.correct + (correct ? 1 : 0) },
+          },
+        };
+      });
+
+      // Marathon mode: auto-generate more when user is near the end
+      if (marathonMode) {
+        marathonAnsweredRef.current += 1;
+        if (marathonAnsweredRef.current >= marathonTotalRef.current - 1) {
+          const nextPrompt = `Gere mais 5 questões ORIGINAIS de ${effectiveSpecialty || "qualquer área médica"} nível ${difficulty}. Formato ENARE com casos clínicos variados. NÃO repita cenários anteriores.`;
+          marathonTotalRef.current += 5;
+          setTimeout(() => sendPromptRef.current?.(nextPrompt), 1500);
+        }
+      }
+    };
+
+    window.addEventListener("question-answered" as any, handler);
+    return () => window.removeEventListener("question-answered" as any, handler);
+  }, [marathonMode, specialty, difficulty]);
+
+  const effectiveSpecialty = specialty && specialty !== "all" ? specialty : "";
+
+  const buildPrompt = () => {
+    const specPart = effectiveSpecialty || "qualquer área médica (variando especialidades)";
+    return `Gere ${quantity} questões ORIGINAIS de ${specPart} nível ${difficulty}. Formato ENARE com casos clínicos variados, alternativas plausíveis e explicação detalhada. Varie subtemas, perfis de pacientes e cenários.`;
+  };
+
+  const quickActions = showSetup ? [] : [
+    { label: "🔄 Gerar mais", prompt: buildPrompt(), icon: "🔄" },
+  ];
 
   const handleSaveQuestions = useCallback(async (content: string): Promise<number> => {
     if (!user) throw new Error("Usuário não autenticado");
-
     const parsed = parseQuestionsFromText(content);
-    if (parsed.length === 0) throw new Error("Nenhuma questão encontrada para salvar. Verifique se o formato é válido.");
+    if (parsed.length === 0) throw new Error("Nenhuma questão encontrada para salvar.");
+
+    // Track marathon total
+    marathonTotalRef.current += parsed.length;
 
     const rows = parsed.map((q) => ({
       user_id: user.id,
@@ -48,7 +108,6 @@ const QuestionGenerator = () => {
 
     const { error } = await supabase.from("questions_bank").insert(rows);
     if (error) throw new Error("Erro ao salvar: " + error.message);
-
     return parsed.length;
   }, [user]);
 
@@ -73,22 +132,196 @@ const QuestionGenerator = () => {
     <InteractiveQuestionRenderer content={content} />
   ), []);
 
+  const handleStartGenerating = () => {
+    setShowSetup(false);
+    marathonAnsweredRef.current = 0;
+    marathonTotalRef.current = 0;
+  };
+
+  const handleResetSession = () => {
+    setSessionStats({ total: 0, correct: 0, bySpecialty: {} });
+    setShowSetup(true);
+    marathonAnsweredRef.current = 0;
+    marathonTotalRef.current = 0;
+  };
+
+  const accuracy = sessionStats.total > 0 ? Math.round((sessionStats.correct / sessionStats.total) * 100) : 0;
+
+  // Find best and worst specialty
+  const specEntries = Object.entries(sessionStats.bySpecialty);
+  const bestSpec = specEntries.length > 0
+    ? specEntries.reduce((a, b) => (b[1].correct / b[1].total) > (a[1].correct / a[1].total) ? b : a)
+    : null;
+  const worstSpec = specEntries.length > 1
+    ? specEntries.reduce((a, b) => (b[1].correct / b[1].total) < (a[1].correct / a[1].total) ? b : a)
+    : null;
+
+  if (showSetup) {
+    return (
+      <div className="flex flex-col animate-fade-in h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)]">
+        <div className="mb-4">
+          <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
+            <HelpCircle className="h-6 w-6 text-primary" />
+            Gerador de Questões
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Configure e comece a treinar com questões estilo ENARE, USP e UNIFESP.</p>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center">
+          <div className="glass-card p-6 sm:p-8 max-w-lg w-full space-y-6">
+            {/* Specialty */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-1.5">
+                <Target className="h-4 w-4 text-primary" />
+                Especialidade
+              </label>
+              <Select value={specialty} onValueChange={setSpecialty}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas (misto)" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  <SelectItem value="all">Todas (misto)</SelectItem>
+                  {SPECIALTIES.map(s => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Difficulty */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Dificuldade</label>
+              <div className="grid grid-cols-2 gap-2">
+                {DIFFICULTY_OPTIONS.map(d => (
+                  <button
+                    key={d.value}
+                    onClick={() => setDifficulty(d.value)}
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm transition-all ${
+                      difficulty === d.value
+                        ? "border-primary bg-primary/10 text-primary font-medium"
+                        : "border-border bg-card hover:bg-secondary"
+                    }`}
+                  >
+                    <span>{d.emoji}</span>
+                    <div className="text-left">
+                      <div className="font-medium text-xs">{d.label}</div>
+                      <div className="text-[10px] text-muted-foreground">{d.desc}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Quantity */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Quantidade</label>
+              <div className="flex gap-2">
+                {QUANTITY_OPTIONS.map(q => (
+                  <button
+                    key={q}
+                    onClick={() => setQuantity(q)}
+                    className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-all ${
+                      quantity === q
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card hover:bg-secondary"
+                    }`}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Marathon mode */}
+            <label className="flex items-center gap-3 cursor-pointer px-3 py-3 rounded-lg border border-border hover:bg-secondary/50 transition-colors">
+              <input
+                type="checkbox"
+                checked={marathonMode}
+                onChange={(e) => setMarathonMode(e.target.checked)}
+                className="rounded border-primary text-primary focus:ring-primary h-4 w-4"
+              />
+              <div className="flex-1">
+                <div className="text-sm font-medium flex items-center gap-1.5">
+                  <Zap className="h-4 w-4 text-amber-500" />
+                  Modo Maratona
+                </div>
+                <p className="text-[10px] text-muted-foreground">Gera questões automaticamente conforme você responde</p>
+              </div>
+            </label>
+
+            {/* Start button */}
+            <Button
+              className="w-full gap-2 h-12 text-base"
+              onClick={handleStartGenerating}
+            >
+              <HelpCircle className="h-5 w-5" />
+              Gerar {quantity} Questões
+              {effectiveSpecialty ? ` de ${effectiveSpecialty}` : ""}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <AgentChat
-      title="Gerador de Questões"
-      subtitle="Questões estilo ENARE, USP e UNIFESP com casos clínicos."
-      icon={<HelpCircle className="h-6 w-6 text-primary" />}
-      welcomeMessage="Olá! Sou o Gerador de Questões para Residência Médica. 📝 Me diga: qual **assunto/especialidade** você quer treinar e **quantas questões** deseja? Exemplo: '10 questões de Cardiologia' ou '5 questões difíceis de Pediatria'."
-      welcomeMessageWithUploads="📚 Detectei {count} material(is) do seu acervo: {materiais}. Vou usar como base para gerar questões! Escolha abaixo quantas questões e o nível de dificuldade, ou me diga o que prefere. 👇"
-      placeholder="Ex: Gere 5 questões de Cardiologia sobre Insuficiência Cardíaca..."
-      functionName="question-generator"
-      onSaveMessage={handleSaveQuestions}
-      quickActions={quickActions}
-      renderAssistantMessage={renderInteractive}
-      showUploadButton={true}
-      autoPromptAfterUpload="Gere 10 questões originais no formato ENARE baseadas no material que acabei de enviar: {filename}. Use o conteúdo do material como base para criar casos clínicos variados."
-      previousContentLoader={loadPreviousQuestions}
-    />
+    <div className="flex flex-col h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)]">
+      {/* Session stats bar */}
+      {sessionStats.total > 0 && (
+        <div className="mb-2 px-3 py-2 rounded-lg bg-card border border-border flex items-center gap-3 flex-wrap text-xs">
+          <div className="flex items-center gap-1.5 font-medium">
+            <BarChart3 className="h-3.5 w-3.5 text-primary" />
+            <span>{sessionStats.total} respondidas</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+            <span>{sessionStats.correct} certas</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <XCircle className="h-3.5 w-3.5 text-red-500" />
+            <span>{sessionStats.total - sessionStats.correct} erradas</span>
+          </div>
+          <Badge variant={accuracy >= 70 ? "default" : "destructive"} className="text-[10px]">
+            {accuracy}%
+          </Badge>
+          {bestSpec && specEntries.length > 1 && (
+            <span className="text-muted-foreground hidden sm:inline">
+              <Trophy className="h-3 w-3 inline mr-0.5 text-amber-500" />
+              Melhor: {bestSpec[0]}
+            </span>
+          )}
+          {worstSpec && worstSpec[0] !== bestSpec?.[0] && (
+            <span className="text-muted-foreground hidden sm:inline">
+              ⚠️ Revisar: {worstSpec[0]}
+            </span>
+          )}
+          {marathonMode && (
+            <Badge variant="outline" className="text-[10px] gap-1">
+              <Zap className="h-3 w-3 text-amber-500" /> Maratona
+            </Badge>
+          )}
+          <Button variant="ghost" size="sm" className="ml-auto h-6 px-2 text-[10px] gap-1" onClick={handleResetSession}>
+            <RotateCcw className="h-3 w-3" /> Nova sessão
+          </Button>
+        </div>
+      )}
+
+      <AgentChat
+        title="Gerador de Questões"
+        subtitle={`${effectiveSpecialty ? effectiveSpecialty + " • " : ""}${DIFFICULTY_OPTIONS.find(d => d.value === difficulty)?.label || "Intermediário"} • ${quantity} questões${marathonMode ? " • 🔥 Maratona" : ""}`}
+        icon={<HelpCircle className="h-6 w-6 text-primary" />}
+        welcomeMessage={`Gerando ${quantity} questões${effectiveSpecialty ? ` de ${effectiveSpecialty}` : " mistas"} (${DIFFICULTY_OPTIONS.find(d => d.value === difficulty)?.label})... Aguarde! 🧠`}
+        welcomeMessageWithUploads="📚 Detectei {count} material(is) do seu acervo: {materiais}. Vou usar como base para gerar questões! 👇"
+        placeholder="Ex: Gere mais 5 de Cardiologia sobre IAM..."
+        functionName="question-generator"
+        onSaveMessage={handleSaveQuestions}
+        quickActions={quickActions}
+        renderAssistantMessage={renderInteractive}
+        showUploadButton={true}
+        autoPromptAfterUpload="Gere 10 questões originais no formato ENARE baseadas no material que acabei de enviar: {filename}. Use o conteúdo do material como base para criar casos clínicos variados."
+        previousContentLoader={loadPreviousQuestions}
+      />
+    </div>
   );
 };
 

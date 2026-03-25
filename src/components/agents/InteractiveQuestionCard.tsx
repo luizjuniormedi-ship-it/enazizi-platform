@@ -36,6 +36,11 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
     setSelected(optionIndex);
     const correct = optionIndex === question.correctIndex;
 
+    // Emit custom event for session stats & marathon mode
+    window.dispatchEvent(new CustomEvent("question-answered", {
+      detail: { correct, topic: question.topic },
+    }));
+
     if (!user) return;
 
     // Award XP
