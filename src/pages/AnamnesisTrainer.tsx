@@ -5,12 +5,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import { useIsMobile } from "@/hooks/use-mobile";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import {
   MessageCircle, Send, Loader2, Clock, Award, RotateCcw,
   CheckCircle, XCircle, Star, Trophy, Target, ClipboardCheck,
   User, Heart, Pill, AlertTriangle, Users as UsersIcon, Activity,
-  Stethoscope, Baby, Brain, ListChecks, FileText
+  Stethoscope, Baby, Brain, ListChecks, FileText, ChevronDown, ChevronUp, Sparkles, History
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,7 +19,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 import ReactMarkdown from "react-markdown";
+import { exportToPdf } from "@/lib/exportPdf";
 
 const SPECIALTIES = [
   "Clínica Médica", "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia",
@@ -62,6 +66,19 @@ const DIAGNOSIS_CATEGORIES = [
   { key: "conduct", label: "Conduta", icon: FileText },
 ];
 
+// Contextual quick-question suggestions
+const SUGGESTION_MAP: Record<string, string[]> = {
+  _start: ["Qual o seu nome completo?", "O que o trouxe aqui hoje?", "Há quanto tempo sente isso?"],
+  identification: ["Qual sua idade?", "O que o trouxe aqui?", "Há quanto tempo está assim?"],
+  chief_complaint: ["Quando começou?", "Como é a dor?", "O que piora ou melhora?"],
+  hda: ["Tem alguma doença crônica?", "Já fez alguma cirurgia?", "Toma algum remédio?"],
+  past_medical: ["Quais remédios toma?", "Tem alergia a algum medicamento?", "Alguém na família tem doença parecida?"],
+  medications: ["Tem alergia a algum medicamento?", "Tem alergias alimentares?", "Alguma reação a remédios?"],
+  allergies: ["Alguém na família tem doenças semelhantes?", "Seus pais são vivos?", "Tem histórico de câncer na família?"],
+  family_history: ["Fuma? Bebe?", "Pratica exercícios?", "Como é sua alimentação?"],
+  social_history: ["Tem sentido febre?", "Perdeu peso recentemente?", "Algum sintoma urinário?"],
+};
+
 type Phase = "lobby" | "active" | "diagnosis" | "finishing" | "result";
 
 interface ChatMessage {
@@ -97,10 +114,48 @@ interface FinalEval {
   xp_earned: number;
 }
 
+interface PastCase {
+  id: string;
+  specialty: string;
+  final_score: number | null;
+  grade: string | null;
+  created_at: string;
+  difficulty: string;
+}
+
+const QualityStars = ({ quality }: { quality?: number }) => {
+  if (quality === undefined || quality === null) return null;
+  const stars = Math.min(3, Math.max(0, Math.round(quality)));
+  const labels = ["Fraca", "Regular", "Boa", "Excelente"];
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex items-center gap-0.5 mt-1">
+            {[0, 1, 2].map(i => (
+              <Star key={i} className={`h-3 w-3 ${i < stars ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground/30"}`} />
+            ))}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent><p className="text-xs">{labels[stars]} — técnica semiológica</p></TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
+const TypingDots = () => (
+  <div className="flex items-center gap-1 px-4 py-3">
+    <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: "0ms" }} />
+    <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: "150ms" }} />
+    <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: "300ms" }} />
+  </div>
+);
+
 const AnamnesisTrainer = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { addXp } = useGamification();
+  const isMobile = useIsMobile();
 
   const [phase, setPhase] = useState<Phase>("lobby");
   const [specialty, setSpecialty] = useState("Clínica Médica");
@@ -120,6 +175,8 @@ const AnamnesisTrainer = () => {
   const [evalData, setEvalData] = useState<FinalEval | null>(null);
   const [startTime, setStartTime] = useState(0);
   const [elapsed, setElapsed] = useState(0);
+  const [checklistOpen, setChecklistOpen] = useState(false);
+  const [pastCases, setPastCases] = useState<PastCase[]>([]);
 
   // Diagnosis phase fields
   const [hypothesis, setHypothesis] = useState("");
@@ -131,6 +188,20 @@ const AnamnesisTrainer = () => {
 
   // Session persistence
   const { pendingSession, checked, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "anamnesis" });
+
+  // Load past cases for lobby
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("anamnesis_results" as any)
+      .select("id, specialty, final_score, grade, created_at, difficulty")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(5)
+      .then(({ data }) => {
+        if (data) setPastCases(data as any);
+      });
+  }, [user, phase]);
 
   const getAnamnesisState = useCallback(() => {
     if (phase !== "active" && phase !== "diagnosis") return {};
@@ -163,6 +234,28 @@ const AnamnesisTrainer = () => {
   }, [messages]);
 
   const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
+
+  const getTimerColor = () => {
+    const mins = elapsed / 60;
+    if (mins < 15) return "text-green-400";
+    if (mins < 25) return "text-yellow-400";
+    return "text-red-400";
+  };
+
+  const getTimerBarColor = () => {
+    const mins = elapsed / 60;
+    if (mins < 15) return "bg-green-500";
+    if (mins < 25) return "bg-yellow-500";
+    return "bg-red-500";
+  };
+
+  // Contextual suggestions based on covered categories
+  const getSuggestions = (): string[] => {
+    if (coveredCategories.size === 0) return SUGGESTION_MAP._start;
+    const catKeys = Array.from(coveredCategories);
+    const lastCovered = catKeys[catKeys.length - 1];
+    return SUGGESTION_MAP[lastCovered] || SUGGESTION_MAP._start;
+  };
 
   const callEdgeFunction = async (body: any) => {
     const { data, error } = await supabase.functions.invoke("anamnesis-trainer", { body });
@@ -199,9 +292,10 @@ const AnamnesisTrainer = () => {
     }
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || loading) return;
-    const userMsg: ChatMessage = { role: "doctor", content: input.trim(), timestamp: Date.now() };
+  const handleSend = async (overrideInput?: string) => {
+    const text = overrideInput ?? input;
+    if (!text.trim() || loading) return;
+    const userMsg: ChatMessage = { role: "doctor", content: text.trim(), timestamp: Date.now() };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     setLoading(true);
@@ -238,9 +332,7 @@ const AnamnesisTrainer = () => {
     }
   };
 
-  const handleGoToDiagnosis = () => {
-    setPhase("diagnosis");
-  };
+  const handleGoToDiagnosis = () => setPhase("diagnosis");
 
   const handleSubmitDiagnosis = async () => {
     setPhase("finishing");
@@ -269,7 +361,6 @@ const AnamnesisTrainer = () => {
           xp_earned: data.xp_earned || 0,
         } as any);
 
-        // Log to ErrorBank if score < 70
         if ((data.final_score || 0) < 70) {
           const missedCategories = Object.entries(data.categories_summary || {})
             .filter(([, v]: [string, any]) => !v)
@@ -286,9 +377,7 @@ const AnamnesisTrainer = () => {
           });
         }
 
-        if (data.xp_earned) {
-          addXp(data.xp_earned);
-        }
+        if (data.xp_earned) addXp(data.xp_earned);
       }
 
       await completeSession();
@@ -313,8 +402,21 @@ const AnamnesisTrainer = () => {
     setProposedConduct("");
   };
 
+  const handleExportPdf = () => {
+    if (!evalData) return;
+    const items = [
+      { title: "Nota", content: `${evalData.grade} — ${evalData.final_score}/100` },
+      ...(evalData.ideal_anamnesis ? [{ title: "Anamnese Ideal", content: evalData.ideal_anamnesis }] : []),
+      ...(evalData.clinical_reasoning ? [{ title: "Raciocínio Clínico", content: evalData.clinical_reasoning }] : []),
+      ...(evalData.strengths?.length ? [{ title: "Pontos Fortes", content: evalData.strengths.join("\n") }] : []),
+      ...(evalData.improvements?.length ? [{ title: "Pontos a Melhorar", content: evalData.improvements.join("\n") }] : []),
+    ];
+    exportToPdf(items, `Anamnese_${specialty}_${evalData.grade}`);
+  };
+
   // === LOBBY ===
   if (phase === "lobby") {
+    const gradeColor: Record<string, string> = { A: "text-green-400", B: "text-blue-400", C: "text-yellow-400", D: "text-orange-400", F: "text-red-400" };
     return (
       <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
         {checked && pendingSession && (
@@ -324,15 +426,46 @@ const AnamnesisTrainer = () => {
             onDiscard={() => abandonSession()}
           />
         )}
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <MessageCircle className="h-6 w-6 text-primary" />
-            Treino de Anamnese
-          </h1>
-          <p className="text-muted-foreground">Pratique sua técnica de entrevista clínica com pacientes simulados por IA.</p>
+
+        {/* Hero header with gradient */}
+        <div className="relative overflow-hidden rounded-2xl border border-primary/10 p-6 sm:p-8 bg-gradient-to-br from-primary/5 via-card to-accent/5 gradient-shift">
+          <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />
+          <div className="relative z-10 space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/25 to-accent/25 flex items-center justify-center tutor-glow float-gentle border border-primary/15">
+                <Stethoscope className="h-7 w-7 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold">Treino de Anamnese</h1>
+                <p className="text-sm text-muted-foreground">Pratique entrevista clínica com pacientes simulados por IA</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <Card className="glass-card">
+        {/* Past cases history */}
+        {pastCases.length > 0 && (
+          <div className="glass-card p-4">
+            <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
+              <History className="h-3.5 w-3.5 text-muted-foreground" />
+              Últimos Casos
+            </h3>
+            <div className="space-y-1.5">
+              {pastCases.map((c) => (
+                <div key={c.id} className="flex items-center justify-between text-xs px-3 py-2 rounded-lg bg-muted/30">
+                  <span className="text-foreground truncate mr-2">{c.specialty}</span>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-[10px] text-muted-foreground">{new Date(c.created_at).toLocaleDateString("pt-BR")}</span>
+                    <span className={`font-bold text-sm ${gradeColor[c.grade || "F"] || "text-foreground"}`}>{c.grade || "—"}</span>
+                    <span className="text-muted-foreground">{c.final_score ?? "—"}pts</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <Card className="glass-card border-primary/10">
           <CardContent className="p-6 space-y-6">
             <div>
               <label className="text-sm font-medium mb-2 block">Especialidade</label>
@@ -376,7 +509,7 @@ const AnamnesisTrainer = () => {
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  🩺 Categorias extras na avaliação: História Gestacional, Neonatal, DNPM, Vacinação e Alimentação
+                  🩺 Categorias extras: História Gestacional, Neonatal, DNPM, Vacinação e Alimentação
                 </p>
               </div>
             )}
@@ -402,13 +535,13 @@ const AnamnesisTrainer = () => {
               <ul className="space-y-1 text-muted-foreground">
                 <li>• A IA simula um paciente real — só responde ao que você perguntar</li>
                 <li>• Conduza a anamnese completa: identificação, QP, HDA, antecedentes...</li>
-                <li>• O checklist lateral mostra quais categorias você já cobriu</li>
+                <li>• O checklist mostra quais categorias você já cobriu</li>
                 <li>• Ao finalizar, proponha hipótese diagnóstica e conduta</li>
-                <li>• Receba avaliação detalhada com anamnese ideal e raciocínio clínico</li>
+                <li>• Receba avaliação detalhada com radar de desempenho</li>
               </ul>
             </div>
 
-            <Button onClick={handleStart} disabled={loading} className="w-full" size="lg">
+            <Button onClick={handleStart} disabled={loading} className="w-full glow bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70" size="lg">
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Stethoscope className="h-4 w-4 mr-2" />}
               Iniciar Consulta
             </Button>
@@ -422,27 +555,29 @@ const AnamnesisTrainer = () => {
   if (phase === "diagnosis" || phase === "finishing") {
     return (
       <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Brain className="h-6 w-6 text-primary" />
-            Raciocínio Clínico
-          </h1>
-          <p className="text-muted-foreground">
-            Com base na anamnese que você realizou, proponha sua hipótese diagnóstica e conduta.
-          </p>
+        <div className="relative overflow-hidden rounded-2xl border border-primary/10 p-4 sm:p-6 bg-gradient-to-br from-primary/5 via-card to-accent/5">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary/25 to-accent/25 flex items-center justify-center">
+              <Brain className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-lg sm:text-xl font-bold">Raciocínio Clínico</h1>
+              <p className="text-xs text-muted-foreground">Proponha diagnóstico e conduta com base na anamnese</p>
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3 text-sm">
+        <div className="flex items-center gap-3 text-sm flex-wrap">
           <Badge variant="outline">{specialty}</Badge>
           <Badge variant="outline" className="capitalize">{difficulty}</Badge>
-          <div className="flex items-center gap-1 font-mono text-muted-foreground">
+          <div className={`flex items-center gap-1 font-mono ${getTimerColor()}`}>
             <Clock className="h-4 w-4" />
             {formatTime(elapsed)}
           </div>
           <Badge variant="secondary">{coveredCategories.size}/{CATEGORIES.length} categorias</Badge>
         </div>
 
-        <Card className="glass-card">
+        <Card className="glass-card border-primary/10">
           <CardContent className="p-6 space-y-5">
             <div>
               <label className="text-sm font-medium mb-2 block flex items-center gap-2">
@@ -452,7 +587,7 @@ const AnamnesisTrainer = () => {
               <Textarea
                 value={hypothesis}
                 onChange={e => setHypothesis(e.target.value)}
-                placeholder="Ex: Infarto Agudo do Miocárdio com supradesnivelamento de ST em parede anterior..."
+                placeholder="Ex: Infarto Agudo do Miocárdio com supradesnivelamento de ST..."
                 className="min-h-[80px]"
                 disabled={phase === "finishing"}
               />
@@ -475,30 +610,22 @@ const AnamnesisTrainer = () => {
             <div>
               <label className="text-sm font-medium mb-2 block flex items-center gap-2">
                 <FileText className="h-4 w-4 text-primary" />
-                Conduta Proposta (exames, tratamento, orientações)
+                Conduta Proposta
               </label>
               <Textarea
                 value={proposedConduct}
                 onChange={e => setProposedConduct(e.target.value)}
-                placeholder="Ex: Solicitar ECG 12 derivações, troponina, hemograma, eletrólitos. Iniciar AAS 300mg, Clopidogrel 300mg..."
+                placeholder="Ex: Solicitar ECG 12 derivações, troponina, hemograma..."
                 className="min-h-[100px]"
                 disabled={phase === "finishing"}
               />
             </div>
 
             <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setPhase("active")}
-                disabled={phase === "finishing"}
-              >
+              <Button variant="outline" onClick={() => setPhase("active")} disabled={phase === "finishing"}>
                 Voltar à Anamnese
               </Button>
-              <Button
-                onClick={handleSubmitDiagnosis}
-                disabled={phase === "finishing" || !hypothesis.trim()}
-                className="flex-1"
-              >
+              <Button onClick={handleSubmitDiagnosis} disabled={phase === "finishing" || !hypothesis.trim()} className="flex-1 glow">
                 {phase === "finishing" ? (
                   <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Avaliando...</>
                 ) : (
@@ -515,34 +642,68 @@ const AnamnesisTrainer = () => {
   // === RESULT ===
   if (phase === "result" && evalData) {
     const gradeColor: Record<string, string> = { A: "text-green-400", B: "text-blue-400", C: "text-yellow-400", D: "text-orange-400", F: "text-red-400" };
+
+    // Radar chart data
+    const radarData = CATEGORIES.map(cat => {
+      const evalCat = evalData.evaluation?.[cat.key];
+      return {
+        category: cat.label.length > 10 ? cat.label.slice(0, 9) + "…" : cat.label,
+        score: evalCat?.score ?? 0,
+      };
+    }).filter(d => d.score > 0 || true);
+
     return (
       <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
             <Trophy className="h-6 w-6 text-yellow-400" /> Resultado da Anamnese
           </h1>
-          <Button onClick={handleReset} variant="outline"><RotateCcw className="h-4 w-4 mr-2" /> Nova Consulta</Button>
+          <div className="flex gap-2">
+            <Button onClick={handleExportPdf} variant="outline" size="sm">
+              <FileText className="h-4 w-4 mr-1" /> PDF
+            </Button>
+            <Button onClick={handleReset} variant="outline" size="sm">
+              <RotateCcw className="h-4 w-4 mr-1" /> Nova Consulta
+            </Button>
+          </div>
         </div>
 
         {/* Score Overview */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="glass-card text-center p-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Card className="glass-card text-center p-4 card-3d">
             <div className={`text-4xl font-bold ${gradeColor[evalData.grade] || "text-foreground"}`}>{evalData.grade}</div>
             <p className="text-xs text-muted-foreground mt-1">Nota</p>
           </Card>
-          <Card className="glass-card text-center p-4">
+          <Card className="glass-card text-center p-4 card-3d">
             <div className="text-4xl font-bold text-primary">{evalData.final_score}</div>
             <p className="text-xs text-muted-foreground mt-1">Pontuação</p>
           </Card>
-          <Card className="glass-card text-center p-4">
+          <Card className="glass-card text-center p-4 card-3d">
             <div className="text-4xl font-bold text-foreground">{Math.round(elapsed / 60)}min</div>
             <p className="text-xs text-muted-foreground mt-1">Tempo</p>
           </Card>
-          <Card className="glass-card text-center p-4">
+          <Card className="glass-card text-center p-4 card-3d">
             <div className="text-4xl font-bold text-yellow-400">+{evalData.xp_earned}</div>
             <p className="text-xs text-muted-foreground mt-1">XP</p>
           </Card>
         </div>
+
+        {/* Radar Chart */}
+        {radarData.length >= 3 && (
+          <Card className="glass-card">
+            <CardContent className="p-6">
+              <h2 className="font-semibold mb-4 flex items-center gap-2"><Target className="h-5 w-5 text-primary" /> Radar de Desempenho</h2>
+              <ResponsiveContainer width="100%" height={280}>
+                <RadarChart data={radarData} outerRadius="70%">
+                  <PolarGrid className="stroke-border" />
+                  <PolarAngleAxis dataKey="category" tick={{ fontSize: 10 }} className="fill-muted-foreground" />
+                  <PolarRadiusAxis domain={[0, 10]} tick={{ fontSize: 9 }} className="fill-muted-foreground" />
+                  <Radar name="Score" dataKey="score" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.2} strokeWidth={2} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Anamnese Categories */}
         <Card className="glass-card">
@@ -559,11 +720,7 @@ const AnamnesisTrainer = () => {
                       <div className="flex items-center gap-2">
                         <Icon className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">{cat.label}</span>
-                        {evalCat.covered ? (
-                          <CheckCircle className="h-4 w-4 text-green-400" />
-                        ) : (
-                          <XCircle className="h-4 w-4 text-red-400" />
-                        )}
+                        {evalCat.covered ? <CheckCircle className="h-4 w-4 text-green-400" /> : <XCircle className="h-4 w-4 text-red-400" />}
                       </div>
                       <span className="text-sm font-bold">{evalCat.score}</span>
                     </div>
@@ -615,7 +772,6 @@ const AnamnesisTrainer = () => {
               })}
             </div>
 
-            {/* Correct diagnosis and ideal conduct */}
             {evalData.correct_diagnosis && (
               <div className="mt-4 pt-4 border-t space-y-3">
                 <div>
@@ -698,42 +854,123 @@ const AnamnesisTrainer = () => {
   }
 
   // === ACTIVE ===
+  const progressPercent = (coveredCategories.size / CATEGORIES.length) * 100;
+  const suggestions = getSuggestions();
+  const timerMins = elapsed / 60;
+
   return (
-    <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-8rem)] animate-fade-in">
-      {/* Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <Badge variant="outline">{specialty}</Badge>
-            <Badge variant="outline" className="capitalize">{difficulty}</Badge>
-            {patientData?.patient_name && (
-              <span className="text-sm text-muted-foreground">Paciente: {patientData.patient_name}</span>
-            )}
+    <div className="flex flex-col h-[calc(100vh-8rem)] animate-fade-in">
+      {/* Compact header bar */}
+      <div className="glass-card rounded-xl p-3 mb-2 space-y-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary/25 to-accent/25 flex items-center justify-center flex-shrink-0">
+              <User className="h-4 w-4 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground truncate">
+                {specialty} • {patientData?.patient_name || "Paciente"}
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1 text-sm font-mono">
-              <Clock className="h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-1 text-sm font-mono ${getTimerColor()}`}>
+              <Clock className="h-3.5 w-3.5" />
               {formatTime(elapsed)}
             </div>
-            <Button
-              onClick={handleGoToDiagnosis}
-              disabled={loading || messages.length < 4}
-              variant="default"
-              size="sm"
-            >
-              <Brain className="h-4 w-4 mr-1" />
-              Finalizar e Diagnosticar
+            <Badge variant="secondary" className="text-[10px]">{coveredCategories.size}/{CATEGORIES.length}</Badge>
+            <Button onClick={handleGoToDiagnosis} disabled={loading || messages.length < 4} size="sm" className="text-xs">
+              <Brain className="h-3.5 w-3.5 mr-1" />
+              <span className="hidden sm:inline">Finalizar e Diagnosticar</span>
+              <span className="sm:hidden">Diagnosticar</span>
             </Button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-3 bg-muted/20 rounded-lg p-4 mb-3">
-          {messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === "doctor" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+        {/* Timer color bar */}
+        <div className="h-1 rounded-full bg-muted overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-1000 ${getTimerBarColor()}`}
+            style={{ width: `${Math.min(100, (timerMins / 30) * 100)}%` }}
+          />
+        </div>
+
+        {/* Compact checklist - mobile: collapsible horizontal, desktop: always visible horizontal */}
+        {isMobile ? (
+          <div>
+            <button
+              onClick={() => setChecklistOpen(!checklistOpen)}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
+            >
+              <ClipboardCheck className="h-3.5 w-3.5" />
+              <span>Checklist</span>
+              <Progress value={progressPercent} className="h-1.5 flex-1 mx-1" />
+              <span className="text-[10px] font-mono">{Math.round(progressPercent)}%</span>
+              {checklistOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </button>
+            {checklistOpen && (
+              <div className="flex flex-wrap gap-1.5 mt-2 animate-fade-in">
+                {CATEGORIES.map(cat => {
+                  const covered = coveredCategories.has(cat.key);
+                  const Icon = cat.icon;
+                  return (
+                    <TooltipProvider key={cat.key}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] ${
+                            covered ? "bg-green-500/10 text-green-400" : "bg-muted/50 text-muted-foreground"
+                          }`}>
+                            {covered ? <CheckCircle className="h-3 w-3" /> : <Icon className="h-3 w-3 opacity-50" />}
+                            <span>{cat.label}</span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent><p className="text-xs">{covered ? "✅ Coberto" : "⬜ Pendente"}</p></TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {CATEGORIES.map(cat => {
+              const covered = coveredCategories.has(cat.key);
+              const Icon = cat.icon;
+              return (
+                <TooltipProvider key={cat.key}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] transition-colors ${
+                        covered ? "bg-green-500/10 text-green-400" : "bg-muted/50 text-muted-foreground"
+                      }`}>
+                        {covered ? <CheckCircle className="h-3 w-3" /> : <Icon className="h-3 w-3 opacity-50" />}
+                        <span>{cat.label}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent><p className="text-xs">{covered ? "✅ Coberto" : "⬜ Pendente"}</p></TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Chat Area */}
+      <div className="flex-1 overflow-y-auto space-y-3 rounded-xl p-3 sm:p-4 mb-2 bg-gradient-to-b from-muted/10 to-muted/20">
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex gap-2 ${msg.role === "doctor" ? "justify-end" : "justify-start"}`}>
+            {msg.role === "patient" && (
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-accent/30 to-primary/20 flex items-center justify-center flex-shrink-0 mt-1">
+                <User className="h-4 w-4 text-accent" />
+              </div>
+            )}
+            <div className="max-w-[80%] space-y-1">
+              <div className={`rounded-2xl px-4 py-3 ${
                 msg.role === "doctor"
                   ? "bg-primary text-primary-foreground rounded-br-md"
-                  : "bg-card border rounded-bl-md"
+                  : "glass-card rounded-bl-md"
               }`}>
                 <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                 {msg.categories && msg.categories.length > 0 && (
@@ -746,72 +983,58 @@ const AnamnesisTrainer = () => {
                   </div>
                 )}
               </div>
+              {msg.role === "patient" && <QualityStars quality={msg.quality} />}
             </div>
-          ))}
-          {loading && (
-            <div className="flex justify-start">
-              <div className="bg-card border rounded-2xl rounded-bl-md px-4 py-3">
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            {msg.role === "doctor" && (
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
+                <Stethoscope className="h-4 w-4 text-primary" />
               </div>
+            )}
+          </div>
+        ))}
+        {loading && (
+          <div className="flex gap-2 justify-start">
+            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-accent/30 to-primary/20 flex items-center justify-center flex-shrink-0">
+              <User className="h-4 w-4 text-accent" />
             </div>
-          )}
-          <div ref={chatEndRef} />
-        </div>
-
-        <div className="flex gap-2">
-          <Input
-            ref={inputRef}
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleSend()}
-            placeholder="Faça sua pergunta ao paciente..."
-            disabled={loading}
-            className="flex-1"
-          />
-          <Button onClick={handleSend} disabled={loading || !input.trim()} size="icon">
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
+            <div className="glass-card rounded-2xl rounded-bl-md">
+              <TypingDots />
+            </div>
+          </div>
+        )}
+        <div ref={chatEndRef} />
       </div>
 
-      {/* Sidebar Checklist */}
-      <div className="w-full lg:w-64 shrink-0">
-        <Card className="glass-card h-full">
-          <CardContent className="p-4">
-            <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-              <ClipboardCheck className="h-4 w-4 text-primary" />
-              Checklist da Anamnese
-            </h3>
-            <div className="space-y-2">
-              {CATEGORIES.map(cat => {
-                const covered = coveredCategories.has(cat.key);
-                const Icon = cat.icon;
-                return (
-                  <div
-                    key={cat.key}
-                    className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors ${
-                      covered ? "bg-green-500/10 text-green-400" : "text-muted-foreground"
-                    }`}
-                  >
-                    {covered ? (
-                      <CheckCircle className="h-4 w-4 shrink-0" />
-                    ) : (
-                      <Icon className="h-4 w-4 shrink-0 opacity-50" />
-                    )}
-                    <span className={covered ? "font-medium" : ""}>{cat.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="mt-4 pt-3 border-t">
-              <div className="flex items-center justify-between text-sm mb-1">
-                <span className="text-muted-foreground">Progresso</span>
-                <span className="font-medium">{coveredCategories.size}/{CATEGORIES.length}</span>
-              </div>
-              <Progress value={(coveredCategories.size / CATEGORIES.length) * 100} className="h-2" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* Quick suggestions */}
+      {!loading && suggestions.length > 0 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide mb-1">
+          {suggestions.map((s, i) => (
+            <button
+              key={i}
+              onClick={() => handleSend(s)}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors whitespace-nowrap flex-shrink-0"
+            >
+              <Sparkles className="h-3 w-3" />
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Input */}
+      <div className="flex gap-2">
+        <Input
+          ref={inputRef}
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleSend()}
+          placeholder="Faça sua pergunta ao paciente..."
+          disabled={loading}
+          className="flex-1 rounded-xl"
+        />
+        <Button onClick={() => handleSend()} disabled={loading || !input.trim()} size="icon" className="rounded-xl glow">
+          <Send className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );
