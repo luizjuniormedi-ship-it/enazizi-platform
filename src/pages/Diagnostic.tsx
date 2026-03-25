@@ -210,7 +210,9 @@ NÃO inclua texto extra, APENAS o JSON.` }],
     else content = JSON.stringify(raw);
 
     const parsed = parseQuestions(content, area, difficulty).filter(q => isMedicalQuestion(q));
-    return parsed.slice(0, QUESTIONS_PER_AREA);
+    // Post-parse: filter out duplicates against already accumulated questions
+    const unique = parsed.filter(q => !isDuplicate(q, allQuestionsSoFar));
+    return unique.slice(0, QUESTIONS_PER_AREA);
   };
 
   const startExam = async (cycle: string) => {
