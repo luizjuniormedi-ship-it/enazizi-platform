@@ -305,7 +305,7 @@ NÃO inclua texto extra, APENAS o JSON.` }],
   };
 
   if (phase === "intro") {
-    return <DiagnosticIntro alreadyDone={alreadyDone} onStart={startExam} />;
+    return <DiagnosticIntro alreadyDone={alreadyDone} defaultCycle={periodoToDefaultCycle(userPeriodo)} onStart={startExam} />;
   }
 
   if (phase === "loading") {
