@@ -67,8 +67,8 @@ const DIAGNOSIS_CATEGORIES = [
   { key: "conduct", label: "Conduta", icon: FileText },
 ];
 
-// Contextual quick-question suggestions
-const SUGGESTION_MAP: Record<string, string[]> = {
+// Contextual quick-question suggestions — ADAPTIVE by difficulty
+const SUGGESTION_MAP_BASICO: Record<string, string[]> = {
   _start: ["Qual o seu nome completo?", "O que o trouxe aqui hoje?", "Há quanto tempo sente isso?"],
   identification: ["Qual sua idade?", "O que o trouxe aqui?", "Há quanto tempo está assim?"],
   chief_complaint: ["Quando começou?", "Como é a dor?", "O que piora ou melhora?"],
@@ -78,6 +78,51 @@ const SUGGESTION_MAP: Record<string, string[]> = {
   allergies: ["Alguém na família tem doenças semelhantes?", "Seus pais são vivos?", "Tem histórico de câncer na família?"],
   family_history: ["Fuma? Bebe?", "Pratica exercícios?", "Como é sua alimentação?"],
   social_history: ["Tem sentido febre?", "Perdeu peso recentemente?", "Algum sintoma urinário?"],
+};
+
+const SUGGESTION_MAP_INTERMEDIARIO: Record<string, string[]> = {
+  _start: ["Identificação do paciente", "Investigue a queixa principal", "Caracterize a cronologia"],
+  identification: ["Explore a queixa principal", "Pergunte sobre início dos sintomas"],
+  chief_complaint: ["Aprofunde a HDA", "Caractere LIQCTSDA", "Fatores de melhora/piora"],
+  hda: ["Investigue antecedentes patológicos", "Pergunte sobre comorbidades"],
+  past_medical: ["Investigue medicações em uso", "Explore alergias"],
+  medications: ["Investigue alergias", "Pergunte reações adversas prévias"],
+  allergies: ["Explore história familiar", "Doenças hereditárias relevantes"],
+  family_history: ["Investigue hábitos de vida", "Explore fatores de risco"],
+  social_history: ["Faça revisão de sistemas", "Investigue sintomas associados"],
+};
+
+const SUGGESTION_MAP_AVANCADO: Record<string, string[]> = {
+  _start: ["💡 Inicie pela identificação", "💡 Explore a queixa"],
+  identification: ["💡 Siga para a QP"],
+  chief_complaint: ["💡 Aprofunde com HDA"],
+  hda: ["💡 Antecedentes relevantes?"],
+  past_medical: ["💡 Medicações e alergias"],
+  medications: ["💡 Alergias?"],
+  allergies: ["💡 Hist. familiar"],
+  family_history: ["💡 Hábitos de vida"],
+  social_history: ["💡 Revisão de sistemas"],
+};
+
+// Mini-caso gatilho templates per specialty
+const MINI_CASES: Record<string, string[]> = {
+  "Clínica Médica": ["Paciente 58a, dispneia aos esforços há 3 semanas", "Homem 42a, cefaleia intensa há 2 dias com rigidez de nuca"],
+  "Cardiologia": ["Mulher 65a, dor torácica em aperto há 4 horas irradiando para MSE", "Homem 50a, palpitações e síncope ao esforço"],
+  "Pneumologia": ["Paciente 30a, tosse produtiva há 3 semanas com hemoptise", "Idoso 70a, dispneia progressiva e chiado no peito"],
+  "Gastroenterologia": ["Mulher 35a, dor epigástrica pós-prandial há 2 meses", "Homem 55a, icterícia progressiva e perda ponderal"],
+  "Neurologia": ["Paciente 28a, cefaleia pulsátil unilateral com aura visual", "Mulher 60a, fraqueza súbita em hemicorpo direito"],
+  "Pediatria": ["Lactente 8m, febre há 3 dias e irritabilidade", "Criança 5a, dor abdominal recorrente e vômitos"],
+  "Cirurgia": ["Homem 40a, dor em FID há 12h com náusea e febre", "Mulher 65a, massa palpável em mama direita"],
+  "Ginecologia e Obstetrícia": ["Gestante 32s, pressão alta e edema de membros inferiores", "Mulher 45a, sangramento uterino anormal há 2 meses"],
+  "Emergência": ["Paciente 25a, trauma torácico em acidente automobilístico", "Homem 55a, rebaixamento de consciência súbito"],
+};
+
+// Coaching feedback based on quality
+const COACHING_TIPS: Record<number, { text: string; color: string }> = {
+  0: { text: "💡 Tente ser mais específico na sua pergunta — use termos semiológicos", color: "text-red-400" },
+  1: { text: "📝 Pergunta razoável — tente explorar mais detalhes (início, duração, fatores)", color: "text-yellow-400" },
+  2: { text: "👍 Boa pergunta! Continue investigando essa linha", color: "text-blue-400" },
+  3: { text: "⭐ Excelente técnica semiológica! Pergunta precisa e relevante", color: "text-green-400" },
 };
 
 type Phase = "lobby" | "active" | "diagnosis" | "finishing" | "result";
