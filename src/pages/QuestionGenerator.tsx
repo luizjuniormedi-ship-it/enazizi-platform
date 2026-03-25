@@ -45,6 +45,7 @@ const QuestionGenerator = () => {
   const marathonAnsweredRef = useRef(0);
   const marathonTotalRef = useRef(0);
   const sendPromptRef = useRef<((prompt: string) => void) | null>(null);
+  const initialPromptRef = useRef<string>("");
 
   // Listen to InteractiveQuestionCard answers via custom event
   useEffect(() => {
@@ -137,7 +138,9 @@ const QuestionGenerator = () => {
     setShowSetup(false);
     marathonAnsweredRef.current = 0;
     marathonTotalRef.current = 0;
+    initialPromptRef.current = buildPrompt();
   };
+
 
   const handleResetSession = () => {
     setSessionStats({ total: 0, correct: 0, bySpecialty: {} });
@@ -321,6 +324,8 @@ const QuestionGenerator = () => {
         showUploadButton={true}
         autoPromptAfterUpload="Gere 10 questões originais no formato ENARE baseadas no material que acabei de enviar: {filename}. Use o conteúdo do material como base para criar casos clínicos variados."
         previousContentLoader={loadPreviousQuestions}
+        initialPrompt={initialPromptRef.current}
+        onSendRef={sendPromptRef}
       />
     </div>
   );

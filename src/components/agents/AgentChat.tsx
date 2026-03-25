@@ -55,9 +55,11 @@ interface AgentChatProps {
   autoPromptAfterUpload?: string;
   linkToAgent?: LinkToAgent;
   previousContentLoader?: () => Promise<string>;
+  initialPrompt?: string;
+  onSendRef?: React.MutableRefObject<((prompt: string) => void) | null>;
 }
 
-const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions, renderAssistantMessage, showUploadButton, autoPromptAfterUpload, linkToAgent, previousContentLoader }: AgentChatProps) => {
+const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName, onSaveMessage, quickActions, renderAssistantMessage, showUploadButton, autoPromptAfterUpload, linkToAgent, previousContentLoader, initialPrompt, onSendRef }: AgentChatProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([
@@ -598,6 +600,27 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
       setIsLoading(false);
     }
   };
+
+  // Expose handleSend to parent via ref
+  useEffect(() => {
+    if (onSendRef) {
+      onSendRef.current = (prompt: string) => handleSend(prompt);
+    }
+    return () => {
+      if (onSendRef) onSendRef.current = null;
+    };
+  }, [onSendRef, messages, user, isLoading, activeConversationId]);
+
+  // Auto-fire initialPrompt once on mount
+  const initialPromptFiredRef = useRef(false);
+  useEffect(() => {
+    if (initialPrompt && !initialPromptFiredRef.current && user && !isLoading) {
+      initialPromptFiredRef.current = true;
+      // Small delay to ensure component is fully mounted
+      const timer = setTimeout(() => handleSend(initialPrompt), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [initialPrompt, user]);
 
   const handleSaveMessage = async (idx: number, content: string) => {
     if (!onSaveMessage || savingMsgIdx !== null) return;
