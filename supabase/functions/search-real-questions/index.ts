@@ -8,24 +8,22 @@ const corsHeaders = {
 };
 
 const TRUSTED_DOMAINS = [
-  "inep.gov.br",
-  "gov.br",
-  "usp.br",
-  "unicamp.br",
-  "unifesp.br",
-  "residenciamedicasp.com.br",
-  "saude.sp.gov.br",
-  "saude.gov.br",
-  "amrigs.org.br",
-  "santacasasp.org.br",
-  "fmusp.br",
-  "fcm.unicamp.br",
-  "medgrupo.com.br",
-  "medcel.com.br",
-  "estrategiamed.com.br",
-  "sanarmed.com",
-  "questoesmedicas.com.br",
-  "editorasanar.com.br",
+  // Governo / INEP
+  "inep.gov.br", "gov.br", "saude.sp.gov.br", "saude.gov.br",
+  // Universidades
+  "usp.br", "unicamp.br", "unifesp.br", "fmusp.br", "fcm.unicamp.br",
+  "ufpr.br", "ufrj.br", "ufmg.br", "ufrgs.br", "ufba.br", "ufpe.br",
+  "ufsc.br", "unesp.br", "pucrs.br", "pucsp.br", "uel.br", "uem.br",
+  // Bancas / organizadoras
+  "fgv.br", "vunesp.com.br", "cesgranrio.org.br", "ibfc.org.br",
+  "amrigs.org.br", "santacasasp.org.br", "upenet.com.br",
+  // Portais de provas e questões
+  "qconcursos.com.br", "pciconcursos.com.br", "questoesmedicas.com.br",
+  "residenciamedicasp.com.br", "residenciamedica.com.br",
+  // Educação médica
+  "medway.com.br", "medcel.com.br", "estrategiamed.com.br",
+  "medgrupo.com.br", "sanarmed.com", "editorasanar.com.br",
+  "jaleko.com.br", "afya.com.br",
 ];
 
 const CLINICAL_CONTENT_MARKERS = [
@@ -68,62 +66,78 @@ async function searchAndScrape(
   const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
   if (!FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY not configured");
 
-  // Build search query
-  const queryParts = ["prova residência médica questões"];
-  if (banca) queryParts.push(banca);
-  if (specialty) queryParts.push(specialty);
-  if (ano) queryParts.push(String(ano));
-  queryParts.push("gabarito");
-
-  const query = queryParts.join(" ");
-  console.log("Firecrawl search query:", query);
-
-  // Search
-  const searchResp = await fetch("https://api.firecrawl.dev/v1/search", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      query,
-      limit: 8,
-      lang: "pt-br",
-      country: "BR",
-      scrapeOptions: { formats: ["markdown"], onlyMainContent: true },
-    }),
-  });
-
-  if (!searchResp.ok) {
-    const err = await searchResp.text();
-    console.error("Firecrawl search error:", searchResp.status, err);
-    throw new Error(`Firecrawl search failed: ${searchResp.status}`);
+  // Build multiple search queries for better coverage
+  const queries = [
+    `"questão" "${specialty}" prova residência médica alternativas gabarito`,
+    `site:pciconcursos.com.br OR site:qconcursos.com.br residência médica ${specialty} questões`,
+  ];
+  if (banca) {
+    queries.unshift(`"${banca}" ${specialty} questões alternativas gabarito`);
   }
 
-  const searchData = await searchResp.json();
-  const results: { url: string; markdown: string }[] = [];
+  const allResults: { url: string; markdown: string }[] = [];
+  const seenUrls = new Set<string>();
 
-  for (const item of (searchData.data || [])) {
-    const url = item.url || "";
-    if (!url) continue;
+  for (const query of queries.slice(0, 2)) { // max 2 searches to save credits
+    console.log("Firecrawl search query:", query);
 
-    // Filter by trusted domains
-    if (!isTrustedDomain(url)) {
-      console.log(`Skipping untrusted domain: ${url}`);
-      continue;
+    try {
+      const searchResp = await fetch("https://api.firecrawl.dev/v1/search", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query,
+          limit: 5,
+          lang: "pt-br",
+          country: "BR",
+          scrapeOptions: { formats: ["markdown"], onlyMainContent: true },
+        }),
+      });
+
+      if (!searchResp.ok) {
+        const err = await searchResp.text();
+        console.error("Firecrawl search error:", searchResp.status, err);
+        continue;
+      }
+
+      const searchData = await searchResp.json();
+
+      for (const item of (searchData.data || [])) {
+        const url = item.url || "";
+        if (!url || seenUrls.has(url)) continue;
+        seenUrls.add(url);
+
+        // Skip YouTube
+        if (url.includes("youtube.com") || url.includes("youtu.be")) continue;
+
+        const markdown = item.markdown || "";
+        if (markdown.length < 300) {
+          console.log(`Skipping thin content (${markdown.length} chars) from: ${url}`);
+          continue;
+        }
+
+        // Check if content looks like exam questions (has alternatives like A), B), etc.)
+        const hasAlternatives = /[A-D]\)\s/.test(markdown) || /alternativa/i.test(markdown) || /gabarito/i.test(markdown);
+        if (!hasAlternatives) {
+          console.log(`Skipping non-question content from: ${url}`);
+          continue;
+        }
+
+        console.log(`✓ Found question content (${markdown.length} chars) from: ${url}`);
+        allResults.push({ url, markdown: markdown.slice(0, 12000) });
+      }
+    } catch (e) {
+      console.warn(`Search query failed:`, e);
     }
 
-    const markdown = item.markdown || "";
-    if (markdown.length < 200) {
-      console.log(`Skipping thin content from: ${url}`);
-      continue;
-    }
-
-    results.push({ url, markdown: markdown.slice(0, 15000) }); // cap to avoid token overflow
+    if (allResults.length >= 4) break; // enough content
   }
 
-  console.log(`Found ${results.length} trusted results with content`);
-  return results;
+  console.log(`Found ${allResults.length} results with question content`);
+  return allResults;
 }
 
 async function structureQuestions(
@@ -182,7 +196,7 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
         { role: "system", content: "Você extrai questões de provas de residência médica a partir de conteúdo web. Responda APENAS com JSON válido." },
         { role: "user", content: prompt },
       ],
-      timeoutMs: 120000,
+      timeoutMs: 90000,
       maxRetries: 1,
     });
 
