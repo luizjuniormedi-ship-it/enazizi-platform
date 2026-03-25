@@ -379,6 +379,10 @@ const Admin = () => {
             <AdminMessagesPanel />
           </TabsContent>
 
+          <TabsContent value="bi">
+            <AdminBIPanel callAdmin={callAdmin} />
+          </TabsContent>
+
           <TabsContent value={activeTab === "whatsapp" || activeTab === "telegram" || activeTab === "feedbacks" || activeTab === "messages" ? "__none__" : activeTab}>
             {loading ? (
               <div className="flex justify-center py-12">
