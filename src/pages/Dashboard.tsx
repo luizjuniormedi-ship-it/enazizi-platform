@@ -76,7 +76,7 @@ const Dashboard = () => {
     );
   }
 
-  const { stats, metrics, displayName } = data;
+  const { stats, metrics, displayName, hasCompletedDiagnostic } = data;
   const taskPercent = stats.totalTasks > 0 ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0;
   const isNewUser = metrics.questionsAnswered === 0 && stats.flashcards === 0;
 
