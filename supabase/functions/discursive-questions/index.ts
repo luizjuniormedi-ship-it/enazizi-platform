@@ -82,8 +82,13 @@ Retorne APENAS um JSON válido:
 
         const questionData = JSON.parse(jsonMatch[0]);
 
+        // Normalize: support both old "question" (string) and new "questions" (array) formats
+        const questions: string[] = Array.isArray(questionData.questions)
+          ? questionData.questions
+          : [questionData.question || ""];
+
         // Save to DB
-        const fullText = `${questionData.case}\n\n${questionData.question}`;
+        const fullText = `${questionData.case}\n\n${questions.join("\n\n")}`;
         const { data: attempt, error: insertErr } = await sb.from("discursive_attempts").insert({
           user_id: user.id,
           specialty,
