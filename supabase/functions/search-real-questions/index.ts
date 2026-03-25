@@ -8,24 +8,22 @@ const corsHeaders = {
 };
 
 const TRUSTED_DOMAINS = [
-  "inep.gov.br",
-  "gov.br",
-  "usp.br",
-  "unicamp.br",
-  "unifesp.br",
-  "residenciamedicasp.com.br",
-  "saude.sp.gov.br",
-  "saude.gov.br",
-  "amrigs.org.br",
-  "santacasasp.org.br",
-  "fmusp.br",
-  "fcm.unicamp.br",
-  "medgrupo.com.br",
-  "medcel.com.br",
-  "estrategiamed.com.br",
-  "sanarmed.com",
-  "questoesmedicas.com.br",
-  "editorasanar.com.br",
+  // Governo / INEP
+  "inep.gov.br", "gov.br", "saude.sp.gov.br", "saude.gov.br",
+  // Universidades
+  "usp.br", "unicamp.br", "unifesp.br", "fmusp.br", "fcm.unicamp.br",
+  "ufpr.br", "ufrj.br", "ufmg.br", "ufrgs.br", "ufba.br", "ufpe.br",
+  "ufsc.br", "unesp.br", "pucrs.br", "pucsp.br", "uel.br", "uem.br",
+  // Bancas / organizadoras
+  "fgv.br", "vunesp.com.br", "cesgranrio.org.br", "ibfc.org.br",
+  "amrigs.org.br", "santacasasp.org.br", "upenet.com.br",
+  // Portais de provas e questões
+  "qconcursos.com.br", "pciconcursos.com.br", "questoesmedicas.com.br",
+  "residenciamedicasp.com.br", "residenciamedica.com.br",
+  // Educação médica
+  "medway.com.br", "medcel.com.br", "estrategiamed.com.br",
+  "medgrupo.com.br", "sanarmed.com", "editorasanar.com.br",
+  "jaleko.com.br", "afya.com.br",
 ];
 
 const CLINICAL_CONTENT_MARKERS = [
