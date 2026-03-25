@@ -158,16 +158,16 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     loadUploads();
   }, [user]);
 
-  // Update welcome message when uploads are detected
+  // Update welcome message when user manually selects uploads
   useEffect(() => {
     if (hasShownUploadWelcome || !welcomeMessageWithUploads) return;
     if (availableUploads.length > 0 && selectedUploadIds.size > 0 && messages.length === 1 && messages[0].role === "assistant") {
-      const materialNames = availableUploads
-        .filter(u => selectedUploadIds.has(u.id))
+      const selectedUploads = availableUploads.filter(u => selectedUploadIds.has(u.id));
+      const materialNames = selectedUploads
         .map(u => u.filename)
         .slice(0, 3)
         .join(", ");
-      const suffix = availableUploads.length > 3 ? ` e mais ${availableUploads.length - 3}` : "";
+      const suffix = selectedUploads.length > 3 ? ` e mais ${selectedUploads.length - 3}` : "";
       const contextMsg = welcomeMessageWithUploads
         .replace("{materiais}", materialNames + suffix)
         .replace("{count}", String(selectedUploadIds.size));
