@@ -7,14 +7,7 @@ import { Brain, AlertTriangle, CheckCircle2, BookOpen, Loader2, GraduationCap } 
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
-const SPECIALTIES = [
-  "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia",
-  "Gastroenterologia", "Nefrologia", "Infectologia", "Hematologia",
-  "Reumatologia", "Pediatria", "Ginecologia e Obstetrícia", "Cirurgia",
-  "Psiquiatria", "Dermatologia", "Oftalmologia", "Otorrinolaringologia",
-  "Medicina Preventiva", "Medicina de Emergência", "Terapia Intensiva",
-  "Semiologia", "Anatomia", "Farmacologia", "Fisiologia", "Bioquímica",
-];
+import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
 
 interface DomainEntry {
   specialty: string;

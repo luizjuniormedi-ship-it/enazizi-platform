@@ -37,12 +37,7 @@ import {
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-const SPECIALTIES = [
-  "Clínica Médica", "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia",
-  "Nefrologia", "Infectologia", "Pediatria", "Cirurgia", "Ginecologia e Obstetrícia",
-  "Ortopedia", "Psiquiatria", "Emergência", "Dermatologia", "Angiologia",
-  "Semiologia", "Anatomia", "Farmacologia", "Oncologia", "Fisiologia", "Bioquímica",
-];
+import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
 
 const PEDIATRIC_AGE_RANGES = [
   { key: "neonato", label: "Neonato (0-28 dias)", vitalRef: "FC 120-160, FR 40-60, PA 60-80/30-45, Temp 36.5-37.5, SpO2 ≥95%" },

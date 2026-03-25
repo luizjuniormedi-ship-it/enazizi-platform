@@ -258,14 +258,7 @@ const ExamSimulator = () => {
     setPhase("result");
   };
 
-  const ALL_AREAS = [
-    "Clínica Médica", "Cirurgia", "Pediatria", "GO", "Preventiva", "Oncologia",
-    "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia", "Gastroenterologia",
-    "Nefrologia", "Infectologia", "Hematologia", "Reumatologia", "Dermatologia",
-    "Urologia", "Ortopedia", "Psiquiatria", "Oftalmologia", "Otorrinolaringologia",
-    "Medicina de Emergência", "Terapia Intensiva", "Semiologia", "Anatomia", "Farmacologia",
-    "Fisiologia", "Bioquímica",
-  ];
+  const ALL_AREAS = ALL_SPECIALTIES;
 
   const toggleArea = (area: string) => {
     setExamConfig(prev => ({

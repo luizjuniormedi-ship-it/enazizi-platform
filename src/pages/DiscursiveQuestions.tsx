@@ -19,13 +19,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
-const SPECIALTIES = [
-  "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia", "Nefrologia",
-  "Endocrinologia", "Infectologia", "Reumatologia", "Hematologia", "Dermatologia",
-  "Pediatria", "Ginecologia e Obstetrícia", "Cirurgia", "Ortopedia", "Urologia",
-  "Psiquiatria", "Medicina Preventiva", "Semiologia", "Anatomia", "Farmacologia",
-  "Fisiologia", "Bioquímica",
-];
+import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
 
 type Phase = "setup" | "answering" | "correcting" | "result" | "history";
 

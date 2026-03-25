@@ -7,15 +7,7 @@ import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import SimuladoHistory from "./SimuladoHistory";
 
-const ALL_TOPICS = [
-  "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia", "Gastroenterologia",
-  "Nefrologia", "Infectologia", "Hematologia", "Reumatologia", "Dermatologia",
-  "Pediatria", "Ginecologia e Obstetrícia", "Cirurgia Geral", "Cirurgia do Trauma",
-  "Ortopedia", "Urologia", "Psiquiatria", "Oftalmologia", "Otorrinolaringologia",
-  "Medicina Preventiva", "Medicina de Emergência", "Terapia Intensiva",
-  "Clínica Médica", "Saúde da Família", "Semiologia", "Anatomia", "Farmacologia", "Oncologia",
-  "Fisiologia", "Bioquímica",
-];
+import { ALL_SPECIALTIES as ALL_TOPICS, SPECIALTY_CYCLES } from "@/constants/specialties";
 
 const DIFFICULTY_OPTIONS = [
   { value: "facil", label: "Fácil" },

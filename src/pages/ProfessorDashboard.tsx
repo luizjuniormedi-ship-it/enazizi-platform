@@ -18,13 +18,7 @@ import StudentTracker from "@/components/professor/StudentTracker";
 import VideoRoom from "@/components/professor/VideoRoom";
 import TeacherStudyAssignments from "@/components/professor/TeacherStudyAssignments";
 
-const SPECIALTIES = [
-  "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia", "Nefrologia",
-  "Endocrinologia", "Infectologia", "Reumatologia", "Hematologia", "Dermatologia",
-  "Pediatria", "Ginecologia e Obstetrícia", "Cirurgia", "Ortopedia", "Urologia",
-  "Psiquiatria", "Medicina Preventiva", "Oftalmologia", "Otorrinolaringologia",
-  "Semiologia", "Anatomia", "Farmacologia", "Fisiologia", "Bioquímica",
-];
+import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
 
 import { FACULDADES } from "@/constants/faculdades";
 
