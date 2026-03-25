@@ -586,14 +586,28 @@ const AnamnesisTrainer = () => {
               </div>
             </div>
 
+            {/* Mini-caso gatilho */}
+            <div className="rounded-xl border border-accent/20 bg-gradient-to-r from-accent/5 to-primary/5 p-4">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
+                  <Lightbulb className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-accent mb-1">🏥 Cenário Clínico</p>
+                  <p className="text-sm text-foreground">{miniCase}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Você receberá um caso similar ao iniciar a consulta</p>
+                </div>
+              </div>
+            </div>
+
             <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-2">
               <p className="font-medium">📋 Como funciona:</p>
               <ul className="space-y-1 text-muted-foreground">
                 <li>• A IA simula um paciente real — só responde ao que você perguntar</li>
                 <li>• Conduza a anamnese completa: identificação, QP, HDA, antecedentes...</li>
-                <li>• O checklist mostra quais categorias você já cobriu</li>
-                <li>• Ao finalizar, proponha hipótese diagnóstica e conduta</li>
-                <li>• Receba avaliação detalhada com radar de desempenho</li>
+                <li>• Receba coaching em tempo real sobre a qualidade das suas perguntas</li>
+                <li>• Sugestões adaptativas ao seu nível de dificuldade</li>
+                <li>• Após avaliação, revise a conversa com anotações do professor IA</li>
               </ul>
             </div>
 
