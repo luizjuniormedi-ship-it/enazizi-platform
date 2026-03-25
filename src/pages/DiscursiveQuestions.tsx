@@ -60,6 +60,7 @@ const DiscursiveQuestions = () => {
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [specialty, setSpecialty] = useState("");
+  const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState("intermediário");
   const [generating, setGenerating] = useState(false);
   const [correcting, setCorrecting] = useState(false);
