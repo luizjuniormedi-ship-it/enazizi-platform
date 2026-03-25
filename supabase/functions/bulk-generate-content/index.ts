@@ -17,6 +17,8 @@ const SPECIALTIES = [
   "Ortopedia", "Urologia", "Psiquiatria", "Oftalmologia",
   "Otorrinolaringologia", "Emergência", "Semiologia", "Anatomia", "Farmacologia",
   "Oncologia", "Fisiologia", "Bioquímica",
+  "Histologia", "Embriologia", "Microbiologia", "Imunologia",
+  "Parasitologia", "Genética Médica", "Patologia",
 ];
 
 const TOPICS_BY_SPECIALTY: Record<string, string[]> = {
