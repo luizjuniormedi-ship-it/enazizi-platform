@@ -1,29 +1,34 @@
 
 
-# Plano: Notificacao clara de categoria concluida na Anamnese
+# Plano: Alerta de Questoes Geradas Automaticamente no Admin
 
-## O que muda
+## O que sera feito
 
-Quando o aluno cobre uma nova categoria (ex: QP, HDA, Alergias), o sistema mostrara uma **notificacao visual inline no chat** confirmando a conclusao, alem de uma **animacao no checklist**.
+Criar um componente `AdminDailyGenerationAlert` que aparece na tela de Admin mostrando um resumo das questoes geradas automaticamente pelo sistema no dia atual, incluindo quantidade, especialidades, dificuldade e status.
 
-## Implementacao em `src/pages/AnamnesisTrainer.tsx`
+## Implementacao
 
-### 1. Toast/banner inline no chat ao concluir categoria
-- No bloco onde `setCoveredCategories` e atualizado (linha ~376), detectar categorias **recem-adicionadas** (comparar prev com next)
-- Para cada nova categoria, inserir uma **mensagem de sistema** no chat com visual distinto:
-  - Fundo verde sutil, icone de CheckCircle, texto "QP concluida" (usando o label da categoria)
-  - Estilo diferente das bolhas de paciente/medico (centralizado, badge-like)
+### 1. Novo componente `src/components/admin/AdminDailyGenerationAlert.tsx`
+- Consulta a tabela `daily_generation_log` filtrando por `run_date = hoje`
+- Consulta `questions_bank` com `is_global = true` e `created_at >= hoje` para obter detalhes (dificuldade, topico)
+- Exibe um card com:
+  - Total de questoes geradas hoje
+  - Especialidades processadas (da coluna `specialties_processed` do log)
+  - Distribuicao de dificuldade (facil/medio/dificil) em mini-badges
+  - Status da ultima execucao (sucesso/erro/pendente)
+  - Horario das execucoes do dia
+- Visual: card com icone de Database/Sparkles, fundo gradiente sutil, badges coloridos por dificuldade
 
-### 2. Animacao no checklist
-- Quando uma categoria muda de pendente para coberta, aplicar animacao `animate-bounce` ou `scale` momentanea no icone correspondente (tanto na barra mobile quanto na sidebar desktop)
+### 2. Integrar no `src/pages/Admin.tsx`
+- Importar e renderizar `AdminDailyGenerationAlert` logo apos `AdminPlanDistribution` (linha ~273), antes da secao de usuarios
+- Visivel apenas para admins (ja esta dentro da rota protegida)
 
-### 3. Contador de progresso com feedback
-- Ao atingir marcos (50%, 75%, 100% das categorias), mostrar mensagem especial no chat:
-  - 50%: "Metade da anamnese coberta"
-  - 75%: "Quase la! Faltam X categorias"
-  - 100%: "Anamnese completa! Hora do diagnostico"
+## Dados utilizados
+
+- **`daily_generation_log`**: `run_date`, `questions_generated`, `specialties_processed` (jsonb), `status`
+- **`questions_bank`**: filtro `is_global = true` + `created_at >= hoje` para contar por dificuldade e topico
 
 ## Impacto
 
-Apenas visual/UX. Nenhuma mudanca em edge function ou banco.
+Apenas frontend. Nenhuma migracao necessaria — ambas as tabelas ja existem com RLS adequado para admins.
 
