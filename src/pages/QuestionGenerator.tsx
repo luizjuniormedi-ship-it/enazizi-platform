@@ -66,9 +66,8 @@ const QuestionGenerator = () => {
       if (marathonMode) {
         marathonAnsweredRef.current += 1;
         if (marathonAnsweredRef.current >= marathonTotalRef.current - 1) {
-          const nextPrompt = `Gere mais 5 questões ORIGINAIS de ${specialty || "qualquer área médica"} nível ${difficulty}. Formato ENARE com casos clínicos variados. NÃO repita cenários anteriores.`;
+          const nextPrompt = `Gere mais 5 questões ORIGINAIS de ${effectiveSpecialty || "qualquer área médica"} nível ${difficulty}. Formato ENARE com casos clínicos variados. NÃO repita cenários anteriores.`;
           marathonTotalRef.current += 5;
-          // Small delay to let the UI settle
           setTimeout(() => sendPromptRef.current?.(nextPrompt), 1500);
         }
       }
