@@ -5,6 +5,7 @@ import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useLocation } from "react-router-dom";
 import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap, LogOut, AlertTriangle, Maximize2, Minimize2, MoreVertical, Copy, ChevronUp, Zap, Brain, Heart, Bone, Eye, Pill, Baby, Microscope, Activity, X, Flame, ArrowRight, Target, TrendingUp } from "lucide-react";
+import tutorAvatar from "@/assets/tutor-avatar.png";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { Button } from "@/components/ui/button";
