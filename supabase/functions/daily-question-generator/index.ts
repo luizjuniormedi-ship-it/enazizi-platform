@@ -402,20 +402,51 @@ serve(async (req) => {
       const existingStatements = (existing || []).map((r: any) => r.statement);
       const topics = TOPICS_BY_SPECIALTY[spec] || [spec];
 
-      // Phase 1: Search real exam questions (target: 6)
-      const realCount = await searchRealQuestionsViaAI(spec, topics, existingStatements, supabaseAdmin, userId);
-      console.log(`${spec}: ${realCount} exam-style questions generated`);
+      // Phase 0: Try web scraping for real questions (if Firecrawl is configured)
+      let webScrapeCount = 0;
+      const FIRECRAWL_KEY = Deno.env.get("FIRECRAWL_API_KEY");
+      if (FIRECRAWL_KEY) {
+        try {
+          const scrapeResp = await fetch(
+            `${Deno.env.get("SUPABASE_URL")}/functions/v1/search-real-questions`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+              },
+              body: JSON.stringify({ specialty: spec }),
+            }
+          );
+          if (scrapeResp.ok) {
+            const scrapeData = await scrapeResp.json();
+            webScrapeCount = scrapeData.questions_inserted || 0;
+            console.log(`${spec}: ${webScrapeCount} web-scraped real questions`);
+          }
+        } catch (e) {
+          console.warn(`Web scraping failed for ${spec}, continuing with AI:`, e);
+        }
+      }
+
+      // Phase 1: Search AI exam-style questions (target: 6 minus web-scraped)
+      const examTarget = Math.max(0, 6 - webScrapeCount);
+      let realCount = 0;
+      if (examTarget > 0) {
+        realCount = await searchRealQuestionsViaAI(spec, topics, existingStatements, supabaseAdmin, userId);
+        console.log(`${spec}: ${realCount} exam-style questions generated`);
+      }
 
       // Phase 2: Generate complementary questions to reach 10 total
-      const remaining = Math.max(0, 10 - realCount);
+      const totalSoFar = webScrapeCount + realCount;
+      const remaining = Math.max(0, 10 - totalSoFar);
       let genCount = 0;
       if (remaining > 0) {
         genCount = await generateForSpecialty(spec, topics, userId, supabaseAdmin, existingStatements, remaining);
         console.log(`${spec}: ${genCount} generated questions added`);
       }
 
-      results[spec] = { real: realCount, generated: genCount };
-      totalGenerated += realCount + genCount;
+      results[spec] = { real: webScrapeCount + realCount, generated: genCount };
+      totalGenerated += webScrapeCount + realCount + genCount;
     }
 
     // Log the run
