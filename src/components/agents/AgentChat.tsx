@@ -660,78 +660,116 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
         </div>
       )}
 
-      {/* Context indicator */}
-      <div className="mb-3">
-        <div className="flex gap-2">
-          <button
-            onClick={() => totalUploads > 0 && setShowUploads(!showUploads)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors flex-1 ${
-              totalUploads > 0
-                ? selectedCount > 0
-                  ? "bg-primary/10 text-primary hover:bg-primary/15"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-                : "bg-muted text-muted-foreground"
-            }`}
-          >
-          <FileText className="h-3.5 w-3.5 flex-shrink-0" />
-          {totalUploads === 0 ? (
-            <span>Nenhum material disponível — faça upload para enriquecer as respostas</span>
-          ) : (
-            <>
-              <span>{selectedCount} de {totalUploads} {totalUploads === 1 ? "material" : "materiais"} como contexto</span>
-              <ChevronDown className={`h-3.5 w-3.5 ml-auto transition-transform ${showUploads ? "rotate-180" : ""}`} />
-            </>
-          )}
-          </button>
-          {showUploadButton && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 px-3 gap-1.5 text-xs flex-shrink-0"
-              disabled={isUploading}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">{isUploading ? "Enviando..." : "Enviar"}</span>
-            </Button>
-          )}
-        </div>
-
-        {showUploads && totalUploads > 0 && (
-          <div className="glass-card p-3 mt-2 max-h-40 overflow-y-auto space-y-1">
+      {/* Context indicator - only show when uploads exist or upload button is shown */}
+      {(totalUploads > 0 || showUploadButton) && (
+        <div className="mb-3">
+          <div className="flex gap-2">
             <button
-              onClick={toggleAll}
-              className="flex items-center gap-2 px-2 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors w-full"
+              onClick={() => totalUploads > 0 && setShowUploads(!showUploads)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors flex-1 ${
+                totalUploads > 0
+                  ? selectedCount > 0
+                    ? "bg-primary/10 text-primary hover:bg-primary/15 border border-primary/20"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  : "bg-muted text-muted-foreground"
+              }`}
+              disabled={totalUploads === 0}
             >
-              <Checkbox
-                checked={selectedCount === totalUploads}
-                className="h-3.5 w-3.5"
-                onCheckedChange={toggleAll}
-              />
-              {selectedCount === totalUploads ? "Desmarcar todos" : "Selecionar todos"}
+              <Paperclip className="h-3.5 w-3.5 flex-shrink-0" />
+              {totalUploads === 0 ? (
+                <span>Nenhum material — faça upload para enriquecer respostas</span>
+              ) : selectedCount > 0 ? (
+                <>
+                  <span>📎 {selectedCount} {selectedCount === 1 ? "material selecionado" : "materiais selecionados"}</span>
+                  <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px] font-bold">{selectedCount}</span>
+                  <ChevronDown className={`h-3.5 w-3.5 ml-auto transition-transform ${showUploads ? "rotate-180" : ""}`} />
+                </>
+              ) : (
+                <>
+                  <span>Nenhum material como contexto</span>
+                  <span className="text-[10px] ml-1 opacity-60">({totalUploads} disponíveis)</span>
+                  <ChevronDown className={`h-3.5 w-3.5 ml-auto transition-transform ${showUploads ? "rotate-180" : ""}`} />
+                </>
+              )}
             </button>
-            {availableUploads.map((u) => (
-              <label
-                key={u.id}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-secondary cursor-pointer text-xs"
+            {showUploadButton && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 px-3 gap-1.5 text-xs flex-shrink-0"
+                disabled={isUploading}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                <span className="hidden sm:inline">{isUploading ? "Enviando..." : "Enviar"}</span>
+              </Button>
+            )}
+          </div>
+
+          {showUploads && totalUploads > 0 && (
+            <div className="glass-card p-3 mt-2 space-y-2">
+              {/* Search filter */}
+              {totalUploads > 5 && (
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Buscar material..."
+                    value={uploadSearch}
+                    onChange={(e) => setUploadSearch(e.target.value)}
+                    className="w-full pl-7 pr-3 py-1.5 rounded-md border border-input bg-background text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                </div>
+              )}
+
+              {/* Select all / none */}
+              <button
+                onClick={toggleAll}
+                className="flex items-center gap-2 px-2 py-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors w-full rounded-md hover:bg-primary/5"
               >
                 <Checkbox
-                  checked={selectedUploadIds.has(u.id)}
-                  onCheckedChange={() => toggleUpload(u.id)}
+                  checked={selectedCount === totalUploads}
                   className="h-3.5 w-3.5"
+                  onCheckedChange={toggleAll}
                 />
-                <FileText className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                <span className="truncate">{u.filename}</span>
-                {u.category && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground flex-shrink-0">
-                    {u.category}
-                  </span>
-                )}
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
+                {selectedCount === totalUploads ? "Desmarcar todos" : `Selecionar todos (${totalUploads})`}
+              </button>
+
+              {/* File list */}
+              <div className="max-h-36 overflow-y-auto space-y-0.5">
+                {availableUploads
+                  .filter(u => !uploadSearch || u.filename.toLowerCase().includes(uploadSearch.toLowerCase()))
+                  .map((u) => {
+                    const charCount = u.extracted_text?.length || 0;
+                    const sizeLabel = charCount > 1000 ? `${(charCount / 1000).toFixed(1)}k` : `${charCount}`;
+                    return (
+                      <label
+                        key={u.id}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-xs transition-colors ${
+                          selectedUploadIds.has(u.id) ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-secondary"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={selectedUploadIds.has(u.id)}
+                          onCheckedChange={() => toggleUpload(u.id)}
+                          className="h-3.5 w-3.5"
+                        />
+                        <FileText className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                        <span className="truncate flex-1">{u.filename}</span>
+                        {u.category && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground flex-shrink-0">
+                            {u.category}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-muted-foreground flex-shrink-0 font-mono">{sizeLabel}</span>
+                      </label>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Resume session banner */}
       {sessionChecked && pendingSession && messages.length <= 1 && (
