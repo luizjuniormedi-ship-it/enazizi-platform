@@ -24,6 +24,7 @@ export const SPECIALTY_CYCLES: SpecialtyCycle[] = [
   {
     label: "Ciclo Clínico (3º-4º ano)",
     specialties: [
+      "Angiologia",
       "Cardiologia",
       "Dermatologia",
       "Endocrinologia",

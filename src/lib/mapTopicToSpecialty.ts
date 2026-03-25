@@ -3,6 +3,7 @@ export function mapTopicToSpecialty(topic: string): string | null {
   if (!topic) return null;
   const t = topic.toLowerCase();
   const map: [string[], string][] = [
+    [["angiolog", "vascular", "varizes", "trombose venosa", "insuficiência venosa", "aneurisma de aorta", "doença arterial periférica", "claudicação", "isquemia de membro", "pé diabético", "linfedema", "fístula arteriovenosa", "endarterectomia", "safena", "doppler vascular"], "Angiologia"],
     [["cardio", "coração", "iam", "arritmia", "hipertensão", "insuficiência cardíaca", "valv"], "Cardiologia"],
     [["pneumo", "pulmão", "asma", "dpoc", "pneumonia", "tuberculose", "respirat"], "Pneumologia"],
     [["neuro", "avc", "epilepsia", "cefaleia", "meningite", "parkinson", "alzheimer"], "Neurologia"],
