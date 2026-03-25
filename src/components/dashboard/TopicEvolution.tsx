@@ -60,16 +60,17 @@ const TopicEvolution = () => {
 
   const { domains, errorTopics } = data;
   const domainMap = new Map(domains.map((d) => [d.specialty, d]));
+  const filteredSpecialties = getFilteredSpecialties(cycleFilter);
 
-  const studied = SPECIALTIES.filter((s) => {
+  const studied = filteredSpecialties.filter((s) => {
     const d = domainMap.get(s);
     return d && d.questions_answered > 0;
   });
-  const notStudied = SPECIALTIES.filter((s) => {
+  const notStudied = filteredSpecialties.filter((s) => {
     const d = domainMap.get(s);
     return !d || d.questions_answered === 0;
   });
-  const weak = SPECIALTIES.filter((s) => {
+  const weak = filteredSpecialties.filter((s) => {
     const d = domainMap.get(s);
     return d && d.domain_score < 50 && d.questions_answered > 0;
   });
