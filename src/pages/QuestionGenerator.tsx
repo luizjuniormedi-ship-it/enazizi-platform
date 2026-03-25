@@ -173,13 +173,14 @@ const QuestionGenerator = () => {
                 <Target className="h-4 w-4 text-primary" />
                 Especialidade
               </label>
+              <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-2" />
               <Select value={specialty} onValueChange={setSpecialty}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todas (misto)" />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
                   <SelectItem value="all">Todas (misto)</SelectItem>
-                  {ALL_SPECIALTIES.map(s => (
+                  {getFilteredSpecialties(cycleFilter).map(s => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
                 </SelectContent>
