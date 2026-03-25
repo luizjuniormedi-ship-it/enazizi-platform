@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-import { SPECIALTY_CYCLES, ALL_SPECIALTIES } from "@/constants/specialties";
+import { ALL_SPECIALTIES } from "@/constants/specialties";
+import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 
 const DIFFICULTY_OPTIONS = [
   { value: "facil", label: "Fácil", emoji: "🟢", desc: "Apresentações típicas" },
