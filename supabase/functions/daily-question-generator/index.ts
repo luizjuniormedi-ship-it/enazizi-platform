@@ -44,6 +44,8 @@ const TOPICS_BY_SPECIALTY: Record<string, string[]> = {
   "Anatomia": ["Anatomia do Tórax", "Anatomia Abdominal", "Anatomia do Pescoço", "Neuroanatomia", "Anatomia do Membro Superior", "Anatomia do Membro Inferior", "Anatomia Pélvica"],
   "Farmacologia": ["Farmacocinética (ADME)", "Farmacodinâmica e Receptores", "Antibioticoterapia", "Anti-hipertensivos", "Antiarrítmicos", "Anticoagulantes", "AINEs e Corticoides", "Psicofarmacologia"],
   "Oncologia": ["Câncer de Mama", "Câncer de Pulmão", "Câncer Colorretal", "Estadiamento TNM", "Síndromes Paraneoplásicas", "Marcadores Tumorais", "Quimioterapia", "Imunoterapia", "Cuidados Paliativos", "Emergências Oncológicas"],
+  "Fisiologia": ["Fisiologia Cardiovascular", "Fisiologia Respiratória", "Fisiologia Renal", "Fisiologia do Sistema Nervoso", "Fisiologia Endócrina", "Fisiologia Gastrointestinal", "Fisiologia Muscular", "Neurofisiologia", "Potencial de Ação e Transmissão Sináptica", "Equilíbrio Ácido-Base", "Regulação da Pressão Arterial", "Hemodinâmica", "Termorregulação", "Fisiologia do Exercício"],
+  "Bioquímica": ["Metabolismo de Carboidratos", "Metabolismo de Lipídios", "Metabolismo de Aminoácidos", "Ciclo de Krebs", "Cadeia Transportadora de Elétrons", "Glicólise e Gliconeogênese", "Beta-Oxidação", "Síntese de Ácidos Graxos", "Biologia Molecular do DNA e RNA", "Enzimologia Clínica", "Vitaminas e Coenzimas", "Bioenergética", "Erros Inatos do Metabolismo", "Integração Metabólica"],
 };
 
 async function generateForSpecialty(

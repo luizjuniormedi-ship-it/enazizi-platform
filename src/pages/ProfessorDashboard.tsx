@@ -23,7 +23,7 @@ const SPECIALTIES = [
   "Endocrinologia", "Infectologia", "Reumatologia", "Hematologia", "Dermatologia",
   "Pediatria", "Ginecologia e Obstetrícia", "Cirurgia", "Ortopedia", "Urologia",
   "Psiquiatria", "Medicina Preventiva", "Oftalmologia", "Otorrinolaringologia",
-  "Semiologia", "Anatomia", "Farmacologia",
+  "Semiologia", "Anatomia", "Farmacologia", "Fisiologia", "Bioquímica",
 ];
 
 import { FACULDADES } from "@/constants/faculdades";
