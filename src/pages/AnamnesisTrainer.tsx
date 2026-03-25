@@ -225,7 +225,7 @@ const AnamnesisTrainer = () => {
   const [difficulty, setDifficulty] = useState("intermediário");
   const [pediatricAge, setPediatricAge] = useState("aleatorio");
 
-  const isPediatrics = specialty === "Pediatria";
+  const { recent: recentlyCompleted, addRecent: addRecentlyCompleted } = useRecentlyCompleted();
   const CATEGORIES = isPediatrics
     ? [...BASE_CATEGORIES.filter(c => c.key !== "gynecological" && c.key !== "social_history"), ...PEDIATRIC_EXTRA_CATEGORIES]
     : BASE_CATEGORIES;
