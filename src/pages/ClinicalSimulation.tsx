@@ -14,7 +14,7 @@ import {
   MessageCircle, Thermometer, Zap, Star, CheckCircle, XCircle,
   Trophy, Target, HelpCircle, Users, ClipboardCheck, ShieldAlert, History, Eye, Maximize2, Minimize2,
   User, Brain, Pill, MonitorCheck, Bone, Scan, HeartPulse, Ear, Hand,
-  Wind, Droplets, Shield, BookOpen, FileText, ChevronDown, ChevronUp, GraduationCap, Download, Clipboard
+  Wind, Droplets, Shield, BookOpen, FileText, ChevronDown, ChevronUp, GraduationCap, Download, Clipboard, Trash2
 } from "lucide-react";
 import VitalsChart, { parseVitalsToSnapshot } from "@/components/plantao/VitalsChart";
 import ExamsPanel from "@/components/plantao/ExamsPanel";
