@@ -38,6 +38,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
+import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 
 const PEDIATRIC_AGE_RANGES = [
   { key: "neonato", label: "Neonato (0-28 dias)", vitalRef: "FC 120-160, FR 40-60, PA 60-80/30-45, Temp 36.5-37.5, SpO2 ≥95%" },
@@ -286,6 +287,7 @@ const ClinicalSimulation = () => {
 
   const [phase, setPhase] = useState<Phase>("lobby");
   const [specialty, setSpecialty] = useState("Clínica Médica");
+  const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [subtopic, setSubtopic] = useState("");
   const [difficulty, setDifficulty] = useState("intermediário");
   const [pediatricAge, setPediatricAge] = useState("aleatorio");
@@ -1183,12 +1185,13 @@ const ClinicalSimulation = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Especialidade do Caso</label>
+                <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-2" />
                 <select
                   value={specialty}
                   onChange={(e) => setSpecialty(e.target.value)}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                 >
-                   {SPECIALTIES.map((s) => <option key={s} value={s}>{s}</option>)}
+                   {getFilteredSpecialties(cycleFilter).map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
                 <Input
                   value={subtopic}

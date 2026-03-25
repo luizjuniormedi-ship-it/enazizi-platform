@@ -19,6 +19,7 @@ import VideoRoom from "@/components/professor/VideoRoom";
 import TeacherStudyAssignments from "@/components/professor/TeacherStudyAssignments";
 
 import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
+import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 
 import { FACULDADES } from "@/constants/faculdades";
 
@@ -36,6 +37,7 @@ const ProfessorDashboard = () => {
   const [title, setTitle] = useState("Simulado");
   const [description, setDescription] = useState("");
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [subtopics, setSubtopics] = useState<Record<string, string>>({});
   const [faculdadeFilter, setFaculdadeFilter] = useState("");
   const [periodoFilter, setPeriodoFilter] = useState("");
@@ -466,8 +468,9 @@ const ProfessorDashboard = () => {
             {/* Topics */}
             <div className="space-y-3">
               <Label className="text-base font-semibold">Temas ({selectedTopics.length} selecionados)</Label>
+              <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-2" />
               <div className="flex flex-wrap gap-1.5">
-                {SPECIALTIES.map((topic) => (
+                {getFilteredSpecialties(cycleFilter).map((topic) => (
                   <button
                     key={topic}
                     onClick={() => {

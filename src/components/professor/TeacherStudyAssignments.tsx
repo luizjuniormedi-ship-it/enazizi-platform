@@ -16,6 +16,7 @@ import { FACULDADES } from "@/constants/faculdades";
 import { CheckSquare, Square } from "lucide-react";
 
 import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
+import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 
 const TeacherStudyAssignments = () => {
   const { session } = useAuth();
@@ -29,6 +30,7 @@ const TeacherStudyAssignments = () => {
   // Form
   const [title, setTitle] = useState("");
   const [specialty, setSpecialty] = useState("");
+  const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [topicsToCover, setTopicsToCover] = useState("");
   const [faculdadeFilter, setFaculdadeFilter] = useState("");
   const [periodoFilter, setPeriodoFilter] = useState("");
@@ -249,10 +251,11 @@ const TeacherStudyAssignments = () => {
 
             <div className="space-y-2">
               <Label>Especialidade *</Label>
+              <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-2" />
               <Select value={specialty} onValueChange={setSpecialty}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
-                  {SPECIALTIES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  {getFilteredSpecialties(cycleFilter).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

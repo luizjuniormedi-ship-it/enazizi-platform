@@ -20,6 +20,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
 import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
+import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 
 type Phase = "setup" | "answering" | "correcting" | "result" | "history";
 
@@ -59,6 +60,7 @@ const DiscursiveQuestions = () => {
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [specialty, setSpecialty] = useState("");
+  const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState("intermediário");
   const [generating, setGenerating] = useState(false);
   const [correcting, setCorrecting] = useState(false);
@@ -263,10 +265,11 @@ const DiscursiveQuestions = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Especialidade</label>
+                <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-2" />
                 <Select value={specialty} onValueChange={setSpecialty}>
                   <SelectTrigger><SelectValue placeholder="Escolha..." /></SelectTrigger>
                   <SelectContent>
-                    {SPECIALTIES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    {getFilteredSpecialties(cycleFilter).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

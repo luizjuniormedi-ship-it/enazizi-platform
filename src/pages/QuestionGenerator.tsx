@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-import { SPECIALTY_CYCLES, ALL_SPECIALTIES } from "@/constants/specialties";
+import { ALL_SPECIALTIES } from "@/constants/specialties";
+import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 
 const DIFFICULTY_OPTIONS = [
   { value: "facil", label: "Fácil", emoji: "🟢", desc: "Apresentações típicas" },
@@ -29,6 +30,7 @@ interface SessionStats {
 const QuestionGenerator = () => {
   const { user } = useAuth();
   const [specialty, setSpecialty] = useState<string>("");
+  const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState("intermediario");
   const [quantity, setQuantity] = useState(10);
   const [marathonMode, setMarathonMode] = useState(false);
@@ -171,13 +173,14 @@ const QuestionGenerator = () => {
                 <Target className="h-4 w-4 text-primary" />
                 Especialidade
               </label>
+              <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-2" />
               <Select value={specialty} onValueChange={setSpecialty}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todas (misto)" />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
                   <SelectItem value="all">Todas (misto)</SelectItem>
-                  {ALL_SPECIALTIES.map(s => (
+                  {getFilteredSpecialties(cycleFilter).map(s => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
                 </SelectContent>

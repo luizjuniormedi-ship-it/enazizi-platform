@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ALL_SPECIALTIES } from "@/constants/specialties";
+import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 import { useNavigate } from "react-router-dom";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
@@ -35,6 +36,7 @@ const ExamSimulator = () => {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [timeLeft, setTimeLeft] = useState(0);
   const [examConfig, setExamConfig] = useState({ questionCount: 50, timeMinutes: 120, areas: ["Clínica Médica", "Cirurgia", "Pediatria", "GO", "Preventiva", "Oncologia"], difficulty: "intermediario" });
+  const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const timerRef = useRef<NodeJS.Timeout>();
 
@@ -289,8 +291,9 @@ const ExamSimulator = () => {
           {/* Area/Topic selection */}
           <div>
             <label className="text-sm font-semibold mb-3 block">Selecione as áreas/assuntos</label>
+            <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-3" />
             <div className="flex flex-wrap gap-2">
-              {ALL_AREAS.map(area => (
+              {getFilteredSpecialties(cycleFilter).map(area => (
                 <button
                   key={area}
                   onClick={() => toggleArea(area)}

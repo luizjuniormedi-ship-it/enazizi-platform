@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,6 +9,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
+import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 
 interface DomainEntry {
   specialty: string;
@@ -19,6 +21,7 @@ interface DomainEntry {
 const TopicEvolution = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [cycleFilter, setCycleFilter] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["topic-evolution", user?.id],
@@ -57,16 +60,17 @@ const TopicEvolution = () => {
 
   const { domains, errorTopics } = data;
   const domainMap = new Map(domains.map((d) => [d.specialty, d]));
+  const filteredSpecialties = getFilteredSpecialties(cycleFilter);
 
-  const studied = SPECIALTIES.filter((s) => {
+  const studied = filteredSpecialties.filter((s) => {
     const d = domainMap.get(s);
     return d && d.questions_answered > 0;
   });
-  const notStudied = SPECIALTIES.filter((s) => {
+  const notStudied = filteredSpecialties.filter((s) => {
     const d = domainMap.get(s);
     return !d || d.questions_answered === 0;
   });
-  const weak = SPECIALTIES.filter((s) => {
+  const weak = filteredSpecialties.filter((s) => {
     const d = domainMap.get(s);
     return d && d.domain_score < 50 && d.questions_answered > 0;
   });
@@ -104,9 +108,11 @@ const TopicEvolution = () => {
         </div>
       </div>
 
+      <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} />
+
       {studied.length > 0 && (
         <div className="space-y-3">
-          {SPECIALTIES.filter((s) => domainMap.get(s)?.questions_answered).map((s) => {
+          {filteredSpecialties.filter((s) => domainMap.get(s)?.questions_answered).map((s) => {
             const d = domainMap.get(s)!;
             return (
               <div key={s}>
