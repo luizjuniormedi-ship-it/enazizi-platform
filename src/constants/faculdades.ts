@@ -108,7 +108,7 @@ export const FACULDADES = [
   "UCS – Universidade de Caxias do Sul",
   "ULBRA – Universidade Luterana do Brasil",
   "UMC – Universidade de Mogi das Cruzes",
-  "UNESA – Universidade Estácio de Sá",
+  "UNESA – Centro Universitário Estácio",
   "UNIFESO – Centro Universitário Serra dos Órgãos",
   "UNIFOA – Centro Universitário de Volta Redonda",
   "UNIG – Universidade Iguaçu",
