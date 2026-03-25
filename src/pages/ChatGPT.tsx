@@ -1029,7 +1029,7 @@ const ChatGPT = () => {
               <span>Nenhum material disponível</span>
             ) : (
               <>
-                <span>{selectedUploadIds.size}/{availableUploads.length} materiais</span>
+                <span>Meus materiais</span>
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showUploads ? "rotate-180" : ""}`} />
               </>
             )}
