@@ -1181,8 +1181,8 @@ const ChatGPT = () => {
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""} animate-fade-in`}>
                 {msg.role === "assistant" && (
-                  <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/25 shadow-md">
-                    <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-cover object-top" />
+                  <div className="h-12 w-9 sm:h-14 sm:w-11 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/25 shadow-md">
+                    <img src={tutorAvatar} alt="TutorZizi" className="h-full w-full object-contain" />
                   </div>
                 )}
                 <div className={`rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm leading-relaxed relative group ${
