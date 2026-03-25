@@ -362,7 +362,7 @@ Deno.serve(async (req) => {
           { data: allProfiles },
           { data: recentAttempts },
           { count: totalAttempts },
-          { data: correctAttemptsData },
+          { count: correctAttemptsCount },
           { count: simulations },
           { count: anamnesis },
           { count: discursives },
@@ -390,7 +390,7 @@ Deno.serve(async (req) => {
 
         // KPIs
         const totalQuestions = (totalAttempts || 0) + (examSessionsData?.length || 0) + (teacherResults?.length || 0);
-        const correctCount = correctAttemptsData || 0;
+        const correctCount = correctAttemptsCount || 0;
         const avgAccuracy = (totalAttempts || 0) > 0 ? Math.round(((correctCount as number) / (totalAttempts as number)) * 100) : 0;
         const totalUsers = (allProfiles || []).length;
         const retention = totalUsers > 0 ? Math.round(((activeUsersCount || 0) / totalUsers) * 100) : 0;
