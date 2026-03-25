@@ -1152,9 +1152,9 @@ const AnamnesisTrainer = () => {
                     <TooltipProvider key={cat.key}>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] ${
-                            covered ? "bg-green-500/10 text-green-400" : "bg-muted/50 text-muted-foreground"
-                          }`}>
+                          <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] transition-all ${
+                            covered ? "bg-success/10 text-success" : "bg-muted/50 text-muted-foreground"
+                          } ${recentlyCompleted.has(cat.key) ? "animate-bounce scale-110" : ""}`}>
                             {covered ? <CheckCircle className="h-3 w-3" /> : <Icon className="h-3 w-3 opacity-50" />}
                             <span>{cat.label}</span>
                           </div>
