@@ -768,12 +768,14 @@ const ChatGPT = () => {
 
   const recentHistory = performance.historico_estudo.slice(-5).reverse();
 
+  const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Estudante";
+
   const content = (
     <div className={`flex flex-col animate-fade-in min-w-0 ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-[calc(100vh-7rem)] sm:h-[calc(100vh-4rem)]"}`}>
       {/* Header */}
       <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1 flex items-center gap-3">
-          <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 tutor-glow">
+          <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 tutor-glow float-gentle">
             <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           </div>
           <div className="min-w-0">
@@ -783,8 +785,8 @@ const ChatGPT = () => {
         </div>
         <div className="flex gap-1.5 flex-shrink-0 items-center">
           {studyStarted && (
-            <span className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-medium">
-              <Check className="h-3 w-3" /> {performance.taxa_acerto}%
+            <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-primary/15 to-accent/15 text-primary text-[10px] font-semibold border border-primary/20">
+              <Target className="h-3 w-3" /> {performance.taxa_acerto}%
             </span>
           )}
           <Button variant="outline" size="icon" onClick={() => setIsFullscreen(!isFullscreen)} className="h-8 w-8" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
@@ -827,31 +829,32 @@ const ChatGPT = () => {
 
       {/* Onboarding Card */}
       {showOnboarding && !studyStarted && (
-        <div className="glass-card p-4 mb-3 border-primary/20 animate-fade-in relative">
-          <button onClick={dismissOnboarding} className="absolute top-2 right-2 text-muted-foreground hover:text-foreground">
+        <div className="relative overflow-hidden rounded-xl border border-primary/20 p-4 mb-3 animate-fade-in bg-gradient-to-br from-primary/5 via-card to-accent/5">
+          <div className="absolute inset-0 shimmer pointer-events-none" />
+          <button onClick={dismissOnboarding} className="absolute top-2 right-2 text-muted-foreground hover:text-foreground z-10">
             <X className="h-4 w-4" />
           </button>
-          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 relative z-10">
             <Sparkles className="h-4 w-4 text-primary" /> Como funciona o Tutor IA
           </h3>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-3 relative z-10">
             <div className="text-center space-y-1.5">
-              <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center mx-auto">
-                <BookOpen className="h-4 w-4 text-primary" />
+              <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto border border-primary/10">
+                <BookOpen className="h-5 w-5 text-primary" />
               </div>
               <p className="text-[10px] sm:text-xs font-medium">1. Escolha um tema</p>
               <p className="text-[9px] sm:text-[10px] text-muted-foreground">Digite ou clique nas sugestões</p>
             </div>
             <div className="text-center space-y-1.5">
-              <div className="h-9 w-9 rounded-xl bg-accent/10 flex items-center justify-center mx-auto">
-                <Brain className="h-4 w-4 text-accent" />
+              <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center mx-auto border border-accent/10">
+                <Brain className="h-5 w-5 text-accent" />
               </div>
               <p className="text-[10px] sm:text-xs font-medium">2. Aprenda em blocos</p>
               <p className="text-[9px] sm:text-[10px] text-muted-foreground">Técnico → Leigo → Recall</p>
             </div>
             <div className="text-center space-y-1.5">
-              <div className="h-9 w-9 rounded-xl bg-emerald-500/10 flex items-center justify-center mx-auto">
-                <Zap className="h-4 w-4 text-emerald-500" />
+              <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-success/20 to-success/5 flex items-center justify-center mx-auto border border-success/10">
+                <Zap className="h-5 w-5 text-success" />
               </div>
               <p className="text-[10px] sm:text-xs font-medium">3. Teste e consolide</p>
               <p className="text-[9px] sm:text-[10px] text-muted-foreground">Questões + casos clínicos</p>
@@ -860,20 +863,27 @@ const ChatGPT = () => {
         </div>
       )}
 
-      {/* Collapsible Performance Panel */}
+      {/* Compact Metrics Bar */}
       <div className="mb-3">
         <button
           onClick={() => setMetricsCollapsed(!metricsCollapsed)}
-          className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors w-full"
+          className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors w-full group"
         >
           <BarChart3 className="h-3.5 w-3.5" />
           <span>Métricas</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary">{performance.questoes_respondidas}Q • {performance.taxa_acerto}%</span>
+          <div className="flex items-center gap-2 text-[10px]">
+            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold">{performance.questoes_respondidas}Q</span>
+            <span className={`px-1.5 py-0.5 rounded font-semibold ${performance.taxa_acerto >= 70 ? "bg-success/10 text-success" : performance.taxa_acerto >= 50 ? "bg-warning/10 text-warning" : "bg-destructive/10 text-destructive"}`}>{performance.taxa_acerto}%</span>
+            {performance.pontuacao_discursiva != null && (
+              <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent font-semibold">{performance.pontuacao_discursiva}/10</span>
+            )}
+            <span className="px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">{performance.historico_estudo.length} sessões</span>
+          </div>
           {metricsCollapsed ? <ChevronDown className="h-3.5 w-3.5 ml-auto" /> : <ChevronUp className="h-3.5 w-3.5 ml-auto" />}
         </button>
         {!metricsCollapsed && (
           <div className="grid grid-cols-4 gap-2 mt-2 animate-fade-in">
-            <div className="glass-card p-2 sm:p-3 flex items-center gap-2">
+            <div className="glass-card p-2 sm:p-3 flex items-center gap-2 card-3d">
               <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                 <BarChart3 className="h-4 w-4 text-primary" />
               </div>
@@ -882,27 +892,27 @@ const ChatGPT = () => {
                 <p className="text-sm font-bold">{performance.questoes_respondidas}</p>
               </div>
             </div>
-            <div className="glass-card p-2 sm:p-3 flex items-center gap-2">
-              <div className="h-8 w-8 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                <Check className="h-4 w-4 text-emerald-500" />
+            <div className="glass-card p-2 sm:p-3 flex items-center gap-2 card-3d">
+              <div className={`h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0 ${performance.taxa_acerto >= 70 ? "bg-success/10" : performance.taxa_acerto >= 50 ? "bg-warning/10" : "bg-destructive/10"}`}>
+                <TrendingUp className={`h-4 w-4 ${performance.taxa_acerto >= 70 ? "text-success" : performance.taxa_acerto >= 50 ? "text-warning" : "text-destructive"}`} />
               </div>
               <div className="min-w-0">
                 <p className="text-[9px] text-muted-foreground">Acerto</p>
                 <p className="text-sm font-bold">{performance.taxa_acerto}%</p>
               </div>
             </div>
-            <div className="glass-card p-2 sm:p-3 flex items-center gap-2">
-              <div className="h-8 w-8 rounded-xl bg-violet-500/10 flex items-center justify-center flex-shrink-0">
-                <Stethoscope className="h-4 w-4 text-violet-500" />
+            <div className="glass-card p-2 sm:p-3 flex items-center gap-2 card-3d">
+              <div className="h-8 w-8 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
+                <Stethoscope className="h-4 w-4 text-accent" />
               </div>
               <div className="min-w-0">
                 <p className="text-[9px] text-muted-foreground">Discursiva</p>
                 <p className="text-sm font-bold">{performance.pontuacao_discursiva != null ? `${performance.pontuacao_discursiva}/10` : "—"}</p>
               </div>
             </div>
-            <div className="glass-card p-2 sm:p-3 flex items-center gap-2">
-              <div className="h-8 w-8 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                <GraduationCap className="h-4 w-4 text-amber-500" />
+            <div className="glass-card p-2 sm:p-3 flex items-center gap-2 card-3d">
+              <div className="h-8 w-8 rounded-xl bg-warning/10 flex items-center justify-center flex-shrink-0">
+                <GraduationCap className="h-4 w-4 text-warning" />
               </div>
               <div className="min-w-0">
                 <p className="text-[9px] text-muted-foreground">Sessões</p>
@@ -916,100 +926,113 @@ const ChatGPT = () => {
       {/* Start Screen */}
       {!studyStarted && (
         <>
-          {/* Hero + Input */}
-          <div className="glass-card p-4 sm:p-6 mb-3 text-center space-y-4 border-primary/10">
-            <div className="h-14 w-14 sm:h-18 sm:w-18 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mx-auto tutor-glow">
-              <GraduationCap className="h-7 w-7 sm:h-9 sm:w-9 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-bold">O que você quer estudar hoje?</h2>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                Escolha um tema abaixo ou digite para começar
-              </p>
-            </div>
-            <div className="flex gap-2 max-w-lg mx-auto">
-              <Input
-                placeholder="Ex: Sepse, IAM, Pneumonia..."
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleStartStudy()}
-                className="bg-secondary border-border text-sm sm:text-base"
-              />
-              <Button onClick={() => handleStartStudy()} className="glow gap-1.5 px-3 sm:px-6 flex-shrink-0 text-xs sm:text-sm" disabled={!topic.trim()}>
-                <GraduationCap className="h-4 w-4" />
-                <span className="hidden sm:inline">Estudar</span>
-                <span className="sm:hidden">Ir</span>
-              </Button>
+          {/* Hero + Input — Immersive */}
+          <div className="relative overflow-hidden rounded-2xl border border-primary/10 p-5 sm:p-8 mb-4 text-center bg-gradient-to-br from-primary/5 via-card to-accent/5 gradient-shift">
+            <div className="absolute inset-0 pattern-dots opacity-30 pointer-events-none" />
+            <div className="relative z-10 space-y-4">
+              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-3xl bg-gradient-to-br from-primary/25 to-accent/25 flex items-center justify-center mx-auto tutor-glow float-gentle border border-primary/15">
+                <GraduationCap className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg sm:text-2xl font-bold">
+                  Olá, <span className="gradient-text">{displayName}</span>! 👋
+                </h2>
+                <p className="text-sm sm:text-base text-muted-foreground mt-1">
+                  Pronto para evoluir? Escolha um tema para começar.
+                </p>
+              </div>
+              {performance.historico_estudo.length > 0 && (
+                <div className="flex items-center justify-center gap-2 text-xs">
+                  <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-warning/10 border border-warning/20">
+                    <Flame className="h-3.5 w-3.5 text-warning" />
+                    <span className="text-warning font-semibold">{performance.historico_estudo.length} sessões completadas</span>
+                  </div>
+                </div>
+              )}
+              <div className="flex gap-2 max-w-lg mx-auto">
+                <div className="relative flex-1">
+                  <Input
+                    placeholder="Ex: Sepse, IAM, Pneumonia..."
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleStartStudy()}
+                    className="bg-background/60 backdrop-blur-sm border-border/60 text-sm sm:text-base h-11 sm:h-12 rounded-xl pl-4 pr-4"
+                  />
+                </div>
+                <Button onClick={() => handleStartStudy()} className="glow gap-2 px-4 sm:px-8 flex-shrink-0 text-sm sm:text-base h-11 sm:h-12 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 font-semibold" disabled={!topic.trim()}>
+                  <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="hidden sm:inline">Estudar</span>
+                  <ArrowRight className="h-4 w-4 sm:hidden" />
+                </Button>
+              </div>
             </div>
           </div>
 
-          {/* Quick Topics Grid */}
-          <div className="mb-3">
+          {/* Recommended (weak topics) — Before popular */}
+          {performance.temas_fracos.length > 0 && (
+            <div className="mb-4">
+              <h3 className="text-xs font-semibold mb-2 flex items-center gap-1.5">
+                <Target className="h-3.5 w-3.5 text-warning" />
+                <span className="text-warning">Recomendado para você</span>
+              </h3>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                {performance.temas_fracos.map((t, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleStartStudy(t)}
+                    className="card-3d flex flex-col items-center gap-1.5 p-3 sm:p-4 rounded-xl bg-gradient-to-br from-warning/10 to-destructive/5 border border-warning/20 hover:border-warning/40 transition-all group"
+                  >
+                    <span className="text-lg group-hover:scale-110 transition-transform">🔴</span>
+                    <span className="text-[10px] sm:text-xs font-medium text-foreground truncate w-full text-center">{t}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Quick Topics Grid — Glassmorphism Cards */}
+          <div className="mb-4">
             <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5" /> Temas Populares
+              <Zap className="h-3.5 w-3.5 text-primary" /> Temas Populares
             </h3>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-1.5 sm:gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
               {QUICK_TOPICS.map((qt) => (
                 <button
                   key={qt.label}
                   onClick={() => handleStartStudy(qt.label)}
-                  className={`flex flex-col items-center gap-1 p-2.5 sm:p-3 rounded-xl bg-gradient-to-br ${qt.color} border hover:scale-[1.03] transition-all duration-200 group`}
+                  className={`card-3d flex flex-col items-center gap-1.5 p-3 sm:p-4 rounded-xl bg-gradient-to-br ${qt.color} border backdrop-blur-sm hover:border-primary/30 transition-all group`}
                 >
-                  <span className="text-lg sm:text-xl group-hover:scale-110 transition-transform">{qt.emoji}</span>
+                  <span className="text-xl sm:text-2xl group-hover:scale-110 transition-transform drop-shadow-sm">{qt.emoji}</span>
                   <span className="text-[10px] sm:text-xs font-medium text-foreground truncate w-full text-center">{qt.label}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Weak Topics + Recent History */}
-          {(performance.temas_fracos.length > 0 || recentHistory.length > 0) && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-              {performance.temas_fracos.length > 0 && (
-                <div className="glass-card p-3 sm:p-4 border-amber-500/20">
-                  <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
-                    <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                    <span className="text-amber-500">Temas Fracos</span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 ml-auto">{performance.temas_fracos.length}</span>
-                  </h3>
-                  <div className="flex flex-wrap gap-1.5">
-                    {performance.temas_fracos.map((t, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleStartStudy(t)}
-                        className="px-2.5 py-1.5 rounded-lg text-xs bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all hover:scale-105 font-medium"
-                      >
-                        🔴 {t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {recentHistory.length > 0 && (
-                <div className="glass-card p-3 sm:p-4">
-                  <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
-                    <History className="h-3.5 w-3.5 text-muted-foreground" />
-                    Continuar Estudando
-                  </h3>
-                  <div className="space-y-1.5">
-                    {recentHistory.map((h, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleStartStudy(h.tema)}
-                        className="flex items-center justify-between text-xs w-full px-2 py-1.5 rounded-lg hover:bg-secondary transition-colors"
-                      >
-                        <span className="text-foreground truncate mr-2">{h.tema}</span>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="text-[10px] text-muted-foreground">{new Date(h.data).toLocaleDateString("pt-BR")}</span>
-                          <span className={`font-semibold px-1.5 py-0.5 rounded text-[10px] ${h.acerto >= 70 ? "bg-emerald-500/10 text-emerald-500" : h.acerto >= 50 ? "bg-amber-500/10 text-amber-500" : "bg-destructive/10 text-destructive"}`}>
-                            {h.acerto}%
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+          {/* Recent History */}
+          {recentHistory.length > 0 && (
+            <div className="glass-card p-3 sm:p-4 mb-3">
+              <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
+                <History className="h-3.5 w-3.5 text-muted-foreground" />
+                Continuar Estudando
+              </h3>
+              <div className="space-y-1.5">
+                {recentHistory.map((h, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleStartStudy(h.tema)}
+                    className="flex items-center justify-between text-xs w-full px-3 py-2 rounded-lg hover:bg-secondary/80 transition-colors group"
+                  >
+                    <span className="text-foreground truncate mr-2 group-hover:text-primary transition-colors">{h.tema}</span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-[10px] text-muted-foreground">{new Date(h.data).toLocaleDateString("pt-BR")}</span>
+                      <span className={`font-semibold px-1.5 py-0.5 rounded text-[10px] ${h.acerto >= 70 ? "bg-success/10 text-success" : h.acerto >= 50 ? "bg-warning/10 text-warning" : "bg-destructive/10 text-destructive"}`}>
+                        {h.acerto}%
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -1079,14 +1102,14 @@ const ChatGPT = () => {
           {/* Visual Step Tracker */}
           <div className="mb-2 sm:mb-3">
             <div className="flex items-center gap-1.5 sm:gap-2 mb-2 flex-wrap">
-              <span className="px-2 sm:px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] sm:text-xs font-medium truncate max-w-[40%]">
+              <span className="px-2 sm:px-3 py-1 rounded-full bg-gradient-to-r from-primary/15 to-accent/15 text-primary text-[10px] sm:text-xs font-medium truncate max-w-[40%] border border-primary/20">
                 📚 {currentTopic}
               </span>
               <span className="px-2 py-1 rounded-full bg-secondary text-muted-foreground text-[10px] sm:text-xs font-medium">
                 Etapa {enaziziStep}/14
               </span>
               {sessionQuestions > 0 && (
-                <span className="px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] sm:text-xs font-medium">
+                <span className={`px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium ${Math.round((sessionCorrect / sessionQuestions) * 100) >= 70 ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}>
                   {sessionQuestions}Q • {Math.round((sessionCorrect / sessionQuestions) * 100)}%
                 </span>
               )}
@@ -1101,86 +1124,113 @@ const ChatGPT = () => {
               </div>
             )}
 
-            {/* Step Progress with tooltips */}
-            <TooltipProvider delayDuration={200}>
-              <div className="flex gap-0.5">
-                {MEDSTUDY_STEPS.map((s) => (
-                  <Tooltip key={s.num}>
+            {/* Timeline Stepper */}
+            <div className="flex items-center gap-0 overflow-x-auto pb-1">
+              {MEDSTUDY_STEPS.map((s, idx) => (
+                <TooltipProvider key={s.num} delayDuration={200}>
+                  <Tooltip>
                     <TooltipTrigger asChild>
-                      <div
-                        className={`flex-1 h-2 sm:h-2.5 rounded-full transition-all cursor-default ${
-                          s.num < enaziziStep
-                            ? "bg-primary"
-                            : s.num === enaziziStep
-                            ? "bg-primary/60 tutor-pulse"
-                            : "bg-muted"
-                        }`}
-                      />
+                      <div className="flex items-center flex-shrink-0">
+                        <div
+                          className={`relative flex items-center justify-center rounded-full transition-all cursor-default ${
+                            s.num < enaziziStep
+                              ? "h-5 w-5 sm:h-6 sm:w-6 bg-primary text-primary-foreground"
+                              : s.num === enaziziStep
+                              ? "h-7 w-7 sm:h-8 sm:w-8 bg-gradient-to-br from-primary to-accent text-primary-foreground animate-pulse-glow ring-2 ring-primary/30"
+                              : "h-5 w-5 sm:h-6 sm:w-6 bg-muted text-muted-foreground border border-border"
+                          }`}
+                        >
+                          {s.num < enaziziStep ? (
+                            <Check className="h-3 w-3" />
+                          ) : s.num === enaziziStep ? (
+                            <span className="text-[10px] sm:text-xs font-bold">{s.icon}</span>
+                          ) : (
+                            <span className="text-[8px] sm:text-[9px]">{s.num}</span>
+                          )}
+                        </div>
+                        {idx < MEDSTUDY_STEPS.length - 1 && (
+                          <div className={`w-1 sm:w-2 h-0.5 ${s.num < enaziziStep ? "bg-primary" : "bg-border"}`} />
+                        )}
+                      </div>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="text-xs">
                       <p className="font-semibold">{s.icon} {s.num}. {s.label}</p>
                       <p className="text-muted-foreground">{s.desc}</p>
                     </TooltipContent>
                   </Tooltip>
-                ))}
-              </div>
-            </TooltipProvider>
-            <div className="hidden sm:flex justify-between mt-1">
-              {MEDSTUDY_STEPS.map((s) => (
-                <span key={s.num} className={`text-[9px] ${s.num === enaziziStep ? "text-primary font-bold" : s.num < enaziziStep ? "text-primary/50" : "text-muted-foreground"}`}>
-                  {s.num < enaziziStep ? "✓" : s.icon}
-                </span>
+                </TooltipProvider>
               ))}
             </div>
+            {/* Mobile: show current step label */}
+            <p className="sm:hidden text-[10px] text-muted-foreground text-center mt-1">
+              {MEDSTUDY_STEPS.find(s => s.num === enaziziStep)?.icon} {MEDSTUDY_STEPS.find(s => s.num === enaziziStep)?.label} ({enaziziStep}/14)
+            </p>
           </div>
 
-          {/* Next Phase Card */}
+          {/* Next Phase Card — Enhanced */}
           {(() => {
             const nextPhase = getNextPhaseInfo();
             if (!nextPhase) return null;
+            const progressPercent = Math.round((enaziziStep / 14) * 100);
             return (
-              <div className="glass-card p-3 mb-2 sm:mb-3 border-primary/20 animate-fade-in">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 text-lg">
+              <div className="relative overflow-hidden rounded-xl border border-primary/20 p-3 sm:p-4 mb-2 sm:mb-3 animate-fade-in bg-gradient-to-r from-primary/5 via-card to-accent/5">
+                <div className="absolute inset-0 shimmer pointer-events-none opacity-50" />
+                <div className="flex items-center gap-3 relative z-10">
+                  <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary/25 to-accent/25 flex items-center justify-center flex-shrink-0 text-xl float-gentle border border-primary/15">
                     {nextPhase.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground">Próxima etapa</p>
-                    <p className="text-sm font-semibold">{nextPhase.label}</p>
+                    <p className="text-[10px] text-muted-foreground">Próxima etapa</p>
+                    <p className="text-sm font-bold">{nextPhase.label}</p>
                     <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{nextPhase.desc}</p>
                   </div>
-                  <Button
-                    size="sm"
-                    className="glow text-xs h-8 px-3 flex-shrink-0"
-                    onClick={() => handlePhaseAction(nextPhase.key)}
-                    disabled={isLoading}
-                  >
-                    Avançar
-                  </Button>
+                  <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                    <div className="relative h-10 w-10">
+                      <svg className="h-10 w-10 -rotate-90" viewBox="0 0 36 36">
+                        <circle cx="18" cy="18" r="16" fill="none" className="stroke-muted" strokeWidth="2" />
+                        <circle cx="18" cy="18" r="16" fill="none" className="stroke-primary" strokeWidth="2" strokeDasharray={`${progressPercent} 100`} strokeLinecap="round" />
+                      </svg>
+                      <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-primary">{progressPercent}%</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="glow text-xs h-8 px-4 flex-shrink-0 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 gap-1.5 font-semibold"
+                      onClick={() => handlePhaseAction(nextPhase.key)}
+                      disabled={isLoading}
+                    >
+                      Avançar <ArrowRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
                 {/* Shortcut buttons */}
                 {enaziziStep < 8 && (
-                  <div className="flex gap-1.5 mt-2 pt-2 border-t border-border/50">
-                    <button onClick={() => handlePhaseAction("questions")} disabled={isLoading} className="text-[10px] text-muted-foreground hover:text-primary transition-colors">⚡ Pular para Questões</button>
+                  <div className="flex gap-1.5 mt-2 pt-2 border-t border-border/50 relative z-10">
+                    <button onClick={() => handlePhaseAction("questions")} disabled={isLoading} className="text-[10px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-1">
+                      <Zap className="h-3 w-3" /> Pular para Questões
+                    </button>
                     <span className="text-border">•</span>
-                    <button onClick={() => handlePhaseAction("consolidation")} disabled={isLoading} className="text-[10px] text-muted-foreground hover:text-primary transition-colors">🔁 Ir para Consolidação</button>
+                    <button onClick={() => handlePhaseAction("consolidation")} disabled={isLoading} className="text-[10px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-1">
+                      <RefreshCw className="h-3 w-3" /> Ir para Consolidação
+                    </button>
                   </div>
                 )}
               </div>
             );
           })()}
 
-          {/* Chat Messages */}
-          <div ref={scrollRef} className="flex-1 glass-card p-2 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 mb-2 sm:mb-3 min-h-0">
+          {/* Chat Messages — Premium */}
+          <div ref={scrollRef} className="flex-1 rounded-xl border border-border/50 bg-card/50 p-2 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 mb-2 sm:mb-3 min-h-0 pattern-dots">
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""} animate-fade-in`}>
                 {msg.role === "assistant" && (
-                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 tutor-glow">
+                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 tutor-glow bot-breathing">
                     <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                   </div>
                 )}
                 <div className={`rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm leading-relaxed relative group ${
-                  msg.role === "user" ? "max-w-[85%] sm:max-w-[75%] bg-primary text-primary-foreground" : "w-full bg-secondary text-secondary-foreground"
+                  msg.role === "user"
+                    ? "max-w-[85%] sm:max-w-[75%] bg-gradient-to-br from-primary to-primary/80 text-primary-foreground"
+                    : "w-full bg-secondary/80 backdrop-blur-sm text-secondary-foreground relative gradient-border-subtle"
                 }`}>
                   {msg.role === "assistant" ? (
                     <>
@@ -1189,7 +1239,7 @@ const ChatGPT = () => {
                       </div>
                       <button
                         onClick={() => copyToClipboard(msg.content)}
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-background/50"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-background/50 backdrop-blur-sm"
                         title="Copiar"
                       >
                         <Copy className="h-3.5 w-3.5 text-muted-foreground" />
@@ -1208,10 +1258,10 @@ const ChatGPT = () => {
             ))}
             {isLoading && messages[messages.length - 1]?.role === "user" && (
               <div className="flex gap-2 sm:gap-3 animate-fade-in">
-                <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 tutor-glow">
+                <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 tutor-glow bot-breathing">
                   <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                 </div>
-                <div className="rounded-xl px-4 py-3 bg-secondary">
+                <div className="rounded-xl px-4 py-3 bg-secondary/80 backdrop-blur-sm">
                   <div className="flex gap-1.5 items-center">
                     <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
                     <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
@@ -1222,17 +1272,22 @@ const ChatGPT = () => {
             )}
           </div>
 
-          {/* Input */}
+          {/* Input — Enhanced */}
           <div className="flex gap-2">
             <Input
               placeholder="Sua resposta ou dúvida..."
-              className="bg-secondary border-border text-sm"
+              className="bg-background/60 backdrop-blur-sm border-border/60 text-sm h-10 sm:h-11 rounded-xl"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
               disabled={isLoading}
             />
-            <Button onClick={() => sendMessage(input)} size="icon" className="glow flex-shrink-0 h-9 w-9 sm:h-10 sm:w-10" disabled={isLoading || !input.trim()}>
+            <Button
+              onClick={() => sendMessage(input)}
+              size="icon"
+              className="glow flex-shrink-0 h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+              disabled={isLoading || !input.trim()}
+            >
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
