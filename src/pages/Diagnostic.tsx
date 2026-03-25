@@ -223,7 +223,7 @@ NÃO inclua texto extra, APENAS o JSON.` }],
       // Process areas in batches of 2 to reduce server load
       for (let i = 0; i < AREAS.length; i += 2) {
         const batch = AREAS.slice(i, i + 2);
-        const results = await Promise.allSettled(batch.map(area => generateAreaQuestions(area)));
+        const results = await Promise.allSettled(batch.map(area => generateAreaQuestions(area, allQuestions)));
 
         results.forEach((result, idx) => {
           const area = batch[idx];
