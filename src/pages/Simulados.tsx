@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
-import { isMedicalQuestion } from "@/lib/medicalValidation";
+import { isMedicalQuestion, NON_MEDICAL_CONTENT_REGEX } from "@/lib/medicalValidation";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
