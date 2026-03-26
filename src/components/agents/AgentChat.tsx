@@ -82,6 +82,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStep, setUploadStep] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [actionTimeline, setActionTimeline] = useState<{ label: string; icon: string; time: string }[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isUploadingRef = useRef(false);
@@ -431,6 +432,15 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const handleSend = async (overridePrompt?: string, contextOverride?: string) => {
     const text = overridePrompt || input.trim();
     if (!text || isLoading || !user) return;
+
+    // Add to action timeline
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const matchedAction = quickActions?.find(a => a.prompt === text);
+    const timelineEntry = matchedAction
+      ? { label: matchedAction.label.replace(/^[^\s]+\s/, ''), icon: matchedAction.icon || "💬", time: timeStr }
+      : { label: text.slice(0, 30) + (text.length > 30 ? "…" : ""), icon: "💬", time: timeStr };
+    setActionTimeline(prev => [...prev, timelineEntry].slice(-8));
 
     const userMsg: Msg = { role: "user", content: text };
     const allMessages = [...messages, userMsg];
@@ -795,6 +805,19 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
               {action.icon && <span>{action.icon}</span>}
               {action.label.replace(/^[^\s]+\s/, '')}
             </button>
+          ))}
+        </div>
+      )}
+
+      {/* Action Timeline */}
+      {actionTimeline.length > 0 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1 mb-2 scrollbar-hide">
+          {actionTimeline.map((entry, idx) => (
+            <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-border/60 bg-muted/50 text-[10px] font-medium text-muted-foreground whitespace-nowrap flex-shrink-0">
+              <span>{entry.icon}</span>
+              <span className="max-w-[100px] truncate">{entry.label}</span>
+              <span className="text-muted-foreground/60">{entry.time}</span>
+            </span>
           ))}
         </div>
       )}
