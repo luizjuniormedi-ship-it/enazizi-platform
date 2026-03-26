@@ -1,58 +1,46 @@
 
 
-# Plano: Correcao de Falhas de Seguranca
+# Plano: Implementar Otimizacoes Globais do Codigo
 
-A analise de seguranca encontrou **9 vulnerabilidades** (4 criticas, 5 avisos). Abaixo as correcoes priorizadas.
+## Resumo
+Reduzir queries duplicadas, adicionar cache com React Query, estabilizar heartbeat e memoizar componentes pesados. Zero mudanca visual.
 
-## Vulnerabilidades Criticas
+## Alteracoes
 
-### 1. Escalacao de privilegios — `user_roles`
-**Problema**: A politica "Admins can manage roles" usa `has_role()` que depende da propria tabela. Se a tabela estiver vazia, ninguem e admin, mas tambem nao ha INSERT restrito — o `handle_new_user()` insere com `SECURITY DEFINER`, porem nao ha politica bloqueando INSERT manual por usuarios autenticados.
+### 1. Criar `src/hooks/useUserRoles.ts`
+- Hook com React Query, key `["user-roles", userId]`, `staleTime: 10min`
+- Uma query: `select role from user_roles where user_id = X`
+- Retorna `{ isAdmin, isProfessor, roles, isLoading }`
 
-**Correcao**: Adicionar politica explicita bloqueando INSERT/UPDATE/DELETE para nao-admins, e restringir INSERT a `service_role` apenas.
+### 2. Editar `src/hooks/useAdminCheck.ts`
+- Substituir implementacao manual por wrapper fino sobre `useUserRoles()`
+- Retorna `{ isAdmin, loading }` igual antes
 
-### 2. Dados sensiveis expostos — `profiles`
-**Problema**: Qualquer usuario autenticado pode potencialmente ler emails e telefones de outros usuarios via queries indiretas.
+### 3. Editar `src/hooks/useProfessorCheck.ts`
+- Substituir implementacao manual por wrapper fino sobre `useUserRoles()`
+- Retorna `{ isProfessor, loading }` igual antes
 
-**Correcao**: Manter SELECT restrito a `user_id = auth.uid()` e admins. Remover paths de leitura via organizacao.
+### 4. Editar `src/hooks/useGamification.ts`
+- Migrar `fetchData` para `useQuery` com key `["gamification", userId]`, `staleTime: 60s`
+- `addXp` faz `queryClient.setQueryData` otimista + `invalidateQueries` depois
+- Remover `useState`/`useEffect` manuais para fetch
 
-### 3. Uploads privados expostos — `uploads`
-**Problema**: Politica "All authenticated can read uploads" com `USING(true)` expoe todos os uploads.
+### 5. Editar `src/hooks/useDashboardData.ts`
+- Remover segunda query a `chat_conversations` (linha 79) — ja tem na linha 76
+- Usar count de `chroniclesRes` e `chatConvRes` separadamente sem query duplicada
 
-**Correcao**: Alterar para `(user_id = auth.uid()) OR (is_global = true)`.
+### 6. Editar `src/hooks/usePresenceHeartbeat.ts`
+- Usar `useRef` para `location.pathname` em vez de dependencia do effect
+- O interval nao reseta mais a cada navegacao
 
-### 4. Flashcards e Summaries privados expostos
-**Problema**: Politicas com `USING(true)` expoem conteudo de todos os usuarios.
+### 7. Editar `src/components/dashboard/DashboardSummaryCard.tsx`
+- Adicionar `React.memo` para evitar re-renders desnecessarios
 
-**Correcao**: Alterar para `(user_id = auth.uid()) OR (is_global = true)`.
-
-## Vulnerabilidades de Aviso
-
-### 5. Leaked Password Protection desabilitada
-**Correcao**: Ativar via configuracao de autenticacao.
-
-### 6. `chat_conversations` com role `public`
-**Correcao**: Alterar politica de `public` para `authenticated`.
-
-### 7. `user_gamification` expoe todos os campos
-**Correcao**: Aceitavel para ranking — manter, pois nao contem dados sensiveis alem de padroes de atividade.
-
-### 8. `clinical_cases` com `USING(true)`
-**Correcao**: Alterar para `(user_id = auth.uid()) OR (is_global = true)`.
-
-## Migracoes SQL necessarias
-
-Uma unica migracao com:
-1. DROP + CREATE das politicas SELECT de `uploads`, `flashcards`, `summaries`, `clinical_cases` para filtrar por `is_global` ou owner
-2. DROP + CREATE da politica de `chat_conversations` mudando role de `public` para `authenticated`
-3. Adicionar politica explicita em `user_roles` restringindo INSERT apenas a `service_role`
-4. Ativar leaked password protection
-
-## Impacto no codigo
-- Nenhuma mudanca de codigo frontend necessaria — a logica de compartilhamento global ja usa `is_global: true` nos inserts
-- O ranking (`MiniLeaderboard`) continua funcionando pois `user_gamification` mantem leitura aberta
+### 8. Editar `src/pages/Dashboard.tsx`
+- Envolver `SmartRecommendations` com `React.memo`
+- Memoizar o grid de summary cards com `useMemo`
 
 ## Arquivos
-- Migracao SQL (via ferramenta de banco)
-- Configuracao de auth (leaked password protection)
+- Criar: `src/hooks/useUserRoles.ts`
+- Editar: `useAdminCheck.ts`, `useProfessorCheck.ts`, `useGamification.ts`, `useDashboardData.ts`, `usePresenceHeartbeat.ts`, `DashboardSummaryCard.tsx`, `Dashboard.tsx`
 
