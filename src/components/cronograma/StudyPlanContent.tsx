@@ -483,11 +483,32 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
           </div>
           <Button onClick={generatePlan} disabled={generating || !examDate} className="w-full">
             {generating ? (
-              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Gerando cronograma com IA...</>
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{
+                generationStep === 1 ? "Analisando documento..." :
+                generationStep === 2 ? "Extraindo temas e subtópicos..." :
+                generationStep === 3 ? "Gerando cronograma semanal..." :
+                generationStep === 4 ? "Sincronizando módulos..." :
+                "Preparando..."
+              }</>
             ) : (
               <><CalendarDays className="h-4 w-4 mr-2" />{schedule.length > 0 ? "Regenerar Cronograma" : "Gerar Cronograma com IA"}</>
             )}
           </Button>
+          {generating && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Progresso</span>
+                <span>{Math.round((generationStep / 4) * 100)}%</span>
+              </div>
+              <Progress value={(generationStep / 4) * 100} className="h-2" />
+              <div className="flex justify-between text-[11px] text-muted-foreground">
+                <span className={generationStep >= 1 ? "text-primary font-medium" : ""}>Análise</span>
+                <span className={generationStep >= 2 ? "text-primary font-medium" : ""}>Extração</span>
+                <span className={generationStep >= 3 ? "text-primary font-medium" : ""}>Cronograma</span>
+                <span className={generationStep >= 4 ? "text-primary font-medium" : ""}>Sincronização</span>
+              </div>
+            </div>
+          )
         </div>
       )}
 
