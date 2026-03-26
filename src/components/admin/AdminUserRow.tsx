@@ -1,4 +1,4 @@
-import { Ban, CheckCircle, ShieldCheck, ShieldOff, CreditCard, KeyRound, UserCheck, UserX, BarChart3, GraduationCap, LogOut, Lock, Target, BookOpen, Activity, Brain, Eye } from "lucide-react";
+import { Ban, CheckCircle, ShieldCheck, ShieldOff, CreditCard, KeyRound, UserCheck, UserX, BarChart3, GraduationCap, LogOut, Lock, Target, BookOpen, Activity, Brain, Eye, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { AdminUser } from "./AdminTypes";
@@ -20,12 +20,13 @@ interface AdminUserRowProps {
   onOpenLogout: (u: AdminUser) => void;
   onOpenTracking: (u: AdminUser) => void;
   onOpenAccess: (u: AdminUser) => void;
+  onOpenDelete: (u: AdminUser) => void;
 }
 
 const AdminUserRow = ({
   u, actionLoading, session, getStatusBadge, getUserPlan,
   onApprove, onReject, onOpenDetail, onOpenAdmin, onOpenProfessor,
-  onOpenPlan, onOpenPassword, onOpenBlock, onOpenLogout, onOpenTracking, onOpenAccess,
+  onOpenPlan, onOpenPassword, onOpenBlock, onOpenLogout, onOpenTracking, onOpenAccess, onOpenDelete,
 }: AdminUserRowProps) => {
   const plan = getUserPlan(u);
   const isCurrentlyActioning = actionLoading === u.user_id;
@@ -151,6 +152,11 @@ const AdminUserRow = ({
             <Button variant="outline" size="sm" className="h-7 text-xs gap-1 border-violet-500/30 text-violet-600 hover:bg-violet-500/10"
               disabled={isCurrentlyActioning} onClick={() => onOpenAccess(u)}>
               <Lock className="h-3 w-3" /> Acessos
+            </Button>
+            <Button variant="destructive" size="sm" className="h-7 text-xs gap-1"
+              disabled={isCurrentlyActioning || u.roles.includes("admin") || u.user_id === session?.user?.id}
+              onClick={() => onOpenDelete(u)}>
+              <Trash2 className="h-3 w-3" /> Excluir
             </Button>
           </>
         )}

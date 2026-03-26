@@ -474,12 +474,76 @@ Deno.serve(async (req) => {
         const { target_user_id } = params;
         if (!target_user_id) throw new Error("target_user_id obrigatório");
         if (target_user_id === user.id) throw new Error("Você não pode desconectar a si mesmo.");
-        // Ban briefly to invalidate all sessions, then unban
         const { error: banErr } = await supabaseAuth.auth.admin.updateUserById(target_user_id, { ban_duration: "1s" });
         if (banErr) throw new Error(`Erro ao desconectar: ${banErr.message}`);
-        // Immediately unban so user can log in again
         await supabaseAuth.auth.admin.updateUserById(target_user_id, { ban_duration: "none" });
         await logAudit(supabaseAuth, user.id, "force_logout", target_user_id, {});
+        return ok({ success: true });
+      }
+
+      case "delete_user": {
+        const { target_user_id } = params;
+        if (!target_user_id) throw new Error("target_user_id obrigatório");
+        if (target_user_id === user.id) throw new Error("Você não pode excluir a si mesmo.");
+
+        // Delete user data from all related tables
+        await Promise.all([
+          supabaseAuth.from("practice_attempts").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("error_bank").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("flashcards").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("summaries").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("uploads").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("study_plans").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("study_tasks").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("study_performance").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("medical_domain_map").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("user_gamification").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("user_achievements").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("user_quotas").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("user_module_access").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("user_presence").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("subscriptions").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("exam_sessions").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("simulation_history").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("anamnesis_results").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("discursive_attempts").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("enazizi_progress").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("performance_predictions").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("diagnostic_results").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("daily_plans").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("cronograma_config").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("user_feedback").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("clinical_cases").delete().eq("user_id", target_user_id),
+          supabaseAuth.from("questions_bank").delete().eq("user_id", target_user_id),
+        ]);
+
+        // Delete chat data (messages first due to FK)
+        const { data: convos } = await supabaseAuth.from("chat_conversations").select("id").eq("user_id", target_user_id);
+        if (convos && convos.length > 0) {
+          const convoIds = convos.map((c: any) => c.id);
+          await supabaseAuth.from("chronicle_favorites").delete().in("conversation_id", convoIds);
+          await supabaseAuth.from("chat_messages").delete().in("conversation_id", convoIds);
+          await supabaseAuth.from("chat_conversations").delete().eq("user_id", target_user_id);
+        }
+
+        // Delete revision data (desempenho first due to FK)
+        const { data: temas } = await supabaseAuth.from("temas_estudados").select("id").eq("user_id", target_user_id);
+        if (temas && temas.length > 0) {
+          const temaIds = temas.map((t: any) => t.id);
+          await supabaseAuth.from("desempenho_questoes").delete().in("tema_id", temaIds);
+          await supabaseAuth.from("revisoes").delete().in("tema_id", temaIds);
+        }
+        await supabaseAuth.from("temas_estudados").delete().eq("user_id", target_user_id);
+
+        // Delete roles and profile
+        await supabaseAuth.from("user_roles").delete().eq("user_id", target_user_id);
+        await supabaseAuth.from("profiles").delete().eq("user_id", target_user_id);
+
+        // Finally delete the auth user
+        const { error: deleteErr } = await supabaseAuth.auth.admin.deleteUser(target_user_id);
+        if (deleteErr) throw new Error(`Erro ao excluir usuário: ${deleteErr.message}`);
+
+        await logAudit(supabaseAuth, user.id, "delete_user", target_user_id, {});
         return ok({ success: true });
       }
 

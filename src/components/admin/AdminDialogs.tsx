@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { LogOut, BarChart3, Brain, ClipboardList, CreditCard, AlertTriangle, TrendingUp, BookOpen, Target, Activity, Lock, Phone, GraduationCap, Calendar, Clock, Stethoscope, Building2, PenTool, FileCheck, Upload, FlipVertical } from "lucide-react";
+import { LogOut, BarChart3, Brain, ClipboardList, CreditCard, AlertTriangle, TrendingUp, BookOpen, Target, Activity, Lock, Phone, GraduationCap, Calendar, Clock, Stethoscope, Building2, PenTool, FileCheck, Upload, FlipVertical, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +54,10 @@ interface AdminDialogsProps {
   accessDialog: { open: boolean; user: AdminUser | null; modules: Record<string, boolean>; loading: boolean; saving: boolean };
   setAccessDialog: (v: any) => void;
   handleSaveAccess: () => void;
+
+  deleteDialog: { open: boolean; user: AdminUser | null };
+  setDeleteDialog: (v: { open: boolean; user: AdminUser | null }) => void;
+  handleDeleteUser: () => void;
 }
 
 const AdminDialogs = ({
@@ -67,6 +71,7 @@ const AdminDialogs = ({
   passwordDialog, setPasswordDialog, handleResetPassword,
   trackingDialog, setTrackingDialog,
   accessDialog, setAccessDialog, handleSaveAccess,
+  deleteDialog, setDeleteDialog, handleDeleteUser,
 }: AdminDialogsProps) => {
   const [profileData, setProfileData] = useState<any>(null);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -526,6 +531,26 @@ const AdminDialogs = ({
           <Button variant="outline" onClick={() => setAccessDialog({ open: false, user: null, modules: {}, loading: false, saving: false })}>Cancelar</Button>
           <Button onClick={handleSaveAccess} disabled={accessDialog.loading || accessDialog.saving}>
             {accessDialog.saving ? "Salvando..." : "Salvar acessos"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    {/* Delete User Dialog */}
+    <Dialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog({ open: false, user: null })}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-destructive">
+            <Trash2 className="h-5 w-5" /> Excluir usuário permanentemente
+          </DialogTitle>
+          <DialogDescription>
+            <span className="font-semibold text-destructive">Atenção: esta ação é irreversível!</span> Todos os dados de "{deleteDialog.user?.display_name || deleteDialog.user?.email}" serão permanentemente excluídos, incluindo questões, simulados, flashcards, histórico e progresso.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setDeleteDialog({ open: false, user: null })}>Cancelar</Button>
+          <Button variant="destructive" onClick={handleDeleteUser} disabled={!!actionLoading} className="gap-1.5">
+            <Trash2 className="h-4 w-4" /> Excluir permanentemente
           </Button>
         </DialogFooter>
       </DialogContent>

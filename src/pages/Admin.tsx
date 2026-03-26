@@ -46,6 +46,7 @@ const Admin = () => {
   const [trackingDialog, setTrackingDialog] = useState<{ open: boolean; user: AdminUser | null; data: any; loading: boolean }>({ open: false, user: null, data: null, loading: false });
   const [logoutDialog, setLogoutDialog] = useState<{ open: boolean; user: AdminUser | null }>({ open: false, user: null });
   const [accessDialog, setAccessDialog] = useState<{ open: boolean; user: AdminUser | null; modules: Record<string, boolean>; loading: boolean; saving: boolean }>({ open: false, user: null, modules: {}, loading: false, saving: false });
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; user: AdminUser | null }>({ open: false, user: null });
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-actions`;
 
@@ -195,6 +196,15 @@ const Admin = () => {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao salvar", variant: "destructive" });
       setAccessDialog(prev => ({ ...prev, saving: false }));
     }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteDialog.user) return;
+    await handleAction(deleteDialog.user.user_id, async () => {
+      await callAdmin({ action: "delete_user", target_user_id: deleteDialog.user!.user_id });
+      toast({ title: "Usuário excluído", description: `${deleteDialog.user!.display_name || deleteDialog.user!.email} foi permanentemente excluído.` });
+      setDeleteDialog({ open: false, user: null });
+    });
   };
 
   // Unique faculdades and periodos for filters
@@ -426,6 +436,7 @@ const Admin = () => {
                     onOpenLogout={(u) => setLogoutDialog({ open: true, user: u })}
                     onOpenTracking={loadUserTracking}
                     onOpenAccess={loadUserAccess}
+                    onOpenDelete={(u) => setDeleteDialog({ open: true, user: u })}
                   />
                 ))}
               </div>
@@ -469,6 +480,9 @@ const Admin = () => {
         accessDialog={accessDialog}
         setAccessDialog={setAccessDialog}
         handleSaveAccess={handleSaveAccess}
+        deleteDialog={deleteDialog}
+        setDeleteDialog={setDeleteDialog}
+        handleDeleteUser={handleDeleteUser}
       />
     </div>
   );
