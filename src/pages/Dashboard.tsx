@@ -1,4 +1,4 @@
-import { useEffect, useRef, lazy, Suspense, useState } from "react";
+import { useEffect, useRef, lazy, Suspense, useState, useMemo, memo } from "react";
 import { Loader2, Target, Calendar, Flame, ClipboardList } from "lucide-react";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
@@ -14,7 +14,7 @@ import DailyGoalWidget from "@/components/dashboard/DailyGoalWidget";
 import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner";
 import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
 import QuickStartCard from "@/components/dashboard/QuickStartCard";
-import SmartRecommendations from "@/components/dashboard/SmartRecommendations";
+const SmartRecommendations = lazy(() => import("@/components/dashboard/SmartRecommendations"));
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import AdminSystemAlerts from "@/components/admin/AdminSystemAlerts";
 import InstallAppBanner from "@/components/dashboard/InstallAppBanner";
@@ -196,12 +196,13 @@ const Dashboard = () => {
       )}
 
       {/* Smart Recommendations */}
-      <SmartRecommendations
-        stats={stats}
-        metrics={metrics}
-        hasCompletedDiagnostic={hasCompletedDiagnostic}
-      />
-
+      <Suspense fallback={<ChartFallback />}>
+        <SmartRecommendations
+          stats={stats}
+          metrics={metrics}
+          hasCompletedDiagnostic={hasCompletedDiagnostic}
+        />
+      </Suspense>
       {/* ===== Drill-down Sheets ===== */}
       <Sheet open={openSection === "desempenho"} onOpenChange={(o) => !o && setOpenSection(null)}>
         <SheetContent side={sheetSide} className={isMobile ? "h-[85vh] overflow-y-auto" : "sm:max-w-lg overflow-y-auto"}>

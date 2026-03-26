@@ -53,7 +53,7 @@ async function fetchDashboardData(userId: string) {
     practiceRes, errorBankRes, pendingRevisoesRes, simuladosRes, discursivasRes,
     gamificationRes, globalFlashRes, globalQuestRes,
     questionsCreatedRes, clinicalSimRes, anamnesisRes, summariesRes,
-    chroniclesRes, imageQuizRes, diagnosticRes, chatConvRes,
+    chroniclesRes, imageQuizRes, diagnosticRes,
   ] = await Promise.all([
     supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", userId),
@@ -73,10 +73,9 @@ async function fetchDashboardData(userId: string) {
     supabase.from("simulation_history").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("anamnesis_results").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("summaries").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    supabase.from("chat_conversations").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("agent_type", "medical-chronicle"),
+    supabase.from("chat_conversations").select("id, agent_type", { count: "exact" }).eq("user_id", userId),
     supabase.from("medical_image_attempts").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("diagnostic_results").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    supabase.from("chat_conversations").select("id", { count: "exact", head: true }).eq("user_id", userId),
   ]);
 
   const [teacherSimuladoRes, teacherClinicalRes] = await Promise.all([
@@ -131,10 +130,10 @@ async function fetchDashboardData(userId: string) {
     clinicalSimulations: totalClinical,
     anamnesisCompleted: anamnesisRes.count || 0,
     summariesCreated: summariesRes.count || 0,
-    chroniclesCompleted: chroniclesRes.count || 0,
+    chroniclesCompleted: (chroniclesRes.data || []).filter((c: any) => c.agent_type === "medical-chronicle").length,
     imageQuizAttempts: imageQuizRes.count || 0,
     diagnosticCompleted: diagnosticRes.count || 0,
-    chatConversations: chatConvRes.count || 0,
+    chatConversations: chroniclesRes.count || 0,
   };
 
   // Build stats

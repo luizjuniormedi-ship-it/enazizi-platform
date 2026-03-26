@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { memo, ReactNode } from "react";
 import { ChevronRight, LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
@@ -16,7 +16,7 @@ interface DashboardSummaryCardProps {
   children?: ReactNode;
 }
 
-const DashboardSummaryCard = ({
+const DashboardSummaryCard = memo(({
   icon: Icon,
   title,
   metrics,
@@ -45,6 +45,8 @@ const DashboardSummaryCard = ({
       <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1 group-hover:text-primary transition-colors" />
     </Card>
   );
-};
+});
+
+DashboardSummaryCard.displayName = "DashboardSummaryCard";
 
 export default DashboardSummaryCard;

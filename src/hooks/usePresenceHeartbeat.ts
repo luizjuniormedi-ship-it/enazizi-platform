@@ -1,13 +1,19 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "react-router-dom";
 
-const HEARTBEAT_INTERVAL = 60_000; // 1 minute
+const HEARTBEAT_INTERVAL = 60_000;
 
 export function usePresenceHeartbeat() {
   const { user } = useAuth();
   const location = useLocation();
+  const pathnameRef = useRef(location.pathname);
+
+  // Keep ref updated without resetting interval
+  useEffect(() => {
+    pathnameRef.current = location.pathname;
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!user) return;
@@ -17,7 +23,7 @@ export function usePresenceHeartbeat() {
         {
           user_id: user.id,
           last_seen_at: new Date().toISOString(),
-          current_page: location.pathname,
+          current_page: pathnameRef.current,
         } as any,
         { onConflict: "user_id" }
       );
@@ -26,5 +32,5 @@ export function usePresenceHeartbeat() {
     sendHeartbeat();
     const interval = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
     return () => clearInterval(interval);
-  }, [user, location.pathname]);
+  }, [user]);
 }
