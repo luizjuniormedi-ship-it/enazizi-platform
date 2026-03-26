@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check, FileDown, Bell, BellOff, GripVertical, CheckCircle2, Circle, MessageSquare, Layers } from "lucide-react";
+import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check, FileDown, Bell, BellOff, GripVertical, CheckCircle2, Circle, MessageSquare, Layers, Sparkles, ArrowRight } from "lucide-react";
 import StudyBlockActions from "./StudyBlockActions";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -50,11 +51,19 @@ interface PlanJson {
   };
 }
 
-interface StudyPlanContentProps {
-  onSubjectsGenerated?: (subjects: string[]) => Promise<void>;
+interface SyncSummary {
+  temasRegistrados: number;
+  flashcardsCriados: number;
+  questoesVinculadas: number;
+  revisoesAgendadas: number;
 }
 
-const StudyPlanContent = ({ onSubjectsGenerated }: StudyPlanContentProps) => {
+interface StudyPlanContentProps {
+  onSubjectsGenerated?: (subjects: string[]) => Promise<SyncSummary | void>;
+  onSyncComplete?: () => void;
+}
+
+const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanContentProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -78,6 +87,8 @@ const StudyPlanContent = ({ onSubjectsGenerated }: StudyPlanContentProps) => {
   const [showConfig, setShowConfig] = useState(false);
   const [editingTask, setEditingTask] = useState<{ day: number; task: number } | null>(null);
   const [editValues, setEditValues] = useState<Task>({ time: "", subject: "", duration: "" });
+  const [generationStep, setGenerationStep] = useState(0);
+  const [syncSummary, setSyncSummary] = useState<SyncSummary | null>(null);
   const [dragSource, setDragSource] = useState<{ day: number; task: number } | null>(null);
   const [dragOver, setDragOver] = useState<{ day: number; task: number } | null>(null);
   const [completedKeys, setCompletedKeys] = useState<Set<string>>(new Set());
@@ -183,8 +194,11 @@ const StudyPlanContent = ({ onSubjectsGenerated }: StudyPlanContentProps) => {
       return;
     }
     setGenerating(true);
+    setGenerationStep(1);
+    setSyncSummary(null);
     try {
       const { data: session } = await supabase.auth.getSession();
+      setGenerationStep(2);
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-study-plan`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.session?.access_token}` },
@@ -198,6 +212,7 @@ const StudyPlanContent = ({ onSubjectsGenerated }: StudyPlanContentProps) => {
       });
       const result = await resp.json();
       if (!resp.ok) throw new Error(result.error);
+      setGenerationStep(3);
       const plan = result.plan.plan_json as PlanJson;
       setPlanId(result.plan.id);
       setSchedule(plan.weeklySchedule || []);
@@ -206,14 +221,19 @@ const StudyPlanContent = ({ onSubjectsGenerated }: StudyPlanContentProps) => {
       setDetectedSpecialty(plan.detectedSpecialty || "");
       setTips(plan.tips || "");
       setShowConfig(false);
-      toast({ title: "Cronograma gerado!", description: "Você pode editar os blocos manualmente." });
       if (onSubjectsGenerated && plan.subjects && plan.subjects.length > 0) {
-        await onSubjectsGenerated(plan.subjects);
+        setGenerationStep(4);
+        const syncResult = await onSubjectsGenerated(plan.subjects);
+        if (syncResult) {
+          setSyncSummary(syncResult);
+        }
       }
+      toast({ title: "Cronograma gerado!", description: "Plano de estudos criado e módulos sincronizados." });
     } catch (err: any) {
       toast({ title: "Erro ao gerar cronograma", description: err.message, variant: "destructive" });
     } finally {
       setGenerating(false);
+      setGenerationStep(0);
     }
   };
 
@@ -464,11 +484,71 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
           </div>
           <Button onClick={generatePlan} disabled={generating || !examDate} className="w-full">
             {generating ? (
-              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Gerando cronograma com IA...</>
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{
+                generationStep === 1 ? "Analisando documento..." :
+                generationStep === 2 ? "Extraindo temas e subtópicos..." :
+                generationStep === 3 ? "Gerando cronograma semanal..." :
+                generationStep === 4 ? "Sincronizando módulos..." :
+                "Preparando..."
+              }</>
             ) : (
               <><CalendarDays className="h-4 w-4 mr-2" />{schedule.length > 0 ? "Regenerar Cronograma" : "Gerar Cronograma com IA"}</>
             )}
           </Button>
+          {generating && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Progresso</span>
+                <span>{Math.round((generationStep / 4) * 100)}%</span>
+              </div>
+              <Progress value={(generationStep / 4) * 100} className="h-2" />
+              <div className="flex justify-between text-[11px] text-muted-foreground">
+                <span className={generationStep >= 1 ? "text-primary font-medium" : ""}>Análise</span>
+                <span className={generationStep >= 2 ? "text-primary font-medium" : ""}>Extração</span>
+                <span className={generationStep >= 3 ? "text-primary font-medium" : ""}>Cronograma</span>
+                <span className={generationStep >= 4 ? "text-primary font-medium" : ""}>Sincronização</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Post-sync summary card */}
+      {syncSummary && !generating && (
+        <div className="glass-card p-5 border-l-4 border-l-primary animate-fade-in">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold">Plano Gerado com Sucesso!</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div className="text-center p-3 rounded-lg bg-primary/10">
+              <p className="text-2xl font-bold text-primary">{syncSummary.temasRegistrados}</p>
+              <p className="text-xs text-muted-foreground">Temas registrados</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-primary/10">
+              <p className="text-2xl font-bold text-primary">{syncSummary.flashcardsCriados}</p>
+              <p className="text-xs text-muted-foreground">Flashcards criados</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-primary/10">
+              <p className="text-2xl font-bold text-primary">{syncSummary.questoesVinculadas}</p>
+              <p className="text-xs text-muted-foreground">Questões encontradas</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-primary/10">
+              <p className="text-2xl font-bold text-primary">{syncSummary.revisoesAgendadas}</p>
+              <p className="text-xs text-muted-foreground">Revisões agendadas</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => onSyncComplete?.()}>
+              <ArrowRight className="h-4 w-4 mr-1" /> Ver Agenda de Hoje
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => navigate("/dashboard/flashcards")}>
+              <Layers className="h-4 w-4 mr-1" /> Flashcards
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => navigate("/dashboard/chatgpt")}>
+              <MessageSquare className="h-4 w-4 mr-1" /> Tutor IA
+            </Button>
+          </div>
         </div>
       )}
 

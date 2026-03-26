@@ -509,25 +509,44 @@ const CronogramaInteligente = () => {
 
       {tab === "plano" && (
         <StudyPlanContent
+          onSyncComplete={() => setTab("hoje")}
           onSubjectsGenerated={async (subjects: string[]) => {
             if (!user) return;
             const today = new Date().toISOString().split("T")[0];
             const existingNames = temas.map(t => t.tema.toLowerCase());
             const newSubjects = subjects.filter(s => !existingNames.includes(s.toLowerCase()));
-            if (newSubjects.length === 0) return;
+            if (newSubjects.length === 0) return { temasRegistrados: 0, flashcardsCriados: 0, questoesVinculadas: 0, revisoesAgendadas: 0 };
+
+            // Fetch topicMap from the latest study plan for subtopic data
+            const { data: latestPlan } = await supabase
+              .from("study_plans")
+              .select("plan_json")
+              .eq("user_id", user.id)
+              .order("updated_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            const topicMap: { topic: string; subtopics: string[] }[] = (latestPlan?.plan_json as any)?.topicMap || [];
 
             const registeredTemas: { id: string; tema: string; especialidade: string }[] = [];
+            let totalReviews = 0;
             for (const subject of newSubjects) {
               const especialidade = (await import("@/lib/mapTopicToSpecialty")).mapTopicToSpecialty(subject) || "Medicina Preventiva";
+              
+              // Find subtopics from topicMap
+              const topicEntry = topicMap.find(t => t.topic.toLowerCase() === subject.toLowerCase());
+              const subtopico = topicEntry?.subtopics?.join(", ") || null;
+
               const { data, error } = await supabase.from("temas_estudados").insert({
                 user_id: user.id, tema: subject, especialidade,
                 data_estudo: today, fonte: "plano_estudos", dificuldade: "medio",
+                subtopico,
                 observacoes: "Registrado automaticamente pelo Plano de Estudos", status: "ativo",
               } as any).select().single();
               if (error || !data) continue;
               const temaId = (data as any).id;
               registeredTemas.push({ id: temaId, tema: subject, especialidade });
               const reviews = generateReviewsByError(today, 0);
+              totalReviews += reviews.length;
               const reviewRows = reviews.map(r => ({
                 user_id: user.id, tema_id: temaId, tipo_revisao: r.tipo,
                 data_revisao: r.data, status: "pendente", prioridade: 50, risco_esquecimento: "baixo",
@@ -535,23 +554,26 @@ const CronogramaInteligente = () => {
               await supabase.from("revisoes").insert(reviewRows as any);
             }
 
-            if (registeredTemas.length > 0) {
-              toast({ title: "📅 Temas vinculados ao Cronograma!", description: `${registeredTemas.length} matérias registradas. Sincronizando módulos...` });
+            let flashcardsCriados = 0;
+            let questoesVinculadas = 0;
 
-              // Sync to all modules (flashcards, questions, tutor)
+            if (registeredTemas.length > 0) {
               try {
                 const syncResult = await syncTemasToModules(user.id, registeredTemas);
-                const parts: string[] = [];
-                if (syncResult.flashcardsCriados > 0) parts.push(`${syncResult.flashcardsCriados} flashcards criados`);
-                if (syncResult.questoesVinculadas > 0) parts.push(`${syncResult.questoesVinculadas} questões encontradas`);
-                parts.push("Tutor IA configurado");
-                toast({ title: "🔗 Módulos sincronizados!", description: parts.join(" • ") });
+                flashcardsCriados = syncResult.flashcardsCriados;
+                questoesVinculadas = syncResult.questoesVinculadas;
               } catch (err) {
                 console.error("Sync error:", err);
               }
-
               loadData();
             }
+
+            return {
+              temasRegistrados: registeredTemas.length,
+              flashcardsCriados,
+              questoesVinculadas,
+              revisoesAgendadas: totalReviews,
+            };
           }}
         />
       )}
