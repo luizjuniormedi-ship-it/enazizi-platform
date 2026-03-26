@@ -498,7 +498,7 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
           {/* Edital Upload */}
           <div className="space-y-2">
             <Label>Edital do concurso (opcional)</Label>
-            <input ref={fileInputRef} type="file" <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx" className="hidden" onChange={handleEditalUpload} /> className="hidden" onChange={handleEditalUpload} />
+            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx" className="hidden" onChange={handleEditalUpload} />
             <div
               className="border-2 border-dashed border-primary/30 rounded-lg p-4 text-center hover:border-primary/50 transition-colors cursor-pointer"
               onClick={() => fileInputRef.current?.click()}
