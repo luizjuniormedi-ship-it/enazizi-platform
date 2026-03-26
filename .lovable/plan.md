@@ -1,43 +1,51 @@
 
 
-# Plano: Limitar Plano do Dia ao tempo disponivel do aluno
+# Plano: Corrigir 3 bugs no Plano do Dia e Cronograma
 
-## Problema
-O Plano do Dia exibe TODAS as revisoes pendentes e TODOS os temas novos do cronograma, ignorando as horas diarias configuradas pelo aluno (ex: 4h). Se o aluno tem 18 temas, todos aparecem, gerando uma lista impossivel de cumprir.
+## Problemas identificados
 
-## Solucao
-Aplicar um filtro de tempo em 3 pontos: revisoes do cronograma, temas iniciais e blocos da IA.
+### Bug 1: Horas diarias nao sao respeitadas
+Na linha 205 do `DailyPlan.tsx`, o calculo do `topicBudget` usa `scheduledReviews` (state antigo do render anterior), nao `fittingReviews` (que acabou de ser calculado). Resultado: o budget de tempo para temas iniciais usa dados desatualizados, causando overflow.
+
+```
+// BUG: scheduledReviews e o state ANTIGO, nao fittingReviews
+const reviewUsed = scheduledReviews.reduce((s, r) => s + (r.estimatedMinutes || 15), 0);
+```
+
+### Bug 2: Temas do cronograma somem apos o dia do upload
+A query de `todayTopics` filtra `created_at >= todayStart`, mostrando apenas temas criados HOJE. No dia seguinte, se nao houver revisoes pendentes ainda, o plano fica vazio. O correto e mostrar TODOS os temas ativos que tem revisoes pendentes para hoje ou temas sem nenhuma revisao concluida.
+
+### Bug 3: Cronograma nao atualiza outros modulos
+O `cronogramaSync.ts` so roda durante a geracao do plano de estudo no `StudyPlanContent.tsx`. Completar revisoes, adicionar temas manualmente, ou concluir blocos no Plano do Dia nao atualiza `study_performance` (contexto do Tutor IA).
 
 ## Alteracoes
 
-### Editar `src/pages/DailyPlan.tsx`
+### 1. Editar `src/pages/DailyPlan.tsx`
 
-**1. Buscar `daily_study_hours` do perfil no carregamento inicial**
-- No `useEffect` de `loadToday`, adicionar query ao `profiles` para obter `daily_study_hours`
-- Armazenar em state `dailyMinutes` (ex: 4h = 240min)
+**Corrigir budget de tempo (Bug 1):**
+- Usar `usedReviewMinutes` (variavel local recem-calculada) no lugar de `scheduledReviews.reduce(...)` na linha 205
+- Corrigir: `const topicBudget = userDailyMinutes - usedReviewMinutes;`
 
-**2. Filtrar revisoes por tempo disponivel**
-- Apos enriquecer as revisoes, ordenar por prioridade (atrasadas primeiro, depois por `prioridade` DESC)
-- Somar os `estimatedMinutes` de cada revisao e cortar quando ultrapassar ~60% do tempo disponivel (reservando 40% para estudo novo/IA)
-- Mover revisoes excedentes para uma secao colapsavel "Revisoes adicionais" (opcionais)
+**Ampliar query de temas (Bug 2):**
+- Trocar query de `temas_estudados` criados hoje para: buscar TODOS os temas ativos do usuario que nao tem nenhuma revisao concluida (primeiro contato) OU que tem revisao pendente para hoje
+- Limitar a 20 resultados para performance
 
-**3. Filtrar temas iniciais por tempo restante**
-- Apos reservar tempo para revisoes, calcular tempo restante
-- Limitar temas iniciais a ~20min cada, exibindo apenas os que cabem no tempo
-- Restantes ficam em secao colapsavel "Mais temas para depois"
+**Sincronizar ao completar (Bug 3):**
+- Ao marcar revisao como concluida (`toggleReviewDone`), chamar `updateStudyPerformanceContext` para atualizar contexto do Tutor IA
+- Ao marcar bloco como concluido (`handleAssessmentSubmit`), idem
 
-**4. Enviar limite de tempo para a IA**
-- No `generatePlan`, ja envia `dailyHours` — mas tambem limitar `scheduledTopics` e `activeTopics` enviados, para nao sobrecarregar o prompt
-- Enviar apenas os temas que couberam no filtro de tempo
+### 2. Editar `src/lib/cronogramaSync.ts`
 
-**5. Mostrar indicador de tempo total vs disponivel**
-- Na barra de progresso, mostrar "3h20min / 4h disponíveis" para o aluno saber que o plano respeita seu tempo
+**Exportar funcao de contexto:**
+- Exportar `updateStudyPerformanceContext` para poder ser chamada pelo `DailyPlan.tsx` e `CronogramaInteligente.tsx`
 
-## Resultado
-- Aluno com 4h/dia ve ~4h de conteudo, priorizando revisoes atrasadas
-- Conteudo excedente fica acessivel mas nao sobrecarrega
-- IA gera blocos dentro do tempo restante
+### 3. Editar `src/pages/CronogramaInteligente.tsx`
+
+**Sincronizar ao concluir revisao:**
+- No `handleCompleteRevisao`, chamar `updateStudyPerformanceContext` apos salvar desempenho
 
 ## Arquivos
 - Editar: `src/pages/DailyPlan.tsx`
+- Editar: `src/lib/cronogramaSync.ts`
+- Editar: `src/pages/CronogramaInteligente.tsx`
 
