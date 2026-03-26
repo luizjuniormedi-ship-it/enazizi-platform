@@ -136,7 +136,14 @@ const QuestionsBank = () => {
         correct_index: q.correct_index ?? 0,
       }));
       const filtered = mapped.filter(q => isMedicalQuestion(q));
-      setQuestions(prev => append ? [...prev, ...filtered] : filtered);
+      // Sort: real exam sources first, then by date
+      const prioritized = filtered.sort((a, b) => {
+        const srcA = a.source === "web-scrape" || a.source === "real-exam-ai" ? 0 : a.source === "ai-exam-style" ? 1 : 2;
+        const srcB = b.source === "web-scrape" || b.source === "real-exam-ai" ? 0 : b.source === "ai-exam-style" ? 1 : 2;
+        if (srcA !== srcB) return srcA - srcB;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+      setQuestions(prev => append ? [...prev, ...prioritized] : prioritized);
       setTotalCount(count ?? 0);
       setHasMore((from + data.length) < (count ?? 0));
     }
