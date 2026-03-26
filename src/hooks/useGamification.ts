@@ -129,7 +129,33 @@ export function useGamification() {
     
     const newXp = gamification.xp + totalAmount;
     const { level } = levelFromXp(newXp);
-    const newWeeklyXp = gamification.weeklyXp + totalAmount;
+
+    // Check weekly reset - get current weekly_reset_at from DB
+    let currentWeeklyXp = gamification.weeklyXp;
+    const { data: freshData } = await supabase
+      .from("user_gamification")
+      .select("weekly_reset_at, weekly_xp")
+      .eq("user_id", user.id)
+      .single();
+    
+    if (freshData) {
+      const resetAt = new Date(freshData.weekly_reset_at);
+      if (new Date() >= resetAt) {
+        // Reset weekly XP and set next reset to next Monday
+        currentWeeklyXp = 0;
+        const nextMonday = new Date();
+        nextMonday.setDate(nextMonday.getDate() + ((8 - nextMonday.getDay()) % 7 || 7));
+        nextMonday.setHours(0, 0, 0, 0);
+        await supabase.from("user_gamification").update({
+          weekly_xp: 0,
+          weekly_reset_at: nextMonday.toISOString(),
+        }).eq("user_id", user.id);
+      } else {
+        currentWeeklyXp = freshData.weekly_xp;
+      }
+    }
+    
+    const newWeeklyXp = currentWeeklyXp + totalAmount;
 
     await supabase.from("user_gamification").update({
       xp: newXp, level, current_streak: newStreak, longest_streak: longestStreak,

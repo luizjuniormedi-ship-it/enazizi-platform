@@ -163,8 +163,8 @@ const Achievements = () => {
                         <div className="text-[10px] text-muted-foreground">Nível {r.level} • {r.xp.toLocaleString()} XP</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-bold text-primary">+{r.weeklyXp}</div>
-                        <div className="text-[10px] text-muted-foreground">semana</div>
+                        <div className="text-sm font-bold text-primary">{isWeeklyRanking ? `+${r.weeklyXp}` : r.xp.toLocaleString()}</div>
+                        <div className="text-[10px] text-muted-foreground">{isWeeklyRanking ? "semana" : "XP total"}</div>
                       </div>
                     </div>
                   );
