@@ -1,5 +1,7 @@
-import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check, FileDown, Bell, BellOff, GripVertical, CheckCircle2, Circle } from "lucide-react";
+import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check, FileDown, Bell, BellOff, GripVertical, CheckCircle2, Circle, MessageSquare, Layers } from "lucide-react";
 import StudyBlockActions from "./StudyBlockActions";
+import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
