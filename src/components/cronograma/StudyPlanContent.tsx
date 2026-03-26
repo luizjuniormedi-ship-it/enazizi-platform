@@ -502,20 +502,50 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
                       onDragEnd={handleDragEnd}
                       onDragOver={(e) => handleDragOver(dayIndex, taskIndex, e)}
                       onDrop={(e) => { e.stopPropagation(); handleDrop(dayIndex, taskIndex, e); }}
-                      className={`flex gap-2 items-start p-3 rounded-lg transition-all cursor-grab active:cursor-grabbing ${typeColor(task.type)} ${isDragTarget ? "ring-2 ring-primary/50 ring-offset-1" : ""} ${isCompleted ? "bg-primary/5 opacity-75" : "bg-secondary/50"}`}
+                      className={`p-3 rounded-lg transition-all cursor-grab active:cursor-grabbing ${typeColor(task.type)} ${isDragTarget ? "ring-2 ring-primary/50 ring-offset-1" : ""} ${isCompleted ? "bg-primary/5 opacity-75" : "bg-secondary/50"}`}
                     >
-                      <button onClick={() => toggleComplete(dayIndex, taskIndex)} className="mt-0.5 flex-shrink-0 transition-colors">
-                        {isCompleted ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <Circle className="h-4 w-4 text-muted-foreground/50 hover:text-primary" />}
-                      </button>
-                      <GripVertical className="h-4 w-4 text-muted-foreground/50 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className={`text-sm font-medium truncate ${isCompleted ? "line-through text-muted-foreground" : ""}`}>{task.subject}</div>
-                        {task.details && <div className="text-xs text-muted-foreground/80 mt-0.5 line-clamp-2">{task.details}</div>}
-                        <div className="text-xs text-muted-foreground">{task.time} • {task.duration}{task.type ? ` • ${task.type}` : ""}</div>
+                      <div className="flex gap-2 items-start">
+                        <button onClick={() => toggleComplete(dayIndex, taskIndex)} className="mt-0.5 flex-shrink-0 transition-colors">
+                          {isCompleted ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <Circle className="h-4 w-4 text-muted-foreground/50 hover:text-primary" />}
+                        </button>
+                        <GripVertical className="h-4 w-4 text-muted-foreground/50 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className={`text-sm font-medium ${isCompleted ? "line-through text-muted-foreground" : ""}`}>{task.subject}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${typeBadge(task.type).className}`}>{typeBadge(task.type).label}</span>
+                          </div>
+                          {task.details && <div className="text-xs text-muted-foreground/80 mt-0.5 mb-1 line-clamp-2">{task.details}</div>}
+                          <div className="text-xs text-muted-foreground">{task.time} • {task.duration}</div>
+                        </div>
+                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                          <button onClick={() => startEdit(dayIndex, taskIndex)} className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
+                          <button onClick={() => removeTask(dayIndex, taskIndex)} className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                        </div>
                       </div>
-                      <StudyBlockActions subject={task.subject} />
-                      <button onClick={() => startEdit(dayIndex, taskIndex)} className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
-                      <button onClick={() => removeTask(dayIndex, taskIndex)} className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                      {/* Quick action buttons - direct links */}
+                      {!isCompleted && (
+                        <div className="flex gap-1.5 mt-2 ml-10">
+                          <button
+                            onClick={() => navigate(`/dashboard/chatgpt?topic=${encodeURIComponent(task.subject)}`)}
+                            className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-md bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 transition-colors font-medium"
+                          >
+                            <MessageSquare className="h-3 w-3" /> Tutor IA
+                          </button>
+                          <button
+                            onClick={() => navigate(`/dashboard/flashcards?topic=${encodeURIComponent(task.subject)}`)}
+                            className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-md bg-violet-500/10 text-violet-600 hover:bg-violet-500/20 transition-colors font-medium"
+                          >
+                            <Layers className="h-3 w-3" /> Flashcards
+                          </button>
+                          <button
+                            onClick={() => navigate(`/dashboard/gerador-questoes?topic=${encodeURIComponent(task.subject)}`)}
+                            className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors font-medium"
+                          >
+                            <BookOpen className="h-3 w-3" /> Questões
+                          </button>
+                          <StudyBlockActions subject={task.subject} />
+                        </div>
+                      )}
                     </div>
                   );
                 })}
