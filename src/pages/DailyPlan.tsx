@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Brain, Clock, BookOpen, RefreshCw, CheckCircle2, Loader2, Zap, Target, FlipVertical, GraduationCap, Calendar, AlertTriangle, Layers, Timer, GripVertical } from "lucide-react";
+import { Brain, Clock, BookOpen, RefreshCw, CheckCircle2, Loader2, Zap, Target, FlipVertical, GraduationCap, Calendar, AlertTriangle, Layers, Timer, GripVertical, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
@@ -11,6 +11,7 @@ import MasteryBadge, { getMasteryLevel } from "@/components/daily-plan/MasteryBa
 import PomodoroTimer from "@/components/daily-plan/PomodoroTimer";
 import MicroQuizDialog from "@/components/daily-plan/MicroQuizDialog";
 import ClassBenchmark from "@/components/daily-plan/ClassBenchmark";
+import SelfAssessmentDialog from "@/components/daily-plan/SelfAssessmentDialog";
 import type { StudyBlock, DailyPlanData, ScheduledReview } from "@/components/daily-plan/DailyPlanTypes";
 
 const typeIcons: Record<string, typeof Brain> = {
@@ -55,6 +56,11 @@ const DailyPlan = () => {
   // Micro-quiz state
   const [quizOpen, setQuizOpen] = useState(false);
   const [quizReview, setQuizReview] = useState<{ id: string; tema: string; especialidade: string } | null>(null);
+
+  // Self-assessment state
+  const [assessmentOpen, setAssessmentOpen] = useState(false);
+  const [assessmentTopic, setAssessmentTopic] = useState("");
+  const [pendingBlockOrder, setPendingBlockOrder] = useState<number | null>(null);
 
   // Drag & drop state
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -238,7 +244,17 @@ const DailyPlan = () => {
       });
 
       if (response.error) throw response.error;
-      const newPlan = response.data as DailyPlanData;
+      const rawPlan = response.data;
+      // Map snake_case from AI to camelCase
+      const newPlan: DailyPlanData = {
+        ...rawPlan,
+        blocks: (rawPlan.blocks || []).map((b: any) => ({
+          ...b,
+          learningGoal: b.learning_goal || b.learningGoal || "",
+          summary: b.summary || "",
+          prerequisite: b.prerequisite || null,
+        })),
+      };
       setPlan(newPlan);
       const newCompleted = new Set<number>();
       setCompletedBlocks(newCompleted);
@@ -251,10 +267,32 @@ const DailyPlan = () => {
   };
 
   const toggleBlock = async (order: number) => {
+    if (!completedBlocks.has(order) && plan) {
+      // Opening self-assessment before marking as done
+      const block = plan.blocks.find(b => b.order === order);
+      if (block) {
+        setAssessmentTopic(block.topic);
+        setPendingBlockOrder(order);
+        setAssessmentOpen(true);
+        return;
+      }
+    }
     const next = new Set(completedBlocks);
     if (next.has(order)) next.delete(order); else next.add(order);
     setCompletedBlocks(next);
     if (plan) await savePlanToDB(plan, next);
+  };
+
+  const handleAssessmentSubmit = async (confidence: number) => {
+    if (pendingBlockOrder !== null) {
+      const next = new Set(completedBlocks);
+      next.add(pendingBlockOrder);
+      setCompletedBlocks(next);
+      if (plan) await savePlanToDB(plan, next);
+      setPendingBlockOrder(null);
+      // Could save confidence to desempenho_questoes in the future
+      toast({ title: "Autoavaliação salva!", description: `Confiança: ${confidence}/5 em ${assessmentTopic}` });
+    }
   };
 
   const handleReviewComplete = (reviewId: string, tema: string, especialidade: string) => {
@@ -596,6 +634,22 @@ const DailyPlan = () => {
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">{block.description}</p>
+                    {block.summary && (
+                      <p className="text-xs text-foreground/70 mt-1 bg-muted/50 rounded px-2 py-1">
+                        <Info className="h-3 w-3 inline mr-1 text-primary" />
+                        {block.summary}
+                      </p>
+                    )}
+                    {block.learningGoal && (
+                      <p className="text-xs text-primary/80 mt-1 font-medium">
+                        🎯 {block.learningGoal}
+                      </p>
+                    )}
+                    {block.prerequisite && (
+                      <p className="text-xs text-warning mt-1 font-medium">
+                        📌 Pré-requisito: {block.prerequisite}
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground/70 mt-1 italic">{block.reason}</p>
                     {!done && (
                       <div className="flex flex-wrap gap-1.5 mt-2">
@@ -679,6 +733,17 @@ const DailyPlan = () => {
           onPass={() => toggleReviewDone(quizReview.id)}
         />
       )}
+
+      {/* Self Assessment */}
+      <SelfAssessmentDialog
+        open={assessmentOpen}
+        onOpenChange={(open) => {
+          setAssessmentOpen(open);
+          if (!open) setPendingBlockOrder(null);
+        }}
+        topic={assessmentTopic}
+        onSubmit={handleAssessmentSubmit}
+      />
     </div>
   );
 };

@@ -6,6 +6,9 @@ export interface StudyBlock {
   description: string;
   priority: string;
   reason: string;
+  summary?: string;
+  learningGoal?: string;
+  prerequisite?: string;
 }
 
 export interface DailyPlanData {
