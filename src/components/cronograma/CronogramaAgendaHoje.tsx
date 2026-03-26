@@ -56,6 +56,22 @@ const CronogramaAgendaHoje = ({ revisoes, temas, temasComputados, onStartRevisao
           </div>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+          <button
+            onClick={() => navigate(`/dashboard/flashcards?topic=${encodeURIComponent(tema.tema)}`)}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-violet-500 hover:bg-violet-500/10 transition-colors"
+            aria-label="Flashcards"
+            title="Flashcards do tema"
+          >
+            <Layers className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => navigate(`/dashboard/banco-questoes?topic=${encodeURIComponent(tema.tema)}`)}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10 transition-colors"
+            aria-label="Questões"
+            title="Questões do tema"
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+          </button>
           <StudyBlockActions subject={tema.tema} specialty={tema.especialidade} />
           <Button size="sm" variant={isUrgent ? "destructive" : "default"} onClick={() => onStartRevisao(r)}>
             <Play className="h-3.5 w-3.5 mr-1" /> Revisar
