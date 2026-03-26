@@ -9,6 +9,20 @@ import { useState, useEffect, useRef } from "react";
 const BottomTabBar = () => {
   const location = useLocation();
   const { user } = useAuth();
+  const [hidden, setHidden] = useState(false);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const main = document.querySelector(".dashboard-main");
+    if (!main) return;
+    const onScroll = () => {
+      const y = main.scrollTop;
+      setHidden(y > lastScrollY.current && y > 60);
+      lastScrollY.current = y;
+    };
+    main.addEventListener("scroll", onScroll, { passive: true });
+    return () => main.removeEventListener("scroll", onScroll);
+  }, []);
 
   const { data: pendingCount } = useQuery({
     queryKey: ["bottom-tab-pending", user?.id],
