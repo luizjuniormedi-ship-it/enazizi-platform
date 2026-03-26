@@ -26,7 +26,7 @@ const DashboardSummaryCard = ({
   return (
     <Card
       onClick={onClick}
-      className="cursor-pointer hover:shadow-md hover:border-primary/30 transition-all p-4 flex items-start gap-3 group active:scale-[0.98]"
+      className="cursor-pointer hover:shadow-lg hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-150 p-4 flex items-start gap-3 group active:scale-[0.97]"
     >
       <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${accentClass}`}>
         <Icon className="h-5 w-5" />

@@ -222,6 +222,7 @@ const DashboardLayout = () => {
   usePresenceHeartbeat();
   useLandscapeTablet();
   const { theme, toggle: toggleTheme } = useTheme();
+  const location = useLocation();
 
   return (
   <div className="flex min-h-[100dvh] min-h-screen bg-background w-full overflow-hidden">
