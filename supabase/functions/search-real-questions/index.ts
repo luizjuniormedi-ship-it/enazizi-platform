@@ -130,7 +130,15 @@ async function searchAndScrape(
         }
 
         console.log(`✓ Found question content (${markdown.length} chars) from: ${url}`);
-        allResults.push({ url, markdown: markdown.slice(0, 12000) });
+        // For large pages, skip header/menu (first 500 chars) and take the meatiest section
+        let content = markdown;
+        if (content.length > 15000) {
+          // Skip initial navigation/header, take from 500 chars onward
+          content = content.slice(500, 12500);
+        } else {
+          content = content.slice(0, 12000);
+        }
+        allResults.push({ url, markdown: content });
 
         if (allResults.length >= 3) break;
       }
