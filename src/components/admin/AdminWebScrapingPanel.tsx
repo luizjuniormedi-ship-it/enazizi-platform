@@ -7,10 +7,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
 const SPECIALTIES = [
-  "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia",
-  "Gastroenterologia", "Pediatria", "Ginecologia e Obstetrícia",
-  "Cirurgia Geral", "Medicina Preventiva", "Nefrologia",
-  "Infectologia", "Hematologia", "Reumatologia", "Dermatologia",
+  "Angiologia", "Cardiologia", "Cirurgia Geral", "Dermatologia",
+  "Endocrinologia", "Gastroenterologia", "Ginecologia e Obstetrícia",
+  "Hematologia", "Infectologia", "Medicina Preventiva", "Nefrologia",
+  "Neurologia", "Oftalmologia", "Oncologia", "Ortopedia",
+  "Otorrinolaringologia", "Pediatria", "Pneumologia", "Psiquiatria",
+  "Reumatologia", "Urologia",
 ];
 
 const BANCAS = [
