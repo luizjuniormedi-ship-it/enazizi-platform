@@ -150,10 +150,11 @@ async function structureQuestions(
 ): Promise<{ inserted: number; sources: string[] }> {
   if (scrapedContent.length === 0) return { inserted: 0, sources: [] };
 
-  // Combine scraped content
-  const contentBlock = scrapedContent
+  // Combine scraped content, limit total to 20000 chars
+  let contentBlock = scrapedContent
     .map((s, i) => `--- FONTE ${i + 1}: ${s.url} ---\n${s.markdown}`)
     .join("\n\n");
+  contentBlock = contentBlock.slice(0, 20000);
 
   const prompt = `Você é um especialista em extrair questões de provas de residência médica a partir de conteúdo web.
 
