@@ -71,6 +71,7 @@ const AdminDialogs = ({
   passwordDialog, setPasswordDialog, handleResetPassword,
   trackingDialog, setTrackingDialog,
   accessDialog, setAccessDialog, handleSaveAccess,
+  deleteDialog, setDeleteDialog, handleDeleteUser,
 }: AdminDialogsProps) => {
   const [profileData, setProfileData] = useState<any>(null);
   const [profileLoading, setProfileLoading] = useState(false);
