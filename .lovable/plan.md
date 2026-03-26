@@ -1,52 +1,41 @@
 
 
-# Plano: Corrigir Plano do Dia — respeitar horas diarias configuradas
+# Plano: Melhorar prompt do generate-study-plan com revisão espaçada
 
-## Problemas encontrados (verificados no preview)
+## Situação atual
+O `generate-study-plan` gera um `weeklySchedule` com blocos genéricos (estudo, revisao, questoes, simulado), mas **não inclui instruções de revisão espaçada** (D1, D7, D30). As revisões são criadas apenas no frontend (`CronogramaInteligente.tsx`) após salvar os temas.
 
-1. **Tempo duplicado**: `totalMinutes` soma `plan?.total_minutes` (plano IA) + `reviewMinutes` + `initialTopicMinutes`. Como o plano IA já inclui esses mesmos itens, o tempo fica duplicado (7h20min em vez de ~3h20min)
+O `learning-optimizer` (que gera o Plano do Dia) já recebe os temas agendados e revisões pendentes, mas depende do frontend para saber quais revisões existem.
 
-2. **Cards mostram ~20min mas calculo usa 40min**: Os cards de "Estudo Inicial" exibem `~20min` no UI (linhas 663, 737) mas o budget usa `TOPIC_DURATION = 40`. Inconsistencia confunde o aluno
+## Melhoria proposta
 
-3. **Sem revisoes pendentes, todo o budget (4h) vai para novos temas**: Quando `usedReviewMinutes = 0`, o `topicBudget = 240min`, permitindo 5 temas × 40min = 200min. Isso ultrapassa o 40% desejado (96min) porque a divisao 60/40 so se aplica quando ha revisoes
+### Editar `supabase/functions/generate-study-plan/index.ts`
 
-4. **Plano IA antigo persiste**: O plano gerado anteriormente (`plan_json`) continua salvo no banco e seus minutos sao somados mesmo apos reset do cronograma
+**Adicionar ao prompt instruções de revisão espaçada no weeklySchedule:**
 
-## Solucao
+1. Após listar os temas na Semana 1, a IA deve programar blocos de revisão D1 (dia seguinte), D7 e D30 automaticamente nas semanas seguintes
+2. Adicionar campo `"reviewSchedule"` ao JSON de saída com o mapa de revisões planejadas por tema
+3. Incluir no prompt:
+   - "Para cada tema estudado, agende revisões espaçadas: D1 (1 dia após), D7 (7 dias após), D30 (30 dias após)"
+   - "Blocos de revisão devem ter type: 'revisao' e duration: '30min'"
+   - "Distribua revisões nos dias disponíveis sem ultrapassar o limite de horas/dia"
 
-### Editar `src/pages/DailyPlan.tsx`
-
-**1. Corrigir calculo do `totalMinutes` (linha 414)**
-- Quando existe plano IA (`plan`), usar APENAS `plan.total_minutes` (ja inclui tudo)
-- Quando NAO existe plano IA, somar `reviewMinutes + initialTopicMinutes`
-```typescript
-const totalMinutes = plan 
-  ? (plan.total_minutes || 0)
-  : reviewMinutes + initialTopicMinutes;
+**Novo campo no JSON de saída:**
+```json
+{
+  "reviewSchedule": [
+    { "topic": "Bronquiolite", "d1": "Ter", "d7": "Seg (semana 2)", "d30": "Seg (semana 5)" }
+  ]
+}
 ```
 
-**2. Limitar novos temas ao budget real de 40% mesmo sem revisoes**
-- Mudar `topicBudget` para sempre usar no maximo 40% do tempo total:
-```typescript
-const topicBudget = Math.min(
-  userDailyMinutes - usedReviewMinutes,
-  Math.round(userDailyMinutes * 0.4)
-);
-```
-- Com 4h: topicBudget = min(240, 96) = 96min → ~2 temas de 40min (realizavel)
+4. Adicionar regra: "O total de horas por dia (estudo + revisão + questões) NÃO pode ultrapassar ${hoursPerDay}h"
 
-**3. Alinhar display dos cards com o calculo**
-- Trocar `~20min` hardcoded nos cards de temas iniciais por `~40min` (ou usar constante)
+### Resultado
+- O plano gerado pela IA já vem com revisões espaçadas embutidas
+- O frontend pode usar `reviewSchedule` para criar as entradas na tabela `revisoes` com datas corretas
+- O Plano do Dia recebe blocos de revisão consistentes com o cronograma
 
-**4. Limpar plano IA antigo ao recarregar sem dados**
-- No `loadToday`, se `planRes.data` existe mas as datas nao batem com o cronograma atual, ignorar o plano antigo
-
-## Resultado
-- Aluno com 4h/dia vera no maximo ~4h de conteudo
-- Sem revisoes: ~2 temas novos (96min) + margem para exploracao
-- Com revisoes: 60% revisoes + 40% temas novos, tudo dentro do budget
-- Barra de tempo mostra valor correto e consistente
-
-## Arquivos
-- Editar: `src/pages/DailyPlan.tsx` (4 pontos)
+### Arquivo
+- Editar: `supabase/functions/generate-study-plan/index.ts` (prompt + schema do JSON)
 
