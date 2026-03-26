@@ -151,8 +151,16 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
     const file = e.target.files?.[0];
     if (!file) return;
     setEditalFileName(file.name);
-    if (file.type === "text/plain") {
-      const text = await file.text();
+    if (file.type === "text/plain" || file.name.endsWith(".txt")) {
+      // Try UTF-8 first, fallback to Latin-1 for accented characters
+      const buffer = await file.arrayBuffer();
+      let text: string;
+      try {
+        const utf8 = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+        text = utf8;
+      } catch {
+        text = new TextDecoder("latin1").decode(buffer);
+      }
       setEditalText(text);
       toast({ title: "Edital carregado!", description: `${file.name} processado.` });
     } else if (file.type === "application/pdf") {
