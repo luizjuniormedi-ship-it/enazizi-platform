@@ -469,10 +469,9 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
 
     console.log(`AI returned ${questions.length} raw questions (robust extraction)`);
 
-    console.log(`AI returned ${parsed.questions.length} raw questions`);
 
     // Normalize and filter valid questions
-    const validQuestions = parsed.questions.filter((q: any) => {
+    const validQuestions = questions.filter((q: any) => {
       if (!q.statement) { console.log("Rejected: no statement"); return false; }
       if (!Array.isArray(q.options) || q.options.length < 2) { console.log("Rejected: bad options"); return false; }
       // Accept correct_index as number or string, default to 0
