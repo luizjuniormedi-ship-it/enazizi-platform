@@ -66,10 +66,16 @@ async function searchAndScrape(
   const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
   if (!FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY not configured");
 
-  // Build multiple search queries for better coverage
-  const query = banca
-    ? `"${banca}" ${specialty} questões alternativas gabarito`
-    : `"questão" "${specialty}" prova residência médica alternativas gabarito`;
+  // Build search query with variation to avoid always getting the same results
+  const queryVariants = banca
+    ? [`"${banca}" ${specialty} questões alternativas gabarito`]
+    : [
+        `prova residência médica ${specialty} questões gabarito comentadas`,
+        `"questão" "${specialty}" prova residência médica alternativas gabarito`,
+        `site:medway.com.br OR site:sanarmed.com ${specialty} questões comentadas`,
+      ];
+  // Pick a random query variant for diversity
+  const query = queryVariants[Math.floor(Math.random() * queryVariants.length)];
 
   const allResults: { url: string; markdown: string }[] = [];
   const seenUrls = new Set<string>();
@@ -88,7 +94,7 @@ async function searchAndScrape(
       },
       body: JSON.stringify({
         query,
-        limit: 3,
+        limit: 5,
         lang: "pt-br",
         country: "BR",
         scrapeOptions: { formats: ["markdown"], onlyMainContent: true },
@@ -124,9 +130,9 @@ async function searchAndScrape(
         }
 
         console.log(`✓ Found question content (${markdown.length} chars) from: ${url}`);
-        allResults.push({ url, markdown: markdown.slice(0, 8000) });
+        allResults.push({ url, markdown: markdown.slice(0, 12000) });
 
-        if (allResults.length >= 2) break;
+        if (allResults.length >= 3) break;
       }
     }
   } catch (e) {
