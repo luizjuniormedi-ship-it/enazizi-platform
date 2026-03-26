@@ -1,44 +1,17 @@
-import { useState, useEffect } from "react";
-import { Brain, Clock, BookOpen, RefreshCw, CheckCircle2, Loader2, Zap, Target, FlipVertical, GraduationCap, Calendar, AlertTriangle, Layers } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Brain, Clock, BookOpen, RefreshCw, CheckCircle2, Loader2, Zap, Target, FlipVertical, GraduationCap, Calendar, AlertTriangle, Layers, Timer, GripVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-
-interface StudyBlock {
-  order: number;
-  type: string;
-  topic: string;
-  duration_minutes: number;
-  description: string;
-  priority: string;
-  reason: string;
-}
-
-interface DailyPlanData {
-  greeting: string;
-  focus_areas: string[];
-  blocks: StudyBlock[];
-  total_minutes: number;
-  tips: string[];
-  review_reminder: string;
-}
-
-interface ScheduledReview {
-  id: string;
-  tema_id: string;
-  tipo_revisao: string;
-  data_revisao: string;
-  status: string;
-  prioridade: number | null;
-  risco_esquecimento: string | null;
-  tema: string;
-  especialidade: string;
-  subtopico: string | null;
-  overdue: boolean;
-}
+import DailyPlanProgress from "@/components/daily-plan/DailyPlanProgress";
+import MasteryBadge, { getMasteryLevel } from "@/components/daily-plan/MasteryBadge";
+import PomodoroTimer from "@/components/daily-plan/PomodoroTimer";
+import MicroQuizDialog from "@/components/daily-plan/MicroQuizDialog";
+import ClassBenchmark from "@/components/daily-plan/ClassBenchmark";
+import type { StudyBlock, DailyPlanData, ScheduledReview } from "@/components/daily-plan/DailyPlanTypes";
 
 const typeIcons: Record<string, typeof Brain> = {
   study: BookOpen,
@@ -53,6 +26,14 @@ const priorityColors: Record<string, string> = {
   low: "border-muted bg-muted/30",
 };
 
+const reviewTimeEstimates: Record<string, number> = {
+  D1: 20,
+  D3: 15,
+  D7: 12,
+  D15: 10,
+  D30: 8,
+};
+
 const DailyPlan = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -63,13 +44,25 @@ const DailyPlan = () => {
   const [completedBlocks, setCompletedBlocks] = useState<Set<number>>(new Set());
   const [scheduledReviews, setScheduledReviews] = useState<ScheduledReview[]>([]);
   const [completedReviews, setCompletedReviews] = useState<Set<string>>(new Set());
+  const [masteryData, setMasteryData] = useState<Map<string, { correctRate: number; reviewsDone: number }>>(new Map());
+
+  // Pomodoro state
+  const [pomodoroOpen, setPomodoroOpen] = useState(false);
+  const [pomodoroTopic, setPomodoroTopic] = useState("");
+
+  // Micro-quiz state
+  const [quizOpen, setQuizOpen] = useState(false);
+  const [quizReview, setQuizReview] = useState<{ id: string; tema: string; especialidade: string } | null>(null);
+
+  // Drag & drop state
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) return;
     const loadToday = async () => {
       const today = new Date().toISOString().split("T")[0];
 
-      const [planRes, reviewsRes] = await Promise.all([
+      const [planRes, reviewsRes, attemptsRes] = await Promise.all([
         supabase
           .from("daily_plans")
           .select("*")
@@ -83,12 +76,26 @@ const DailyPlan = () => {
           .eq("status", "pendente")
           .lte("data_revisao", today)
           .order("prioridade", { ascending: false }),
+        supabase
+          .from("desempenho_questoes")
+          .select("tema_id, questoes_feitas, taxa_acerto")
+          .eq("user_id", user.id),
       ]);
 
       if (planRes.data) {
         setPlan(planRes.data.plan_json as unknown as DailyPlanData);
         const completed = (planRes.data.completed_blocks as number[]) || [];
         setCompletedBlocks(new Set(completed));
+      }
+
+      // Build mastery map from desempenho
+      const mMap = new Map<string, { correctRate: number; reviewsDone: number }>();
+      if (attemptsRes.data) {
+        for (const d of attemptsRes.data) {
+          const existing = mMap.get(d.tema_id) || { correctRate: 0, reviewsDone: 0 };
+          existing.correctRate = Number(d.taxa_acerto) / 100;
+          mMap.set(d.tema_id, existing);
+        }
       }
 
       // Enrich reviews with tema info
@@ -98,6 +105,26 @@ const DailyPlan = () => {
           .from("temas_estudados")
           .select("id, tema, especialidade, subtopico")
           .in("id", temaIds);
+
+        // Count reviews done per tema
+        const { data: doneReviews } = await supabase
+          .from("revisoes")
+          .select("tema_id")
+          .eq("user_id", user.id)
+          .eq("status", "concluida")
+          .in("tema_id", temaIds);
+
+        const reviewCounts = new Map<string, number>();
+        for (const r of (doneReviews || [])) {
+          reviewCounts.set(r.tema_id, (reviewCounts.get(r.tema_id) || 0) + 1);
+        }
+
+        // Update mastery with review counts
+        for (const tId of temaIds) {
+          const existing = mMap.get(tId) || { correctRate: 0, reviewsDone: 0 };
+          existing.reviewsDone = reviewCounts.get(tId) || 0;
+          mMap.set(tId, existing);
+        }
 
         const temaMap = new Map((temas || []).map(t => [t.id, t]));
 
@@ -109,11 +136,13 @@ const DailyPlan = () => {
             especialidade: tema?.especialidade || "Geral",
             subtopico: tema?.subtopico || null,
             overdue: r.data_revisao < today,
+            estimatedMinutes: reviewTimeEstimates[r.tipo_revisao] || 15,
           };
         });
         setScheduledReviews(enriched);
       }
 
+      setMasteryData(mMap);
       setLoading(false);
     };
     loadToday();
@@ -161,7 +190,6 @@ const DailyPlan = () => {
         .filter(([, v]) => v.total >= 3 && (v.correct / v.total) < 0.6)
         .map(([k]) => k);
 
-      // Build scheduledTopics from cronograma reviews
       const scheduledTopics = scheduledReviews.map(r => ({
         topic: r.tema,
         specialty: r.especialidade,
@@ -204,6 +232,11 @@ const DailyPlan = () => {
     if (plan) await savePlanToDB(plan, next);
   };
 
+  const handleReviewComplete = (reviewId: string, tema: string, especialidade: string) => {
+    setQuizReview({ id: reviewId, tema, especialidade });
+    setQuizOpen(true);
+  };
+
   const toggleReviewDone = async (reviewId: string) => {
     const next = new Set(completedReviews);
     if (next.has(reviewId)) {
@@ -216,10 +249,29 @@ const DailyPlan = () => {
     setCompletedReviews(next);
   };
 
-  const completionPct = plan ? Math.round((completedBlocks.size / plan.blocks.length) * 100) : 0;
+  // Drag & drop handlers for blocks
+  const handleDragStart = (idx: number) => setDragIndex(idx);
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    if (dragIndex === null || dragIndex === idx || !plan) return;
+    const newBlocks = [...plan.blocks];
+    const [moved] = newBlocks.splice(dragIndex, 1);
+    newBlocks.splice(idx, 0, moved);
+    setPlan({ ...plan, blocks: newBlocks.map((b, i) => ({ ...b, order: i })) });
+    setDragIndex(idx);
+  };
+  const handleDragEnd = () => {
+    setDragIndex(null);
+    if (plan) savePlanToDB(plan, completedBlocks);
+  };
+
   const totalItems = (plan?.blocks.length || 0) + scheduledReviews.length;
   const totalDone = completedBlocks.size + completedReviews.size;
   const overallPct = totalItems > 0 ? Math.round((totalDone / totalItems) * 100) : 0;
+
+  // Estimated total time (reviews + AI blocks)
+  const reviewMinutes = scheduledReviews.reduce((sum, r) => sum + (r.estimatedMinutes || 15), 0);
+  const totalMinutes = (plan?.total_minutes || 0) + reviewMinutes;
 
   if (loading) {
     return (
@@ -243,10 +295,10 @@ const DailyPlan = () => {
           <ModuleHelpButton moduleKey="daily-plan" moduleName="Plano do Dia" steps={[
             "Clique em 'Gerar Plano' — a IA analisa seus erros, flashcards pendentes e desempenho",
             "Receba blocos de estudo com tema, duração e prioridade (alta, média, baixa)",
-            "Marque cada bloco como concluído clicando no ícone à esquerda",
-            "Use 'Estudar com Tutor IA' para abrir sessão direta no tema sugerido",
-            "Acompanhe o progresso pela barra — tente completar 100% do dia",
-            "Clique 'Regenerar' a qualquer momento para atualizar o plano",
+            "Use o 🍅 Pomodoro para estudar com foco de 25min",
+            "Ao concluir uma revisão, responda o micro-quiz para validar retenção",
+            "Arraste blocos para reordenar suas prioridades",
+            "Complete 100% para ganhar celebração de conquista! 🎉",
           ]} />
           <Button onClick={generatePlan} disabled={generating} variant="outline" size="sm">
             <RefreshCw className={`h-4 w-4 mr-2 ${generating ? "animate-spin" : ""}`} />
@@ -262,27 +314,16 @@ const DailyPlan = () => {
         </div>
       )}
 
-      {/* Overall progress bar */}
+      {/* Progress + Benchmark */}
       {(plan || scheduledReviews.length > 0) && !generating && (
-        <div className="glass-card p-4 flex items-center gap-4">
-          <div className="flex-1">
-            <div className="flex justify-between text-sm mb-1">
-              <span>Progresso do Dia</span>
-              <span className="font-bold text-primary">{overallPct}%</span>
-            </div>
-            <div className="h-2 rounded-full bg-secondary">
-              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${overallPct}%` }} />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {totalDone}/{totalItems} atividades concluídas
-            </p>
-          </div>
-          {plan && (
-            <div className="text-sm text-muted-foreground flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              {Math.round(plan.total_minutes / 60)}h {plan.total_minutes % 60}min
-            </div>
-          )}
+        <div className="space-y-3">
+          <DailyPlanProgress
+            overallPct={overallPct}
+            totalDone={totalDone}
+            totalItems={totalItems}
+            totalMinutes={totalMinutes}
+          />
+          <ClassBenchmark />
         </div>
       )}
 
@@ -293,17 +334,23 @@ const DailyPlan = () => {
             <Calendar className="h-5 w-5 text-primary" />
             Revisões do Cronograma
             <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{scheduledReviews.length}</span>
+            <span className="text-xs text-muted-foreground ml-auto flex items-center gap-1">
+              <Clock className="h-3 w-3" /> ~{reviewMinutes}min
+            </span>
           </h2>
           {scheduledReviews.map((review) => {
             const done = completedReviews.has(review.id);
+            const mastery = masteryData.get(review.tema_id);
+            const masteryLevel = mastery ? getMasteryLevel(mastery.correctRate, mastery.reviewsDone) : null;
+
             return (
               <div
                 key={review.id}
                 className={`glass-card p-4 flex items-start gap-4 transition-all ${done ? "opacity-50" : ""} ${review.overdue ? "border-destructive/50 bg-destructive/5" : "border-warning/50 bg-warning/5"}`}
               >
                 <div
-                  className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 cursor-pointer ${done ? "bg-primary/20" : "bg-primary/10"}`}
-                  onClick={() => toggleReviewDone(review.id)}
+                  className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-95 transition-transform ${done ? "bg-primary/20" : "bg-primary/10"}`}
+                  onClick={() => done ? toggleReviewDone(review.id) : handleReviewComplete(review.id, review.tema, review.especialidade)}
                 >
                   {done ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <RefreshCw className="h-5 w-5 text-primary" />}
                 </div>
@@ -312,6 +359,12 @@ const DailyPlan = () => {
                     <h3 className={`font-semibold text-sm ${done ? "line-through" : ""}`}>{review.tema}</h3>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{review.tipo_revisao}</span>
                     <span className="text-xs text-muted-foreground">{review.especialidade}</span>
+                    {review.estimatedMinutes && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+                        <Clock className="h-3 w-3" /> ~{review.estimatedMinutes}min
+                      </span>
+                    )}
+                    {masteryLevel && <MasteryBadge level={masteryLevel.level} percentage={masteryLevel.percentage} compact />}
                     {review.overdue && (
                       <span className="text-xs text-destructive flex items-center gap-1">
                         <AlertTriangle className="h-3 w-3" /> Atrasada
@@ -340,6 +393,14 @@ const DailyPlan = () => {
                         })}
                       >
                         <GraduationCap className="h-3.5 w-3.5" /> Tutor IA
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1.5 text-xs h-7 px-2 text-primary hover:text-primary"
+                        onClick={() => { setPomodoroTopic(review.tema); setPomodoroOpen(true); }}
+                      >
+                        <Timer className="h-3.5 w-3.5" /> Pomodoro
                       </Button>
                       <Button
                         variant="ghost"
@@ -386,44 +447,67 @@ const DailyPlan = () => {
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Brain className="h-5 w-5 text-primary" />
               Blocos de Estudo IA
+              <span className="text-xs text-muted-foreground ml-1">(arraste para reordenar)</span>
             </h2>
-            {plan.blocks.map((block) => {
+            {plan.blocks.map((block, idx) => {
               const Icon = typeIcons[block.type] || BookOpen;
               const done = completedBlocks.has(block.order);
               return (
                 <div
-                  key={block.order}
-                  className={`glass-card p-4 flex items-start gap-4 transition-all ${done ? "opacity-50" : ""} ${priorityColors[block.priority] || ""}`}
+                  key={`block-${idx}`}
+                  draggable={!done}
+                  onDragStart={() => handleDragStart(idx)}
+                  onDragOver={(e) => handleDragOver(e, idx)}
+                  onDragEnd={handleDragEnd}
+                  className={`glass-card p-4 flex items-start gap-3 transition-all ${done ? "opacity-50" : "cursor-grab active:cursor-grabbing"} ${priorityColors[block.priority] || ""} ${dragIndex === idx ? "ring-2 ring-primary/50 scale-[1.02]" : ""}`}
                 >
+                  {!done && (
+                    <div className="flex items-center pt-2 text-muted-foreground/40">
+                      <GripVertical className="h-4 w-4" />
+                    </div>
+                  )}
                   <div
-                    className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 cursor-pointer ${done ? "bg-primary/20" : "bg-primary/10"}`}
+                    className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-95 transition-transform ${done ? "bg-primary/20" : "bg-primary/10"}`}
                     onClick={() => toggleBlock(block.order)}
                   >
                     {done ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <Icon className="h-5 w-5 text-primary" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <h3 className={`font-semibold text-sm ${done ? "line-through" : ""}`}>{block.topic}</h3>
-                      <span className="text-xs text-muted-foreground">{block.duration_minutes}min</span>
+                      <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+                        <Clock className="h-3 w-3" /> {block.duration_minutes}min
+                      </span>
                     </div>
                     <p className="text-xs text-muted-foreground">{block.description}</p>
                     <p className="text-xs text-muted-foreground/70 mt-1 italic">{block.reason}</p>
-                    {!done && (block.type === "study" || block.type === "review") && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="mt-2 gap-1.5 text-xs h-7 px-2 text-primary hover:text-primary"
-                        onClick={() => navigate("/dashboard/chatgpt", {
-                          state: {
-                            initialMessage: `Quero estudar o tópico "${block.topic}". Me dê uma aula completa seguindo o protocolo ENAZIZI.`,
-                            fromDailyPlan: true,
-                            topic: block.topic,
-                          },
-                        })}
-                      >
-                        <GraduationCap className="h-3.5 w-3.5" />
-                        Estudar com Tutor IA
-                      </Button>
+                    {!done && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {(block.type === "study" || block.type === "review") && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-1.5 text-xs h-7 px-2 text-primary hover:text-primary"
+                            onClick={() => navigate("/dashboard/chatgpt", {
+                              state: {
+                                initialMessage: `Quero estudar o tópico "${block.topic}". Me dê uma aula completa seguindo o protocolo ENAZIZI.`,
+                                fromDailyPlan: true,
+                                topic: block.topic,
+                              },
+                            })}
+                          >
+                            <GraduationCap className="h-3.5 w-3.5" /> Tutor IA
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1.5 text-xs h-7 px-2 text-primary hover:text-primary"
+                          onClick={() => { setPomodoroTopic(block.topic); setPomodoroOpen(true); }}
+                        >
+                          <Timer className="h-3.5 w-3.5" /> Pomodoro
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -460,6 +544,24 @@ const DailyPlan = () => {
           <p className="text-muted-foreground">Clique em "Gerar Plano" para criar seu plano do dia.</p>
           <p className="text-xs text-muted-foreground mt-2">Ou cadastre temas no Cronograma Inteligente para ver revisões aqui.</p>
         </div>
+      )}
+
+      {/* Pomodoro Timer */}
+      <PomodoroTimer
+        open={pomodoroOpen}
+        onOpenChange={setPomodoroOpen}
+        topic={pomodoroTopic}
+      />
+
+      {/* Micro Quiz */}
+      {quizReview && (
+        <MicroQuizDialog
+          open={quizOpen}
+          onOpenChange={setQuizOpen}
+          topic={quizReview.tema}
+          specialty={quizReview.especialidade}
+          onPass={() => toggleReviewDone(quizReview.id)}
+        />
       )}
     </div>
   );
