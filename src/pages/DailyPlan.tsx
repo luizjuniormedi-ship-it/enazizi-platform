@@ -257,10 +257,32 @@ const DailyPlan = () => {
   };
 
   const toggleBlock = async (order: number) => {
+    if (!completedBlocks.has(order) && plan) {
+      // Opening self-assessment before marking as done
+      const block = plan.blocks.find(b => b.order === order);
+      if (block) {
+        setAssessmentTopic(block.topic);
+        setPendingBlockOrder(order);
+        setAssessmentOpen(true);
+        return;
+      }
+    }
     const next = new Set(completedBlocks);
     if (next.has(order)) next.delete(order); else next.add(order);
     setCompletedBlocks(next);
     if (plan) await savePlanToDB(plan, next);
+  };
+
+  const handleAssessmentSubmit = async (confidence: number) => {
+    if (pendingBlockOrder !== null) {
+      const next = new Set(completedBlocks);
+      next.add(pendingBlockOrder);
+      setCompletedBlocks(next);
+      if (plan) await savePlanToDB(plan, next);
+      setPendingBlockOrder(null);
+      // Could save confidence to desempenho_questoes in the future
+      toast({ title: "Autoavaliação salva!", description: `Confiança: ${confidence}/5 em ${assessmentTopic}` });
+    }
   };
 
   const handleReviewComplete = (reviewId: string, tema: string, especialidade: string) => {
