@@ -411,7 +411,7 @@ const DailyPlan = () => {
 
   // Estimated total time (reviews + AI blocks + initial topics)
   const reviewMinutes = scheduledReviews.reduce((sum, r) => sum + (r.estimatedMinutes || 15), 0);
-  const initialTopicMinutes = todayTopics.length * 20;
+  const initialTopicMinutes = todayTopics.length * 40;
   const totalMinutes = (plan?.total_minutes || 0) + reviewMinutes + initialTopicMinutes;
   const timeUsedPct = dailyMinutes > 0 ? Math.min(100, Math.round((totalMinutes / dailyMinutes) * 100)) : 0;
 
