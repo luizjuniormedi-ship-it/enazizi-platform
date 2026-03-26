@@ -20,6 +20,7 @@ interface AdminUserRowProps {
   onOpenLogout: (u: AdminUser) => void;
   onOpenTracking: (u: AdminUser) => void;
   onOpenAccess: (u: AdminUser) => void;
+  onOpenDelete: (u: AdminUser) => void;
 }
 
 const AdminUserRow = ({
