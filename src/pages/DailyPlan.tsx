@@ -212,8 +212,11 @@ const DailyPlan = () => {
       // Show topics that have NO completed reviews (first contact) and aren't already in scheduled reviews
       const allNewTopics = (todayTemasRes.data || []).filter(t => !reviewedTemaIds.has(t.id) && !completedTemaIds.has(t.id));
 
-      // Time budget for initial topics: remaining after reviews (uses local usedReviewMinutes)
-      const topicBudget = userDailyMinutes - usedReviewMinutes;
+      // Time budget for initial topics: remaining after reviews, capped at 40% of total daily time
+      const topicBudget = Math.min(
+        userDailyMinutes - usedReviewMinutes,
+        Math.round(userDailyMinutes * 0.4)
+      );
       const TOPIC_DURATION = 40; // 40min per new topic (realistic first-contact study)
       const MAX_NEW_TOPICS_PER_DAY = 5; // Hard cap to keep plan achievable
       let usedTopicMinutes = 0;
@@ -408,10 +411,12 @@ const DailyPlan = () => {
   const totalDone = completedBlocks.size + completedReviews.size + completedInitialTopics.size;
   const overallPct = totalItems > 0 ? Math.round((totalDone / totalItems) * 100) : 0;
 
-  // Estimated total time (reviews + AI blocks + initial topics)
+  // Estimated total time — use AI plan total if available (already includes everything), otherwise sum manually
   const reviewMinutes = scheduledReviews.reduce((sum, r) => sum + (r.estimatedMinutes || 15), 0);
   const initialTopicMinutes = todayTopics.length * 40;
-  const totalMinutes = (plan?.total_minutes || 0) + reviewMinutes + initialTopicMinutes;
+  const totalMinutes = plan
+    ? (plan.total_minutes || 0)
+    : reviewMinutes + initialTopicMinutes;
   const timeUsedPct = dailyMinutes > 0 ? Math.min(100, Math.round((totalMinutes / dailyMinutes) * 100)) : 0;
 
   const formatTime = (mins: number) => {
@@ -660,7 +665,7 @@ const DailyPlan = () => {
                     <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">Novo</span>
                     <span className="text-xs text-muted-foreground">{topic.especialidade}</span>
                     <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-                      <Clock className="h-3 w-3" /> ~20min
+                      <Clock className="h-3 w-3" /> ~40min
                     </span>
                   </div>
                   {topic.subtopico && (
@@ -734,7 +739,7 @@ const DailyPlan = () => {
                 <BookOpen className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{topic.tema}</p>
-                  <p className="text-xs text-muted-foreground">{topic.especialidade} · ~20min</p>
+                  <p className="text-xs text-muted-foreground">{topic.especialidade} · ~40min</p>
                 </div>
                 <Button
                   variant="ghost"
