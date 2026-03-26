@@ -153,6 +153,11 @@ const DailyPlan = () => {
         setScheduledReviews(enriched);
       }
 
+      // Set today's topics (exclude those that already have scheduled reviews)
+      const reviewedTemaIds = new Set((reviewsRes.data || []).map(r => r.tema_id));
+      const newTodayTopics = (todayTemasRes.data || []).filter(t => !reviewedTemaIds.has(t.id));
+      setTodayTopics(newTodayTopics);
+
       setMasteryData(mMap);
       setLoading(false);
     };
