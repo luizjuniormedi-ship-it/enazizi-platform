@@ -13,7 +13,7 @@ import CronogramaHistorico from "@/components/cronograma/CronogramaHistorico";
 import CronogramaConfiguracoes from "@/components/cronograma/CronogramaConfiguracoes";
 import CronogramaGraficos from "@/components/cronograma/CronogramaGraficos";
 import StudyPlanContent from "@/components/cronograma/StudyPlanContent";
-import { syncTemasToModules } from "@/lib/cronogramaSync";
+import { syncTemasToModules, updateStudyPerformanceContext } from "@/lib/cronogramaSync";
 
 /* ======================== TYPES ======================== */
 

@@ -356,8 +356,11 @@ const DailyPlan = () => {
       setCompletedBlocks(next);
       if (plan) await savePlanToDB(plan, next);
       setPendingBlockOrder(null);
-      // Could save confidence to desempenho_questoes in the future
       toast({ title: "Autoavaliação salva!", description: `Confiança: ${confidence}/5 em ${assessmentTopic}` });
+      // Sync study context for Tutor IA
+      if (user) {
+        updateStudyPerformanceContext(user.id, [{ id: "", tema: assessmentTopic, especialidade: "" }]).catch(() => {});
+      }
     }
   };
 
