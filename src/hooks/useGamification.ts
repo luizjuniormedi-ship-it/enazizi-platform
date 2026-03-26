@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -63,7 +64,6 @@ export function levelFromXp(totalXp: number): { level: number; currentLevelXp: n
   return { level, currentLevelXp: remaining, nextLevelXp: xpForLevel(level) };
 }
 
-// XP rewards
 export const XP_REWARDS = {
   question_answered: 5,
   question_correct: 10,
@@ -72,43 +72,62 @@ export const XP_REWARDS = {
   plantao_completed: 75,
   discursive_completed: 30,
   daily_login: 10,
-  streak_bonus: 5, // multiplied by streak days
+  streak_bonus: 5,
 };
+
+interface GamificationData {
+  xp: number;
+  level: number;
+  currentStreak: number;
+  longestStreak: number;
+  weeklyXp: number;
+  lastActivityDate: string | null;
+}
+
+interface GamificationQueryData {
+  gamification: GamificationData;
+  unlockedKeys: Set<string>;
+}
+
+async function fetchGamificationData(userId: string): Promise<GamificationQueryData> {
+  const [gamRes, achRes] = await Promise.all([
+    supabase.from("user_gamification").select("*").eq("user_id", userId).maybeSingle(),
+    supabase.from("user_achievements").select("achievement_key").eq("user_id", userId),
+  ]);
+
+  let gamification: GamificationData;
+
+  if (!gamRes.data) {
+    const { data } = await supabase.from("user_gamification").insert({ user_id: userId }).select().single();
+    gamification = { xp: 0, level: 1, currentStreak: 0, longestStreak: 0, weeklyXp: 0, lastActivityDate: null };
+  } else {
+    const g = gamRes.data as any;
+    gamification = {
+      xp: g.xp, level: g.level, currentStreak: g.current_streak,
+      longestStreak: g.longest_streak, weeklyXp: g.weekly_xp,
+      lastActivityDate: g.last_activity_date,
+    };
+  }
+
+  const unlockedKeys = new Set((achRes.data || []).map((a: any) => a.achievement_key));
+  return { gamification, unlockedKeys };
+}
 
 export function useGamification() {
   const { user } = useAuth();
-  const [gamification, setGamification] = useState<{ xp: number; level: number; currentStreak: number; longestStreak: number; weeklyXp: number; lastActivityDate: string | null } | null>(null);
-  const [unlockedKeys, setUnlockedKeys] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [newAchievement, setNewAchievement] = useState<Achievement | null>(null);
 
-  const fetchData = useCallback(async () => {
-    if (!user) return;
-    const [gamRes, achRes] = await Promise.all([
-      supabase.from("user_gamification").select("*").eq("user_id", user.id).maybeSingle(),
-      supabase.from("user_achievements").select("achievement_key").eq("user_id", user.id),
-    ]);
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["gamification", user?.id],
+    queryFn: () => fetchGamificationData(user!.id),
+    enabled: !!user,
+    staleTime: 60 * 1000, // 60s
+    gcTime: 5 * 60 * 1000,
+  });
 
-    if (!gamRes.data) {
-      // Initialize
-      const { data } = await supabase.from("user_gamification").insert({ user_id: user.id }).select().single();
-      if (data) {
-        setGamification({ xp: 0, level: 1, currentStreak: 0, longestStreak: 0, weeklyXp: 0, lastActivityDate: null });
-      }
-    } else {
-      const g = gamRes.data as any;
-      setGamification({
-        xp: g.xp, level: g.level, currentStreak: g.current_streak,
-        longestStreak: g.longest_streak, weeklyXp: g.weekly_xp,
-        lastActivityDate: g.last_activity_date,
-      });
-    }
-
-    setUnlockedKeys(new Set((achRes.data || []).map((a: any) => a.achievement_key)));
-    setLoading(false);
-  }, [user]);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const gamification = data?.gamification ?? null;
+  const unlockedKeys = data?.unlockedKeys ?? new Set<string>();
 
   const addXp = useCallback(async (amount: number, activityType?: string) => {
     if (!user || !gamification) return;
@@ -123,14 +142,13 @@ export function useGamification() {
     }
     const longestStreak = Math.max(gamification.longestStreak, newStreak);
     
-    // Streak bonus
     const streakBonus = newStreak > 1 ? XP_REWARDS.streak_bonus * Math.min(newStreak, 10) : 0;
     const totalAmount = amount + streakBonus;
     
     const newXp = gamification.xp + totalAmount;
     const { level } = levelFromXp(newXp);
 
-    // Check weekly reset - get current weekly_reset_at from DB
+    // Check weekly reset
     let currentWeeklyXp = gamification.weeklyXp;
     const { data: freshData } = await supabase
       .from("user_gamification")
@@ -141,7 +159,6 @@ export function useGamification() {
     if (freshData) {
       const resetAt = new Date(freshData.weekly_reset_at);
       if (new Date() >= resetAt) {
-        // Reset weekly XP and set next reset to next Monday
         currentWeeklyXp = 0;
         const nextMonday = new Date();
         nextMonday.setDate(nextMonday.getDate() + ((8 - nextMonday.getDay()) % 7 || 7));
@@ -162,8 +179,12 @@ export function useGamification() {
       weekly_xp: newWeeklyXp, last_activity_date: today, updated_at: new Date().toISOString(),
     }).eq("user_id", user.id);
 
-    const newGam = { xp: newXp, level, currentStreak: newStreak, longestStreak, weeklyXp: newWeeklyXp, lastActivityDate: today };
-    setGamification(newGam);
+    // Optimistic update
+    const newGam: GamificationData = { xp: newXp, level, currentStreak: newStreak, longestStreak, weeklyXp: newWeeklyXp, lastActivityDate: today };
+    queryClient.setQueryData<GamificationQueryData>(["gamification", user.id], (old) => ({
+      gamification: newGam,
+      unlockedKeys: old?.unlockedKeys ?? new Set(),
+    }));
 
     // Check achievements
     const stats: GamificationStats = {
@@ -171,7 +192,6 @@ export function useGamification() {
       weeklyXp: newWeeklyXp, totalQuestions: 0, totalSimulados: 0, totalFlashcards: 0, totalPlantao: 0,
     };
 
-    // Fetch counts for achievement checks
     const [qRes, simRes, fcRes] = await Promise.all([
       supabase.from("practice_attempts").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       supabase.from("exam_sessions").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "finished"),
@@ -184,16 +204,23 @@ export function useGamification() {
     for (const ach of ACHIEVEMENTS) {
       if (!unlockedKeys.has(ach.key) && ach.condition(stats)) {
         await supabase.from("user_achievements").insert({ user_id: user.id, achievement_key: ach.key });
-        setUnlockedKeys(prev => new Set(prev).add(ach.key));
+        queryClient.setQueryData<GamificationQueryData>(["gamification", user.id], (old) => {
+          const newKeys = new Set(old?.unlockedKeys ?? []);
+          newKeys.add(ach.key);
+          return { gamification: old?.gamification ?? newGam, unlockedKeys: newKeys };
+        });
         setNewAchievement(ach);
         setTimeout(() => setNewAchievement(null), 4000);
       }
     }
 
     return totalAmount;
-  }, [user, gamification, unlockedKeys]);
+  }, [user, gamification, unlockedKeys, queryClient]);
 
   const dismissAchievement = useCallback(() => setNewAchievement(null), []);
+  const refetch = useCallback(() => {
+    if (user) queryClient.invalidateQueries({ queryKey: ["gamification", user.id] });
+  }, [user, queryClient]);
 
-  return { gamification, loading, addXp, unlockedKeys, newAchievement, dismissAchievement, refetch: fetchData };
+  return { gamification, loading, addXp, unlockedKeys, newAchievement, dismissAchievement, refetch };
 }

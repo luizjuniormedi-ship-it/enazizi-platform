@@ -196,12 +196,13 @@ const Dashboard = () => {
       )}
 
       {/* Smart Recommendations */}
-      <SmartRecommendations
-        stats={stats}
-        metrics={metrics}
-        hasCompletedDiagnostic={hasCompletedDiagnostic}
-      />
-
+      <Suspense fallback={<ChartFallback />}>
+        <SmartRecommendations
+          stats={stats}
+          metrics={metrics}
+          hasCompletedDiagnostic={hasCompletedDiagnostic}
+        />
+      </Suspense>
       {/* ===== Drill-down Sheets ===== */}
       <Sheet open={openSection === "desempenho"} onOpenChange={(o) => !o && setOpenSection(null)}>
         <SheetContent side={sheetSide} className={isMobile ? "h-[85vh] overflow-y-auto" : "sm:max-w-lg overflow-y-auto"}>
