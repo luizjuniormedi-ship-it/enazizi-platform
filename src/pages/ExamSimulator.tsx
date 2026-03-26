@@ -186,7 +186,23 @@ const ExamSimulator = () => {
         }
       }
 
-      examQuestions = examQuestions.sort(() => Math.random() - 0.5).slice(0, examConfig.questionCount);
+      // Separate unseen vs seen questions
+      const unseenQuestions = examQuestions.filter(q => !answeredIds.has(q.id));
+      const seenQuestions = examQuestions.filter(q => answeredIds.has(q.id));
+
+      // Sort unseen by source priority (real exam questions first), then shuffle within tiers
+      unseenQuestions.sort((a, b) => {
+        const pDiff = getSourcePriority(a.source) - getSourcePriority(b.source);
+        return pDiff !== 0 ? pDiff : Math.random() - 0.5;
+      });
+
+      // Use unseen first, fill with seen (oldest first) if needed
+      examQuestions = unseenQuestions.length >= examConfig.questionCount
+        ? unseenQuestions.slice(0, examConfig.questionCount)
+        : [...unseenQuestions, ...seenQuestions.sort(() => Math.random() - 0.5)].slice(0, examConfig.questionCount);
+
+      // Final shuffle to mix priorities for a natural exam feel
+      examQuestions = examQuestions.sort(() => Math.random() - 0.5);
 
       if (examQuestions.length === 0) {
         throw new Error("Não encontrei questões médicas válidas para montar o simulado.");
