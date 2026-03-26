@@ -439,8 +439,12 @@ serve(async (req) => {
       .limit(30);
     const existingStatements = (existing || []).map((r: any) => r.statement);
 
-    // Step 1: Search and scrape
-    const scrapedContent = await searchAndScrape(specialty, banca, ano);
+    // Get already-scraped URLs to skip them
+    const alreadyScrapedKeys = await getAlreadyScrapedUrls(supabaseAdmin, specialty);
+    console.log(`Already scraped ${alreadyScrapedKeys.size} unique URLs for ${specialty}`);
+
+    // Step 1: Search and scrape (skipping already-scraped sources)
+    const scrapedContent = await searchAndScrape(specialty, banca, ano, alreadyScrapedKeys);
 
     // Step 2: Structure questions via AI
     const result = await structureQuestions(scrapedContent, specialty, existingStatements, supabaseAdmin, userId);
