@@ -64,6 +64,17 @@ ${safeActiveTopics.map(t => `- ${t.topic} (${t.specialty})${t.subtopics ? ` | Su
 REGRA: Esses temas foram adicionados hoje e o aluno ainda não estudou. Inclua como blocos de estudo inicial (type: "study") com priority: "high".`
       : "";
 
+    // Process error bank for personalized tips
+    const safeRecentErrorDetails = Array.isArray(recentErrors)
+      ? recentErrors.slice(0, 15).map(String)
+      : [];
+
+    const errorSection = safeRecentErrorDetails.length > 0
+      ? `\n\nERROS RECENTES DO ALUNO (para gerar dicas personalizadas):
+${safeRecentErrorDetails.map(e => `- ${e}`).join("\n")}
+REGRA: As "tips" devem ser baseadas nesses erros reais, sugerindo revisão específica dos conceitos errados.`
+      : "";
+
     const systemPrompt = `Você é o Learning Optimization Agent, um agente de IA especializado em otimizar o estudo diário para Residência Médica e disciplinas de saúde em geral.
 
 ⛔ RESTRIÇÃO DE ESCOPO:
@@ -87,7 +98,7 @@ DADOS DO ALUNO:
 - Áreas fracas: ${JSON.stringify(safeWeakAreas)}
 - Flashcards pendentes: ${flashcardsDue || 0}
 - Erros recentes: ${JSON.stringify(safeRecentErrors)}
-- Desempenho geral: ${JSON.stringify(safePerformanceData)}${scheduledSection}${activeSection}
+- Desempenho geral: ${JSON.stringify(safePerformanceData)}${scheduledSection}${activeSection}${errorSection}
 
 RETORNE um plano do dia estruturado em JSON com a seguinte estrutura:
 {
@@ -101,11 +112,14 @@ RETORNE um plano do dia estruturado em JSON com a seguinte estrutura:
       "duration_minutes": 60,
       "description": "o que fazer neste bloco",
       "priority": "high|medium|low",
-      "reason": "por que este bloco foi escolhido"
+      "reason": "por que este bloco foi escolhido",
+      "summary": "Resumo de 2 frases do conteúdo do tópico para dar contexto ao aluno antes de estudar",
+      "learning_goal": "Objetivo de aprendizagem: o que o aluno deve saber ao final deste bloco",
+      "prerequisite": "Nome de um tópico pré-requisito que o aluno precisa dominar antes, ou null se não houver"
     }
   ],
   "total_minutes": 240,
-  "tips": ["dica 1", "dica 2"],
+  "tips": ["dica personalizada baseada nos erros recentes"],
   "review_reminder": "lembrete sobre revisões pendentes"
 }
 
@@ -117,6 +131,8 @@ Regras:
 - Se a prova está próxima (< 30 dias), foque em revisão e simulados
 - Temas agendados no cronograma DEVEM aparecer como blocos (type: "review")
 - Revisões atrasadas devem ter priority: "high"
+- Cada bloco DEVE ter: summary (2 frases contextualizando o conteúdo), learning_goal (objetivo claro de aprendizagem com "Ao final, você saberá..."), e prerequisite (tópico pré-requisito ou null)
+- As tips DEVEM ser personalizadas baseadas nos erros recentes do aluno, não genéricas
 - Sempre em português brasileiro
 - RETORNE APENAS O JSON, sem texto adicional`;
 
