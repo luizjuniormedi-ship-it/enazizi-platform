@@ -112,7 +112,7 @@ const SidebarGroup = ({ group, isOpen, onToggle }: { group: NavGroup; isOpen: bo
                 )}
               >
                 {item.to === "/dashboard/chatgpt" ? (
-                  <img src={enazizi} alt="Tutor" className="h-5 w-5 rounded-full object-contain flex-shrink-0" />
+                  <img src={tutorAvatar} alt="Tutor" className="h-5 w-5 rounded-full object-contain flex-shrink-0" />
                 ) : (
                   <item.icon className="h-4 w-4 flex-shrink-0" />
                 )}
