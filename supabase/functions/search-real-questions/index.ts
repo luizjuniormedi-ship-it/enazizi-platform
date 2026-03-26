@@ -203,7 +203,8 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
     });
 
     if (!response.ok) {
-      console.error("AI structuring error:", await response.text());
+      const errText = await response.text();
+      console.error("AI structuring error:", errText);
       return { inserted: 0, sources: [] };
     }
 
@@ -211,27 +212,43 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
     const rawContent = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
     const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
 
+    console.log("AI raw response length:", rawContent.length, "cleaned length:", cleaned.length);
+
     let parsed: any = null;
     try {
       parsed = JSON.parse(cleaned);
     } catch {
       const jsonMatch = cleaned.match(/\{[\s\S]*"questions"[\s\S]*\}/);
       if (jsonMatch) {
-        try { parsed = JSON.parse(jsonMatch[0]); } catch { return { inserted: 0, sources: [] }; }
+        try { parsed = JSON.parse(jsonMatch[0]); } catch {
+          console.error("Failed to parse AI JSON response, first 500 chars:", cleaned.slice(0, 500));
+          return { inserted: 0, sources: [] };
+        }
+      } else {
+        console.error("No JSON found in AI response, first 500 chars:", cleaned.slice(0, 500));
+        return { inserted: 0, sources: [] };
       }
     }
 
-    if (!parsed?.questions || !Array.isArray(parsed.questions)) return { inserted: 0, sources: [] };
+    if (!parsed?.questions || !Array.isArray(parsed.questions)) {
+      console.error("No questions array in parsed response");
+      return { inserted: 0, sources: [] };
+    }
 
-    // Filter valid questions
-    const validQuestions = parsed.questions.filter((q: any) =>
-      q.statement &&
-      Array.isArray(q.options) &&
-      q.options.length >= 2 &&
-      typeof q.correct_index === "number" &&
-      String(q.statement).trim().length >= 200 &&
-      !isDuplicate(q.statement, existingStatements)
-    );
+    console.log(`AI returned ${parsed.questions.length} raw questions`);
+
+    // Filter valid questions - log rejections
+    const validQuestions = parsed.questions.filter((q: any) => {
+      if (!q.statement) { console.log("Rejected: no statement"); return false; }
+      if (!Array.isArray(q.options) || q.options.length < 2) { console.log("Rejected: bad options"); return false; }
+      if (typeof q.correct_index !== "number") { console.log("Rejected: no correct_index"); return false; }
+      const len = String(q.statement).trim().length;
+      if (len < 150) { console.log(`Rejected: too short (${len} chars)`); return false; }
+      if (isDuplicate(q.statement, existingStatements)) { console.log("Rejected: duplicate"); return false; }
+      return true;
+    });
+
+    console.log(`${validQuestions.length} questions passed validation`);
 
     if (validQuestions.length === 0) return { inserted: 0, sources: [] };
 
