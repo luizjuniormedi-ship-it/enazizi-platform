@@ -180,6 +180,9 @@ Regras:
             description: String(b?.description || ""),
             priority: String(b?.priority || "medium"),
             reason: String(b?.reason || ""),
+            summary: String(b?.summary || ""),
+            learning_goal: String(b?.learning_goal || ""),
+            prerequisite: b?.prerequisite ? String(b.prerequisite) : null,
           }))
           .filter((b: any) => !NON_MEDICAL_CONTENT_REGEX.test(`${b.topic} ${b.description} ${b.reason}`))
       : [];
