@@ -518,8 +518,14 @@ const CronogramaInteligente = () => {
           onSubjectsGenerated={async (subjects: string[]) => {
             if (!user) return;
             const today = new Date().toISOString().split("T")[0];
-            const existingNames = temas.map(t => t.tema.toLowerCase());
-            const newSubjects = subjects.filter(s => !existingNames.includes(s.toLowerCase()));
+
+            // Zerar dados antigos antes de criar novo plano
+            await supabase.from("desempenho_questoes").delete().eq("user_id", user.id);
+            await supabase.from("revisoes").delete().eq("user_id", user.id);
+            await supabase.from("temas_estudados").delete().eq("user_id", user.id);
+            setTemas([]);
+
+            const newSubjects = subjects;
             if (newSubjects.length === 0) return { temasRegistrados: 0, flashcardsCriados: 0, questoesVinculadas: 0, revisoesAgendadas: 0 };
 
             // Fetch topicMap from the latest study plan for subtopic data
