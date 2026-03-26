@@ -264,6 +264,13 @@ const CronogramaInteligente = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Recarregar dados ao trocar de tab para garantir dados frescos
+  useEffect(() => {
+    if (tab !== "plano" && tab !== "novo" && tab !== "config") {
+      loadData();
+    }
+  }, [tab]);
+
   const pesos = config?.pesos_algoritmo || DEFAULT_PESOS;
   const temasComputados = temas.map(t => computeTema(t, revisoes, desempenhos, pesos as PesosAlgoritmo));
 
