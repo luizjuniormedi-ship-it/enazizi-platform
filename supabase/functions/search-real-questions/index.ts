@@ -66,42 +66,52 @@ async function searchAndScrape(
   const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
   if (!FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY not configured");
 
-  // Build multiple search queries for better coverage
-  const query = banca
-    ? `"${banca}" ${specialty} questões alternativas gabarito`
-    : `"questão" "${specialty}" prova residência médica alternativas gabarito`;
+  // Build search queries - try multiple if needed
+  const queries = banca
+    ? [`"${banca}" ${specialty} questões alternativas gabarito`]
+    : [
+        `site:medway.com.br ${specialty} questões comentadas residência`,
+        `"questão" "${specialty}" prova residência médica alternativas gabarito`,
+        `site:sanarmed.com ${specialty} questões comentadas prova`,
+      ];
 
   const allResults: { url: string; markdown: string }[] = [];
   const seenUrls = new Set<string>();
+  // Skip scribd (paywall), youtube
+  const blockedDomains = ["scribd.com", "youtube.com", "youtu.be"];
 
-  console.log("Firecrawl search query:", query);
+  for (const query of queries) {
+    if (allResults.length >= 2) break;
 
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000);
+    console.log("Firecrawl search query:", query);
 
-    const searchResp = await fetch("https://api.firecrawl.dev/v1/search", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query,
-        limit: 3,
-        lang: "pt-br",
-        country: "BR",
-        scrapeOptions: { formats: ["markdown"], onlyMainContent: true },
-      }),
-      signal: controller.signal,
-    });
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000);
 
-    clearTimeout(timeout);
+      const searchResp = await fetch("https://api.firecrawl.dev/v1/search", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query,
+          limit: 3,
+          lang: "pt-br",
+          country: "BR",
+          scrapeOptions: { formats: ["markdown"], onlyMainContent: true },
+        }),
+        signal: controller.signal,
+      });
 
-    if (!searchResp.ok) {
-      const err = await searchResp.text();
-      console.error("Firecrawl search error:", searchResp.status, err);
-    } else {
+      clearTimeout(timeout);
+
+      if (!searchResp.ok) {
+        console.error("Firecrawl search error:", searchResp.status, await searchResp.text());
+        continue;
+      }
+
       const searchData = await searchResp.json();
 
       for (const item of (searchData.data || [])) {
@@ -109,31 +119,41 @@ async function searchAndScrape(
         if (!url || seenUrls.has(url)) continue;
         seenUrls.add(url);
 
-        if (url.includes("youtube.com") || url.includes("youtu.be")) continue;
+        if (blockedDomains.some(d => url.includes(d))) {
+          console.log(`Skipping blocked domain: ${url}`);
+          continue;
+        }
 
         const markdown = item.markdown || "";
-        if (markdown.length < 300) {
+        if (markdown.length < 500) {
           console.log(`Skipping thin content (${markdown.length} chars) from: ${url}`);
           continue;
         }
 
-        const hasAlternatives = /[A-D]\)\s/.test(markdown) || /alternativa/i.test(markdown) || /gabarito/i.test(markdown);
+        const hasAlternatives = /[A-E]\)\s/.test(markdown) || /alternativa/i.test(markdown) || /gabarito/i.test(markdown);
         if (!hasAlternatives) {
           console.log(`Skipping non-question content from: ${url}`);
           continue;
         }
 
         console.log(`✓ Found question content (${markdown.length} chars) from: ${url}`);
-        allResults.push({ url, markdown: markdown.slice(0, 8000) });
+        // For large pages, skip header/menu and take the meatiest section
+        let content = markdown;
+        if (content.length > 15000) {
+          content = content.slice(500, 12500);
+        } else {
+          content = content.slice(0, 12000);
+        }
+        allResults.push({ url, markdown: content });
 
         if (allResults.length >= 2) break;
       }
-    }
-  } catch (e) {
-    if (e instanceof DOMException && e.name === "AbortError") {
-      console.warn("Firecrawl search timed out after 25s");
-    } else {
-      console.warn("Search query failed:", e);
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") {
+        console.warn(`Firecrawl search timed out for query: ${query.slice(0, 50)}`);
+      } else {
+        console.warn("Search query failed:", e);
+      }
     }
   }
 
@@ -237,11 +257,23 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
 
     console.log(`AI returned ${parsed.questions.length} raw questions`);
 
-    // Filter valid questions - log rejections
+    // Normalize and filter valid questions
     const validQuestions = parsed.questions.filter((q: any) => {
       if (!q.statement) { console.log("Rejected: no statement"); return false; }
       if (!Array.isArray(q.options) || q.options.length < 2) { console.log("Rejected: bad options"); return false; }
-      if (typeof q.correct_index !== "number") { console.log("Rejected: no correct_index"); return false; }
+      // Accept correct_index as number or string, default to 0
+      if (q.correct_index === undefined || q.correct_index === null) {
+        if (q.correct_answer !== undefined) {
+          // Try to map letter answer to index
+          const letterMap: Record<string, number> = { "A": 0, "B": 1, "C": 2, "D": 3, "E": 4 };
+          q.correct_index = letterMap[String(q.correct_answer).toUpperCase().trim()] ?? 0;
+        } else {
+          q.correct_index = 0;
+        }
+        console.log(`Fixed missing correct_index, set to ${q.correct_index}`);
+      }
+      q.correct_index = Number(q.correct_index);
+      if (isNaN(q.correct_index)) q.correct_index = 0;
       const len = String(q.statement).trim().length;
       if (len < 150) { console.log(`Rejected: too short (${len} chars)`); return false; }
       if (isDuplicate(q.statement, existingStatements)) { console.log("Rejected: duplicate"); return false; }
