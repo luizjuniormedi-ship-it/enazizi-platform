@@ -191,6 +191,7 @@ Regras:
         ...planJson,
         subjects: safeSubjects,
         weeklySchedule: safeWeeklySchedule,
+        suggestedSimulado,
         config: { examDate, hoursPerDay, daysPerWeek, hasEdital: !!editalText },
         generatedAt: new Date().toISOString(),
       },
