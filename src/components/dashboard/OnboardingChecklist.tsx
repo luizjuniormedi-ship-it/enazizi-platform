@@ -30,8 +30,25 @@ const DISMISSED_KEY = "onboarding_checklist_dismissed_v2";
 
 export default function OnboardingChecklist({ stats, metrics, hasCompletedDiagnostic }: Props) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [expanded, setExpanded] = useState(true);
   const [dismissed, setDismissed] = useState(() => localStorage.getItem(DISMISSED_KEY) === "true");
+
+  // Fallback check for diagnostic completion
+  const { data: diagnosticCount } = useQuery({
+    queryKey: ["diagnostic-count", user?.id],
+    enabled: !!user && !hasCompletedDiagnostic,
+    staleTime: 60 * 1000,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("diagnostic_results")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user!.id);
+      return count || 0;
+    },
+  });
+
+  const diagnosticDone = hasCompletedDiagnostic || (diagnosticCount ?? 0) > 0;
 
   const items: ChecklistItem[] = useMemo(() => [
     {
@@ -41,7 +58,7 @@ export default function OnboardingChecklist({ stats, metrics, hasCompletedDiagno
       description: "Descubra seu nível em cada especialidade médica",
       xp: 50,
       path: "/dashboard/diagnostico",
-      isComplete: hasCompletedDiagnostic,
+      isComplete: diagnosticDone,
     },
     {
       id: "questions",

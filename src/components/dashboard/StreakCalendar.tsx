@@ -12,7 +12,8 @@ const StreakCalendar = () => {
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const [gamifRes, attemptsRes] = await Promise.all([
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const [gamifRes, attemptsRes, examRes, simRes, anamnesisRes, teacherSimRes] = await Promise.all([
         supabase.from("user_gamification")
           .select("current_streak, longest_streak, xp, level, weekly_xp")
           .eq("user_id", user!.id)
@@ -20,15 +21,39 @@ const StreakCalendar = () => {
         supabase.from("practice_attempts")
           .select("created_at")
           .eq("user_id", user!.id)
-          .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+          .gte("created_at", thirtyDaysAgo)
           .order("created_at", { ascending: true }),
+        supabase.from("exam_sessions")
+          .select("finished_at")
+          .eq("user_id", user!.id)
+          .eq("status", "finished")
+          .gte("finished_at", thirtyDaysAgo),
+        supabase.from("simulation_history")
+          .select("created_at")
+          .eq("user_id", user!.id)
+          .gte("created_at", thirtyDaysAgo),
+        supabase.from("anamnesis_results")
+          .select("created_at")
+          .eq("user_id", user!.id)
+          .gte("created_at", thirtyDaysAgo),
+        supabase.from("teacher_simulado_results")
+          .select("created_at")
+          .eq("student_id", user!.id)
+          .gte("created_at", thirtyDaysAgo),
       ]);
 
-      // Build activity map for last 30 days
+      // Build activity map for last 30 days from ALL sources
       const activityDays = new Set<string>();
-      (attemptsRes.data || []).forEach((a: any) => {
-        activityDays.add(new Date(a.created_at).toISOString().split("T")[0]);
-      });
+      const addDates = (rows: any[], field: string) => {
+        (rows || []).forEach((r: any) => {
+          if (r[field]) activityDays.add(new Date(r[field]).toISOString().split("T")[0]);
+        });
+      };
+      addDates(attemptsRes.data || [], "created_at");
+      addDates(examRes.data || [], "finished_at");
+      addDates(simRes.data || [], "created_at");
+      addDates(anamnesisRes.data || [], "created_at");
+      addDates(teacherSimRes.data || [], "created_at");
 
       // Generate last 14 days for display
       const days: { date: string; label: string; active: boolean; isToday: boolean }[] = [];
