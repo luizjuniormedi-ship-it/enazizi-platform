@@ -198,7 +198,7 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
         { role: "system", content: "Você extrai questões de provas de residência médica a partir de conteúdo web. Responda APENAS com JSON válido." },
         { role: "user", content: prompt },
       ],
-      timeoutMs: 90000,
+      timeoutMs: 45000,
       maxRetries: 1,
     });
 
