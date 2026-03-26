@@ -104,7 +104,7 @@ function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
       (q) =>
         q.options.length >= 4 &&
         q.statement.length > 10 &&
-        isMedicalQuestion({ statement: q.statement, topic: q.topic, options: q.options }),
+        !NON_MEDICAL_CONTENT_REGEX.test(q.statement),
     );
 }
 
