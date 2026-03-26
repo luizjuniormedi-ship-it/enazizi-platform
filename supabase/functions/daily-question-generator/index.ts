@@ -371,18 +371,39 @@ serve(async (req) => {
       });
     }
 
-    // Pick 2 specialties with fewest questions
+    // Weighted cycle prioritization: Internato 3x, Clínico 2x, Básico 1x
+    const INTERNATO = ["Cirurgia Geral", "Ginecologia e Obstetrícia", "Emergência", "Medicina Preventiva", "Pediatria", "Terapia Intensiva"];
+    const CICLO_CLINICO = ["Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia", "Gastroenterologia", "Nefrologia", "Infectologia", "Hematologia", "Reumatologia", "Dermatologia", "Ortopedia", "Urologia", "Psiquiatria", "Oftalmologia", "Otorrinolaringologia", "Angiologia", "Oncologia"];
+    function getCycleWeight(spec: string): number {
+      if (INTERNATO.includes(spec)) return 3;
+      if (CICLO_CLINICO.includes(spec)) return 2;
+      return 1; // Ciclo Básico
+    }
+
+    // Pick 3 specialties using weighted score (count / weight)
     const countPromises = SPECIALTIES.map(async (spec) => {
       const { count } = await supabaseAdmin
         .from("questions_bank")
         .select("id", { count: "exact", head: true })
         .eq("is_global", true)
         .eq("topic", spec);
-      return { spec, count: count || 0 };
+      const weight = getCycleWeight(spec);
+      return { spec, count: count || 0, weight, score: (count || 0) / weight };
     });
     const countResults = await Promise.all(countPromises);
-    countResults.sort((a, b) => a.count - b.count);
-    const selected = countResults.slice(0, 2).map(c => c.spec);
+    countResults.sort((a, b) => a.score - b.score);
+
+    // Ensure at least 1 Internato and 1 Clínico in selection
+    const selected: string[] = [];
+    const internatoPool = countResults.filter(c => INTERNATO.includes(c.spec));
+    const clinicoPool = countResults.filter(c => CICLO_CLINICO.includes(c.spec));
+    if (internatoPool.length > 0) selected.push(internatoPool[0].spec);
+    if (clinicoPool.length > 0) selected.push(clinicoPool[0].spec);
+    // Fill remaining slot(s) from top of sorted list (excluding already selected)
+    for (const c of countResults) {
+      if (selected.length >= 3) break;
+      if (!selected.includes(c.spec)) selected.push(c.spec);
+    }
 
     console.log(`Daily generation starting for: ${selected.join(", ")} (counts: ${countResults.slice(0, 5).map(c => `${c.spec}:${c.count}`).join(", ")})`);
 
