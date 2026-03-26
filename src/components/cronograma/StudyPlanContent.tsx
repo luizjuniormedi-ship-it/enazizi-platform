@@ -51,6 +51,7 @@ interface StudyPlanContentProps {
 const StudyPlanContent = ({ onSubjectsGenerated }: StudyPlanContentProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [examDate, setExamDate] = useState<Date>();
   const [hoursPerDay, setHoursPerDay] = useState("4");
