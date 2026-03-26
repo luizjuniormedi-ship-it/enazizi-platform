@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
-import { isMedicalQuestion, NON_MEDICAL_CONTENT_REGEX } from "@/lib/medicalValidation";
+import { NON_MEDICAL_CONTENT_REGEX } from "@/lib/medicalValidation";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
@@ -9,15 +9,50 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import SimuladoSetup from "@/components/simulados/SimuladoSetup";
 import type { SimuladoMode } from "@/components/simulados/SimuladoSetup";
 import SimuladoExam from "@/components/simulados/SimuladoExam";
 import type { SimQuestion } from "@/components/simulados/SimuladoExam";
 import SimuladoResult from "@/components/simulados/SimuladoResult";
 
-type Phase = "setup" | "loading" | "exam" | "finished";
+type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 
 const BATCH_SIZE = 10;
+
+function buildPrompt(topics: string[], count: number, difficulty: string): string {
+  const topicsStr = topics.join(", ");
+  const perTopic = Math.ceil(count / topics.length);
+  const difficultyInstruction = difficulty === "misto"
+    ? "Distribua: 50% intermediárias (padrão REVALIDA) e 50% difíceis (padrão ENAMED/ENARE)."
+    : `Nível de dificuldade: ${difficulty}.`;
+
+  return `Gere exatamente ${count} questões de múltipla escolha para simulado de residência médica.
+
+TEMAS: ${topicsStr}
+DISTRIBUIÇÃO: aproximadamente ${perTopic} questões por tema. Distribua igualmente.
+${difficultyInstruction}
+
+REGRAS OBRIGATÓRIAS:
+1. Cada questão DEVE ser um caso clínico completo com: idade, sexo, queixa principal, história clínica relevante, exame físico e/ou exames complementares
+2. Mínimo 150 caracteres no enunciado
+3. Exatamente 5 alternativas (A-E) por questão
+4. A explicação deve citar a referência bibliográfica (ex: Harrison, Nelson, Sabiston, etc.)
+5. O campo "correct_index" deve ser o índice (0-4) da alternativa correta
+6. 70% das questões devem envolver raciocínio clínico (diagnóstico, conduta ou tratamento), 30% podem ser teóricas
+
+FORMATO: Retorne APENAS um array JSON puro, sem markdown, sem \`\`\`, neste formato:
+[
+  {
+    "statement": "Caso clínico completo...",
+    "options": ["alternativa A", "alternativa B", "alternativa C", "alternativa D", "alternativa E"],
+    "correct_index": 0,
+    "topic": "tema da questão",
+    "explanation": "Explicação detalhada com referência bibliográfica..."
+  }
+]`;
+}
 
 async function generateBatch(
   topics: string[],
@@ -25,11 +60,6 @@ async function generateBatch(
   difficulty: string,
   accessToken: string | undefined,
 ): Promise<SimQuestion[]> {
-  const topicsStr = topics.join(", ");
-  const difficultyInstruction = difficulty === "misto"
-    ? "Mescle questões fáceis (30%), intermediárias (50%) e difíceis (20%)."
-    : `Nível de dificuldade: ${difficulty}.`;
-
   const res = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`,
     {
@@ -44,10 +74,7 @@ async function generateBatch(
         outputFormat: "json",
         difficulty,
         timeoutMs: 55000,
-        messages: [{
-          role: "user",
-          content: `Gere exatamente ${count} questões de múltipla escolha para simulado de residência médica sobre: ${topicsStr}. ${difficultyInstruction} Distribua igualmente entre os temas solicitados. Com casos clínicos completos.`,
-        }],
+        messages: [{ role: "user", content: buildPrompt(topics, count, difficulty) }],
       }),
     },
   );
@@ -63,18 +90,14 @@ async function generateBatch(
   if (toolCall?.function?.arguments) {
     try {
       const parsed = JSON.parse(toolCall.function.arguments);
-      if (Array.isArray(parsed.questions)) {
-        return mapQuestions(parsed.questions, topics);
-      }
+      if (Array.isArray(parsed.questions)) return mapQuestions(parsed.questions, topics);
     } catch { /* fall through */ }
   }
 
   const content = json.choices?.[0]?.message?.content || "";
   const jsonMatch = content.match(/\[[\s\S]*\]/);
   if (jsonMatch) {
-    try {
-      return mapQuestions(JSON.parse(jsonMatch[0]), topics);
-    } catch { /* fall through */ }
+    try { return mapQuestions(JSON.parse(jsonMatch[0]), topics); } catch { /* fall through */ }
   }
 
   const parsed = parseQuestionsFromText(content);
@@ -93,19 +116,33 @@ async function generateBatch(
 
 function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
   return (Array.isArray(arr) ? arr : [])
-    .map((q: any) => ({
-      statement: String(q.statement || ""),
-      options: Array.isArray(q.options) ? q.options.map(String) : [],
-      correct: Number.isInteger(q.correct_index) ? q.correct_index : 0,
-      topic: String(q.topic || topics[0]),
-      explanation: String(q.explanation || ""),
-    }))
+    .map((q: any) => {
+      const options = Array.isArray(q.options) ? q.options.map(String) : [];
+      const correctIdx = Number.isInteger(q.correct_index) ? q.correct_index : 0;
+      return {
+        statement: String(q.statement || ""),
+        options,
+        correct: correctIdx >= 0 && correctIdx < options.length ? correctIdx : 0,
+        topic: String(q.topic || topics[0]),
+        explanation: String(q.explanation || ""),
+      };
+    })
     .filter(
       (q) =>
         q.options.length >= 4 &&
         q.statement.length > 10 &&
         !NON_MEDICAL_CONTENT_REGEX.test(q.statement),
     );
+}
+
+function deduplicateQuestions(questions: SimQuestion[]): SimQuestion[] {
+  const seen = new Set<string>();
+  return questions.filter((q) => {
+    const key = q.statement.substring(0, 80).toLowerCase().replace(/\s+/g, " ");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 const Simulados = () => {
@@ -119,10 +156,14 @@ const Simulados = () => {
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [restoredState, setRestoredState] = useState<any>(null);
   const [loadingProgress, setLoadingProgress] = useState("");
+  const [loadingPercent, setLoadingPercent] = useState(0);
   const [mode, setMode] = useState<SimuladoMode>("estudo");
   const [flaggedQuestions, setFlaggedQuestions] = useState<number[]>([]);
+  const [partialCount, setPartialCount] = useState(0);
+  const [targetCount, setTargetCount] = useState(0);
   const startTimeRef = useRef<Date>();
   const elapsedSecondsRef = useRef<number>(0);
+  const configRef = useRef<any>(null);
 
   const { pendingSession, checked, saveSession, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "simulados" });
 
@@ -149,6 +190,20 @@ const Simulados = () => {
     clearPending();
   }, [pendingSession, clearPending]);
 
+  const startExamWithQuestions = (qs: SimQuestion[], config: any) => {
+    setQuestions(qs);
+    const timeLeft = config.mode === "prova" ? qs.length * config.timePerQuestion * 60 : 0;
+    setRestoredState({ timeLeft });
+    startTimeRef.current = new Date();
+    setPhase("exam");
+  };
+
+  const handleAcceptPartial = () => {
+    if (questions.length > 0) {
+      startExamWithQuestions(questions, configRef.current);
+    }
+  };
+
   const handleStart = async (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode }) => {
     if (config.topics.length === 0) {
       toast({ title: "Selecione pelo menos um assunto", variant: "destructive" });
@@ -161,23 +216,28 @@ const Simulados = () => {
 
     setSelectedTopics(config.topics);
     setMode(config.mode);
+    setTargetCount(config.count);
+    configRef.current = config;
     setPhase("loading");
+    setLoadingPercent(0);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
 
       let allQuestions: SimQuestion[] = [];
-
-      // Request 30% extra to compensate for filtering losses
       const requestCount = Math.ceil(config.count * 1.3);
 
       if (requestCount <= BATCH_SIZE) {
-        setLoadingProgress("Gerando questões...");
+        setLoadingProgress(`Gerando ${config.count} questões...`);
+        setLoadingPercent(20);
         allQuestions = await generateBatch(config.topics, requestCount, config.difficulty, accessToken);
-        // Retry if we got fewer than needed
+        setLoadingPercent(70);
+        setLoadingProgress(`Geradas ${allQuestions.length}/${config.count} questões...`);
+
         if (allQuestions.length < config.count) {
-          setLoadingProgress("Complementando questões...");
+          setLoadingProgress(`Complementando... (${allQuestions.length}/${config.count})`);
+          setLoadingPercent(80);
           const extra = await generateBatch(config.topics, Math.min(config.count - allQuestions.length + 2, BATCH_SIZE), config.difficulty, accessToken);
           allQuestions.push(...extra);
         }
@@ -188,10 +248,18 @@ const Simulados = () => {
           return Math.min(BATCH_SIZE, remaining);
         });
 
-        setLoadingProgress(`Gerando ${batchCount} lotes...`);
+        setLoadingProgress(`Gerando lote 1/${batchCount}...`);
 
+        let completedBatches = 0;
         const results = await Promise.allSettled(
-          batchSizes.map((size) => generateBatch(config.topics, size, config.difficulty, accessToken)),
+          batchSizes.map(async (size, idx) => {
+            const result = await generateBatch(config.topics, size, config.difficulty, accessToken);
+            completedBatches++;
+            const pct = Math.round((completedBatches / batchCount) * 80);
+            setLoadingPercent(pct);
+            setLoadingProgress(`Gerando lote ${completedBatches}/${batchCount}... (${allQuestions.length + result.length} questões)`);
+            return result;
+          }),
         );
 
         for (const result of results) {
@@ -200,9 +268,9 @@ const Simulados = () => {
           }
         }
 
-        // Retry if still short
         if (allQuestions.length < config.count) {
-          setLoadingProgress(`Complementando questões...`);
+          setLoadingProgress(`Complementando... (${allQuestions.length}/${config.count})`);
+          setLoadingPercent(85);
           const retrySize = Math.min(config.count - allQuestions.length + 2, BATCH_SIZE);
           try {
             const retry = await generateBatch(config.topics, retrySize, config.difficulty, accessToken);
@@ -211,6 +279,12 @@ const Simulados = () => {
         }
       }
 
+      setLoadingPercent(90);
+      setLoadingProgress("Validando e filtrando questões...");
+
+      // Deduplicate
+      allQuestions = deduplicateQuestions(allQuestions);
+
       if (allQuestions.length === 0) {
         toast({ title: "Erro ao gerar questões. Tente novamente.", variant: "destructive" });
         setPhase("setup");
@@ -218,11 +292,17 @@ const Simulados = () => {
       }
 
       const finalQuestions = allQuestions.slice(0, config.count);
-      setQuestions(finalQuestions);
-      const timeLeft = config.mode === "prova" ? config.count * config.timePerQuestion * 60 : 0;
-      setRestoredState({ timeLeft });
-      startTimeRef.current = new Date();
-      setPhase("exam");
+
+      // If we got significantly fewer than requested, offer partial
+      if (finalQuestions.length < config.count && finalQuestions.length < config.count * 0.8) {
+        setQuestions(finalQuestions);
+        setPartialCount(finalQuestions.length);
+        setPhase("partial");
+        return;
+      }
+
+      setLoadingPercent(100);
+      startExamWithQuestions(finalQuestions, config);
     } catch (err: any) {
       toast({ title: "Erro ao gerar simulado", description: err.message, variant: "destructive" });
       setPhase("setup");
@@ -339,10 +419,30 @@ const Simulados = () => {
 
   if (phase === "loading") {
     return (
-      <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
-        <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-        <p className="text-muted-foreground">{loadingProgress || "Gerando questões..."}</p>
-        <p className="text-xs text-muted-foreground mt-2">Isso pode levar alguns segundos</p>
+      <div className="flex flex-col items-center justify-center py-20 animate-fade-in gap-4">
+        <Loader2 className="h-12 w-12 text-primary animate-spin" />
+        <p className="text-muted-foreground font-medium">{loadingProgress || "Gerando questões..."}</p>
+        <div className="w-64">
+          <Progress value={loadingPercent} className="h-2" />
+        </div>
+        <p className="text-xs text-muted-foreground">{loadingPercent}% concluído</p>
+      </div>
+    );
+  }
+
+  if (phase === "partial") {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 animate-fade-in gap-4 max-w-md mx-auto text-center">
+        <div className="text-4xl">⚠️</div>
+        <h2 className="text-lg font-semibold text-foreground">Geração parcial</h2>
+        <p className="text-muted-foreground">
+          Foram geradas <strong>{partialCount}</strong> de <strong>{targetCount}</strong> questões solicitadas.
+          Deseja continuar com as questões disponíveis?
+        </p>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={handleNewSimulado}>Cancelar</Button>
+          <Button onClick={handleAcceptPartial}>Continuar com {partialCount} questões</Button>
+        </div>
       </div>
     );
   }
