@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Brain, Clock, BookOpen, RefreshCw, CheckCircle2, Loader2, Zap, Target, FlipVertical, GraduationCap, Calendar, AlertTriangle, Layers, Timer, GripVertical, Info, ChevronDown } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +41,7 @@ const reviewTimeEstimates: Record<string, number> = {
 const DailyPlan = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const location = useLocation();
   const navigate = useNavigate();
   const [plan, setPlan] = useState<DailyPlanData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -235,7 +236,7 @@ const DailyPlan = () => {
       setLoading(false);
     };
     loadToday();
-  }, [user]);
+  }, [user, location.key]);
 
   const savePlanToDB = async (planData: DailyPlanData, completed: Set<number>) => {
     if (!user) return;
@@ -409,7 +410,7 @@ const DailyPlan = () => {
 
   // Estimated total time (reviews + AI blocks + initial topics)
   const reviewMinutes = scheduledReviews.reduce((sum, r) => sum + (r.estimatedMinutes || 15), 0);
-  const initialTopicMinutes = todayTopics.length * 20;
+  const initialTopicMinutes = todayTopics.length * 40;
   const totalMinutes = (plan?.total_minutes || 0) + reviewMinutes + initialTopicMinutes;
   const timeUsedPct = dailyMinutes > 0 ? Math.min(100, Math.round((totalMinutes / dailyMinutes) * 100)) : 0;
 
