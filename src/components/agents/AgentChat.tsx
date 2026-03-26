@@ -82,6 +82,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStep, setUploadStep] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [actionTimeline, setActionTimeline] = useState<{ label: string; icon: string; time: string }[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isUploadingRef = useRef(false);
