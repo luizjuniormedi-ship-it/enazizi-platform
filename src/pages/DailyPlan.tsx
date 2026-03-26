@@ -213,13 +213,14 @@ const DailyPlan = () => {
 
       // Time budget for initial topics: remaining after reviews (uses local usedReviewMinutes)
       const topicBudget = userDailyMinutes - usedReviewMinutes;
-      const TOPIC_DURATION = 20;
+      const TOPIC_DURATION = 40; // 40min per new topic (realistic first-contact study)
+      const MAX_NEW_TOPICS_PER_DAY = 5; // Hard cap to keep plan achievable
       let usedTopicMinutes = 0;
       const fittingTopics: typeof allNewTopics = [];
       const extraTopics: typeof allNewTopics = [];
 
       for (const t of allNewTopics) {
-        if (usedTopicMinutes + TOPIC_DURATION <= topicBudget) {
+        if (fittingTopics.length < MAX_NEW_TOPICS_PER_DAY && usedTopicMinutes + TOPIC_DURATION <= topicBudget) {
           fittingTopics.push(t);
           usedTopicMinutes += TOPIC_DURATION;
         } else {
