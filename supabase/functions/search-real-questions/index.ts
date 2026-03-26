@@ -103,21 +103,47 @@ function buildQueryPool(specialty: string, banca: string | null): string[] {
     return [
       `"${banca}" ${specialty} questões alternativas gabarito`,
       `"${banca}" ${specialty} prova comentada residência médica`,
+      `"${banca}" ${specialty} prova gabarito oficial`,
     ];
   }
 
-  // Large diverse pool — the function will skip already-scraped URLs
+  // Massive diverse pool — the function will skip already-scraped URLs
   return [
+    // Portais de questões nacionais
     `site:medway.com.br ${specialty} questões comentadas residência`,
-    `"questão" "${specialty}" prova residência médica alternativas gabarito`,
     `site:sanarmed.com ${specialty} questões comentadas prova`,
     `site:qconcursos.com.br ${specialty} questões residência médica`,
     `site:estrategiamed.com.br ${specialty} questões comentadas`,
-    `${specialty} prova residência médica questões gabarito comentado`,
-    `${specialty} questões objetivas residência médica 2024 2025`,
     `site:medcel.com.br ${specialty} questões comentadas`,
+    `site:med.estrategia.com ${specialty} questões gabarito residência`,
+    // Provas oficiais e PDFs
+    `"${specialty}" prova residência médica gabarito oficial PDF`,
+    `REVALIDA INEP ${specialty} prova questões gabarito`,
+    `ENARE ${specialty} questões prova residência`,
+    `SUS-SP ${specialty} prova residência médica gabarito`,
+    // Universidades
+    `USP ${specialty} prova residência questões comentadas`,
+    `UNICAMP ${specialty} prova residência médica gabarito`,
+    `UNIFESP ${specialty} questões prova residência`,
+    `Santa Casa ${specialty} prova residência médica questões`,
+    `UFRJ UFMG ${specialty} prova residência gabarito`,
+    // Buscas genéricas diversificadas
+    `"questão" "${specialty}" prova residência médica alternativas gabarito`,
+    `${specialty} prova residência médica questões gabarito comentado`,
+    `${specialty} questões objetivas residência médica 2024 2025 2026`,
     `"residência médica" "${specialty}" questões resolvidas alternativas`,
     `${specialty} simulado residência médica questões com gabarito`,
+    // Sites internacionais (traduzidos)
+    `site:amboss.com ${specialty} multiple choice questions`,
+    `site:radiopaedia.org ${specialty} quiz cases`,
+    `site:geekymedics.com ${specialty} questions answers`,
+    `site:lecturio.com ${specialty} board review questions`,
+    `${specialty} USMLE step 2 questions explanations`,
+    `${specialty} medical residency exam MCQ answers`,
+    // Provas estaduais
+    `${specialty} prova residência AMRIGS questões gabarito`,
+    `${specialty} prova residência FAMERP questões comentadas`,
+    `${specialty} concurso residência médica questões 2025`,
   ];
 }
 
