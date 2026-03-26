@@ -7,6 +7,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+function getSourcePriority(source: string | null | undefined): number {
+  if (!source) return 3;
+  if (source === "web-scrape" || source === "real-exam-ai") return 1;
+  if (source === "ai-exam-style") return 2;
+  return 3;
+}
+import { useToast } from "@/hooks/use-toast";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import { Progress } from "@/components/ui/progress";
