@@ -54,6 +54,10 @@ interface AdminDialogsProps {
   accessDialog: { open: boolean; user: AdminUser | null; modules: Record<string, boolean>; loading: boolean; saving: boolean };
   setAccessDialog: (v: any) => void;
   handleSaveAccess: () => void;
+
+  deleteDialog: { open: boolean; user: AdminUser | null };
+  setDeleteDialog: (v: { open: boolean; user: AdminUser | null }) => void;
+  handleDeleteUser: () => void;
 }
 
 const AdminDialogs = ({
