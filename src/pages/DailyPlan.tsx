@@ -131,6 +131,7 @@ const DailyPlan = () => {
       }
 
       // Enrich reviews with tema info
+      let usedReviewMinutes = 0;
       if (reviewsRes.data && reviewsRes.data.length > 0) {
         const temaIds = [...new Set(reviewsRes.data.map(r => r.tema_id))];
         const { data: temas } = await supabase
@@ -180,7 +181,6 @@ const DailyPlan = () => {
 
         // Time budget: 60% for reviews
         const reviewBudget = Math.round(userDailyMinutes * 0.6);
-        let usedReviewMinutes = 0;
         const fittingReviews: ScheduledReview[] = [];
         const extraReviews: ScheduledReview[] = [];
 
@@ -211,29 +211,8 @@ const DailyPlan = () => {
       // Show topics that have NO completed reviews (first contact) and aren't already in scheduled reviews
       const allNewTopics = (todayTemasRes.data || []).filter(t => !reviewedTemaIds.has(t.id) && !completedTemaIds.has(t.id));
 
-      // Time budget for initial topics: remaining after reviews
-      const actualReviewMinutes = scheduledReviews.length > 0 ? 0 : 0; // placeholder
-      const computedReviewMinutes = (reviewsRes.data && reviewsRes.data.length > 0)
-        ? scheduledReviews.reduce((s, r) => s + (r.estimatedMinutes || 15), 0)
-        : 0;
-      // We use fittingReviews sum which was already set via setScheduledReviews
-      const reviewMinsUsed = (() => {
-        // Recompute from the fitting reviews we just set
-        if (!reviewsRes.data || reviewsRes.data.length === 0) return 0;
-        // scheduledReviews state was just set; but state is async. Use enriched data directly.
-        const reviewBudgetLocal = Math.round(userDailyMinutes * 0.6);
-        let used = 0;
-        const enrichedLocal = reviewsRes.data
-          .map(r => ({ estimatedMinutes: reviewTimeEstimates[r.tipo_revisao] || 15 }))
-          .sort(() => 0); // already sorted above
-        for (const r of enrichedLocal) {
-          if (used + r.estimatedMinutes <= reviewBudgetLocal) {
-            used += r.estimatedMinutes;
-          } else break;
-        }
-        return used;
-      })();
-      const topicBudget = userDailyMinutes - reviewMinsUsed;
+      // Time budget for initial topics: remaining after reviews (uses local usedReviewMinutes)
+      const topicBudget = userDailyMinutes - usedReviewMinutes;
       const TOPIC_DURATION = 20;
       let usedTopicMinutes = 0;
       const fittingTopics: typeof allNewTopics = [];
