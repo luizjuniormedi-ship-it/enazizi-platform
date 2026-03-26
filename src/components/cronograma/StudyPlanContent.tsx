@@ -50,8 +50,16 @@ interface PlanJson {
   };
 }
 
+interface SyncSummary {
+  temasRegistrados: number;
+  flashcardsCriados: number;
+  questoesVinculadas: number;
+  revisoesAgendadas: number;
+}
+
 interface StudyPlanContentProps {
-  onSubjectsGenerated?: (subjects: string[]) => Promise<void>;
+  onSubjectsGenerated?: (subjects: string[]) => Promise<SyncSummary | void>;
+  onSyncComplete?: () => void;
 }
 
 const StudyPlanContent = ({ onSubjectsGenerated }: StudyPlanContentProps) => {
