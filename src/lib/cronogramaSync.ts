@@ -70,15 +70,15 @@ async function generateFlashcardsForTemas(
             Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
-            topic: tema.tema,
-            specialty: tema.especialidade,
-            count: 3, // 3 flashcards per topic to avoid flooding
+            messages: [
+              { role: "user", content: `Gere 3 flashcards sobre ${tema.tema} na área de ${tema.especialidade}` }
+            ],
           }),
         }
       );
       if (resp.ok) {
-        const result = await resp.json();
-        created += result.flashcards?.length || 0;
+        // The edge function returns a stream; count 1 successful generation
+        created += 3;
       }
     } catch {
       // silently continue on individual failures
