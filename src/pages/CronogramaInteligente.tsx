@@ -376,6 +376,11 @@ const CronogramaInteligente = () => {
 
     toast({ title: "✅ Revisão concluída!", description: `Acerto: ${taxa}% | Erro: ${taxaErro}%` });
     setActiveRevisao(null);
+    // Sync study context for Tutor IA
+    const tema = temas.find(t => t.id === revisao.tema_id);
+    if (tema) {
+      updateStudyPerformanceContext(user.id, [{ id: tema.id, tema: tema.tema, especialidade: tema.especialidade }]).catch(() => {});
+    }
     loadData();
   };
 
