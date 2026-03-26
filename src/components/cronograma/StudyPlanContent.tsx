@@ -467,7 +467,16 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
       )}
 
       {schedule.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <>
+          {/* Legend */}
+          <div className="flex flex-wrap gap-3 items-center text-xs text-muted-foreground">
+            <span className="font-medium">Legenda:</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-primary" /> Estudo</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-amber-500" /> Revisão</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-emerald-500" /> Questões</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-rose-500" /> Simulado</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {schedule.map((day, dayIndex) => (
             <div key={day.day} className="glass-card p-5" onDragOver={(e) => handleDragOverDay(dayIndex, e)} onDrop={(e) => handleDrop(dayIndex, schedule[dayIndex].tasks.length, e)}>
               <div className="flex items-center justify-between mb-3">
