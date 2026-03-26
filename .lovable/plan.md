@@ -1,22 +1,19 @@
 
 
-# Plano: Incluir DOCX nos uploads
+# Plano: Corrigir erro "messages is not iterable" no generate-flashcards
 
-## Resumo
-Adicionar `.docx` como formato aceito nos inputs de upload que ainda nao suportam (Uploads, StudyPlan, StudyPlanContent). Alguns ja aceitam (AgentChat, CronogramaNovoTema, TeacherStudyAssignments).
+## Problema
+O `cronogramaSync.ts` envia `{ topic, specialty, count }` para a edge function `generate-flashcards`, mas ela espera `{ messages, userContext }`. O campo `messages` fica `undefined` e o spread `...messages` quebra.
 
-## Alteracoes
+## Solucao
+Ajustar o `cronogramaSync.ts` para enviar o payload no formato correto da edge function: um array `messages` com a solicitacao de flashcards e o contexto do tema.
 
-### 1. `src/pages/Uploads.tsx`
-- Linha 264: mudar `accept=".pdf,.txt"` para `accept=".pdf,.txt,.docx"`
-- Linha 280: atualizar texto de "PDF, TXT" para "PDF, TXT, DOCX"
+## Alteracao
 
-### 2. `src/pages/StudyPlan.tsx`
-- Linha 501: mudar `accept=".pdf,.txt"` para `accept=".pdf,.txt,.docx"`
-
-### 3. `src/components/cronograma/StudyPlanContent.tsx`
-- Linha 421: mudar `accept=".pdf,.txt"` para `accept=".pdf,.txt,.docx"`
+### Editar `src/lib/cronogramaSync.ts` (funcao `generateFlashcardsForTemas`)
+- Mudar o body do fetch de `{ topic, specialty, count }` para `{ messages: [{ role: "user", content: "Gere 3 flashcards sobre {tema} na area de {especialidade}" }] }`
+- Isso alinha com o que a edge function espera (linhas 13 e 160 do index.ts)
 
 ## Arquivos
-- Editar: `Uploads.tsx`, `StudyPlan.tsx`, `StudyPlanContent.tsx`
+- Editar: `src/lib/cronogramaSync.ts`
 
