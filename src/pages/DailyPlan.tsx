@@ -42,6 +42,7 @@ const reviewTimeEstimates: Record<string, number> = {
 const DailyPlan = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const location = useLocation();
   const navigate = useNavigate();
   const [plan, setPlan] = useState<DailyPlanData | null>(null);
   const [loading, setLoading] = useState(true);
