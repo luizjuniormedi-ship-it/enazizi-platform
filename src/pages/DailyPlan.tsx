@@ -103,8 +103,7 @@ const DailyPlan = () => {
           .from("temas_estudados")
           .select("id, tema, especialidade, subtopico")
           .eq("user_id", user.id)
-          .eq("status", "ativo")
-          .gte("created_at", todayStart.toISOString()),
+          .eq("status", "ativo"),
         supabase
           .from("profiles")
           .select("daily_study_hours")
