@@ -32,6 +32,13 @@ const MODULES = [
     color: "hover:text-emerald-500 hover:bg-emerald-500/10",
   },
   {
+    key: "banco",
+    label: "Questões do Tema",
+    icon: GraduationCap,
+    path: (s: string) => `/dashboard/banco-questoes?topic=${encodeURIComponent(s)}`,
+    color: "hover:text-cyan-500 hover:bg-cyan-500/10",
+  },
+  {
     key: "anamnese",
     label: "Anamnese",
     icon: Stethoscope,
