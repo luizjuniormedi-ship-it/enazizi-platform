@@ -70,9 +70,9 @@ async function generateFlashcardsForTemas(
             Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
-            topic: tema.tema,
-            specialty: tema.especialidade,
-            count: 3, // 3 flashcards per topic to avoid flooding
+            messages: [
+              { role: "user", content: `Gere 3 flashcards sobre ${tema.tema} na área de ${tema.especialidade}` }
+            ],
           }),
         }
       );
