@@ -1,41 +1,38 @@
 
 
-# Plano: Melhorar prompt do generate-study-plan com revisão espaçada
+# Plano: Melhorar módulo Simulados
 
-## Situação atual
-O `generate-study-plan` gera um `weeklySchedule` com blocos genéricos (estudo, revisao, questoes, simulado), mas **não inclui instruções de revisão espaçada** (D1, D7, D30). As revisões são criadas apenas no frontend (`CronogramaInteligente.tsx`) após salvar os temas.
+## Problemas atuais
 
-O `learning-optimizer` (que gera o Plano do Dia) já recebe os temas agendados e revisões pendentes, mas depende do frontend para saber quais revisões existem.
+1. **Quantidade inexata**: O `generateBatch` pede X questões mas a IA pode retornar menos. O retry ajuda mas nem sempre resolve
+2. **Prompt fraco**: O prompt é genérico ("Gere X questões...") sem instruções de formato JSON estruturado, casos clínicos detalhados, ou distribuição por tema
+3. **Erro silencioso em lotes**: Batches que falham são ignorados sem feedback ao usuário
+4. **Progresso vago**: Loading mostra apenas "Gerando questões..." sem indicar quantas já foram geradas
+5. **Deduplicação inexistente**: Múltiplos batches podem gerar questões repetidas
 
-## Melhoria proposta
+## Melhorias propostas
 
-### Editar `supabase/functions/generate-study-plan/index.ts`
+### Editar `src/pages/Simulados.tsx`
 
-**Adicionar ao prompt instruções de revisão espaçada no weeklySchedule:**
+**1. Prompt mais rigoroso no `generateBatch`**
+- Instruir a IA a retornar JSON puro (sem markdown)
+- Exigir distribuição proporcional por tema (ex: 3 temas, 10 questões = ~3-4 por tema)
+- Pedir caso clínico com dados do paciente (idade, sexo, queixa, exames) em cada questão
+- Exigir explicação com referência bibliográfica
 
-1. Após listar os temas na Semana 1, a IA deve programar blocos de revisão D1 (dia seguinte), D7 e D30 automaticamente nas semanas seguintes
-2. Adicionar campo `"reviewSchedule"` ao JSON de saída com o mapa de revisões planejadas por tema
-3. Incluir no prompt:
-   - "Para cada tema estudado, agende revisões espaçadas: D1 (1 dia após), D7 (7 dias após), D30 (30 dias após)"
-   - "Blocos de revisão devem ter type: 'revisao' e duration: '30min'"
-   - "Distribua revisões nos dias disponíveis sem ultrapassar o limite de horas/dia"
+**2. Progresso detalhado**
+- Mostrar "Geradas 7/10 questões..." atualizando conforme batches completam
+- Barra de progresso visual em vez de apenas texto
 
-**Novo campo no JSON de saída:**
-```json
-{
-  "reviewSchedule": [
-    { "topic": "Bronquiolite", "d1": "Ter", "d7": "Seg (semana 2)", "d30": "Seg (semana 5)" }
-  ]
-}
-```
+**3. Deduplicação**
+- Após juntar todos os batches, filtrar questões com enunciados muito similares (comparação por primeiros 80 caracteres)
 
-4. Adicionar regra: "O total de horas por dia (estudo + revisão + questões) NÃO pode ultrapassar ${hoursPerDay}h"
+**4. Retry inteligente**
+- Se após 2 tentativas ainda faltar questões, informar ao usuário quantas foram geradas e perguntar se quer continuar com o que tem
 
-### Resultado
-- O plano gerado pela IA já vem com revisões espaçadas embutidas
-- O frontend pode usar `reviewSchedule` para criar as entradas na tabela `revisoes` com datas corretas
-- O Plano do Dia recebe blocos de revisão consistentes com o cronograma
+**5. Validação do `correct_index`**
+- Verificar que `correct_index` está dentro do range de opções (0 a options.length-1), evitando gabarito inválido
 
 ### Arquivo
-- Editar: `supabase/functions/generate-study-plan/index.ts` (prompt + schema do JSON)
+- Editar: `src/pages/Simulados.tsx`
 
