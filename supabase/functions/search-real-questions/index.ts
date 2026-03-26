@@ -61,8 +61,147 @@ function hasClinicalContent(text: string): boolean {
 }
 
 function isDuplicate(statement: string, existingStatements: string[]): boolean {
-  const prefix = statement.slice(0, 80).toLowerCase();
-  return existingStatements.some(ex => ex.slice(0, 80).toLowerCase() === prefix);
+  const prefix = statement.slice(0, 100).toLowerCase().replace(/\s+/g, " ");
+  return existingStatements.some(ex => ex.slice(0, 100).toLowerCase().replace(/\s+/g, " ") === prefix);
+}
+
+/** Pre-filter: extract blocks that look like exam questions from raw markdown */
+function extractQuestionBlocks(markdown: string, maxChars: number): string {
+  // Split into paragraphs / sections
+  const sections = markdown.split(/\n{2,}/);
+  const questionBlocks: string[] = [];
+  let totalLen = 0;
+
+  const questionPattern = /(?:[A-E]\)\s|alternativa|gabarito|\bquestão\b|\d+\.\s)/i;
+
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i].trim();
+    if (!section) continue;
+
+    // Check if this section or the next one contains question markers
+    const nextSection = sections[i + 1]?.trim() || "";
+    const combined = section + " " + nextSection;
+
+    if (questionPattern.test(combined) || hasClinicalContent(section)) {
+      // Grab this section and up to 2 surrounding sections for context
+      const start = Math.max(0, i - 1);
+      const end = Math.min(sections.length - 1, i + 2);
+      const block = sections.slice(start, end + 1).join("\n\n");
+
+      if (totalLen + block.length <= maxChars && !questionBlocks.includes(block)) {
+        questionBlocks.push(block);
+        totalLen += block.length;
+      }
+
+      if (totalLen >= maxChars) break;
+      i = end; // skip ahead
+    }
+  }
+
+  // If we found question blocks, use them; otherwise fall back to truncation
+  if (questionBlocks.length > 0 && totalLen > 500) {
+    return questionBlocks.join("\n\n---\n\n");
+  }
+
+  // Fallback: skip header (first 500 chars) and take up to maxChars
+  return markdown.length > maxChars + 500
+    ? markdown.slice(500, 500 + maxChars)
+    : markdown.slice(0, maxChars);
+}
+
+/** Robust JSON extraction: handles truncated JSON, markdown blocks, partial objects */
+function extractQuestionsFromJson(raw: string): any[] {
+  // Remove markdown code blocks
+  let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+
+  // Remove control characters except newlines/tabs
+  cleaned = cleaned.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+
+  // Try full parse first
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (parsed?.questions && Array.isArray(parsed.questions)) return parsed.questions;
+    if (Array.isArray(parsed)) return parsed;
+  } catch { /* continue to recovery */ }
+
+  // Try finding the questions array
+  const arrMatch = cleaned.match(/"questions"\s*:\s*\[/);
+  if (arrMatch && arrMatch.index !== undefined) {
+    const startIdx = cleaned.indexOf("[", arrMatch.index);
+    if (startIdx !== -1) {
+      let substr = cleaned.slice(startIdx);
+      // Try to find matching bracket
+      let depth = 0;
+      let endIdx = -1;
+      for (let i = 0; i < substr.length; i++) {
+        if (substr[i] === "[") depth++;
+        else if (substr[i] === "]") { depth--; if (depth === 0) { endIdx = i; break; } }
+      }
+      if (endIdx !== -1) {
+        try { return JSON.parse(substr.slice(0, endIdx + 1)); } catch { /* continue */ }
+      }
+      // Array was truncated — try to recover individual objects
+      substr = substr.slice(1); // remove leading [
+      return extractIndividualObjects(substr);
+    }
+  }
+
+  // Last resort: extract individual JSON objects that look like questions
+  return extractIndividualObjects(cleaned);
+}
+
+function extractIndividualObjects(text: string): any[] {
+  const results: any[] = [];
+  const objectRegex = /\{[^{}]*"statement"[^{}]*\}/g;
+  let match;
+  while ((match = objectRegex.exec(text)) !== null) {
+    try {
+      const obj = JSON.parse(match[0]);
+      if (obj.statement) results.push(obj);
+    } catch {
+      // Try fixing common issues
+      try {
+        const fixed = match[0]
+          .replace(/,\s*\}/g, "}")
+          .replace(/,\s*\]/g, "]");
+        const obj = JSON.parse(fixed);
+        if (obj.statement) results.push(obj);
+      } catch { /* skip */ }
+    }
+  }
+
+  // Also try nested objects (with arrays inside)
+  if (results.length === 0) {
+    let depth = 0;
+    let start = -1;
+    for (let i = 0; i < text.length; i++) {
+      if (text[i] === "{") { if (depth === 0) start = i; depth++; }
+      else if (text[i] === "}") {
+        depth--;
+        if (depth === 0 && start !== -1) {
+          const candidate = text.slice(start, i + 1);
+          if (candidate.includes('"statement"')) {
+            try {
+              const obj = JSON.parse(candidate);
+              if (obj.statement) results.push(obj);
+            } catch {
+              try {
+                const fixed = candidate
+                  .replace(/,\s*\}/g, "}")
+                  .replace(/,\s*\]/g, "]")
+                  .replace(/[\x00-\x1F\x7F]/g, "");
+                const obj = JSON.parse(fixed);
+                if (obj.statement) results.push(obj);
+              } catch { /* skip */ }
+            }
+          }
+          start = -1;
+        }
+      }
+    }
+  }
+
+  return results;
 }
 
 function isTrustedDomain(url: string): boolean {
