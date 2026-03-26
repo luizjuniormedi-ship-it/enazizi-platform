@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, CheckCircle2, Rocket } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const CURRENT_VERSION = "7.2.0";
+const CURRENT_VERSION = "7.3.0";
 const STORAGE_KEY = "enazizi_last_seen_version_v2";
 
 interface UpdateItem {
@@ -22,33 +22,33 @@ interface UpdateItem {
 const updates: UpdateItem[] = [
   {
     icon: "rocket",
-    title: "🧠 Questões Calibradas Nível REVALIDA/ENAMED",
+    title: "📋 Plano do Dia Inteligente",
     description:
-      "Todas as questões geradas por IA agora seguem padrão real de prova: casos clínicos com sinais vitais, exames e raciocínio multi-etapa. Zero questões de definição pura.",
+      "O Plano do Dia agora respeita suas horas diárias de estudo, prioriza revisões atrasadas e limita temas novos a no máximo 5 por dia para uma carga realista.",
   },
   {
     icon: "sparkles",
-    title: "⚡ Geração Automática 3x ao Dia",
+    title: "🧠 Tutor IA contextual",
     description:
-      "O banco de questões agora recebe ~60 novas questões diariamente (6h, 14h e 22h), priorizando especialidades com menor cobertura.",
+      "Ao clicar em um tema no Plano do Dia, o Tutor IA já inicia a aula direto no assunto — sem precisar digitar nada.",
   },
   {
     icon: "rocket",
-    title: "🩺 Novas Especialidades no Banco",
+    title: "🔄 Cronograma zera ao gerar novo plano",
     description:
-      "Emergência, Semiologia, Otorrinolaringologia, Farmacologia e Oncologia agora têm questões dedicadas com casos clínicos completos.",
+      "Ao gerar um novo plano de estudo, temas e revisões antigos são removidos automaticamente para evitar mistura de conteúdos.",
   },
   {
     icon: "check",
-    title: "🔍 Monitor de Saúde do Sistema",
+    title: "📊 Sincronização em tempo real",
     description:
-      "Verificação automática diária detecta problemas críticos: déficit de questões, falhas de geração e uploads pendentes. Alertas exibidos ao admin.",
+      "Visão Geral, Temas, Críticos e demais abas do Cronograma agora atualizam imediatamente após criar ou modificar o plano.",
   },
   {
     icon: "sparkles",
-    title: "📱 Atualização Automática no Mobile",
+    title: "⏱️ Micro-quiz, Pomodoro e Celebrações",
     description:
-      "O app agora detecta novas versões e oferece atualização instantânea — sem precisar reinstalar.",
+      "Responda um micro-quiz antes de marcar concluído, use o timer Pomodoro integrado e receba celebração ao completar 100% do dia.",
   },
 ];
 
