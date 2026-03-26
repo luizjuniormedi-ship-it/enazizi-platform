@@ -59,45 +59,59 @@ serve(async (req) => {
 
     const daysUntilExam = Math.ceil((new Date(examDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
-    const prompt = `Você é um especialista em planejamento de estudos para provas de Residência Médica no Brasil (ENARE, USP, UNIFESP, Santa Casa, etc.).
+    const prompt = `Você é um especialista em planejamento de estudos médicos.
 
-⛔ RESTRIÇÃO ABSOLUTA DE ESCOPO:
-Você só pode montar planos de estudo de MEDICINA, SAÚDE e CIÊNCIAS BIOMÉDICAS.
-
-ÁREAS MÉDICAS VÁLIDAS (incluem, mas não se limitam a):
-Farmacologia, Semiologia Médica, Anatomia, Fisiologia, Histologia, Bioquímica, Patologia, Microbiologia, Imunologia, Parasitologia, Genética Médica, Embriologia, Epidemiologia, Bioestatística, Saúde Pública, Medicina Preventiva, Clínica Médica, Cirurgia, Pediatria, Ginecologia e Obstetrícia, Cardiologia, Neurologia, Infectologia, Endocrinologia, Reumatologia, Psiquiatria, Hematologia, Nefrologia, Pneumologia, Gastroenterologia, Dermatologia, Ortopedia, Urologia, Oftalmologia, Otorrinolaringologia, Medicina de Emergência, Medicina Intensiva, Radiologia, Medicina Legal, Ética Médica.
-
-Se identificar tema não médico, responda com JSON de erro sem gerar plano.
+⛔ RESTRIÇÃO: Somente conteúdo de MEDICINA, SAÚDE e CIÊNCIAS BIOMÉDICAS.
 
 Dados do aluno:
 - Data da prova: ${examDate} (${daysUntilExam} dias restantes)
 - Horas disponíveis por dia: ${hoursPerDay}
 - Dias de estudo por semana: ${daysPerWeek}
-${editalPreview ? `\nConteúdo programático/edital:\n${editalPreview}` : ""}
+${editalPreview ? `\n📋 CONTEÚDO PROGRAMÁTICO / CRONOGRAMA ENVIADO PELO ALUNO:\n---\n${editalPreview}\n---` : ""}
 
-Gere um cronograma semanal de estudos otimizado para residência médica. Retorne APENAS um JSON válido (sem markdown) no formato:
+🎯 INSTRUÇÕES CRÍTICAS:
+
+1. **EXTRAIA TODOS OS TEMAS**: Leia o conteúdo acima linha por linha. CADA tópico mencionado (ex: "Bronquiolite", "ITU", "Pneumonias I", "Cardiopatias Congênitas II", "Piodermites", "Síndrome Nefrótica", "Meningoencefalites") DEVE aparecer no plano. NÃO IGNORE NENHUM TEMA.
+
+2. **IDENTIFIQUE A ESPECIALIDADE**: O documento pode ser de uma disciplina específica (ex: Pediatria, Clínica Médica). Identifique e use como contexto.
+
+3. **RESPEITE A ORDEM CRONOLÓGICA**: Se houver datas no documento, organize os temas na mesma sequência temporal.
+
+4. **ROTEIRO CLARO**: Cada bloco de estudo deve ter:
+   - O tema específico (não genérico)
+   - Tempo dedicado
+   - Tipo de atividade (estudo teórico, questões, revisão, simulado)
+
+5. **DISTRIBUA AS ATIVIDADES**:
+   - Estudo teórico do tema novo
+   - Resolução de questões sobre o tema
+   - Revisões espaçadas de temas anteriores
+   - Simulados periódicos
+
+Retorne APENAS um JSON válido (sem markdown, sem \`\`\`) no formato:
 {
-  "subjects": ["matéria1", "matéria2", ...],
+  "detectedSpecialty": "Pediatria",
+  "subjects": ["Infecções de Vias Aéreas Superiores", "Bronquiolite", "Asma Brônquica", ...TODOS os temas],
   "weeklySchedule": [
     {
       "day": "Seg",
       "tasks": [
-        { "time": "08:00", "subject": "Nome da matéria", "duration": "2h", "type": "estudo" }
+        { "time": "08:00", "subject": "Bronquiolite", "duration": "2h", "type": "estudo", "details": "Estudar etiologia (VSR), fisiopatologia, quadro clínico e manejo" },
+        { "time": "10:00", "subject": "Questões - Bronquiolite", "duration": "1h", "type": "questoes", "details": "Resolver 20 questões sobre bronquiolite" }
       ]
     }
   ],
-  "tips": "Dica geral sobre a estratégia"
+  "tips": "Dica geral sobre a estratégia",
+  "totalTopicsExtracted": 12
 }
 
 Regras:
-- As matérias principais são: Clínica Médica, Cirurgia, Pediatria, Ginecologia e Obstetrícia, Medicina Preventiva/Saúde Coletiva, Farmacologia, Semiologia, Anatomia, e demais ciências básicas médicas
-- NUNCA incluir Direito, Engenharia, Informática ou qualquer área não médica
-- Distribua as matérias proporcionalmente ao peso nas provas (Clínica Médica geralmente tem maior peso)
-- Inclua revisões, resolução de questões e simulados
-- Respeite o limite de horas/dia
-- Use os dias da semana: Seg, Ter, Qua, Qui, Sex, Sáb, Dom (apenas ${daysPerWeek} dias)
-- Tipos: "estudo", "revisao", "simulado", "questoes"
-- Considere que o aluno pode ter plantões/internato e precisa de flexibilidade`;
+- O campo "details" é OBRIGATÓRIO em cada task - explique O QUE estudar naquele bloco
+- Use os dias: Seg, Ter, Qua, Qui, Sex, Sáb, Dom (apenas ${daysPerWeek} dias)
+- Tipos válidos: "estudo", "revisao", "simulado", "questoes"
+- TODOS os temas do documento DEVEM estar distribuídos no cronograma
+- Respeite o limite de ${hoursPerDay}h/dia
+- Se não houver edital, use temas padrão de residência médica`;
 
     const aiResp = await aiFetch({
       messages: [{ role: "user", content: prompt }],

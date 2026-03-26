@@ -20,6 +20,7 @@ interface Task {
   subject: string;
   duration: string;
   type?: string;
+  details?: string;
 }
 
 interface DaySchedule {
@@ -31,6 +32,8 @@ interface PlanJson {
   weeklySchedule?: DaySchedule[];
   subjects?: string[];
   tips?: string;
+  detectedSpecialty?: string;
+  totalTopicsExtracted?: number;
   config?: {
     examDate: string;
     hoursPerDay: number;
@@ -494,7 +497,8 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
                       <GripVertical className="h-4 w-4 text-muted-foreground/50 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className={`text-sm font-medium truncate ${isCompleted ? "line-through text-muted-foreground" : ""}`}>{task.subject}</div>
-                        <div className="text-xs text-muted-foreground">{task.time} • {task.duration}</div>
+                        {task.details && <div className="text-xs text-muted-foreground/80 mt-0.5 line-clamp-2">{task.details}</div>}
+                        <div className="text-xs text-muted-foreground">{task.time} • {task.duration}{task.type ? ` • ${task.type}` : ""}</div>
                       </div>
                       <StudyBlockActions subject={task.subject} />
                       <button onClick={() => startEdit(dayIndex, taskIndex)} className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
