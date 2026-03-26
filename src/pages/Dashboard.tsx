@@ -14,7 +14,7 @@ import DailyGoalWidget from "@/components/dashboard/DailyGoalWidget";
 import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner";
 import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
 import QuickStartCard from "@/components/dashboard/QuickStartCard";
-import SmartRecommendations from "@/components/dashboard/SmartRecommendations";
+const SmartRecommendations = lazy(() => import("@/components/dashboard/SmartRecommendations"));
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import AdminSystemAlerts from "@/components/admin/AdminSystemAlerts";
 import InstallAppBanner from "@/components/dashboard/InstallAppBanner";
