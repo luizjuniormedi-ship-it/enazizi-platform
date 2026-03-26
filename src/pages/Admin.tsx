@@ -436,6 +436,7 @@ const Admin = () => {
                     onOpenLogout={(u) => setLogoutDialog({ open: true, user: u })}
                     onOpenTracking={loadUserTracking}
                     onOpenAccess={loadUserAccess}
+                    onOpenDelete={(u) => setDeleteDialog({ open: true, user: u })}
                   />
                 ))}
               </div>
