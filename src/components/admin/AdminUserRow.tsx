@@ -26,7 +26,7 @@ interface AdminUserRowProps {
 const AdminUserRow = ({
   u, actionLoading, session, getStatusBadge, getUserPlan,
   onApprove, onReject, onOpenDetail, onOpenAdmin, onOpenProfessor,
-  onOpenPlan, onOpenPassword, onOpenBlock, onOpenLogout, onOpenTracking, onOpenAccess,
+  onOpenPlan, onOpenPassword, onOpenBlock, onOpenLogout, onOpenTracking, onOpenAccess, onOpenDelete,
 }: AdminUserRowProps) => {
   const plan = getUserPlan(u);
   const isCurrentlyActioning = actionLoading === u.user_id;
