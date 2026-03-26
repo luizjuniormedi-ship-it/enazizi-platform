@@ -514,7 +514,7 @@ const CronogramaInteligente = () => {
 
       {tab === "plano" && (
         <StudyPlanContent
-          onSyncComplete={() => setTab("hoje")}
+          onSyncComplete={async () => { await loadData(); setTab("hoje"); }}
           onSubjectsGenerated={async (subjects: string[]) => {
             if (!user) return;
             const today = new Date().toISOString().split("T")[0];
