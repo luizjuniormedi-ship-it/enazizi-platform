@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 const NON_MEDICAL_CONTENT_REGEX = /(direito|jur[ií]d|penal|constitucional|processo penal|inquérito|inqu[eé]rito|stf|stj|delegad|advogad|pol[ií]cia federal|c[oó]digo penal|a[cç][aã]o penal|inform[aá]tica|tecnologia da informa[cç][aã]o|engenharia|contabil|economia|administra[cç][aã]o)/i;
-const MEDICAL_CONTENT_REGEX = /(medicin|sa[uú]de|paciente|diagn[oó]st|tratament|sintom|doen[cç]|fisiopat|farmac|anatom|cl[íi]nic|cirurg|pediatr|ginec|obstetr|preventiva|resid[eê]ncia|enare|revalida|protocolo|diretriz|sus)/i;
+const MEDICAL_CONTENT_REGEX = /(medicin|sa[uú]de|paciente|diagn[oó]st|tratament|sintom|doen[cç]|fisiopat|farmac|anatom|cl[íi]nic|cirurg|pediatr|ginec|obstetr|preventiva|resid[eê]ncia|enare|revalida|protocolo|diretriz|sus|revis[aã]o|estudo|D1|D3|D7|D15|D30|flashcard|simulad)/i;
 
 const isMedicalContent = (text: string) => MEDICAL_CONTENT_REGEX.test(text) && !NON_MEDICAL_CONTENT_REGEX.test(text);
 
@@ -14,11 +14,10 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { performanceData, examDate, dailyHours, completedTopics, weakAreas, flashcardsDue, recentErrors } = await req.json();
-    
+    const { performanceData, examDate, dailyHours, completedTopics, weakAreas, flashcardsDue, recentErrors, scheduledTopics } = await req.json();
 
     const sanitizeTopicList = (value: unknown) => Array.isArray(value)
-      ? value.map(String).filter((t) => isMedicalContent(t))
+      ? value.map(String).filter((t) => isMedicalContent(t) || t.length < 60)
       : [];
 
     const safeCompletedTopics = sanitizeTopicList(completedTopics);
@@ -26,16 +25,35 @@ serve(async (req) => {
     const safeRecentErrors = sanitizeTopicList(recentErrors);
 
     const safePerformanceData = Object.fromEntries(
-      Object.entries(performanceData || {}).filter(([k]) => isMedicalContent(k))
+      Object.entries(performanceData || {}).filter(([k]) => !NON_MEDICAL_CONTENT_REGEX.test(k))
     );
+
+    // Process scheduled topics from cronograma
+    const safeScheduledTopics = Array.isArray(scheduledTopics)
+      ? scheduledTopics.map((t: any) => ({
+          topic: String(t?.topic || ""),
+          specialty: String(t?.specialty || ""),
+          subtopics: String(t?.subtopics || ""),
+          reviewType: String(t?.reviewType || ""),
+          overdue: Boolean(t?.overdue),
+          risk: String(t?.risk || "baixo"),
+        })).filter(t => t.topic.length > 0)
+      : [];
 
     const today = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
 
-    const systemPrompt = `Você é o Learning Optimization Agent, um agente de IA especializado em otimizar o estudo diário para Residência Médica.
+    const scheduledSection = safeScheduledTopics.length > 0
+      ? `\n\nTEMAS AGENDADOS NO CRONOGRAMA (OBRIGATÓRIOS - DEVEM APARECER NOS BLOCOS):
+${safeScheduledTopics.map(t => `- ${t.topic} (${t.specialty}) — Revisão ${t.reviewType}${t.overdue ? " ⚠️ ATRASADA" : ""} | Risco: ${t.risk}${t.subtopics ? ` | Subtópicos: ${t.subtopics}` : ""}`).join("\n")}
 
-⛔ RESTRIÇÃO ABSOLUTA DE ESCOPO:
-Você SOMENTE pode gerar plano para MEDICINA, SAÚDE e CIÊNCIAS BIOMÉDICAS.
-NUNCA inclua Direito, Engenharia, Informática ou áreas não médicas.
+REGRA: Esses temas DEVEM ser incluídos como blocos no plano. Revisões atrasadas têm prioridade máxima.`
+      : "";
+
+    const systemPrompt = `Você é o Learning Optimization Agent, um agente de IA especializado em otimizar o estudo diário para Residência Médica e disciplinas de saúde em geral.
+
+⛔ RESTRIÇÃO DE ESCOPO:
+Você gera planos para MEDICINA, SAÚDE e CIÊNCIAS BIOMÉDICAS, incluindo disciplinas curriculares de cursos de saúde.
+NUNCA inclua Direito, Engenharia ou áreas completamente fora da saúde.
 
 DATA DE HOJE: ${today}
 
@@ -45,6 +63,7 @@ Sua função é decidir EXATAMENTE o que o aluno deve estudar hoje, baseado em:
 - Desempenho por área
 - Tempo disponível
 - Proximidade da prova
+- Temas agendados no cronograma inteligente
 
 DADOS DO ALUNO:
 - Data da prova: ${examDate || "Não definida"}
@@ -53,7 +72,7 @@ DADOS DO ALUNO:
 - Áreas fracas: ${JSON.stringify(safeWeakAreas)}
 - Flashcards pendentes: ${flashcardsDue || 0}
 - Erros recentes: ${JSON.stringify(safeRecentErrors)}
-- Desempenho geral: ${JSON.stringify(safePerformanceData)}
+- Desempenho geral: ${JSON.stringify(safePerformanceData)}${scheduledSection}
 
 RETORNE um plano do dia estruturado em JSON com a seguinte estrutura:
 {
@@ -81,6 +100,8 @@ Regras:
 - Distribua entre teoria + prática
 - Respeite o tempo disponível
 - Se a prova está próxima (< 30 dias), foque em revisão e simulados
+- Temas agendados no cronograma DEVEM aparecer como blocos (type: "review")
+- Revisões atrasadas devem ter priority: "high"
 - Sempre em português brasileiro
 - RETORNE APENAS O JSON, sem texto adicional`;
 
@@ -102,7 +123,6 @@ Regras:
     const data = await response.json();
     const content = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
     
-    // Parse and sanitize JSON from response
     let plan: any;
     try {
       const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -116,7 +136,7 @@ Regras:
     }
 
     const safeFocusAreas = Array.isArray(plan?.focus_areas)
-      ? plan.focus_areas.map(String).filter((t: string) => isMedicalContent(t))
+      ? plan.focus_areas.map(String).filter((t: string) => !NON_MEDICAL_CONTENT_REGEX.test(t))
       : [];
 
     const safeBlocks = Array.isArray(plan?.blocks)
@@ -124,17 +144,17 @@ Regras:
           .map((b: any, i: number) => ({
             order: Number(b?.order ?? i + 1),
             type: String(b?.type || "study"),
-            topic: String(b?.topic || "Revisão médica"),
+            topic: String(b?.topic || "Revisão"),
             duration_minutes: Number(b?.duration_minutes || 30),
             description: String(b?.description || ""),
             priority: String(b?.priority || "medium"),
             reason: String(b?.reason || ""),
           }))
-          .filter((b: any) => isMedicalContent(`${b.topic} ${b.description} ${b.reason}`))
+          .filter((b: any) => !NON_MEDICAL_CONTENT_REGEX.test(`${b.topic} ${b.description} ${b.reason}`))
       : [];
 
     if (safeBlocks.length === 0) {
-      return new Response(JSON.stringify({ error: "A IA retornou um plano sem conteúdo médico válido." }), {
+      return new Response(JSON.stringify({ error: "A IA retornou um plano sem conteúdo válido." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -145,7 +165,7 @@ Regras:
       : [];
 
     const safePlan = {
-      greeting: String(plan?.greeting || "Vamos focar na sua evolução médica hoje."),
+      greeting: String(plan?.greeting || "Vamos focar na sua evolução hoje."),
       focus_areas: safeFocusAreas,
       blocks: safeBlocks,
       total_minutes: Number(plan?.total_minutes || safeBlocks.reduce((acc: number, b: any) => acc + b.duration_minutes, 0)),
