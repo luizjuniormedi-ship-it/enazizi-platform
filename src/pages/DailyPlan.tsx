@@ -237,7 +237,7 @@ const DailyPlan = () => {
       setLoading(false);
     };
     loadToday();
-  }, [user]);
+  }, [user, location.key]);
 
   const savePlanToDB = async (planData: DailyPlanData, completed: Set<number>) => {
     if (!user) return;
