@@ -452,6 +452,97 @@ const DailyPlan = () => {
         </div>
       )}
 
+      {/* Today's new topics - Estudo Inicial */}
+      {todayTopics.length > 0 && !generating && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-primary" />
+            Estudo Inicial — Primeiro Contato
+            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{todayTopics.length}</span>
+          </h2>
+          <p className="text-xs text-muted-foreground">Temas adicionados hoje ao cronograma. Comece seu primeiro contato com cada assunto.</p>
+          {todayTopics.map((topic) => {
+            const done = completedInitialTopics.has(topic.id);
+            return (
+              <div
+                key={topic.id}
+                className={`glass-card p-4 flex items-start gap-4 transition-all ${done ? "opacity-50" : ""} border-primary/30 bg-primary/5`}
+              >
+                <div
+                  className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-95 transition-transform ${done ? "bg-primary/20" : "bg-primary/10"}`}
+                  onClick={() => {
+                    const next = new Set(completedInitialTopics);
+                    if (next.has(topic.id)) next.delete(topic.id); else next.add(topic.id);
+                    setCompletedInitialTopics(next);
+                  }}
+                >
+                  {done ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <BookOpen className="h-5 w-5 text-primary" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <h3 className={`font-semibold text-sm ${done ? "line-through" : ""}`}>{topic.tema}</h3>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">Novo</span>
+                    <span className="text-xs text-muted-foreground">{topic.especialidade}</span>
+                    <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+                      <Clock className="h-3 w-3" /> ~20min
+                    </span>
+                  </div>
+                  {topic.subtopico && (
+                    <p className="text-xs text-muted-foreground mb-1">
+                      <Layers className="h-3 w-3 inline mr-1" />
+                      {topic.subtopico}
+                    </p>
+                  )}
+                  {!done && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1.5 text-xs h-7 px-2 text-primary hover:text-primary"
+                        onClick={() => navigate("/dashboard/chatgpt", {
+                          state: {
+                            initialMessage: `Quero estudar o tópico "${topic.tema}" (${topic.especialidade})${topic.subtopico ? ` — subtópico: ${topic.subtopico}` : ""}. Me dê uma aula completa seguindo o protocolo ENAZIZI.`,
+                            fromDailyPlan: true,
+                            topic: topic.tema,
+                            specialty: topic.especialidade,
+                          },
+                        })}
+                      >
+                        <GraduationCap className="h-3.5 w-3.5" /> Tutor IA
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1.5 text-xs h-7 px-2 text-primary hover:text-primary"
+                        onClick={() => { setPomodoroTopic(topic.tema); setPomodoroOpen(true); }}
+                      >
+                        <Timer className="h-3.5 w-3.5" /> Pomodoro
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1.5 text-xs h-7 px-2 text-primary hover:text-primary"
+                        onClick={() => navigate("/dashboard/flashcards")}
+                      >
+                        <FlipVertical className="h-3.5 w-3.5" /> Flashcards
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1.5 text-xs h-7 px-2 text-primary hover:text-primary"
+                        onClick={() => navigate("/dashboard/questions-bank")}
+                      >
+                        <Target className="h-3.5 w-3.5" /> Questões
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* AI-generated plan blocks */}
       {plan && !generating && (
         <>
