@@ -14,7 +14,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { performanceData, examDate, dailyHours, completedTopics, weakAreas, flashcardsDue, recentErrors, scheduledTopics } = await req.json();
+    const { performanceData, examDate, dailyHours, completedTopics, weakAreas, flashcardsDue, recentErrors, scheduledTopics, activeTopics } = await req.json();
 
     const sanitizeTopicList = (value: unknown) => Array.isArray(value)
       ? value.map(String).filter((t) => isMedicalContent(t) || t.length < 60)
@@ -39,6 +39,14 @@ serve(async (req) => {
           risk: String(t?.risk || "baixo"),
         })).filter(t => t.topic.length > 0)
       : [];
+    // Process active topics (new topics added today, no reviews yet)
+    const safeActiveTopics = Array.isArray(activeTopics)
+      ? activeTopics.map((t: any) => ({
+          topic: String(t?.topic || ""),
+          specialty: String(t?.specialty || ""),
+          subtopics: String(t?.subtopics || ""),
+        })).filter(t => t.topic.length > 0)
+      : [];
 
     const today = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
 
@@ -47,6 +55,13 @@ serve(async (req) => {
 ${safeScheduledTopics.map(t => `- ${t.topic} (${t.specialty}) — Revisão ${t.reviewType}${t.overdue ? " ⚠️ ATRASADA" : ""} | Risco: ${t.risk}${t.subtopics ? ` | Subtópicos: ${t.subtopics}` : ""}`).join("\n")}
 
 REGRA: Esses temas DEVEM ser incluídos como blocos no plano. Revisões atrasadas têm prioridade máxima.`
+      : "";
+
+    const activeSection = safeActiveTopics.length > 0
+      ? `\n\nTEMAS NOVOS DO CRONOGRAMA (PRIMEIRO CONTATO - INCLUIR COMO BLOCOS type: "study"):
+${safeActiveTopics.map(t => `- ${t.topic} (${t.specialty})${t.subtopics ? ` | Subtópicos: ${t.subtopics}` : ""}`).join("\n")}
+
+REGRA: Esses temas foram adicionados hoje e o aluno ainda não estudou. Inclua como blocos de estudo inicial (type: "study") com priority: "high".`
       : "";
 
     const systemPrompt = `Você é o Learning Optimization Agent, um agente de IA especializado em otimizar o estudo diário para Residência Médica e disciplinas de saúde em geral.
@@ -72,7 +87,7 @@ DADOS DO ALUNO:
 - Áreas fracas: ${JSON.stringify(safeWeakAreas)}
 - Flashcards pendentes: ${flashcardsDue || 0}
 - Erros recentes: ${JSON.stringify(safeRecentErrors)}
-- Desempenho geral: ${JSON.stringify(safePerformanceData)}${scheduledSection}
+- Desempenho geral: ${JSON.stringify(safePerformanceData)}${scheduledSection}${activeSection}
 
 RETORNE um plano do dia estruturado em JSON com a seguinte estrutura:
 {
