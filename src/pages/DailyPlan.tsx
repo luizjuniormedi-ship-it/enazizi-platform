@@ -290,8 +290,8 @@ const DailyPlan = () => {
     if (plan) savePlanToDB(plan, completedBlocks);
   };
 
-  const totalItems = (plan?.blocks.length || 0) + scheduledReviews.length;
-  const totalDone = completedBlocks.size + completedReviews.size;
+  const totalItems = (plan?.blocks.length || 0) + scheduledReviews.length + todayTopics.length;
+  const totalDone = completedBlocks.size + completedReviews.size + completedInitialTopics.size;
   const overallPct = totalItems > 0 ? Math.round((totalDone / totalItems) * 100) : 0;
 
   // Estimated total time (reviews + AI blocks)
