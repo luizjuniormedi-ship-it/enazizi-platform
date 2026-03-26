@@ -75,11 +75,19 @@ ${editalPreview ? `\n📋 CONTEÚDO PROGRAMÁTICO / CRONOGRAMA ENVIADO PELO ALUN
 
 2. **DESDOBRE EM SUBTÓPICOS**: Para cada tema, liste os subtópicos essenciais que o aluno precisa dominar. Exemplo:
    - Tema: "Bronquiolite" → Subtópicos: ["Etiologia (VSR)", "Fisiopatologia", "Quadro clínico", "Diagnóstico diferencial", "Tratamento e suporte", "Critérios de internação"]
-   - Tema: "Pneumonias" → Subtópicos: ["Classificação por agente", "Pneumonia típica vs atípica", "Diagnóstico radiológico", "Antibioticoterapia empírica", "Complicações"]
 
 3. **IDENTIFIQUE A ESPECIALIDADE** do documento (ex: Pediatria, Clínica Médica).
 
 4. **RESPEITE A ORDEM CRONOLÓGICA** se houver datas.
+
+5. **REVISÃO ESPAÇADA OBRIGATÓRIA**: Para CADA tema estudado, programe revisões espaçadas:
+   - **D1**: Revisão rápida no DIA SEGUINTE ao estudo (duração: 30min, type: "revisao")
+   - **D7**: Revisão intermediária 7 DIAS após o estudo (duração: 30min, type: "revisao")
+   - **D30**: Revisão de consolidação 30 DIAS após o estudo (duração: 20min, type: "revisao")
+   - Distribua as revisões nos dias disponíveis SEM ultrapassar ${hoursPerDay}h/dia
+   - Se houver conflito de horário, priorize revisões D1 > D7 > D30
+
+6. **LIMITE DE TEMPO**: O total de horas por dia (estudo + revisão + questões) NÃO pode ultrapassar ${hoursPerDay}h. Se necessário, mova blocos para o próximo dia disponível.
 
 Retorne APENAS um JSON válido (sem markdown, sem \`\`\`) no formato:
 {
@@ -88,19 +96,34 @@ Retorne APENAS um JSON válido (sem markdown, sem \`\`\`) no formato:
     {
       "topic": "Infecções de Vias Aéreas Superiores",
       "subtopics": ["IVAS virais", "Otite média aguda", "Sinusite", "Faringite estreptocócica", "Diagnóstico diferencial"]
-    },
-    {
-      "topic": "Bronquiolite",
-      "subtopics": ["Etiologia (VSR)", "Fisiopatologia", "Quadro clínico", "Score de gravidade", "Tratamento", "Critérios de internação"]
     }
   ],
   "subjects": ["Infecções de Vias Aéreas Superiores", "Bronquiolite", ...todos os temas],
+  "reviewSchedule": [
+    {
+      "topic": "Bronquiolite",
+      "studyDay": "Seg",
+      "studyWeek": 1,
+      "d1": { "day": "Ter", "week": 1 },
+      "d7": { "day": "Seg", "week": 2 },
+      "d30": { "day": "Seg", "week": 5 }
+    }
+  ],
   "weeklySchedule": [
     {
       "day": "Seg",
+      "week": 1,
       "tasks": [
-        { "time": "08:00", "subject": "Bronquiolite", "duration": "2h", "type": "estudo", "details": "Etiologia (VSR), fisiopatologia obstrutiva, quadro clínico típico (sibilância + taquipneia em lactente)" },
-        { "time": "10:00", "subject": "Bronquiolite - Questões", "duration": "1h", "type": "questoes", "details": "Resolver questões sobre critérios de internação e diagnóstico diferencial com asma" }
+        { "time": "08:00", "subject": "Bronquiolite", "duration": "2h", "type": "estudo", "details": "Etiologia (VSR), fisiopatologia obstrutiva, quadro clínico típico" },
+        { "time": "10:00", "subject": "Bronquiolite - Questões", "duration": "1h", "type": "questoes", "details": "Resolver questões sobre critérios de internação" }
+      ]
+    },
+    {
+      "day": "Ter",
+      "week": 1,
+      "tasks": [
+        { "time": "08:00", "subject": "Revisão D1: Bronquiolite", "duration": "30min", "type": "revisao", "details": "Revisar conceitos-chave: VSR, score de gravidade, critérios de internação" },
+        { "time": "08:30", "subject": "Pneumonias", "duration": "2h", "type": "estudo", "details": "Classificação por agente, típica vs atípica" }
       ]
     }
   ],
@@ -110,13 +133,16 @@ Retorne APENAS um JSON válido (sem markdown, sem \`\`\`) no formato:
 
 REGRAS OBRIGATÓRIAS:
 - O campo "topicMap" DEVE conter TODOS os temas com seus subtópicos (mínimo 3 subtópicos por tema)
-- O campo "details" em cada task é OBRIGATÓRIO - seja específico sobre O QUE estudar (cite subtópicos, conceitos-chave)
+- O campo "details" em cada task é OBRIGATÓRIO - seja específico sobre O QUE estudar
+- O campo "reviewSchedule" é OBRIGATÓRIO - liste TODOS os temas com suas datas de revisão D1, D7 e D30
+- O campo "week" em cada dia do weeklySchedule indica a semana (1, 2, 3...)
+- Blocos de revisão DEVEM ter type "revisao" e subject começando com "Revisão D1:", "Revisão D7:" ou "Revisão D30:"
 - Use os dias: Seg, Ter, Qua, Qui, Sex, Sáb, Dom (apenas ${daysPerWeek} dias)
 - Tipos válidos: "estudo", "revisao", "simulado", "questoes"
 - TODOS os temas do topicMap DEVEM estar distribuídos no weeklySchedule
-- Respeite o limite de ${hoursPerDay}h/dia
+- Respeite o limite de ${hoursPerDay}h/dia incluindo revisões
 - Se não houver edital, use temas padrão das 5 grandes áreas de residência médica
-- Cada tema deve ter pelo menos: 1 bloco de estudo teórico + 1 bloco de questões`;
+- Cada tema deve ter pelo menos: 1 bloco de estudo teórico + 1 bloco de questões + 3 blocos de revisão (D1, D7, D30)`;
 
     const aiResp = await aiFetch({
       messages: [{ role: "user", content: prompt }],
