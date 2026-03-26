@@ -1,38 +1,33 @@
 
 
-# Plano: Melhorar módulo Simulados
+# Plano: Priorizar Internato e Ciclo Clinico na geracao diaria
 
-## Problemas atuais
+## Situacao atual
+O `daily-question-generator` seleciona as 2 especialidades com **menos questoes** no banco, sem considerar ciclo academico. Isso distribui igualmente entre Basico, Clinico e Internato.
 
-1. **Quantidade inexata**: O `generateBatch` pede X questões mas a IA pode retornar menos. O retry ajuda mas nem sempre resolve
-2. **Prompt fraco**: O prompt é genérico ("Gere X questões...") sem instruções de formato JSON estruturado, casos clínicos detalhados, ou distribuição por tema
-3. **Erro silencioso em lotes**: Batches que falham são ignorados sem feedback ao usuário
-4. **Progresso vago**: Loading mostra apenas "Gerando questões..." sem indicar quantas já foram geradas
-5. **Deduplicação inexistente**: Múltiplos batches podem gerar questões repetidas
+## Mudanca proposta
 
-## Melhorias propostas
+### Editar `supabase/functions/daily-question-generator/index.ts`
 
-### Editar `src/pages/Simulados.tsx`
+**Adicionar sistema de peso por ciclo:**
 
-**1. Prompt mais rigoroso no `generateBatch`**
-- Instruir a IA a retornar JSON puro (sem markdown)
-- Exigir distribuição proporcional por tema (ex: 3 temas, 10 questões = ~3-4 por tema)
-- Pedir caso clínico com dados do paciente (idade, sexo, queixa, exames) em cada questão
-- Exigir explicação com referência bibliográfica
+1. Definir os ciclos com pesos:
+   - Internato (Cirurgia, GO, Emergencia, Preventiva, Pediatria, Terapia Intensiva): peso **3x** (aparecem com muito mais frequencia)
+   - Ciclo Clinico (Cardio, Neuro, Dermato, etc.): peso **2x**
+   - Ciclo Basico (Anatomia, Bioquimica, etc.): peso **1x**
 
-**2. Progresso detalhado**
-- Mostrar "Geradas 7/10 questões..." atualizando conforme batches completam
-- Barra de progresso visual em vez de apenas texto
+2. Na selecao das especialidades (linhas 374-385), em vez de ordenar apenas por contagem, dividir a contagem pelo peso do ciclo. Assim especialidades de Internato e Clinico precisam de **mais questoes** para nao serem priorizadas.
 
-**3. Deduplicação**
-- Após juntar todos os batches, filtrar questões com enunciados muito similares (comparação por primeiros 80 caracteres)
+3. Selecionar **3 especialidades** por execucao (em vez de 2): garantir que pelo menos 1 seja Internato e 1 seja Clinico.
 
-**4. Retry inteligente**
-- Se após 2 tentativas ainda faltar questões, informar ao usuário quantas foram geradas e perguntar se quer continuar com o que tem
+### Logica simplificada
+```text
+score = count / weight
+Internato:  100 questoes / 3 = score 33 (priorizado)
+Clinico:    100 questoes / 2 = score 50
+Basico:     100 questoes / 1 = score 100 (deprioritizado)
+```
 
-**5. Validação do `correct_index`**
-- Verificar que `correct_index` está dentro do range de opções (0 a options.length-1), evitando gabarito inválido
-
-### Arquivo
-- Editar: `src/pages/Simulados.tsx`
+## Arquivo
+- Editar + deploy: `supabase/functions/daily-question-generator/index.ts`
 
