@@ -550,7 +550,7 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
             </Button>
           </div>
         </div>
-      )
+      )}
 
       {tips && (
         <div className="glass-card p-4 border-l-4 border-l-accent">
