@@ -8,22 +8,38 @@ const corsHeaders = {
 };
 
 const TRUSTED_DOMAINS = [
-  // Governo / INEP
+  // Governo / INEP / Provas oficiais
   "inep.gov.br", "gov.br", "saude.sp.gov.br", "saude.gov.br",
-  // Universidades
+  "enare.org.br", "abmes.org.br",
+  // Universidades federais
   "usp.br", "unicamp.br", "unifesp.br", "fmusp.br", "fcm.unicamp.br",
   "ufpr.br", "ufrj.br", "ufmg.br", "ufrgs.br", "ufba.br", "ufpe.br",
-  "ufsc.br", "unesp.br", "pucrs.br", "pucsp.br", "uel.br", "uem.br",
+  "ufsc.br", "unesp.br", "uel.br", "uem.br", "ufg.br", "ufms.br",
+  "ufpa.br", "ufma.br", "ufrn.br", "ufal.br", "ufes.br", "ufc.br",
+  "ufpb.br", "ufpi.br", "ufmt.br", "unb.br", "ufam.br", "ufra.br",
+  "ufcg.br", "ufscar.br", "ufsm.br", "furg.br", "ufla.br",
+  // Universidades estaduais e privadas
+  "pucrs.br", "pucsp.br", "pucminas.br", "pucpr.br", "puccamp.br",
+  "mackenzie.br", "einstein.br", "hsl.org.br", "hospitalsiriolibanes.org.br",
+  "santacasasp.org.br", "fcmsantacasasp.edu.br",
   // Bancas / organizadoras
   "fgv.br", "vunesp.com.br", "cesgranrio.org.br", "ibfc.org.br",
-  "amrigs.org.br", "santacasasp.org.br", "upenet.com.br",
+  "amrigs.org.br", "upenet.com.br", "fuvest.br", "comvest.unicamp.br",
+  "famerp.br", "fmabc.br", "iamspe.sp.gov.br",
   // Portais de provas e questões
   "qconcursos.com.br", "pciconcursos.com.br", "questoesmedicas.com.br",
   "residenciamedicasp.com.br", "residenciamedica.com.br",
-  // Educação médica
+  "provamedicina.com.br", "residenciamedica.net",
+  // Educação médica nacional
   "medway.com.br", "medcel.com.br", "estrategiamed.com.br",
   "medgrupo.com.br", "sanarmed.com", "editorasanar.com.br",
-  "jaleko.com.br", "afya.com.br",
+  "jaleko.com.br", "afya.com.br", "medblog.estrategiaeducacional.com.br",
+  "med.estrategia.com",
+  // Sites internacionais
+  "amboss.com", "usmle.org", "nbme.org", "pubmed.ncbi.nlm.nih.gov",
+  "medscape.com", "lecturio.com", "osmosis.org", "kenhub.com",
+  "radiopaedia.org", "teachmemedicine.org", "geekymedics.com",
+  "passmedicine.com", "bmj.com", "nejm.org", "thelancet.com",
 ];
 
 const CLINICAL_CONTENT_MARKERS = [
@@ -87,21 +103,47 @@ function buildQueryPool(specialty: string, banca: string | null): string[] {
     return [
       `"${banca}" ${specialty} questões alternativas gabarito`,
       `"${banca}" ${specialty} prova comentada residência médica`,
+      `"${banca}" ${specialty} prova gabarito oficial`,
     ];
   }
 
-  // Large diverse pool — the function will skip already-scraped URLs
+  // Massive diverse pool — the function will skip already-scraped URLs
   return [
+    // Portais de questões nacionais
     `site:medway.com.br ${specialty} questões comentadas residência`,
-    `"questão" "${specialty}" prova residência médica alternativas gabarito`,
     `site:sanarmed.com ${specialty} questões comentadas prova`,
     `site:qconcursos.com.br ${specialty} questões residência médica`,
     `site:estrategiamed.com.br ${specialty} questões comentadas`,
-    `${specialty} prova residência médica questões gabarito comentado`,
-    `${specialty} questões objetivas residência médica 2024 2025`,
     `site:medcel.com.br ${specialty} questões comentadas`,
+    `site:med.estrategia.com ${specialty} questões gabarito residência`,
+    // Provas oficiais e PDFs
+    `"${specialty}" prova residência médica gabarito oficial PDF`,
+    `REVALIDA INEP ${specialty} prova questões gabarito`,
+    `ENARE ${specialty} questões prova residência`,
+    `SUS-SP ${specialty} prova residência médica gabarito`,
+    // Universidades
+    `USP ${specialty} prova residência questões comentadas`,
+    `UNICAMP ${specialty} prova residência médica gabarito`,
+    `UNIFESP ${specialty} questões prova residência`,
+    `Santa Casa ${specialty} prova residência médica questões`,
+    `UFRJ UFMG ${specialty} prova residência gabarito`,
+    // Buscas genéricas diversificadas
+    `"questão" "${specialty}" prova residência médica alternativas gabarito`,
+    `${specialty} prova residência médica questões gabarito comentado`,
+    `${specialty} questões objetivas residência médica 2024 2025 2026`,
     `"residência médica" "${specialty}" questões resolvidas alternativas`,
     `${specialty} simulado residência médica questões com gabarito`,
+    // Sites internacionais (traduzidos)
+    `site:amboss.com ${specialty} multiple choice questions`,
+    `site:radiopaedia.org ${specialty} quiz cases`,
+    `site:geekymedics.com ${specialty} questions answers`,
+    `site:lecturio.com ${specialty} board review questions`,
+    `${specialty} USMLE step 2 questions explanations`,
+    `${specialty} medical residency exam MCQ answers`,
+    // Provas estaduais
+    `${specialty} prova residência AMRIGS questões gabarito`,
+    `${specialty} prova residência FAMERP questões comentadas`,
+    `${specialty} concurso residência médica questões 2025`,
   ];
 }
 
