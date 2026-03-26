@@ -50,6 +50,11 @@ const DailyPlan = () => {
   const [todayTopics, setTodayTopics] = useState<Array<{ id: string; tema: string; especialidade: string; subtopico: string | null }>>([]);
   const [completedInitialTopics, setCompletedInitialTopics] = useState<Set<string>>(new Set());
   const [masteryData, setMasteryData] = useState<Map<string, { correctRate: number; reviewsDone: number }>>(new Map());
+  const [dailyMinutes, setDailyMinutes] = useState(240);
+  const [overflowReviews, setOverflowReviews] = useState<ScheduledReview[]>([]);
+  const [overflowTopics, setOverflowTopics] = useState<Array<{ id: string; tema: string; especialidade: string; subtopico: string | null }>>([]);
+  const [showOverflowReviews, setShowOverflowReviews] = useState(false);
+  const [showOverflowTopics, setShowOverflowTopics] = useState(false);
 
   // Pomodoro state
   const [pomodoroOpen, setPomodoroOpen] = useState(false);
