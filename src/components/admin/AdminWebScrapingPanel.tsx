@@ -128,7 +128,7 @@ const AdminWebScrapingPanel = () => {
 
       // Rate-limit delay between calls
       if (i < SPECIALTIES.length - 1 && !cancelRef.current) {
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise(r => setTimeout(r, 4000));
       }
     }
 
