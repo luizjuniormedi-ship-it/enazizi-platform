@@ -562,6 +562,7 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
             </div>
           ))}
         </div>
+        </>
       ) : !showConfig ? (
         <div className="glass-card p-12 text-center">
           <GraduationCap className="h-12 w-12 text-primary/30 mx-auto mb-4" />
