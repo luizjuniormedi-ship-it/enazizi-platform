@@ -16,6 +16,7 @@ const Achievements = () => {
   const { gamification, unlockedKeys, loading } = useGamification();
   const [ranking, setRanking] = useState<{ userId: string; displayName: string; xp: number; level: number; weeklyXp: number }[]>([]);
   const [filter, setFilter] = useState<string>("all");
+  const [isWeeklyRanking, setIsWeeklyRanking] = useState(true);
 
   useEffect(() => {
     const loadRanking = async () => {
@@ -26,15 +27,30 @@ const Achievements = () => {
         .limit(20);
 
       if (!data) return;
-      // Get display names
-      const userIds = data.map((r: any) => r.user_id);
+
+      const hasWeeklyXp = data.some((r: any) => r.weekly_xp > 0);
+      let finalData = data;
+
+      if (!hasWeeklyXp) {
+        const { data: totalData } = await supabase
+          .from("user_gamification")
+          .select("user_id, xp, level, weekly_xp")
+          .order("xp", { ascending: false })
+          .limit(20);
+        if (totalData && totalData.length > 0) finalData = totalData;
+        setIsWeeklyRanking(false);
+      } else {
+        setIsWeeklyRanking(true);
+      }
+
+      const userIds = finalData.map((r: any) => r.user_id);
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, display_name")
         .in("user_id", userIds);
 
       const nameMap = new Map((profiles || []).map((p: any) => [p.user_id, p.display_name]));
-      setRanking(data.map((r: any) => ({
+      setRanking(finalData.map((r: any) => ({
         userId: r.user_id,
         displayName: nameMap.get(r.user_id) || "Anônimo",
         xp: r.xp,
@@ -130,7 +146,7 @@ const Achievements = () => {
           <div className="glass-card p-4">
             <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
               <Medal className="h-5 w-5 text-amber-500" />
-              Ranking Semanal
+              {isWeeklyRanking ? "Ranking Semanal" : "Ranking Geral"}
             </h2>
             {ranking.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">Nenhum dado ainda.</p>
@@ -147,8 +163,8 @@ const Achievements = () => {
                         <div className="text-[10px] text-muted-foreground">Nível {r.level} • {r.xp.toLocaleString()} XP</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-bold text-primary">+{r.weeklyXp}</div>
-                        <div className="text-[10px] text-muted-foreground">semana</div>
+                        <div className="text-sm font-bold text-primary">{isWeeklyRanking ? `+${r.weeklyXp}` : r.xp.toLocaleString()}</div>
+                        <div className="text-[10px] text-muted-foreground">{isWeeklyRanking ? "semana" : "XP total"}</div>
                       </div>
                     </div>
                   );
