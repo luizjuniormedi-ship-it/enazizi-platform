@@ -1,34 +1,63 @@
 
 
-# Plano: Corrigir contabilizacao de atividades e reposicionar Termometro
+# Plano: Dashboard Limpo com Navegacao Drill-Down
 
-## Problemas identificados
+## Problema atual
+O dashboard mostra tudo de uma vez: saudacao, XP, banners, alertas, termometro, KPIs, graficos, leaderboard, etc. Sao ~15 widgets empilhados, gerando sobrecarga visual.
 
-1. **StreakCalendar** so consulta `practice_attempts` para marcar dias ativos — ignora `exam_sessions`, `simulation_history`, `anamnesis_results`, `teacher_simulado_results`
-2. **DailyGoalWidget** so conta `practice_attempts` + `exam_sessions` — ignora simulados de professor e plantoes
-3. **OnboardingChecklist** usa `hasCompletedDiagnostic` do perfil mas esse flag pode nao estar sendo atualizado apos o nivelamento
-4. **ApprovalThermometer** esta posicionado abaixo dos KPIs em vez de no topo
+## Conceito
+Transformar o dashboard em uma tela resumida com **5 cards principais** clicaveis. Ao clicar em qualquer card, ele expande/navega para uma tela detalhada.
+
+## Estrutura da tela principal (resumo)
+
+```text
+┌─────────────────────────────────┐
+│ Saudacao + XP (compacto)        │
+├─────────────────────────────────┤
+│ Termometro de Aprovacao (topo)  │
+├────────────────┬────────────────┤
+│ Desempenho     │ Cronograma     │
+│ 72% acerto     │ 3 revisoes     │
+│ 150 questoes   │ 5/12 tarefas   │
+├────────────────┼────────────────┤
+│ Streak & Metas │ Simulados      │
+│ 🔥 7 dias      │ 4 feitos       │
+│ Meta: 80%      │ Media: 68%     │
+├────────────────┴────────────────┤
+│ Recomendacoes Inteligentes      │
+└─────────────────────────────────┘
+```
+
+Cada card e clicavel e abre uma **secao expandida** (Sheet/Dialog ou sub-rota) com os detalhes completos.
 
 ## Alteracoes
 
-### 1. `src/components/dashboard/StreakCalendar.tsx`
-- Adicionar queries paralelas para `exam_sessions` (finished_at), `simulation_history` (created_at), `anamnesis_results` (created_at), `teacher_simulado_results` (created_at)
-- Unir todas as datas no Set `activityDays` para que qualquer atividade marque o dia como ativo
+### 1. Novo componente `DashboardSummaryCard.tsx`
+- Card reutilizavel com: icone, titulo, 2-3 metricas resumidas, seta de "ver mais"
+- Ao clicar, abre um `Sheet` (drawer lateral/inferior) com o conteudo detalhado
+- Usa o pattern de Sheet do shadcn ja existente no projeto
 
-### 2. `src/components/dashboard/DailyGoalWidget.tsx`
-- Adicionar query para `teacher_simulado_results` (hoje) e `simulation_history` (hoje)
-- Somar total_questions dos simulados de professor + contar simulacoes clinicas como questoes equivalentes (ex: 1 plantao = 5 questoes)
+### 2. Refatorar `Dashboard.tsx`
+- **Manter no topo** (sempre visiveis): Saudacao compacta, XP, banners de sistema, Termometro
+- **Agrupar em 4 cards resumo**:
+  - **Desempenho**: Questoes respondidas, taxa de acerto, erros → ao abrir mostra DashboardCharts + SpecialtyProgressCard + TopicEvolution
+  - **Cronograma & Revisoes**: Tarefas, revisoes pendentes, plano do dia → ao abrir mostra DailyPlanWidget + DailyGoalWidget
+  - **Streak & Gamificacao**: Streak, nivel, conquistas → ao abrir mostra StreakCalendar + WeeklyProgressCard + MiniLeaderboard
+  - **Simulados & Pratica**: Simulados feitos, discursivas, plantoes → ao abrir mostra DashboardMetricsGrid completo + SpecialtyBenchmark
+- **Manter embaixo**: SmartRecommendations (compacto, 2-3 sugestoes)
+- Remover widgets que ja estao acessiveis via sidebar (ErrorReviewCard, SmartNotifications ficam como notificacoes)
 
-### 3. `src/components/dashboard/OnboardingChecklist.tsx`
-- O item "diagnostic" ja usa `hasCompletedDiagnostic` que vem de `profiles.has_completed_diagnostic`
-- Verificar se a pagina Diagnostic esta atualizando esse flag — adicionar fallback checando `diagnostic_results` count > 0
+### 3. Manter comportamento para novos usuarios
+- QuickStartCard e OnboardingChecklist continuam aparecendo normalmente para `isNewUser`
 
-### 4. `src/pages/Dashboard.tsx`
-- Mover `<ApprovalThermometer>` para antes do grid Streak+DailyGoal (logo apos SmartRecommendations, dentro do bloco `!isNewUser`)
+## Detalhes tecnicos
+- Usar `Sheet` do shadcn (ja existe em `src/components/ui/sheet.tsx`) para os paineis detalhados
+- Os componentes existentes (StreakCalendar, DashboardCharts, etc) nao mudam — so movem para dentro dos Sheets
+- Estado `openSection: string | null` controla qual Sheet esta aberto
+- Mobile: Sheet abre de baixo (side="bottom"); Desktop: abre da direita (side="right")
 
-## Arquivos a modificar
-- `src/components/dashboard/StreakCalendar.tsx`
-- `src/components/dashboard/DailyGoalWidget.tsx`
-- `src/components/dashboard/OnboardingChecklist.tsx`
-- `src/pages/Dashboard.tsx`
+## Arquivos
+- Criar: `src/components/dashboard/DashboardSummaryCard.tsx`
+- Modificar: `src/pages/Dashboard.tsx`
+- Sem mudancas nos componentes filhos existentes
 
