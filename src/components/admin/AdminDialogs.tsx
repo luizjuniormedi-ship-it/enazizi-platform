@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { LogOut, BarChart3, Brain, ClipboardList, CreditCard, AlertTriangle, TrendingUp, BookOpen, Target, Activity, Lock, Phone, GraduationCap, Calendar, Clock, Stethoscope, Building2, PenTool, FileCheck, Upload, FlipVertical } from "lucide-react";
+import { LogOut, BarChart3, Brain, ClipboardList, CreditCard, AlertTriangle, TrendingUp, BookOpen, Target, Activity, Lock, Phone, GraduationCap, Calendar, Clock, Stethoscope, Building2, PenTool, FileCheck, Upload, FlipVertical, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
