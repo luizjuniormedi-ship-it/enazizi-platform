@@ -576,7 +576,7 @@ const CronogramaInteligente = () => {
               } catch (err) {
                 console.error("Sync error:", err);
               }
-              loadData();
+              await loadData();
             }
 
             return {
