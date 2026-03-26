@@ -654,7 +654,7 @@ const DailyPlan = () => {
         </>
       )}
 
-      {!plan && scheduledReviews.length === 0 && !generating && (
+      {!plan && scheduledReviews.length === 0 && todayTopics.length === 0 && !generating && (
         <div className="text-center py-16">
           <Brain className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground">Clique em "Gerar Plano" para criar seu plano do dia.</p>

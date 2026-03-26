@@ -14,7 +14,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { performanceData, examDate, dailyHours, completedTopics, weakAreas, flashcardsDue, recentErrors, scheduledTopics } = await req.json();
+    const { performanceData, examDate, dailyHours, completedTopics, weakAreas, flashcardsDue, recentErrors, scheduledTopics, activeTopics } = await req.json();
 
     const sanitizeTopicList = (value: unknown) => Array.isArray(value)
       ? value.map(String).filter((t) => isMedicalContent(t) || t.length < 60)
