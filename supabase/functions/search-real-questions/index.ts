@@ -8,22 +8,38 @@ const corsHeaders = {
 };
 
 const TRUSTED_DOMAINS = [
-  // Governo / INEP
+  // Governo / INEP / Provas oficiais
   "inep.gov.br", "gov.br", "saude.sp.gov.br", "saude.gov.br",
-  // Universidades
+  "enare.org.br", "abmes.org.br",
+  // Universidades federais
   "usp.br", "unicamp.br", "unifesp.br", "fmusp.br", "fcm.unicamp.br",
   "ufpr.br", "ufrj.br", "ufmg.br", "ufrgs.br", "ufba.br", "ufpe.br",
-  "ufsc.br", "unesp.br", "pucrs.br", "pucsp.br", "uel.br", "uem.br",
+  "ufsc.br", "unesp.br", "uel.br", "uem.br", "ufg.br", "ufms.br",
+  "ufpa.br", "ufma.br", "ufrn.br", "ufal.br", "ufes.br", "ufc.br",
+  "ufpb.br", "ufpi.br", "ufmt.br", "unb.br", "ufam.br", "ufra.br",
+  "ufcg.br", "ufscar.br", "ufsm.br", "furg.br", "ufla.br",
+  // Universidades estaduais e privadas
+  "pucrs.br", "pucsp.br", "pucminas.br", "pucpr.br", "puccamp.br",
+  "mackenzie.br", "einstein.br", "hsl.org.br", "hospitalsiriolibanes.org.br",
+  "santacasasp.org.br", "fcmsantacasasp.edu.br",
   // Bancas / organizadoras
   "fgv.br", "vunesp.com.br", "cesgranrio.org.br", "ibfc.org.br",
-  "amrigs.org.br", "santacasasp.org.br", "upenet.com.br",
+  "amrigs.org.br", "upenet.com.br", "fuvest.br", "comvest.unicamp.br",
+  "famerp.br", "fmabc.br", "iamspe.sp.gov.br",
   // Portais de provas e questões
   "qconcursos.com.br", "pciconcursos.com.br", "questoesmedicas.com.br",
   "residenciamedicasp.com.br", "residenciamedica.com.br",
-  // Educação médica
+  "provamedicina.com.br", "residenciamedica.net",
+  // Educação médica nacional
   "medway.com.br", "medcel.com.br", "estrategiamed.com.br",
   "medgrupo.com.br", "sanarmed.com", "editorasanar.com.br",
-  "jaleko.com.br", "afya.com.br",
+  "jaleko.com.br", "afya.com.br", "medblog.estrategiaeducacional.com.br",
+  "med.estrategia.com",
+  // Sites internacionais
+  "amboss.com", "usmle.org", "nbme.org", "pubmed.ncbi.nlm.nih.gov",
+  "medscape.com", "lecturio.com", "osmosis.org", "kenhub.com",
+  "radiopaedia.org", "teachmemedicine.org", "geekymedics.com",
+  "passmedicine.com", "bmj.com", "nejm.org", "thelancet.com",
 ];
 
 const CLINICAL_CONTENT_MARKERS = [
