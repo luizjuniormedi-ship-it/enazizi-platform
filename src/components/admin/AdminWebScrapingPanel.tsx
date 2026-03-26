@@ -64,7 +64,10 @@ const AdminWebScrapingPanel = () => {
         description: `${data.pages_scraped} páginas analisadas de fontes oficiais.`,
       });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Erro desconhecido";
+      const isTimeout = e instanceof TypeError && /load failed|abort|timeout/i.test(e.message);
+      const msg = isTimeout
+        ? "A busca demorou demais e foi cancelada. Tente novamente ou escolha outra especialidade."
+        : (e instanceof Error ? e.message : "Erro desconhecido");
       setError(msg);
       toast({ title: "Erro", description: msg, variant: "destructive" });
     } finally {
