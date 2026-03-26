@@ -30,12 +30,15 @@ Deno.serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabaseAuth = createClient(supabaseUrl, serviceRoleKey);
-    
-    // Validate token using service role client's admin API
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
+
+    // Client 1: User context — validates the JWT via the user's own token
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
     if (authError || !user) {
       console.error("Auth error:", authError?.message);
       return new Response(JSON.stringify({ error: "Token inválido. Faça login novamente." }), {
@@ -43,6 +46,9 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Client 2: Service role — bypasses RLS for admin operations
+    const supabaseAuth = createClient(supabaseUrl, serviceRoleKey);
 
     const { data: roleData } = await supabaseAuth
       .from("user_roles")
