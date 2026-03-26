@@ -114,7 +114,7 @@ export default function OnboardingChecklist({ stats, metrics, hasCompletedDiagno
       path: "/dashboard/agentes",
       isComplete: metrics.summariesCreated > 0 || metrics.anamnesisCompleted > 0,
     },
-  ], [stats, metrics, hasCompletedDiagnostic]);
+  ], [stats, metrics, diagnosticDone]);
 
   const completed = items.filter((i) => i.isComplete).length;
   const totalXp = items.filter((i) => i.isComplete).reduce((s, i) => s + i.xp, 0);
