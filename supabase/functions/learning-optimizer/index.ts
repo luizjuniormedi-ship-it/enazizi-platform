@@ -87,7 +87,7 @@ DADOS DO ALUNO:
 - Áreas fracas: ${JSON.stringify(safeWeakAreas)}
 - Flashcards pendentes: ${flashcardsDue || 0}
 - Erros recentes: ${JSON.stringify(safeRecentErrors)}
-- Desempenho geral: ${JSON.stringify(safePerformanceData)}${scheduledSection}
+- Desempenho geral: ${JSON.stringify(safePerformanceData)}${scheduledSection}${activeSection}
 
 RETORNE um plano do dia estruturado em JSON com a seguinte estrutura:
 {
