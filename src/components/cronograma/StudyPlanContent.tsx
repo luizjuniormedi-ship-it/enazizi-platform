@@ -99,6 +99,8 @@ const StudyPlanContent = ({ onSubjectsGenerated }: StudyPlanContentProps) => {
         setPlanId(data.id);
         setSchedule(plan.weeklySchedule || []);
         setSubjects(plan.subjects || []);
+        setTopicMap(plan.topicMap || []);
+        setDetectedSpecialty(plan.detectedSpecialty || "");
         setTips(plan.tips || "");
         if (plan.config) {
           if (plan.config.examDate) setExamDate(new Date(plan.config.examDate));
