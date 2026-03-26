@@ -212,8 +212,11 @@ const DailyPlan = () => {
       // Show topics that have NO completed reviews (first contact) and aren't already in scheduled reviews
       const allNewTopics = (todayTemasRes.data || []).filter(t => !reviewedTemaIds.has(t.id) && !completedTemaIds.has(t.id));
 
-      // Time budget for initial topics: remaining after reviews (uses local usedReviewMinutes)
-      const topicBudget = userDailyMinutes - usedReviewMinutes;
+      // Time budget for initial topics: remaining after reviews, capped at 40% of total daily time
+      const topicBudget = Math.min(
+        userDailyMinutes - usedReviewMinutes,
+        Math.round(userDailyMinutes * 0.4)
+      );
       const TOPIC_DURATION = 40; // 40min per new topic (realistic first-contact study)
       const MAX_NEW_TOPICS_PER_DAY = 5; // Hard cap to keep plan achievable
       let usedTopicMinutes = 0;
