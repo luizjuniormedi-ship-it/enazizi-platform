@@ -665,7 +665,7 @@ const DailyPlan = () => {
                     <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">Novo</span>
                     <span className="text-xs text-muted-foreground">{topic.especialidade}</span>
                     <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-                      <Clock className="h-3 w-3" /> ~20min
+                      <Clock className="h-3 w-3" /> ~40min
                     </span>
                   </div>
                   {topic.subtopico && (
