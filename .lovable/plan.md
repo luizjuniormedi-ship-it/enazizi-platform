@@ -1,22 +1,31 @@
 
 
-# Plano: Corrigir extração de questões reais (search-real-questions)
+# Plano: Corrigir timeout na busca de questões reais
 
-## Problemas identificados nos logs
-
-1. **JSON truncado da IA**: O log mostra "Failed to parse AI JSON response" com uma questão válida cortada no meio. A IA gera respostas longas que excedem o limite e o JSON fica incompleto
-2. **Respostas vazias**: "AI raw response length: 33" = a IA retorna `{"questions": []}` mesmo com conteúdo válido de 64k+ chars, porque o conteúdo é truncado demais (12k chars) e perde as questões
-3. **Truncamento agressivo do conteúdo**: Fontes como `endocrino.org.br` (88k chars) ou `qconcursos.com` (64k chars) são cortadas para apenas 12k chars, perdendo as questões que estão mais no meio/final do documento
-4. **Deduplicação limitada**: Só verifica os últimos 30 statements, insuficiente para evitar duplicatas a longo prazo
+## Problema
+A edge function `search-real-questions` faz múltiplas buscas Firecrawl sequenciais (cada uma com timeout de 20s), totalizando até 60-80s. O browser aborta a conexão com "Load failed" antes da resposta chegar.
 
 ## Solução
 
-### Editar: `supabase/functions/search-real-questions/index.ts`
+### 1. Frontend: adicionar AbortController com timeout de 120s (`src/components/admin/AdminWebScrapingPanel.tsx`)
+- Adicionar `AbortController` com `setTimeout` de 120 segundos no `searchSingle`
+- Melhorar mensagem de erro para timeout: "A busca pode levar até 2 minutos. Tente novamente."
 
-**1. Melhorar extração de conteúdo relevante (pré-filtro inteligente)**
-- Antes de truncar, fazer um pré-filtro: buscar blocos de texto que contenham padrões de questões (`[A-E]\)`, numeração `1.`, `2.`, `Questão`, `alternativa`)
-- Extrair apenas os trechos que parecem questões em vez de pegar os primeiros 12k chars cegamente
-- Aumentar limite por fonte de 12k para 18k chars
+### 2. Edge function: reduzir tempo total (`supabase/functions/search-real-questions/index.ts`)
+- Reduzir timeout do Firecrawl de 20s para 12s por query
+- Limitar a 4 queries tentadas (em vez de iterar todas até achar 2 resultados)
+- Adicionar timeout global de 55s na função (edge functions tem limite de 60s) — se atingir, retornar o que já processou
+- Executar as queries Firecrawl em paralelo (2 de cada vez) em vez de sequencialmente
 
-**2. Corrigir parsing de JSON truncado**
-- Se o JSON falhar no parse, tentar recuperar questões parciais:
+### 3. Bulk search: aumentar delay entre calls
+- Aumentar delay de 2s para 4s no bulk para evitar rate limiting
+
+## Resultado
+- Função completa em <55s mesmo com queries lentas
+- Frontend não aborta prematuramente
+- Se algumas queries falharem por timeout, o resultado parcial é retornado
+
+## Arquivos
+- Editar: `src/components/admin/AdminWebScrapingPanel.tsx`
+- Editar + deploy: `supabase/functions/search-real-questions/index.ts`
+
