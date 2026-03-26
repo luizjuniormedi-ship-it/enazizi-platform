@@ -16,6 +16,7 @@ const Achievements = () => {
   const { gamification, unlockedKeys, loading } = useGamification();
   const [ranking, setRanking] = useState<{ userId: string; displayName: string; xp: number; level: number; weeklyXp: number }[]>([]);
   const [filter, setFilter] = useState<string>("all");
+  const [isWeeklyRanking, setIsWeeklyRanking] = useState(true);
 
   useEffect(() => {
     const loadRanking = async () => {
