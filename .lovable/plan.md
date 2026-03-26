@@ -1,63 +1,28 @@
 
 
-# Plano: Dashboard Limpo com Navegacao Drill-Down
+# Plano: Ranking Semanal sempre visivel com fallback para XP total
 
-## Problema atual
-O dashboard mostra tudo de uma vez: saudacao, XP, banners, alertas, termometro, KPIs, graficos, leaderboard, etc. Sao ~15 widgets empilhados, gerando sobrecarga visual.
-
-## Conceito
-Transformar o dashboard em uma tela resumida com **5 cards principais** clicaveis. Ao clicar em qualquer card, ele expande/navega para uma tela detalhada.
-
-## Estrutura da tela principal (resumo)
-
-```text
-┌─────────────────────────────────┐
-│ Saudacao + XP (compacto)        │
-├─────────────────────────────────┤
-│ Termometro de Aprovacao (topo)  │
-├────────────────┬────────────────┤
-│ Desempenho     │ Cronograma     │
-│ 72% acerto     │ 3 revisoes     │
-│ 150 questoes   │ 5/12 tarefas   │
-├────────────────┼────────────────┤
-│ Streak & Metas │ Simulados      │
-│ 🔥 7 dias      │ 4 feitos       │
-│ Meta: 80%      │ Media: 68%     │
-├────────────────┴────────────────┤
-│ Recomendacoes Inteligentes      │
-└─────────────────────────────────┘
-```
-
-Cada card e clicavel e abre uma **secao expandida** (Sheet/Dialog ou sub-rota) com os detalhes completos.
+## Problema
+O ranking semanal (`MiniLeaderboard` e pagina `Achievements`) so mostra dados quando `weekly_xp > 0`. Se nenhum usuario tem XP semanal (apos reset ou inicio), o ranking fica vazio/invisivel — sem referencia nenhuma.
 
 ## Alteracoes
 
-### 1. Novo componente `DashboardSummaryCard.tsx`
-- Card reutilizavel com: icone, titulo, 2-3 metricas resumidas, seta de "ver mais"
-- Ao clicar, abre um `Sheet` (drawer lateral/inferior) com o conteudo detalhado
-- Usa o pattern de Sheet do shadcn ja existente no projeto
+### 1. `src/components/dashboard/MiniLeaderboard.tsx`
+- Remover o `if (ranking.length === 0) return null` — sempre renderizar o componente
+- Adicionar fallback: se todos tem `weekly_xp = 0`, fazer segunda query ordenando por `xp` total
+- Mostrar label dinamico: "Ranking Semanal" quando ha XP semanal, "Ranking Geral" como fallback
+- Exibir mensagem "Comece a estudar para aparecer no ranking!" se realmente nao ha dados
 
-### 2. Refatorar `Dashboard.tsx`
-- **Manter no topo** (sempre visiveis): Saudacao compacta, XP, banners de sistema, Termometro
-- **Agrupar em 4 cards resumo**:
-  - **Desempenho**: Questoes respondidas, taxa de acerto, erros → ao abrir mostra DashboardCharts + SpecialtyProgressCard + TopicEvolution
-  - **Cronograma & Revisoes**: Tarefas, revisoes pendentes, plano do dia → ao abrir mostra DailyPlanWidget + DailyGoalWidget
-  - **Streak & Gamificacao**: Streak, nivel, conquistas → ao abrir mostra StreakCalendar + WeeklyProgressCard + MiniLeaderboard
-  - **Simulados & Pratica**: Simulados feitos, discursivas, plantoes → ao abrir mostra DashboardMetricsGrid completo + SpecialtyBenchmark
-- **Manter embaixo**: SmartRecommendations (compacto, 2-3 sugestoes)
-- Remover widgets que ja estao acessiveis via sidebar (ErrorReviewCard, SmartNotifications ficam como notificacoes)
+### 2. `src/pages/Achievements.tsx`
+- Mesma logica de fallback: se `weekly_xp` de todos e 0, ordenar por `xp` total
+- Mostrar label indicando qual ranking esta sendo exibido
 
-### 3. Manter comportamento para novos usuarios
-- QuickStartCard e OnboardingChecklist continuam aparecendo normalmente para `isNewUser`
-
-## Detalhes tecnicos
-- Usar `Sheet` do shadcn (ja existe em `src/components/ui/sheet.tsx`) para os paineis detalhados
-- Os componentes existentes (StreakCalendar, DashboardCharts, etc) nao mudam — so movem para dentro dos Sheets
-- Estado `openSection: string | null` controla qual Sheet esta aberto
-- Mobile: Sheet abre de baixo (side="bottom"); Desktop: abre da direita (side="right")
+### 3. Reset semanal do `weekly_xp`
+- Verificar se o campo `weekly_reset_at` esta sendo usado — atualmente o hook `useGamification` incrementa `weekly_xp` mas nunca reseta
+- Adicionar logica no `addXp`: se `weekly_reset_at < now()`, zerar `weekly_xp` antes de somar e atualizar `weekly_reset_at` para proximo reset (proxima segunda)
 
 ## Arquivos
-- Criar: `src/components/dashboard/DashboardSummaryCard.tsx`
-- Modificar: `src/pages/Dashboard.tsx`
-- Sem mudancas nos componentes filhos existentes
+- `src/components/dashboard/MiniLeaderboard.tsx`
+- `src/pages/Achievements.tsx`
+- `src/hooks/useGamification.ts`
 
