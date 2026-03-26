@@ -340,7 +340,7 @@ const DailyPlan = () => {
       )}
 
       {/* Progress + Benchmark */}
-      {(plan || scheduledReviews.length > 0) && !generating && (
+      {(plan || scheduledReviews.length > 0 || todayTopics.length > 0) && !generating && (
         <div className="space-y-3">
           <DailyPlanProgress
             overallPct={overallPct}
