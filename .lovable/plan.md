@@ -1,33 +1,42 @@
 
 
-# Plano: Priorizar Internato e Ciclo Clinico na geracao diaria
+# Plano: Priorizar questoes de bancas reais no consumo
 
-## Situacao atual
-O `daily-question-generator` seleciona as 2 especialidades com **menos questoes** no banco, sem considerar ciclo academico. Isso distribui igualmente entre Basico, Clinico e Internato.
+## Problema
+Atualmente os 3 modulos de questoes tratam todas as fontes igualmente:
+- **ExamSimulator**: busca do `questions_bank` com shuffle aleatorio
+- **QuestionsBank**: ordena por data de criacao
+- **Simulados**: gera 100% via IA, ignora o banco existente
 
-## Mudanca proposta
+Questoes de fontes externas (`web-scrape`, `real-exam-ai`, provas reais) tem qualidade superior mas nao sao priorizadas.
 
-### Editar `supabase/functions/daily-question-generator/index.ts`
+## Solucao
 
-**Adicionar sistema de peso por ciclo:**
+### 1. ExamSimulator — priorizar fontes reais (`src/pages/ExamSimulator.tsx`)
+- Apos buscar as questoes do banco (linha 94-112), ordenar por prioridade de fonte antes do shuffle:
+  - Prioridade 1: `web-scrape`, `real-exam-ai` (questoes reais extraidas)
+  - Prioridade 2: `ai-exam-style` (geradas imitando bancas)
+  - Prioridade 3: `daily-auto`, demais fontes
+- Selecionar as N primeiras por prioridade, depois shuffle entre elas
+- Adicionar coluna `source` na query (atualmente nao busca `source`)
 
-1. Definir os ciclos com pesos:
-   - Internato (Cirurgia, GO, Emergencia, Preventiva, Pediatria, Terapia Intensiva): peso **3x** (aparecem com muito mais frequencia)
-   - Ciclo Clinico (Cardio, Neuro, Dermato, etc.): peso **2x**
-   - Ciclo Basico (Anatomia, Bioquimica, etc.): peso **1x**
+### 2. Simulados — usar banco primeiro, complementar com IA (`src/pages/Simulados.tsx`)
+- Antes de gerar via IA, buscar questoes do `questions_bank` que correspondam aos temas selecionados
+- Priorizar fontes reais (`web-scrape`, `real-exam-ai`) sobre geradas
+- Gerar via IA apenas a diferenca (se o banco tem 6 de 10, gerar apenas 4)
+- Manter deduplicacao: comparar com `practice_attempts` do usuario para nao repetir questoes ja respondidas
 
-2. Na selecao das especialidades (linhas 374-385), em vez de ordenar apenas por contagem, dividir a contagem pelo peso do ciclo. Assim especialidades de Internato e Clinico precisam de **mais questoes** para nao serem priorizadas.
+### 3. QuestionsBank — ordenar por fonte (`src/pages/QuestionsBank.tsx`)
+- Adicionar opcao de ordenacao "Questoes reais primeiro"
+- Default: priorizar `web-scrape` e `real-exam-ai` no topo
 
-3. Selecionar **3 especialidades** por execucao (em vez de 2): garantir que pelo menos 1 seja Internato e 1 seja Clinico.
+### 4. Anti-repeticao cross-session
+- Em ExamSimulator e Simulados, buscar os `question_id` das ultimas 200 `practice_attempts` do usuario
+- Excluir essas questoes da selecao
+- Se nao houver questoes suficientes apos exclusao, permitir repeticoes das mais antigas
 
-### Logica simplificada
-```text
-score = count / weight
-Internato:  100 questoes / 3 = score 33 (priorizado)
-Clinico:    100 questoes / 2 = score 50
-Basico:     100 questoes / 1 = score 100 (deprioritizado)
-```
-
-## Arquivo
-- Editar + deploy: `supabase/functions/daily-question-generator/index.ts`
+## Arquivos
+- Editar: `src/pages/ExamSimulator.tsx` (query + ordenacao por fonte + anti-repeticao)
+- Editar: `src/pages/Simulados.tsx` (buscar banco antes de gerar IA + anti-repeticao)
+- Editar: `src/pages/QuestionsBank.tsx` (ordenacao por fonte)
 
