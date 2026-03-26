@@ -193,8 +193,11 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
       return;
     }
     setGenerating(true);
+    setGenerationStep(1);
+    setSyncSummary(null);
     try {
       const { data: session } = await supabase.auth.getSession();
+      setGenerationStep(2);
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-study-plan`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.session?.access_token}` },
@@ -208,6 +211,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
       });
       const result = await resp.json();
       if (!resp.ok) throw new Error(result.error);
+      setGenerationStep(3);
       const plan = result.plan.plan_json as PlanJson;
       setPlanId(result.plan.id);
       setSchedule(plan.weeklySchedule || []);
@@ -216,14 +220,19 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
       setDetectedSpecialty(plan.detectedSpecialty || "");
       setTips(plan.tips || "");
       setShowConfig(false);
-      toast({ title: "Cronograma gerado!", description: "Você pode editar os blocos manualmente." });
       if (onSubjectsGenerated && plan.subjects && plan.subjects.length > 0) {
-        await onSubjectsGenerated(plan.subjects);
+        setGenerationStep(4);
+        const syncResult = await onSubjectsGenerated(plan.subjects);
+        if (syncResult) {
+          setSyncSummary(syncResult);
+        }
       }
+      toast({ title: "Cronograma gerado!", description: "Plano de estudos criado e módulos sincronizados." });
     } catch (err: any) {
       toast({ title: "Erro ao gerar cronograma", description: err.message, variant: "destructive" });
     } finally {
       setGenerating(false);
+      setGenerationStep(0);
     }
   };
 
