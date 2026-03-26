@@ -153,6 +153,11 @@ const AdminUserRow = ({
               disabled={isCurrentlyActioning} onClick={() => onOpenAccess(u)}>
               <Lock className="h-3 w-3" /> Acessos
             </Button>
+            <Button variant="destructive" size="sm" className="h-7 text-xs gap-1"
+              disabled={isCurrentlyActioning || u.roles.includes("admin") || u.user_id === session?.user?.id}
+              onClick={() => onOpenDelete(u)}>
+              <Trash2 className="h-3 w-3" /> Excluir
+            </Button>
           </>
         )}
       </div>
