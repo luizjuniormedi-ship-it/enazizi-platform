@@ -451,6 +451,23 @@ const DailyPlan = () => {
             totalItems={totalItems}
             totalMinutes={totalMinutes}
           />
+          {/* Time budget indicator */}
+          <div className="glass-card p-3 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground flex items-center gap-1.5">
+                <Clock className="h-4 w-4" /> Tempo planejado
+              </span>
+              <span className={`font-semibold ${timeUsedPct > 100 ? "text-destructive" : "text-primary"}`}>
+                {formatTime(totalMinutes)} / {formatTime(dailyMinutes)}
+              </span>
+            </div>
+            <Progress value={timeUsedPct} className="h-2" />
+            {(overflowReviews.length > 0 || overflowTopics.length > 0) && (
+              <p className="text-xs text-muted-foreground">
+                {overflowReviews.length + overflowTopics.length} itens adicionais disponíveis abaixo (não cabem no tempo de hoje)
+              </p>
+            )}
+          </div>
           <ClassBenchmark />
         </div>
       )}
