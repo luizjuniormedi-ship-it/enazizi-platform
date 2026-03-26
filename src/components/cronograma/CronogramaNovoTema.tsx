@@ -55,10 +55,20 @@ const CronogramaNovoTema = ({ specialties, onAdd }: Props) => {
     return { text: "Padrão: D1, D3, D7, D15, D30", color: "text-emerald-500" };
   };
 
+  const handleFileAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files || []);
+    setFiles(prev => [...prev, ...selected]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = () => {
     if (!tema.trim() || !especialidade) return;
-    onAdd(tema.trim(), especialidade, subtopico.trim(), dataEstudo, fonte, dificuldade, observacoes.trim(), feitas, erradas);
-    setTema(""); setSubtopico(""); setObservacoes(""); setQuestoesFeitas(""); setQuestoesErradas("");
+    onAdd(tema.trim(), especialidade, subtopico.trim(), dataEstudo, fonte, dificuldade, observacoes.trim(), feitas, erradas, files.length > 0 ? files : undefined);
+    setTema(""); setSubtopico(""); setObservacoes(""); setQuestoesFeitas(""); setQuestoesErradas(""); setFiles([]);
   };
 
   const preview = getSchedulePreview();
