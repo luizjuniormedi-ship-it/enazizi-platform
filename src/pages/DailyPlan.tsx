@@ -160,24 +160,66 @@ const DailyPlan = () => {
 
         const temaMap = new Map((temas || []).map(t => [t.id, t]));
 
-        const enriched: ScheduledReview[] = reviewsRes.data.map(r => {
-          const tema = temaMap.get(r.tema_id);
-          return {
-            ...r,
-            tema: tema?.tema || "Tema desconhecido",
-            especialidade: tema?.especialidade || "Geral",
-            subtopico: tema?.subtopico || null,
-            overdue: r.data_revisao < today,
-            estimatedMinutes: reviewTimeEstimates[r.tipo_revisao] || 15,
-          };
-        });
-        setScheduledReviews(enriched);
+        const enriched: ScheduledReview[] = reviewsRes.data
+          .map(r => {
+            const tema = temaMap.get(r.tema_id);
+            return {
+              ...r,
+              tema: tema?.tema || "Tema desconhecido",
+              especialidade: tema?.especialidade || "Geral",
+              subtopico: tema?.subtopico || null,
+              overdue: r.data_revisao < today,
+              estimatedMinutes: reviewTimeEstimates[r.tipo_revisao] || 15,
+            };
+          })
+          // Sort: overdue first, then by priority desc
+          .sort((a, b) => {
+            if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
+            return (b.prioridade || 0) - (a.prioridade || 0);
+          });
+
+        // Time budget: 60% for reviews
+        const reviewBudget = Math.round(userDailyMinutes * 0.6);
+        let usedReviewMinutes = 0;
+        const fittingReviews: ScheduledReview[] = [];
+        const extraReviews: ScheduledReview[] = [];
+
+        for (const r of enriched) {
+          if (usedReviewMinutes + (r.estimatedMinutes || 15) <= reviewBudget) {
+            fittingReviews.push(r);
+            usedReviewMinutes += r.estimatedMinutes || 15;
+          } else {
+            extraReviews.push(r);
+          }
+        }
+
+        setScheduledReviews(fittingReviews);
+        setOverflowReviews(extraReviews);
       }
 
       // Set today's topics (exclude those that already have scheduled reviews)
       const reviewedTemaIds = new Set((reviewsRes.data || []).map(r => r.tema_id));
-      const newTodayTopics = (todayTemasRes.data || []).filter(t => !reviewedTemaIds.has(t.id));
-      setTodayTopics(newTodayTopics);
+      const allNewTopics = (todayTemasRes.data || []).filter(t => !reviewedTemaIds.has(t.id));
+
+      // Time budget for initial topics: remaining after reviews, capped at 40%
+      const reviewUsed = scheduledReviews.reduce((s, r) => s + (r.estimatedMinutes || 15), 0);
+      const topicBudget = userDailyMinutes - reviewUsed;
+      let usedTopicMinutes = 0;
+      const fittingTopics: typeof allNewTopics = [];
+      const extraTopics: typeof allNewTopics = [];
+      const TOPIC_DURATION = 20;
+
+      for (const t of allNewTopics) {
+        if (usedTopicMinutes + TOPIC_DURATION <= topicBudget) {
+          fittingTopics.push(t);
+          usedTopicMinutes += TOPIC_DURATION;
+        } else {
+          extraTopics.push(t);
+        }
+      }
+
+      setTodayTopics(fittingTopics);
+      setOverflowTopics(extraTopics);
 
       setMasteryData(mMap);
       setLoading(false);
