@@ -57,6 +57,13 @@ ${safeScheduledTopics.map(t => `- ${t.topic} (${t.specialty}) — Revisão ${t.r
 REGRA: Esses temas DEVEM ser incluídos como blocos no plano. Revisões atrasadas têm prioridade máxima.`
       : "";
 
+    const activeSection = safeActiveTopics.length > 0
+      ? `\n\nTEMAS NOVOS DO CRONOGRAMA (PRIMEIRO CONTATO - INCLUIR COMO BLOCOS type: "study"):
+${safeActiveTopics.map(t => `- ${t.topic} (${t.specialty})${t.subtopics ? ` | Subtópicos: ${t.subtopics}` : ""}`).join("\n")}
+
+REGRA: Esses temas foram adicionados hoje e o aluno ainda não estudou. Inclua como blocos de estudo inicial (type: "study") com priority: "high".`
+      : "";
+
     const systemPrompt = `Você é o Learning Optimization Agent, um agente de IA especializado em otimizar o estudo diário para Residência Médica e disciplinas de saúde em geral.
 
 ⛔ RESTRIÇÃO DE ESCOPO:
