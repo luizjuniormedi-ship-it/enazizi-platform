@@ -61,8 +61,147 @@ function hasClinicalContent(text: string): boolean {
 }
 
 function isDuplicate(statement: string, existingStatements: string[]): boolean {
-  const prefix = statement.slice(0, 80).toLowerCase();
-  return existingStatements.some(ex => ex.slice(0, 80).toLowerCase() === prefix);
+  const prefix = statement.slice(0, 100).toLowerCase().replace(/\s+/g, " ");
+  return existingStatements.some(ex => ex.slice(0, 100).toLowerCase().replace(/\s+/g, " ") === prefix);
+}
+
+/** Pre-filter: extract blocks that look like exam questions from raw markdown */
+function extractQuestionBlocks(markdown: string, maxChars: number): string {
+  // Split into paragraphs / sections
+  const sections = markdown.split(/\n{2,}/);
+  const questionBlocks: string[] = [];
+  let totalLen = 0;
+
+  const questionPattern = /(?:[A-E]\)\s|alternativa|gabarito|\bquestão\b|\d+\.\s)/i;
+
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i].trim();
+    if (!section) continue;
+
+    // Check if this section or the next one contains question markers
+    const nextSection = sections[i + 1]?.trim() || "";
+    const combined = section + " " + nextSection;
+
+    if (questionPattern.test(combined) || hasClinicalContent(section)) {
+      // Grab this section and up to 2 surrounding sections for context
+      const start = Math.max(0, i - 1);
+      const end = Math.min(sections.length - 1, i + 2);
+      const block = sections.slice(start, end + 1).join("\n\n");
+
+      if (totalLen + block.length <= maxChars && !questionBlocks.includes(block)) {
+        questionBlocks.push(block);
+        totalLen += block.length;
+      }
+
+      if (totalLen >= maxChars) break;
+      i = end; // skip ahead
+    }
+  }
+
+  // If we found question blocks, use them; otherwise fall back to truncation
+  if (questionBlocks.length > 0 && totalLen > 500) {
+    return questionBlocks.join("\n\n---\n\n");
+  }
+
+  // Fallback: skip header (first 500 chars) and take up to maxChars
+  return markdown.length > maxChars + 500
+    ? markdown.slice(500, 500 + maxChars)
+    : markdown.slice(0, maxChars);
+}
+
+/** Robust JSON extraction: handles truncated JSON, markdown blocks, partial objects */
+function extractQuestionsFromJson(raw: string): any[] {
+  // Remove markdown code blocks
+  let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+
+  // Remove control characters except newlines/tabs
+  cleaned = cleaned.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+
+  // Try full parse first
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (parsed?.questions && Array.isArray(parsed.questions)) return parsed.questions;
+    if (Array.isArray(parsed)) return parsed;
+  } catch { /* continue to recovery */ }
+
+  // Try finding the questions array
+  const arrMatch = cleaned.match(/"questions"\s*:\s*\[/);
+  if (arrMatch && arrMatch.index !== undefined) {
+    const startIdx = cleaned.indexOf("[", arrMatch.index);
+    if (startIdx !== -1) {
+      let substr = cleaned.slice(startIdx);
+      // Try to find matching bracket
+      let depth = 0;
+      let endIdx = -1;
+      for (let i = 0; i < substr.length; i++) {
+        if (substr[i] === "[") depth++;
+        else if (substr[i] === "]") { depth--; if (depth === 0) { endIdx = i; break; } }
+      }
+      if (endIdx !== -1) {
+        try { return JSON.parse(substr.slice(0, endIdx + 1)); } catch { /* continue */ }
+      }
+      // Array was truncated — try to recover individual objects
+      substr = substr.slice(1); // remove leading [
+      return extractIndividualObjects(substr);
+    }
+  }
+
+  // Last resort: extract individual JSON objects that look like questions
+  return extractIndividualObjects(cleaned);
+}
+
+function extractIndividualObjects(text: string): any[] {
+  const results: any[] = [];
+  const objectRegex = /\{[^{}]*"statement"[^{}]*\}/g;
+  let match;
+  while ((match = objectRegex.exec(text)) !== null) {
+    try {
+      const obj = JSON.parse(match[0]);
+      if (obj.statement) results.push(obj);
+    } catch {
+      // Try fixing common issues
+      try {
+        const fixed = match[0]
+          .replace(/,\s*\}/g, "}")
+          .replace(/,\s*\]/g, "]");
+        const obj = JSON.parse(fixed);
+        if (obj.statement) results.push(obj);
+      } catch { /* skip */ }
+    }
+  }
+
+  // Also try nested objects (with arrays inside)
+  if (results.length === 0) {
+    let depth = 0;
+    let start = -1;
+    for (let i = 0; i < text.length; i++) {
+      if (text[i] === "{") { if (depth === 0) start = i; depth++; }
+      else if (text[i] === "}") {
+        depth--;
+        if (depth === 0 && start !== -1) {
+          const candidate = text.slice(start, i + 1);
+          if (candidate.includes('"statement"')) {
+            try {
+              const obj = JSON.parse(candidate);
+              if (obj.statement) results.push(obj);
+            } catch {
+              try {
+                const fixed = candidate
+                  .replace(/,\s*\}/g, "}")
+                  .replace(/,\s*\]/g, "]")
+                  .replace(/[\x00-\x1F\x7F]/g, "");
+                const obj = JSON.parse(fixed);
+                if (obj.statement) results.push(obj);
+              } catch { /* skip */ }
+            }
+          }
+          start = -1;
+        }
+      }
+    }
+  }
+
+  return results;
 }
 
 function isTrustedDomain(url: string): boolean {
@@ -233,12 +372,8 @@ async function searchAndScrape(
         }
 
         console.log(`✓ Found question content (${markdown.length} chars) from: ${url}`);
-        let content = markdown;
-        if (content.length > 15000) {
-          content = content.slice(500, 12500);
-        } else {
-          content = content.slice(0, 12000);
-        }
+        const content = extractQuestionBlocks(markdown, 18000);
+        console.log(`  → Extracted ${content.length} chars of question-relevant content`);
         allResults.push({ url, markdown: content });
 
         if (allResults.length >= 2) break;
@@ -265,30 +400,31 @@ async function structureQuestions(
 ): Promise<{ inserted: number; sources: string[] }> {
   if (scrapedContent.length === 0) return { inserted: 0, sources: [] };
 
-  // Combine scraped content, limit total to 20000 chars
+  // Combine scraped content, limit total to 30000 chars
   let contentBlock = scrapedContent
     .map((s, i) => `--- FONTE ${i + 1}: ${s.url} ---\n${s.markdown}`)
     .join("\n\n");
-  contentBlock = contentBlock.slice(0, 20000);
+  contentBlock = contentBlock.slice(0, 30000);
 
   const prompt = `Você é um especialista em extrair questões de provas de residência médica a partir de conteúdo web.
 
 CONTEÚDO EXTRAÍDO DA WEB (fontes reais de provas):
 ${contentBlock}
 
-TAREFA: Extraia TODAS as questões de múltipla escolha encontradas no conteúdo acima que sejam de ${specialty} ou áreas correlatas.
+TAREFA: Extraia no MÁXIMO 5 questões de múltipla escolha encontradas no conteúdo acima que sejam de ${specialty} ou áreas correlatas. Priorize as questões mais completas e com gabarito identificável.
 
 REGRAS:
 1. Extraia APENAS questões que realmente existem no texto — NÃO invente questões
 2. Preserve o enunciado original o mais fielmente possível
-3. Preserve as alternativas originais
+3. Preserve as alternativas originais (mínimo 4 alternativas)
 4. Identifique a alternativa correta (se o gabarito estiver disponível)
 5. Se não houver gabarito, tente identificar a resposta correta pelo contexto
 6. Indique a fonte URL de onde a questão foi extraída
 7. Mínimo 200 caracteres no enunciado para ser considerada válida
 8. Ignore questões sobre declarações financeiras ou conflitos de interesse
+9. MÁXIMO 5 questões para garantir JSON completo
 
-FORMATO JSON OBRIGATÓRIO:
+FORMATO JSON OBRIGATÓRIO (responda APENAS com este JSON, sem texto adicional):
 {
   "questions": [
     {
@@ -310,10 +446,10 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
     const response = await aiFetch({
       model: "google/gemini-2.5-flash",
       messages: [
-        { role: "system", content: "Você extrai questões de provas de residência médica a partir de conteúdo web. Responda APENAS com JSON válido." },
+        { role: "system", content: "Você extrai questões de provas de residência médica a partir de conteúdo web. Responda APENAS com JSON válido, sem markdown, sem explicações adicionais." },
         { role: "user", content: prompt },
       ],
-      timeoutMs: 45000,
+      timeoutMs: 50000,
       maxRetries: 1,
     });
 
@@ -324,36 +460,18 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
     }
 
     const data = await response.json();
-    const rawContent = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
-    const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+    const rawContent = data.choices?.[0]?.message?.content || "";
 
-    console.log("AI raw response length:", rawContent.length, "cleaned length:", cleaned.length);
+    console.log("AI raw response length:", rawContent.length);
 
-    let parsed: any = null;
-    try {
-      parsed = JSON.parse(cleaned);
-    } catch {
-      const jsonMatch = cleaned.match(/\{[\s\S]*"questions"[\s\S]*\}/);
-      if (jsonMatch) {
-        try { parsed = JSON.parse(jsonMatch[0]); } catch {
-          console.error("Failed to parse AI JSON response, first 500 chars:", cleaned.slice(0, 500));
-          return { inserted: 0, sources: [] };
-        }
-      } else {
-        console.error("No JSON found in AI response, first 500 chars:", cleaned.slice(0, 500));
-        return { inserted: 0, sources: [] };
-      }
-    }
+    // Use robust JSON extraction with truncation recovery
+    const questions = extractQuestionsFromJson(rawContent);
 
-    if (!parsed?.questions || !Array.isArray(parsed.questions)) {
-      console.error("No questions array in parsed response");
-      return { inserted: 0, sources: [] };
-    }
+    console.log(`AI returned ${questions.length} raw questions (robust extraction)`);
 
-    console.log(`AI returned ${parsed.questions.length} raw questions`);
 
     // Normalize and filter valid questions
-    const validQuestions = parsed.questions.filter((q: any) => {
+    const validQuestions = questions.filter((q: any) => {
       if (!q.statement) { console.log("Rejected: no statement"); return false; }
       if (!Array.isArray(q.options) || q.options.length < 2) { console.log("Rejected: bad options"); return false; }
       // Accept correct_index as number or string, default to 0
@@ -507,7 +625,7 @@ serve(async (req) => {
       .eq("topic", specialty)
       .eq("is_global", true)
       .order("created_at", { ascending: false })
-      .limit(30);
+      .limit(200);
     const existingStatements = (existing || []).map((r: any) => r.statement);
 
     // Get already-scraped URLs to skip them
