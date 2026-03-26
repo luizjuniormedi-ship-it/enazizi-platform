@@ -1,16 +1,17 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookOpen, Save, AlertTriangle } from "lucide-react";
+import { BookOpen, Save, AlertTriangle, Paperclip, X } from "lucide-react";
 
 interface Props {
   specialties: string[];
   onAdd: (
     tema: string, especialidade: string, subtopico: string, dataEstudo: string,
     fonte: string, dificuldade: string, observacoes: string,
-    questoesFeitas: number, questoesErradas: number
+    questoesFeitas: number, questoesErradas: number,
+    files?: File[]
   ) => void;
 }
 
