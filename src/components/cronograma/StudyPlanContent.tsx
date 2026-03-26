@@ -70,6 +70,8 @@ const StudyPlanContent = ({ onSubjectsGenerated }: StudyPlanContentProps) => {
   const [schedule, setSchedule] = useState<DaySchedule[]>([]);
   const reminders = useStudyReminders(schedule);
   const [subjects, setSubjects] = useState<string[]>([]);
+  const [topicMap, setTopicMap] = useState<TopicMapItem[]>([]);
+  const [detectedSpecialty, setDetectedSpecialty] = useState("");
   const [tips, setTips] = useState("");
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
