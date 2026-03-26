@@ -400,30 +400,31 @@ async function structureQuestions(
 ): Promise<{ inserted: number; sources: string[] }> {
   if (scrapedContent.length === 0) return { inserted: 0, sources: [] };
 
-  // Combine scraped content, limit total to 20000 chars
+  // Combine scraped content, limit total to 30000 chars
   let contentBlock = scrapedContent
     .map((s, i) => `--- FONTE ${i + 1}: ${s.url} ---\n${s.markdown}`)
     .join("\n\n");
-  contentBlock = contentBlock.slice(0, 20000);
+  contentBlock = contentBlock.slice(0, 30000);
 
   const prompt = `Você é um especialista em extrair questões de provas de residência médica a partir de conteúdo web.
 
 CONTEÚDO EXTRAÍDO DA WEB (fontes reais de provas):
 ${contentBlock}
 
-TAREFA: Extraia TODAS as questões de múltipla escolha encontradas no conteúdo acima que sejam de ${specialty} ou áreas correlatas.
+TAREFA: Extraia no MÁXIMO 5 questões de múltipla escolha encontradas no conteúdo acima que sejam de ${specialty} ou áreas correlatas. Priorize as questões mais completas e com gabarito identificável.
 
 REGRAS:
 1. Extraia APENAS questões que realmente existem no texto — NÃO invente questões
 2. Preserve o enunciado original o mais fielmente possível
-3. Preserve as alternativas originais
+3. Preserve as alternativas originais (mínimo 4 alternativas)
 4. Identifique a alternativa correta (se o gabarito estiver disponível)
 5. Se não houver gabarito, tente identificar a resposta correta pelo contexto
 6. Indique a fonte URL de onde a questão foi extraída
 7. Mínimo 200 caracteres no enunciado para ser considerada válida
 8. Ignore questões sobre declarações financeiras ou conflitos de interesse
+9. MÁXIMO 5 questões para garantir JSON completo
 
-FORMATO JSON OBRIGATÓRIO:
+FORMATO JSON OBRIGATÓRIO (responda APENAS com este JSON, sem texto adicional):
 {
   "questions": [
     {
@@ -443,13 +444,13 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
 
   try {
     const response = await aiFetch({
-      model: "google/gemini-2.5-flash",
+      model: "google/gemini-2.5-pro",
       messages: [
-        { role: "system", content: "Você extrai questões de provas de residência médica a partir de conteúdo web. Responda APENAS com JSON válido." },
+        { role: "system", content: "Você extrai questões de provas de residência médica a partir de conteúdo web. Responda APENAS com JSON válido, sem markdown, sem explicações adicionais." },
         { role: "user", content: prompt },
       ],
-      timeoutMs: 45000,
-      maxRetries: 1,
+      timeoutMs: 60000,
+      maxRetries: 2,
     });
 
     if (!response.ok) {
@@ -459,31 +460,14 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
     }
 
     const data = await response.json();
-    const rawContent = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
-    const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+    const rawContent = data.choices?.[0]?.message?.content || "";
 
-    console.log("AI raw response length:", rawContent.length, "cleaned length:", cleaned.length);
+    console.log("AI raw response length:", rawContent.length);
 
-    let parsed: any = null;
-    try {
-      parsed = JSON.parse(cleaned);
-    } catch {
-      const jsonMatch = cleaned.match(/\{[\s\S]*"questions"[\s\S]*\}/);
-      if (jsonMatch) {
-        try { parsed = JSON.parse(jsonMatch[0]); } catch {
-          console.error("Failed to parse AI JSON response, first 500 chars:", cleaned.slice(0, 500));
-          return { inserted: 0, sources: [] };
-        }
-      } else {
-        console.error("No JSON found in AI response, first 500 chars:", cleaned.slice(0, 500));
-        return { inserted: 0, sources: [] };
-      }
-    }
+    // Use robust JSON extraction with truncation recovery
+    const questions = extractQuestionsFromJson(rawContent);
 
-    if (!parsed?.questions || !Array.isArray(parsed.questions)) {
-      console.error("No questions array in parsed response");
-      return { inserted: 0, sources: [] };
-    }
+    console.log(`AI returned ${questions.length} raw questions (robust extraction)`);
 
     console.log(`AI returned ${parsed.questions.length} raw questions`);
 
