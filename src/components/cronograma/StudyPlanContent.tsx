@@ -20,6 +20,7 @@ interface Task {
   subject: string;
   duration: string;
   type?: string;
+  details?: string;
 }
 
 interface DaySchedule {
