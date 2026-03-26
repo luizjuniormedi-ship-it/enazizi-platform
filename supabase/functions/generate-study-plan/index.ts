@@ -7,10 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const NON_MEDICAL_CONTENT_REGEX = /(direito|jur[ií]d|penal|constitucional|processo penal|inquérito|inqu[eé]rito|stf|stj|delegad|advogad|pol[ií]cia federal|c[oó]digo penal|a[cç][aã]o penal|inform[aá]tica|tecnologia da informa[cç][aã]o|engenharia|contabil|economia|administra[cç][aã]o)/i;
-const MEDICAL_CONTENT_REGEX = /(medicin|sa[uú]de|paciente|diagn[oó]st|tratament|sintom|doen[cç]|fisiopat|farmac|anatom|cl[íi]nic|cirurg|pediatr|ginec|obstetr|preventiva|resid[eê]ncia|enare|revalida|protocolo|diretriz|sus)/i;
+const NON_MEDICAL_CONTENT_REGEX = /(direito\s+(penal|civil|constitucional|tributário)|jur[ií]dic|processo\s+penal|stf|stj|delegad[oa]|advogad[oa]|pol[ií]cia\s+federal|c[oó]digo\s+penal|a[cç][aã]o\s+penal|engenharia\s+(civil|elétrica|mecânica)|contabilidade|ciências\s+contábeis)/i;
 
-const isMedicalContent = (text: string) => MEDICAL_CONTENT_REGEX.test(text) && !NON_MEDICAL_CONTENT_REGEX.test(text);
+// For edital/cronograma: only reject clearly non-medical content, accept everything else
+// Medical subjects often have generic names (e.g., "Atenção Básica", "Saúde da Família", "Urgência")
+const isNonMedicalContent = (text: string) => NON_MEDICAL_CONTENT_REGEX.test(text);
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -49,7 +50,7 @@ serve(async (req) => {
     }
 
     const editalPreview = String(editalText || "").slice(0, 8000);
-    if (editalPreview && !isMedicalContent(editalPreview)) {
+    if (editalPreview && isNonMedicalContent(editalPreview)) {
       return new Response(JSON.stringify({ error: "Edital rejeitado: somente conteúdo médico é permitido para gerar cronograma." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -138,7 +139,7 @@ Regras:
     }
 
     const safeSubjects = Array.isArray(planJson?.subjects)
-      ? planJson.subjects.map(String).filter((s: string) => isMedicalContent(s))
+      ? planJson.subjects.map(String).filter((s: string) => !isNonMedicalContent(s))
       : [];
 
     const safeWeeklySchedule = Array.isArray(planJson?.weeklySchedule)
@@ -153,7 +154,7 @@ Regras:
                     duration: String(t?.duration || ""),
                     type: String(t?.type || "estudo"),
                   }))
-                  .filter((t: any) => isMedicalContent(`${t.subject} ${t.type}`))
+                  .filter((t: any) => !isNonMedicalContent(`${t.subject}`))
               : [],
           }))
           .filter((d: any) => d.tasks.length > 0)
