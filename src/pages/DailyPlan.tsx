@@ -80,7 +80,7 @@ const DailyPlan = () => {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
 
-      const [planRes, reviewsRes, attemptsRes, todayTemasRes] = await Promise.all([
+      const [planRes, reviewsRes, attemptsRes, todayTemasRes, profileRes] = await Promise.all([
         supabase
           .from("daily_plans")
           .select("*")
@@ -104,7 +104,15 @@ const DailyPlan = () => {
           .eq("user_id", user.id)
           .eq("status", "ativo")
           .gte("created_at", todayStart.toISOString()),
+        supabase
+          .from("profiles")
+          .select("daily_study_hours")
+          .eq("user_id", user.id)
+          .maybeSingle(),
       ]);
+
+      const userDailyMinutes = Math.round((profileRes.data?.daily_study_hours || 4) * 60);
+      setDailyMinutes(userDailyMinutes);
 
       if (planRes.data) {
         setPlan(planRes.data.plan_json as unknown as DailyPlanData);
