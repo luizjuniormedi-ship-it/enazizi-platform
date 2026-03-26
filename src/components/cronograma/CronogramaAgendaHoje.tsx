@@ -1,6 +1,7 @@
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Play, CalendarDays, AlertTriangle, Clock, CheckCircle2, ShieldAlert } from "lucide-react";
+import { Play, CalendarDays, AlertTriangle, Clock, CheckCircle2, ShieldAlert, Layers, BookOpen } from "lucide-react";
 import StudyBlockActions from "./StudyBlockActions";
 import type { TemaEstudado, Revisao, TemaComputado } from "@/pages/CronogramaInteligente";
 
