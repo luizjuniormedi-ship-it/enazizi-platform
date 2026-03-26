@@ -1,19 +1,39 @@
 
 
-# Plano: Corrigir erro "messages is not iterable" no generate-flashcards
+# Plano: Melhorar Jornada Pos-Upload do Cronograma
 
-## Problema
-O `cronogramaSync.ts` envia `{ topic, specialty, count }` para a edge function `generate-flashcards`, mas ela espera `{ messages, userContext }`. O campo `messages` fica `undefined` e o spread `...messages` quebra.
+## Problema Atual
+1. Apos gerar o plano, o usuario ve um toast rapido e nao tem um resumo claro do que foi sincronizado
+2. Os subtopicos do `topicMap` nao sao salvos na tabela `temas_estudados` (coluna `subtopico` existe mas nao e usada)
+3. Nao ha barra de progresso durante a sincronizacao
+4. Apos gerar, o usuario continua na mesma tela sem redirecionamento para a agenda do dia
 
-## Solucao
-Ajustar o `cronogramaSync.ts` para enviar o payload no formato correto da edge function: um array `messages` com a solicitacao de flashcards e o contexto do tema.
+## Alteracoes
 
-## Alteracao
+### 1. Adicionar Progresso Visual na Geracao (`StudyPlanContent.tsx`)
+- Substituir o simples "Gerando cronograma com IA..." por uma barra de progresso com etapas:
+  - "Analisando documento..." → "Extraindo temas..." → "Gerando cronograma..." → "Sincronizando modulos..."
+- Usar o componente `Progress` existente com texto da etapa atual
 
-### Editar `src/lib/cronogramaSync.ts` (funcao `generateFlashcardsForTemas`)
-- Mudar o body do fetch de `{ topic, specialty, count }` para `{ messages: [{ role: "user", content: "Gere 3 flashcards sobre {tema} na area de {especialidade}" }] }`
-- Isso alinha com o que a edge function espera (linhas 13 e 160 do index.ts)
+### 2. Salvar Subtopicos na tabela `temas_estudados` (`CronogramaInteligente.tsx`)
+- No `onSubjectsGenerated`, cruzar o `topicMap` (disponivel no `plan_json`) com os subjects para inserir cada tema com seus subtopicos
+- Usar a coluna `subtopico` ja existente, salvando os subtopicos como string separada por virgula
+- Ou inserir uma linha por subtopico (com o tema pai no campo `tema`)
+
+### 3. Mostrar Resumo Pos-Sincronizacao (`StudyPlanContent.tsx`)
+- Apos `onSubjectsGenerated` completar, exibir um card de resumo inline (nao apenas toast):
+  - Total de temas registrados
+  - Flashcards criados
+  - Questoes encontradas
+  - Revisoes agendadas
+  - Botoes: "Ver Agenda de Hoje", "Ver Mapa de Topicos", "Ir para Flashcards"
+
+### 4. Redirecionar para Agenda (`CronogramaInteligente.tsx`)
+- Apos a sincronizacao, mudar automaticamente a tab para "hoje" (agenda do dia) com um delay de 2s mostrando o resumo
 
 ## Arquivos
-- Editar: `src/lib/cronogramaSync.ts`
+- Editar: `src/components/cronograma/StudyPlanContent.tsx` (progresso visual + resumo pos-sync)
+- Editar: `src/pages/CronogramaInteligente.tsx` (salvar subtopicos + redirecionar tab)
+
+## Sem migracao SQL — coluna `subtopico` ja existe em `temas_estudados`
 
