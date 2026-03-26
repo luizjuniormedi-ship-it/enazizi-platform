@@ -58,26 +58,71 @@ function isTrustedDomain(url: string): boolean {
   }
 }
 
+async function getAlreadyScrapedUrls(supabaseAdmin: any, specialty: string): Promise<Set<string>> {
+  const { data } = await supabaseAdmin
+    .from("questions_bank")
+    .select("explanation")
+    .eq("topic", specialty)
+    .eq("source", "web-scrape")
+    .eq("is_global", true)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  const urls = new Set<string>();
+  for (const row of (data || [])) {
+    const match = String(row.explanation || "").match(/\[Fonte:\s*(https?:\/\/[^\s\]|]+)/);
+    if (match) {
+      try {
+        const hostname = new URL(match[1]).hostname;
+        const path = new URL(match[1]).pathname;
+        urls.add(hostname + path);
+      } catch { /* ignore */ }
+    }
+  }
+  return urls;
+}
+
+function buildQueryPool(specialty: string, banca: string | null): string[] {
+  if (banca) {
+    return [
+      `"${banca}" ${specialty} questões alternativas gabarito`,
+      `"${banca}" ${specialty} prova comentada residência médica`,
+    ];
+  }
+
+  // Large diverse pool — the function will skip already-scraped URLs
+  return [
+    `site:medway.com.br ${specialty} questões comentadas residência`,
+    `"questão" "${specialty}" prova residência médica alternativas gabarito`,
+    `site:sanarmed.com ${specialty} questões comentadas prova`,
+    `site:qconcursos.com.br ${specialty} questões residência médica`,
+    `site:estrategiamed.com.br ${specialty} questões comentadas`,
+    `${specialty} prova residência médica questões gabarito comentado`,
+    `${specialty} questões objetivas residência médica 2024 2025`,
+    `site:medcel.com.br ${specialty} questões comentadas`,
+    `"residência médica" "${specialty}" questões resolvidas alternativas`,
+    `${specialty} simulado residência médica questões com gabarito`,
+  ];
+}
+
 async function searchAndScrape(
   specialty: string,
   banca: string | null,
   ano: number | null,
+  alreadyScrapedKeys: Set<string>,
 ): Promise<{ url: string; markdown: string }[]> {
   const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
   if (!FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY not configured");
 
-  // Build search queries - try multiple if needed
-  const queries = banca
-    ? [`"${banca}" ${specialty} questões alternativas gabarito`]
-    : [
-        `site:medway.com.br ${specialty} questões comentadas residência`,
-        `"questão" "${specialty}" prova residência médica alternativas gabarito`,
-        `site:sanarmed.com ${specialty} questões comentadas prova`,
-      ];
+  const queries = buildQueryPool(specialty, banca);
+  // Shuffle queries to vary across executions
+  for (let i = queries.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [queries[i], queries[j]] = [queries[j], queries[i]];
+  }
 
   const allResults: { url: string; markdown: string }[] = [];
   const seenUrls = new Set<string>();
-  // Skip scribd (paywall), youtube
   const blockedDomains = ["scribd.com", "youtube.com", "youtu.be"];
 
   for (const query of queries) {
@@ -97,7 +142,7 @@ async function searchAndScrape(
         },
         body: JSON.stringify({
           query,
-          limit: 3,
+          limit: 5,
           lang: "pt-br",
           country: "BR",
           scrapeOptions: { formats: ["markdown"], onlyMainContent: true },
@@ -124,6 +169,15 @@ async function searchAndScrape(
           continue;
         }
 
+        // Skip URLs we already scraped before
+        try {
+          const urlKey = new URL(url).hostname + new URL(url).pathname;
+          if (alreadyScrapedKeys.has(urlKey)) {
+            console.log(`Skipping already-scraped URL: ${url}`);
+            continue;
+          }
+        } catch { /* ignore parse errors */ }
+
         const markdown = item.markdown || "";
         if (markdown.length < 500) {
           console.log(`Skipping thin content (${markdown.length} chars) from: ${url}`);
@@ -137,7 +191,6 @@ async function searchAndScrape(
         }
 
         console.log(`✓ Found question content (${markdown.length} chars) from: ${url}`);
-        // For large pages, skip header/menu and take the meatiest section
         let content = markdown;
         if (content.length > 15000) {
           content = content.slice(500, 12500);
