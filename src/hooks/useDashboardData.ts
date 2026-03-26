@@ -73,10 +73,9 @@ async function fetchDashboardData(userId: string) {
     supabase.from("simulation_history").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("anamnesis_results").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("summaries").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    supabase.from("chat_conversations").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("agent_type", "medical-chronicle"),
+    supabase.from("chat_conversations").select("id, agent_type", { count: "exact" }).eq("user_id", userId),
     supabase.from("medical_image_attempts").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("diagnostic_results").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    supabase.from("chat_conversations").select("id", { count: "exact", head: true }).eq("user_id", userId),
   ]);
 
   const [teacherSimuladoRes, teacherClinicalRes] = await Promise.all([
