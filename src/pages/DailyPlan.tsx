@@ -374,6 +374,11 @@ const DailyPlan = () => {
     } else {
       next.add(reviewId);
       await supabase.from("revisoes").update({ status: "concluida", concluida_em: new Date().toISOString() }).eq("id", reviewId);
+      // Sync study context for Tutor IA
+      if (user) {
+        const completedTopics = scheduledReviews.filter(r => next.has(r.id) || r.id === reviewId).map(r => ({ tema: r.tema, especialidade: r.especialidade }));
+        updateStudyPerformanceContext(user.id, completedTopics.map(t => ({ id: "", ...t }))).catch(() => {});
+      }
     }
     setCompletedReviews(next);
   };
