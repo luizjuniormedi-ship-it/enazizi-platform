@@ -33,19 +33,22 @@ Deno.serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Client 1: User context — validates the JWT via the user's own token
+    // Validate JWT using getClaims (works with signing-keys system)
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user }, error: authError } = await userClient.auth.getUser();
-    if (authError || !user) {
-      console.error("Auth error:", authError?.message);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      console.error("Auth error:", claimsError?.message);
       return new Response(JSON.stringify({ error: "Token inválido. Faça login novamente." }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const userId = claimsData.claims.sub as string;
 
     // Client 2: Service role — bypasses RLS for admin operations
     const supabaseAuth = createClient(supabaseUrl, serviceRoleKey);
@@ -53,7 +56,7 @@ Deno.serve(async (req) => {
     const { data: roleData } = await supabaseAuth
       .from("user_roles")
       .select("role")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("role", "admin")
       .single();
 
@@ -108,10 +111,10 @@ Deno.serve(async (req) => {
         if (!target_user_id) throw new Error("target_user_id obrigatório");
         await supabaseAuth.from("profiles").update({
           status: "active",
-          approved_by: user.id,
+          approved_by: userId,
           approved_at: new Date().toISOString(),
         }).eq("user_id", target_user_id);
-        await logAudit(supabaseAuth, user.id, "approve_user", target_user_id, {});
+        await logAudit(supabaseAuth, userId, "approve_user", target_user_id, {});
         return ok({ success: true });
       }
 
@@ -119,7 +122,7 @@ Deno.serve(async (req) => {
         const { target_user_id } = params;
         if (!target_user_id) throw new Error("target_user_id obrigatório");
         await supabaseAuth.from("profiles").update({ status: "disabled" }).eq("user_id", target_user_id);
-        await logAudit(supabaseAuth, user.id, "reject_user", target_user_id, {});
+        await logAudit(supabaseAuth, userId, "reject_user", target_user_id, {});
         return ok({ success: true });
       }
 
@@ -127,7 +130,7 @@ Deno.serve(async (req) => {
         const { target_user_id, blocked } = params;
         if (!target_user_id) throw new Error("target_user_id obrigatório");
         await supabaseAuth.from("profiles").update({ is_blocked: blocked }).eq("user_id", target_user_id);
-        await logAudit(supabaseAuth, user.id, blocked ? "block_user" : "unblock_user", target_user_id, { blocked });
+        await logAudit(supabaseAuth, userId, blocked ? "block_user" : "unblock_user", target_user_id, { blocked });
         return ok({ success: true, blocked });
       }
 
@@ -154,21 +157,21 @@ Deno.serve(async (req) => {
         await supabaseAuth.from("subscriptions").insert({ user_id: target_user_id, plan_id: plan.id, status: "active" });
         const limit = planLimits[plan_name]?.limit || 50;
         await supabaseAuth.from("user_quotas").upsert({ user_id: target_user_id, questions_limit: limit, questions_used: 0 }, { onConflict: "user_id" });
-        await logAudit(supabaseAuth, user.id, "change_plan", target_user_id, { plan_name });
+        await logAudit(supabaseAuth, userId, "change_plan", target_user_id, { plan_name });
         return ok({ success: true, plan: plan_name });
       }
 
       case "toggle_admin": {
         const { target_user_id, make_admin } = params;
         if (!target_user_id) throw new Error("target_user_id obrigatório");
-        if (target_user_id === user.id) throw new Error("Você não pode remover seu próprio acesso admin.");
+        if (target_user_id === userId) throw new Error("Você não pode remover seu próprio acesso admin.");
 
         if (make_admin) {
           await supabaseAuth.from("user_roles").upsert({ user_id: target_user_id, role: "admin" }, { onConflict: "user_id,role" });
         } else {
           await supabaseAuth.from("user_roles").delete().eq("user_id", target_user_id).eq("role", "admin");
         }
-        await logAudit(supabaseAuth, user.id, make_admin ? "promote_admin" : "demote_admin", target_user_id, { make_admin });
+        await logAudit(supabaseAuth, userId, make_admin ? "promote_admin" : "demote_admin", target_user_id, { make_admin });
         return ok({ success: true, is_admin: make_admin });
       }
 
@@ -181,7 +184,7 @@ Deno.serve(async (req) => {
         } else {
           await supabaseAuth.from("user_roles").delete().eq("user_id", target_user_id).eq("role", "professor");
         }
-        await logAudit(supabaseAuth, user.id, make_professor ? "promote_professor" : "demote_professor", target_user_id, { make_professor });
+        await logAudit(supabaseAuth, userId, make_professor ? "promote_professor" : "demote_professor", target_user_id, { make_professor });
         return ok({ success: true, is_professor: make_professor });
       }
 
@@ -191,7 +194,7 @@ Deno.serve(async (req) => {
         if (new_password.length < 6) throw new Error("A senha deve ter pelo menos 6 caracteres");
         const { error: updateErr } = await supabaseAuth.auth.admin.updateUserById(target_user_id, { password: new_password });
         if (updateErr) throw new Error(`Erro ao redefinir senha: ${updateErr.message}`);
-        await logAudit(supabaseAuth, user.id, "reset_password", target_user_id, {});
+        await logAudit(supabaseAuth, userId, "reset_password", target_user_id, {});
         return ok({ success: true });
       }
 
@@ -351,11 +354,11 @@ Deno.serve(async (req) => {
           await supabaseAuth
             .from("user_module_access")
             .upsert(
-              { user_id: target_user_id, module_key: mod.module_key, enabled: mod.enabled, granted_by: user.id },
+              { user_id: target_user_id, module_key: mod.module_key, enabled: mod.enabled, granted_by: userId },
               { onConflict: "user_id,module_key" }
             );
         }
-        await logAudit(supabaseAuth, user.id, "set_user_access", target_user_id, { modules_count: (modules as any[]).length });
+        await logAudit(supabaseAuth, userId, "set_user_access", target_user_id, { modules_count: (modules as any[]).length });
         return ok({ success: true });
       }
 
@@ -479,18 +482,18 @@ Deno.serve(async (req) => {
       case "force_logout": {
         const { target_user_id } = params;
         if (!target_user_id) throw new Error("target_user_id obrigatório");
-        if (target_user_id === user.id) throw new Error("Você não pode desconectar a si mesmo.");
+        if (target_user_id === userId) throw new Error("Você não pode desconectar a si mesmo.");
         const { error: banErr } = await supabaseAuth.auth.admin.updateUserById(target_user_id, { ban_duration: "1s" });
         if (banErr) throw new Error(`Erro ao desconectar: ${banErr.message}`);
         await supabaseAuth.auth.admin.updateUserById(target_user_id, { ban_duration: "none" });
-        await logAudit(supabaseAuth, user.id, "force_logout", target_user_id, {});
+        await logAudit(supabaseAuth, userId, "force_logout", target_user_id, {});
         return ok({ success: true });
       }
 
       case "delete_user": {
         const { target_user_id } = params;
         if (!target_user_id) throw new Error("target_user_id obrigatório");
-        if (target_user_id === user.id) throw new Error("Você não pode excluir a si mesmo.");
+        if (target_user_id === userId) throw new Error("Você não pode excluir a si mesmo.");
 
         // Delete user data from all related tables
         await Promise.all([
@@ -549,7 +552,7 @@ Deno.serve(async (req) => {
         const { error: deleteErr } = await supabaseAuth.auth.admin.deleteUser(target_user_id);
         if (deleteErr) throw new Error(`Erro ao excluir usuário: ${deleteErr.message}`);
 
-        await logAudit(supabaseAuth, user.id, "delete_user", target_user_id, {});
+        await logAudit(supabaseAuth, userId, "delete_user", target_user_id, {});
         return ok({ success: true });
       }
 
