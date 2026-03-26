@@ -372,12 +372,8 @@ async function searchAndScrape(
         }
 
         console.log(`✓ Found question content (${markdown.length} chars) from: ${url}`);
-        let content = markdown;
-        if (content.length > 15000) {
-          content = content.slice(500, 12500);
-        } else {
-          content = content.slice(0, 12000);
-        }
+        const content = extractQuestionBlocks(markdown, 18000);
+        console.log(`  → Extracted ${content.length} chars of question-relevant content`);
         allResults.push({ url, markdown: content });
 
         if (allResults.length >= 2) break;
