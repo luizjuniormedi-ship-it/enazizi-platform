@@ -59,7 +59,7 @@ serve(async (req) => {
 
     const daysUntilExam = Math.ceil((new Date(examDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
-    const prompt = `Você é um especialista em planejamento de estudos médicos.
+    const prompt = `Você é um especialista em planejamento de estudos médicos para Residência Médica no Brasil.
 
 ⛔ RESTRIÇÃO: Somente conteúdo de MEDICINA, SAÚDE e CIÊNCIAS BIOMÉDICAS.
 
@@ -71,47 +71,52 @@ ${editalPreview ? `\n📋 CONTEÚDO PROGRAMÁTICO / CRONOGRAMA ENVIADO PELO ALUN
 
 🎯 INSTRUÇÕES CRÍTICAS:
 
-1. **EXTRAIA TODOS OS TEMAS**: Leia o conteúdo acima linha por linha. CADA tópico mencionado (ex: "Bronquiolite", "ITU", "Pneumonias I", "Cardiopatias Congênitas II", "Piodermites", "Síndrome Nefrótica", "Meningoencefalites") DEVE aparecer no plano. NÃO IGNORE NENHUM TEMA.
+1. **EXTRAIA TODOS OS TEMAS**: Leia CADA linha do conteúdo acima. Todo tópico mencionado DEVE aparecer. NÃO IGNORE NENHUM.
 
-2. **IDENTIFIQUE A ESPECIALIDADE**: O documento pode ser de uma disciplina específica (ex: Pediatria, Clínica Médica). Identifique e use como contexto.
+2. **DESDOBRE EM SUBTÓPICOS**: Para cada tema, liste os subtópicos essenciais que o aluno precisa dominar. Exemplo:
+   - Tema: "Bronquiolite" → Subtópicos: ["Etiologia (VSR)", "Fisiopatologia", "Quadro clínico", "Diagnóstico diferencial", "Tratamento e suporte", "Critérios de internação"]
+   - Tema: "Pneumonias" → Subtópicos: ["Classificação por agente", "Pneumonia típica vs atípica", "Diagnóstico radiológico", "Antibioticoterapia empírica", "Complicações"]
 
-3. **RESPEITE A ORDEM CRONOLÓGICA**: Se houver datas no documento, organize os temas na mesma sequência temporal.
+3. **IDENTIFIQUE A ESPECIALIDADE** do documento (ex: Pediatria, Clínica Médica).
 
-4. **ROTEIRO CLARO**: Cada bloco de estudo deve ter:
-   - O tema específico (não genérico)
-   - Tempo dedicado
-   - Tipo de atividade (estudo teórico, questões, revisão, simulado)
-
-5. **DISTRIBUA AS ATIVIDADES**:
-   - Estudo teórico do tema novo
-   - Resolução de questões sobre o tema
-   - Revisões espaçadas de temas anteriores
-   - Simulados periódicos
+4. **RESPEITE A ORDEM CRONOLÓGICA** se houver datas.
 
 Retorne APENAS um JSON válido (sem markdown, sem \`\`\`) no formato:
 {
   "detectedSpecialty": "Pediatria",
-  "subjects": ["Infecções de Vias Aéreas Superiores", "Bronquiolite", "Asma Brônquica", ...TODOS os temas],
+  "topicMap": [
+    {
+      "topic": "Infecções de Vias Aéreas Superiores",
+      "subtopics": ["IVAS virais", "Otite média aguda", "Sinusite", "Faringite estreptocócica", "Diagnóstico diferencial"]
+    },
+    {
+      "topic": "Bronquiolite",
+      "subtopics": ["Etiologia (VSR)", "Fisiopatologia", "Quadro clínico", "Score de gravidade", "Tratamento", "Critérios de internação"]
+    }
+  ],
+  "subjects": ["Infecções de Vias Aéreas Superiores", "Bronquiolite", ...todos os temas],
   "weeklySchedule": [
     {
       "day": "Seg",
       "tasks": [
-        { "time": "08:00", "subject": "Bronquiolite", "duration": "2h", "type": "estudo", "details": "Estudar etiologia (VSR), fisiopatologia, quadro clínico e manejo" },
-        { "time": "10:00", "subject": "Questões - Bronquiolite", "duration": "1h", "type": "questoes", "details": "Resolver 20 questões sobre bronquiolite" }
+        { "time": "08:00", "subject": "Bronquiolite", "duration": "2h", "type": "estudo", "details": "Etiologia (VSR), fisiopatologia obstrutiva, quadro clínico típico (sibilância + taquipneia em lactente)" },
+        { "time": "10:00", "subject": "Bronquiolite - Questões", "duration": "1h", "type": "questoes", "details": "Resolver questões sobre critérios de internação e diagnóstico diferencial com asma" }
       ]
     }
   ],
-  "tips": "Dica geral sobre a estratégia",
+  "tips": "Dica estratégica personalizada",
   "totalTopicsExtracted": 12
 }
 
-Regras:
-- O campo "details" é OBRIGATÓRIO em cada task - explique O QUE estudar naquele bloco
+REGRAS OBRIGATÓRIAS:
+- O campo "topicMap" DEVE conter TODOS os temas com seus subtópicos (mínimo 3 subtópicos por tema)
+- O campo "details" em cada task é OBRIGATÓRIO - seja específico sobre O QUE estudar (cite subtópicos, conceitos-chave)
 - Use os dias: Seg, Ter, Qua, Qui, Sex, Sáb, Dom (apenas ${daysPerWeek} dias)
 - Tipos válidos: "estudo", "revisao", "simulado", "questoes"
-- TODOS os temas do documento DEVEM estar distribuídos no cronograma
+- TODOS os temas do topicMap DEVEM estar distribuídos no weeklySchedule
 - Respeite o limite de ${hoursPerDay}h/dia
-- Se não houver edital, use temas padrão de residência médica`;
+- Se não houver edital, use temas padrão das 5 grandes áreas de residência médica
+- Cada tema deve ter pelo menos: 1 bloco de estudo teórico + 1 bloco de questões`;
 
     const aiResp = await aiFetch({
       messages: [{ role: "user", content: prompt }],
