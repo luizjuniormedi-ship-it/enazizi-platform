@@ -319,9 +319,19 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
 
   const typeColor = (type?: string) => {
     switch (type) {
-      case "revisao": return "border-l-4 border-l-accent";
-      case "simulado": return "border-l-4 border-l-warning";
+      case "revisao": return "border-l-4 border-l-amber-500";
+      case "simulado": return "border-l-4 border-l-rose-500";
+      case "questoes": return "border-l-4 border-l-emerald-500";
       default: return "border-l-4 border-l-primary";
+    }
+  };
+
+  const typeBadge = (type?: string) => {
+    switch (type) {
+      case "revisao": return { label: "Revisão", className: "bg-amber-500/10 text-amber-600" };
+      case "simulado": return { label: "Simulado", className: "bg-rose-500/10 text-rose-600" };
+      case "questoes": return { label: "Questões", className: "bg-emerald-500/10 text-emerald-600" };
+      default: return { label: "Estudo", className: "bg-primary/10 text-primary" };
     }
   };
 
