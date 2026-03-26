@@ -572,7 +572,44 @@ const DailyPlan = () => {
         </div>
       )}
 
-      {/* Today's new topics - Estudo Inicial */}
+      {/* Overflow reviews */}
+      {overflowReviews.length > 0 && !generating && (
+        <Collapsible open={showOverflowReviews} onOpenChange={setShowOverflowReviews}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground text-xs">
+              <span>Revisões adicionais ({overflowReviews.length})</span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${showOverflowReviews ? "rotate-180" : ""}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-2 mt-2">
+            {overflowReviews.map((review) => (
+              <div key={review.id} className="glass-card p-3 flex items-center gap-3 opacity-60">
+                <RefreshCw className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{review.tema}</p>
+                  <p className="text-xs text-muted-foreground">{review.tipo_revisao} · {review.especialidade} · ~{review.estimatedMinutes}min</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs h-7 px-2"
+                  onClick={() => navigate("/dashboard/chatgpt", {
+                    state: {
+                      initialMessage: `Quero revisar o tópico "${review.tema}" (${review.tipo_revisao}). Me dê uma aula completa seguindo o protocolo ENAZIZI.`,
+                      fromDailyPlan: true,
+                      topic: review.tema,
+                      specialty: review.especialidade,
+                    },
+                  })}
+                >
+                  <GraduationCap className="h-3.5 w-3.5 mr-1" /> Estudar
+                </Button>
+              </div>
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
       {todayTopics.length > 0 && !generating && (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold flex items-center gap-2">
