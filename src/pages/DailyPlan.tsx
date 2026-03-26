@@ -624,6 +624,22 @@ const DailyPlan = () => {
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">{block.description}</p>
+                    {block.summary && (
+                      <p className="text-xs text-foreground/70 mt-1 bg-muted/50 rounded px-2 py-1">
+                        <Info className="h-3 w-3 inline mr-1 text-primary" />
+                        {block.summary}
+                      </p>
+                    )}
+                    {block.learningGoal && (
+                      <p className="text-xs text-primary/80 mt-1 font-medium">
+                        🎯 {block.learningGoal}
+                      </p>
+                    )}
+                    {block.prerequisite && (
+                      <p className="text-xs text-warning mt-1 font-medium">
+                        📌 Pré-requisito: {block.prerequisite}
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground/70 mt-1 italic">{block.reason}</p>
                     {!done && (
                       <div className="flex flex-wrap gap-1.5 mt-2">
