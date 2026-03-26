@@ -1,6 +1,7 @@
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Play, CalendarDays, AlertTriangle, Clock, CheckCircle2, ShieldAlert } from "lucide-react";
+import { Play, CalendarDays, AlertTriangle, Clock, CheckCircle2, ShieldAlert, Layers, BookOpen } from "lucide-react";
 import StudyBlockActions from "./StudyBlockActions";
 import type { TemaEstudado, Revisao, TemaComputado } from "@/pages/CronogramaInteligente";
 
@@ -19,6 +20,7 @@ const PRIORIDADE_COLOR: Record<string, string> = {
 };
 
 const CronogramaAgendaHoje = ({ revisoes, temas, temasComputados, onStartRevisao }: Props) => {
+  const navigate = useNavigate();
   const today = new Date().toISOString().split("T")[0];
   const atrasadas = revisoes.filter(r => r.data_revisao < today && r.status === "pendente");
   const hojePendentes = revisoes.filter(r => r.data_revisao === today && r.status === "pendente");
@@ -54,6 +56,22 @@ const CronogramaAgendaHoje = ({ revisoes, temas, temasComputados, onStartRevisao
           </div>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+          <button
+            onClick={() => navigate(`/dashboard/flashcards?topic=${encodeURIComponent(tema.tema)}`)}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-violet-500 hover:bg-violet-500/10 transition-colors"
+            aria-label="Flashcards"
+            title="Flashcards do tema"
+          >
+            <Layers className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => navigate(`/dashboard/banco-questoes?topic=${encodeURIComponent(tema.tema)}`)}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10 transition-colors"
+            aria-label="Questões"
+            title="Questões do tema"
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+          </button>
           <StudyBlockActions subject={tema.tema} specialty={tema.especialidade} />
           <Button size="sm" variant={isUrgent ? "destructive" : "default"} onClick={() => onStartRevisao(r)}>
             <Play className="h-3.5 w-3.5 mr-1" /> Revisar

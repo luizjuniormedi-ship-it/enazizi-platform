@@ -13,6 +13,7 @@ import CronogramaHistorico from "@/components/cronograma/CronogramaHistorico";
 import CronogramaConfiguracoes from "@/components/cronograma/CronogramaConfiguracoes";
 import CronogramaGraficos from "@/components/cronograma/CronogramaGraficos";
 import StudyPlanContent from "@/components/cronograma/StudyPlanContent";
+import { syncTemasToModules } from "@/lib/cronogramaSync";
 
 /* ======================== TYPES ======================== */
 
@@ -515,7 +516,7 @@ const CronogramaInteligente = () => {
             const newSubjects = subjects.filter(s => !existingNames.includes(s.toLowerCase()));
             if (newSubjects.length === 0) return;
 
-            let registeredCount = 0;
+            const registeredTemas: { id: string; tema: string; especialidade: string }[] = [];
             for (const subject of newSubjects) {
               const especialidade = (await import("@/lib/mapTopicToSpecialty")).mapTopicToSpecialty(subject) || "Medicina Preventiva";
               const { data, error } = await supabase.from("temas_estudados").insert({
@@ -525,16 +526,30 @@ const CronogramaInteligente = () => {
               } as any).select().single();
               if (error || !data) continue;
               const temaId = (data as any).id;
+              registeredTemas.push({ id: temaId, tema: subject, especialidade });
               const reviews = generateReviewsByError(today, 0);
               const reviewRows = reviews.map(r => ({
                 user_id: user.id, tema_id: temaId, tipo_revisao: r.tipo,
                 data_revisao: r.data, status: "pendente", prioridade: 50, risco_esquecimento: "baixo",
               }));
               await supabase.from("revisoes").insert(reviewRows as any);
-              registeredCount++;
             }
-            if (registeredCount > 0) {
-              toast({ title: "📅 Temas vinculados ao Cronograma!", description: `${registeredCount} matérias registradas com revisões automáticas.` });
+
+            if (registeredTemas.length > 0) {
+              toast({ title: "📅 Temas vinculados ao Cronograma!", description: `${registeredTemas.length} matérias registradas. Sincronizando módulos...` });
+
+              // Sync to all modules (flashcards, questions, tutor)
+              try {
+                const syncResult = await syncTemasToModules(user.id, registeredTemas);
+                const parts: string[] = [];
+                if (syncResult.flashcardsCriados > 0) parts.push(`${syncResult.flashcardsCriados} flashcards criados`);
+                if (syncResult.questoesVinculadas > 0) parts.push(`${syncResult.questoesVinculadas} questões encontradas`);
+                parts.push("Tutor IA configurado");
+                toast({ title: "🔗 Módulos sincronizados!", description: parts.join(" • ") });
+              } catch (err) {
+                console.error("Sync error:", err);
+              }
+
               loadData();
             }
           }}
