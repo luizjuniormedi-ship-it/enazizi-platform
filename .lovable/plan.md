@@ -1,26 +1,34 @@
 
 
-# Plano: Timeline de ações no AgentChat (estilo Modo Plantão)
+# Plano: Corrigir contabilizacao de atividades e reposicionar Termometro
 
-## Objetivo
-Adicionar uma faixa horizontal com badges mostrando as ações/perguntas enviadas pelo usuario, similar a timeline do Modo Plantao.
+## Problemas identificados
+
+1. **StreakCalendar** so consulta `practice_attempts` para marcar dias ativos — ignora `exam_sessions`, `simulation_history`, `anamnesis_results`, `teacher_simulado_results`
+2. **DailyGoalWidget** so conta `practice_attempts` + `exam_sessions` — ignora simulados de professor e plantoes
+3. **OnboardingChecklist** usa `hasCompletedDiagnostic` do perfil mas esse flag pode nao estar sendo atualizado apos o nivelamento
+4. **ApprovalThermometer** esta posicionado abaixo dos KPIs em vez de no topo
 
 ## Alteracoes
 
-### `src/components/agents/AgentChat.tsx`
+### 1. `src/components/dashboard/StreakCalendar.tsx`
+- Adicionar queries paralelas para `exam_sessions` (finished_at), `simulation_history` (created_at), `anamnesis_results` (created_at), `teacher_simulado_results` (created_at)
+- Unir todas as datas no Set `activityDays` para que qualquer atividade marque o dia como ativo
 
-1. **Novo estado** `actionTimeline` — array de `{ label, timestamp }` acumulando cada mensagem enviada pelo usuario (truncada a ~30 chars)
+### 2. `src/components/dashboard/DailyGoalWidget.tsx`
+- Adicionar query para `teacher_simulado_results` (hoje) e `simulation_history` (hoje)
+- Somar total_questions dos simulados de professor + contar simulacoes clinicas como questoes equivalentes (ex: 1 plantao = 5 questoes)
 
-2. **Registrar na timeline** — dentro de `handleSend`, ao enviar uma mensagem, adicionar entrada com o texto resumido e timestamp
+### 3. `src/components/dashboard/OnboardingChecklist.tsx`
+- O item "diagnostic" ja usa `hasCompletedDiagnostic` que vem de `profiles.has_completed_diagnostic`
+- Verificar se a pagina Diagnostic esta atualizando esse flag — adicionar fallback checando `diagnostic_results` count > 0
 
-3. **Renderizar timeline** — logo acima da area de mensagens (entre quick actions e chat), exibir badges horizontais com scroll, mostrando as ultimas 8 acoes com horario, identico ao pattern do ClinicalSimulation:
-```text
-[🩺 Tirar dúvida 14:32] [📌 Pontos de prova 14:35] [💊 Condutas 14:38]
-```
+### 4. `src/pages/Dashboard.tsx`
+- Mover `<ApprovalThermometer>` para antes do grid Streak+DailyGoal (logo apos SmartRecommendations, dentro do bloco `!isNewUser`)
 
-4. Para quick actions, usar o icon/label da action. Para mensagens livres, usar icone 💬 + texto truncado.
-
-### Resultado
-- Timeline visivel durante toda a conversa mostrando historico de interacoes
-- Mesmo visual (Badge outline com texto pequeno + horario) do Modo Plantao
+## Arquivos a modificar
+- `src/components/dashboard/StreakCalendar.tsx`
+- `src/components/dashboard/DailyGoalWidget.tsx`
+- `src/components/dashboard/OnboardingChecklist.tsx`
+- `src/pages/Dashboard.tsx`
 
