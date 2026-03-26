@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { supabase } from "@/integrations/supabase/client";
+import { updateStudyPerformanceContext } from "@/lib/cronogramaSync";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import DailyPlanProgress from "@/components/daily-plan/DailyPlanProgress";
