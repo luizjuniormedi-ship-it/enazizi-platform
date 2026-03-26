@@ -405,7 +405,7 @@ serve(async (req) => {
       if (!selected.includes(c.spec)) selected.push(c.spec);
     }
 
-    console.log(`Daily generation starting for: ${selected.join(", ")} (counts: ${countResults.slice(0, 5).map(c => `${c.spec}:${c.count}`).join(", ")})`);
+    console.log(`Daily generation starting for: ${selected.join(", ")} (weighted scores: ${countResults.slice(0, 8).map(c => `${c.spec}:${c.count}/${c.weight}=${c.score.toFixed(0)}`).join(", ")})`);
 
     const results: Record<string, { real: number; generated: number }> = {};
     let totalGenerated = 0;
