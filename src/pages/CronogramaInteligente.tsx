@@ -264,6 +264,13 @@ const CronogramaInteligente = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Recarregar dados ao trocar de tab para garantir dados frescos
+  useEffect(() => {
+    if (tab !== "plano" && tab !== "novo" && tab !== "config") {
+      loadData();
+    }
+  }, [tab]);
+
   const pesos = config?.pesos_algoritmo || DEFAULT_PESOS;
   const temasComputados = temas.map(t => computeTema(t, revisoes, desempenhos, pesos as PesosAlgoritmo));
 
@@ -514,7 +521,7 @@ const CronogramaInteligente = () => {
 
       {tab === "plano" && (
         <StudyPlanContent
-          onSyncComplete={() => setTab("hoje")}
+          onSyncComplete={async () => { await loadData(); setTab("hoje"); }}
           onSubjectsGenerated={async (subjects: string[]) => {
             if (!user) return;
             const today = new Date().toISOString().split("T")[0];
@@ -576,7 +583,7 @@ const CronogramaInteligente = () => {
               } catch (err) {
                 console.error("Sync error:", err);
               }
-              loadData();
+              await loadData();
             }
 
             return {
