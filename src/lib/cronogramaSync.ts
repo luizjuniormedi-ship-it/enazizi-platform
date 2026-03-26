@@ -91,7 +91,7 @@ async function generateFlashcardsForTemas(
 /**
  * Updates study_performance with cronograma topics as priority context
  */
-async function updateStudyPerformanceContext(
+export async function updateStudyPerformanceContext(
   userId: string,
   temas: TemaInfo[]
 ): Promise<void> {
