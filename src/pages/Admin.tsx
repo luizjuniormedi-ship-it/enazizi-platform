@@ -198,6 +198,15 @@ const Admin = () => {
     }
   };
 
+  const handleDeleteUser = async () => {
+    if (!deleteDialog.user) return;
+    await handleAction(deleteDialog.user.user_id, async () => {
+      await callAdmin({ action: "delete_user", target_user_id: deleteDialog.user!.user_id });
+      toast({ title: "Usuário excluído", description: `${deleteDialog.user!.display_name || deleteDialog.user!.email} foi permanentemente excluído.` });
+      setDeleteDialog({ open: false, user: null });
+    });
+  };
+
   // Unique faculdades and periodos for filters
   const uniqueFaculdades = [...new Set(users.map(u => u.faculdade).filter(Boolean))].sort() as string[];
   const uniquePeriodos = [...new Set(users.map(u => u.periodo).filter(Boolean))].sort((a, b) => (a as number) - (b as number)) as number[];
