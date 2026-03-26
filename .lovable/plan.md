@@ -1,28 +1,29 @@
 
 
-# Plano: Tutor IA aborda o assunto direto ao clicar no Plano do Dia
+# Plano: Corrigir Plano do Dia vazio no dia do upload
 
 ## Problema
-Ao clicar "Tutor IA" no Plano do Dia, o ChatGPT.tsx recebe `fromErrorBank: true` e define `currentTopic` como "Revisão do Banco de Erros" em vez do tema real (ex: "Sepse", "Cardiologia"). Isso faz o tutor não reconhecer o assunto corretamente.
+Apos o upload do cronograma, as revisoes D1 sao agendadas para o dia seguinte. O Plano do Dia fica vazio ate amanha, frustrando o usuario que acabou de configurar tudo.
 
 ## Solucao
+Duas abordagens complementares:
 
-### 1. Editar `src/pages/DailyPlan.tsx`
-- Nas 2 navegações para o Tutor IA (revisões na linha 333 e blocos na linha 414), trocar `fromErrorBank: true` por um novo flag `fromDailyPlan: true` e adicionar o campo `topic` com o nome do tema
-- Passar também `specialty` quando disponível (nas revisões, `review.especialidade`)
+### 1. Mostrar temas do cronograma como "Estudo Inicial" no dia do upload
+- No `DailyPlan.tsx`, alem de buscar revisoes pendentes, buscar tambem `temas_estudados` criados hoje que ainda nao tem nenhuma revisao concluida
+- Exibir como secao "Estudo Inicial — Primeiro Contato" com os temas cadastrados hoje
+- Cada tema tera os mesmos botoes (Tutor IA, Pomodoro, Flashcards, Questoes)
 
-### 2. Editar `src/pages/ChatGPT.tsx`
-- No `useEffect` que trata `location.state` (linha 303), adicionar handler para `fromDailyPlan`:
-  - Extrair `state.topic` e `state.initialMessage`
-  - Setar `currentTopic` com o tema real (ex: "Sepse")
-  - Setar `topic` (input de tema) com o mesmo valor
-  - Iniciar estudo automaticamente (`setStudyStarted(true)`)
-  - Enviar a mensagem inicial via `sendMessage`
+### 2. Incluir temas do cronograma no prompt do `learning-optimizer`
+- Os temas ja sao enviados via `scheduledTopics`, mas quando nao ha revisoes pendentes, a lista fica vazia
+- Buscar `temas_estudados` ativos do usuario e enviar como `activeTopics` para a IA considerar na geracao de blocos
 
-## Resultado
-Ao clicar no tema no Plano do Dia, o Tutor IA abre já com o tema correto definido e inicia a aula automaticamente, sem o usuário precisar digitar nada.
+## Alteracoes
+
+### Editar `src/pages/DailyPlan.tsx`
+- No `useEffect` de carregamento, adicionar query para `temas_estudados` criados hoje (`created_at >= today`)
+- Renderizar secao "Temas de Hoje" quando existem temas novos mas nenhuma revisao pendente
+- Na funcao `generatePlan`, enviar `activeTopics` (temas sem revisao pendente) junto com `scheduledTopics`
 
 ## Arquivos
-- Editar: `src/pages/DailyPlan.tsx` (2 pontos de navegação)
-- Editar: `src/pages/ChatGPT.tsx` (1 novo handler no useEffect)
+- Editar: `src/pages/DailyPlan.tsx`
 
