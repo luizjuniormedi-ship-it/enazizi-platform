@@ -110,7 +110,11 @@ const SidebarGroup = ({ group, isOpen, onToggle }: { group: NavGroup; isOpen: bo
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                 )}
               >
-                <item.icon className="h-4 w-4 flex-shrink-0" />
+                {item.to === "/dashboard/chatgpt" ? (
+                  <img src={enazizi} alt="Tutor" className="h-5 w-5 rounded-full object-contain flex-shrink-0" />
+                ) : (
+                  <item.icon className="h-4 w-4 flex-shrink-0" />
+                )}
                 <span className="truncate">{item.label}</span>
               </Link>
             );
