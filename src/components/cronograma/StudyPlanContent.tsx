@@ -30,9 +30,15 @@ interface DaySchedule {
   tasks: Task[];
 }
 
+interface TopicMapItem {
+  topic: string;
+  subtopics: string[];
+}
+
 interface PlanJson {
   weeklySchedule?: DaySchedule[];
   subjects?: string[];
+  topicMap?: TopicMapItem[];
   tips?: string;
   detectedSpecialty?: string;
   totalTopicsExtracted?: number;
