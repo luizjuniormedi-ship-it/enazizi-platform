@@ -535,6 +535,26 @@ const AdminDialogs = ({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Delete User Dialog */}
+    <Dialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog({ open: false, user: null })}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-destructive">
+            <Trash2 className="h-5 w-5" /> Excluir usuário permanentemente
+          </DialogTitle>
+          <DialogDescription>
+            <span className="font-semibold text-destructive">Atenção: esta ação é irreversível!</span> Todos os dados de "{deleteDialog.user?.display_name || deleteDialog.user?.email}" serão permanentemente excluídos, incluindo questões, simulados, flashcards, histórico e progresso.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setDeleteDialog({ open: false, user: null })}>Cancelar</Button>
+          <Button variant="destructive" onClick={handleDeleteUser} disabled={!!actionLoading} className="gap-1.5">
+            <Trash2 className="h-4 w-4" /> Excluir permanentemente
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </>
   );
 };
