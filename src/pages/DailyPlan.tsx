@@ -700,6 +700,44 @@ const DailyPlan = () => {
         </div>
       )}
 
+      {/* Overflow topics */}
+      {overflowTopics.length > 0 && !generating && (
+        <Collapsible open={showOverflowTopics} onOpenChange={setShowOverflowTopics}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground text-xs">
+              <span>Mais temas para depois ({overflowTopics.length})</span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${showOverflowTopics ? "rotate-180" : ""}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-2 mt-2">
+            {overflowTopics.map((topic) => (
+              <div key={topic.id} className="glass-card p-3 flex items-center gap-3 opacity-60">
+                <BookOpen className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{topic.tema}</p>
+                  <p className="text-xs text-muted-foreground">{topic.especialidade} · ~20min</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs h-7 px-2"
+                  onClick={() => navigate("/dashboard/chatgpt", {
+                    state: {
+                      initialMessage: `Quero estudar o tópico "${topic.tema}" (${topic.especialidade}). Me dê uma aula completa seguindo o protocolo ENAZIZI.`,
+                      fromDailyPlan: true,
+                      topic: topic.tema,
+                      specialty: topic.especialidade,
+                    },
+                  })}
+                >
+                  <GraduationCap className="h-3.5 w-3.5 mr-1" /> Estudar
+                </Button>
+              </div>
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
       {/* AI-generated plan blocks */}
       {plan && !generating && (
         <>
