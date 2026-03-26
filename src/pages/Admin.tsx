@@ -480,6 +480,9 @@ const Admin = () => {
         accessDialog={accessDialog}
         setAccessDialog={setAccessDialog}
         handleSaveAccess={handleSaveAccess}
+        deleteDialog={deleteDialog}
+        setDeleteDialog={setDeleteDialog}
+        handleDeleteUser={handleDeleteUser}
       />
     </div>
   );
