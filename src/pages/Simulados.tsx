@@ -14,7 +14,6 @@ function getSourcePriority(source: string | null | undefined): number {
   if (source === "ai-exam-style") return 2;
   return 3;
 }
-import { useToast } from "@/hooks/use-toast";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import { Progress } from "@/components/ui/progress";
