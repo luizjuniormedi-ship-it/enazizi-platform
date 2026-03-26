@@ -365,6 +365,33 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
 
     rows.forEach((r: any) => existingStatements.push(r.statement));
 
+    // Auto-generate flashcards from inserted questions
+    const flashcardRows = validQuestions.map((q: any, i: number) => {
+      const correctOption = String(q.options[q.correct_index] || "").replace(/^[A-E]\)\s*/, "");
+      const explanation = String(q.explanation || "").trim();
+      // Extract core clinical question (first 200 chars of statement)
+      const statementSummary = String(q.statement).trim().slice(0, 300);
+      
+      return {
+        user_id: userId,
+        question: statementSummary.length < String(q.statement).trim().length
+          ? statementSummary + "... Qual a conduta/diagnóstico correto?"
+          : statementSummary,
+        answer: `✅ ${correctOption}\n\n${explanation ? `📖 ${explanation}` : ""}`,
+        topic: specialty,
+        is_global: true,
+      };
+    });
+
+    if (flashcardRows.length > 0) {
+      const { error: fcError } = await supabaseAdmin.from("flashcards").insert(flashcardRows);
+      if (fcError) {
+        console.error("Insert flashcards from web-scrape error:", fcError);
+      } else {
+        console.log(`Created ${flashcardRows.length} flashcards from web-scrape questions`);
+      }
+    }
+
     return { inserted: rows.length, sources: [...sources] };
   } catch (e) {
     console.error("Error structuring scraped questions:", e);
