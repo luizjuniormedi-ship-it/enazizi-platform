@@ -127,7 +127,6 @@ const QuestionsBank = () => {
       .from("questions_bank")
       .select("*", { count: "exact" })
       .or(`user_id.eq.${user.id},is_global.eq.true`)
-      .order("created_at", { ascending: false })
       .range(from, to);
 
     if (data) {
