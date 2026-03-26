@@ -723,6 +723,17 @@ const DailyPlan = () => {
           onPass={() => toggleReviewDone(quizReview.id)}
         />
       )}
+
+      {/* Self Assessment */}
+      <SelfAssessmentDialog
+        open={assessmentOpen}
+        onOpenChange={(open) => {
+          setAssessmentOpen(open);
+          if (!open) setPendingBlockOrder(null);
+        }}
+        topic={assessmentTopic}
+        onSubmit={handleAssessmentSubmit}
+      />
     </div>
   );
 };
