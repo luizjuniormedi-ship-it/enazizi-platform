@@ -1906,6 +1906,7 @@ export type Database = {
       }
       temas_estudados: {
         Row: {
+          anexos: Json | null
           created_at: string
           data_estudo: string
           dificuldade: string | null
@@ -1920,6 +1921,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          anexos?: Json | null
           created_at?: string
           data_estudo?: string
           dificuldade?: string | null
@@ -1934,6 +1936,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          anexos?: Json | null
           created_at?: string
           data_estudo?: string
           dificuldade?: string | null

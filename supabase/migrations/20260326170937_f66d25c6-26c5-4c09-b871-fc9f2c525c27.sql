@@ -1,0 +1,1 @@
+ALTER TABLE public.temas_estudados ADD COLUMN anexos jsonb DEFAULT '[]'::jsonb;
