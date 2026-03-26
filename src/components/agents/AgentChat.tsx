@@ -809,6 +809,19 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
         </div>
       )}
 
+      {/* Action Timeline */}
+      {actionTimeline.length > 0 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1 mb-2 scrollbar-hide">
+          {actionTimeline.map((entry, idx) => (
+            <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-border/60 bg-muted/50 text-[10px] font-medium text-muted-foreground whitespace-nowrap flex-shrink-0">
+              <span>{entry.icon}</span>
+              <span className="max-w-[100px] truncate">{entry.label}</span>
+              <span className="text-muted-foreground/60">{entry.time}</span>
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Chat Messages — Premium */}
       <div ref={scrollRef} className="flex-1 rounded-xl border border-border/50 bg-card/50 p-2 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 mb-2 sm:mb-3 min-h-0 pattern-dots">
         {messages.map((msg, i) => (
