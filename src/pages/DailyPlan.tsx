@@ -244,7 +244,17 @@ const DailyPlan = () => {
       });
 
       if (response.error) throw response.error;
-      const newPlan = response.data as DailyPlanData;
+      const rawPlan = response.data;
+      // Map snake_case from AI to camelCase
+      const newPlan: DailyPlanData = {
+        ...rawPlan,
+        blocks: (rawPlan.blocks || []).map((b: any) => ({
+          ...b,
+          learningGoal: b.learning_goal || b.learningGoal || "",
+          summary: b.summary || "",
+          prerequisite: b.prerequisite || null,
+        })),
+      };
       setPlan(newPlan);
       const newCompleted = new Set<number>();
       setCompletedBlocks(newCompleted);
