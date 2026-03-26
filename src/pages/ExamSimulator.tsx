@@ -21,6 +21,14 @@ interface ExamQuestion {
   correct_index: number;
   topic: string;
   explanation: string;
+  source?: string;
+}
+
+function getSourcePriority(source: string | null | undefined): number {
+  if (!source) return 3;
+  if (source === "web-scrape" || source === "real-exam-ai") return 1;
+  if (source === "ai-exam-style") return 2;
+  return 3;
 }
 
 type Phase = "setup" | "loading" | "exam" | "review" | "result";
