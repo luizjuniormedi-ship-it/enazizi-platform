@@ -1,16 +1,17 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookOpen, Save, AlertTriangle } from "lucide-react";
+import { BookOpen, Save, AlertTriangle, Paperclip, X } from "lucide-react";
 
 interface Props {
   specialties: string[];
   onAdd: (
     tema: string, especialidade: string, subtopico: string, dataEstudo: string,
     fonte: string, dificuldade: string, observacoes: string,
-    questoesFeitas: number, questoesErradas: number
+    questoesFeitas: number, questoesErradas: number,
+    files?: File[]
   ) => void;
 }
 
@@ -39,6 +40,8 @@ const CronogramaNovoTema = ({ specialties, onAdd }: Props) => {
   const [observacoes, setObservacoes] = useState("");
   const [questoesFeitas, setQuestoesFeitas] = useState("");
   const [questoesErradas, setQuestoesErradas] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const feitas = parseInt(questoesFeitas) || 0;
   const erradas = parseInt(questoesErradas) || 0;
@@ -52,10 +55,20 @@ const CronogramaNovoTema = ({ specialties, onAdd }: Props) => {
     return { text: "Padrão: D1, D3, D7, D15, D30", color: "text-emerald-500" };
   };
 
+  const handleFileAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files || []);
+    setFiles(prev => [...prev, ...selected]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = () => {
     if (!tema.trim() || !especialidade) return;
-    onAdd(tema.trim(), especialidade, subtopico.trim(), dataEstudo, fonte, dificuldade, observacoes.trim(), feitas, erradas);
-    setTema(""); setSubtopico(""); setObservacoes(""); setQuestoesFeitas(""); setQuestoesErradas("");
+    onAdd(tema.trim(), especialidade, subtopico.trim(), dataEstudo, fonte, dificuldade, observacoes.trim(), feitas, erradas, files.length > 0 ? files : undefined);
+    setTema(""); setSubtopico(""); setObservacoes(""); setQuestoesFeitas(""); setQuestoesErradas(""); setFiles([]);
   };
 
   const preview = getSchedulePreview();
@@ -152,6 +165,34 @@ const CronogramaNovoTema = ({ specialties, onAdd }: Props) => {
         <div>
           <label className="text-sm font-medium mb-1 block">Observações</label>
           <Textarea value={observacoes} onChange={(e) => setObservacoes(e.target.value)} placeholder="Pontos importantes, dúvidas..." rows={2} />
+        </div>
+
+        {/* File attachments */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium mb-1 block">Anexos (opcional)</label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
+            onChange={handleFileAdd}
+            className="hidden"
+          />
+          <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+            <Paperclip className="h-4 w-4 mr-2" /> Anexar arquivos
+          </Button>
+          {files.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {files.map((f, i) => (
+                <span key={i} className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-xs">
+                  📎 {f.name.length > 25 ? f.name.slice(0, 22) + "..." : f.name}
+                  <button type="button" onClick={() => removeFile(i)} className="ml-1 hover:text-destructive">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <Button onClick={handleSubmit} disabled={!tema.trim() || !especialidade} className="w-full sm:w-auto">

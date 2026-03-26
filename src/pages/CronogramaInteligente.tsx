@@ -269,13 +269,28 @@ const CronogramaInteligente = () => {
   const handleAddTema = async (
     tema: string, especialidade: string, subtopico: string, dataEstudo: string,
     fonte: string, dificuldade: string, observacoes: string,
-    questoesFeitas: number, questoesErradas: number
+    questoesFeitas: number, questoesErradas: number,
+    files?: File[]
   ) => {
     if (!user) return;
+
+    // Upload files if any
+    let anexos: { name: string; path: string }[] = [];
+    if (files && files.length > 0) {
+      for (const file of files) {
+        const filePath = `${user.id}/cronograma/${Date.now()}-${file.name}`;
+        const { error: upErr } = await supabase.storage.from("user-uploads").upload(filePath, file);
+        if (!upErr) {
+          anexos.push({ name: file.name, path: filePath });
+        }
+      }
+    }
+
     const { data, error } = await supabase.from("temas_estudados").insert({
       user_id: user.id, tema, especialidade, subtopico: subtopico || null,
       data_estudo: dataEstudo, fonte, dificuldade,
       observacoes: observacoes || null, status: "ativo",
+      anexos: anexos.length > 0 ? anexos : [],
     } as any).select().single();
     if (error || !data) { toast({ title: "Erro", description: "Não foi possível salvar o tema.", variant: "destructive" }); return; }
 
@@ -299,7 +314,7 @@ const CronogramaInteligente = () => {
     }));
     await supabase.from("revisoes").insert(reviewRows as any);
 
-    toast({ title: "✅ Tema registrado!", description: `${reviews.length} revisões agendadas. Erro: ${taxaErro}%` });
+    toast({ title: "✅ Tema registrado!", description: `${reviews.length} revisões agendadas.${anexos.length > 0 ? ` ${anexos.length} arquivo(s) anexado(s).` : ""} Erro: ${taxaErro}%` });
     setTab("visao");
     loadData();
   };
