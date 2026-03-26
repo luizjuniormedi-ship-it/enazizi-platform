@@ -40,6 +40,8 @@ const CronogramaNovoTema = ({ specialties, onAdd }: Props) => {
   const [observacoes, setObservacoes] = useState("");
   const [questoesFeitas, setQuestoesFeitas] = useState("");
   const [questoesErradas, setQuestoesErradas] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const feitas = parseInt(questoesFeitas) || 0;
   const erradas = parseInt(questoesErradas) || 0;
