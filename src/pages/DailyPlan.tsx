@@ -197,16 +197,22 @@ const DailyPlan = () => {
         setOverflowReviews(extraReviews);
       }
 
-      // Set today's topics (exclude those that already have scheduled reviews)
+      // Set today's topics: topics without any completed review (first contact) and not in today's reviews
       const reviewedTemaIds = new Set((reviewsRes.data || []).map(r => r.tema_id));
-      const allNewTopics = (todayTemasRes.data || []).filter(t => !reviewedTemaIds.has(t.id));
+      
+      // Get all tema IDs that have at least one completed review
+      const { data: completedReviewTemas } = await supabase
+        .from("revisoes")
+        .select("tema_id")
+        .eq("user_id", user.id)
+        .eq("status", "concluida");
+      const completedTemaIds = new Set((completedReviewTemas || []).map(r => r.tema_id));
+      
+      // Show topics that have NO completed reviews (first contact) and aren't already in scheduled reviews
+      const allNewTopics = (todayTemasRes.data || []).filter(t => !reviewedTemaIds.has(t.id) && !completedTemaIds.has(t.id));
 
-      // Time budget for initial topics: remaining after reviews, capped at 40%
-      const reviewUsed = scheduledReviews.reduce((s, r) => s + (r.estimatedMinutes || 15), 0);
-      const topicBudget = userDailyMinutes - reviewUsed;
-      let usedTopicMinutes = 0;
-      const fittingTopics: typeof allNewTopics = [];
-      const extraTopics: typeof allNewTopics = [];
+      // Time budget for initial topics: remaining after reviews (use local usedReviewMinutes)
+      const topicBudget = userDailyMinutes - usedReviewMinutes;
       const TOPIC_DURATION = 20;
 
       for (const t of allNewTopics) {
