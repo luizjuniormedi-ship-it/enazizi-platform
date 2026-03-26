@@ -508,9 +508,48 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
                 <span className={generationStep >= 4 ? "text-primary font-medium" : ""}>Sincronização</span>
               </div>
             </div>
-          )
+          )}
         </div>
       )}
+
+      {/* Post-sync summary card */}
+      {syncSummary && !generating && (
+        <div className="glass-card p-5 border-l-4 border-l-primary animate-fade-in">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold">Plano Gerado com Sucesso!</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div className="text-center p-3 rounded-lg bg-primary/10">
+              <p className="text-2xl font-bold text-primary">{syncSummary.temasRegistrados}</p>
+              <p className="text-xs text-muted-foreground">Temas registrados</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-primary/10">
+              <p className="text-2xl font-bold text-primary">{syncSummary.flashcardsCriados}</p>
+              <p className="text-xs text-muted-foreground">Flashcards criados</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-primary/10">
+              <p className="text-2xl font-bold text-primary">{syncSummary.questoesVinculadas}</p>
+              <p className="text-xs text-muted-foreground">Questões encontradas</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-primary/10">
+              <p className="text-2xl font-bold text-primary">{syncSummary.revisoesAgendadas}</p>
+              <p className="text-xs text-muted-foreground">Revisões agendadas</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => onSyncComplete?.()}>
+              <ArrowRight className="h-4 w-4 mr-1" /> Ver Agenda de Hoje
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => navigate("/dashboard/flashcards")}>
+              <Layers className="h-4 w-4 mr-1" /> Flashcards
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => navigate("/dashboard/chatgpt")}>
+              <MessageSquare className="h-4 w-4 mr-1" /> Tutor IA
+            </Button>
+          </div>
+        </div>
+      )
 
       {tips && (
         <div className="glass-card p-4 border-l-4 border-l-accent">
