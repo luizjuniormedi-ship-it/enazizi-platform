@@ -444,13 +444,13 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
 
   try {
     const response = await aiFetch({
-      model: "google/gemini-2.5-pro",
+      model: "google/gemini-2.5-flash",
       messages: [
         { role: "system", content: "Você extrai questões de provas de residência médica a partir de conteúdo web. Responda APENAS com JSON válido, sem markdown, sem explicações adicionais." },
         { role: "user", content: prompt },
       ],
-      timeoutMs: 60000,
-      maxRetries: 2,
+      timeoutMs: 50000,
+      maxRetries: 1,
     });
 
     if (!response.ok) {
