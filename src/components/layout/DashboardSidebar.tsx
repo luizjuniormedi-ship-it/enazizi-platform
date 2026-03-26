@@ -10,6 +10,7 @@ import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import enazizi from "@/assets/enazizi-mascot.png";
+import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import StudyTimer from "@/components/dashboard/StudyTimer";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -111,7 +112,7 @@ const SidebarGroup = ({ group, isOpen, onToggle }: { group: NavGroup; isOpen: bo
                 )}
               >
                 {item.to === "/dashboard/chatgpt" ? (
-                  <img src={enazizi} alt="Tutor" className="h-5 w-5 rounded-full object-contain flex-shrink-0" />
+                  <img src={tutorAvatar} alt="Tutor" className="h-5 w-5 rounded-full object-contain flex-shrink-0" />
                 ) : (
                   <item.icon className="h-4 w-4 flex-shrink-0" />
                 )}
