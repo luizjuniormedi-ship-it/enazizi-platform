@@ -99,9 +99,18 @@ const ExamSimulator = () => {
     setPhase("loading");
     try {
       // Fetch questions from bank or generate
+      // Fetch previously answered question IDs to avoid repetition
+      const { data: pastAttempts } = await supabase
+        .from("practice_attempts")
+        .select("question_id")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      const answeredIds = new Set((pastAttempts || []).map(a => a.question_id));
+
       const { data: bankQuestions, error: bankError } = await supabase
         .from("questions_bank")
-        .select("id, statement, options, correct_index, topic, explanation")
+        .select("id, statement, options, correct_index, topic, explanation, source")
         .or(`user_id.eq.${user!.id},is_global.eq.true`)
         .limit(1000);
 
@@ -115,6 +124,7 @@ const ExamSimulator = () => {
           correct_index: q.correct_index || 0,
           topic: q.topic || "Geral",
           explanation: q.explanation || "",
+          source: q.source || null,
         }))
         .filter((q) => q.options.length >= 2)
         .filter(isMedicalQuestion);
