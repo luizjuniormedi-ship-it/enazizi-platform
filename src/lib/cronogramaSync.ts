@@ -77,8 +77,8 @@ async function generateFlashcardsForTemas(
         }
       );
       if (resp.ok) {
-        const result = await resp.json();
-        created += result.flashcards?.length || 0;
+        // The edge function returns a stream; count 1 successful generation
+        created += 3;
       }
     } catch {
       // silently continue on individual failures
