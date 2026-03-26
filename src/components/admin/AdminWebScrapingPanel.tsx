@@ -1,8 +1,9 @@
-import { useState, useCallback } from "react";
-import { Globe, Search, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { useState, useCallback, useRef } from "react";
+import { Globe, Search, Loader2, CheckCircle2, AlertTriangle, PlayCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -26,6 +27,12 @@ interface ScrapeResult {
   pages_scraped: number;
 }
 
+interface BulkResult {
+  specialty: string;
+  questions: number;
+  error?: string;
+}
+
 const AdminWebScrapingPanel = () => {
   const { session } = useAuth();
   const { toast } = useToast();
@@ -35,36 +42,48 @@ const AdminWebScrapingPanel = () => {
   const [result, setResult] = useState<ScrapeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Bulk search state
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState(0);
+  const [bulkCurrent, setBulkCurrent] = useState("");
+  const [bulkResults, setBulkResults] = useState<BulkResult[]>([]);
+  const cancelRef = useRef(false);
+
+  const searchSingle = useCallback(async (spec: string, bancaVal: string | null): Promise<ScrapeResult | null> => {
+    if (!session) return null;
+    const resp = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-real-questions`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          specialty: spec,
+          banca: bancaVal === "all" ? null : bancaVal,
+        }),
+      }
+    );
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || "Erro na busca");
+    return data;
+  }, [session]);
+
   const handleSearch = useCallback(async () => {
     if (!session) return;
     setLoading(true);
     setResult(null);
     setError(null);
-
     try {
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-real-questions`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            specialty,
-            banca: banca === "all" ? null : banca,
-          }),
-        }
-      );
-
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || "Erro na busca");
-
-      setResult(data);
-      toast({
-        title: `${data.questions_inserted} questões encontradas!`,
-        description: `${data.pages_scraped} páginas analisadas de fontes oficiais.`,
-      });
+      const data = await searchSingle(specialty, banca);
+      if (data) {
+        setResult(data);
+        toast({
+          title: `${data.questions_inserted} questões encontradas!`,
+          description: `${data.pages_scraped} páginas analisadas de fontes oficiais.`,
+        });
+      }
     } catch (e) {
       const isTimeout = e instanceof TypeError && /load failed|abort|timeout/i.test(e.message);
       const msg = isTimeout
@@ -75,7 +94,53 @@ const AdminWebScrapingPanel = () => {
     } finally {
       setLoading(false);
     }
-  }, [session, specialty, banca, toast]);
+  }, [session, specialty, banca, toast, searchSingle]);
+
+  const handleBulkSearch = useCallback(async () => {
+    if (!session) return;
+    cancelRef.current = false;
+    setBulkRunning(true);
+    setBulkResults([]);
+    setBulkProgress(0);
+    setBulkCurrent("");
+
+    const results: BulkResult[] = [];
+    for (let i = 0; i < SPECIALTIES.length; i++) {
+      if (cancelRef.current) break;
+      const spec = SPECIALTIES[i];
+      setBulkCurrent(spec);
+      setBulkProgress(((i) / SPECIALTIES.length) * 100);
+
+      try {
+        const data = await searchSingle(spec, null);
+        results.push({ specialty: spec, questions: data?.questions_inserted || 0 });
+      } catch {
+        results.push({ specialty: spec, questions: 0, error: "falhou" });
+      }
+      setBulkResults([...results]);
+
+      // Rate-limit delay between calls
+      if (i < SPECIALTIES.length - 1 && !cancelRef.current) {
+        await new Promise(r => setTimeout(r, 2000));
+      }
+    }
+
+    setBulkProgress(100);
+    setBulkCurrent("");
+    setBulkRunning(false);
+
+    const total = results.reduce((s, r) => s + r.questions, 0);
+    toast({
+      title: `Busca geral concluída!`,
+      description: `${total} questões inseridas em ${results.filter(r => r.questions > 0).length} especialidades.`,
+    });
+  }, [session, searchSingle, toast]);
+
+  const handleCancelBulk = useCallback(() => {
+    cancelRef.current = true;
+  }, []);
+
+  const bulkTotal = bulkResults.reduce((s, r) => s + r.questions, 0);
 
   return (
     <div className="glass-card p-4 sm:p-5 border border-blue-500/20 bg-gradient-to-r from-blue-500/5 to-transparent">
@@ -117,17 +182,68 @@ const AdminWebScrapingPanel = () => {
         <Button
           size="sm"
           onClick={handleSearch}
-          disabled={loading}
+          disabled={loading || bulkRunning}
           className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
         >
-          {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Search className="h-4 w-4" />
-          )}
-          {loading ? "Buscando..." : "Buscar Questões"}
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+          {loading ? "Buscando..." : "Buscar"}
         </Button>
+
+        {!bulkRunning ? (
+          <Button
+            size="sm"
+            onClick={handleBulkSearch}
+            disabled={loading || bulkRunning}
+            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            <PlayCircle className="h-4 w-4" />
+            Buscar Todas (21)
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            onClick={handleCancelBulk}
+            variant="destructive"
+            className="gap-1.5"
+          >
+            <XCircle className="h-4 w-4" />
+            Cancelar
+          </Button>
+        )}
       </div>
+
+      {/* Bulk progress */}
+      {bulkRunning && (
+        <div className="space-y-2 mb-3 p-3 rounded-lg bg-muted/50">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-medium">
+              Buscando {bulkResults.length + 1}/{SPECIALTIES.length}: {bulkCurrent}
+            </span>
+            <span className="text-muted-foreground">{bulkTotal} questões</span>
+          </div>
+          <Progress value={bulkProgress} className="h-2" />
+        </div>
+      )}
+
+      {/* Bulk results summary */}
+      {!bulkRunning && bulkResults.length > 0 && (
+        <div className="space-y-2 mb-3 p-3 rounded-lg bg-muted/50">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            <span className="text-sm font-medium">{bulkTotal} questões inseridas no total</span>
+          </div>
+          <div className="grid grid-cols-2 gap-1">
+            {bulkResults.map((r) => (
+              <div key={r.specialty} className="flex items-center justify-between text-xs px-2 py-1 rounded bg-background/50">
+                <span className={r.error ? "text-destructive" : ""}>{r.specialty}</span>
+                <Badge variant={r.questions > 0 ? "default" : "secondary"} className="text-[10px] h-4 px-1.5">
+                  {r.error ? "erro" : r.questions}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {result && (
         <div className="space-y-2 mt-3 p-3 rounded-lg bg-muted/50">
