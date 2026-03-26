@@ -1,5 +1,5 @@
-import { useEffect, useRef, lazy, Suspense } from "react";
-import { Loader2 } from "lucide-react";
+import { useEffect, useRef, lazy, Suspense, useState } from "react";
+import { Loader2, Target, Calendar, Flame, ClipboardList } from "lucide-react";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
 import DashboardWarnings from "@/components/dashboard/DashboardWarnings";
@@ -16,16 +16,17 @@ import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
 import QuickStartCard from "@/components/dashboard/QuickStartCard";
 import SmartRecommendations from "@/components/dashboard/SmartRecommendations";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
-import ErrorReviewCard from "@/components/dashboard/ErrorReviewCard";
-import SmartNotifications from "@/components/dashboard/SmartNotifications";
 import AdminSystemAlerts from "@/components/admin/AdminSystemAlerts";
 import InstallAppBanner from "@/components/dashboard/InstallAppBanner";
 import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
+import DashboardSummaryCard from "@/components/dashboard/DashboardSummaryCard";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { fireCelebration } from "@/lib/celebrations";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Lazy load heavy chart/analytics components
 const StreakCalendar = lazy(() => import("@/components/dashboard/StreakCalendar"));
@@ -46,11 +47,15 @@ const ChartFallback = () => (
   </Card>
 );
 
+type SectionKey = "desempenho" | "cronograma" | "streak" | "simulados" | null;
+
 const Dashboard = () => {
   useRevisionNotifier();
   const { data, isLoading } = useDashboardData();
   const prevLevelRef = useRef<number | null>(null);
   const prevStreakRef = useRef<number | null>(null);
+  const [openSection, setOpenSection] = useState<SectionKey>(null);
+  const isMobile = useIsMobile();
 
   // Celebrate level ups and streak milestones
   useEffect(() => {
@@ -80,14 +85,17 @@ const Dashboard = () => {
   const taskPercent = stats.totalTasks > 0 ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0;
   const isNewUser = metrics.questionsAnswered === 0 && stats.flashcards === 0;
 
+  const sheetSide = isMobile ? "bottom" as const : "right" as const;
+
   return (
-    <div className="space-y-6 animate-fade-in pb-16 lg:pb-0">
+    <div className="space-y-4 animate-fade-in pb-16 lg:pb-0">
       <AdminSystemAlerts />
       <WhatsNewPopup />
       <SystemGuidePopup />
       <FeedbackSurveyPopup />
       <OnboardingTour />
 
+      {/* Top bar — always visible */}
       <div>
         <MotivationalGreeting
           streak={stats.streak}
@@ -100,37 +108,24 @@ const Dashboard = () => {
           accuracy={metrics.accuracy}
           displayName={displayName}
         />
-        <div className="mt-4 mb-2">
+        <div className="mt-3 mb-1 flex items-center justify-between">
           <XpWidget />
+          <PerformanceReport />
         </div>
         <AchievementToast />
         <InstallAppBanner />
         <AdminMessagesBanner />
-
-        <div className="flex items-center justify-between mt-5">
-          <div>
-            <h1 className="text-2xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">
-              {stats.daysUntilExam
-                ? `${stats.daysUntilExam} dias até a prova • ${taskPercent}% das tarefas concluídas`
-                : "Bem-vindo de volta! Aqui está seu progresso."}
-            </p>
-          </div>
-          <PerformanceReport />
-        </div>
-
         <ActiveVideoRoomBanner />
-        <SmartNotifications />
-        <DashboardWarnings
-          todayCompleted={stats.todayCompleted}
-          todayTotal={stats.todayTotal}
-          completedTasks={stats.completedTasks}
-          totalTasks={stats.totalTasks}
-          streak={stats.streak}
-          daysUntilExam={stats.daysUntilExam}
-        />
-        <ErrorReviewCard />
       </div>
+
+      <DashboardWarnings
+        todayCompleted={stats.todayCompleted}
+        todayTotal={stats.todayTotal}
+        completedTasks={stats.completedTasks}
+        totalTasks={stats.totalTasks}
+        streak={stats.streak}
+        daysUntilExam={stats.daysUntilExam}
+      />
 
       {/* Quick Start for new users */}
       <QuickStartCard
@@ -146,6 +141,60 @@ const Dashboard = () => {
         hasCompletedDiagnostic={hasCompletedDiagnostic}
       />
 
+      {!isNewUser && (
+        <Suspense fallback={<div className="space-y-4"><ChartFallback /><ChartFallback /></div>}>
+          {/* Approval Thermometer — top visibility */}
+          <ApprovalThermometer metrics={metrics} />
+
+          {/* Summary cards grid */}
+          <div className="grid grid-cols-2 gap-3">
+            <DashboardSummaryCard
+              icon={Target}
+              title="Desempenho"
+              accentClass="text-primary bg-primary/10"
+              onClick={() => setOpenSection("desempenho")}
+              metrics={[
+                { label: "Acerto", value: `${metrics.accuracy}%` },
+                { label: "Questões", value: metrics.questionsAnswered },
+              ]}
+            />
+            <DashboardSummaryCard
+              icon={Calendar}
+              title="Cronograma"
+              accentClass="text-blue-500 bg-blue-500/10"
+              onClick={() => setOpenSection("cronograma")}
+              metrics={[
+                { label: "Tarefas", value: `${stats.completedTasks}/${stats.totalTasks}` },
+                { label: "Concluído", value: `${taskPercent}%` },
+              ]}
+            />
+            <DashboardSummaryCard
+              icon={Flame}
+              title="Streak & Metas"
+              accentClass="text-orange-500 bg-orange-500/10"
+              onClick={() => setOpenSection("streak")}
+              metrics={[
+                { label: "Streak", value: `🔥 ${stats.streak} dias` },
+                { label: "Nível", value: metrics.gamificationLevel },
+              ]}
+            />
+            <DashboardSummaryCard
+              icon={ClipboardList}
+              title="Simulados"
+              accentClass="text-emerald-500 bg-emerald-500/10"
+              onClick={() => setOpenSection("simulados")}
+              metrics={[
+                { label: "Hoje", value: `${stats.todayCompleted}/${stats.todayTotal}` },
+                { label: "Dias p/ prova", value: stats.daysUntilExam ?? "—" },
+              ]}
+            />
+          </div>
+
+          {/* Daily Plan Widget inline */}
+          <DailyPlanWidget />
+        </Suspense>
+      )}
+
       {/* Smart Recommendations */}
       <SmartRecommendations
         stats={stats}
@@ -153,37 +202,66 @@ const Dashboard = () => {
         hasCompletedDiagnostic={hasCompletedDiagnostic}
       />
 
-    {!isNewUser && (
-        <Suspense fallback={<div className="space-y-6"><ChartFallback /><ChartFallback /></div>}>
-          {/* Approval Thermometer — top visibility */}
-          <ApprovalThermometer metrics={metrics} />
+      {/* ===== Drill-down Sheets ===== */}
+      <Sheet open={openSection === "desempenho"} onOpenChange={(o) => !o && setOpenSection(null)}>
+        <SheetContent side={sheetSide} className={isMobile ? "h-[85vh] overflow-y-auto" : "sm:max-w-lg overflow-y-auto"}>
+          <SheetHeader>
+            <SheetTitle>Desempenho Detalhado</SheetTitle>
+            <SheetDescription>Gráficos e evolução por especialidade</SheetDescription>
+          </SheetHeader>
+          <div className="space-y-6 mt-4">
+            <Suspense fallback={<ChartFallback />}>
+              <DashboardCharts stats={stats} metrics={metrics} />
+              <SpecialtyProgressCard />
+              <TopicEvolution />
+            </Suspense>
+          </div>
+        </SheetContent>
+      </Sheet>
 
-          {/* Streak Calendar + Daily Goal */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <StreakCalendar />
+      <Sheet open={openSection === "cronograma"} onOpenChange={(o) => !o && setOpenSection(null)}>
+        <SheetContent side={sheetSide} className={isMobile ? "h-[85vh] overflow-y-auto" : "sm:max-w-lg overflow-y-auto"}>
+          <SheetHeader>
+            <SheetTitle>Cronograma & Revisões</SheetTitle>
+            <SheetDescription>Plano do dia e metas de estudo</SheetDescription>
+          </SheetHeader>
+          <div className="space-y-6 mt-4">
+            <DailyPlanWidget />
             <DailyGoalWidget />
           </div>
+        </SheetContent>
+      </Sheet>
 
-          {/* KPIs */}
-          <DashboardMetricsGrid stats={stats} metrics={metrics} />
-
-          <DailyPlanWidget />
-
-          {/* Specialty Progress */}
-          <SpecialtyProgressCard />
-
-          <DashboardCharts stats={stats} metrics={metrics} />
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <WeeklyProgressCard />
-            <MiniLeaderboard />
+      <Sheet open={openSection === "streak"} onOpenChange={(o) => !o && setOpenSection(null)}>
+        <SheetContent side={sheetSide} className={isMobile ? "h-[85vh] overflow-y-auto" : "sm:max-w-lg overflow-y-auto"}>
+          <SheetHeader>
+            <SheetTitle>Streak & Gamificação</SheetTitle>
+            <SheetDescription>Calendário de atividade e ranking</SheetDescription>
+          </SheetHeader>
+          <div className="space-y-6 mt-4">
+            <Suspense fallback={<ChartFallback />}>
+              <StreakCalendar />
+              <WeeklyProgressCard />
+              <MiniLeaderboard />
+            </Suspense>
           </div>
+        </SheetContent>
+      </Sheet>
 
-          <TopicEvolution />
-
-          <SpecialtyBenchmark />
-        </Suspense>
-      )}
+      <Sheet open={openSection === "simulados"} onOpenChange={(o) => !o && setOpenSection(null)}>
+        <SheetContent side={sheetSide} className={isMobile ? "h-[85vh] overflow-y-auto" : "sm:max-w-lg overflow-y-auto"}>
+          <SheetHeader>
+            <SheetTitle>Simulados & Prática</SheetTitle>
+            <SheetDescription>Métricas detalhadas e benchmarks</SheetDescription>
+          </SheetHeader>
+          <div className="space-y-6 mt-4">
+            <Suspense fallback={<ChartFallback />}>
+              <DashboardMetricsGrid stats={stats} metrics={metrics} />
+              <SpecialtyBenchmark />
+            </Suspense>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
