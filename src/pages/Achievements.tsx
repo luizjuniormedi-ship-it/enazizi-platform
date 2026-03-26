@@ -27,15 +27,30 @@ const Achievements = () => {
         .limit(20);
 
       if (!data) return;
-      // Get display names
-      const userIds = data.map((r: any) => r.user_id);
+
+      const hasWeeklyXp = data.some((r: any) => r.weekly_xp > 0);
+      let finalData = data;
+
+      if (!hasWeeklyXp) {
+        const { data: totalData } = await supabase
+          .from("user_gamification")
+          .select("user_id, xp, level, weekly_xp")
+          .order("xp", { ascending: false })
+          .limit(20);
+        if (totalData && totalData.length > 0) finalData = totalData;
+        setIsWeeklyRanking(false);
+      } else {
+        setIsWeeklyRanking(true);
+      }
+
+      const userIds = finalData.map((r: any) => r.user_id);
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, display_name")
         .in("user_id", userIds);
 
       const nameMap = new Map((profiles || []).map((p: any) => [p.user_id, p.display_name]));
-      setRanking(data.map((r: any) => ({
+      setRanking(finalData.map((r: any) => ({
         userId: r.user_id,
         displayName: nameMap.get(r.user_id) || "Anônimo",
         xp: r.xp,
