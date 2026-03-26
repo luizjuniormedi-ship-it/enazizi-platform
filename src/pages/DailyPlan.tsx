@@ -389,9 +389,17 @@ const DailyPlan = () => {
   const totalDone = completedBlocks.size + completedReviews.size + completedInitialTopics.size;
   const overallPct = totalItems > 0 ? Math.round((totalDone / totalItems) * 100) : 0;
 
-  // Estimated total time (reviews + AI blocks)
+  // Estimated total time (reviews + AI blocks + initial topics)
   const reviewMinutes = scheduledReviews.reduce((sum, r) => sum + (r.estimatedMinutes || 15), 0);
-  const totalMinutes = (plan?.total_minutes || 0) + reviewMinutes;
+  const initialTopicMinutes = todayTopics.length * 20;
+  const totalMinutes = (plan?.total_minutes || 0) + reviewMinutes + initialTopicMinutes;
+  const timeUsedPct = dailyMinutes > 0 ? Math.min(100, Math.round((totalMinutes / dailyMinutes) * 100)) : 0;
+
+  const formatTime = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return h > 0 ? `${h}h${m > 0 ? `${m}min` : ""}` : `${m}min`;
+  };
 
   if (loading) {
     return (
