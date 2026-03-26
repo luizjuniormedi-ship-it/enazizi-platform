@@ -333,7 +333,9 @@ const DailyPlan = () => {
                         onClick={() => navigate("/dashboard/chatgpt", {
                           state: {
                             initialMessage: `Quero revisar o tópico "${review.tema}" (${review.tipo_revisao}). Me dê uma aula completa seguindo o protocolo ENAZIZI.`,
-                            fromErrorBank: true,
+                            fromDailyPlan: true,
+                            topic: review.tema,
+                            specialty: review.especialidade,
                           },
                         })}
                       >
@@ -414,7 +416,8 @@ const DailyPlan = () => {
                         onClick={() => navigate("/dashboard/chatgpt", {
                           state: {
                             initialMessage: `Quero estudar o tópico "${block.topic}". Me dê uma aula completa seguindo o protocolo ENAZIZI.`,
-                            fromErrorBank: true,
+                            fromDailyPlan: true,
+                            topic: block.topic,
                           },
                         })}
                       >

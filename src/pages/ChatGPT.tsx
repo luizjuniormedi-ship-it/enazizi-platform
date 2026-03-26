@@ -301,7 +301,17 @@ const ChatGPT = () => {
   const errorBankHandled = useRef(false);
   const summaryHandled = useRef(false);
   useEffect(() => {
-    const state = location.state as { initialMessage?: string; fromErrorBank?: boolean; fromSimulado?: boolean; fromErrorReview?: boolean; fromSummary?: string; sharedUploadIds?: string[] } | null;
+    const state = location.state as { initialMessage?: string; fromErrorBank?: boolean; fromSimulado?: boolean; fromErrorReview?: boolean; fromDailyPlan?: boolean; topic?: string; specialty?: string; fromSummary?: string; sharedUploadIds?: string[] } | null;
+    if (state?.fromDailyPlan && state?.initialMessage && !errorBankHandled.current && user) {
+      errorBankHandled.current = true;
+      const initialMessage = ensureSequentialInitialMessage(state.initialMessage);
+      setStudyStarted(true);
+      setMetricsCollapsed(true);
+      setCurrentTopic(state.topic || "Estudo Dirigido");
+      setTopic(state.topic || "");
+      setTimeout(() => { sendMessage(initialMessage); }, 500);
+      window.history.replaceState({}, document.title);
+    }
     if (state?.fromErrorReview && state?.initialMessage && !errorBankHandled.current && user) {
       errorBankHandled.current = true;
       const initialMessage = ensureSequentialInitialMessage(state.initialMessage);
