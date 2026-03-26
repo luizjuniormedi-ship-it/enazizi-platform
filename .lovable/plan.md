@@ -1,39 +1,33 @@
 
 
-# Plano: Melhorar Jornada Pos-Upload do Cronograma
+# Plano: Integrar Cronograma Inteligente ao Plano do Dia
 
-## Problema Atual
-1. Apos gerar o plano, o usuario ve um toast rapido e nao tem um resumo claro do que foi sincronizado
-2. Os subtopicos do `topicMap` nao sao salvos na tabela `temas_estudados` (coluna `subtopico` existe mas nao e usada)
-3. Nao ha barra de progresso durante a sincronizacao
-4. Apos gerar, o usuario continua na mesma tela sem redirecionamento para a agenda do dia
+## Problema
+O "Plano do Dia" (`DailyPlan.tsx`) gera blocos de estudo via edge function `learning-optimizer` mas ignora completamente os temas e revisoes cadastrados no Cronograma Inteligente (`temas_estudados`, `revisoes`). O usuario faz upload do edital, gera o cronograma, mas o Plano do Dia nao reflete essas atividades.
+
+## Solucao
+Alterar o `DailyPlan.tsx` para buscar as revisoes pendentes de hoje e os temas do cronograma, e inclui-los como blocos no plano do dia — tanto no plano gerado pela IA quanto como fallback quando nao ha plano gerado.
 
 ## Alteracoes
 
-### 1. Adicionar Progresso Visual na Geracao (`StudyPlanContent.tsx`)
-- Substituir o simples "Gerando cronograma com IA..." por uma barra de progresso com etapas:
-  - "Analisando documento..." → "Extraindo temas..." → "Gerando cronograma..." → "Sincronizando modulos..."
-- Usar o componente `Progress` existente com texto da etapa atual
+### 1. Editar `src/pages/DailyPlan.tsx`
+- No `useEffect` de carregamento, alem de buscar `daily_plans`, buscar tambem:
+  - `revisoes` pendentes de hoje e atrasadas (do usuario)
+  - `temas_estudados` ativos (para exibir nome/especialidade)
+- Exibir uma secao "Atividades do Cronograma" abaixo do plano IA (ou como conteudo principal se nao houver plano gerado)
+- Cada revisao pendente vira um card com: tema, tipo_revisao (D1/D3/D7...), especialidade, e botoes de acao (Tutor IA, Flashcards, Questoes)
+- Na funcao `generatePlan`, enviar os temas do cronograma e revisoes pendentes para o `learning-optimizer` para que a IA inclua esses temas nos blocos
 
-### 2. Salvar Subtopicos na tabela `temas_estudados` (`CronogramaInteligente.tsx`)
-- No `onSubjectsGenerated`, cruzar o `topicMap` (disponivel no `plan_json`) com os subjects para inserir cada tema com seus subtopicos
-- Usar a coluna `subtopico` ja existente, salvando os subtopicos como string separada por virgula
-- Ou inserir uma linha por subtopico (com o tema pai no campo `tema`)
+### 2. Editar `supabase/functions/learning-optimizer/index.ts`
+- Aceitar novo campo `scheduledTopics` no body (lista de temas com tipo de revisao)
+- Incluir esses temas obrigatoriamente nos blocos gerados, priorizando revisoes atrasadas
 
-### 3. Mostrar Resumo Pos-Sincronizacao (`StudyPlanContent.tsx`)
-- Apos `onSubjectsGenerated` completar, exibir um card de resumo inline (nao apenas toast):
-  - Total de temas registrados
-  - Flashcards criados
-  - Questoes encontradas
-  - Revisoes agendadas
-  - Botoes: "Ver Agenda de Hoje", "Ver Mapa de Topicos", "Ir para Flashcards"
-
-### 4. Redirecionar para Agenda (`CronogramaInteligente.tsx`)
-- Apos a sincronizacao, mudar automaticamente a tab para "hoje" (agenda do dia) com um delay de 2s mostrando o resumo
+## Resultado
+- O Plano do Dia mostra automaticamente as revisoes agendadas pelo cronograma
+- A IA incorpora os temas do edital nos blocos de estudo
+- O usuario tem uma visao unificada de tudo que precisa fazer no dia
 
 ## Arquivos
-- Editar: `src/components/cronograma/StudyPlanContent.tsx` (progresso visual + resumo pos-sync)
-- Editar: `src/pages/CronogramaInteligente.tsx` (salvar subtopicos + redirecionar tab)
-
-## Sem migracao SQL — coluna `subtopico` ja existe em `temas_estudados`
+- Editar: `src/pages/DailyPlan.tsx`
+- Editar: `supabase/functions/learning-optimizer/index.ts`
 
