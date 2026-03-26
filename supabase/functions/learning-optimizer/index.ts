@@ -39,6 +39,14 @@ serve(async (req) => {
           risk: String(t?.risk || "baixo"),
         })).filter(t => t.topic.length > 0)
       : [];
+    // Process active topics (new topics added today, no reviews yet)
+    const safeActiveTopics = Array.isArray(activeTopics)
+      ? activeTopics.map((t: any) => ({
+          topic: String(t?.topic || ""),
+          specialty: String(t?.specialty || ""),
+          subtopics: String(t?.subtopics || ""),
+        })).filter(t => t.topic.length > 0)
+      : [];
 
     const today = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
 
