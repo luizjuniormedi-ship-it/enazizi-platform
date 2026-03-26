@@ -237,11 +237,23 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
 
     console.log(`AI returned ${parsed.questions.length} raw questions`);
 
-    // Filter valid questions - log rejections
+    // Normalize and filter valid questions
     const validQuestions = parsed.questions.filter((q: any) => {
       if (!q.statement) { console.log("Rejected: no statement"); return false; }
       if (!Array.isArray(q.options) || q.options.length < 2) { console.log("Rejected: bad options"); return false; }
-      if (typeof q.correct_index !== "number") { console.log("Rejected: no correct_index"); return false; }
+      // Accept correct_index as number or string, default to 0
+      if (q.correct_index === undefined || q.correct_index === null) {
+        if (q.correct_answer !== undefined) {
+          // Try to map letter answer to index
+          const letterMap: Record<string, number> = { "A": 0, "B": 1, "C": 2, "D": 3, "E": 4 };
+          q.correct_index = letterMap[String(q.correct_answer).toUpperCase().trim()] ?? 0;
+        } else {
+          q.correct_index = 0;
+        }
+        console.log(`Fixed missing correct_index, set to ${q.correct_index}`);
+      }
+      q.correct_index = Number(q.correct_index);
+      if (isNaN(q.correct_index)) q.correct_index = 0;
       const len = String(q.statement).trim().length;
       if (len < 150) { console.log(`Rejected: too short (${len} chars)`); return false; }
       if (isDuplicate(q.statement, existingStatements)) { console.log("Rejected: duplicate"); return false; }
