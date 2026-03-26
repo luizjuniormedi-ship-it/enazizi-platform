@@ -215,6 +215,14 @@ const DailyPlan = () => {
         risk: r.risco_esquecimento || "baixo",
       }));
 
+      // Include today's new topics as active topics for the AI
+      const activeTopics = todayTopics.map(t => ({
+        topic: t.tema,
+        specialty: t.especialidade,
+        subtopics: t.subtopico || "",
+        isNew: true,
+      }));
+
       const response = await supabase.functions.invoke("learning-optimizer", {
         body: {
           performanceData: areaPerformance,
@@ -225,6 +233,7 @@ const DailyPlan = () => {
           flashcardsDue: flashcardsRes.data?.length || 0,
           recentErrors: errorTopics.slice(0, 10),
           scheduledTopics,
+          activeTopics,
         },
       });
 
