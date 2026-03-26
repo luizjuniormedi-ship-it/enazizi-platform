@@ -1,36 +1,24 @@
 
 
-# Plano: Zerar temas antigos ao criar novo plano de estudo
+# Plano: Forcar atualizacao do cronograma apos novo plano
 
 ## Problema
-Ao gerar um novo plano de estudo no Cronograma, os temas antigos permanecem ativos. Isso mistura conteúdo de planos diferentes e polui o Plano do Dia com temas que já não fazem parte do plano atual.
+Apos gerar um novo plano de estudo, o `loadData()` na linha 579 do `CronogramaInteligente.tsx` nao e awaited. Isso causa uma race condition: o tab muda para "hoje" (via `onSyncComplete`) antes dos dados serem carregados, e a Visao Geral e demais abas mostram dados desatualizados ou vazios.
 
-## Solução
-Antes de inserir os novos temas do plano, deletar todos os dados do plano anterior do usuário.
-
-## Alteração
+## Solucao
 
 ### Editar `src/pages/CronogramaInteligente.tsx`
 
-No callback `onSubjectsGenerated` (linha ~518), **antes** de inserir novos temas:
+1. **Awaitar `loadData` apos a sincronizacao** (linha 579): trocar `loadData()` por `await loadData()` para garantir que os dados estejam prontos antes de retornar o resumo
 
-1. Deletar todas as `revisoes` do usuário (dependem de `tema_id`)
-2. Deletar todos os `desempenho_questoes` do usuário (dependem de `tema_id`)
-3. Deletar todos os `temas_estudados` do usuário
-4. Limpar o state local `temas` para evitar o filtro de "já existentes" bloquear inserções
-5. Remover a linha 521-522 que filtra `newSubjects` por `existingNames` (já que tudo foi zerado)
+2. **Chamar `loadData` no `onSyncComplete`**: quando o usuario clica "Ver Agenda de Hoje", chamar `loadData` novamente para garantir dados frescos
+   - Mudar `onSyncComplete={() => setTab("hoje")}` para `onSyncComplete={async () => { await loadData(); setTab("hoje"); }}`
 
-```typescript
-// Zerar dados antigos antes de criar novo plano
-await supabase.from("desempenho_questoes").delete().eq("user_id", user.id);
-await supabase.from("revisoes").delete().eq("user_id", user.id);
-await supabase.from("temas_estudados").delete().eq("user_id", user.id);
-```
+3. **Chamar `loadData` sempre que a tab mudar**: adicionar um efeito que recarrega dados ao trocar de tab (para "visao", "hoje", "temas", "criticos", etc.)
+   - Adicionar `useEffect` que chama `loadData()` quando `tab` muda (com debounce para nao sobrecarregar)
 
 ## Resultado
-- Cada novo plano de estudo começa do zero
-- Sem mistura de temas antigos com novos
-- Plano do Dia reflete apenas o plano atual
+Todas as abas do cronograma (Visao Geral, Temas, Criticos, Graficos, Historico) refletem os dados do novo plano imediatamente.
 
 ## Arquivos
 - Editar: `src/pages/CronogramaInteligente.tsx`
