@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
-import { isMedicalQuestion } from "@/lib/medicalValidation";
+import { isMedicalQuestion, NON_MEDICAL_CONTENT_REGEX } from "@/lib/medicalValidation";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
@@ -104,7 +104,7 @@ function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
       (q) =>
         q.options.length >= 4 &&
         q.statement.length > 10 &&
-        isMedicalQuestion({ statement: q.statement, topic: q.topic, options: q.options }),
+        !NON_MEDICAL_CONTENT_REGEX.test(q.statement),
     );
 }
 
@@ -169,17 +169,22 @@ const Simulados = () => {
 
       let allQuestions: SimQuestion[] = [];
 
-      if (config.count <= BATCH_SIZE) {
+      // Request 30% extra to compensate for filtering losses
+      const requestCount = Math.ceil(config.count * 1.3);
+
+      if (requestCount <= BATCH_SIZE) {
         setLoadingProgress("Gerando questões...");
-        allQuestions = await generateBatch(config.topics, config.count, config.difficulty, accessToken);
-        if (allQuestions.length === 0) {
-          setLoadingProgress("Tentando novamente...");
-          allQuestions = await generateBatch(config.topics, config.count, config.difficulty, accessToken);
+        allQuestions = await generateBatch(config.topics, requestCount, config.difficulty, accessToken);
+        // Retry if we got fewer than needed
+        if (allQuestions.length < config.count) {
+          setLoadingProgress("Complementando questões...");
+          const extra = await generateBatch(config.topics, Math.min(config.count - allQuestions.length + 2, BATCH_SIZE), config.difficulty, accessToken);
+          allQuestions.push(...extra);
         }
       } else {
-        const batchCount = Math.ceil(config.count / BATCH_SIZE);
+        const batchCount = Math.ceil(requestCount / BATCH_SIZE);
         const batchSizes = Array.from({ length: batchCount }, (_, i) => {
-          const remaining = config.count - i * BATCH_SIZE;
+          const remaining = requestCount - i * BATCH_SIZE;
           return Math.min(BATCH_SIZE, remaining);
         });
 
@@ -195,10 +200,10 @@ const Simulados = () => {
           }
         }
 
-        const failedCount = results.filter((r) => r.status === "rejected" || (r.status === "fulfilled" && r.value.length === 0)).length;
-        if (failedCount > 0 && allQuestions.length < config.count) {
-          setLoadingProgress(`Recuperando ${failedCount} lotes...`);
-          const retrySize = Math.min(config.count - allQuestions.length, BATCH_SIZE);
+        // Retry if still short
+        if (allQuestions.length < config.count) {
+          setLoadingProgress(`Complementando questões...`);
+          const retrySize = Math.min(config.count - allQuestions.length + 2, BATCH_SIZE);
           try {
             const retry = await generateBatch(config.topics, retrySize, config.difficulty, accessToken);
             allQuestions.push(...retry);
