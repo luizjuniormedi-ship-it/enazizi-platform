@@ -13,6 +13,8 @@ import MicroQuizDialog from "@/components/daily-plan/MicroQuizDialog";
 import ClassBenchmark from "@/components/daily-plan/ClassBenchmark";
 import SelfAssessmentDialog from "@/components/daily-plan/SelfAssessmentDialog";
 import type { StudyBlock, DailyPlanData, ScheduledReview } from "@/components/daily-plan/DailyPlanTypes";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Progress } from "@/components/ui/progress";
 
 const typeIcons: Record<string, typeof Brain> = {
   study: BookOpen,
