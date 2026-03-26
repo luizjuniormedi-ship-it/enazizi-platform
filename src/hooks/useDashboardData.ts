@@ -53,7 +53,7 @@ async function fetchDashboardData(userId: string) {
     practiceRes, errorBankRes, pendingRevisoesRes, simuladosRes, discursivasRes,
     gamificationRes, globalFlashRes, globalQuestRes,
     questionsCreatedRes, clinicalSimRes, anamnesisRes, summariesRes,
-    chroniclesRes, imageQuizRes, diagnosticRes, chatConvRes,
+    chroniclesRes, imageQuizRes, diagnosticRes,
   ] = await Promise.all([
     supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", userId),
