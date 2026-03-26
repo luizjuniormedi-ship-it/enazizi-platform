@@ -44,6 +44,8 @@ const DailyPlan = () => {
   const [completedBlocks, setCompletedBlocks] = useState<Set<number>>(new Set());
   const [scheduledReviews, setScheduledReviews] = useState<ScheduledReview[]>([]);
   const [completedReviews, setCompletedReviews] = useState<Set<string>>(new Set());
+  const [todayTopics, setTodayTopics] = useState<Array<{ id: string; tema: string; especialidade: string; subtopico: string | null }>>([]);
+  const [completedInitialTopics, setCompletedInitialTopics] = useState<Set<string>>(new Set());
   const [masteryData, setMasteryData] = useState<Map<string, { correctRate: number; reviewsDone: number }>>(new Map());
 
   // Pomodoro state
