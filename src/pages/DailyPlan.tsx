@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Brain, Clock, BookOpen, RefreshCw, CheckCircle2, Loader2, Zap, Target, FlipVertical, GraduationCap, Calendar, AlertTriangle, Layers, Timer, GripVertical, Info } from "lucide-react";
+import { Brain, Clock, BookOpen, RefreshCw, CheckCircle2, Loader2, Zap, Target, FlipVertical, GraduationCap, Calendar, AlertTriangle, Layers, Timer, GripVertical, Info, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
@@ -13,6 +13,8 @@ import MicroQuizDialog from "@/components/daily-plan/MicroQuizDialog";
 import ClassBenchmark from "@/components/daily-plan/ClassBenchmark";
 import SelfAssessmentDialog from "@/components/daily-plan/SelfAssessmentDialog";
 import type { StudyBlock, DailyPlanData, ScheduledReview } from "@/components/daily-plan/DailyPlanTypes";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Progress } from "@/components/ui/progress";
 
 const typeIcons: Record<string, typeof Brain> = {
   study: BookOpen,
@@ -48,6 +50,11 @@ const DailyPlan = () => {
   const [todayTopics, setTodayTopics] = useState<Array<{ id: string; tema: string; especialidade: string; subtopico: string | null }>>([]);
   const [completedInitialTopics, setCompletedInitialTopics] = useState<Set<string>>(new Set());
   const [masteryData, setMasteryData] = useState<Map<string, { correctRate: number; reviewsDone: number }>>(new Map());
+  const [dailyMinutes, setDailyMinutes] = useState(240);
+  const [overflowReviews, setOverflowReviews] = useState<ScheduledReview[]>([]);
+  const [overflowTopics, setOverflowTopics] = useState<Array<{ id: string; tema: string; especialidade: string; subtopico: string | null }>>([]);
+  const [showOverflowReviews, setShowOverflowReviews] = useState(false);
+  const [showOverflowTopics, setShowOverflowTopics] = useState(false);
 
   // Pomodoro state
   const [pomodoroOpen, setPomodoroOpen] = useState(false);
@@ -73,7 +80,7 @@ const DailyPlan = () => {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
 
-      const [planRes, reviewsRes, attemptsRes, todayTemasRes] = await Promise.all([
+      const [planRes, reviewsRes, attemptsRes, todayTemasRes, profileRes] = await Promise.all([
         supabase
           .from("daily_plans")
           .select("*")
@@ -97,7 +104,15 @@ const DailyPlan = () => {
           .eq("user_id", user.id)
           .eq("status", "ativo")
           .gte("created_at", todayStart.toISOString()),
+        supabase
+          .from("profiles")
+          .select("daily_study_hours")
+          .eq("user_id", user.id)
+          .maybeSingle(),
       ]);
+
+      const userDailyMinutes = Math.round((profileRes.data?.daily_study_hours || 4) * 60);
+      setDailyMinutes(userDailyMinutes);
 
       if (planRes.data) {
         setPlan(planRes.data.plan_json as unknown as DailyPlanData);
@@ -145,24 +160,66 @@ const DailyPlan = () => {
 
         const temaMap = new Map((temas || []).map(t => [t.id, t]));
 
-        const enriched: ScheduledReview[] = reviewsRes.data.map(r => {
-          const tema = temaMap.get(r.tema_id);
-          return {
-            ...r,
-            tema: tema?.tema || "Tema desconhecido",
-            especialidade: tema?.especialidade || "Geral",
-            subtopico: tema?.subtopico || null,
-            overdue: r.data_revisao < today,
-            estimatedMinutes: reviewTimeEstimates[r.tipo_revisao] || 15,
-          };
-        });
-        setScheduledReviews(enriched);
+        const enriched: ScheduledReview[] = reviewsRes.data
+          .map(r => {
+            const tema = temaMap.get(r.tema_id);
+            return {
+              ...r,
+              tema: tema?.tema || "Tema desconhecido",
+              especialidade: tema?.especialidade || "Geral",
+              subtopico: tema?.subtopico || null,
+              overdue: r.data_revisao < today,
+              estimatedMinutes: reviewTimeEstimates[r.tipo_revisao] || 15,
+            };
+          })
+          // Sort: overdue first, then by priority desc
+          .sort((a, b) => {
+            if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
+            return (b.prioridade || 0) - (a.prioridade || 0);
+          });
+
+        // Time budget: 60% for reviews
+        const reviewBudget = Math.round(userDailyMinutes * 0.6);
+        let usedReviewMinutes = 0;
+        const fittingReviews: ScheduledReview[] = [];
+        const extraReviews: ScheduledReview[] = [];
+
+        for (const r of enriched) {
+          if (usedReviewMinutes + (r.estimatedMinutes || 15) <= reviewBudget) {
+            fittingReviews.push(r);
+            usedReviewMinutes += r.estimatedMinutes || 15;
+          } else {
+            extraReviews.push(r);
+          }
+        }
+
+        setScheduledReviews(fittingReviews);
+        setOverflowReviews(extraReviews);
       }
 
       // Set today's topics (exclude those that already have scheduled reviews)
       const reviewedTemaIds = new Set((reviewsRes.data || []).map(r => r.tema_id));
-      const newTodayTopics = (todayTemasRes.data || []).filter(t => !reviewedTemaIds.has(t.id));
-      setTodayTopics(newTodayTopics);
+      const allNewTopics = (todayTemasRes.data || []).filter(t => !reviewedTemaIds.has(t.id));
+
+      // Time budget for initial topics: remaining after reviews, capped at 40%
+      const reviewUsed = scheduledReviews.reduce((s, r) => s + (r.estimatedMinutes || 15), 0);
+      const topicBudget = userDailyMinutes - reviewUsed;
+      let usedTopicMinutes = 0;
+      const fittingTopics: typeof allNewTopics = [];
+      const extraTopics: typeof allNewTopics = [];
+      const TOPIC_DURATION = 20;
+
+      for (const t of allNewTopics) {
+        if (usedTopicMinutes + TOPIC_DURATION <= topicBudget) {
+          fittingTopics.push(t);
+          usedTopicMinutes += TOPIC_DURATION;
+        } else {
+          extraTopics.push(t);
+        }
+      }
+
+      setTodayTopics(fittingTopics);
+      setOverflowTopics(extraTopics);
 
       setMasteryData(mMap);
       setLoading(false);
@@ -332,9 +389,17 @@ const DailyPlan = () => {
   const totalDone = completedBlocks.size + completedReviews.size + completedInitialTopics.size;
   const overallPct = totalItems > 0 ? Math.round((totalDone / totalItems) * 100) : 0;
 
-  // Estimated total time (reviews + AI blocks)
+  // Estimated total time (reviews + AI blocks + initial topics)
   const reviewMinutes = scheduledReviews.reduce((sum, r) => sum + (r.estimatedMinutes || 15), 0);
-  const totalMinutes = (plan?.total_minutes || 0) + reviewMinutes;
+  const initialTopicMinutes = todayTopics.length * 20;
+  const totalMinutes = (plan?.total_minutes || 0) + reviewMinutes + initialTopicMinutes;
+  const timeUsedPct = dailyMinutes > 0 ? Math.min(100, Math.round((totalMinutes / dailyMinutes) * 100)) : 0;
+
+  const formatTime = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return h > 0 ? `${h}h${m > 0 ? `${m}min` : ""}` : `${m}min`;
+  };
 
   if (loading) {
     return (
@@ -386,6 +451,23 @@ const DailyPlan = () => {
             totalItems={totalItems}
             totalMinutes={totalMinutes}
           />
+          {/* Time budget indicator */}
+          <div className="glass-card p-3 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground flex items-center gap-1.5">
+                <Clock className="h-4 w-4" /> Tempo planejado
+              </span>
+              <span className={`font-semibold ${timeUsedPct > 100 ? "text-destructive" : "text-primary"}`}>
+                {formatTime(totalMinutes)} / {formatTime(dailyMinutes)}
+              </span>
+            </div>
+            <Progress value={timeUsedPct} className="h-2" />
+            {(overflowReviews.length > 0 || overflowTopics.length > 0) && (
+              <p className="text-xs text-muted-foreground">
+                {overflowReviews.length + overflowTopics.length} itens adicionais disponíveis abaixo (não cabem no tempo de hoje)
+              </p>
+            )}
+          </div>
           <ClassBenchmark />
         </div>
       )}
@@ -490,7 +572,44 @@ const DailyPlan = () => {
         </div>
       )}
 
-      {/* Today's new topics - Estudo Inicial */}
+      {/* Overflow reviews */}
+      {overflowReviews.length > 0 && !generating && (
+        <Collapsible open={showOverflowReviews} onOpenChange={setShowOverflowReviews}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground text-xs">
+              <span>Revisões adicionais ({overflowReviews.length})</span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${showOverflowReviews ? "rotate-180" : ""}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-2 mt-2">
+            {overflowReviews.map((review) => (
+              <div key={review.id} className="glass-card p-3 flex items-center gap-3 opacity-60">
+                <RefreshCw className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{review.tema}</p>
+                  <p className="text-xs text-muted-foreground">{review.tipo_revisao} · {review.especialidade} · ~{review.estimatedMinutes}min</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs h-7 px-2"
+                  onClick={() => navigate("/dashboard/chatgpt", {
+                    state: {
+                      initialMessage: `Quero revisar o tópico "${review.tema}" (${review.tipo_revisao}). Me dê uma aula completa seguindo o protocolo ENAZIZI.`,
+                      fromDailyPlan: true,
+                      topic: review.tema,
+                      specialty: review.especialidade,
+                    },
+                  })}
+                >
+                  <GraduationCap className="h-3.5 w-3.5 mr-1" /> Estudar
+                </Button>
+              </div>
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
       {todayTopics.length > 0 && !generating && (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -579,6 +698,44 @@ const DailyPlan = () => {
             );
           })}
         </div>
+      )}
+
+      {/* Overflow topics */}
+      {overflowTopics.length > 0 && !generating && (
+        <Collapsible open={showOverflowTopics} onOpenChange={setShowOverflowTopics}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground text-xs">
+              <span>Mais temas para depois ({overflowTopics.length})</span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${showOverflowTopics ? "rotate-180" : ""}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-2 mt-2">
+            {overflowTopics.map((topic) => (
+              <div key={topic.id} className="glass-card p-3 flex items-center gap-3 opacity-60">
+                <BookOpen className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{topic.tema}</p>
+                  <p className="text-xs text-muted-foreground">{topic.especialidade} · ~20min</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs h-7 px-2"
+                  onClick={() => navigate("/dashboard/chatgpt", {
+                    state: {
+                      initialMessage: `Quero estudar o tópico "${topic.tema}" (${topic.especialidade}). Me dê uma aula completa seguindo o protocolo ENAZIZI.`,
+                      fromDailyPlan: true,
+                      topic: topic.tema,
+                      specialty: topic.especialidade,
+                    },
+                  })}
+                >
+                  <GraduationCap className="h-3.5 w-3.5 mr-1" /> Estudar
+                </Button>
+              </div>
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
       )}
 
       {/* AI-generated plan blocks */}
