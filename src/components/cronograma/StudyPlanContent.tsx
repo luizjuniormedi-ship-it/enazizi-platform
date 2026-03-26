@@ -32,6 +32,8 @@ interface PlanJson {
   weeklySchedule?: DaySchedule[];
   subjects?: string[];
   tips?: string;
+  detectedSpecialty?: string;
+  totalTopicsExtracted?: number;
   config?: {
     examDate: string;
     hoursPerDay: number;
