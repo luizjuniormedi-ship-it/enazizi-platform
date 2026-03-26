@@ -20,6 +20,7 @@ const PRIORIDADE_COLOR: Record<string, string> = {
 };
 
 const CronogramaAgendaHoje = ({ revisoes, temas, temasComputados, onStartRevisao }: Props) => {
+  const navigate = useNavigate();
   const today = new Date().toISOString().split("T")[0];
   const atrasadas = revisoes.filter(r => r.data_revisao < today && r.status === "pendente");
   const hojePendentes = revisoes.filter(r => r.data_revisao === today && r.status === "pendente");
