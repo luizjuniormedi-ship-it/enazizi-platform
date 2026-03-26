@@ -202,6 +202,8 @@ const StudyPlanContent = ({ onSubjectsGenerated }: StudyPlanContentProps) => {
       setPlanId(result.plan.id);
       setSchedule(plan.weeklySchedule || []);
       setSubjects(plan.subjects || []);
+      setTopicMap(plan.topicMap || []);
+      setDetectedSpecialty(plan.detectedSpecialty || "");
       setTips(plan.tips || "");
       setShowConfig(false);
       toast({ title: "Cronograma gerado!", description: "Você pode editar os blocos manualmente." });
