@@ -30,9 +30,15 @@ interface DaySchedule {
   tasks: Task[];
 }
 
+interface TopicMapItem {
+  topic: string;
+  subtopics: string[];
+}
+
 interface PlanJson {
   weeklySchedule?: DaySchedule[];
   subjects?: string[];
+  topicMap?: TopicMapItem[];
   tips?: string;
   detectedSpecialty?: string;
   totalTopicsExtracted?: number;
@@ -64,6 +70,8 @@ const StudyPlanContent = ({ onSubjectsGenerated }: StudyPlanContentProps) => {
   const [schedule, setSchedule] = useState<DaySchedule[]>([]);
   const reminders = useStudyReminders(schedule);
   const [subjects, setSubjects] = useState<string[]>([]);
+  const [topicMap, setTopicMap] = useState<TopicMapItem[]>([]);
+  const [detectedSpecialty, setDetectedSpecialty] = useState("");
   const [tips, setTips] = useState("");
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -91,6 +99,8 @@ const StudyPlanContent = ({ onSubjectsGenerated }: StudyPlanContentProps) => {
         setPlanId(data.id);
         setSchedule(plan.weeklySchedule || []);
         setSubjects(plan.subjects || []);
+        setTopicMap(plan.topicMap || []);
+        setDetectedSpecialty(plan.detectedSpecialty || "");
         setTips(plan.tips || "");
         if (plan.config) {
           if (plan.config.examDate) setExamDate(new Date(plan.config.examDate));
@@ -192,6 +202,8 @@ const StudyPlanContent = ({ onSubjectsGenerated }: StudyPlanContentProps) => {
       setPlanId(result.plan.id);
       setSchedule(plan.weeklySchedule || []);
       setSubjects(plan.subjects || []);
+      setTopicMap(plan.topicMap || []);
+      setDetectedSpecialty(plan.detectedSpecialty || "");
       setTips(plan.tips || "");
       setShowConfig(false);
       toast({ title: "Cronograma gerado!", description: "Você pode editar os blocos manualmente." });
@@ -378,7 +390,7 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
             Configurar
           </Button>
           <Button size="sm" onClick={() => {
-            setPlanId(null); setSchedule([]); setSubjects([]); setTips("");
+            setPlanId(null); setSchedule([]); setSubjects([]); setTopicMap([]); setDetectedSpecialty(""); setTips("");
             setExamDate(undefined); setHoursPerDay("4"); setDaysPerWeek("5");
             setEditalText(""); setEditalFileName(""); setShowConfig(true);
           }}>
@@ -575,7 +587,39 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
         </div>
       ) : null}
 
-      {subjects.length > 0 && (
+      {/* Topic Map with subtopics */}
+      {topicMap.length > 0 && (
+        <div className="glass-card p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <BookOpen className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold">Mapa de Tópicos{detectedSpecialty ? ` — ${detectedSpecialty}` : ""}</h3>
+            <span className="text-xs text-muted-foreground ml-auto">{topicMap.length} temas</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {topicMap.map((item, i) => (
+              <div key={i} className="p-3 rounded-lg bg-secondary/50 border-l-4 border-l-primary">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-semibold">{item.topic}</span>
+                  <button
+                    onClick={() => navigate(`/dashboard/chatgpt?topic=${encodeURIComponent(item.topic)}`)}
+                    className="ml-auto flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 transition-colors font-medium"
+                  >
+                    <MessageSquare className="h-3 w-3" /> Estudar
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {item.subtopics.map((sub, j) => (
+                    <span key={j} className="text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{sub}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Fallback: simple subjects list if no topicMap */}
+      {topicMap.length === 0 && subjects.length > 0 && (
         <div className="glass-card p-5">
           <h3 className="font-semibold mb-3">Matérias do plano</h3>
           <div className="flex flex-wrap gap-2">
