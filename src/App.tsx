@@ -56,9 +56,15 @@ const MedicalChronicles = lazy(() => import("./pages/MedicalChronicles"));
 
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
+const PageSkeleton = lazy(() => import("./components/layout/PageSkeleton"));
+
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-[400px]">
-    <Loader2 className="h-8 w-8 text-primary animate-spin" />
+  <div className="p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in">
+    <div className="h-8 w-48 rounded-md bg-muted animate-pulse" />
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {[1,2,3,4].map(i => <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />)}
+    </div>
+    <div className="h-64 rounded-xl bg-muted animate-pulse" />
   </div>
 );
 

@@ -4,10 +4,25 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect, useRef } from "react";
 
 const BottomTabBar = () => {
   const location = useLocation();
   const { user } = useAuth();
+  const [hidden, setHidden] = useState(false);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const main = document.querySelector(".dashboard-main");
+    if (!main) return;
+    const onScroll = () => {
+      const y = main.scrollTop;
+      setHidden(y > lastScrollY.current && y > 60);
+      lastScrollY.current = y;
+    };
+    main.addEventListener("scroll", onScroll, { passive: true });
+    return () => main.removeEventListener("scroll", onScroll);
+  }, []);
 
   const { data: pendingCount } = useQuery({
     queryKey: ["bottom-tab-pending", user?.id],
@@ -56,7 +71,7 @@ const BottomTabBar = () => {
   ];
 
   return (
-    <nav className="landscape-tablet:hidden lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border safe-area-bottom">
+    <nav className={cn("landscape-tablet:hidden lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border safe-area-bottom transition-transform duration-300", hidden && "translate-y-full")}>
       <div className="flex items-center justify-around h-16">
         {tabs.map((tab) => {
           const active = location.pathname === tab.to;

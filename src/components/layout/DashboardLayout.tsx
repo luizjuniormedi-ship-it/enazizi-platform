@@ -222,6 +222,7 @@ const DashboardLayout = () => {
   usePresenceHeartbeat();
   useLandscapeTablet();
   const { theme, toggle: toggleTheme } = useTheme();
+  const location = useLocation();
 
   return (
   <div className="flex min-h-[100dvh] min-h-screen bg-background w-full overflow-hidden">
@@ -258,7 +259,7 @@ const DashboardLayout = () => {
       </div>
       <main className="dashboard-main flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-x-hidden overflow-y-auto relative w-full min-h-0 min-w-0 flex flex-col">
         <ActiveVideoRoomPopup />
-        <div className="relative z-10 w-full max-w-full pb-16 lg:pb-0 flex-1 min-w-0 min-h-0 flex flex-col">
+        <div key={location.pathname} className="animate-fade-in relative z-10 w-full max-w-full pb-16 lg:pb-0 flex-1 min-w-0 min-h-0 flex flex-col">
           <Outlet />
         </div>
       </main>
