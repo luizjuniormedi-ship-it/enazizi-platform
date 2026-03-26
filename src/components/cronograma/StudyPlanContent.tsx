@@ -390,7 +390,7 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
             Configurar
           </Button>
           <Button size="sm" onClick={() => {
-            setPlanId(null); setSchedule([]); setSubjects([]); setTips("");
+            setPlanId(null); setSchedule([]); setSubjects([]); setTopicMap([]); setDetectedSpecialty(""); setTips("");
             setExamDate(undefined); setHoursPerDay("4"); setDaysPerWeek("5");
             setEditalText(""); setEditalFileName(""); setShowConfig(true);
           }}>
