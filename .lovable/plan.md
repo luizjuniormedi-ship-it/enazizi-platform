@@ -1,28 +1,28 @@
 
 
-# Plano: Ranking Semanal sempre visivel com fallback para XP total
+# Plano: Melhorias Globais de UX
 
-## Problema
-O ranking semanal (`MiniLeaderboard` e pagina `Achievements`) so mostra dados quando `weekly_xp > 0`. Se nenhum usuario tem XP semanal (apos reset ou inicio), o ranking fica vazio/invisivel — sem referencia nenhuma.
+## Alterações
 
-## Alteracoes
+### 1. Transições de página — `DashboardLayout.tsx`
+- Envolver o `<Outlet>` com wrapper que aplica `animate-fade-in` ao trocar de rota (usando `key={location.pathname}`)
+- Sem dependência externa — usa as animações CSS já definidas no Tailwind config
 
-### 1. `src/components/dashboard/MiniLeaderboard.tsx`
-- Remover o `if (ranking.length === 0) return null` — sempre renderizar o componente
-- Adicionar fallback: se todos tem `weekly_xp = 0`, fazer segunda query ordenando por `xp` total
-- Mostrar label dinamico: "Ranking Semanal" quando ha XP semanal, "Ranking Geral" como fallback
-- Exibir mensagem "Comece a estudar para aparecer no ranking!" se realmente nao ha dados
+### 2. Loading skeleton — novo `PageSkeleton.tsx`
+- Componente com skeleton imitando layout de página (header + 4 cards + area de conteúdo)
+- Substituir o `PageLoader` (spinner genérico) no `App.tsx` pelo skeleton
 
-### 2. `src/pages/Achievements.tsx`
-- Mesma logica de fallback: se `weekly_xp` de todos e 0, ordenar por `xp` total
-- Mostrar label indicando qual ranking esta sendo exibido
+### 3. Bottom Bar auto-hide — `BottomTabBar.tsx`
+- Detectar direção de scroll: esconder ao rolar para baixo, mostrar ao rolar para cima
+- Transição suave com `translate-y` e `transition-transform`
 
-### 3. Reset semanal do `weekly_xp`
-- Verificar se o campo `weekly_reset_at` esta sendo usado — atualmente o hook `useGamification` incrementa `weekly_xp` mas nunca reseta
-- Adicionar logica no `addXp`: se `weekly_reset_at < now()`, zerar `weekly_xp` antes de somar e atualizar `weekly_reset_at` para proximo reset (proxima segunda)
+### 4. Feedback tátil — `DashboardSummaryCard.tsx`
+- Já tem `active:scale-[0.98]` — reforçar com `transition-transform duration-150` e hover elevation
+
+### 5. Theme — `useTheme.ts`
+- Já persiste em localStorage — OK, sem mudança necessária
 
 ## Arquivos
-- `src/components/dashboard/MiniLeaderboard.tsx`
-- `src/pages/Achievements.tsx`
-- `src/hooks/useGamification.ts`
+- Criar: `src/components/layout/PageSkeleton.tsx`
+- Editar: `src/components/layout/DashboardLayout.tsx`, `src/App.tsx`, `src/components/layout/BottomTabBar.tsx`, `src/components/dashboard/DashboardSummaryCard.tsx`
 
