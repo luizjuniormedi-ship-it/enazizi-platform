@@ -139,7 +139,7 @@ Regras:
     }
 
     const safeSubjects = Array.isArray(planJson?.subjects)
-      ? planJson.subjects.map(String).filter((s: string) => isMedicalContent(s))
+      ? planJson.subjects.map(String).filter((s: string) => !isNonMedicalContent(s))
       : [];
 
     const safeWeeklySchedule = Array.isArray(planJson?.weeklySchedule)
@@ -154,7 +154,7 @@ Regras:
                     duration: String(t?.duration || ""),
                     type: String(t?.type || "estudo"),
                   }))
-                  .filter((t: any) => isMedicalContent(`${t.subject} ${t.type}`))
+                  .filter((t: any) => !isNonMedicalContent(`${t.subject}`))
               : [],
           }))
           .filter((d: any) => d.tasks.length > 0)
