@@ -62,7 +62,7 @@ interface StudyPlanContentProps {
   onSyncComplete?: () => void;
 }
 
-const StudyPlanContent = ({ onSubjectsGenerated }: StudyPlanContentProps) => {
+const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanContentProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
