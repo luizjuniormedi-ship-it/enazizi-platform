@@ -626,7 +626,7 @@ serve(async (req) => {
       .eq("topic", specialty)
       .eq("is_global", true)
       .order("created_at", { ascending: false })
-      .limit(30);
+      .limit(200);
     const existingStatements = (existing || []).map((r: any) => r.statement);
 
     // Get already-scraped URLs to skip them
