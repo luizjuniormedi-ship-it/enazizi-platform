@@ -1,51 +1,37 @@
 
 
-# Plano: Corrigir 3 bugs no Plano do Dia e Cronograma
+# Plano: Zerar temas antigos ao criar novo plano de estudo
 
-## Problemas identificados
+## Problema
+Ao gerar um novo plano de estudo no Cronograma, os temas antigos permanecem ativos. Isso mistura conteúdo de planos diferentes e polui o Plano do Dia com temas que já não fazem parte do plano atual.
 
-### Bug 1: Horas diarias nao sao respeitadas
-Na linha 205 do `DailyPlan.tsx`, o calculo do `topicBudget` usa `scheduledReviews` (state antigo do render anterior), nao `fittingReviews` (que acabou de ser calculado). Resultado: o budget de tempo para temas iniciais usa dados desatualizados, causando overflow.
+## Solução
+Antes de inserir os novos temas do plano, deletar todos os dados do plano anterior do usuário.
 
+## Alteração
+
+### Editar `src/pages/CronogramaInteligente.tsx`
+
+No callback `onSubjectsGenerated` (linha ~518), **antes** de inserir novos temas:
+
+1. Deletar todas as `revisoes` do usuário (dependem de `tema_id`)
+2. Deletar todos os `desempenho_questoes` do usuário (dependem de `tema_id`)
+3. Deletar todos os `temas_estudados` do usuário
+4. Limpar o state local `temas` para evitar o filtro de "já existentes" bloquear inserções
+5. Remover a linha 521-522 que filtra `newSubjects` por `existingNames` (já que tudo foi zerado)
+
+```typescript
+// Zerar dados antigos antes de criar novo plano
+await supabase.from("desempenho_questoes").delete().eq("user_id", user.id);
+await supabase.from("revisoes").delete().eq("user_id", user.id);
+await supabase.from("temas_estudados").delete().eq("user_id", user.id);
 ```
-// BUG: scheduledReviews e o state ANTIGO, nao fittingReviews
-const reviewUsed = scheduledReviews.reduce((s, r) => s + (r.estimatedMinutes || 15), 0);
-```
 
-### Bug 2: Temas do cronograma somem apos o dia do upload
-A query de `todayTopics` filtra `created_at >= todayStart`, mostrando apenas temas criados HOJE. No dia seguinte, se nao houver revisoes pendentes ainda, o plano fica vazio. O correto e mostrar TODOS os temas ativos que tem revisoes pendentes para hoje ou temas sem nenhuma revisao concluida.
-
-### Bug 3: Cronograma nao atualiza outros modulos
-O `cronogramaSync.ts` so roda durante a geracao do plano de estudo no `StudyPlanContent.tsx`. Completar revisoes, adicionar temas manualmente, ou concluir blocos no Plano do Dia nao atualiza `study_performance` (contexto do Tutor IA).
-
-## Alteracoes
-
-### 1. Editar `src/pages/DailyPlan.tsx`
-
-**Corrigir budget de tempo (Bug 1):**
-- Usar `usedReviewMinutes` (variavel local recem-calculada) no lugar de `scheduledReviews.reduce(...)` na linha 205
-- Corrigir: `const topicBudget = userDailyMinutes - usedReviewMinutes;`
-
-**Ampliar query de temas (Bug 2):**
-- Trocar query de `temas_estudados` criados hoje para: buscar TODOS os temas ativos do usuario que nao tem nenhuma revisao concluida (primeiro contato) OU que tem revisao pendente para hoje
-- Limitar a 20 resultados para performance
-
-**Sincronizar ao completar (Bug 3):**
-- Ao marcar revisao como concluida (`toggleReviewDone`), chamar `updateStudyPerformanceContext` para atualizar contexto do Tutor IA
-- Ao marcar bloco como concluido (`handleAssessmentSubmit`), idem
-
-### 2. Editar `src/lib/cronogramaSync.ts`
-
-**Exportar funcao de contexto:**
-- Exportar `updateStudyPerformanceContext` para poder ser chamada pelo `DailyPlan.tsx` e `CronogramaInteligente.tsx`
-
-### 3. Editar `src/pages/CronogramaInteligente.tsx`
-
-**Sincronizar ao concluir revisao:**
-- No `handleCompleteRevisao`, chamar `updateStudyPerformanceContext` apos salvar desempenho
+## Resultado
+- Cada novo plano de estudo começa do zero
+- Sem mistura de temas antigos com novos
+- Plano do Dia reflete apenas o plano atual
 
 ## Arquivos
-- Editar: `src/pages/DailyPlan.tsx`
-- Editar: `src/lib/cronogramaSync.ts`
 - Editar: `src/pages/CronogramaInteligente.tsx`
 
