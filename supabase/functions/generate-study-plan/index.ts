@@ -166,6 +166,24 @@ Regras:
       });
     }
 
+    // Build suggested simulado config based on subject distribution
+    const subjectCounts: Record<string, number> = {};
+    for (const day of safeWeeklySchedule) {
+      for (const task of day.tasks) {
+        const subj = task.subject;
+        subjectCounts[subj] = (subjectCounts[subj] || 0) + 1;
+      }
+    }
+    const totalTasks = Object.values(subjectCounts).reduce((s, c) => s + c, 0);
+    const suggestedSimulado = {
+      totalQuestions: 40,
+      timeMinutes: 120,
+      distribution: Object.entries(subjectCounts).map(([subject, count]) => ({
+        subject,
+        questions: Math.max(1, Math.round((count / totalTasks) * 40)),
+      })).sort((a, b) => b.questions - a.questions),
+    };
+
     // Save to DB
     const planData = {
       user_id: userId,
