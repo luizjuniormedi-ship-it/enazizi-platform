@@ -50,7 +50,7 @@ serve(async (req) => {
     }
 
     const editalPreview = String(editalText || "").slice(0, 8000);
-    if (editalPreview && !isMedicalContent(editalPreview)) {
+    if (editalPreview && isNonMedicalContent(editalPreview)) {
       return new Response(JSON.stringify({ error: "Edital rejeitado: somente conteúdo médico é permitido para gerar cronograma." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
