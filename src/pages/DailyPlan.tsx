@@ -64,7 +64,10 @@ const DailyPlan = () => {
     const loadToday = async () => {
       const today = new Date().toISOString().split("T")[0];
 
-      const [planRes, reviewsRes, attemptsRes] = await Promise.all([
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const [planRes, reviewsRes, attemptsRes, todayTemasRes] = await Promise.all([
         supabase
           .from("daily_plans")
           .select("*")
@@ -82,6 +85,12 @@ const DailyPlan = () => {
           .from("desempenho_questoes")
           .select("tema_id, questoes_feitas, taxa_acerto")
           .eq("user_id", user.id),
+        supabase
+          .from("temas_estudados")
+          .select("id, tema, especialidade, subtopico")
+          .eq("user_id", user.id)
+          .eq("status", "ativo")
+          .gte("created_at", todayStart.toISOString()),
       ]);
 
       if (planRes.data) {
