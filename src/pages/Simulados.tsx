@@ -7,6 +7,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+function getSourcePriority(source: string | null | undefined): number {
+  if (!source) return 3;
+  if (source === "web-scrape" || source === "real-exam-ai") return 1;
+  if (source === "ai-exam-style") return 2;
+  return 3;
+}
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import { Progress } from "@/components/ui/progress";
@@ -225,57 +232,102 @@ const Simulados = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
 
-      let allQuestions: SimQuestion[] = [];
-      const requestCount = Math.ceil(config.count * 1.3);
+      // ── Step 1: Fetch previously answered question IDs ──
+      setLoadingProgress("Verificando questões já respondidas...");
+      const { data: pastAttempts } = await supabase
+        .from("practice_attempts")
+        .select("question_id")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      const answeredIds = new Set((pastAttempts || []).map(a => a.question_id));
 
-      if (requestCount <= BATCH_SIZE) {
-        setLoadingProgress(`Gerando ${config.count} questões...`);
-        setLoadingPercent(20);
-        allQuestions = await generateBatch(config.topics, requestCount, config.difficulty, accessToken);
-        setLoadingPercent(70);
-        setLoadingProgress(`Geradas ${allQuestions.length}/${config.count} questões...`);
+      // ── Step 2: Fetch questions from bank matching topics ──
+      setLoadingProgress("Buscando questões do banco...");
+      setLoadingPercent(10);
 
-        if (allQuestions.length < config.count) {
-          setLoadingProgress(`Complementando... (${allQuestions.length}/${config.count})`);
-          setLoadingPercent(80);
-          const extra = await generateBatch(config.topics, Math.min(config.count - allQuestions.length + 2, BATCH_SIZE), config.difficulty, accessToken);
-          allQuestions.push(...extra);
-        }
-      } else {
-        const batchCount = Math.ceil(requestCount / BATCH_SIZE);
-        const batchSizes = Array.from({ length: batchCount }, (_, i) => {
-          const remaining = requestCount - i * BATCH_SIZE;
-          return Math.min(BATCH_SIZE, remaining);
-        });
+      const topicFilters = config.topics.map(t => `topic.ilike.%${t}%`).join(",");
+      const { data: bankData } = await supabase
+        .from("questions_bank")
+        .select("id, statement, options, correct_index, topic, explanation, source")
+        .or(topicFilters)
+        .eq("review_status", "approved")
+        .limit(500);
 
-        setLoadingProgress(`Gerando lote 1/${batchCount}...`);
+      const bankQuestions: SimQuestion[] = (bankData || [])
+        .filter(q => {
+          const opts = Array.isArray(q.options) ? q.options.map(String) : [];
+          return opts.length >= 4 && (q.statement || "").length > 10 && !NON_MEDICAL_CONTENT_REGEX.test(q.statement || "");
+        })
+        .filter(q => !answeredIds.has(q.id))
+        .sort((a, b) => getSourcePriority(a.source) - getSourcePriority(b.source))
+        .map(q => ({
+          statement: q.statement,
+          options: Array.isArray(q.options) ? q.options.map(String) : [],
+          correct: q.correct_index ?? 0,
+          topic: q.topic || config.topics[0],
+          explanation: q.explanation || "",
+          bankId: q.id,
+        }));
 
-        let completedBatches = 0;
-        const results = await Promise.allSettled(
-          batchSizes.map(async (size, idx) => {
-            const result = await generateBatch(config.topics, size, config.difficulty, accessToken);
-            completedBatches++;
-            const pct = Math.round((completedBatches / batchCount) * 80);
-            setLoadingPercent(pct);
-            setLoadingProgress(`Gerando lote ${completedBatches}/${batchCount}... (${allQuestions.length + result.length} questões)`);
-            return result;
-          }),
-        );
+      setLoadingPercent(25);
+      const bankCount = Math.min(bankQuestions.length, config.count);
+      const selectedFromBank = bankQuestions.slice(0, bankCount);
+      const deficit = config.count - selectedFromBank.length;
 
-        for (const result of results) {
-          if (result.status === "fulfilled") {
-            allQuestions.push(...result.value);
+      setLoadingProgress(`${selectedFromBank.length} questões do banco. ${deficit > 0 ? `Gerando ${deficit} via IA...` : "Pronto!"}`);
+
+      // ── Step 3: Generate remaining via AI if needed ──
+      let allQuestions: SimQuestion[] = [...selectedFromBank];
+
+      if (deficit > 0) {
+        const requestCount = Math.ceil(deficit * 1.3);
+
+        if (requestCount <= BATCH_SIZE) {
+          setLoadingPercent(40);
+          const batch = await generateBatch(config.topics, requestCount, config.difficulty, accessToken);
+          allQuestions.push(...batch);
+          setLoadingPercent(70);
+
+          if (allQuestions.length < config.count) {
+            setLoadingProgress(`Complementando... (${allQuestions.length}/${config.count})`);
+            setLoadingPercent(80);
+            const extra = await generateBatch(config.topics, Math.min(config.count - allQuestions.length + 2, BATCH_SIZE), config.difficulty, accessToken);
+            allQuestions.push(...extra);
           }
-        }
+        } else {
+          const batchCount = Math.ceil(requestCount / BATCH_SIZE);
+          const batchSizes = Array.from({ length: batchCount }, (_, i) => {
+            const remaining = requestCount - i * BATCH_SIZE;
+            return Math.min(BATCH_SIZE, remaining);
+          });
 
-        if (allQuestions.length < config.count) {
-          setLoadingProgress(`Complementando... (${allQuestions.length}/${config.count})`);
-          setLoadingPercent(85);
-          const retrySize = Math.min(config.count - allQuestions.length + 2, BATCH_SIZE);
-          try {
-            const retry = await generateBatch(config.topics, retrySize, config.difficulty, accessToken);
-            allQuestions.push(...retry);
-          } catch { /* accept partial */ }
+          let completedBatches = 0;
+          const results = await Promise.allSettled(
+            batchSizes.map(async (size) => {
+              const result = await generateBatch(config.topics, size, config.difficulty, accessToken);
+              completedBatches++;
+              const pct = 25 + Math.round((completedBatches / batchCount) * 55);
+              setLoadingPercent(pct);
+              setLoadingProgress(`Gerando lote ${completedBatches}/${batchCount}...`);
+              return result;
+            }),
+          );
+
+          for (const result of results) {
+            if (result.status === "fulfilled") {
+              allQuestions.push(...result.value);
+            }
+          }
+
+          if (allQuestions.length < config.count) {
+            setLoadingProgress(`Complementando... (${allQuestions.length}/${config.count})`);
+            setLoadingPercent(85);
+            try {
+              const retry = await generateBatch(config.topics, Math.min(config.count - allQuestions.length + 2, BATCH_SIZE), config.difficulty, accessToken);
+              allQuestions.push(...retry);
+            } catch { /* accept partial */ }
+          }
         }
       }
 

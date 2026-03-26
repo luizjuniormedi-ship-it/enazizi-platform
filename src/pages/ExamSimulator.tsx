@@ -21,6 +21,14 @@ interface ExamQuestion {
   correct_index: number;
   topic: string;
   explanation: string;
+  source?: string;
+}
+
+function getSourcePriority(source: string | null | undefined): number {
+  if (!source) return 3;
+  if (source === "web-scrape" || source === "real-exam-ai") return 1;
+  if (source === "ai-exam-style") return 2;
+  return 3;
 }
 
 type Phase = "setup" | "loading" | "exam" | "review" | "result";
@@ -91,9 +99,18 @@ const ExamSimulator = () => {
     setPhase("loading");
     try {
       // Fetch questions from bank or generate
+      // Fetch previously answered question IDs to avoid repetition
+      const { data: pastAttempts } = await supabase
+        .from("practice_attempts")
+        .select("question_id")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      const answeredIds = new Set((pastAttempts || []).map(a => a.question_id));
+
       const { data: bankQuestions, error: bankError } = await supabase
         .from("questions_bank")
-        .select("id, statement, options, correct_index, topic, explanation")
+        .select("id, statement, options, correct_index, topic, explanation, source")
         .or(`user_id.eq.${user!.id},is_global.eq.true`)
         .limit(1000);
 
@@ -107,6 +124,7 @@ const ExamSimulator = () => {
           correct_index: q.correct_index || 0,
           topic: q.topic || "Geral",
           explanation: q.explanation || "",
+          source: q.source || null,
         }))
         .filter((q) => q.options.length >= 2)
         .filter(isMedicalQuestion);
@@ -168,7 +186,23 @@ const ExamSimulator = () => {
         }
       }
 
-      examQuestions = examQuestions.sort(() => Math.random() - 0.5).slice(0, examConfig.questionCount);
+      // Separate unseen vs seen questions
+      const unseenQuestions = examQuestions.filter(q => !answeredIds.has(q.id));
+      const seenQuestions = examQuestions.filter(q => answeredIds.has(q.id));
+
+      // Sort unseen by source priority (real exam questions first), then shuffle within tiers
+      unseenQuestions.sort((a, b) => {
+        const pDiff = getSourcePriority(a.source) - getSourcePriority(b.source);
+        return pDiff !== 0 ? pDiff : Math.random() - 0.5;
+      });
+
+      // Use unseen first, fill with seen (oldest first) if needed
+      examQuestions = unseenQuestions.length >= examConfig.questionCount
+        ? unseenQuestions.slice(0, examConfig.questionCount)
+        : [...unseenQuestions, ...seenQuestions.sort(() => Math.random() - 0.5)].slice(0, examConfig.questionCount);
+
+      // Final shuffle to mix priorities for a natural exam feel
+      examQuestions = examQuestions.sort(() => Math.random() - 0.5);
 
       if (examQuestions.length === 0) {
         throw new Error("Não encontrei questões médicas válidas para montar o simulado.");
