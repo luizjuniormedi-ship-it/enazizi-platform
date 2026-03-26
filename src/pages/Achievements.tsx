@@ -146,7 +146,7 @@ const Achievements = () => {
           <div className="glass-card p-4">
             <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
               <Medal className="h-5 w-5 text-amber-500" />
-              Ranking Semanal
+              {isWeeklyRanking ? "Ranking Semanal" : "Ranking Geral"}
             </h2>
             {ranking.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">Nenhum dado ainda.</p>
