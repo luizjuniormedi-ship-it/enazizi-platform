@@ -67,42 +67,41 @@ async function searchAndScrape(
   if (!FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY not configured");
 
   // Build multiple search queries for better coverage
-  const queries = [
-    `"questão" "${specialty}" prova residência médica alternativas gabarito`,
-    `site:pciconcursos.com.br OR site:qconcursos.com.br residência médica ${specialty} questões`,
-  ];
-  if (banca) {
-    queries.unshift(`"${banca}" ${specialty} questões alternativas gabarito`);
-  }
+  const query = banca
+    ? `"${banca}" ${specialty} questões alternativas gabarito`
+    : `"questão" "${specialty}" prova residência médica alternativas gabarito`;
 
   const allResults: { url: string; markdown: string }[] = [];
   const seenUrls = new Set<string>();
 
-  for (const query of queries.slice(0, 2)) { // max 2 searches to save credits
-    console.log("Firecrawl search query:", query);
+  console.log("Firecrawl search query:", query);
 
-    try {
-      const searchResp = await fetch("https://api.firecrawl.dev/v1/search", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query,
-          limit: 5,
-          lang: "pt-br",
-          country: "BR",
-          scrapeOptions: { formats: ["markdown"], onlyMainContent: true },
-        }),
-      });
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
 
-      if (!searchResp.ok) {
-        const err = await searchResp.text();
-        console.error("Firecrawl search error:", searchResp.status, err);
-        continue;
-      }
+    const searchResp = await fetch("https://api.firecrawl.dev/v1/search", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query,
+        limit: 3,
+        lang: "pt-br",
+        country: "BR",
+        scrapeOptions: { formats: ["markdown"], onlyMainContent: true },
+      }),
+      signal: controller.signal,
+    });
 
+    clearTimeout(timeout);
+
+    if (!searchResp.ok) {
+      const err = await searchResp.text();
+      console.error("Firecrawl search error:", searchResp.status, err);
+    } else {
       const searchData = await searchResp.json();
 
       for (const item of (searchData.data || [])) {
@@ -110,7 +109,6 @@ async function searchAndScrape(
         if (!url || seenUrls.has(url)) continue;
         seenUrls.add(url);
 
-        // Skip YouTube
         if (url.includes("youtube.com") || url.includes("youtu.be")) continue;
 
         const markdown = item.markdown || "";
@@ -119,7 +117,6 @@ async function searchAndScrape(
           continue;
         }
 
-        // Check if content looks like exam questions (has alternatives like A), B), etc.)
         const hasAlternatives = /[A-D]\)\s/.test(markdown) || /alternativa/i.test(markdown) || /gabarito/i.test(markdown);
         if (!hasAlternatives) {
           console.log(`Skipping non-question content from: ${url}`);
@@ -127,13 +124,17 @@ async function searchAndScrape(
         }
 
         console.log(`✓ Found question content (${markdown.length} chars) from: ${url}`);
-        allResults.push({ url, markdown: markdown.slice(0, 12000) });
-      }
-    } catch (e) {
-      console.warn(`Search query failed:`, e);
-    }
+        allResults.push({ url, markdown: markdown.slice(0, 8000) });
 
-    if (allResults.length >= 4) break; // enough content
+        if (allResults.length >= 2) break;
+      }
+    }
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "AbortError") {
+      console.warn("Firecrawl search timed out after 25s");
+    } else {
+      console.warn("Search query failed:", e);
+    }
   }
 
   console.log(`Found ${allResults.length} results with question content`);
