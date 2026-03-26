@@ -433,6 +433,15 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     const text = overridePrompt || input.trim();
     if (!text || isLoading || !user) return;
 
+    // Add to action timeline
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const matchedAction = quickActions?.find(a => a.prompt === text);
+    const timelineEntry = matchedAction
+      ? { label: matchedAction.label.replace(/^[^\s]+\s/, ''), icon: matchedAction.icon || "💬", time: timeStr }
+      : { label: text.slice(0, 30) + (text.length > 30 ? "…" : ""), icon: "💬", time: timeStr };
+    setActionTimeline(prev => [...prev, timelineEntry].slice(-8));
+
     const userMsg: Msg = { role: "user", content: text };
     const allMessages = [...messages, userMsg];
     setMessages(allMessages);
