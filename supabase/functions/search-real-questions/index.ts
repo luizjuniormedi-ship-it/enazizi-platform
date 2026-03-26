@@ -609,6 +609,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const globalDeadline = Date.now() + 55000; // 55s global timeout
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -651,8 +653,8 @@ serve(async (req) => {
     const alreadyScrapedKeys = await getAlreadyScrapedUrls(supabaseAdmin, specialty);
     console.log(`Already scraped ${alreadyScrapedKeys.size} unique URLs for ${specialty}`);
 
-    // Step 1: Search and scrape (skipping already-scraped sources)
-    const scrapedContent = await searchAndScrape(specialty, banca, ano, alreadyScrapedKeys);
+    // Step 1: Search and scrape (with global deadline)
+    const scrapedContent = await searchAndScrape(specialty, banca, ano, alreadyScrapedKeys, globalDeadline);
 
     // Step 2: Structure questions via AI
     const result = await structureQuestions(scrapedContent, specialty, existingStatements, supabaseAdmin, userId);
