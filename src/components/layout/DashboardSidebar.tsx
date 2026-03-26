@@ -10,6 +10,7 @@ import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import enazizi from "@/assets/enazizi-mascot.png";
+import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import StudyTimer from "@/components/dashboard/StudyTimer";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
