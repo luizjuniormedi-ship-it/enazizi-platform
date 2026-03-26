@@ -57,6 +57,11 @@ const DailyPlan = () => {
   const [quizOpen, setQuizOpen] = useState(false);
   const [quizReview, setQuizReview] = useState<{ id: string; tema: string; especialidade: string } | null>(null);
 
+  // Self-assessment state
+  const [assessmentOpen, setAssessmentOpen] = useState(false);
+  const [assessmentTopic, setAssessmentTopic] = useState("");
+  const [pendingBlockOrder, setPendingBlockOrder] = useState<number | null>(null);
+
   // Drag & drop state
   const [dragIndex, setDragIndex] = useState<number | null>(null);
 
