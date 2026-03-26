@@ -155,6 +155,9 @@ const Dashboard = () => {
 
     {!isNewUser && (
         <Suspense fallback={<div className="space-y-6"><ChartFallback /><ChartFallback /></div>}>
+          {/* Approval Thermometer — top visibility */}
+          <ApprovalThermometer metrics={metrics} />
+
           {/* Streak Calendar + Daily Goal */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <StreakCalendar />
@@ -163,9 +166,6 @@ const Dashboard = () => {
 
           {/* KPIs */}
           <DashboardMetricsGrid stats={stats} metrics={metrics} />
-
-          {/* Approval Thermometer — higher visibility */}
-          <ApprovalThermometer metrics={metrics} />
 
           <DailyPlanWidget />
 
