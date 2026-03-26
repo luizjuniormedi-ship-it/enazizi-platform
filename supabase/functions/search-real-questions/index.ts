@@ -291,6 +291,7 @@ async function searchAndScrape(
   banca: string | null,
   ano: number | null,
   alreadyScrapedKeys: Set<string>,
+  globalDeadline: number,
 ): Promise<{ url: string; markdown: string }[]> {
   const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
   if (!FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY not configured");
@@ -302,87 +303,105 @@ async function searchAndScrape(
     [queries[i], queries[j]] = [queries[j], queries[i]];
   }
 
+  // Limit to 4 queries max
+  const selectedQueries = queries.slice(0, 4);
+
   const allResults: { url: string; markdown: string }[] = [];
   const seenUrls = new Set<string>();
   const blockedDomains = ["scribd.com", "youtube.com", "youtu.be"];
 
-  for (const query of queries) {
-    if (allResults.length >= 2) break;
+  const processSearchResult = (item: any) => {
+    const url = item.url || "";
+    if (!url || seenUrls.has(url)) return null;
+    seenUrls.add(url);
 
-    console.log("Firecrawl search query:", query);
+    if (blockedDomains.some(d => url.includes(d))) return null;
 
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 20000);
-
-      const searchResp = await fetch("https://api.firecrawl.dev/v1/search", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query,
-          limit: 5,
-          lang: "pt-br",
-          country: "BR",
-          scrapeOptions: { formats: ["markdown"], onlyMainContent: true },
-        }),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeout);
-
-      if (!searchResp.ok) {
-        console.error("Firecrawl search error:", searchResp.status, await searchResp.text());
-        continue;
+      const urlKey = new URL(url).hostname + new URL(url).pathname;
+      if (alreadyScrapedKeys.has(urlKey)) {
+        console.log(`Skipping already-scraped URL: ${url}`);
+        return null;
       }
+    } catch { /* ignore */ }
 
-      const searchData = await searchResp.json();
+    const markdown = item.markdown || "";
+    if (markdown.length < 500) return null;
 
-      for (const item of (searchData.data || [])) {
-        const url = item.url || "";
-        if (!url || seenUrls.has(url)) continue;
-        seenUrls.add(url);
+    const hasAlternatives = /[A-E]\)\s/.test(markdown) || /alternativa/i.test(markdown) || /gabarito/i.test(markdown);
+    if (!hasAlternatives) {
+      console.log(`Skipping non-question content from: ${url}`);
+      return null;
+    }
 
-        if (blockedDomains.some(d => url.includes(d))) {
-          console.log(`Skipping blocked domain: ${url}`);
-          continue;
+    console.log(`✓ Found question content (${markdown.length} chars) from: ${url}`);
+    const content = extractQuestionBlocks(markdown, 18000);
+    console.log(`  → Extracted ${content.length} chars of question-relevant content`);
+    return { url, markdown: content };
+  };
+
+  // Execute queries in parallel pairs
+  for (let i = 0; i < selectedQueries.length; i += 2) {
+    if (allResults.length >= 2) break;
+    if (Date.now() >= globalDeadline) {
+      console.warn("Global deadline reached, returning partial results");
+      break;
+    }
+
+    const batch = selectedQueries.slice(i, i + 2);
+    const remainingMs = Math.max(1000, globalDeadline - Date.now());
+    const queryTimeout = Math.min(12000, remainingMs - 1000);
+
+    console.log(`Executing ${batch.length} queries in parallel (timeout: ${queryTimeout}ms)`);
+
+    const promises = batch.map(async (query) => {
+      console.log("Firecrawl search query:", query);
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), queryTimeout);
+
+        const searchResp = await fetch("https://api.firecrawl.dev/v1/search", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            query,
+            limit: 5,
+            lang: "pt-br",
+            country: "BR",
+            scrapeOptions: { formats: ["markdown"], onlyMainContent: true },
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeout);
+
+        if (!searchResp.ok) {
+          console.error("Firecrawl search error:", searchResp.status, await searchResp.text());
+          return [];
         }
 
-        // Skip URLs we already scraped before
-        try {
-          const urlKey = new URL(url).hostname + new URL(url).pathname;
-          if (alreadyScrapedKeys.has(urlKey)) {
-            console.log(`Skipping already-scraped URL: ${url}`);
-            continue;
-          }
-        } catch { /* ignore parse errors */ }
-
-        const markdown = item.markdown || "";
-        if (markdown.length < 500) {
-          console.log(`Skipping thin content (${markdown.length} chars) from: ${url}`);
-          continue;
+        const searchData = await searchResp.json();
+        return searchData.data || [];
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") {
+          console.warn(`Firecrawl search timed out for query: ${query.slice(0, 50)}`);
+        } else {
+          console.warn("Search query failed:", e);
         }
+        return [];
+      }
+    });
 
-        const hasAlternatives = /[A-E]\)\s/.test(markdown) || /alternativa/i.test(markdown) || /gabarito/i.test(markdown);
-        if (!hasAlternatives) {
-          console.log(`Skipping non-question content from: ${url}`);
-          continue;
-        }
+    const batchResults = await Promise.all(promises);
 
-        console.log(`✓ Found question content (${markdown.length} chars) from: ${url}`);
-        const content = extractQuestionBlocks(markdown, 18000);
-        console.log(`  → Extracted ${content.length} chars of question-relevant content`);
-        allResults.push({ url, markdown: content });
-
+    for (const items of batchResults) {
+      for (const item of items) {
         if (allResults.length >= 2) break;
-      }
-    } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") {
-        console.warn(`Firecrawl search timed out for query: ${query.slice(0, 50)}`);
-      } else {
-        console.warn("Search query failed:", e);
+        const result = processSearchResult(item);
+        if (result) allResults.push(result);
       }
     }
   }
@@ -590,6 +609,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const globalDeadline = Date.now() + 55000; // 55s global timeout
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -632,8 +653,8 @@ serve(async (req) => {
     const alreadyScrapedKeys = await getAlreadyScrapedUrls(supabaseAdmin, specialty);
     console.log(`Already scraped ${alreadyScrapedKeys.size} unique URLs for ${specialty}`);
 
-    // Step 1: Search and scrape (skipping already-scraped sources)
-    const scrapedContent = await searchAndScrape(specialty, banca, ano, alreadyScrapedKeys);
+    // Step 1: Search and scrape (with global deadline)
+    const scrapedContent = await searchAndScrape(specialty, banca, ano, alreadyScrapedKeys, globalDeadline);
 
     // Step 2: Structure questions via AI
     const result = await structureQuestions(scrapedContent, specialty, existingStatements, supabaseAdmin, userId);

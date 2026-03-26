@@ -51,23 +51,30 @@ const AdminWebScrapingPanel = () => {
 
   const searchSingle = useCallback(async (spec: string, bancaVal: string | null): Promise<ScrapeResult | null> => {
     if (!session) return null;
-    const resp = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-real-questions`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          specialty: spec,
-          banca: bancaVal === "all" ? null : bancaVal,
-        }),
-      }
-    );
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || "Erro na busca");
-    return data;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-real-questions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            specialty: spec,
+            banca: bancaVal === "all" ? null : bancaVal,
+          }),
+          signal: controller.signal,
+        }
+      );
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || "Erro na busca");
+      return data;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }, [session]);
 
   const handleSearch = useCallback(async () => {
@@ -121,7 +128,7 @@ const AdminWebScrapingPanel = () => {
 
       // Rate-limit delay between calls
       if (i < SPECIALTIES.length - 1 && !cancelRef.current) {
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise(r => setTimeout(r, 4000));
       }
     }
 
