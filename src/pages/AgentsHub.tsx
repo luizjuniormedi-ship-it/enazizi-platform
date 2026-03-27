@@ -62,6 +62,15 @@ const agents = [
     isNew: true,
   },
   {
+    to: "/dashboard/feynman",
+    icon: HelpCircle,
+    title: "💡 Método Feynman",
+    description: "Explique conceitos médicos com suas palavras como se fosse para um leigo. A IA avalia sua explicação em Clareza, Completude, Precisão e Simplicidade — e identifica exatamente suas lacunas.",
+    color: "text-yellow-400",
+    bgColor: "bg-yellow-500/10",
+    isNew: true,
+  },
+  {
     to: "/dashboard/coach",
     icon: Heart,
     title: "💪 Coach Motivacional",
