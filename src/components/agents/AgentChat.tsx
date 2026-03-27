@@ -916,7 +916,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
         />
         <Button onClick={() => handleSend()} size="icon"
           className="glow flex-shrink-0 h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-          disabled={isLoading || !input.trim()}>
+          disabled={isLoading || sendCooldown || !input.trim()}>
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </Button>
       </div>
