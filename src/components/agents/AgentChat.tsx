@@ -927,6 +927,12 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
                     className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-background/50 backdrop-blur-sm" title="Copiar">
                     <Copy className="h-3.5 w-3.5 text-muted-foreground" />
                   </button>
+                  {hasSpeechSynthesis && (
+                    <button onClick={() => speakText(msg.content, i)}
+                      className="absolute top-2 right-9 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-background/50 backdrop-blur-sm" title={speakingMsgIdx === i ? "Parar" : "Ouvir"}>
+                      {speakingMsgIdx === i ? <VolumeX className="h-3.5 w-3.5 text-primary animate-pulse" /> : <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />}
+                    </button>
+                  )}
                   {/* Save & Link buttons */}
                   <div className="flex gap-2 mt-2 pt-2 border-t border-border/30 empty:hidden">
                     {onSaveMessage && i > 0 && !isLoading && (
