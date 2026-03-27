@@ -163,6 +163,7 @@ async function fetchDashboardData(userId: string) {
     .map(([week, { hours, timestamp }]) => ({ week, hours: Math.round(hours * 10) / 10, timestamp }));
 
   const plan = plansRes.data?.plan_json as PlanJson | null;
+  const hasStudyPlan = plan !== null && !!plan?.weeklySchedule;
   const subjects = plan?.subjects || [];
   const subjectHours: Record<string, number> = {};
   let totalStudyHours = 0;
