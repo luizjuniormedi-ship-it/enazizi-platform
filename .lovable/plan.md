@@ -1,28 +1,36 @@
 
 
-# Plano: Aba Upload no painel Admin para banco global
+# Plano: Corrigir botão "Gerar Questões" na aba Uploads
 
-## O que existe
-- A página `Admin.tsx` já tem um sistema de abas (Tabs) com WhatsApp, Telegram, Feedbacks, Mensagens, BI
-- A página `Uploads.tsx` já tem toda a lógica de upload de PDF/TXT com processamento via edge functions (`process-upload`, `populate-questions`)
-- O upload já suporta `is_global: true` para admins
+## Problema
+O `populate-questions` usa `supabaseAdmin.auth.getUser(token)` para validar o JWT do admin (linha 226). Este é o mesmo problema que afetou o `admin-actions` — o sistema de signing-keys impede que `getUser()` funcione corretamente em edge functions, retornando 401 silenciosamente.
+
+Quando o admin clica em "Gerar Questões", a função retorna 401 e o frontend mostra erro genérico.
 
 ## Solução
 
-### Criar componente `AdminUploadsPanel.tsx`
-Componente dedicado para a aba de uploads do admin, com:
-- Upload de PDF/TXT (reutilizando a lógica existente do `Uploads.tsx`)
-- Todos os uploads são marcados como `is_global: true` automaticamente
-- Lista de uploads globais existentes com status de processamento
-- Botão para reprocessar/popular questões de uploads já feitos
-- Contagem de questões geradas por upload
+### Editar `supabase/functions/populate-questions/index.ts`
+Aplicar o mesmo fix do `admin-actions`: usar um client com `SUPABASE_ANON_KEY` + o header Authorization do request para validar o usuário, em vez de `supabaseAdmin.auth.getUser(token)`.
 
-### Editar `Admin.tsx`
-- Adicionar nova aba "Uploads" com ícone `Upload` ao TabsList
-- Importar e renderizar `AdminUploadsPanel` no TabsContent correspondente
-- Ajustar o filtro do TabsContent dos usuários para excluir a nova aba
+```text
+// Antes (quebrado):
+const { data: { user } } = await supabaseAdmin.auth.getUser(token);
 
-## Arquivos
-- Criar: `src/components/admin/AdminUploadsPanel.tsx`
-- Editar: `src/pages/Admin.tsx` (adicionar aba + import)
+// Depois (funciona):
+const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
+const userClient = createClient(supabaseUrl, anonKey, {
+  global: { headers: { Authorization: authHeader } },
+});
+const { data: { user } } = await userClient.auth.getUser();
+```
+
+- Manter o `supabaseAdmin` (service role) para operações de banco
+- Usar `userClient` (anon key + auth header) apenas para identificar o usuário
+- Manter a lógica de fallback para service_role_key token
+
+### Deploy
+- Redeployar a edge function `populate-questions`
+
+## Arquivo
+- Editar + deploy: `supabase/functions/populate-questions/index.ts`
 
