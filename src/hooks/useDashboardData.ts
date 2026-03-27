@@ -88,8 +88,10 @@ async function fetchDashboardData(userId: string) {
   const displayName = profileRes.data?.display_name || null;
   const hasCompletedDiagnostic = profileRes.data?.has_completed_diagnostic || false;
 
-  // Calculate accuracy
+  // Calculate accuracy and questions today
   const practiceAttempts = practiceRes.data || [];
+  const todayStr = new Date().toISOString().split("T")[0];
+  const questionsToday = practiceAttempts.filter((a: any) => a.created_at?.startsWith(todayStr)).length;
   const practiceCorrect = practiceAttempts.filter((a: any) => a.correct).length;
   const practiceTotal = practiceAttempts.length;
 
