@@ -70,6 +70,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const [input, setInput] = useState("");
   const [hasShownUploadWelcome, setHasShownUploadWelcome] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStage, setLoadingStage] = useState<string>("");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -83,6 +84,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const [uploadStep, setUploadStep] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [actionTimeline, setActionTimeline] = useState<{ label: string; icon: string; time: string }[]>([]);
+  const [sendCooldown, setSendCooldown] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isUploadingRef = useRef(false);
@@ -431,7 +433,11 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
 
   const handleSend = async (overridePrompt?: string, contextOverride?: string) => {
     const text = overridePrompt || input.trim();
-    if (!text || isLoading || !user) return;
+    if (!text || isLoading || sendCooldown || !user) return;
+
+    // Rate limiting: 2s cooldown between sends
+    setSendCooldown(true);
+    setTimeout(() => setSendCooldown(false), 2000);
 
     // Add to action timeline
     const now = new Date();
@@ -448,6 +454,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     if (!overridePrompt) setInput("");
     else setInput("");
     setIsLoading(true);
+    setLoadingStage("🔍 Buscando referências científicas...");
 
     let convId = activeConversationId;
     if (!convId) {
@@ -503,6 +510,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
         const description = errData.error || errorMessages[resp.status] || "Erro ao conectar com o agente IA";
         toast({ title: "Erro", description, variant: "destructive" });
         setIsLoading(false);
+        setLoadingStage("");
         return;
       }
 
@@ -515,6 +523,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
 
       const appendAssistantChunk = (content: string) => {
         if (!content) return;
+        if (!assistantSoFar) setLoadingStage("✍️ Gerando resposta...");
         assistantSoFar += content;
         setMessages((prev) => {
           const last = prev[prev.length - 1];
@@ -610,6 +619,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
       toast({ title: "Erro", description: "Falha ao conectar com o agente IA.", variant: "destructive" });
     } finally {
       setIsLoading(false);
+      setLoadingStage("");
     }
   };
 
@@ -886,12 +896,15 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
             <div className="h-12 w-9 sm:h-14 sm:w-11 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/25 shadow-md">
               <img src={tutorAvatar} alt={title} className="h-full w-full object-contain" />
             </div>
-            <div className="rounded-xl px-4 py-3 bg-secondary/80 backdrop-blur-sm">
+            <div className="rounded-xl px-4 py-3 bg-secondary/80 backdrop-blur-sm space-y-1.5">
               <div className="flex gap-1.5 items-center">
                 <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
                 <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
                 <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
               </div>
+              {loadingStage && (
+                <p className="text-xs text-muted-foreground animate-pulse">{loadingStage}</p>
+              )}
             </div>
           </div>
         )}
@@ -909,7 +922,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
         />
         <Button onClick={() => handleSend()} size="icon"
           className="glow flex-shrink-0 h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-          disabled={isLoading || !input.trim()}>
+          disabled={isLoading || sendCooldown || !input.trim()}>
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </Button>
       </div>
