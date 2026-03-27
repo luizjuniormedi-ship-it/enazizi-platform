@@ -61,11 +61,13 @@ export default function SmartNotifications() {
         .eq("user_id", user!.id)
         .maybeSingle();
 
+      // Only show daily goal alert if user explicitly configured a goal
+      const hasConfiguredGoal = configData !== null && configData.meta_questoes_dia !== null;
       const dailyGoal = configData?.meta_questoes_dia || 30;
       const questionsToday = todayQuestions || 0;
       const hour = now.getHours();
 
-      if (hour >= 14 && questionsToday < dailyGoal * 0.5) {
+      if (hasConfiguredGoal && hour >= 14 && questionsToday < dailyGoal * 0.5) {
         notifs.push({
           id: "daily-goal",
           icon: <Target className="h-4 w-4" />,
