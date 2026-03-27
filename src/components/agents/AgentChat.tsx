@@ -433,7 +433,11 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
 
   const handleSend = async (overridePrompt?: string, contextOverride?: string) => {
     const text = overridePrompt || input.trim();
-    if (!text || isLoading || !user) return;
+    if (!text || isLoading || sendCooldown || !user) return;
+
+    // Rate limiting: 2s cooldown between sends
+    setSendCooldown(true);
+    setTimeout(() => setSendCooldown(false), 2000);
 
     // Add to action timeline
     const now = new Date();
