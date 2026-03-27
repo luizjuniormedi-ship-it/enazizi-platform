@@ -10,6 +10,7 @@ import AdminRoute from "@/components/auth/AdminRoute";
 import ProfessorRoute from "@/components/auth/ProfessorRoute";
 import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
+import ErrorBoundary from "@/components/layout/ErrorBoundary";
 
 // Eager-load shell layout (always needed)
 import DashboardLayout from "./components/layout/DashboardLayout";

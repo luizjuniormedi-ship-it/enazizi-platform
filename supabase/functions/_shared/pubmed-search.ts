@@ -88,6 +88,13 @@ export async function searchPubMed(query: string, maxResults = 3): Promise<PubMe
       });
     }
     
+    // Store in cache
+    pubmedCache.set(cacheKey, { articles, ts: Date.now() });
+    // Evict old entries
+    if (pubmedCache.size > 50) {
+      const oldest = [...pubmedCache.entries()].sort((a, b) => a[1].ts - b[1].ts)[0];
+      if (oldest) pubmedCache.delete(oldest[0]);
+    }
     return articles;
   } catch (e) {
     console.error("PubMed search error:", e);
