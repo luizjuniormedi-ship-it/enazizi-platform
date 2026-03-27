@@ -1,35 +1,49 @@
 
 
-# Plano: Voz bidirecional no Tutor IA
+# Plano: Avatar 3D Falante com Lip-Sync no Tutor IA
 
-## O que será feito
-Adicionar dois botões ao chat: um **microfone** para o usuário falar (speech-to-text) e um **alto-falante** em cada resposta do tutor para ouvir a resposta (text-to-speech). Tudo usando APIs nativas do navegador — sem custo extra e sem API keys.
+## Conceito
+Adicionar um avatar 3D animado que fala automaticamente as respostas do tutor, com lip-sync baseado em visemas. O avatar será renderizado com React Three Fiber + Ready Player Me e sincronizado com o Web Speech API (TTS) já implementado.
 
-## Como funciona
+## Abordagem técnica
 
-### 🎤 Usuário fala → Texto
-- Botão de microfone ao lado do botão de enviar
-- Usa `Web Speech API` (`SpeechRecognition`) nativa do navegador
-- Reconhecimento contínuo em português (`pt-BR`)
-- O texto reconhecido preenche o campo de input automaticamente
-- Indicador visual pulsante quando está gravando
+### 1. Modelo 3D — Ready Player Me
+- Usar um modelo `.glb` gratuito do Ready Player Me com blend shapes (visemas) para animação labial
+- O modelo será hospedado em `public/models/tutor-avatar.glb`
+- Blend shapes padrão RPM incluem: `viseme_aa`, `viseme_E`, `viseme_I`, `viseme_O`, `viseme_U`, `viseme_FF`, `viseme_TH`, `viseme_SS`, etc.
 
-### 🔊 Tutor fala → Áudio
-- Botão de alto-falante em cada mensagem do assistente
-- Usa `Web Speech Synthesis API` (`speechSynthesis`) nativa do navegador
-- Voz em português brasileiro
-- Botão muda para "parar" enquanto está falando
+### 2. Componente `TutorAvatar3D`
+- Criar `src/components/agents/TutorAvatar3D.tsx`
+- Usar `@react-three/fiber@^8.18` e `@react-three/drei@^9.122.0` (versões compatíveis com React 18)
+- Canvas Three.js com o modelo GLB carregado via `useGLTF`
+- Props: `isSpeaking: boolean` — quando true, anima os visemas ciclicamente
+- Animação de idle (leve balanço/respiração) quando não está falando
+- Fundo transparente para integrar no chat
 
-## Detalhes técnicos
+### 3. Lip-Sync com Web Speech API
+- Aproveitar o TTS já implementado (`window.speechSynthesis`)
+- Usar eventos `onboundary` do `SpeechSynthesisUtterance` para detectar palavras sendo faladas
+- Mapear fonemas para blend shapes do modelo RPM
+- Fallback: animação cíclica de boca quando `onboundary` não disponível
 
-### Editar `src/components/agents/AgentChat.tsx`
-- Adicionar estado `isListening` e `isSpeaking`
-- Criar função `toggleListening()` que inicia/para o `SpeechRecognition`
-- Criar função `speakText(text)` que usa `SpeechSynthesisUtterance` com `lang: 'pt-BR'`
-- Adicionar botão `Mic` ao lado do botão Send (com animação pulsante quando ativo)
-- Adicionar botão `Volume2` em cada mensagem do assistente (ao lado do Copy)
-- Detectar suporte do navegador e esconder botões se não suportado
+### 4. Integração no AgentChat
+- Exibir o avatar 3D acima ou ao lado do chat quando o tutor está falando
+- Auto-play: quando nova resposta chega, o avatar automaticamente fala (TTS + lip-sync)
+- Toggle para ativar/desativar auto-play
+- O avatar fica em idle com animação sutil quando não está falando
+
+### 5. Fallback
+- Se WebGL não disponível, manter o avatar 2D estático atual
+- Detectar suporte com `document.createElement('canvas').getContext('webgl2')`
 
 ## Arquivos
-- Editar: `src/components/agents/AgentChat.tsx`
+
+- Instalar: `@react-three/fiber@^8.18`, `@react-three/drei@^9.122.0`, `three@^0.160`
+- Criar: `src/components/agents/TutorAvatar3D.tsx`
+- Criar: `src/hooks/useLipSync.ts` (lógica de mapeamento fonema→visema)
+- Editar: `src/components/agents/AgentChat.tsx` (integrar avatar 3D + auto-speak)
+- Adicionar: modelo GLB em `public/models/` (Ready Player Me genérico ou criar um personalizado)
+
+## Limitação
+- Precisaremos de um modelo `.glb` com blend shapes. Podemos usar um modelo RPM genérico gratuito ou você pode criar um personalizado em readyplayer.me e me enviar o link.
 
