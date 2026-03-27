@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3 } from "lucide-react";
+import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,6 +21,7 @@ import AdminUserRow from "@/components/admin/AdminUserRow";
 import AdminFeedbackPanel from "@/components/admin/AdminFeedbackPanel";
 import AdminMessagesPanel from "@/components/admin/AdminMessagesPanel";
 import AdminBIPanel from "@/components/admin/AdminBIPanel";
+import AdminUploadsPanel from "@/components/admin/AdminUploadsPanel";
 import type { AdminUser, Stats } from "@/components/admin/AdminTypes";
 
 const Admin = () => {
@@ -375,6 +376,9 @@ const Admin = () => {
             <TabsTrigger value="bi" className="gap-1.5">
               <BarChart3 className="h-3.5 w-3.5" /> BI
             </TabsTrigger>
+            <TabsTrigger value="uploads" className="gap-1.5">
+              <Upload className="h-3.5 w-3.5" /> Uploads
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="whatsapp">
@@ -397,7 +401,11 @@ const Admin = () => {
             <AdminBIPanel callAdmin={callAdmin} />
           </TabsContent>
 
-          <TabsContent value={activeTab === "whatsapp" || activeTab === "telegram" || activeTab === "feedbacks" || activeTab === "messages" || activeTab === "bi" ? "__none__" : activeTab}>
+          <TabsContent value="uploads">
+            <AdminUploadsPanel />
+          </TabsContent>
+
+          <TabsContent value={activeTab === "whatsapp" || activeTab === "telegram" || activeTab === "feedbacks" || activeTab === "messages" || activeTab === "bi" || activeTab === "uploads" ? "__none__" : activeTab}>
             {loading ? (
               <div className="flex justify-center py-12">
                 <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
