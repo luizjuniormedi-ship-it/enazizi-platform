@@ -16,6 +16,8 @@ export interface DashboardStats {
   streak: number;
   todayCompleted: number;
   todayTotal: number;
+  questionsToday: number;
+  hasStudyPlan: boolean;
 }
 
 export interface DashboardMetrics {
