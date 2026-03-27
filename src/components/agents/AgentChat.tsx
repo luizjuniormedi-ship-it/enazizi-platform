@@ -896,12 +896,15 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
             <div className="h-12 w-9 sm:h-14 sm:w-11 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/25 shadow-md">
               <img src={tutorAvatar} alt={title} className="h-full w-full object-contain" />
             </div>
-            <div className="rounded-xl px-4 py-3 bg-secondary/80 backdrop-blur-sm">
+            <div className="rounded-xl px-4 py-3 bg-secondary/80 backdrop-blur-sm space-y-1.5">
               <div className="flex gap-1.5 items-center">
                 <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
                 <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
                 <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
               </div>
+              {loadingStage && (
+                <p className="text-xs text-muted-foreground animate-pulse">{loadingStage}</p>
+              )}
             </div>
           </div>
         )}
