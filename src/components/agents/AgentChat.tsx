@@ -989,13 +989,20 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
       {/* Input — Enhanced */}
       <div className="flex gap-2">
         <Input
-          placeholder={placeholder}
-          className="bg-background/60 backdrop-blur-sm border-border/60 text-sm h-10 sm:h-11 rounded-xl"
+          placeholder={isListening ? "🎤 Ouvindo..." : placeholder}
+          className={`bg-background/60 backdrop-blur-sm border-border/60 text-sm h-10 sm:h-11 rounded-xl ${isListening ? "ring-2 ring-red-400/50 border-red-400/50" : ""}`}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           disabled={isLoading}
         />
+        {hasSpeechRecognition && (
+          <Button onClick={toggleListening} size="icon" variant={isListening ? "destructive" : "outline"}
+            className={`flex-shrink-0 h-10 w-10 sm:h-11 sm:w-11 rounded-xl ${isListening ? "animate-pulse" : ""}`}
+            title={isListening ? "Parar de ouvir" : "Falar"}>
+            {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </Button>
+        )}
         <Button onClick={() => handleSend()} size="icon"
           className="glow flex-shrink-0 h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
           disabled={isLoading || sendCooldown || !input.trim()}>
