@@ -143,6 +143,61 @@ const ChatGPT = () => {
     localStorage.setItem("tutor-onboarding-dismissed", "true");
   };
 
+  // Toggle avatar persistence
+  const toggleAvatar3D = () => {
+    setShowAvatar3D(v => { const next = !v; localStorage.setItem("tutor-show-avatar3d", String(next)); return next; });
+  };
+  const toggleAutoSpeak = () => {
+    setAutoSpeak(v => { const next = !v; localStorage.setItem("tutor-auto-speak", String(next)); return next; });
+  };
+
+  // TTS
+  const speakText = useCallback((text: string) => {
+    if (!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const clean = text.replace(/[#*_`~>\-|]/g, "").replace(/\[.*?\]\(.*?\)/g, "").replace(/\n{2,}/g, ". ");
+    const utterance = new SpeechSynthesisUtterance(clean);
+    utterance.lang = "pt-BR";
+    utterance.rate = 1.05;
+    utterance.onstart = () => { setIsSpeaking(true); lipSync.startSpeaking(); };
+    utterance.onboundary = (e) => { if (e.name === "word") { const word = clean.slice(e.charIndex, e.charIndex + (e.charLength || 5)); lipSync.feedWord(word); } };
+    utterance.onend = () => { setIsSpeaking(false); lipSync.stopSpeaking(); };
+    utterance.onerror = () => { setIsSpeaking(false); lipSync.stopSpeaking(); };
+    window.speechSynthesis.speak(utterance);
+  }, [lipSync]);
+
+  const stopSpeaking = useCallback(() => {
+    window.speechSynthesis?.cancel();
+    setIsSpeaking(false);
+    lipSync.stopSpeaking();
+  }, [lipSync]);
+
+  // STT
+  const hasSpeechRecognition = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+
+  const toggleListening = useCallback(() => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "pt-BR";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInput(prev => prev ? `${prev} ${transcript}` : transcript);
+    };
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [isListening]);
+
   // Register auto-save for session persistence
   useEffect(() => {
     registerAutoSave(() => {
