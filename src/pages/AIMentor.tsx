@@ -6,6 +6,7 @@ const quickActions = [
   { label: "📌 Pontos de prova", prompt: "Quais são os pontos mais cobrados em provas de residência sobre o conteúdo do meu material?", icon: "📌" },
   { label: "💊 Condutas", prompt: "Quais as condutas terapêuticas mais importantes e mais cobradas nos temas do meu material?", icon: "💊" },
   { label: "🔄 Diagnóstico diferencial", prompt: "Faça uma análise de diagnóstico diferencial dos temas abordados no meu material.", icon: "🔄" },
+  { label: "🔬 Artigos PubMed", prompt: "Busque e cite artigos científicos relevantes do PubMed/NLM sobre o tema principal do meu material, com links e resumos.", icon: "🔬" },
 ];
 
 const AIMentor = () => (
