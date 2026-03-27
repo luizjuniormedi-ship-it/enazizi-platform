@@ -19,6 +19,7 @@ import ReactMarkdown from "react-markdown";
 import { mapTopicToSpecialty } from "@/lib/mapTopicToSpecialty";
 import TutorAvatar3D from "@/components/agents/TutorAvatar3D";
 import { useLipSync } from "@/hooks/useLipSync";
+import MultimediaControls from "@/components/agents/MultimediaControls";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
