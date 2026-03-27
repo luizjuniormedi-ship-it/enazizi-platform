@@ -14,8 +14,19 @@ export interface PubMedArticle {
   url: string;
 }
 
+// In-memory cache with 10min TTL
+const pubmedCache = new Map<string, { articles: PubMedArticle[]; ts: number }>();
+const CACHE_TTL = 10 * 60 * 1000;
+
 export async function searchPubMed(query: string, maxResults = 3): Promise<PubMedArticle[]> {
   const BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
+  
+  const cacheKey = `${query}::${maxResults}`;
+  const cached = pubmedCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < CACHE_TTL) {
+    console.log("[PubMed] Cache hit for:", query);
+    return cached.articles;
+  }
   
   try {
     // Step 1: Search for IDs
