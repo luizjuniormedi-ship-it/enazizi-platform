@@ -215,6 +215,8 @@ async function fetchDashboardData(userId: string) {
     streak: gamData?.current_streak || 0,
     todayCompleted: completedToday.length,
     todayTotal,
+    questionsToday,
+    hasStudyPlan,
   };
 
   return { stats, metrics, displayName, hasCompletedDiagnostic };
