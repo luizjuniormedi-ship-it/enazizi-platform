@@ -510,6 +510,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
         const description = errData.error || errorMessages[resp.status] || "Erro ao conectar com o agente IA";
         toast({ title: "Erro", description, variant: "destructive" });
         setIsLoading(false);
+        setLoadingStage("");
         return;
       }
 
