@@ -454,6 +454,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     if (!overridePrompt) setInput("");
     else setInput("");
     setIsLoading(true);
+    setLoadingStage("🔍 Buscando referências científicas...");
 
     let convId = activeConversationId;
     if (!convId) {
