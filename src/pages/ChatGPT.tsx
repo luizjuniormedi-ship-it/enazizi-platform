@@ -4,7 +4,7 @@ import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useLocation } from "react-router-dom";
-import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap, LogOut, AlertTriangle, Maximize2, Minimize2, MoreVertical, Copy, ChevronUp, Zap, Brain, Heart, Bone, Eye, Pill, Baby, Microscope, Activity, X, Flame, ArrowRight, Target, TrendingUp } from "lucide-react";
+import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap, LogOut, AlertTriangle, Maximize2, Minimize2, MoreVertical, Copy, ChevronUp, Zap, Brain, Heart, Bone, Eye, Pill, Baby, Microscope, Activity, X, Flame, ArrowRight, Target, TrendingUp, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
@@ -17,6 +17,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import { mapTopicToSpecialty } from "@/lib/mapTopicToSpecialty";
+import TutorAvatar3D from "@/components/agents/TutorAvatar3D";
+import { useLipSync } from "@/hooks/useLipSync";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -114,6 +116,12 @@ const ChatGPT = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [metricsCollapsed, setMetricsCollapsed] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showAvatar3D, setShowAvatar3D] = useState(() => localStorage.getItem("tutor-show-avatar3d") !== "false");
+  const [autoSpeak, setAutoSpeak] = useState(() => localStorage.getItem("tutor-auto-speak") === "true");
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const lipSync = useLipSync();
+  const recognitionRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -134,6 +142,61 @@ const ChatGPT = () => {
     setShowOnboarding(false);
     localStorage.setItem("tutor-onboarding-dismissed", "true");
   };
+
+  // Toggle avatar persistence
+  const toggleAvatar3D = () => {
+    setShowAvatar3D(v => { const next = !v; localStorage.setItem("tutor-show-avatar3d", String(next)); return next; });
+  };
+  const toggleAutoSpeak = () => {
+    setAutoSpeak(v => { const next = !v; localStorage.setItem("tutor-auto-speak", String(next)); return next; });
+  };
+
+  // TTS
+  const speakText = useCallback((text: string) => {
+    if (!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const clean = text.replace(/[#*_`~>\-|]/g, "").replace(/\[.*?\]\(.*?\)/g, "").replace(/\n{2,}/g, ". ");
+    const utterance = new SpeechSynthesisUtterance(clean);
+    utterance.lang = "pt-BR";
+    utterance.rate = 1.05;
+    utterance.onstart = () => { setIsSpeaking(true); lipSync.startSpeaking(); };
+    utterance.onboundary = (e) => { if (e.name === "word") { const word = clean.slice(e.charIndex, e.charIndex + (e.charLength || 5)); lipSync.feedWord(word); } };
+    utterance.onend = () => { setIsSpeaking(false); lipSync.stopSpeaking(); };
+    utterance.onerror = () => { setIsSpeaking(false); lipSync.stopSpeaking(); };
+    window.speechSynthesis.speak(utterance);
+  }, [lipSync]);
+
+  const stopSpeaking = useCallback(() => {
+    window.speechSynthesis?.cancel();
+    setIsSpeaking(false);
+    lipSync.stopSpeaking();
+  }, [lipSync]);
+
+  // STT
+  const hasSpeechRecognition = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+
+  const toggleListening = useCallback(() => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "pt-BR";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInput(prev => prev ? `${prev} ${transcript}` : transcript);
+    };
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [isListening]);
 
   // Register auto-save for session persistence
   useEffect(() => {
@@ -641,6 +704,10 @@ const ChatGPT = () => {
           if (result === "done") break;
         }
       }
+      // Auto-speak the response
+      if (autoSpeak && assistantSoFar) {
+        speakText(assistantSoFar);
+      }
       if (convId && assistantSoFar) {
         await supabase.from("chat_messages").insert({
           conversation_id: convId, user_id: user.id, role: "assistant", content: assistantSoFar,
@@ -820,6 +887,13 @@ const ChatGPT = () => {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowHistory(!showHistory)}>
                 <History className="h-4 w-4 mr-2" /> Histórico
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={toggleAvatar3D}>
+                <Bot className="h-4 w-4 mr-2" /> {showAvatar3D ? "Ocultar Avatar 3D" : "Mostrar Avatar 3D"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={toggleAutoSpeak}>
+                {autoSpeak ? <VolumeX className="h-4 w-4 mr-2" /> : <Volume2 className="h-4 w-4 mr-2" />}
+                {autoSpeak ? "Desativar auto-fala" : "Ativar auto-fala"}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowOnboarding(true)}>
                 <HelpCircle className="h-4 w-4 mr-2" /> Como usar
@@ -1186,6 +1260,11 @@ const ChatGPT = () => {
             })()}
           </div>
 
+          {/* Avatar 3D */}
+          {showAvatar3D && (
+            <TutorAvatar3D isSpeaking={isSpeaking} lipSync={lipSync} className="h-32 sm:h-40 mb-2" />
+          )}
+
           {/* Chat Messages — Premium */}
           <div ref={scrollRef} className="flex-1 rounded-xl border border-border/50 bg-card/50 p-2 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 mb-2 sm:mb-3 min-h-0 pattern-dots">
             {messages.map((msg, i) => (
@@ -1205,13 +1284,24 @@ const ChatGPT = () => {
                       <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-xs sm:text-sm prose-p:my-3 prose-headings:mt-5 prose-headings:mb-2 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 [&_p:has(+ul)]:mb-1 [&_p:has(+ol)]:mb-1 [&>p+p]:mt-4 [&_strong]:text-foreground [&_hr]:my-4 [&_blockquote]:my-3">
                         <ReactMarkdown>{msg.content}</ReactMarkdown>
                       </div>
-                      <button
-                        onClick={() => copyToClipboard(msg.content)}
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-background/50 backdrop-blur-sm"
-                        title="Copiar"
-                      >
-                        <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                      </button>
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                        {"speechSynthesis" in window && (
+                          <button
+                            onClick={() => speakText(msg.content)}
+                            className="p-1.5 rounded-lg hover:bg-background/50 backdrop-blur-sm"
+                            title="Ouvir"
+                          >
+                            <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => copyToClipboard(msg.content)}
+                          className="p-1.5 rounded-lg hover:bg-background/50 backdrop-blur-sm"
+                          title="Copiar"
+                        >
+                          <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                        </button>
+                      </div>
                     </>
                   ) : (
                     <span className="whitespace-pre-wrap">{msg.content}</span>
@@ -1242,6 +1332,17 @@ const ChatGPT = () => {
 
           {/* Input — Enhanced */}
           <div className="flex gap-2">
+            {hasSpeechRecognition && (
+              <Button
+                variant={isListening ? "destructive" : "outline"}
+                size="icon"
+                className={`flex-shrink-0 h-10 w-10 sm:h-11 sm:w-11 rounded-xl ${isListening ? "animate-pulse" : ""}`}
+                onClick={toggleListening}
+                title={isListening ? "Parar gravação" : "Falar"}
+              >
+                {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </Button>
+            )}
             <Input
               placeholder="Sua resposta ou dúvida..."
               className="bg-background/60 backdrop-blur-sm border-border/60 text-sm h-10 sm:h-11 rounded-xl"
@@ -1250,6 +1351,17 @@ const ChatGPT = () => {
               onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
               disabled={isLoading}
             />
+            {isSpeaking && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="flex-shrink-0 h-10 w-10 sm:h-11 sm:w-11 rounded-xl"
+                onClick={stopSpeaking}
+                title="Parar fala"
+              >
+                <VolumeX className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               onClick={() => sendMessage(input)}
               size="icon"

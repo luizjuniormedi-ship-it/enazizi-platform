@@ -53,6 +53,7 @@ const Install = lazy(() => import("./pages/Install"));
 const StudyGuides = lazy(() => import("./pages/StudyGuides"));
 const MedicalChronicles = lazy(() => import("./pages/MedicalChronicles"));
 const FeynmanTrainer = lazy(() => import("./pages/FeynmanTrainer"));
+const AIMentor = lazy(() => import("./pages/AIMentor"));
 
 
 
@@ -125,6 +126,7 @@ const App = () => (
                 <Route path="anamnese" element={<AnamnesisTrainer />} />
                 <Route path="cronicas" element={<MedicalChronicles />} />
                 <Route path="feynman" element={<FeynmanTrainer />} />
+                <Route path="mentor" element={<AIMentor />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="perfil" element={<Profile />} />
               </Route>
