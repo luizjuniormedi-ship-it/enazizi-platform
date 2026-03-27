@@ -704,6 +704,10 @@ const ChatGPT = () => {
           if (result === "done") break;
         }
       }
+      // Auto-speak the response
+      if (autoSpeak && assistantSoFar) {
+        speakText(assistantSoFar);
+      }
       if (convId && assistantSoFar) {
         await supabase.from("chat_messages").insert({
           conversation_id: convId, user_id: user.id, role: "assistant", content: assistantSoFar,
