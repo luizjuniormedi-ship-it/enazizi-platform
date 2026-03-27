@@ -1260,6 +1260,11 @@ const ChatGPT = () => {
             })()}
           </div>
 
+          {/* Avatar 3D */}
+          {showAvatar3D && (
+            <TutorAvatar3D isSpeaking={isSpeaking} lipSync={lipSync} className="h-32 sm:h-40 mb-2" />
+          )}
+
           {/* Chat Messages — Premium */}
           <div ref={scrollRef} className="flex-1 rounded-xl border border-border/50 bg-card/50 p-2 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 mb-2 sm:mb-3 min-h-0 pattern-dots">
             {messages.map((msg, i) => (
