@@ -798,6 +798,12 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
               <DropdownMenuItem onClick={() => setShowHistory(!showHistory)}>
                 <History className="h-4 w-4 mr-2" /> Histórico
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowAvatar3D(!showAvatar3D)}>
+                <User2 className="h-4 w-4 mr-2" /> {showAvatar3D ? "Ocultar Avatar 3D" : "Mostrar Avatar 3D"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setAutoSpeak(!autoSpeak)}>
+                <Volume2 className="h-4 w-4 mr-2" /> {autoSpeak ? "Desativar auto-fala" : "Ativar auto-fala"}
+              </DropdownMenuItem>
               {showUploadButton && (
                 <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
                   <Upload className="h-4 w-4 mr-2" /> {isUploading ? "Enviando..." : "Enviar material"}
