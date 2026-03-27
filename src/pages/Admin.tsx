@@ -376,6 +376,9 @@ const Admin = () => {
             <TabsTrigger value="bi" className="gap-1.5">
               <BarChart3 className="h-3.5 w-3.5" /> BI
             </TabsTrigger>
+            <TabsTrigger value="uploads" className="gap-1.5">
+              <Upload className="h-3.5 w-3.5" /> Uploads
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="whatsapp">
