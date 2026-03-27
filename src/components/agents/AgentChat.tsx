@@ -716,9 +716,11 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     if (speakingMsgIdx === msgIdx) {
       window.speechSynthesis.cancel();
       setSpeakingMsgIdx(null);
+      lipSync.stopSpeaking();
       return;
     }
     window.speechSynthesis.cancel();
+    lipSync.stopSpeaking();
     // Strip markdown for cleaner speech
     const clean = text.replace(/[#*_`~>\[\]()!|]/g, "").replace(/\n{2,}/g, ". ").replace(/\n/g, " ");
     const utterance = new SpeechSynthesisUtterance(clean);
@@ -728,11 +730,30 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     const voices = window.speechSynthesis.getVoices();
     const ptVoice = voices.find(v => v.lang.startsWith("pt-BR")) || voices.find(v => v.lang.startsWith("pt"));
     if (ptVoice) utterance.voice = ptVoice;
-    utterance.onend = () => setSpeakingMsgIdx(null);
-    utterance.onerror = () => setSpeakingMsgIdx(null);
+    utterance.onstart = () => lipSync.startSpeaking();
+    utterance.onboundary = (event) => {
+      if (event.name === "word") {
+        const word = clean.slice(event.charIndex, event.charIndex + (event.charLength || 5));
+        lipSync.feedWord(word);
+      }
+    };
+    utterance.onend = () => { setSpeakingMsgIdx(null); lipSync.stopSpeaking(); };
+    utterance.onerror = () => { setSpeakingMsgIdx(null); lipSync.stopSpeaking(); };
     setSpeakingMsgIdx(msgIdx);
     window.speechSynthesis.speak(utterance);
   };
+
+  // Auto-speak last assistant message when autoSpeak is on
+  const lastMsgRef = useRef<number>(0);
+  useEffect(() => {
+    if (!autoSpeak || !hasSpeechSynthesis) return;
+    const lastIdx = messages.length - 1;
+    const lastMsg = messages[lastIdx];
+    if (lastMsg?.role === "assistant" && lastIdx > lastMsgRef.current && !isLoading && lastIdx > 0) {
+      lastMsgRef.current = lastIdx;
+      speakText(lastMsg.content, lastIdx);
+    }
+  }, [messages, isLoading, autoSpeak]);
 
   // Cleanup speech on unmount
   useEffect(() => {
