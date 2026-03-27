@@ -888,6 +888,13 @@ const ChatGPT = () => {
               <DropdownMenuItem onClick={() => setShowHistory(!showHistory)}>
                 <History className="h-4 w-4 mr-2" /> Histórico
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={toggleAvatar3D}>
+                <Bot className="h-4 w-4 mr-2" /> {showAvatar3D ? "Ocultar Avatar 3D" : "Mostrar Avatar 3D"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={toggleAutoSpeak}>
+                {autoSpeak ? <VolumeX className="h-4 w-4 mr-2" /> : <Volume2 className="h-4 w-4 mr-2" />}
+                {autoSpeak ? "Desativar auto-fala" : "Ativar auto-fala"}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowOnboarding(true)}>
                 <HelpCircle className="h-4 w-4 mr-2" /> Como usar
               </DropdownMenuItem>
