@@ -522,6 +522,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
 
       const appendAssistantChunk = (content: string) => {
         if (!content) return;
+        if (!assistantSoFar) setLoadingStage("✍️ Gerando resposta...");
         assistantSoFar += content;
         setMessages((prev) => {
           const last = prev[prev.length - 1];
