@@ -669,6 +669,73 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     toast({ title: "Copiado!", description: "Texto copiado para a área de transferência." });
   };
 
+  // Speech-to-Text
+  const hasSpeechRecognition = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "pt-BR";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    let finalTranscript = "";
+    recognition.onresult = (event: any) => {
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript + " ";
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      setInput(finalTranscript + interim);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  };
+
+  // Text-to-Speech
+  const hasSpeechSynthesis = typeof window !== "undefined" && "speechSynthesis" in window;
+
+  const speakText = (text: string, msgIdx: number) => {
+    if (speakingMsgIdx === msgIdx) {
+      window.speechSynthesis.cancel();
+      setSpeakingMsgIdx(null);
+      return;
+    }
+    window.speechSynthesis.cancel();
+    // Strip markdown for cleaner speech
+    const clean = text.replace(/[#*_`~>\[\]()!|]/g, "").replace(/\n{2,}/g, ". ").replace(/\n/g, " ");
+    const utterance = new SpeechSynthesisUtterance(clean);
+    utterance.lang = "pt-BR";
+    utterance.rate = 1;
+    // Try to pick a pt-BR voice
+    const voices = window.speechSynthesis.getVoices();
+    const ptVoice = voices.find(v => v.lang.startsWith("pt-BR")) || voices.find(v => v.lang.startsWith("pt"));
+    if (ptVoice) utterance.voice = ptVoice;
+    utterance.onend = () => setSpeakingMsgIdx(null);
+    utterance.onerror = () => setSpeakingMsgIdx(null);
+    setSpeakingMsgIdx(msgIdx);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Cleanup speech on unmount
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.stop();
+      window.speechSynthesis?.cancel();
+    };
+  }, []);
+
   const content = (
     <div className={`flex flex-col animate-fade-in min-w-0 w-full ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-full"}`}>
       {/* Header — Tutor style */}
