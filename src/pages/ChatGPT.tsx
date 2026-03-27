@@ -116,6 +116,12 @@ const ChatGPT = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [metricsCollapsed, setMetricsCollapsed] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showAvatar3D, setShowAvatar3D] = useState(() => localStorage.getItem("tutor-show-avatar3d") !== "false");
+  const [autoSpeak, setAutoSpeak] = useState(() => localStorage.getItem("tutor-auto-speak") === "true");
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const lipSync = useLipSync();
+  const recognitionRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
