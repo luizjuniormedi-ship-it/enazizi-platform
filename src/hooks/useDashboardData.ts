@@ -16,6 +16,8 @@ export interface DashboardStats {
   streak: number;
   todayCompleted: number;
   todayTotal: number;
+  questionsToday: number;
+  hasStudyPlan: boolean;
 }
 
 export interface DashboardMetrics {
@@ -61,7 +63,7 @@ async function fetchDashboardData(userId: string) {
     supabase.from("study_plans").select("plan_json").eq("user_id", userId).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("reviews").select("next_review, flashcard_id, flashcards(topic)").eq("user_id", userId).gte("next_review", new Date().toISOString()).order("next_review", { ascending: true }).limit(5),
     supabase.from("profiles").select("display_name, has_completed_diagnostic").eq("user_id", userId).maybeSingle(),
-    supabase.from("practice_attempts").select("correct").eq("user_id", userId),
+    supabase.from("practice_attempts").select("correct, created_at").eq("user_id", userId),
     supabase.from("error_bank").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("revisoes").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "pendente"),
     supabase.from("exam_sessions").select("id, total_questions, score", { count: "exact" }).eq("user_id", userId).eq("status", "finished"),
@@ -86,8 +88,10 @@ async function fetchDashboardData(userId: string) {
   const displayName = profileRes.data?.display_name || null;
   const hasCompletedDiagnostic = profileRes.data?.has_completed_diagnostic || false;
 
-  // Calculate accuracy
+  // Calculate accuracy and questions today
   const practiceAttempts = practiceRes.data || [];
+  const todayStr = new Date().toISOString().split("T")[0];
+  const questionsToday = practiceAttempts.filter((a: any) => a.created_at?.startsWith(todayStr)).length;
   const practiceCorrect = practiceAttempts.filter((a: any) => a.correct).length;
   const practiceTotal = practiceAttempts.length;
 
@@ -159,6 +163,7 @@ async function fetchDashboardData(userId: string) {
     .map(([week, { hours, timestamp }]) => ({ week, hours: Math.round(hours * 10) / 10, timestamp }));
 
   const plan = plansRes.data?.plan_json as PlanJson | null;
+  const hasStudyPlan = plan !== null && !!plan?.weeklySchedule;
   const subjects = plan?.subjects || [];
   const subjectHours: Record<string, number> = {};
   let totalStudyHours = 0;
@@ -210,6 +215,8 @@ async function fetchDashboardData(userId: string) {
     streak: gamData?.current_streak || 0,
     todayCompleted: completedToday.length,
     todayTotal,
+    questionsToday,
+    hasStudyPlan,
   };
 
   return { stats, metrics, displayName, hasCompletedDiagnostic };

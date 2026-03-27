@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
           .from("questions_bank")
           .select("id", { count: "exact", head: true })
           .eq("is_global", true)
-          .eq("topic", spec);
+          .ilike("topic", `${spec}%`);
         return { spec, count: count || 0 };
       })
     );

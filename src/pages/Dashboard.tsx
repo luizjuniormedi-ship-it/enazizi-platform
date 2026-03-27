@@ -125,6 +125,8 @@ const Dashboard = () => {
         totalTasks={stats.totalTasks}
         streak={stats.streak}
         daysUntilExam={stats.daysUntilExam}
+        questionsToday={stats.questionsToday}
+        hasStudyPlan={stats.hasStudyPlan}
       />
 
       {/* Quick Start for new users */}
