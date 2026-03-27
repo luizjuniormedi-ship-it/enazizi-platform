@@ -19,6 +19,7 @@ import ReactMarkdown from "react-markdown";
 import { mapTopicToSpecialty } from "@/lib/mapTopicToSpecialty";
 import TutorAvatar3D from "@/components/agents/TutorAvatar3D";
 import { useLipSync } from "@/hooks/useLipSync";
+import MultimediaControls from "@/components/agents/MultimediaControls";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -1284,16 +1285,9 @@ const ChatGPT = () => {
                       <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-xs sm:text-sm prose-p:my-3 prose-headings:mt-5 prose-headings:mb-2 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 [&_p:has(+ul)]:mb-1 [&_p:has(+ol)]:mb-1 [&>p+p]:mt-4 [&_strong]:text-foreground [&_hr]:my-4 [&_blockquote]:my-3">
                         <ReactMarkdown>{msg.content}</ReactMarkdown>
                       </div>
+                      {/* Multimedia Controls — Audio + Avatar */}
+                      <MultimediaControls text={msg.content} />
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                        {"speechSynthesis" in window && (
-                          <button
-                            onClick={() => speakText(msg.content)}
-                            className="p-1.5 rounded-lg hover:bg-background/50 backdrop-blur-sm"
-                            title="Ouvir"
-                          >
-                            <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
-                          </button>
-                        )}
                         <button
                           onClick={() => copyToClipboard(msg.content)}
                           className="p-1.5 rounded-lg hover:bg-background/50 backdrop-blur-sm"
