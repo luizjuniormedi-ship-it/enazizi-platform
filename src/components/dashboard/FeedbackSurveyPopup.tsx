@@ -16,7 +16,7 @@ import { toast } from "sonner";
 
 const LOGIN_COUNT_KEY_PREFIX = "enazizi_login_count_";
 const FEEDBACK_GIVEN_KEY_PREFIX = "enazizi_feedback_given_";
-const MIN_LOGINS = 3;
+const MIN_LOGINS = 6;
 
 const MODULES = [
   { key: "simulados", label: "Simulados" },
