@@ -1332,6 +1332,17 @@ const ChatGPT = () => {
 
           {/* Input — Enhanced */}
           <div className="flex gap-2">
+            {hasSpeechRecognition && (
+              <Button
+                variant={isListening ? "destructive" : "outline"}
+                size="icon"
+                className={`flex-shrink-0 h-10 w-10 sm:h-11 sm:w-11 rounded-xl ${isListening ? "animate-pulse" : ""}`}
+                onClick={toggleListening}
+                title={isListening ? "Parar gravação" : "Falar"}
+              >
+                {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </Button>
+            )}
             <Input
               placeholder="Sua resposta ou dúvida..."
               className="bg-background/60 backdrop-blur-sm border-border/60 text-sm h-10 sm:h-11 rounded-xl"
@@ -1340,6 +1351,17 @@ const ChatGPT = () => {
               onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
               disabled={isLoading}
             />
+            {isSpeaking && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="flex-shrink-0 h-10 w-10 sm:h-11 sm:w-11 rounded-xl"
+                onClick={stopSpeaking}
+                title="Parar fala"
+              >
+                <VolumeX className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               onClick={() => sendMessage(input)}
               size="icon"
