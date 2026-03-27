@@ -22,24 +22,26 @@ const Achievements = () => {
     const loadRanking = async () => {
       const { data } = await supabase
         .from("user_gamification")
-        .select("user_id, xp, level, weekly_xp")
+        .select("user_id, xp, level, weekly_xp, weekly_reset_at")
         .order("weekly_xp", { ascending: false })
-        .limit(20);
+        .limit(50);
 
       if (!data) return;
 
-      const hasWeeklyXp = data.some((r: any) => r.weekly_xp > 0);
-      let finalData = data;
+      // Zero out weekly_xp for users whose week already expired
+      const adjusted = data.map((r: any) => ({
+        ...r,
+        weekly_xp: r.weekly_reset_at && new Date(r.weekly_reset_at) > new Date() ? r.weekly_xp : 0,
+      }));
+
+      const hasWeeklyXp = adjusted.some((r: any) => r.weekly_xp > 0);
+      let finalData: any[];
 
       if (!hasWeeklyXp) {
-        const { data: totalData } = await supabase
-          .from("user_gamification")
-          .select("user_id, xp, level, weekly_xp")
-          .order("xp", { ascending: false })
-          .limit(20);
-        if (totalData && totalData.length > 0) finalData = totalData;
+        finalData = [...adjusted].sort((a: any, b: any) => b.xp - a.xp).slice(0, 20);
         setIsWeeklyRanking(false);
       } else {
+        finalData = [...adjusted].sort((a: any, b: any) => b.weekly_xp - a.weekly_xp).slice(0, 20);
         setIsWeeklyRanking(true);
       }
 
