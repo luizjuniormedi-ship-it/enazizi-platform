@@ -6,6 +6,7 @@ const quickActions = [
   { label: "🧠 Mnemônicos", prompt: "Crie mnemônicos e técnicas de memorização para os temas mais importantes do meu material.", icon: "🧠" },
   { label: "⚠️ Pegadinhas de prova", prompt: "Liste as principais pegadinhas de prova e pontos de atenção baseados no meu material.", icon: "⚠️" },
   { label: "📊 Tabela comparativa", prompt: "Crie tabelas comparativas dos diagnósticos diferenciais presentes no meu material.", icon: "📊" },
+  { label: "🔬 Artigos PubMed", prompt: "Busque artigos científicos do PubMed/NLM sobre os temas do meu material e inclua referências com links.", icon: "🔬" },
 ];
 
 const ContentSummarizer = () => (
