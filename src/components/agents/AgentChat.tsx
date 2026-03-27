@@ -814,6 +814,17 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
         </div>
       </div>
 
+      {/* 3D Avatar */}
+      {showAvatar3D && (
+        <Suspense fallback={null}>
+          <TutorAvatar3D
+            isSpeaking={speakingMsgIdx !== null}
+            lipSync={lipSync}
+            className="h-32 sm:h-40 mb-2"
+          />
+        </Suspense>
+      )}
+
       {/* Hidden file input */}
       <input type="file" ref={fileInputRef} accept=".pdf,.txt,.docx" className="hidden" onChange={handleFileUpload} />
 
