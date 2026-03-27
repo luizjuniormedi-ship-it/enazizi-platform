@@ -619,6 +619,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
       toast({ title: "Erro", description: "Falha ao conectar com o agente IA.", variant: "destructive" });
     } finally {
       setIsLoading(false);
+      setLoadingStage("");
     }
   };
 
