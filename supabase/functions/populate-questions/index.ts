@@ -224,7 +224,7 @@ serve(async (req) => {
       userId = adminRole?.user_id || "92736dea-6422-48ff-8330-de9f0d1094e9";
     } else {
       const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
-      const userClient = createClient(supabaseUrl, anonKey, {
+      const userClient = createClient(Deno.env.get("SUPABASE_URL")!, anonKey, {
         global: { headers: { Authorization: authHeader } },
       });
       const { data: claimsData, error: claimsError } = await userClient.auth.getUser();
