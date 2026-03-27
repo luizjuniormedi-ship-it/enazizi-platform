@@ -1,44 +1,45 @@
 
+# Plano: Corrigir Avisos do Sistema para Refletir a Realidade
 
-# Melhorias Recomendadas
+## Problemas Identificados
 
-Após análise do código, identifiquei 5 melhorias prioritárias:
+### 1. Health Check (Admin) — Contagem de questões por especialidade está errada
+A edge function `system-health-check` busca questões com `eq("topic", "Cardiologia")`, mas os tópicos reais são armazenados como subtópicos: "Cardiologia - Arritmias", "Cardiologia - Doença Coronariana", etc. Resultado: o sistema sempre reporta "especialidades com poucas questões" mesmo tendo centenas. Precisa usar `ilike` com pattern matching.
 
-## 1. Error Boundary Global
-O app não tem Error Boundary. Se qualquer componente crashar, a tela fica branca sem feedback. Criar um `ErrorBoundary` React que capture erros e mostre uma tela de recuperação com botão "Recarregar".
+### 2. DashboardWarnings — Depende de dados que a maioria dos usuários não tem
+- `todayTotal` vem do `weeklySchedule` do plano de estudo. Se o usuário não criou um plano, `todayTotal = 0` e os avisos de "não estudou hoje" nunca aparecem.
+- `totalTasks` conta `study_tasks`, mas a atividade real dos alunos está em `practice_attempts`, `exam_sessions`, `chat_conversations`. O aviso "cronograma ficando para trás" não reflete o uso real.
+- Precisa considerar atividade real (questões respondidas, sessões de chat, simulados) além do cronograma.
 
-- Criar: `src/components/layout/ErrorBoundary.tsx`
-- Editar: `src/App.tsx` (envolver Routes com ErrorBoundary)
+### 3. SmartNotifications — Meta diária arbitrária
+- Default `meta_questoes_dia = 30` quando o usuário não configurou. Muitos alunos novos recebem "você fez 0% da meta" sem nunca terem definido meta.
 
-## 2. Cache de Artigos PubMed (performance)
-Cada mensagem nos agentes faz 3 chamadas à API PubMed (esearch + esummary + efetch), mesmo para temas repetidos. Adicionar um cache em memória simples (Map com TTL de 10min) no `pubmed-search.ts` para evitar buscas duplicadas na mesma sessão da edge function.
+## Mudanças
 
-- Editar: `supabase/functions/_shared/pubmed-search.ts`
+### Editar `supabase/functions/system-health-check/index.ts`
+- Trocar `eq("topic", spec)` por `ilike("topic", `${spec}%`)` para capturar subtópicos
+- Ajustar threshold: contar todas as questões que começam com o nome da especialidade
 
-## 3. Feedback Visual de Carregamento nos Agentes
-Quando o agente está buscando artigos PubMed + gerando resposta, o usuário só vê "..." sem indicação do que está acontecendo. Adicionar indicadores de etapa ("Buscando referências científicas...", "Gerando resposta...").
+### Editar `src/components/dashboard/DashboardWarnings.tsx`
+- Aceitar novos props: `questionsToday`, `hasStudyPlan`
+- Adicionar aviso baseado em atividade real (0 questões respondidas hoje após meio-dia)
+- Só mostrar avisos de cronograma se o usuário tem plano de estudo ativo
+- Adicionar aviso para quem não tem cronograma configurado
 
-- Editar: `src/components/agents/AgentChat.tsx` (mensagem de loading contextual)
+### Editar `src/pages/Dashboard.tsx`
+- Passar os novos props (`questionsToday` dos metrics, `hasStudyPlan`)
 
-## 4. Fallback Offline para PWA
-O app tem `manifest.json` e página Install, mas não tem Service Worker registrado. Sem ele, o app não funciona offline. Adicionar um SW básico com cache de assets estáticos.
+### Editar `src/hooks/useDashboardData.ts`
+- Adicionar contagem de `questionsToday` (practice_attempts de hoje)
+- Adicionar flag `hasStudyPlan` baseado na existência de plano
 
-- Criar: `public/sw.js`
-- Editar: `src/main.tsx` (registrar SW)
-
-## 5. Rate Limiting Visual no Chat
-Se o usuário enviar muitas mensagens rápidas, pode receber erro 429 sem explicação clara. Adicionar debounce no botão de envio (2s cooldown) e mensagem amigável quando rate limited.
-
-- Editar: `src/components/agents/AgentChat.tsx`
-
-## Ordem de Implementação
-1. Error Boundary (previne tela branca)
-2. Cache PubMed (performance imediata)
-3. Feedback de loading (UX)
-4. Rate limiting visual (UX)
-5. Service Worker offline (PWA)
+### Editar `src/components/dashboard/SmartNotifications.tsx`
+- Só mostrar alerta de meta diária se o usuário configurou `meta_questoes_dia` explicitamente
+- Remover default arbitrário de 30
 
 ## Arquivos
-- Criar: `src/components/layout/ErrorBoundary.tsx`, `public/sw.js`
-- Editar: `src/App.tsx`, `src/main.tsx`, `src/components/agents/AgentChat.tsx`, `supabase/functions/_shared/pubmed-search.ts`
-
+- Editar + deploy: `supabase/functions/system-health-check/index.ts`
+- Editar: `src/components/dashboard/DashboardWarnings.tsx`
+- Editar: `src/pages/Dashboard.tsx`
+- Editar: `src/hooks/useDashboardData.ts`
+- Editar: `src/components/dashboard/SmartNotifications.tsx`
