@@ -27,7 +27,14 @@ serve(async (req) => {
         const pubmedBlock = formatPubMedForPrompt(articles);
         if (pubmedBlock) {
           systemPrompt += pubmedBlock;
-          systemPrompt += `\n\nINSTRUÇÃO OBRIGATÓRIA: Inclua uma seção "🔬 ARTIGOS CIENTÍFICOS (PubMed/NLM)" ao final da resposta citando os artigos acima com título, autores, periódico, ano e link. Estes são artigos REAIS da Biblioteca Nacional de Medicina (NLM/NIH).`;
+          systemPrompt += `\n\nINSTRUÇÃO OBRIGATÓRIA: Ao final da resposta, inclua uma seção:
+"📚 REFERÊNCIAS CIENTÍFICAS — Biblioteca Nacional de Medicina (NLM) | NIH"
+Para cada artigo acima, cite:
+- Título completo entre aspas
+- Autores, Periódico, Ano
+- Link CLICÁVEL no formato markdown: [Acessar no PubMed](URL_COMPLETA)
+- Breve resumo do artigo (1-2 frases) baseado no abstract fornecido
+Estes são artigos REAIS indexados no PubMed. NÃO invente artigos.`;
         }
       } catch (e) {
         console.error("PubMed enrichment failed (non-blocking):", e);
