@@ -90,6 +90,8 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const [sendCooldown, setSendCooldown] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speakingMsgIdx, setSpeakingMsgIdx] = useState<number | null>(null);
+  const [showAvatar3D, setShowAvatar3D] = useState(true);
+  const [autoSpeak, setAutoSpeak] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isUploadingRef = useRef(false);
@@ -97,6 +99,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const previousContentRef = useRef<string>("");
   const previousContentLoadedRef = useRef(false);
   const recognitionRef = useRef<any>(null);
+  const lipSync = useLipSync();
   const { toast } = useToast();
 
   // Session persistence for "continue where you left off"
