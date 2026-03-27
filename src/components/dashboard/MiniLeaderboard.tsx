@@ -22,33 +22,34 @@ const MiniLeaderboard = () => {
 
   useEffect(() => {
     const load = async () => {
-      // Try weekly first
+      const now = new Date().toISOString();
+
+      // Only count weekly_xp for users whose reset hasn't passed yet (current week)
       const { data } = await supabase
         .from("user_gamification")
-        .select("user_id, weekly_xp, xp, level")
+        .select("user_id, weekly_xp, xp, level, weekly_reset_at")
         .order("weekly_xp", { ascending: false })
-        .limit(5);
+        .limit(20);
 
       if (!data || data.length === 0) {
         setLoading(false);
         return;
       }
 
-      const hasWeeklyXp = data.some((r: any) => r.weekly_xp > 0);
-      let finalData = data;
+      // Zero out weekly_xp for users whose week already expired
+      const adjusted = data.map((r: any) => ({
+        ...r,
+        weekly_xp: r.weekly_reset_at && new Date(r.weekly_reset_at) > new Date() ? r.weekly_xp : 0,
+      }));
+
+      const hasWeeklyXp = adjusted.some((r: any) => r.weekly_xp > 0);
+      let finalData: any[];
 
       if (!hasWeeklyXp) {
-        // Fallback to total XP ranking
-        const { data: totalData } = await supabase
-          .from("user_gamification")
-          .select("user_id, weekly_xp, xp, level")
-          .order("xp", { ascending: false })
-          .limit(5);
-        if (totalData && totalData.length > 0) {
-          finalData = totalData;
-        }
+        finalData = [...adjusted].sort((a: any, b: any) => b.xp - a.xp).slice(0, 5);
         setIsWeekly(false);
       } else {
+        finalData = [...adjusted].sort((a: any, b: any) => b.weekly_xp - a.weekly_xp).slice(0, 5);
         setIsWeekly(true);
       }
 
