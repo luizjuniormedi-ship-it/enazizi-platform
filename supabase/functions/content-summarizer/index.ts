@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
 import ENAZIZI_PROMPT from "../_shared/enazizi-prompt.ts";
+import { searchPubMed, formatPubMedForPrompt, extractSearchTopic } from "../_shared/pubmed-search.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -52,6 +53,21 @@ serve(async (req) => {
 
     if (userContext) {
       systemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
+    }
+
+    // Search PubMed for relevant articles based on user's question
+    const topic = extractSearchTopic(messages || []);
+    if (topic.length >= 3) {
+      try {
+        const articles = await searchPubMed(topic, 3);
+        const pubmedBlock = formatPubMedForPrompt(articles);
+        if (pubmedBlock) {
+          systemPrompt += pubmedBlock;
+          systemPrompt += `\n\nINSTRUÇÃO OBRIGATÓRIA: Inclua uma seção "🔬 ARTIGOS CIENTÍFICOS (PubMed/NLM)" ao final do resumo citando os artigos acima com título, autores, periódico, ano e link. Estes são artigos REAIS da Biblioteca Nacional de Medicina (NLM/NIH).`;
+        }
+      } catch (e) {
+        console.error("PubMed enrichment failed (non-blocking):", e);
+      }
     }
 
     const response = await aiFetch({
