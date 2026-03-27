@@ -75,11 +75,9 @@ const MiniLeaderboard = () => {
       if (idx >= 0) {
         setUserRank(idx + 1);
       } else {
-        const { count } = await supabase
-          .from("user_gamification")
-          .select("id", { count: "exact", head: true })
-          .gt(hasWeeklyXp ? "weekly_xp" : "xp", 0);
-        setUserRank(count ? count + 1 : null);
+        // User not in top 5; estimate position
+        const activeCount = adjusted.filter((r: any) => (hasWeeklyXp ? r.weekly_xp : r.xp) > 0).length;
+        setUserRank(activeCount ? activeCount + 1 : null);
       }
 
       setLoading(false);
