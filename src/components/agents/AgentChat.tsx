@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useNavigate } from "react-router-dom";
-import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Save, Upload, GraduationCap, Maximize2, Minimize2, Search, Paperclip, MoreVertical, Copy, ArrowRight } from "lucide-react";
+import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Save, Upload, GraduationCap, Maximize2, Minimize2, Search, Paperclip, MoreVertical, Copy, ArrowRight, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
@@ -85,12 +85,15 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [actionTimeline, setActionTimeline] = useState<{ label: string; icon: string; time: string }[]>([]);
   const [sendCooldown, setSendCooldown] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speakingMsgIdx, setSpeakingMsgIdx] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isUploadingRef = useRef(false);
   const autoPromptFiredRef = useRef(false);
   const previousContentRef = useRef<string>("");
   const previousContentLoadedRef = useRef(false);
+  const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
 
   // Session persistence for "continue where you left off"
@@ -666,6 +669,73 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     toast({ title: "Copiado!", description: "Texto copiado para a área de transferência." });
   };
 
+  // Speech-to-Text
+  const hasSpeechRecognition = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "pt-BR";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    let finalTranscript = "";
+    recognition.onresult = (event: any) => {
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript + " ";
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      setInput(finalTranscript + interim);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  };
+
+  // Text-to-Speech
+  const hasSpeechSynthesis = typeof window !== "undefined" && "speechSynthesis" in window;
+
+  const speakText = (text: string, msgIdx: number) => {
+    if (speakingMsgIdx === msgIdx) {
+      window.speechSynthesis.cancel();
+      setSpeakingMsgIdx(null);
+      return;
+    }
+    window.speechSynthesis.cancel();
+    // Strip markdown for cleaner speech
+    const clean = text.replace(/[#*_`~>\[\]()!|]/g, "").replace(/\n{2,}/g, ". ").replace(/\n/g, " ");
+    const utterance = new SpeechSynthesisUtterance(clean);
+    utterance.lang = "pt-BR";
+    utterance.rate = 1;
+    // Try to pick a pt-BR voice
+    const voices = window.speechSynthesis.getVoices();
+    const ptVoice = voices.find(v => v.lang.startsWith("pt-BR")) || voices.find(v => v.lang.startsWith("pt"));
+    if (ptVoice) utterance.voice = ptVoice;
+    utterance.onend = () => setSpeakingMsgIdx(null);
+    utterance.onerror = () => setSpeakingMsgIdx(null);
+    setSpeakingMsgIdx(msgIdx);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Cleanup speech on unmount
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.stop();
+      window.speechSynthesis?.cancel();
+    };
+  }, []);
+
   const content = (
     <div className={`flex flex-col animate-fade-in min-w-0 w-full ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-full"}`}>
       {/* Header — Tutor style */}
@@ -857,6 +927,12 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
                     className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-background/50 backdrop-blur-sm" title="Copiar">
                     <Copy className="h-3.5 w-3.5 text-muted-foreground" />
                   </button>
+                  {hasSpeechSynthesis && (
+                    <button onClick={() => speakText(msg.content, i)}
+                      className="absolute top-2 right-9 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-background/50 backdrop-blur-sm" title={speakingMsgIdx === i ? "Parar" : "Ouvir"}>
+                      {speakingMsgIdx === i ? <VolumeX className="h-3.5 w-3.5 text-primary animate-pulse" /> : <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />}
+                    </button>
+                  )}
                   {/* Save & Link buttons */}
                   <div className="flex gap-2 mt-2 pt-2 border-t border-border/30 empty:hidden">
                     {onSaveMessage && i > 0 && !isLoading && (
@@ -913,13 +989,20 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
       {/* Input — Enhanced */}
       <div className="flex gap-2">
         <Input
-          placeholder={placeholder}
-          className="bg-background/60 backdrop-blur-sm border-border/60 text-sm h-10 sm:h-11 rounded-xl"
+          placeholder={isListening ? "🎤 Ouvindo..." : placeholder}
+          className={`bg-background/60 backdrop-blur-sm border-border/60 text-sm h-10 sm:h-11 rounded-xl ${isListening ? "ring-2 ring-red-400/50 border-red-400/50" : ""}`}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           disabled={isLoading}
         />
+        {hasSpeechRecognition && (
+          <Button onClick={toggleListening} size="icon" variant={isListening ? "destructive" : "outline"}
+            className={`flex-shrink-0 h-10 w-10 sm:h-11 sm:w-11 rounded-xl ${isListening ? "animate-pulse" : ""}`}
+            title={isListening ? "Parar de ouvir" : "Falar"}>
+            {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </Button>
+        )}
         <Button onClick={() => handleSend()} size="icon"
           className="glow flex-shrink-0 h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
           disabled={isLoading || sendCooldown || !input.trim()}>
