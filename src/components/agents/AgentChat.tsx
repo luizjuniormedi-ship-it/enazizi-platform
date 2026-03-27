@@ -85,12 +85,15 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [actionTimeline, setActionTimeline] = useState<{ label: string; icon: string; time: string }[]>([]);
   const [sendCooldown, setSendCooldown] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speakingMsgIdx, setSpeakingMsgIdx] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isUploadingRef = useRef(false);
   const autoPromptFiredRef = useRef(false);
   const previousContentRef = useRef<string>("");
   const previousContentLoadedRef = useRef(false);
+  const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
 
   // Session persistence for "continue where you left off"
