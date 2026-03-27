@@ -48,6 +48,7 @@ const navGroups: NavGroup[] = [
       { to: "/dashboard/resumos", icon: BookOpen, label: "📖 Resumidor" },
       { to: "/dashboard/apostilas", icon: BookOpen, label: "📚 Apostilas & Resumos" },
       { to: "/dashboard/cronicas", icon: BookOpen, label: "📖 Crônicas Médicas" },
+      { to: "/dashboard/feynman", icon: BookOpen, label: "💡 Método Feynman" },
       
     ],
   },
