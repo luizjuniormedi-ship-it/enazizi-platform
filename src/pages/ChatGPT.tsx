@@ -886,7 +886,7 @@ const ChatGPT = () => {
                 <History className="h-4 w-4 mr-2" /> Histórico
               </DropdownMenuItem>
               <DropdownMenuItem onClick={toggleAvatar3D}>
-                <Bot className="h-4 w-4 mr-2" /> {showAvatar3D ? "Ocultar Avatar 3D" : "Mostrar Avatar 3D"}
+                <Film className="h-4 w-4 mr-2" /> {showAvatar3D ? "Ocultar Avatar" : "Mostrar Avatar"}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={toggleAutoSpeak}>
                 {autoSpeak ? <VolumeX className="h-4 w-4 mr-2" /> : <Volume2 className="h-4 w-4 mr-2" />}
