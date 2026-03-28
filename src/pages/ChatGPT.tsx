@@ -167,8 +167,7 @@ const ChatGPT = () => {
   const stopSpeaking = useCallback(() => {
     window.speechSynthesis?.cancel();
     setIsSpeaking(false);
-    lipSync.stopSpeaking();
-  }, [lipSync]);
+  }, []);
 
   // STT
   const hasSpeechRecognition = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
