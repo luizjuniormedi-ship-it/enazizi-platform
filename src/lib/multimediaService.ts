@@ -25,6 +25,7 @@ export const createMultimediaState = (text: string): MultimediaState => ({
   avatar_video_url: null,
   voice_type: "default",
   avatar_type: "3d-doctor",
+  avatar_style: "cinematic",
   status_audio: "idle",
   status_avatar: "idle",
 });
