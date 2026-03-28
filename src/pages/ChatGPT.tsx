@@ -1257,9 +1257,9 @@ const ChatGPT = () => {
             })()}
           </div>
 
-          {/* Avatar 3D */}
+          {/* Cinematic Avatar */}
           {showAvatar3D && (
-            <TutorAvatar3D isSpeaking={isSpeaking} lipSync={lipSync} className="h-32 sm:h-40 mb-2" />
+            <CinematicAvatar isSpeaking={isSpeaking} compact className="h-32 sm:h-40 mb-2 rounded-xl" />
           )}
 
           {/* Chat Messages — Premium */}

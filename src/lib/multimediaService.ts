@@ -116,6 +116,7 @@ export async function generateAvatar(
       avatar_video_url: `avatar-live:${Date.now()}`,
       voice_type: "browser-tts",
       avatar_type: "3d-doctor",
+      avatar_style: "cinematic",
       status_audio: "idle",
       status_avatar: "ready",
     });
