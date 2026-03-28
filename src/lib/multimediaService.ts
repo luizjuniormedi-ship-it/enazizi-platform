@@ -12,6 +12,7 @@ export interface MultimediaState {
   avatar_video_url: string | null;
   voice_type: string;
   avatar_type: string;
+  avatar_style: "cinematic" | "3d" | "video";
   status_audio: MediaStatus;
   status_avatar: MediaStatus;
   error_audio?: string;

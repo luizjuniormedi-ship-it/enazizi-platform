@@ -17,8 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import { mapTopicToSpecialty } from "@/lib/mapTopicToSpecialty";
-import TutorAvatar3D from "@/components/agents/TutorAvatar3D";
-import { useLipSync } from "@/hooks/useLipSync";
+import CinematicAvatar from "@/components/agents/CinematicAvatar";
 import MultimediaControls from "@/components/agents/MultimediaControls";
 
 type Msg = { role: "user" | "assistant"; content: string };
