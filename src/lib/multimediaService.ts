@@ -75,6 +75,7 @@ export async function generateAudio(
       avatar_video_url: null,
       voice_type: "browser-tts",
       avatar_type: "3d-doctor",
+      avatar_style: "cinematic",
       status_audio: "ready",
       status_avatar: "idle",
     });
