@@ -120,7 +120,6 @@ const ChatGPT = () => {
   const [autoSpeak, setAutoSpeak] = useState(() => localStorage.getItem("tutor-auto-speak") === "true");
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const lipSync = useLipSync();
   const recognitionRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
