@@ -158,12 +158,11 @@ const ChatGPT = () => {
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.lang = "pt-BR";
     utterance.rate = 1.05;
-    utterance.onstart = () => { setIsSpeaking(true); lipSync.startSpeaking(); };
-    utterance.onboundary = (e) => { if (e.name === "word") { const word = clean.slice(e.charIndex, e.charIndex + (e.charLength || 5)); lipSync.feedWord(word); } };
-    utterance.onend = () => { setIsSpeaking(false); lipSync.stopSpeaking(); };
-    utterance.onerror = () => { setIsSpeaking(false); lipSync.stopSpeaking(); };
+    utterance.onstart = () => { setIsSpeaking(true); };
+    utterance.onend = () => { setIsSpeaking(false); };
+    utterance.onerror = () => { setIsSpeaking(false); };
     window.speechSynthesis.speak(utterance);
-  }, [lipSync]);
+  }, []);
 
   const stopSpeaking = useCallback(() => {
     window.speechSynthesis?.cancel();
