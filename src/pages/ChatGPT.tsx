@@ -4,7 +4,7 @@ import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useLocation } from "react-router-dom";
-import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap, LogOut, AlertTriangle, Maximize2, Minimize2, MoreVertical, Copy, ChevronUp, Zap, Brain, Heart, Bone, Eye, Pill, Baby, Microscope, Activity, X, Flame, ArrowRight, Target, TrendingUp, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
+import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap, LogOut, AlertTriangle, Maximize2, Minimize2, MoreVertical, Copy, ChevronUp, Zap, Brain, Heart, Bone, Eye, Pill, Baby, Microscope, Activity, X, Flame, ArrowRight, Target, TrendingUp, Mic, MicOff, Volume2, VolumeX, Film } from "lucide-react";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
