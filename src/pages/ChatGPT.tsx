@@ -4,7 +4,7 @@ import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useLocation } from "react-router-dom";
-import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap, LogOut, AlertTriangle, Maximize2, Minimize2, MoreVertical, Copy, ChevronUp, Zap, Brain, Heart, Bone, Eye, Pill, Baby, Microscope, Activity, X, Flame, ArrowRight, Target, TrendingUp, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
+import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Sparkles, BookOpen, HelpCircle, Stethoscope, RefreshCw, BarChart3, GraduationCap, LogOut, AlertTriangle, Maximize2, Minimize2, MoreVertical, Copy, ChevronUp, Zap, Brain, Heart, Bone, Eye, Pill, Baby, Microscope, Activity, X, Flame, ArrowRight, Target, TrendingUp, Mic, MicOff, Volume2, VolumeX, Film } from "lucide-react";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
@@ -17,8 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import { mapTopicToSpecialty } from "@/lib/mapTopicToSpecialty";
-import TutorAvatar3D from "@/components/agents/TutorAvatar3D";
-import { useLipSync } from "@/hooks/useLipSync";
+import CinematicAvatar from "@/components/agents/CinematicAvatar";
 import MultimediaControls from "@/components/agents/MultimediaControls";
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -121,7 +120,6 @@ const ChatGPT = () => {
   const [autoSpeak, setAutoSpeak] = useState(() => localStorage.getItem("tutor-auto-speak") === "true");
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const lipSync = useLipSync();
   const recognitionRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -160,18 +158,16 @@ const ChatGPT = () => {
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.lang = "pt-BR";
     utterance.rate = 1.05;
-    utterance.onstart = () => { setIsSpeaking(true); lipSync.startSpeaking(); };
-    utterance.onboundary = (e) => { if (e.name === "word") { const word = clean.slice(e.charIndex, e.charIndex + (e.charLength || 5)); lipSync.feedWord(word); } };
-    utterance.onend = () => { setIsSpeaking(false); lipSync.stopSpeaking(); };
-    utterance.onerror = () => { setIsSpeaking(false); lipSync.stopSpeaking(); };
+    utterance.onstart = () => { setIsSpeaking(true); };
+    utterance.onend = () => { setIsSpeaking(false); };
+    utterance.onerror = () => { setIsSpeaking(false); };
     window.speechSynthesis.speak(utterance);
-  }, [lipSync]);
+  }, []);
 
   const stopSpeaking = useCallback(() => {
     window.speechSynthesis?.cancel();
     setIsSpeaking(false);
-    lipSync.stopSpeaking();
-  }, [lipSync]);
+  }, []);
 
   // STT
   const hasSpeechRecognition = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
@@ -890,7 +886,7 @@ const ChatGPT = () => {
                 <History className="h-4 w-4 mr-2" /> Histórico
               </DropdownMenuItem>
               <DropdownMenuItem onClick={toggleAvatar3D}>
-                <Bot className="h-4 w-4 mr-2" /> {showAvatar3D ? "Ocultar Avatar 3D" : "Mostrar Avatar 3D"}
+                <Film className="h-4 w-4 mr-2" /> {showAvatar3D ? "Ocultar Avatar" : "Mostrar Avatar"}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={toggleAutoSpeak}>
                 {autoSpeak ? <VolumeX className="h-4 w-4 mr-2" /> : <Volume2 className="h-4 w-4 mr-2" />}
@@ -1261,9 +1257,9 @@ const ChatGPT = () => {
             })()}
           </div>
 
-          {/* Avatar 3D */}
+          {/* Cinematic Avatar */}
           {showAvatar3D && (
-            <TutorAvatar3D isSpeaking={isSpeaking} lipSync={lipSync} className="h-32 sm:h-40 mb-2" />
+            <CinematicAvatar isSpeaking={isSpeaking} compact className="h-32 sm:h-40 mb-2 rounded-xl" />
           )}
 
           {/* Chat Messages — Premium */}

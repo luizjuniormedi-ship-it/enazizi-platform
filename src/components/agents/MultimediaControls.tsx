@@ -1,19 +1,17 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Volume2, VolumeX, Pause, Play, RotateCcw, User2, Loader2, AlertCircle } from "lucide-react";
+import { Volume2, VolumeX, Pause, Play, RotateCcw, Film, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { type MediaStatus, generateAudio, generateAvatar } from "@/lib/multimediaService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import TutorAvatar3D from "@/components/agents/TutorAvatar3D";
-import { useLipSync } from "@/hooks/useLipSync";
+import CinematicAvatar from "@/components/agents/CinematicAvatar";
 
 interface MultimediaControlsProps {
   text: string;
-  /** Compact mode for mobile */
   compact?: boolean;
 }
 
-const SPEED_OPTIONS = [1, 1.5, 2] as const;
+const SPEED_OPTIONS = [1, 1.25, 1.5, 2] as const;
 
 export default function MultimediaControls({ text, compact }: MultimediaControlsProps) {
   // Audio state
@@ -29,15 +27,12 @@ export default function MultimediaControls({ text, compact }: MultimediaControls
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [avatarSpeaking, setAvatarSpeaking] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
-  const lipSync = useLipSync();
+  const [currentSubtitle, setCurrentSubtitle] = useState("");
 
   const hasTTS = typeof window !== "undefined" && "speechSynthesis" in window;
 
-  // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      window.speechSynthesis?.cancel();
-    };
+    return () => { window.speechSynthesis?.cancel(); };
   }, []);
 
   const cleanText = useCallback((t: string) => {
@@ -51,29 +46,14 @@ export default function MultimediaControls({ text, compact }: MultimediaControls
 
   const playAudio = useCallback(() => {
     if (!hasTTS) return;
-
     window.speechSynthesis.cancel();
     const clean = cleanText(text);
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.lang = "pt-BR";
     utterance.rate = speed;
-
-    utterance.onstart = () => {
-      setIsPlaying(true);
-      setIsPaused(false);
-      setAudioStatus("ready");
-    };
-    utterance.onend = () => {
-      setIsPlaying(false);
-      setIsPaused(false);
-    };
-    utterance.onerror = () => {
-      setIsPlaying(false);
-      setIsPaused(false);
-      setAudioError("Erro na reprodução");
-      setAudioStatus("error");
-    };
-
+    utterance.onstart = () => { setIsPlaying(true); setIsPaused(false); setAudioStatus("ready"); };
+    utterance.onend = () => { setIsPlaying(false); setIsPaused(false); };
+    utterance.onerror = () => { setIsPlaying(false); setIsPaused(false); setAudioError("Erro na reprodução"); setAudioStatus("error"); };
     utteranceRef.current = utterance;
     window.speechSynthesis.speak(utterance);
   }, [text, speed, hasTTS, cleanText]);
@@ -83,41 +63,22 @@ export default function MultimediaControls({ text, compact }: MultimediaControls
       generateAudio(text, (status, _url, error) => {
         setAudioStatus(status);
         if (error) setAudioError(error);
-        if (status === "ready") {
-          playAudio();
-        }
+        if (status === "ready") playAudio();
       });
     } else {
       playAudio();
     }
   }, [audioStatus, text, playAudio]);
 
-  const pauseAudio = useCallback(() => {
-    window.speechSynthesis?.pause();
-    setIsPaused(true);
-  }, []);
-
-  const resumeAudio = useCallback(() => {
-    window.speechSynthesis?.resume();
-    setIsPaused(false);
-  }, []);
-
-  const stopAudio = useCallback(() => {
-    window.speechSynthesis?.cancel();
-    setIsPlaying(false);
-    setIsPaused(false);
-  }, []);
-
-  const repeatAudio = useCallback(() => {
-    stopAudio();
-    setTimeout(() => playAudio(), 100);
-  }, [stopAudio, playAudio]);
+  const pauseAudio = useCallback(() => { window.speechSynthesis?.pause(); setIsPaused(true); }, []);
+  const resumeAudio = useCallback(() => { window.speechSynthesis?.resume(); setIsPaused(false); }, []);
+  const stopAudio = useCallback(() => { window.speechSynthesis?.cancel(); setIsPlaying(false); setIsPaused(false); }, []);
+  const repeatAudio = useCallback(() => { stopAudio(); setTimeout(() => playAudio(), 100); }, [stopAudio, playAudio]);
 
   const cycleSpeed = useCallback(() => {
     setSpeed((prev) => {
       const idx = SPEED_OPTIONS.indexOf(prev as any);
       const next = SPEED_OPTIONS[(idx + 1) % SPEED_OPTIONS.length];
-      // If currently playing, restart with new speed
       if (isPlaying) {
         window.speechSynthesis?.cancel();
         setTimeout(() => {
@@ -136,16 +97,14 @@ export default function MultimediaControls({ text, compact }: MultimediaControls
     });
   }, [isPlaying, text, cleanText]);
 
-  // ─── AVATAR ──────────────────────────────────────────────
+  // ─── CINEMATIC AVATAR ──────────────────────────────────
 
   const handleAvatarClick = useCallback(() => {
     if (avatarStatus === "idle") {
       generateAvatar(text, (status, _url, error) => {
         setAvatarStatus(status);
         if (error) setAvatarError(error);
-        if (status === "ready") {
-          setShowAvatarModal(true);
-        }
+        if (status === "ready") setShowAvatarModal(true);
       });
     } else {
       setShowAvatarModal(true);
@@ -162,36 +121,40 @@ export default function MultimediaControls({ text, compact }: MultimediaControls
 
     utterance.onstart = () => {
       setAvatarSpeaking(true);
-      lipSync.startSpeaking();
+      setCurrentSubtitle("");
     };
     utterance.onboundary = (e) => {
       if (e.name === "word") {
-        const word = clean.slice(e.charIndex, e.charIndex + (e.charLength || 5));
-        lipSync.feedWord(word);
+        // Show ~8 words around current position as subtitle
+        const words = clean.split(/\s+/);
+        const charsSoFar = e.charIndex;
+        let wordIdx = 0;
+        let charCount = 0;
+        for (let i = 0; i < words.length; i++) {
+          charCount += words[i].length + 1;
+          if (charCount >= charsSoFar) { wordIdx = i; break; }
+        }
+        const start = Math.max(0, wordIdx - 2);
+        const end = Math.min(words.length, wordIdx + 6);
+        setCurrentSubtitle(words.slice(start, end).join(" "));
       }
     };
-    utterance.onend = () => {
-      setAvatarSpeaking(false);
-      lipSync.stopSpeaking();
-    };
-    utterance.onerror = () => {
-      setAvatarSpeaking(false);
-      lipSync.stopSpeaking();
-    };
+    utterance.onend = () => { setAvatarSpeaking(false); setCurrentSubtitle(""); };
+    utterance.onerror = () => { setAvatarSpeaking(false); setCurrentSubtitle(""); };
 
     window.speechSynthesis.speak(utterance);
-  }, [text, speed, hasTTS, cleanText, lipSync]);
+  }, [text, speed, hasTTS, cleanText]);
 
   const stopAvatarNarration = useCallback(() => {
     window.speechSynthesis?.cancel();
     setAvatarSpeaking(false);
-    lipSync.stopSpeaking();
-  }, [lipSync]);
+    setCurrentSubtitle("");
+  }, []);
 
   // Auto-start narration when modal opens
   useEffect(() => {
     if (showAvatarModal && avatarStatus === "ready" && !avatarSpeaking) {
-      const timer = setTimeout(startAvatarNarration, 300);
+      const timer = setTimeout(startAvatarNarration, 400);
       return () => clearTimeout(timer);
     }
   }, [showAvatarModal]); // intentionally minimal deps
@@ -234,7 +197,7 @@ export default function MultimediaControls({ text, compact }: MultimediaControls
             ) : (
               <Volume2 className="h-3 w-3" />
             )}
-            <span>{audioStatus === "generating" ? "Gerando..." : "Ouvir"}</span>
+            <span>{audioStatus === "generating" ? "Gerando..." : "Ouvir explicação"}</span>
           </Button>
         ) : (
           <div className="flex items-center gap-0.5">
@@ -269,7 +232,7 @@ export default function MultimediaControls({ text, compact }: MultimediaControls
 
         <div className="w-px h-4 bg-border/40 mx-1" />
 
-        {/* Avatar button */}
+        {/* Cinematic Avatar button */}
         <Button
           variant="ghost"
           size="sm"
@@ -280,9 +243,9 @@ export default function MultimediaControls({ text, compact }: MultimediaControls
           {avatarStatus === "generating" ? (
             <Loader2 className="h-3 w-3 animate-spin" />
           ) : (
-            <User2 className="h-3 w-3" />
+            <Film className="h-3 w-3" />
           )}
-          <span>{avatarStatus === "generating" ? "Preparando..." : "Avatar"}</span>
+          <span>{avatarStatus === "generating" ? "Preparando tutor..." : "Assistir explicação"}</span>
         </Button>
 
         {statusIcon(avatarStatus, avatarError)}
@@ -293,51 +256,50 @@ export default function MultimediaControls({ text, compact }: MultimediaControls
         )}
       </div>
 
-      {/* Avatar Modal */}
+      {/* Cinematic Avatar Modal */}
       <Dialog open={showAvatarModal} onOpenChange={(open) => { if (!open) handleCloseAvatarModal(); }}>
-        <DialogContent className="sm:max-w-lg p-0 overflow-hidden bg-gradient-to-br from-card via-card to-accent/5 border-primary/20">
-          <DialogHeader className="p-4 pb-0">
-            <DialogTitle className="text-sm font-semibold flex items-center gap-2">
-              <User2 className="h-4 w-4 text-primary" />
-              Avatar Narrador
+        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden bg-slate-950 border-primary/20 gap-0">
+          <DialogHeader className="p-3 pb-0">
+            <DialogTitle className="text-sm font-semibold flex items-center gap-2 text-white">
+              <Film className="h-4 w-4 text-primary" />
+              Explicação Narrada
             </DialogTitle>
           </DialogHeader>
 
-          <div className="p-4 space-y-3">
-            {/* 3D Avatar */}
-            <div className="rounded-xl overflow-hidden border border-border/50 bg-background/50">
-              <TutorAvatar3D isSpeaking={avatarSpeaking} lipSync={lipSync} className="h-48 sm:h-64" />
+          <div className="space-y-0">
+            {/* Cinematic Avatar — 16:9 aspect */}
+            <div className="aspect-video">
+              <CinematicAvatar
+                isSpeaking={avatarSpeaking}
+                subtitle={currentSubtitle}
+                className="h-full w-full"
+              />
             </div>
 
             {/* Controls */}
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-2 p-3 bg-slate-900/80">
               {avatarSpeaking ? (
                 <>
-                  <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={stopAvatarNarration}>
+                  <Button variant="outline" size="sm" className="gap-1.5 text-xs border-slate-700 text-slate-200 hover:bg-slate-800" onClick={stopAvatarNarration}>
                     <Pause className="h-3.5 w-3.5" /> Pausar
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => { stopAvatarNarration(); setTimeout(startAvatarNarration, 200); }}>
+                  <Button variant="outline" size="sm" className="gap-1.5 text-xs border-slate-700 text-slate-200 hover:bg-slate-800" onClick={() => { stopAvatarNarration(); setTimeout(startAvatarNarration, 200); }}>
                     <RotateCcw className="h-3.5 w-3.5" /> Repetir
                   </Button>
                 </>
               ) : (
-                <Button size="sm" className="gap-1.5 text-xs bg-gradient-to-r from-primary to-primary/80" onClick={startAvatarNarration}>
+                <Button size="sm" className="gap-1.5 text-xs bg-gradient-to-r from-primary to-primary/80 text-primary-foreground" onClick={startAvatarNarration}>
                   <Play className="h-3.5 w-3.5" /> Narrar
                 </Button>
               )}
               <Button
                 variant="outline"
                 size="sm"
-                className="text-xs font-mono font-bold"
+                className="text-xs font-mono font-bold border-slate-700 text-slate-200 hover:bg-slate-800"
                 onClick={cycleSpeed}
               >
                 {speed}x
               </Button>
-            </div>
-
-            {/* Text preview */}
-            <div className="max-h-32 overflow-y-auto rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground leading-relaxed">
-              {text.slice(0, 500)}{text.length > 500 ? "..." : ""}
             </div>
           </div>
         </DialogContent>

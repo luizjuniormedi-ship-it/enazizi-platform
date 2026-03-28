@@ -12,6 +12,7 @@ export interface MultimediaState {
   avatar_video_url: string | null;
   voice_type: string;
   avatar_type: string;
+  avatar_style: "cinematic" | "3d" | "video";
   status_audio: MediaStatus;
   status_avatar: MediaStatus;
   error_audio?: string;
@@ -24,6 +25,7 @@ export const createMultimediaState = (text: string): MultimediaState => ({
   avatar_video_url: null,
   voice_type: "default",
   avatar_type: "3d-doctor",
+  avatar_style: "cinematic",
   status_audio: "idle",
   status_avatar: "idle",
 });
@@ -73,6 +75,7 @@ export async function generateAudio(
       avatar_video_url: null,
       voice_type: "browser-tts",
       avatar_type: "3d-doctor",
+      avatar_style: "cinematic",
       status_audio: "ready",
       status_avatar: "idle",
     });
@@ -113,6 +116,7 @@ export async function generateAvatar(
       avatar_video_url: `avatar-live:${Date.now()}`,
       voice_type: "browser-tts",
       avatar_type: "3d-doctor",
+      avatar_style: "cinematic",
       status_audio: "idle",
       status_avatar: "ready",
     });
