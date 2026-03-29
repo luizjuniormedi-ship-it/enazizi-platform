@@ -55,7 +55,7 @@ const MedicalChronicles = lazy(() => import("./pages/MedicalChronicles"));
 const FeynmanTrainer = lazy(() => import("./pages/FeynmanTrainer"));
 const AIMentor = lazy(() => import("./pages/AIMentor"));
 const SmartPlanner = lazy(() => import("./pages/SmartPlanner"));
-
+const AdminMonitoring = lazy(() => import("./pages/AdminMonitoring"));
 
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
@@ -133,6 +133,7 @@ const App = () => (
               </Route>
               <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />
+                <Route path="monitoring" element={<AdminMonitoring />} />
               </Route>
               <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
