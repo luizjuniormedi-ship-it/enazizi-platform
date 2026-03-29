@@ -6,6 +6,29 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// ── Approval-score weight logic (mirrored from client) ─────────
+interface PlanWeights {
+  reviewWeight: number;
+  theoryWeight: number;
+  questionsWeight: number;
+  practicalWeight: number;
+  maxNewTopics: number;
+  phase: string;
+}
+
+function adjustPlanByApprovalScore(score: number): PlanWeights {
+  if (score < 50) {
+    return { reviewWeight: 0.40, theoryWeight: 0.15, questionsWeight: 0.35, practicalWeight: 0.10, maxNewTopics: 1, phase: "critico" };
+  }
+  if (score < 70) {
+    return { reviewWeight: 0.30, theoryWeight: 0.15, questionsWeight: 0.30, practicalWeight: 0.25, maxNewTopics: 2, phase: "atencao" };
+  }
+  if (score < 85) {
+    return { reviewWeight: 0.20, theoryWeight: 0.10, questionsWeight: 0.25, practicalWeight: 0.45, maxNewTopics: 3, phase: "competitivo" };
+  }
+  return { reviewWeight: 0.15, theoryWeight: 0.05, questionsWeight: 0.20, practicalWeight: 0.60, maxNewTopics: 2, phase: "pronto" };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS")
     return new Response(null, { headers: corsHeaders });
@@ -35,13 +58,11 @@ Deno.serve(async (req) => {
     const today = new Date().toISOString().split("T")[0];
 
     // Fetch inputs in parallel
-    const [revisoesRes, errorsRes, desempenhoRes, temasRes, profilesRes] =
+    const [revisoesRes, errorsRes, desempenhoRes, temasRes, profilesRes, domainRes, practiceRes, examRes, anamnesisRes, clinicalRes] =
       await Promise.all([
         adminClient
           .from("revisoes")
-          .select(
-            "id, tema_id, data_revisao, prioridade, risco_esquecimento, status, temas_estudados(tema, especialidade)"
-          )
+          .select("id, tema_id, data_revisao, prioridade, risco_esquecimento, status, temas_estudados(tema, especialidade)")
           .eq("user_id", userId)
           .eq("status", "pendente")
           .lte("data_revisao", today)
@@ -56,9 +77,7 @@ Deno.serve(async (req) => {
           .limit(10),
         adminClient
           .from("desempenho_questoes")
-          .select(
-            "tema_id, taxa_acerto, questoes_feitas, temas_estudados(tema, especialidade)"
-          )
+          .select("tema_id, taxa_acerto, questoes_feitas, temas_estudados(tema, especialidade)")
           .eq("user_id", userId)
           .order("taxa_acerto", { ascending: true })
           .limit(15),
@@ -73,11 +92,62 @@ Deno.serve(async (req) => {
           .from("user_topic_profiles")
           .select("topic, accuracy, mastery_level, next_review_at")
           .eq("user_id", userId),
+        adminClient
+          .from("medical_domain_map")
+          .select("specialty, domain_score, questions_answered")
+          .eq("user_id", userId),
+        adminClient
+          .from("practice_attempts")
+          .select("correct")
+          .eq("user_id", userId)
+          .limit(500),
+        adminClient
+          .from("exam_sessions")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("status", "finished")
+          .limit(10),
+        adminClient
+          .from("anamnesis_results")
+          .select("id")
+          .eq("user_id", userId)
+          .limit(10),
+        adminClient
+          .from("simulation_history")
+          .select("id")
+          .eq("user_id", userId)
+          .limit(10),
       ]);
 
-    // Build task list with priorities
+    // ── Compute approval score ──────────────────────────────────
+    const domains = (domainRes.data || []) as any[];
+    const avgDomain = domains.length > 0
+      ? domains.reduce((s: number, d: any) => s + (d.domain_score || 0), 0) / domains.length
+      : 0;
+
+    const practiceData = (practiceRes.data || []) as any[];
+    const totalPractice = practiceData.length;
+    const totalCorrect = practiceData.filter((a: any) => a.correct).length;
+    const accuracy = totalPractice > 0 ? (totalCorrect / totalPractice) * 100 : 0;
+    const volumeScore = Math.min((totalPractice / 500) * 100, 100);
+
+    const activities = [
+      totalPractice > 0,
+      (examRes.data || []).length > 0,
+      (clinicalRes.data || []).length > 0,
+      (anamnesisRes.data || []).length > 0,
+    ].filter(Boolean).length;
+    const diversityScore = (activities / 6) * 100;
+
+    const approvalScore = Math.round(
+      accuracy * 0.35 + avgDomain * 0.25 + volumeScore * 0.20 + diversityScore * 0.20
+    );
+
+    const weights = adjustPlanByApprovalScore(approvalScore);
+
+    // ── Build task list ─────────────────────────────────────────
     interface DailyTask {
-      type: "review" | "error_fix" | "practice" | "new_topic";
+      type: "review" | "error_fix" | "practice" | "new_topic" | "clinical" | "simulado";
       topic: string;
       specialty: string;
       priority: number;
@@ -89,7 +159,8 @@ Deno.serve(async (req) => {
 
     const tasks: DailyTask[] = [];
 
-    // 1. Overdue reviews (highest priority)
+    // 1. Overdue reviews
+    const reviewBonus = weights.phase === "critico" ? 5 : 0;
     for (const rev of (revisoesRes.data || []) as any[]) {
       const tema = rev.temas_estudados?.tema || "Revisão";
       const spec = rev.temas_estudados?.especialidade || "Geral";
@@ -98,15 +169,15 @@ Deno.serve(async (req) => {
         type: "review",
         topic: tema,
         specialty: spec,
-        priority: 90 + (isHighRisk ? 5 : 0),
-        reason: `Revisão atrasada${isHighRisk ? " (alto risco de esquecimento)" : ""}`,
+        priority: 90 + (isHighRisk ? 5 : 0) + reviewBonus,
+        reason: `Revisão atrasada${isHighRisk ? " (alto risco)" : ""}`,
         suggested_module: "cronograma",
         estimated_minutes: 15,
         meta: { revisao_id: rev.id, tema_id: rev.tema_id },
       });
     }
 
-    // 2. Error bank items
+    // 2. Error bank
     for (const err of (errorsRes.data || []) as any[]) {
       tasks.push({
         type: "error_fix",
@@ -120,36 +191,70 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 3. Weak topics (low accuracy)
+    // 3. Weak topics
     const weakTopics = ((desempenhoRes.data || []) as any[]).filter(
       (d: any) => d.taxa_acerto < 60 && d.questoes_feitas >= 3
     );
+    const coveredByReview = new Set(tasks.map((t) => t.topic));
     for (const w of weakTopics) {
       const tema = w.temas_estudados?.tema || "Tema";
+      if (coveredByReview.has(tema)) continue;
       const spec = w.temas_estudados?.especialidade || "Geral";
-      // Avoid duplicates with reviews
-      if (tasks.some((t) => t.topic === tema)) continue;
       tasks.push({
         type: "practice",
         topic: tema,
         specialty: spec,
         priority: 55 + Math.round((60 - w.taxa_acerto) / 2),
-        reason: `Acerto de ${Math.round(w.taxa_acerto)}% — pratique mais questões`,
+        reason: `Acerto de ${Math.round(w.taxa_acerto)}% — pratique mais`,
         suggested_module: "questoes",
         estimated_minutes: 20,
         meta: { tema_id: w.tema_id },
       });
     }
 
-    // 4. New topics from active temas
-    const coveredTopics = new Set(tasks.map((t) => t.topic));
+    // 4. Clinical practice (boosted in competitive/ready phases)
+    const clinicalPriority = weights.phase === "pronto" ? 80 : weights.phase === "competitivo" ? 65 : 40;
+    if (weights.practicalWeight >= 0.20) {
+      tasks.push({
+        type: "clinical",
+        topic: "Plantão Simulado",
+        specialty: "Prática Clínica",
+        priority: clinicalPriority,
+        reason: weights.phase === "pronto" ? "Fase final: pratique casos clínicos" : "Treino prático recomendado",
+        suggested_module: "plantao",
+        estimated_minutes: 30,
+      });
+      tasks.push({
+        type: "clinical",
+        topic: "Anamnese",
+        specialty: "Semiologia",
+        priority: clinicalPriority - 5,
+        reason: "Treino de anamnese com paciente virtual",
+        suggested_module: "anamnese",
+        estimated_minutes: 25,
+      });
+    }
+
+    // 5. Simulado (boosted in ready phase)
+    if (weights.phase === "pronto" || weights.phase === "competitivo") {
+      tasks.push({
+        type: "simulado",
+        topic: "Simulado Completo",
+        specialty: "Geral",
+        priority: weights.phase === "pronto" ? 85 : 55,
+        reason: "Teste em condições reais de prova",
+        suggested_module: "simulados",
+        estimated_minutes: 60,
+      });
+    }
+
+    // 6. New topics (limited by weights)
+    const covered = new Set(tasks.map((t) => t.topic));
+    let newCount = 0;
     for (const tema of (temasRes.data || []) as any[]) {
-      if (coveredTopics.has(tema.tema)) continue;
-      // Check if topic profile shows it needs review
-      const profile = ((profilesRes.data || []) as any[]).find(
-        (p: any) => p.topic === tema.tema
-      );
-      if (profile && profile.mastery_level >= 4) continue; // already mastered
+      if (covered.has(tema.tema)) continue;
+      const profile = ((profilesRes.data || []) as any[]).find((p: any) => p.topic === tema.tema);
+      if (profile && profile.mastery_level >= 4) continue;
       tasks.push({
         type: "new_topic",
         topic: tema.tema,
@@ -160,12 +265,32 @@ Deno.serve(async (req) => {
         estimated_minutes: 25,
         meta: { tema_id: tema.id },
       });
-      if (tasks.filter((t) => t.type === "new_topic").length >= 3) break;
+      newCount++;
+      if (newCount >= weights.maxNewTopics) break;
     }
 
-    // Sort and limit to manageable daily load (~8 tasks)
+    // ── Apply weight-based slot limits ──────────────────────────
     tasks.sort((a, b) => b.priority - a.priority);
-    const dailyTasks = tasks.slice(0, 8);
+    const maxTotal = 8;
+    const slots: Record<string, number> = {};
+    const limits: Record<string, number> = {
+      review: Math.max(1, Math.round(maxTotal * weights.reviewWeight)),
+      error_fix: Math.max(1, Math.round(maxTotal * weights.questionsWeight)),
+      practice: Math.max(1, Math.round(maxTotal * weights.questionsWeight)),
+      clinical: Math.round(maxTotal * weights.practicalWeight),
+      simulado: Math.round(maxTotal * weights.practicalWeight),
+      new_topic: weights.maxNewTopics,
+    };
+
+    const dailyTasks: DailyTask[] = [];
+    for (const task of tasks) {
+      if (dailyTasks.length >= maxTotal) break;
+      const type = task.type;
+      if ((slots[type] || 0) < (limits[type] || 2)) {
+        dailyTasks.push(task);
+        slots[type] = (slots[type] || 0) + 1;
+      }
+    }
 
     // Upsert into daily_plans
     const planData = {
@@ -181,9 +306,7 @@ Deno.serve(async (req) => {
       .from("daily_plans")
       .upsert(planData, { onConflict: "user_id,plan_date" });
 
-    // If upsert fails due to no unique constraint, try insert
     if (upsertErr) {
-      // Check if plan already exists
       const { data: existing } = await adminClient
         .from("daily_plans")
         .select("id")
@@ -194,10 +317,7 @@ Deno.serve(async (req) => {
       if (existing) {
         await adminClient
           .from("daily_plans")
-          .update({
-            plan_json: dailyTasks,
-            total_blocks: dailyTasks.length,
-          })
+          .update({ plan_json: dailyTasks, total_blocks: dailyTasks.length })
           .eq("id", existing.id);
       } else {
         await adminClient.from("daily_plans").insert(planData);
@@ -208,6 +328,9 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         date: today,
+        approval_score: approvalScore,
+        phase: weights.phase,
+        weights,
         total_tasks: dailyTasks.length,
         tasks: dailyTasks,
       }),

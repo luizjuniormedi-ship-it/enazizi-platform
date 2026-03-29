@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { adjustPlanByApprovalScore, type PlanWeights } from "./approvalScoreWeights";
 
 export type RecommendationType = "review" | "practice" | "clinical" | "new" | "error_review" | "simulado";
 export type TargetModule = "tutor" | "questoes" | "flashcards" | "plantao" | "anamnese" | "simulado" | "cronograma" | "banco-erros";
@@ -19,7 +20,6 @@ interface EngineInput {
   userId: string;
 }
 
-// ── helpers ────────────────────────────────────────────────────────
 function id(prefix: string, idx: number) {
   return `${prefix}-${idx}`;
 }
@@ -28,7 +28,74 @@ function cap(n: number, max = 100) {
   return Math.min(Math.max(Math.round(n), 0), max);
 }
 
-// ── main engine ────────────────────────────────────────────────────
+// ── Compute approval score (same logic as ApprovalScoreCard) ───
+async function computeApprovalScore(userId: string, practiceData: any[], examData: any[], anamnesisData: any[], clinicalData: any[]): Promise<number> {
+  const { data: domainData } = await supabase
+    .from("medical_domain_map")
+    .select("specialty, domain_score, questions_answered")
+    .eq("user_id", userId);
+
+  const specialties = domainData || [];
+  const avgDomain = specialties.length > 0
+    ? specialties.reduce((s, d) => s + (d.domain_score || 0), 0) / specialties.length
+    : 0;
+
+  const totalPractice = practiceData.length;
+  const totalCorrect = practiceData.filter((a: any) => a.correct).length;
+  const accuracy = totalPractice > 0 ? (totalCorrect / totalPractice) * 100 : 0;
+
+  const volumeScore = Math.min((totalPractice / 500) * 100, 100);
+
+  const activities = [
+    totalPractice > 0,
+    examData.length > 0,
+    clinicalData.length > 0,
+    anamnesisData.length > 0,
+    false, // discursivas — not loaded here, minor impact
+    false, // summaries
+  ].filter(Boolean).length;
+  const diversityScore = (activities / 6) * 100;
+
+  return Math.round(
+    accuracy * 0.35 +
+    avgDomain * 0.25 +
+    volumeScore * 0.20 +
+    diversityScore * 0.20
+  );
+}
+
+// ── Apply weights to limit slots per type ─────────────────────
+function applyWeights(recs: StudyRecommendation[], weights: PlanWeights, maxTotal: number): StudyRecommendation[] {
+  const slotReview = Math.max(1, Math.round(maxTotal * weights.reviewWeight));
+  const slotQuestions = Math.max(1, Math.round(maxTotal * weights.questionsWeight));
+  const slotClinical = Math.round(maxTotal * weights.practicalWeight);
+  const slotNew = weights.maxNewTopics;
+
+  const buckets: Record<string, number> = {
+    review: 0, error_review: 0, practice: 0, clinical: 0, simulado: 0, new: 0,
+  };
+  const limits: Record<string, number> = {
+    review: slotReview,
+    error_review: slotQuestions,
+    practice: slotQuestions,
+    clinical: slotClinical,
+    simulado: slotClinical,
+    new: slotNew,
+  };
+
+  const result: StudyRecommendation[] = [];
+  for (const rec of recs) {
+    if (result.length >= maxTotal) break;
+    const b = rec.type;
+    if ((buckets[b] || 0) < (limits[b] || 2)) {
+      result.push(rec);
+      buckets[b] = (buckets[b] || 0) + 1;
+    }
+  }
+  return result;
+}
+
+// ── main engine ────────────────────────────────────────────────
 export async function generateRecommendations({ userId }: EngineInput): Promise<StudyRecommendation[]> {
   const recs: StudyRecommendation[] = [];
 
@@ -95,10 +162,19 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       .limit(10),
   ]);
 
-  // ── 1. Overdue / pending reviews (highest priority) ──────────
+  // ── Compute approval score & weights ─────────────────────────
+  const practiceAttempts = practiceRes.data || [];
+  const exams = examRes.data || [];
+  const anamnesisResults = anamnesisRes.data || [];
+  const clinicalSims = clinicalSimRes.data || [];
+
+  const approvalScore = await computeApprovalScore(userId, practiceAttempts, exams, anamnesisResults, clinicalSims);
+  const weights = adjustPlanByApprovalScore(approvalScore);
+
+  // ── 1. Overdue / pending reviews ─────────────────────────────
   const today = new Date().toISOString().split("T")[0];
   const pendingReviews = (revisoesRes.data || []) as any[];
-  
+
   for (let i = 0; i < Math.min(pendingReviews.length, 5); i++) {
     const rev = pendingReviews[i];
     const isOverdue = rev.data_revisao <= today;
@@ -106,13 +182,15 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     const spec = rev.temas_estudados?.especialidade || "Geral";
     const basePriority = isOverdue ? 95 : 80;
     const riskBonus = rev.risco_esquecimento === "alto" ? 5 : rev.risco_esquecimento === "medio" ? 2 : 0;
+    // Boost review priority in critical phase
+    const phaseBonus = weights.phase === "critico" ? 5 : 0;
 
     recs.push({
       id: id("rev", i),
       type: "review",
       topic: tema,
       specialty: spec,
-      priority: cap(basePriority + riskBonus - i),
+      priority: cap(basePriority + riskBonus + phaseBonus - i),
       reason: isOverdue
         ? `Revisão atrasada de "${tema}" — risco de esquecer!`
         : `Revisão programada de "${tema}" para hoje.`,
@@ -122,7 +200,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     });
   }
 
-  // ── 2. Error bank — recurring mistakes ───────────────────────
+  // ── 2. Error bank ────────────────────────────────────────────
   const errors = (errorBankRes.data || []) as any[];
   for (let i = 0; i < Math.min(errors.length, 3); i++) {
     const err = errors[i];
@@ -140,7 +218,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     });
   }
 
-  // ── 3. Low-accuracy topics — need more practice ──────────────
+  // ── 3. Low-accuracy topics ───────────────────────────────────
   const weakTopics = (desempenhoRes.data || []).filter((d: any) => d.taxa_acerto < 60 && d.questoes_feitas >= 3) as any[];
   for (let i = 0; i < Math.min(weakTopics.length, 3); i++) {
     const w = weakTopics[i];
@@ -159,36 +237,41 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     });
   }
 
-  // ── 4. Clinical practice gap ─────────────────────────────────
-  const practiceAttempts = practiceRes.data || [];
+  // ── 4. Clinical practice ─────────────────────────────────────
   const totalPractice = practiceAttempts.length;
   const totalCorrect = practiceAttempts.filter((a: any) => a.correct).length;
   const overallAccuracy = totalPractice > 0 ? (totalCorrect / totalPractice) * 100 : 0;
-  const clinicalCount = (clinicalSimRes.data || []).length;
-  const anamnesisCount = (anamnesisRes.data || []).length;
+  const clinicalCount = clinicalSims.length;
+  const anamnesisCount = anamnesisResults.length;
 
-  if (overallAccuracy >= 70 && totalPractice >= 20 && clinicalCount < 3) {
+  // In competitive/ready phases, always suggest clinical if not enough done
+  const clinicalThreshold = weights.phase === "competitivo" || weights.phase === "pronto" ? 1 : 3;
+  const clinicalPriority = weights.phase === "pronto" ? 80 : weights.phase === "competitivo" ? 65 : 55;
+
+  if ((overallAccuracy >= 60 || weights.phase === "competitivo" || weights.phase === "pronto") && clinicalCount < clinicalThreshold + 5) {
     recs.push({
       id: "clinical-gap",
       type: "clinical",
       topic: "Simulação Clínica",
       specialty: "Prática Clínica",
-      priority: 55,
-      reason: `Boa acurácia teórica (${Math.round(overallAccuracy)}%), mas poucas simulações clínicas. Hora de praticar!`,
+      priority: clinicalPriority,
+      reason: weights.phase === "pronto"
+        ? "Fase final: pratique casos clínicos para consolidar."
+        : `Boa acurácia (${Math.round(overallAccuracy)}%). Hora de praticar no plantão!`,
       targetModule: "plantao",
       targetPath: "/dashboard/simulacao-clinica",
       estimatedMinutes: 30,
     });
   }
 
-  if (overallAccuracy >= 60 && totalPractice >= 10 && anamnesisCount < 2) {
+  if ((overallAccuracy >= 50 || weights.phase !== "critico") && anamnesisCount < 5) {
     recs.push({
       id: "anamnesis-gap",
       type: "clinical",
       topic: "Treino de Anamnese",
       specialty: "Semiologia",
-      priority: 50,
-      reason: "Você ainda não praticou anamnese suficientemente. Treine a coleta de história clínica.",
+      priority: clinicalPriority - 5,
+      reason: "Treine a coleta de história clínica com paciente virtual.",
       targetModule: "anamnese",
       targetPath: "/dashboard/anamnese",
       estimatedMinutes: 25,
@@ -196,22 +279,24 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   }
 
   // ── 5. Simulado readiness ────────────────────────────────────
-  const exams = examRes.data || [];
-  if (overallAccuracy >= 65 && totalPractice >= 30 && exams.length < 3) {
+  const simuladoPriority = weights.phase === "pronto" ? 85 : weights.phase === "competitivo" ? 60 : 45;
+  if (overallAccuracy >= 55 && totalPractice >= 20) {
     recs.push({
       id: "simulado-ready",
       type: "simulado",
       topic: "Simulado Completo",
       specialty: "Geral",
-      priority: 45,
-      reason: `Com ${Math.round(overallAccuracy)}% de acurácia, você está pronto para um simulado completo.`,
+      priority: simuladoPriority,
+      reason: weights.phase === "pronto"
+        ? "Fase de prova: faça simulados completos regularmente."
+        : `Com ${Math.round(overallAccuracy)}% de acurácia, teste em condições reais.`,
       targetModule: "simulado",
       targetPath: "/dashboard/simulados",
       estimatedMinutes: 60,
     });
   }
 
-  // ── 6. New topics to explore ─────────────────────────────────
+  // ── 6. New topics ────────────────────────────────────────────
   const temas = (temasRes.data || []) as any[];
   const studiedSpecialties = new Set(temas.map((t: any) => t.especialidade));
   const CORE_SPECIALTIES = [
@@ -220,7 +305,8 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   ];
   const unexplored = CORE_SPECIALTIES.filter((s) => !studiedSpecialties.has(s));
 
-  for (let i = 0; i < Math.min(unexplored.length, 2); i++) {
+  const maxNew = weights.maxNewTopics;
+  for (let i = 0; i < Math.min(unexplored.length, maxNew); i++) {
     recs.push({
       id: id("new", i),
       type: "new",
@@ -234,7 +320,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     });
   }
 
-  // ── Sort by priority and return top recommendations ──────────
+  // ── Sort by priority then apply weight-based slot limits ─────
   recs.sort((a, b) => b.priority - a.priority);
-  return recs.slice(0, 8);
+  return applyWeights(recs, weights, 8);
 }
