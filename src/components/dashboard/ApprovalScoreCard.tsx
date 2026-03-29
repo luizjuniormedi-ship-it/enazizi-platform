@@ -163,15 +163,15 @@ export default function ApprovalScoreCard() {
         {/* No data state — uncertainty framing */}
         {!scoreData && (
           <div className="px-4 pb-3 text-center">
-            <p className="text-xs text-muted-foreground mb-1">
-              Você ainda não sabe sua chance de aprovação
+           <p className="text-xs text-muted-foreground mb-1">
+              Descubra sua chance de aprovação
             </p>
             <p className="text-[11px] text-muted-foreground/70 mb-2">
-              Sem esse dado, é difícil saber se está no caminho certo
+              Analisamos seu desempenho e calculamos sua probabilidade
             </p>
             <Button size="sm" variant="outline" onClick={handleRecalculate} disabled={isRecalculating}>
               <RefreshCw className={`h-3.5 w-3.5 mr-1 ${isRecalculating ? "animate-spin" : ""}`} />
-              Descobrir agora
+              Calcular agora
             </Button>
           </div>
         )}
