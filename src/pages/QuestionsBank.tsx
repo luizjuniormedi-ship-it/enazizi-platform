@@ -351,6 +351,7 @@ const QuestionsBank = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <StudyContextBanner />
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
