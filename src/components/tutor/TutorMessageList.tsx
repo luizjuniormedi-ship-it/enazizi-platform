@@ -11,8 +11,28 @@ function linkifyBareUrls(text: string): string {
   // Don't touch URLs already inside markdown link syntax [text](url)
   return text.replace(
     /(?<!\]\()(?<!\()(https?:\/\/[^\s\)>\]]+)/g,
-    (url) => `[${url.includes('pubmed') ? 'Ver no PubMed' : url.includes('doi.org') ? 'Ver DOI' : 'Abrir link'}](${url})`
+    (url) => `[${url.includes("pubmed") ? "Ver no PubMed" : url.includes("doi.org") ? "Ver DOI" : "Abrir link"}](${url})`
   );
+}
+
+function sanitizeReferenceUrl(href?: string): string {
+  if (!href) return "https://pubmed.ncbi.nlm.nih.gov/";
+
+  const trimmed = href.trim();
+  const lower = trimmed.toLowerCase();
+  const hasPlaceholder = ["url_do_pubmed", "url_do_doi", "/pmid", "/doi", "termo+de+busca"].some((token) =>
+    lower.includes(token)
+  );
+
+  if (hasPlaceholder) {
+    if (lower.includes("doi")) return "https://doi.org/";
+    return "https://pubmed.ncbi.nlm.nih.gov/?term=medicina";
+  }
+
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+  if (trimmed.startsWith("www.")) return `https://${trimmed}`;
+
+  return "https://pubmed.ncbi.nlm.nih.gov/";
 }
 
 interface TutorMessageListProps {
@@ -42,9 +62,14 @@ const TutorMessageList = forwardRef<HTMLDivElement, TutorMessageListProps>(
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
-                      a: ({ href, children, ...props }) => (
-                        <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80" {...props}>{children}</a>
-                      ),
+                      a: ({ href, children, ...props }) => {
+                        const safeHref = sanitizeReferenceUrl(href);
+                        return (
+                          <a href={safeHref} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80" {...props}>
+                            {children}
+                          </a>
+                        );
+                      },
                     }}
                   >{linkifyBareUrls(msg.content)}</ReactMarkdown>
                 </div>
