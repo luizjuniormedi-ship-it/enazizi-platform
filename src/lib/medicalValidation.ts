@@ -6,6 +6,9 @@ export const NON_MEDICAL_CONTENT_REGEX = /(direito|jur[ií]d|penal|constituciona
 
 export const MEDICAL_CONTENT_REGEX = /(medicin|sa[uú]de|paciente|diagn[oó]st|tratament|sintom|doen[cç]|fisiopat|farmac|anatom|cl[íi]nic|cirurg|pediatr|ginec|obstetr|preventiva|resid[eê]ncia|enare|revalida|cardio|pneumo|neuro|go|sus|protocolo|diretriz)/i;
 
+// Heurística para bloquear vazamento de conteúdo em inglês nas questões.
+export const ENGLISH_QUESTION_REGEX = /\b(the|which|following|patient|diagnosis|treatment|management|most likely|except|all of the following|correct answer|best option)\b/i;
+
 export function isMedicalContent(text: string): boolean {
   return MEDICAL_CONTENT_REGEX.test(text) && !NON_MEDICAL_CONTENT_REGEX.test(text);
 }
@@ -13,4 +16,9 @@ export function isMedicalContent(text: string): boolean {
 export function isMedicalQuestion(q: { statement?: string; topic?: string; explanation?: string; options?: string[] }): boolean {
   const text = `${q.topic || ""} ${q.statement || ""} ${q.explanation || ""} ${(q.options || []).join(" ")}`;
   return MEDICAL_CONTENT_REGEX.test(text) && !NON_MEDICAL_CONTENT_REGEX.test(text);
+}
+
+export function isPortugueseMedicalQuestion(q: { statement?: string; topic?: string; explanation?: string; options?: string[] }): boolean {
+  const text = `${q.topic || ""} ${q.statement || ""} ${q.explanation || ""} ${(q.options || []).join(" ")}`;
+  return isMedicalQuestion(q) && !ENGLISH_QUESTION_REGEX.test(text);
 }
