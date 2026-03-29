@@ -273,7 +273,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     const w = weakTopics[i];
     const tema = w.temas_estudados?.tema || "Tema";
     const spec = w.temas_estudados?.especialidade || "Geral";
-    recs.push({
+    addRec({
       id: id("weak", i),
       type: "practice",
       topic: tema,
@@ -283,6 +283,8 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       targetModule: "questoes",
       targetPath: "/dashboard/banco-questoes",
       estimatedMinutes: 20,
+      objective: "reinforcement",
+      _groupKey: `practice:${tema}`,
     });
   }
 
