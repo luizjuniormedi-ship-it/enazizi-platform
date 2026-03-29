@@ -40,7 +40,7 @@ const mobileNavGroups: MobileNavGroup[] = [
   {
     title: "Estudo",
     items: [
-      { to: "/dashboard/cronograma", label: "📅 Cronograma" },
+      { to: "/dashboard/planner", label: "🧠 Planner IA" },
       { to: "/dashboard/flashcards", label: "🃏 Flashcards" },
       { to: "/dashboard/gerar-flashcards", label: "🃏 Gerador Flashcards" },
       { to: "/dashboard/resumos", label: "📖 Resumidor" },

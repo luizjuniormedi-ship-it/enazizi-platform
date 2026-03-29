@@ -70,7 +70,7 @@ export default function SmartRecommendations({ stats, metrics, hasCompletedDiagn
         icon: <Brain className="h-5 w-5 text-purple-500" />,
         title: "Revisões Pendentes",
         description: `Você tem ${metrics.pendingRevisoes} revisões pendentes. Não perca o timing!`,
-        path: "/dashboard/cronograma",
+        path: "/dashboard/planner",
         priority: "alta",
         reason: `${metrics.pendingRevisoes} revisões acumuladas`,
       });

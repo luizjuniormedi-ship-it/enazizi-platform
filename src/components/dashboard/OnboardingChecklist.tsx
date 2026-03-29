@@ -84,7 +84,7 @@ export default function OnboardingChecklist({ stats, metrics, hasCompletedDiagno
       title: "Monte seu Cronograma",
       description: "Adicione temas e ative a revisão espaçada",
       xp: 40,
-      path: "/dashboard/cronograma",
+      path: "/dashboard/planner",
       isComplete: stats.todayTotal > 0 || metrics.pendingRevisoes > 0,
     },
     {

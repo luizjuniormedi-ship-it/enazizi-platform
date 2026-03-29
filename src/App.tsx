@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AdminRoute from "@/components/auth/AdminRoute";
 import ProfessorRoute from "@/components/auth/ProfessorRoute";
 import { lazy, Suspense } from "react";
+import { Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 
@@ -102,7 +103,7 @@ const App = () => (
               <Route path="/register" element={<Register />} />
               <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                 <Route index element={<Dashboard />} />
-                <Route path="cronograma" element={<CronogramaInteligente />} />
+                <Route path="cronograma" element={<Navigate to="/dashboard/planner" replace />} />
                 <Route path="flashcards" element={<Flashcards />} />
                 <Route path="gerar-flashcards" element={<FlashcardGenerator />} />
                 <Route path="simulados" element={<Simulados />} />

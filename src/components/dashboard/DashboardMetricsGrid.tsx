@@ -42,7 +42,7 @@ const DashboardMetricsGrid = ({ stats, metrics }: Props) => {
           <div className="text-sm text-muted-foreground mt-1">Dias de streak</div>
         </Link>
 
-        <Link to="/dashboard/cronograma" className="glass-card p-5 hover:border-primary/30 transition-all group relative overflow-hidden">
+        <Link to="/dashboard/planner" className="glass-card p-5 hover:border-primary/30 transition-all group relative overflow-hidden">
           <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
           <CalendarDays className={cn("h-6 w-6 mb-3", metrics.pendingRevisoes > 0 ? "text-yellow-500" : "text-green-500")} />
           <div className="text-3xl font-bold">{metrics.pendingRevisoes}</div>
@@ -69,7 +69,7 @@ const DashboardMetricsGrid = ({ stats, metrics }: Props) => {
               { to: "/dashboard/questoes", icon: PenTool, value: metrics.questionsCreated, label: "Questões criadas" },
               { to: "/dashboard/plantao", icon: Activity, value: metrics.clinicalSimulations, label: "Simulações clínicas" },
               { to: "/dashboard/anamnese", icon: ClipboardList, value: metrics.anamnesisCompleted, label: "Anamneses" },
-              { to: "/dashboard/cronograma", icon: CheckCircle2, value: `${stats.completedTasks}/${stats.totalTasks}`, label: "Tarefas concluídas" },
+              { to: "/dashboard/planner", icon: CheckCircle2, value: `${stats.completedTasks}/${stats.totalTasks}`, label: "Tarefas concluídas" },
               { to: "/dashboard/resumos", icon: FileCheck, value: metrics.summariesCreated, label: "Resumos gerados" },
               { to: "/dashboard/uploads", icon: Upload, value: stats.uploads, label: "Uploads" },
               { to: "/dashboard/discursivas", icon: Stethoscope, value: metrics.discursivasCompleted, label: "Discursivas feitas" },

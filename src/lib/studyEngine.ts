@@ -224,7 +224,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
         ? `Revisão atrasada de "${tema}" — risco de esquecer!`
         : `Revisão programada de "${tema}" para hoje.`,
       targetModule: "cronograma",
-      targetPath: "/dashboard/cronograma",
+      targetPath: "/dashboard/planner",
       estimatedMinutes: 15,
     });
   }

@@ -55,7 +55,7 @@ const DashboardWarnings = ({
         title: "Seu cronograma está ficando para trás!",
         message: `Apenas ${taskPercent}% das suas tarefas foram concluídas. Retome o foco agora!`,
         severity: "red",
-        action: { label: "Ver Cronograma", path: "/dashboard/cronograma" },
+        action: { label: "Ver Planner", path: "/dashboard/planner" },
       });
     }
   }
