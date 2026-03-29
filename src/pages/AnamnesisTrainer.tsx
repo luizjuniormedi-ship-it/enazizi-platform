@@ -221,6 +221,9 @@ const AnamnesisTrainer = () => {
   const { toast } = useToast();
   const { addXp } = useGamification();
   const isMobile = useIsMobile();
+  const [searchParams] = useSearchParams();
+  const paramOrigin = (searchParams.get("origin") as SessionOrigin) || "manual";
+  const { startSession: startTrackedSession, completeSession: completeTrackedSession } = useSessionTracking();
 
   const [phase, setPhase] = useState<Phase>("lobby");
   const [specialty, setSpecialty] = useState("Clínica Médica");
@@ -361,6 +364,11 @@ const AnamnesisTrainer = () => {
       setDifferentials("");
       setProposedConduct("");
       setPhase("active");
+
+      // Track session
+      if (user) {
+        startTrackedSession({ type: "anamnesis", userId: user.id, specialty, difficulty, origin: paramOrigin });
+      }
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
     } finally {
@@ -486,6 +494,12 @@ const AnamnesisTrainer = () => {
           time_total_minutes: Math.round(elapsed / 60),
           xp_earned: data.xp_earned || 0,
         } as any);
+
+        // Complete tracked session
+        await completeTrackedSession("anamnesis", {
+          finalScore: data.final_score || 0,
+          categoriesCovered: Object.keys(data.categories_summary || {}),
+        });
 
         if ((data.final_score || 0) < 70) {
           const missedCategories = Object.entries(data.categories_summary || {})
