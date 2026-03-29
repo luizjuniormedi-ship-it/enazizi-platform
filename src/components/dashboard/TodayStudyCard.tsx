@@ -83,7 +83,7 @@ export default function TodayStudyCard() {
           <Button
             size="sm"
             className="gap-1.5 font-semibold"
-            onClick={() => navigate(topTask.targetPath)}
+            onClick={() => navigate(buildStudyPath(topTask))}
           >
             <Play className="h-3.5 w-3.5" />
             Iniciar próximo bloco
