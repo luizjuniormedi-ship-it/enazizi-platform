@@ -24,7 +24,7 @@ export default function PendingReviewsCard() {
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4">
-          <p className="text-xs text-muted-foreground">✅ Nenhuma revisão pendente</p>
+          <p className="text-xs text-muted-foreground">✅ Revisões em dia</p>
         </CardContent>
       </Card>
     );
