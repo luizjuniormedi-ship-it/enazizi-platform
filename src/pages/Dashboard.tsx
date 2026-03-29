@@ -152,17 +152,26 @@ const Dashboard = () => {
          ══════════════════════════════════════════ */}
       <TodayStudyCard />
 
+      {/* Focus selector */}
+      <FocusSelector />
+
       {/* ══════════════════════════════════════════
           BLOCO 2 — PROGRESSO E APROVAÇÃO
          ══════════════════════════════════════════ */}
       {!isNewUser && (
-        <ApprovalScoreCard />
+        <>
+          <ApprovalScoreCard />
+          <ApprovalTimeline />
+        </>
       )}
 
       {/* ══════════════════════════════════════════
           BLOCO 2.5 — NIVELAMENTO
          ══════════════════════════════════════════ */}
       <DiagnosticSummaryCard />
+
+      {/* Behavioral alerts */}
+      <BehavioralAlerts />
 
       {/* ══════════════════════════════════════════
           BLOCO 3 — REVISÕES E FRAQUEZAS
