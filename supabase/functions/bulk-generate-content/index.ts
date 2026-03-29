@@ -115,7 +115,7 @@ FORMATO JSON OBRIGATÓRIO:
     const response = await aiFetch({
       model: "google/gemini-2.5-flash",
       messages: [
-        { role: "system", content: "Você é um professor de medicina especialista em criar questões de residência médica. Responda APENAS com JSON válido, sem markdown.\n\n⛔ CONTEÚDO PROIBIDO: NUNCA gere questões ou flashcards sobre declarações financeiras, conflitos de interesse, relações com empresas/indústrias farmacêuticas, honorários, pagamentos de palestrantes, vínculos empregatícios com laboratórios. Foque EXCLUSIVAMENTE em conteúdo clínico-científico para estudo médico." },
+        { role: "system", content: "Você é um professor de medicina especialista em criar questões de residência médica. Responda APENAS com JSON válido, sem markdown.\n\nIDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA gere questões, alternativas, explicações ou flashcards em inglês. Inglês permitido APENAS em nomes de artigos/guidelines.\n\n⛔ CONTEÚDO PROIBIDO: NUNCA gere questões ou flashcards sobre declarações financeiras, conflitos de interesse, relações com empresas/indústrias farmacêuticas, honorários, pagamentos de palestrantes, vínculos empregatícios com laboratórios. Foque EXCLUSIVAMENTE em conteúdo clínico-científico para estudo médico." },
         { role: "user", content: prompt },
       ],
     });
