@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Server, RefreshCw, Wifi, WifiOff, XCircle } from "lucide-react";
-import { DashboardData } from "@/components/monitoring/MonitoringTypes";
+import { DashboardData, MentorSummary, StudentRow, RiskAlert } from "@/components/monitoring/MonitoringTypes";
 import { OverviewTab } from "@/components/monitoring/OverviewTab";
 import { StudentsTab } from "@/components/monitoring/StudentsTab";
 import { PerformanceTab } from "@/components/monitoring/PerformanceTab";
@@ -18,6 +18,7 @@ export default function AdminMonitoring() {
   const { session } = useAuth();
   const [autoRefresh, setAutoRefresh] = useState(true);
 
+  // System metrics (existing)
   const { data: dashboard, isLoading, refetch, isFetching } = useQuery<DashboardData>({
     queryKey: ["admin-monitoring-dashboard"],
     queryFn: async () => {
@@ -37,6 +38,31 @@ export default function AdminMonitoring() {
     refetchInterval: autoRefresh ? 60_000 : false,
   });
 
+  // Mentor intelligence (new)
+  const { data: mentorData } = useQuery<{
+    students: StudentRow[];
+    alerts: RiskAlert[];
+    summary: MentorSummary;
+  }>({
+    queryKey: ["admin-mentor-intelligence"],
+    queryFn: async () => {
+      const { data: { session: s } } = await supabase.auth.getSession();
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mentor-intelligence`;
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${s?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch mentor data");
+      return response.json();
+    },
+    enabled: !!session,
+    staleTime: 60_000,
+    refetchInterval: autoRefresh ? 120_000 : false,
+  });
+
+  // System alerts (existing)
   const { data: alertsData } = useQuery({
     queryKey: ["admin-monitoring-alerts"],
     queryFn: async () => {
@@ -94,12 +120,27 @@ export default function AdminMonitoring() {
             <TabsTrigger value="system" className="text-xs">Sistema</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview"><OverviewTab d={d} /></TabsContent>
-          <TabsContent value="students"><StudentsTab students={d.students || []} /></TabsContent>
-          <TabsContent value="performance"><PerformanceTab d={d} /></TabsContent>
-          <TabsContent value="risk"><RiskAlertsTab alerts={d.riskAlerts || []} systemAlerts={(alertsData as any)?.alerts || []} /></TabsContent>
-          <TabsContent value="ai"><AIUsageTab d={d} /></TabsContent>
-          <TabsContent value="system"><SystemHealthTab d={d} /></TabsContent>
+          <TabsContent value="overview">
+            <OverviewTab d={d} mentorSummary={mentorData?.summary} />
+          </TabsContent>
+          <TabsContent value="students">
+            <StudentsTab students={mentorData?.students || d.students || []} />
+          </TabsContent>
+          <TabsContent value="performance">
+            <PerformanceTab d={d} />
+          </TabsContent>
+          <TabsContent value="risk">
+            <RiskAlertsTab
+              alerts={mentorData?.alerts || d.riskAlerts || []}
+              systemAlerts={(alertsData as any)?.alerts || []}
+            />
+          </TabsContent>
+          <TabsContent value="ai">
+            <AIUsageTab d={d} />
+          </TabsContent>
+          <TabsContent value="system">
+            <SystemHealthTab d={d} />
+          </TabsContent>
         </Tabs>
       ) : (
         <Card>
