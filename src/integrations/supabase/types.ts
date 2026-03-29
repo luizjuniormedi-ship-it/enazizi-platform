@@ -100,6 +100,50 @@ export type Database = {
         }
         Relationships: []
       }
+      anamnesis_interactions: {
+        Row: {
+          category: string | null
+          coaching_tip: string | null
+          created_at: string
+          id: string
+          patient_response: string | null
+          quality_score: number | null
+          question_text: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          coaching_tip?: string | null
+          created_at?: string
+          id?: string
+          patient_response?: string | null
+          quality_score?: number | null
+          question_text: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          coaching_tip?: string | null
+          created_at?: string
+          id?: string
+          patient_response?: string | null
+          quality_score?: number | null
+          question_text?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anamnesis_interactions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "anamnesis_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       anamnesis_results: {
         Row: {
           categories_covered: Json
@@ -144,6 +188,59 @@ export type Database = {
           xp_earned?: number | null
         }
         Relationships: []
+      }
+      anamnesis_sessions: {
+        Row: {
+          categories_covered: Json
+          created_at: string
+          difficulty: string
+          final_score: number | null
+          finished_at: string | null
+          id: string
+          scenario_id: string | null
+          session_origin: string
+          specialty: string
+          started_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          categories_covered?: Json
+          created_at?: string
+          difficulty?: string
+          final_score?: number | null
+          finished_at?: string | null
+          id?: string
+          scenario_id?: string | null
+          session_origin?: string
+          specialty: string
+          started_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          categories_covered?: Json
+          created_at?: string
+          difficulty?: string
+          final_score?: number | null
+          finished_at?: string | null
+          id?: string
+          scenario_id?: string | null
+          session_origin?: string
+          specialty?: string
+          started_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anamnesis_sessions_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       chat_conversations: {
         Row: {
@@ -299,6 +396,45 @@ export type Database = {
           treatment?: string | null
           user_id?: string
           vitals?: Json | null
+        }
+        Relationships: []
+      }
+      clinical_scenarios: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          difficulty: string
+          id: string
+          is_global: boolean
+          scenario_data: Json
+          scenario_type: string
+          specialty: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          difficulty?: string
+          id?: string
+          is_global?: boolean
+          scenario_data?: Json
+          scenario_type?: string
+          specialty: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          difficulty?: string
+          id?: string
+          is_global?: boolean
+          scenario_data?: Json
+          scenario_type?: string
+          specialty?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1386,6 +1522,59 @@ export type Database = {
           xp_earned?: number
         }
         Relationships: []
+      }
+      simulation_sessions: {
+        Row: {
+          created_at: string
+          difficulty: string
+          final_score: number | null
+          finished_at: string | null
+          id: string
+          scenario_id: string | null
+          session_data: Json
+          session_origin: string
+          specialty: string
+          started_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          difficulty?: string
+          final_score?: number | null
+          finished_at?: string | null
+          id?: string
+          scenario_id?: string | null
+          session_data?: Json
+          session_origin?: string
+          specialty: string
+          started_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          difficulty?: string
+          final_score?: number | null
+          finished_at?: string | null
+          id?: string
+          scenario_id?: string | null
+          session_data?: Json
+          session_origin?: string
+          specialty?: string
+          started_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulation_sessions_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       study_performance: {
         Row: {
