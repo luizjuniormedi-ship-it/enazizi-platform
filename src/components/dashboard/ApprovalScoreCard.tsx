@@ -7,9 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Shield, AlertTriangle, TrendingUp, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Shield, AlertTriangle, TrendingUp, ChevronRight } from "lucide-react";
+import type { DashboardMetrics } from "@/hooks/useDashboardData";
 import type { DashboardMetrics } from "@/hooks/useDashboardData";
 
 interface Props {
