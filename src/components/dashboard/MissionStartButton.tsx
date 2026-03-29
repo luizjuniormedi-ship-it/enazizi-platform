@@ -68,9 +68,9 @@ export default function MissionStartButton() {
             <Rocket className="h-6 w-6 text-primary" />
           </div>
           <div className="flex-1">
-            <h3 className="font-bold text-base">Missão do Dia</h3>
+            <h3 className="font-bold text-base">Sua Missão de Hoje</h3>
             <p className="text-xs text-muted-foreground">
-              O sistema monta seu estudo ideal automaticamente
+              Estudo personalizado com base no seu desempenho
             </p>
           </div>
         </div>
