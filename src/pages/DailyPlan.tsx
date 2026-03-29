@@ -302,10 +302,10 @@ const DailyPlan = () => {
       <div>
         <h1 className="text-xl font-bold flex items-center gap-2">
           <Zap className="h-6 w-6 text-primary" />
-          Plano do Dia
+          Plano de Hoje
         </h1>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Tarefas de hoje derivadas do seu Plano Geral e desempenho.
+          O que o sistema selecionou para você estudar hoje.
         </p>
       </div>
 

@@ -26,9 +26,6 @@ export default function StudyContextBanner() {
             {getObjectiveLabel(ctx.objective)}
           </Badge>
         )}
-        <span className="text-muted-foreground">
-          via {getSourceLabel(ctx.source)}
-        </span>
       </div>
       <Button
         variant="ghost"
