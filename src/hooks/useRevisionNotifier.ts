@@ -106,7 +106,7 @@ export function useRevisionNotifier() {
         }
 
         // Clinical practice gap notification
-        const clinicalRec = recs.find(r => r.type === "clinical");
+        const clinicalRec = recs.find((r: any) => r.type === "clinical");
         if (clinicalRec && !errorRec) {
           setTimeout(() => {
             toast({

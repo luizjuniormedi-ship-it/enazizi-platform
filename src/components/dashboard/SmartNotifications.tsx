@@ -55,7 +55,7 @@ export default function SmartNotifications() {
           .select("current_streak")
           .eq("user_id", user!.id)
           .maybeSingle(),
-        generateRecommendations({ userId: user!.id }).catch(() => []),
+        generateRecommendations({ userId: user!.id }).then(r => r.recommendations).catch(() => [] as any[]),
       ]);
 
       const overdueCount = overdueRes.count || 0;
