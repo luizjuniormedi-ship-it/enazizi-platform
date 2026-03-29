@@ -4,7 +4,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Bell, CalendarClock, Target, Flame, Brain } from "lucide-react";
+import { Bell, CalendarClock, Target, Flame, Brain, Stethoscope, BookOpen } from "lucide-react";
+import { generateRecommendations } from "@/lib/studyEngine";
+import { buildStudyPath } from "@/lib/studyRouter";
 
 interface SmartNotification {
   id: string;
@@ -27,98 +29,125 @@ export default function SmartNotifications() {
     queryFn: async () => {
       const notifs: SmartNotification[] = [];
       const now = new Date();
+      const todayStr = now.toISOString().split("T")[0];
+      const hour = now.getHours();
+
+      // Parallel data fetching
+      const [overdueRes, todayQuestionsRes, configRes, gamifRes, recsResult] = await Promise.all([
+        supabase
+          .from("revisoes")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user!.id)
+          .eq("status", "pendente")
+          .lt("data_revisao", todayStr),
+        supabase
+          .from("practice_attempts")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user!.id)
+          .gte("created_at", `${todayStr}T00:00:00`),
+        supabase
+          .from("cronograma_config")
+          .select("meta_questoes_dia")
+          .eq("user_id", user!.id)
+          .maybeSingle(),
+        supabase
+          .from("user_gamification")
+          .select("current_streak")
+          .eq("user_id", user!.id)
+          .maybeSingle(),
+        generateRecommendations({ userId: user!.id }).catch(() => []),
+      ]);
+
+      const overdueCount = overdueRes.count || 0;
+      const questionsToday = todayQuestionsRes.count || 0;
+      const streak = gamifRes.data?.current_streak || 0;
+      const recs = recsResult || [];
 
       // 1. Overdue reviews
-      const { count: overdueCount } = await supabase
-        .from("revisoes")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user!.id)
-        .eq("status", "pendente")
-        .lt("data_revisao", now.toISOString().split("T")[0]);
-
-      if (overdueCount && overdueCount > 0) {
+      if (overdueCount > 0) {
+        const reviewRec = recs.find(r => r.type === "review");
         notifs.push({
           id: "overdue-reviews",
           icon: <CalendarClock className="h-4 w-4" />,
           title: `${overdueCount} ${overdueCount === 1 ? "revisão vencida" : "revisões vencidas"}`,
           message: "Revisões atrasadas aumentam o risco de esquecimento. Faça agora para manter a retenção.",
-          action: { label: "Ir ao Cronograma", path: "/dashboard/cronograma" },
+          action: reviewRec
+            ? { label: "Revisar Agora", path: buildStudyPath(reviewRec) }
+            : { label: "Ir ao Planner", path: "/dashboard/planner" },
           severity: overdueCount > 5 ? "critical" : "warning",
         });
       }
 
-      // 2. Daily question goal
-      const todayStr = now.toISOString().split("T")[0];
-      const { count: todayQuestions } = await supabase
-        .from("practice_attempts")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user!.id)
-        .gte("created_at", `${todayStr}T00:00:00`);
-
-      const { data: configData } = await supabase
-        .from("cronograma_config")
-        .select("meta_questoes_dia")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-
-      // Only show daily goal alert if user explicitly configured a goal
-      const hasConfiguredGoal = configData !== null && configData.meta_questoes_dia !== null;
-      const dailyGoal = configData?.meta_questoes_dia || 30;
-      const questionsToday = todayQuestions || 0;
-      const hour = now.getHours();
+      // 2. Daily question goal (only if configured)
+      const hasConfiguredGoal = configRes.data !== null && configRes.data?.meta_questoes_dia !== null;
+      const dailyGoal = configRes.data?.meta_questoes_dia || 30;
 
       if (hasConfiguredGoal && hour >= 14 && questionsToday < dailyGoal * 0.5) {
+        const practiceRec = recs.find(r => r.type === "practice");
         notifs.push({
           id: "daily-goal",
           icon: <Target className="h-4 w-4" />,
           title: `Meta diária: ${questionsToday}/${dailyGoal} questões`,
           message: `Você fez apenas ${Math.round((questionsToday / dailyGoal) * 100)}% da meta de hoje. Aproveite o restante do dia!`,
-          action: { label: "Praticar Questões", path: "/dashboard/simulados" },
+          action: practiceRec
+            ? { label: "Praticar Agora", path: buildStudyPath(practiceRec) }
+            : { label: "Praticar Questões", path: "/dashboard/simulados" },
           severity: hour >= 18 ? "critical" : "warning",
         });
       }
 
       // 3. Streak risk
-      const { data: gamData } = await supabase
-        .from("user_gamification")
-        .select("current_streak")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-
-      const streak = gamData?.current_streak || 0;
       if (streak >= 3 && hour >= 16 && questionsToday === 0) {
+        const topRec = recs[0];
         notifs.push({
           id: "streak-risk",
           icon: <Flame className="h-4 w-4" />,
           title: `Streak de ${streak} dias em risco! 🔥`,
-          message: "Você ainda não estudou hoje. Faça pelo menos 1 questão para não perder sua sequência!",
-          action: { label: "Estudar Agora", path: "/dashboard/chatgpt" },
+          message: "Você ainda não estudou hoje. Faça pelo menos 1 atividade para não perder sua sequência!",
+          action: topRec
+            ? { label: "Estudar Agora", path: buildStudyPath(topRec) }
+            : { label: "Estudar Agora", path: "/dashboard/chatgpt" },
           severity: "warning",
         });
       }
 
-      // 4. High forgetting risk topics
-      const { data: highRiskReviews } = await supabase
-        .from("revisoes")
-        .select("id, temas_estudados(tema)")
-        .eq("user_id", user!.id)
-        .eq("status", "pendente")
-        .eq("risco_esquecimento", "alto")
-        .limit(5);
-
-      if (highRiskReviews && highRiskReviews.length >= 2) {
-        const topics = highRiskReviews
-          .map((r: any) => r.temas_estudados?.tema)
-          .filter(Boolean)
-          .slice(0, 3);
-
+      // 4. Topic-specific: error bank recurring mistakes
+      const errorRecs = recs.filter(r => r.type === "error_review");
+      if (errorRecs.length > 0) {
+        const topError = errorRecs[0];
         notifs.push({
-          id: "forgetting-risk",
+          id: "recurring-errors",
           icon: <Brain className="h-4 w-4" />,
-          title: `${highRiskReviews.length} temas com alto risco de esquecimento`,
-          message: topics.length > 0 ? `Temas: ${topics.join(", ")}` : "Revise agora para consolidar a memória.",
-          action: { label: "Revisar Temas", path: "/dashboard/cronograma" },
-          severity: "warning",
+          title: `Tema recorrente: "${topError.topic}"`,
+          message: topError.reason,
+          action: { label: "Corrigir Agora", path: buildStudyPath(topError) },
+          severity: topError.priority >= 80 ? "critical" : "warning",
+        });
+      }
+
+      // 5. Clinical practice gap
+      const clinicalRec = recs.find(r => r.type === "clinical");
+      if (clinicalRec) {
+        notifs.push({
+          id: "clinical-gap",
+          icon: <Stethoscope className="h-4 w-4" />,
+          title: clinicalRec.topic,
+          message: clinicalRec.reason,
+          action: { label: "Praticar", path: buildStudyPath(clinicalRec) },
+          severity: "info",
+        });
+      }
+
+      // 6. New specialty to explore
+      const newRec = recs.find(r => r.type === "new");
+      if (newRec && notifs.length < 4) {
+        notifs.push({
+          id: "new-topic",
+          icon: <BookOpen className="h-4 w-4" />,
+          title: `Nova área: ${newRec.topic}`,
+          message: newRec.reason,
+          action: { label: "Começar", path: buildStudyPath(newRec) },
+          severity: "info",
         });
       }
 
@@ -146,7 +175,7 @@ export default function SmartNotifications() {
         <Bell className="h-4 w-4 text-primary" />
         <span className="text-sm font-medium text-muted-foreground">Notificações</span>
       </div>
-      {notifications.slice(0, 3).map((n) => (
+      {notifications.slice(0, 4).map((n) => (
         <Alert key={n.id} className={`${severityStyles[n.severity]} py-3`}>
           <div className={iconColors[n.severity]}>{n.icon}</div>
           <AlertTitle className="text-sm font-semibold">{n.title}</AlertTitle>
