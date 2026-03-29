@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { adjustPlanByApprovalScore, type PlanWeights } from "./approvalScoreWeights";
+import { adjustPlanByApprovalScore, getAdaptiveMode, type PlanWeights, type AdaptiveMode } from "./approvalScoreWeights";
 import { adjustNewTopicsByLock, type ContentLockStatus } from "@/hooks/useContentLock";
 import { retrievability as fsrsRetrievability, State as FsrsState } from "./fsrs";
 import type { StudyTaskType, StudyObjective } from "./studyContext";
@@ -22,6 +22,26 @@ export interface StudyRecommendation {
   objective?: StudyObjective;
   /** Category tag for anti-duplicate grouping */
   _groupKey?: string;
+}
+
+/** Adaptive state exposed to Dashboard/Mission/Mentor */
+export interface AdaptiveState {
+  approvalScore: number;
+  weights: PlanWeights;
+  mode: AdaptiveMode;
+  lockStatus: ContentLockStatus;
+  lockReasons: string[];
+  /** Human-readable explanation of current focus */
+  focusReason: string;
+  /** Memory pressure: 0-100 based on overdue FSRS + reviews */
+  memoryPressure: number;
+  /** Overdue review count */
+  overdueCount: number;
+}
+
+export interface EngineResult {
+  recommendations: StudyRecommendation[];
+  adaptive: AdaptiveState;
 }
 
 interface EngineInput {
@@ -59,8 +79,8 @@ async function computeApprovalScore(userId: string, practiceData: any[], examDat
     examData.length > 0,
     clinicalData.length > 0,
     anamnesisData.length > 0,
-    false, // discursivas — not loaded here, minor impact
-    false, // summaries
+    false,
+    false,
   ].filter(Boolean).length;
   const diversityScore = (activities / 6) * 100;
 
@@ -103,8 +123,27 @@ function applyWeights(recs: StudyRecommendation[], weights: PlanWeights, maxTota
   return result;
 }
 
+// ── Build focus reason ────────────────────────────────────────
+function buildFocusReason(weights: PlanWeights, overdueCount: number, lockStatus: ContentLockStatus): string {
+  if (lockStatus === "blocked") {
+    return "Hoje o foco é revisão porque você tem muitas revisões atrasadas e precisa recuperar sua base.";
+  }
+  switch (weights.phase) {
+    case "critico":
+      return overdueCount > 5
+        ? `Foco em revisões — ${overdueCount} revisões atrasadas e score abaixo de 50%.`
+        : "Foco em revisões e correção de erros para recuperar sua base de conhecimento.";
+    case "atencao":
+      return "Hoje o sistema prioriza revisões e questões direcionadas para estabilizar seu desempenho.";
+    case "competitivo":
+      return "Hoje o sistema liberou simulados e prática clínica para refinar seu desempenho.";
+    case "pronto":
+      return "Fase final: simulados completos e cenários práticos para manter a prontidão.";
+  }
+}
+
 // ── main engine ────────────────────────────────────────────────
-export async function generateRecommendations({ userId }: EngineInput): Promise<StudyRecommendation[]> {
+export async function generateRecommendations({ userId }: EngineInput): Promise<EngineResult> {
  try {
   const recs: StudyRecommendation[] = [];
 
@@ -198,19 +237,46 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   const recentErrorRate = recentTotal > 0 ? (recentErrors / recentTotal) * 100 : 0;
 
   let lockStatus: ContentLockStatus = "allowed";
+  const lockReasons: string[] = [];
   const blockHits = [overdueCount > 20, recentErrorRate > 70 && recentTotal >= 10].filter(Boolean).length;
   if (blockHits >= 2) {
     lockStatus = "blocked";
+    if (overdueCount > 20) lockReasons.push(`${overdueCount} revisões atrasadas`);
+    if (recentErrorRate > 70) lockReasons.push(`Taxa de erro ${Math.round(recentErrorRate)}%`);
   } else {
     const limitHits = [overdueCount >= 10, approvalScore < 50, recentErrorRate > 50 && recentTotal >= 5].filter(Boolean).length;
-    if (limitHits >= 2) lockStatus = "limited";
+    if (limitHits >= 2) {
+      lockStatus = "limited";
+      if (overdueCount >= 10) lockReasons.push(`${overdueCount} revisões pendentes`);
+      if (approvalScore < 50) lockReasons.push(`Score de aprovação ${approvalScore}%`);
+      if (recentErrorRate > 50) lockReasons.push("Alto índice de erros recentes");
+    }
   }
   // Adjust max new topics based on content lock
   weights.maxNewTopics = adjustNewTopicsByLock(weights.maxNewTopics, lockStatus);
 
-  // ── 1. Overdue / pending reviews ─────────────────────────────
+  // ── FSRS memory pressure ─────────────────────────────────────
+  const fsrsDue = (fsrsDueRes.data || []) as any[];
+  const memoryPressure = cap(
+    (overdueCount / 20) * 50 + (fsrsDue.length / 30) * 50,
+    100
+  );
 
-  // Track seen topic keys to avoid duplicates
+  // ── Build adaptive state ─────────────────────────────────────
+  const mode = getAdaptiveMode(weights.phase);
+  const focusReason = buildFocusReason(weights, overdueCount, lockStatus);
+  const adaptive: AdaptiveState = {
+    approvalScore,
+    weights,
+    mode,
+    lockStatus,
+    lockReasons,
+    focusReason,
+    memoryPressure,
+    overdueCount,
+  };
+
+  // ── 1. Overdue / pending reviews ─────────────────────────────
   const seenTopics = new Set<string>();
   const addRec = (rec: StudyRecommendation) => {
     const groupKey = rec._groupKey || `${rec.type}:${rec.topic}`;
@@ -226,7 +292,6 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     const spec = rev.temas_estudados?.especialidade || "Geral";
     const basePriority = isOverdue ? 95 : 80;
     const riskBonus = rev.risco_esquecimento === "alto" ? 5 : rev.risco_esquecimento === "medio" ? 2 : 0;
-    // Boost review priority in critical phase
     const phaseBonus = weights.phase === "critico" ? 5 : 0;
 
     addRec({
@@ -248,9 +313,10 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
 
   // ── 2. Error bank ────────────────────────────────────────────
   const errors = (errorBankRes.data || []) as any[];
-  for (let i = 0; i < Math.min(errors.length, 3); i++) {
+  const errorLimit = weights.phase === "critico" ? 5 : 3;
+  for (let i = 0; i < Math.min(errors.length, errorLimit); i++) {
     const err = errors[i];
-    const priority = cap(70 + err.vezes_errado * 5 - i * 2);
+    const priority = cap(70 + err.vezes_errado * 5 - i * 2 + (weights.phase === "critico" ? 10 : 0));
     addRec({
       id: id("err", i),
       type: "error_review",
@@ -295,24 +361,32 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   const clinicalCount = clinicalSims.length;
   const anamnesisCount = anamnesisResults.length;
 
-  // In competitive/ready phases, always suggest clinical if not enough done
-  const clinicalThreshold = weights.phase === "competitivo" || weights.phase === "pronto" ? 1 : 3;
-  const clinicalPriority = weights.phase === "pronto" ? 80 : weights.phase === "competitivo" ? 65 : 55;
+  // Adaptive clinical priority based on phase
+  const clinicalPriority = weights.phase === "pronto" ? 85 : weights.phase === "competitivo" ? 70 : weights.phase === "atencao" ? 55 : 40;
 
-  if ((overallAccuracy >= 60 || weights.phase === "competitivo" || weights.phase === "pronto") && clinicalCount < clinicalThreshold + 5) {
+  // Detect theory-strong but practice-weak users
+  const avgPracticalScore = [...clinicalSims, ...anamnesisResults]
+    .map((r: any) => r.final_score || 0)
+    .reduce((sum, s, _, arr) => sum + s / (arr.length || 1), 0);
+  const practiceGap = overallAccuracy > 60 && avgPracticalScore < 60;
+
+  if (practiceGap || weights.phase === "competitivo" || weights.phase === "pronto") {
     addRec({
       id: "clinical-gap",
       type: "clinical",
       topic: "Simulação Clínica",
       specialty: "Prática Clínica",
-      priority: clinicalPriority,
-      reason: weights.phase === "pronto"
+      priority: practiceGap ? clinicalPriority + 10 : clinicalPriority,
+      reason: practiceGap
+        ? "Bom desempenho teórico mas prática clínica fraca. Treine cenários!"
+        : weights.phase === "pronto"
         ? "Fase final: pratique casos clínicos para consolidar."
         : `Boa acurácia (${Math.round(overallAccuracy)}%). Hora de praticar no plantão!`,
       targetModule: "plantao",
       targetPath: "/dashboard/simulacao-clinica",
       estimatedMinutes: 30,
       objective: "practice",
+      difficulty: weights.phase === "pronto" ? "difícil" : "intermediário",
     });
   }
 
@@ -322,7 +396,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       type: "clinical",
       topic: "Treino de Anamnese",
       specialty: "Semiologia",
-      priority: clinicalPriority - 5,
+      priority: practiceGap ? clinicalPriority + 5 : clinicalPriority - 5,
       reason: "Treine a coleta de história clínica com paciente virtual.",
       targetModule: "anamnese",
       targetPath: "/dashboard/anamnese",
@@ -332,7 +406,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   }
 
   // ── 5. Simulado readiness ────────────────────────────────────
-  const simuladoPriority = weights.phase === "pronto" ? 85 : weights.phase === "competitivo" ? 60 : 45;
+  const simuladoPriority = weights.phase === "pronto" ? 90 : weights.phase === "competitivo" ? 65 : 45;
   if (overallAccuracy >= 55 && totalPractice >= 20) {
     addRec({
       id: "simulado-ready",
@@ -347,6 +421,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       targetPath: "/dashboard/simulados",
       estimatedMinutes: 60,
       objective: "practice",
+      difficulty: weights.phase === "pronto" || weights.phase === "competitivo" ? "difícil" : "médio",
     });
   }
 
@@ -359,7 +434,6 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   ];
   const unexplored = CORE_SPECIALTIES.filter((s) => !studiedSpecialties.has(s));
 
-  // For new users (no data at all), boost maxNewTopics so they get a meaningful session
   const isNewUser = temas.length === 0 && practiceAttempts.length === 0;
   const maxNew = isNewUser ? Math.max(weights.maxNewTopics, 3) : weights.maxNewTopics;
   for (let i = 0; i < Math.min(unexplored.length, maxNew); i++) {
@@ -378,14 +452,10 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   }
 
   // ── 7. FSRS due flashcard reviews ────────────────────────────
-  const fsrsDue = (fsrsDueRes.data || []) as any[];
   const flashcardDue = fsrsDue.filter((c: any) => c.card_type === "flashcard");
   if (flashcardDue.length > 0) {
-    const now = new Date();
-    // Sort by lowest stability first (most at risk of forgetting)
     flashcardDue.sort((a: any, b: any) => a.stability - b.stability);
-    const count = Math.min(flashcardDue.length, 5);
-    const urgency = count > 10 ? "alta" : count > 3 ? "moderada" : "normal";
+    const urgency = flashcardDue.length > 10 ? "alta" : flashcardDue.length > 3 ? "moderada" : "normal";
     addRec({
       id: "fsrs-flashcards",
       type: "review",
@@ -408,8 +478,28 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
 
   // ── FALLBACK: guarantee at least 1 task for any user ─────────
   if (result.length === 0) {
-    return [{
-      id: "fallback-start",
+    return {
+      recommendations: [{
+        id: "fallback-start",
+        type: "new",
+        topic: "Clínica Médica",
+        specialty: "Clínica Médica",
+        priority: 90,
+        reason: "Vamos começar! Estude com o Tutor IA.",
+        targetModule: "tutor",
+        targetPath: "/dashboard/chatgpt",
+        estimatedMinutes: 20,
+      }],
+      adaptive,
+    };
+  }
+
+  return { recommendations: result, adaptive };
+ } catch (err) {
+  console.error("[StudyEngine] Error generating recommendations:", err);
+  return {
+    recommendations: [{
+      id: "fallback-error",
       type: "new",
       topic: "Clínica Médica",
       specialty: "Clínica Médica",
@@ -418,23 +508,17 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       targetModule: "tutor",
       targetPath: "/dashboard/chatgpt",
       estimatedMinutes: 20,
-    }];
-  }
-
-  return result;
- } catch (err) {
-  console.error("[StudyEngine] Error generating recommendations:", err);
-  // Return fallback task so the user is never stuck
-  return [{
-    id: "fallback-error",
-    type: "new",
-    topic: "Clínica Médica",
-    specialty: "Clínica Médica",
-    priority: 90,
-    reason: "Vamos começar! Estude com o Tutor IA.",
-    targetModule: "tutor",
-    targetPath: "/dashboard/chatgpt",
-    estimatedMinutes: 20,
-  }];
+    }],
+    adaptive: {
+      approvalScore: 0,
+      weights: adjustPlanByApprovalScore(0),
+      mode: getAdaptiveMode("critico"),
+      lockStatus: "allowed",
+      lockReasons: [],
+      focusReason: "Vamos começar seus estudos!",
+      memoryPressure: 0,
+      overdueCount: 0,
+    },
+  };
  }
 }
