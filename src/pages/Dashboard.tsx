@@ -22,6 +22,7 @@ import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import AdminSystemAlerts from "@/components/admin/AdminSystemAlerts";
 import InstallAppBanner from "@/components/dashboard/InstallAppBanner";
 import MissionStartButton from "@/components/dashboard/MissionStartButton";
+import AdaptiveModeCard from "@/components/dashboard/AdaptiveModeCard";
 import ExamSetupReminder from "@/components/dashboard/ExamSetupReminder";
 import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
 import DashboardSummaryCard from "@/components/dashboard/DashboardSummaryCard";
