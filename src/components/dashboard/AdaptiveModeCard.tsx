@@ -31,36 +31,15 @@ export default function AdaptiveModeCard() {
   const colorClass = PHASE_COLORS[mode.phase] || PHASE_COLORS.atencao;
 
   return (
-    <Card className={`${colorClass} border`}>
-      <CardContent className="p-3">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="text-base">{mode.icon}</span>
-          <span className="text-sm font-bold">{mode.label}</span>
-          <Badge variant="outline" className="ml-auto text-[10px] h-5 gap-1">
-            {LOCK_ICONS[lockStatus]}
-            {LOCK_LABELS[lockStatus]}
-          </Badge>
-        </div>
-
-        <p className="text-xs text-foreground/80 leading-relaxed mb-2">
-          {focusReason}
-        </p>
-
-        <div className="flex flex-wrap gap-1.5">
-          {mode.focusAreas.map((area) => (
-            <Badge key={area} variant="secondary" className="text-[10px] font-normal">
-              {area}
-            </Badge>
-          ))}
-        </div>
-
-        {memoryPressure > 50 && (
-          <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <Info className="h-3 w-3" />
-            Pressão de memória: {Math.round(memoryPressure)}% — revisões são prioridade.
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <div className={`rounded-lg border px-3 py-2.5 ${colorClass}`}>
+      <div className="flex items-center gap-2">
+        <span className="text-sm">{mode.icon}</span>
+        <span className="text-xs font-semibold flex-1">{focusReason}</span>
+        <Badge variant="outline" className="text-[9px] h-4.5 gap-1 shrink-0">
+          {LOCK_ICONS[lockStatus]}
+          {LOCK_LABELS[lockStatus]}
+        </Badge>
+      </div>
+    </div>
   );
 }

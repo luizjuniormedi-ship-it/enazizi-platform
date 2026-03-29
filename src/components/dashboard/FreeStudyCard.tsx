@@ -21,7 +21,7 @@ export default function FreeStudyCard() {
     <Card className="border-border/40">
       <CardHeader className="pb-2 pt-4 px-4">
         <CardTitle className="text-sm font-semibold text-muted-foreground">
-          Ou escolha como estudar
+          Acesso livre
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4">
