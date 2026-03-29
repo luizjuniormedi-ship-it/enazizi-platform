@@ -546,6 +546,11 @@ const ClinicalSimulation = () => {
         ideal_prescription: evalData.ideal_prescription || null,
         xp_earned: evalData.xp_earned,
       });
+      // Complete tracked session
+      await completeTrackedSession("simulation", {
+        finalScore: evalData.final_score,
+        sessionData: { grade: evalData.grade, correct_diagnosis: evalData.correct_diagnosis },
+      });
     } catch (e) {
       console.error("Error saving simulation:", e);
     }
