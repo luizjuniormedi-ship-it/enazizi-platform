@@ -50,11 +50,12 @@ const QuestionsBank = () => {
   const { toast } = useToast();
   const { addXp } = useGamification();
   const navigate = useNavigate();
+  const studyCtx = useStudyContext();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [topicFilter, setTopicFilter] = useState("all");
+  const [topicFilter, setTopicFilter] = useState(studyCtx?.topic || "all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(0);
