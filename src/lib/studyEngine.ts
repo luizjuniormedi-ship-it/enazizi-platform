@@ -348,6 +348,30 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     });
   }
 
+  // ── 7. FSRS due flashcard reviews ────────────────────────────
+  const fsrsDue = (fsrsDueRes.data || []) as any[];
+  const flashcardDue = fsrsDue.filter((c: any) => c.card_type === "flashcard");
+  if (flashcardDue.length > 0) {
+    const now = new Date();
+    // Sort by lowest stability first (most at risk of forgetting)
+    flashcardDue.sort((a: any, b: any) => a.stability - b.stability);
+    const count = Math.min(flashcardDue.length, 5);
+    const urgency = count > 10 ? "alta" : count > 3 ? "moderada" : "normal";
+    recs.push({
+      id: "fsrs-flashcards",
+      type: "review",
+      topic: `${flashcardDue.length} Flashcards`,
+      specialty: "Revisão Espaçada",
+      priority: cap(85 + Math.min(flashcardDue.length, 10)),
+      reason: flashcardDue.length > 5
+        ? `${flashcardDue.length} flashcards pendentes — prioridade ${urgency}!`
+        : `${flashcardDue.length} flashcard(s) pronto(s) para revisão.`,
+      targetModule: "flashcards",
+      targetPath: "/dashboard/flashcards",
+      estimatedMinutes: Math.max(5, flashcardDue.length * 2),
+    });
+  }
+
   // ── Sort by priority then apply weight-based slot limits ─────
   recs.sort((a, b) => b.priority - a.priority);
   return applyWeights(recs, weights, 8);
