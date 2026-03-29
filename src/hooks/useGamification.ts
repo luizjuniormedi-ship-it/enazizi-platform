@@ -24,27 +24,71 @@ export interface GamificationStats {
   totalPlantao: number;
 }
 
+export const LEVEL_NAMES: Record<number, string> = {
+  1: "Iniciante",
+  2: "Iniciante",
+  3: "Constante",
+  4: "Constante",
+  5: "Focado",
+  6: "Focado",
+  7: "Focado",
+  8: "Competitivo",
+  9: "Competitivo",
+  10: "Competitivo",
+  15: "Aprovação em Construção",
+  20: "Especialista",
+  25: "Elite Clínica",
+  30: "Lenda da Medicina",
+};
+
+export function getLevelName(level: number): string {
+  const thresholds = Object.keys(LEVEL_NAMES).map(Number).sort((a, b) => b - a);
+  for (const t of thresholds) {
+    if (level >= t) return LEVEL_NAMES[t];
+  }
+  return "Iniciante";
+}
+
 export const ACHIEVEMENTS: Achievement[] = [
+  // Milestones - Questions
   { key: "first_question", title: "Primeira Questão", description: "Respondeu sua primeira questão", icon: "🎯", category: "milestone", condition: (s) => s.totalQuestions >= 1 },
   { key: "10_questions", title: "Dedicado", description: "Respondeu 10 questões", icon: "📝", category: "milestone", condition: (s) => s.totalQuestions >= 10 },
   { key: "50_questions", title: "Estudioso", description: "Respondeu 50 questões", icon: "📚", category: "milestone", condition: (s) => s.totalQuestions >= 50 },
   { key: "100_questions", title: "Centenário", description: "Respondeu 100 questões", icon: "💯", category: "milestone", condition: (s) => s.totalQuestions >= 100 },
   { key: "500_questions", title: "Mestre das Questões", description: "Respondeu 500 questões", icon: "🏅", category: "milestone", condition: (s) => s.totalQuestions >= 500 },
+  // Study - Simulados & Flashcards
   { key: "first_simulado", title: "Primeiro Simulado", description: "Completou seu primeiro simulado", icon: "🏆", category: "study", condition: (s) => s.totalSimulados >= 1 },
   { key: "5_simulados", title: "Veterano de Provas", description: "Completou 5 simulados", icon: "🎖️", category: "study", condition: (s) => s.totalSimulados >= 5 },
   { key: "first_flashcard", title: "Memória Flash", description: "Criou seu primeiro flashcard", icon: "⚡", category: "study", condition: (s) => s.totalFlashcards >= 1 },
   { key: "50_flashcards", title: "Colecionador", description: "Criou 50 flashcards", icon: "🃏", category: "study", condition: (s) => s.totalFlashcards >= 50 },
+  // Study - Plantão & Anamnese
   { key: "first_plantao", title: "Plantão Iniciante", description: "Completou seu primeiro plantão", icon: "🏥", category: "study", condition: (s) => s.totalPlantao >= 1 },
+  { key: "5_plantao", title: "Plantonista Veterano", description: "Completou 5 plantões", icon: "🩺", category: "study", condition: (s) => s.totalPlantao >= 5 },
+  { key: "first_anamnese", title: "Anamnese Completa", description: "Completou sua primeira anamnese", icon: "📋", category: "study", condition: (s) => s.totalAnamnese >= 1 },
+  { key: "5_anamnese", title: "Entrevistador Clínico", description: "Completou 5 anamneses", icon: "🗣️", category: "study", condition: (s) => s.totalAnamnese >= 5 },
+  // Study - Reviews
+  { key: "first_review", title: "Rei da Revisão", description: "Completou sua primeira revisão no prazo", icon: "🔄", category: "study", condition: (s) => s.totalReviews >= 1 },
+  { key: "50_reviews", title: "Memória de Elefante", description: "Completou 50 revisões", icon: "🐘", category: "study", condition: (s) => s.totalReviews >= 50 },
+  // Streak
   { key: "streak_3", title: "Consistente", description: "Streak de 3 dias", icon: "🔥", category: "streak", condition: (s) => s.longestStreak >= 3 },
-  { key: "streak_7", title: "Semana de Fogo", description: "Streak de 7 dias", icon: "🔥🔥", category: "streak", condition: (s) => s.longestStreak >= 7 },
+  { key: "streak_7", title: "Semana Perfeita", description: "Streak de 7 dias", icon: "🔥🔥", category: "streak", condition: (s) => s.longestStreak >= 7 },
   { key: "streak_14", title: "Duas Semanas Imparável", description: "Streak de 14 dias", icon: "💪", category: "streak", condition: (s) => s.longestStreak >= 14 },
   { key: "streak_30", title: "Mês de Ferro", description: "Streak de 30 dias", icon: "🏆🔥", category: "streak", condition: (s) => s.longestStreak >= 30 },
-  { key: "level_5", title: "Nível 5", description: "Alcançou o nível 5", icon: "⭐", category: "milestone", condition: (s) => s.level >= 5 },
-  { key: "level_10", title: "Nível 10", description: "Alcançou o nível 10", icon: "🌟", category: "milestone", condition: (s) => s.level >= 10 },
-  { key: "level_25", title: "Nível 25", description: "Alcançou o nível 25", icon: "💫", category: "milestone", condition: (s) => s.level >= 25 },
+  // Level milestones
+  { key: "level_5", title: "Nível 5 — Focado", description: "Alcançou o nível 5", icon: "⭐", category: "milestone", condition: (s) => s.level >= 5 },
+  { key: "level_10", title: "Nível 10 — Competitivo", description: "Alcançou o nível 10", icon: "🌟", category: "milestone", condition: (s) => s.level >= 10 },
+  { key: "level_25", title: "Nível 25 — Elite Clínica", description: "Alcançou o nível 25", icon: "💫", category: "milestone", condition: (s) => s.level >= 25 },
+  // XP milestones
   { key: "xp_1000", title: "Mil XP", description: "Acumulou 1.000 XP", icon: "🎉", category: "milestone", condition: (s) => s.xp >= 1000 },
   { key: "xp_5000", title: "5K XP", description: "Acumulou 5.000 XP", icon: "🚀", category: "milestone", condition: (s) => s.xp >= 5000 },
   { key: "xp_10000", title: "10K XP", description: "Acumulou 10.000 XP", icon: "👑", category: "milestone", condition: (s) => s.xp >= 10000 },
+  // Mission milestones
+  { key: "first_mission", title: "Primeira Missão", description: "Completou sua primeira missão do dia", icon: "🚀", category: "milestone", condition: (s) => s.totalMissions >= 1 },
+  { key: "10_missions", title: "Missionário", description: "Completou 10 missões", icon: "🎯", category: "milestone", condition: (s) => s.totalMissions >= 10 },
+  // Approval Score
+  { key: "approval_50", title: "Meio Caminho", description: "Approval Score acima de 50", icon: "📈", category: "milestone", condition: (s) => s.approvalScore >= 50 },
+  { key: "approval_70", title: "Zona de Aprovação", description: "Approval Score acima de 70", icon: "🎓", category: "milestone", condition: (s) => s.approvalScore >= 70 },
+  { key: "approval_90", title: "Quase Lá", description: "Approval Score acima de 90", icon: "🏅", category: "milestone", condition: (s) => s.approvalScore >= 90 },
 ];
 
 const XP_PER_LEVEL_BASE = 100;
