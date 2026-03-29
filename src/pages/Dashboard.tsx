@@ -38,6 +38,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+// UX enhancements
+import FocusSelector from "@/components/dashboard/FocusSelector";
+import ApprovalTimeline from "@/components/dashboard/ApprovalTimeline";
+import BehavioralAlerts from "@/components/dashboard/BehavioralAlerts";
+const EndOfDaySummary = lazy(() => import("@/components/dashboard/EndOfDaySummary"));
+
 // Lazy load heavy chart/analytics components
 const StreakCalendar = lazy(() => import("@/components/dashboard/StreakCalendar"));
 const SpecialtyProgressCard = lazy(() => import("@/components/dashboard/SpecialtyProgressCard"));
