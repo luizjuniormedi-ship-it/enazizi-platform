@@ -463,7 +463,7 @@ NÃO inclua texto extra, APENAS o JSON.` }],
     );
   }
 
-  return <DiagnosticResult questions={questions} answers={answers} xpEarned={xpEarned} />;
+  return <DiagnosticResult questions={questions} answers={answers} xpEarned={xpEarned} previousTopicResults={previousTopicResults} />;
 };
 
 export default Diagnostic;
