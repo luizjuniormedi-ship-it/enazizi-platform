@@ -36,6 +36,8 @@ const CTASection = forwardRef<HTMLElement>((_, ref) => (
       </div>
     </div>
   </section>
-);
+));
+
+CTASection.displayName = "CTASection";
 
 export default CTASection;
