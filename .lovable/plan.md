@@ -1,21 +1,18 @@
 
-# Substituir Cronograma pelo Planner IA
 
-## Mudanças
+# Corrigir Pipeline de Busca de Questões Reais
 
-### 1. Sidebar (`DashboardSidebar.tsx`)
-- Remover a linha do Cronograma (`/dashboard/cronograma`)
-- Renomear o Planner para "🧠 Planner IA"
+## Problema Raiz
+O pipeline coleta candidate blocks e a IA extrai questões, mas a validação pós-IA rejeita TUDO porque:
+1. Opções retornadas pela IA não começam exatamente com `A) ` (pode vir `a)`, `A.`, `A -`, ou sem prefixo)
+2. Mínimo de 180 caracteres é alto demais — questões reais curtas de 120-170 chars são descartadas
+3. A normalização (`normalizeQuestion`) não trata o formato das opções
 
-### 2. Rotas (`App.tsx`)
-- Redirecionar `/dashboard/cronograma` para `/dashboard/planner` (usando `Navigate`)
-- Manter a rota do Planner como está
+## Correções no `supabase/functions/search-real-questions/index.ts`
 
-### 3. Referências internas
-- Atualizar `studyRouter.ts` caso `cronograma` aponte para o antigo módulo
-- Verificar outros componentes do dashboard que linkam para `/dashboard/cronograma` e apontar para `/dashboard/planner`
+### 1. Adicionar normalização de opções ANTES da validação
+Na função `normalizeQuestion`, adicionar lógica para:
+- Se opção não começa com `A) `, adicionar o prefixo automaticamente baseado no índice
+- Aceitar formatos: `a)`, `A.`, `A -`, `A:`, `(A)`, ou opção sem prefixo
 
-### Resultado
-- Sidebar mostra apenas "🧠 Planner IA" no grupo Estudo
-- Usuários que acessarem `/dashboard/cronograma` são redirecionados automaticamente
-- Zero funcionalidade perdida — o Planner já inclui tudo do cronograma
+### 2. Relax
