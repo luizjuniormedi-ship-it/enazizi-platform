@@ -242,6 +242,48 @@ export type Database = {
           },
         ]
       }
+      approval_scores: {
+        Row: {
+          accuracy: number
+          consistency_score: number
+          created_at: string
+          details_json: Json | null
+          domain_score: number
+          error_penalty: number
+          id: string
+          review_score: number
+          score: number
+          simulation_score: number
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number
+          consistency_score?: number
+          created_at?: string
+          details_json?: Json | null
+          domain_score?: number
+          error_penalty?: number
+          id?: string
+          review_score?: number
+          score?: number
+          simulation_score?: number
+          user_id: string
+        }
+        Update: {
+          accuracy?: number
+          consistency_score?: number
+          created_at?: string
+          details_json?: Json | null
+          domain_score?: number
+          error_penalty?: number
+          id?: string
+          review_score?: number
+          score?: number
+          simulation_score?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           agent_type: string

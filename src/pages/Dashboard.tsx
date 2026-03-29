@@ -147,7 +147,7 @@ const Dashboard = () => {
           BLOCO 2 — PROGRESSO E APROVAÇÃO
          ══════════════════════════════════════════ */}
       {!isNewUser && (
-        <ApprovalScoreCard metrics={metrics} />
+        <ApprovalScoreCard />
       )}
 
       {/* ══════════════════════════════════════════
