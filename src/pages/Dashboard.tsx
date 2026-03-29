@@ -112,6 +112,7 @@ const Dashboard = () => {
       <FeedbackSurveyPopup />
       <OnboardingTour />
       <DashboardSmartPopups />
+      <Suspense fallback={null}><EndOfDaySummary /></Suspense>
 
       {/* Top bar — greeting & XP */}
       <div>
