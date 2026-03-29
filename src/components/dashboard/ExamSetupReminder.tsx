@@ -38,7 +38,7 @@ export default function ExamSetupReminder() {
             Sem a prova-alvo definida, o sistema não consegue otimizar seu estudo.
           </p>
         </div>
-        <Button size="sm" variant="outline" onClick={() => navigate("/profile")} className="shrink-0 gap-1">
+        <Button size="sm" variant="outline" onClick={() => navigate("/dashboard/perfil")} className="shrink-0 gap-1">
           Corrigir agora <ArrowRight className="h-3 w-3" />
         </Button>
       </CardContent>
