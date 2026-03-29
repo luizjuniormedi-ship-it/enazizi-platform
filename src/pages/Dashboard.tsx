@@ -4,18 +4,11 @@ import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
 import DashboardWarnings from "@/components/dashboard/DashboardWarnings";
 import MotivationalGreeting from "@/components/dashboard/MotivationalGreeting";
-import WhatsNewPopup from "@/components/dashboard/WhatsNewPopup";
-import FeedbackSurveyPopup from "@/components/dashboard/FeedbackSurveyPopup";
-import SystemGuidePopup from "@/components/dashboard/SystemGuidePopup";
-import OnboardingTour from "@/components/dashboard/OnboardingTour";
-import DashboardSmartPopups from "@/components/onboarding/DashboardSmartPopups";
 import PerformanceReport from "@/components/dashboard/PerformanceReport";
 import DailyPlanWidget from "@/components/dashboard/DailyPlanWidget";
 import DailyGoalWidget from "@/components/dashboard/DailyGoalWidget";
 import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner";
 import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
-import QuickStartCard from "@/components/dashboard/QuickStartCard";
-const SmartRecommendations = lazy(() => import("@/components/dashboard/SmartRecommendations"));
 
 // Dashboard 2.0 — Strategic blocks
 import TodayStudyCard from "@/components/dashboard/TodayStudyCard";
@@ -29,11 +22,10 @@ import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import AdminSystemAlerts from "@/components/admin/AdminSystemAlerts";
 import InstallAppBanner from "@/components/dashboard/InstallAppBanner";
 import MissionStartButton from "@/components/dashboard/MissionStartButton";
-import ContentLockStatusCard from "@/components/dashboard/ContentLockStatusCard";
 import ExamSetupReminder from "@/components/dashboard/ExamSetupReminder";
-import ExamSetupConfirmation from "@/components/onboarding/ExamSetupConfirmation";
 import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
 import DashboardSummaryCard from "@/components/dashboard/DashboardSummaryCard";
+import ApprovalTimeline from "@/components/dashboard/ApprovalTimeline";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useMessageDelivery } from "@/hooks/useMessageDelivery";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -43,10 +35,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-// UX enhancements
-import FocusSelector from "@/components/dashboard/FocusSelector";
-import ApprovalTimeline from "@/components/dashboard/ApprovalTimeline";
-import BehavioralAlerts from "@/components/dashboard/BehavioralAlerts";
+// Lazy load popups — only 1 per session via queue
+const WhatsNewPopup = lazy(() => import("@/components/dashboard/WhatsNewPopup"));
+const SystemGuidePopup = lazy(() => import("@/components/dashboard/SystemGuidePopup"));
+const FeedbackSurveyPopup = lazy(() => import("@/components/dashboard/FeedbackSurveyPopup"));
+const OnboardingTour = lazy(() => import("@/components/dashboard/OnboardingTour"));
+const DashboardSmartPopups = lazy(() => import("@/components/onboarding/DashboardSmartPopups"));
 const EndOfDaySummary = lazy(() => import("@/components/dashboard/EndOfDaySummary"));
 
 // Lazy load heavy chart/analytics components
@@ -95,7 +89,7 @@ const Dashboard = () => {
     prevStreakRef.current = stats.streak;
   }, [data]);
 
-  // Smart message delivery — contextual notifications based on student profile
+  // Smart message delivery
   useEffect(() => {
     if (data) evaluateAndDeliver();
   }, [data, evaluateAndDeliver]);
@@ -116,16 +110,22 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-4 animate-fade-in pb-16 lg:pb-0">
-      {/* System popups & banners */}
+      {/* System alerts (admin only) */}
       <AdminSystemAlerts />
-      <WhatsNewPopup />
-      <SystemGuidePopup />
-      <FeedbackSurveyPopup />
-      <OnboardingTour />
-      <DashboardSmartPopups />
-      <Suspense fallback={null}><EndOfDaySummary /></Suspense>
 
-      {/* Top bar — greeting & XP */}
+      {/* Popup queue — lazy loaded, each checks internally if should show */}
+      <Suspense fallback={null}>
+        <OnboardingTour />
+        <WhatsNewPopup />
+        <FeedbackSurveyPopup />
+        <SystemGuidePopup />
+        <DashboardSmartPopups />
+        <EndOfDaySummary />
+      </Suspense>
+
+      {/* ══════════════════════════════════════════
+          TOP — Saudação + XP
+         ══════════════════════════════════════════ */}
       <div>
         <MotivationalGreeting
           streak={stats.streak}
@@ -147,9 +147,9 @@ const Dashboard = () => {
         <AdminMessagesBanner />
         <ActiveVideoRoomBanner />
         <ExamSetupReminder />
-        <ExamSetupConfirmation />
       </div>
 
+      {/* Warning — only most urgent (component already limits internally) */}
       <DashboardWarnings
         todayCompleted={stats.todayCompleted}
         todayTotal={stats.todayTotal}
@@ -166,34 +166,18 @@ const Dashboard = () => {
          ══════════════════════════════════════════ */}
       <MissionStartButton />
 
-      {/* Content Lock alert */}
-      <ContentLockStatusCard />
-
       {/* ══════════════════════════════════════════
-          BLOCO 1 — FOCO TOTAL: O que estudar hoje
+          BLOCO 1 — O que estudar hoje
          ══════════════════════════════════════════ */}
       <TodayStudyCard />
-
-      {/* Focus selector */}
-      <FocusSelector />
 
       {/* ══════════════════════════════════════════
           BLOCO 2 — PROGRESSO E APROVAÇÃO
          ══════════════════════════════════════════ */}
-      {!isNewUser && (
-        <>
-          <ApprovalScoreCard />
-          <ApprovalTimeline />
-        </>
-      )}
+      {!isNewUser && <ApprovalScoreCard />}
 
-      {/* ══════════════════════════════════════════
-          BLOCO 2.5 — NIVELAMENTO
-         ══════════════════════════════════════════ */}
+      {/* Nivelamento */}
       <DiagnosticSummaryCard />
-
-      {/* Behavioral alerts */}
-      <BehavioralAlerts />
 
       {/* ══════════════════════════════════════════
           BLOCO 3 — REVISÕES E FRAQUEZAS
@@ -209,30 +193,10 @@ const Dashboard = () => {
       <PracticalTrainingCard />
 
       {/* ══════════════════════════════════════════
-          BLOCO 5 — ACESSO LIVRE
+          BLOCO 5 — MÉTRICAS DRILL-DOWN
          ══════════════════════════════════════════ */}
-      <FreeStudyCard />
-
-      {/* ══════════════════════════════════════════
-          BELOW: Existing widgets (preserved, lower priority)
-         ══════════════════════════════════════════ */}
-
-      {/* Quick Start for new users */}
-      <QuickStartCard
-        questionsAnswered={metrics.questionsAnswered}
-        flashcards={stats.flashcards}
-        hasCompletedDiagnostic={hasCompletedDiagnostic}
-      />
-
-      <OnboardingChecklist
-        stats={stats}
-        metrics={metrics}
-        hasCompletedDiagnostic={hasCompletedDiagnostic}
-      />
-
       {!isNewUser && (
         <Suspense fallback={<div className="space-y-4"><ChartFallback /><ChartFallback /></div>}>
-          {/* Summary cards grid — drill-down */}
           <div className="grid grid-cols-2 gap-3">
             <DashboardSummaryCard
               icon={Target}
@@ -246,7 +210,7 @@ const Dashboard = () => {
             />
             <DashboardSummaryCard
               icon={Calendar}
-              title="Cronograma"
+              title="Planner"
               accentClass="text-blue-500 bg-blue-500/10"
               onClick={() => setOpenSection("cronograma")}
               metrics={[
@@ -275,19 +239,20 @@ const Dashboard = () => {
               ]}
             />
           </div>
-
-          <DailyPlanWidget />
         </Suspense>
       )}
 
-      {/* Smart Recommendations */}
-      <Suspense fallback={<ChartFallback />}>
-        <SmartRecommendations
-          stats={stats}
-          metrics={metrics}
-          hasCompletedDiagnostic={hasCompletedDiagnostic}
-        />
-      </Suspense>
+      {/* ══════════════════════════════════════════
+          BLOCO 6 — ACESSO LIVRE
+         ══════════════════════════════════════════ */}
+      <FreeStudyCard />
+
+      {/* Onboarding checklist for new users */}
+      <OnboardingChecklist
+        stats={stats}
+        metrics={metrics}
+        hasCompletedDiagnostic={hasCompletedDiagnostic}
+      />
 
       {/* ===== Drill-down Sheets ===== */}
       <Sheet open={openSection === "desempenho"} onOpenChange={(o) => !o && setOpenSection(null)}>
@@ -301,6 +266,7 @@ const Dashboard = () => {
               <DashboardCharts stats={stats} metrics={metrics} />
               <SpecialtyProgressCard />
               <TopicEvolution />
+              <ApprovalTimeline />
             </Suspense>
           </div>
         </SheetContent>
@@ -309,7 +275,7 @@ const Dashboard = () => {
       <Sheet open={openSection === "cronograma"} onOpenChange={(o) => !o && setOpenSection(null)}>
         <SheetContent side={sheetSide} className={isMobile ? "h-[85vh] overflow-y-auto" : "sm:max-w-lg overflow-y-auto"}>
           <SheetHeader>
-            <SheetTitle>Cronograma & Revisões</SheetTitle>
+            <SheetTitle>Planner & Revisões</SheetTitle>
             <SheetDescription>Plano do dia e metas de estudo</SheetDescription>
           </SheetHeader>
           <div className="space-y-6 mt-4">
