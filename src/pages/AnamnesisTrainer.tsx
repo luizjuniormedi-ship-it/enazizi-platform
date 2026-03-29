@@ -229,9 +229,9 @@ const AnamnesisTrainer = () => {
   const { startSession: startTrackedSession, completeSession: completeTrackedSession } = useSessionTracking();
 
   const [phase, setPhase] = useState<Phase>("lobby");
-  const [specialty, setSpecialty] = useState("Clínica Médica");
-  const [subtopic, setSubtopic] = useState("");
-  const [difficulty, setDifficulty] = useState("intermediário");
+  const [specialty, setSpecialty] = useState(studyCtx?.specialty || "Clínica Médica");
+  const [subtopic, setSubtopic] = useState(studyCtx?.subtopic || "");
+  const [difficulty, setDifficulty] = useState(studyCtx?.difficulty || "intermediário");
   const [pediatricAge, setPediatricAge] = useState("aleatorio");
 
   const { recent: recentlyCompleted, addRecent: addRecentlyCompleted } = useRecentlyCompleted();
