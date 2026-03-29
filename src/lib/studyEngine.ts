@@ -300,7 +300,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   const clinicalPriority = weights.phase === "pronto" ? 80 : weights.phase === "competitivo" ? 65 : 55;
 
   if ((overallAccuracy >= 60 || weights.phase === "competitivo" || weights.phase === "pronto") && clinicalCount < clinicalThreshold + 5) {
-    recs.push({
+    addRec({
       id: "clinical-gap",
       type: "clinical",
       topic: "Simulação Clínica",
@@ -312,11 +312,12 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       targetModule: "plantao",
       targetPath: "/dashboard/simulacao-clinica",
       estimatedMinutes: 30,
+      objective: "practice",
     });
   }
 
   if ((overallAccuracy >= 50 || weights.phase !== "critico") && anamnesisCount < 5) {
-    recs.push({
+    addRec({
       id: "anamnesis-gap",
       type: "clinical",
       topic: "Treino de Anamnese",
@@ -326,13 +327,14 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       targetModule: "anamnese",
       targetPath: "/dashboard/anamnese",
       estimatedMinutes: 25,
+      objective: "practice",
     });
   }
 
   // ── 5. Simulado readiness ────────────────────────────────────
   const simuladoPriority = weights.phase === "pronto" ? 85 : weights.phase === "competitivo" ? 60 : 45;
   if (overallAccuracy >= 55 && totalPractice >= 20) {
-    recs.push({
+    addRec({
       id: "simulado-ready",
       type: "simulado",
       topic: "Simulado Completo",
@@ -344,6 +346,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       targetModule: "simulado",
       targetPath: "/dashboard/simulados",
       estimatedMinutes: 60,
+      objective: "practice",
     });
   }
 
@@ -360,7 +363,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   const isNewUser = temas.length === 0 && practiceAttempts.length === 0;
   const maxNew = isNewUser ? Math.max(weights.maxNewTopics, 3) : weights.maxNewTopics;
   for (let i = 0; i < Math.min(unexplored.length, maxNew); i++) {
-    recs.push({
+    addRec({
       id: id("new", i),
       type: "new",
       topic: unexplored[i],
@@ -370,6 +373,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       targetModule: "tutor",
       targetPath: "/dashboard/chatgpt",
       estimatedMinutes: 30,
+      objective: "new_content",
     });
   }
 
@@ -382,7 +386,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     flashcardDue.sort((a: any, b: any) => a.stability - b.stability);
     const count = Math.min(flashcardDue.length, 5);
     const urgency = count > 10 ? "alta" : count > 3 ? "moderada" : "normal";
-    recs.push({
+    addRec({
       id: "fsrs-flashcards",
       type: "review",
       topic: `${flashcardDue.length} Flashcards`,
@@ -394,6 +398,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       targetModule: "flashcards",
       targetPath: "/dashboard/flashcards",
       estimatedMinutes: Math.max(5, flashcardDue.length * 2),
+      objective: "review",
     });
   }
 
