@@ -35,11 +35,8 @@ const TRUSTED_DOMAINS = [
   "medgrupo.com.br", "sanarmed.com", "editorasanar.com.br",
   "jaleko.com.br", "afya.com.br", "medblog.estrategiaeducacional.com.br",
   "med.estrategia.com",
-  // Sites internacionais
-  "amboss.com", "usmle.org", "nbme.org", "pubmed.ncbi.nlm.nih.gov",
-  "medscape.com", "lecturio.com", "osmosis.org", "kenhub.com",
-  "radiopaedia.org", "teachmemedicine.org", "geekymedics.com",
-  "passmedicine.com", "bmj.com", "nejm.org", "thelancet.com",
+  // Referências bibliográficas internacionais (apenas leitura, não fontes de questões)
+  "pubmed.ncbi.nlm.nih.gov", "medscape.com", "bmj.com", "nejm.org", "thelancet.com",
 ];
 
 const CLINICAL_CONTENT_MARKERS = [
@@ -272,13 +269,13 @@ function buildQueryPool(specialty: string, banca: string | null): string[] {
     `${specialty} questões objetivas residência médica 2024 2025 2026`,
     `"residência médica" "${specialty}" questões resolvidas alternativas`,
     `${specialty} simulado residência médica questões com gabarito`,
-    // Sites internacionais (traduzidos)
-    `site:amboss.com ${specialty} multiple choice questions`,
-    `site:radiopaedia.org ${specialty} quiz cases`,
-    `site:geekymedics.com ${specialty} questions answers`,
-    `site:lecturio.com ${specialty} board review questions`,
-    `${specialty} USMLE step 2 questions explanations`,
-    `${specialty} medical residency exam MCQ answers`,
+    // Mais fontes brasileiras
+    `site:jaleko.com.br ${specialty} questões comentadas residência`,
+    `site:afya.com.br ${specialty} questões provas residência médica`,
+    `site:editorasanar.com.br ${specialty} questões gabarito comentado`,
+    `site:residenciamedicasp.com.br ${specialty} provas anteriores`,
+    `site:provamedicina.com.br ${specialty} questões provas residência`,
+    `${specialty} prova residência médica questões comentadas site:.br`,
     // Provas estaduais
     `${specialty} prova residência AMRIGS questões gabarito`,
     `${specialty} prova residência FAMERP questões comentadas`,
@@ -427,6 +424,8 @@ async function structureQuestions(
 
   const prompt = `Você é um especialista em extrair questões de provas de residência médica a partir de conteúdo web.
 
+IDIOMA OBRIGATÓRIO: Todas as questões DEVEM estar em PORTUGUÊS BRASILEIRO. Descarte COMPLETAMENTE qualquer questão em inglês, espanhol ou outro idioma que não seja português. NÃO traduza questões — apenas extraia as que já estão em português.
+
 CONTEÚDO EXTRAÍDO DA WEB (fontes reais de provas):
 ${contentBlock}
 
@@ -434,6 +433,7 @@ TAREFA: Extraia no MÁXIMO 5 questões de múltipla escolha encontradas no conte
 
 REGRAS:
 1. Extraia APENAS questões que realmente existem no texto — NÃO invente questões
+1b. APENAS questões em PORTUGUÊS BRASILEIRO — rejeite qualquer conteúdo em inglês
 2. Preserve o enunciado original o mais fielmente possível
 3. Preserve as alternativas originais (mínimo 4 alternativas)
 4. Identifique a alternativa correta (se o gabarito estiver disponível)
@@ -490,9 +490,13 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
 
 
     // Normalize and filter valid questions
+    const englishPattern = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice)\b/i;
     const validQuestions = questions.filter((q: any) => {
       if (!q.statement) { console.log("Rejected: no statement"); return false; }
       if (!Array.isArray(q.options) || q.options.length < 2) { console.log("Rejected: bad options"); return false; }
+      // Reject English questions
+      const stText = String(q.statement);
+      if (englishPattern.test(stText)) { console.log("Rejected: English content detected"); return false; }
       // Accept correct_index as number or string, default to 0
       if (q.correct_index === undefined || q.correct_index === null) {
         if (q.correct_answer !== undefined) {
