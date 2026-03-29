@@ -56,6 +56,7 @@ const FeynmanTrainer = lazy(() => import("./pages/FeynmanTrainer"));
 const AIMentor = lazy(() => import("./pages/AIMentor"));
 const SmartPlanner = lazy(() => import("./pages/SmartPlanner"));
 const AdminMonitoring = lazy(() => import("./pages/AdminMonitoring"));
+const MissionMode = lazy(() => import("./pages/MissionMode"));
 
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 

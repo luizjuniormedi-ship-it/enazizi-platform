@@ -153,6 +153,11 @@ const Dashboard = () => {
       />
 
       {/* ══════════════════════════════════════════
+          BLOCO 0 — MISSÃO DO DIA (CTA principal)
+         ══════════════════════════════════════════ */}
+      <MissionStartButton />
+
+      {/* ══════════════════════════════════════════
           BLOCO 1 — FOCO TOTAL: O que estudar hoje
          ══════════════════════════════════════════ */}
       <TodayStudyCard />
