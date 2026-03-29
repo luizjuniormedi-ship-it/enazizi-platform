@@ -44,16 +44,18 @@ serve(async (req) => {
         const perTopic = Math.max(1, Math.floor(count / topics.length));
         const prompt = `Gere exatamente ${count} questões objetivas de múltipla escolha (A-E) para residência médica sobre: ${topicList}.
 
+IDIOMA OBRIGATÓRIO: TUDO deve ser escrito em PORTUGUÊS BRASILEIRO. Enunciados, alternativas, explicações, blocos — absolutamente TUDO em pt-BR. NUNCA use inglês.
+
 ${topics.length > 1 ? `ORGANIZAÇÃO POR BLOCOS: Distribua as questões proporcionalmente entre os temas (~${perTopic} por tema). Cada questão DEVE ter o campo "block" indicando o bloco temático ao qual pertence (ex: "Cardiologia", "Farmacologia").` : `Todas as questões pertencem ao bloco "${topics[0]}". Cada questão DEVE ter o campo "block" com o valor "${topics[0]}".`}
 
 Para cada questão, retorne APENAS um array JSON válido no formato:
 [
   {
     "block": "Nome do bloco temático",
-    "statement": "Texto do enunciado com caso clínico",
+    "statement": "Texto do enunciado com caso clínico em português",
     "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
     "correct_index": 0,
-    "explanation": "Explicação detalhada da resposta correta",
+    "explanation": "Explicação detalhada da resposta correta em português",
     "topic": "Tema/subtema específico da questão"
   }
 ]
@@ -66,6 +68,7 @@ REGRAS:
 - Baseie-se em provas reais de residência (ENARE, USP, UNIFESP)
 - Agrupe as questões por bloco temático no array (todas de um bloco juntas, depois o próximo bloco)
 - REGRA DE GABARITO: NUNCA repita a mesma letra de resposta correta em questões consecutivas. Distribua equilibradamente entre A(0), B(1), C(2), D(3) e E(4). Em cada bloco de 5 questões, use pelo menos 3 letras diferentes.
+- TODOS os textos DEVEM estar em português brasileiro. PROIBIDO qualquer texto em inglês.
 
 ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 - NUNCA repita nome, idade, sexo ou perfil de paciente entre questões
