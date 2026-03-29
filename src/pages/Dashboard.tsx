@@ -1,4 +1,4 @@
-import { useEffect, useRef, lazy, Suspense, useState, useMemo, memo } from "react";
+import { useEffect, useRef, lazy, Suspense, useState } from "react";
 import { Loader2, Target, Calendar, Flame, ClipboardList } from "lucide-react";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
@@ -16,8 +16,9 @@ import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
 import QuickStartCard from "@/components/dashboard/QuickStartCard";
 const SmartRecommendations = lazy(() => import("@/components/dashboard/SmartRecommendations"));
 
-// Dashboard 2.0 — Study Engine components
+// Dashboard 2.0 — Strategic blocks
 import TodayStudyCard from "@/components/dashboard/TodayStudyCard";
+import ApprovalScoreCard from "@/components/dashboard/ApprovalScoreCard";
 import PendingReviewsCard from "@/components/dashboard/PendingReviewsCard";
 import WeakTopicsCard from "@/components/dashboard/WeakTopicsCard";
 import FreeStudyCard from "@/components/dashboard/FreeStudyCard";
@@ -96,13 +97,14 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-4 animate-fade-in pb-16 lg:pb-0">
+      {/* System popups & banners */}
       <AdminSystemAlerts />
       <WhatsNewPopup />
       <SystemGuidePopup />
       <FeedbackSurveyPopup />
       <OnboardingTour />
 
-      {/* Top bar — always visible */}
+      {/* Top bar — greeting & XP */}
       <div>
         <MotivationalGreeting
           streak={stats.streak}
@@ -136,16 +138,39 @@ const Dashboard = () => {
         hasStudyPlan={stats.hasStudyPlan}
       />
 
-      {/* ===== Dashboard 2.0 — Guided Study Flow ===== */}
+      {/* ══════════════════════════════════════════
+          BLOCO 1 — FOCO TOTAL: O que estudar hoje
+         ══════════════════════════════════════════ */}
       <TodayStudyCard />
 
+      {/* ══════════════════════════════════════════
+          BLOCO 2 — PROGRESSO E APROVAÇÃO
+         ══════════════════════════════════════════ */}
+      {!isNewUser && (
+        <ApprovalScoreCard metrics={metrics} />
+      )}
+
+      {/* ══════════════════════════════════════════
+          BLOCO 3 — REVISÕES E FRAQUEZAS
+         ══════════════════════════════════════════ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <PendingReviewsCard />
         <WeakTopicsCard />
       </div>
 
+      {/* ══════════════════════════════════════════
+          BLOCO 4 — TREINO PRÁTICO
+         ══════════════════════════════════════════ */}
       <PracticalTrainingCard />
+
+      {/* ══════════════════════════════════════════
+          BLOCO 5 — ACESSO LIVRE
+         ══════════════════════════════════════════ */}
       <FreeStudyCard />
+
+      {/* ══════════════════════════════════════════
+          BELOW: Existing widgets (preserved, lower priority)
+         ══════════════════════════════════════════ */}
 
       {/* Quick Start for new users */}
       <QuickStartCard
@@ -154,7 +179,6 @@ const Dashboard = () => {
         hasCompletedDiagnostic={hasCompletedDiagnostic}
       />
 
-      {/* Onboarding Checklist */}
       <OnboardingChecklist
         stats={stats}
         metrics={metrics}
@@ -163,10 +187,7 @@ const Dashboard = () => {
 
       {!isNewUser && (
         <Suspense fallback={<div className="space-y-4"><ChartFallback /><ChartFallback /></div>}>
-          {/* Approval Thermometer — top visibility */}
-          <ApprovalThermometer metrics={metrics} />
-
-          {/* Summary cards grid */}
+          {/* Summary cards grid — drill-down */}
           <div className="grid grid-cols-2 gap-3">
             <DashboardSummaryCard
               icon={Target}
@@ -210,7 +231,6 @@ const Dashboard = () => {
             />
           </div>
 
-          {/* Daily Plan Widget inline */}
           <DailyPlanWidget />
         </Suspense>
       )}
@@ -223,6 +243,7 @@ const Dashboard = () => {
           hasCompletedDiagnostic={hasCompletedDiagnostic}
         />
       </Suspense>
+
       {/* ===== Drill-down Sheets ===== */}
       <Sheet open={openSection === "desempenho"} onOpenChange={(o) => !o && setOpenSection(null)}>
         <SheetContent side={sheetSide} className={isMobile ? "h-[85vh] overflow-y-auto" : "sm:max-w-lg overflow-y-auto"}>
