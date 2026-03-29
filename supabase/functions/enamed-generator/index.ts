@@ -88,6 +88,8 @@ async function generateENAMEDContent(
 
   const prompt = `Você é um elaborador de questões de ELITE das provas ENAMED, REVALIDA INEP, USP, UNIFESP, UNICAMP e ENARE.
 
+IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA gere questões, alternativas, explicações, flashcards ou casos clínicos em inglês. Inglês permitido APENAS em nomes de artigos/guidelines.
+
 GERE EXATAMENTE:
 - 10 questões de múltipla escolha no padrão ENAMED/REVALIDA
 - 8 flashcards
@@ -197,9 +199,11 @@ FORMATO JSON PURO (sem markdown):
     if (!parsed) return { questions: 0, flashcards: 0, cases: 0 };
 
     // Insert questions
+    const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
     const questions = (parsed.questions || []).filter((q: any) =>
       q.statement && Array.isArray(q.options) && q.options.length >= 2 && typeof q.correct_index === "number" &&
-      String(q.statement).trim().length >= 200 && (q.difficulty || 3) >= 3
+      String(q.statement).trim().length >= 200 && (q.difficulty || 3) >= 3 &&
+      !ENGLISH_PATTERN.test(q.statement)
     );
     let qCount = 0;
     if (questions.length > 0) {

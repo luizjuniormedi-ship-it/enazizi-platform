@@ -14,6 +14,8 @@ serve(async (req) => {
 
     const systemPrompt = `Você é o GERADOR OFICIAL DE FLASHCARDS CLÍNICOS do sistema ENAZIZI.
 
+IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). Perguntas, respostas, explicações — absolutamente TUDO em pt-BR. NUNCA gere flashcards em inglês. Inglês permitido APENAS em nomes de artigos/guidelines.
+
 ⛔ RESTRIÇÃO ABSOLUTA DE ESCOPO:
 Você SOMENTE pode gerar flashcards relacionados a MEDICINA, SAÚDE e CIÊNCIAS BIOMÉDICAS.
 

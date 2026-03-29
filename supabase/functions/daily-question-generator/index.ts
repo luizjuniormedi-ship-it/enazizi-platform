@@ -159,7 +159,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
     const response = await aiFetch({
       model: "google/gemini-2.5-flash",
       messages: [
-        { role: "system", content: "Você é um professor de medicina que cria questões de altíssima qualidade no estilo de provas reais de residência médica brasileira. Responda APENAS com JSON válido, sem markdown. Cada questão DEVE ter caso clínico completo." },
+        { role: "system", content: "Você é um professor de medicina que cria questões de altíssima qualidade no estilo de provas reais de residência médica brasileira. Responda APENAS com JSON válido, sem markdown. Cada questão DEVE ter caso clínico completo.\n\nIDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA gere questões, alternativas ou explicações em inglês." },
         { role: "user", content: prompt },
       ],
       timeoutMs: 90000,
@@ -187,6 +187,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
 
     if (!parsed?.questions) return 0;
 
+    const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
     const questions = parsed.questions.filter((q: any) =>
       q.statement && Array.isArray(q.options) && q.options.length >= 2 &&
       typeof q.correct_index === "number" &&
@@ -195,7 +196,8 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
       hasClinicalContent(String(q.statement)) &&
       !INVALID_CONTENT_REGEX.test(q.statement) &&
       !INVALID_CONTENT_REGEX.test(q.explanation || "") &&
-      !isDuplicate(q.statement, existingStatements)
+      !isDuplicate(q.statement, existingStatements) &&
+      !ENGLISH_PATTERN.test(q.statement)
     );
 
     if (questions.length === 0) return 0;
