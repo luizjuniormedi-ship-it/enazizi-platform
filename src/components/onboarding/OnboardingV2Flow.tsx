@@ -171,8 +171,8 @@ export default function OnboardingV2Flow({ onComplete, onSkip }: Props) {
   const progressPercent = (step / TOTAL_STEPS) * 100;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-6 animate-fade-in">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 sm:p-6 md:p-8">
+      <div className="w-full max-w-md sm:max-w-lg space-y-6 animate-fade-in">
         {/* Progress bar */}
         <div className="space-y-2">
           <div className="flex justify-between text-xs text-muted-foreground">
