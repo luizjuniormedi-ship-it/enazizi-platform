@@ -186,7 +186,7 @@ export default function ApprovalScoreCard() {
           >
             <span className="flex items-center gap-1">
               <TrendingUp className="h-3.5 w-3.5" />
-              Ver plano para melhorar
+              Ver Plano Geral
             </span>
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>

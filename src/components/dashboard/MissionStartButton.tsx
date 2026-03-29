@@ -96,7 +96,7 @@ export default function MissionStartButton() {
 
         {!isLoading && hasTasks && (
           <p className="text-[10px] text-center text-muted-foreground">
-            Revisões → Conteúdo → Questões → Reforço → Avaliação
+            Revisão → Conteúdo → Questões → Reforço
           </p>
         )}
       </CardContent>

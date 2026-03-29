@@ -8,7 +8,7 @@ import { buildStudyPath } from "@/lib/studyRouter";
 const CLINICAL_MODULES = [
   {
     label: "Plantão",
-    desc: "Simulação de plantão com casos clínicos",
+    desc: "Casos clínicos interativos",
     path: "/dashboard/simulacao-clinica",
     icon: Stethoscope,
     iconColor: "text-teal-500",
@@ -16,7 +16,7 @@ const CLINICAL_MODULES = [
   },
   {
     label: "Anamnese",
-    desc: "Treino de anamnese com paciente virtual",
+    desc: "Entrevista com paciente virtual",
     path: "/dashboard/anamnese",
     icon: HeartPulse,
     iconColor: "text-rose-500",

@@ -53,7 +53,7 @@ export default function WeakTopicsCard() {
               <p className="text-[10px] text-muted-foreground">{item.reason}</p>
             </div>
             <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-primary shrink-0">
-              Treinar
+              Reforçar
             </Button>
           </div>
         ))}

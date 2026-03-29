@@ -155,7 +155,7 @@ export default function DiagnosticSummaryCard() {
             className="flex-1 justify-between text-xs h-8 text-primary"
             onClick={() => navigate("/dashboard/planner")}
           >
-            <span>Ver plano baseado no nivelamento</span>
+            <span>Ver Plano Geral</span>
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>
           {canRetake && (
