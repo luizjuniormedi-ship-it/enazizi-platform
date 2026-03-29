@@ -306,6 +306,24 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
+  const handleSkipOnboarding = async () => {
+    if (!user) return;
+    try {
+      await supabase.from("profiles").update({
+        onboarding_version: 2,
+        experience_reset_at: new Date().toISOString(),
+        last_onboarding_step: 0,
+        daily_study_hours: 4,
+      }).eq("user_id", user.id);
+    } catch {}
+    localStorage.setItem("enazizi_v2_welcome_seen", "true");
+    localStorage.setItem("enazizi_v2_onboarding_done", "true");
+    localStorage.setItem("enazizi_exam_setup_skipped", "true");
+    setShowWelcome(false);
+    setShowOnboarding(false);
+    setOnboardingVersion(2);
+  };
+
   // V2 Welcome screen for existing users
   if (showWelcome) {
     return (
@@ -315,6 +333,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
           setShowWelcome(false);
           setShowOnboarding(true);
         }}
+        onSkip={handleSkipOnboarding}
       />
     );
   }
@@ -327,6 +346,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
           setShowOnboarding(false);
           setOnboardingVersion(2);
         }}
+        onSkip={handleSkipOnboarding}
       />
     );
   }

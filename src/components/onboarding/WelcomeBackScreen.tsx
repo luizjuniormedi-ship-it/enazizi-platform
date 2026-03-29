@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Rocket, Target, Brain, BarChart3 } from "lucide-react";
+import { Sparkles, Rocket, Target, Brain, BarChart3, ArrowRight } from "lucide-react";
 
 interface Props {
   onStart: () => void;
+  onSkip: () => void;
 }
 
 const features = [
@@ -24,7 +24,7 @@ const features = [
   },
 ];
 
-export default function WelcomeBackScreen({ onStart }: Props) {
+export default function WelcomeBackScreen({ onStart, onSkip }: Props) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-lg space-y-6 animate-fade-in text-center">
@@ -53,9 +53,21 @@ export default function WelcomeBackScreen({ onStart }: Props) {
           ))}
         </div>
 
-        <Button onClick={onStart} size="lg" className="w-full gap-2">
-          <Sparkles className="h-4 w-4" /> Iniciar nova jornada
-        </Button>
+        <div className="space-y-2">
+          <Button onClick={onStart} size="lg" className="w-full gap-2">
+            <Sparkles className="h-4 w-4" /> Configurar minha prova agora
+          </Button>
+          <Button variant="outline" onClick={onSkip} size="lg" className="w-full gap-2 text-muted-foreground">
+            Pular e fazer depois <ArrowRight className="h-4 w-4" />
+          </Button>
+          <button
+            type="button"
+            onClick={onSkip}
+            className="text-xs text-muted-foreground hover:underline mx-auto block pt-1"
+          >
+            Ainda não sei qual prova escolher
+          </button>
+        </div>
       </div>
     </div>
   );
