@@ -242,14 +242,14 @@ const Simulados = () => {
         .select("question_id")
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false })
-        .limit(200);
-      const answeredIds = new Set((pastAttempts || []).map(a => a.question_id));
+        .limit(1000);
+      const answeredIds = new Set((pastAttempts || []).map((a) => a.question_id));
 
       // ── Step 2: Fetch questions from bank matching topics ──
       setLoadingProgress("Buscando questões do banco...");
       setLoadingPercent(10);
 
-      const topicFilters = config.topics.map(t => `topic.ilike.%${t}%`).join(",");
+      const topicFilters = config.topics.map((t) => `topic.ilike.%${t}%`).join(",");
       const { data: bankData } = await supabase
         .from("questions_bank")
         .select("id, statement, options, correct_index, topic, explanation, source")
@@ -258,20 +258,26 @@ const Simulados = () => {
         .limit(500);
 
       const bankQuestions: SimQuestion[] = (bankData || [])
-        .filter(q => {
-          const opts = Array.isArray(q.options) ? q.options.map(String) : [];
-          return opts.length >= 4 && (q.statement || "").length > 10 && !NON_MEDICAL_CONTENT_REGEX.test(q.statement || "");
-        })
-        .filter(q => !answeredIds.has(q.id))
-        .sort((a, b) => getSourcePriority(a.source) - getSourcePriority(b.source))
-        .map(q => ({
-          statement: q.statement,
+        .filter((q: any) => !answeredIds.has(q.id))
+        .map((q: any) => ({
+          statement: String(q.statement || ""),
           options: Array.isArray(q.options) ? q.options.map(String) : [],
-          correct: q.correct_index ?? 0,
-          topic: q.topic || config.topics[0],
-          explanation: q.explanation || "",
+          correct: Number.isInteger(q.correct_index) ? q.correct_index : 0,
+          topic: String(q.topic || config.topics[0]),
+          explanation: String(q.explanation || ""),
           bankId: q.id,
-        }));
+          source: q.source || null,
+        }))
+        .filter(
+          (q) =>
+            q.options.length >= 4 &&
+            q.statement.length > 10 &&
+            !NON_MEDICAL_CONTENT_REGEX.test(q.statement),
+        )
+        .sort((a, b) => {
+          const priorityDiff = getSourcePriority(a.source) - getSourcePriority(b.source);
+          return priorityDiff !== 0 ? priorityDiff : Math.random() - 0.5;
+        });
 
       setLoadingPercent(25);
       const bankCount = Math.min(bankQuestions.length, config.count);
@@ -295,7 +301,12 @@ const Simulados = () => {
           if (allQuestions.length < config.count) {
             setLoadingProgress(`Complementando... (${allQuestions.length}/${config.count})`);
             setLoadingPercent(80);
-            const extra = await generateBatch(config.topics, Math.min(config.count - allQuestions.length + 2, BATCH_SIZE), config.difficulty, accessToken);
+            const extra = await generateBatch(
+              config.topics,
+              Math.min(config.count - allQuestions.length + 2, BATCH_SIZE),
+              config.difficulty,
+              accessToken,
+            );
             allQuestions.push(...extra);
           }
         } else {
@@ -327,9 +338,16 @@ const Simulados = () => {
             setLoadingProgress(`Complementando... (${allQuestions.length}/${config.count})`);
             setLoadingPercent(85);
             try {
-              const retry = await generateBatch(config.topics, Math.min(config.count - allQuestions.length + 2, BATCH_SIZE), config.difficulty, accessToken);
+              const retry = await generateBatch(
+                config.topics,
+                Math.min(config.count - allQuestions.length + 2, BATCH_SIZE),
+                config.difficulty,
+                accessToken,
+              );
               allQuestions.push(...retry);
-            } catch { /* accept partial */ }
+            } catch {
+              // accept partial
+            }
           }
         }
       }
@@ -379,7 +397,10 @@ const Simulados = () => {
         if (!areaResults[q.topic]) areaResults[q.topic] = { correct: 0, total: 0 };
         areaResults[q.topic].total++;
         const isCorrect = answers[i] === q.correct;
-        if (isCorrect) { areaResults[q.topic].correct++; correctCount++; }
+        if (isCorrect) {
+          areaResults[q.topic].correct++;
+          correctCount++;
+        }
       });
 
       const finalScore = questions.length > 0 ? (correctCount / questions.length) * 100 : 0;
@@ -395,6 +416,25 @@ const Simulados = () => {
         results_json: areaResults,
         score: finalScore,
       });
+
+      // Salva tentativas para o anti-repetição entre sessões
+      const practiceRows = questions
+        .map((q, i) => {
+          if (!q.bankId) return null;
+          return {
+            user_id: user.id,
+            question_id: q.bankId,
+            correct: answers[i] === q.correct,
+          };
+        })
+        .filter(Boolean);
+
+      if (practiceRows.length > 0) {
+        const { error: attemptsError } = await supabase.from("practice_attempts").insert(practiceRows as any[]);
+        if (attemptsError) {
+          console.error("Erro ao salvar tentativas do simulado:", attemptsError);
+        }
+      }
 
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i];

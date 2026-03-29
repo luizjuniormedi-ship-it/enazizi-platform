@@ -127,10 +127,18 @@ Deno.serve(async (req) => {
     // ── 5. Simulation score (0-100) ──────────────────────────
     const exams = examRes.data || [];
     const clinicals = clinicalRes.data || [];
+
+    // exam_sessions.score já é percentual (0-100), então NÃO dividir por total_questions
     const examScores = exams
-      .filter((e: any) => e.total_questions > 0)
-      .map((e: any) => ((e.score || 0) / e.total_questions) * 100);
-    const clinicalScores = clinicals.map((c: any) => c.final_score || 0);
+      .map((e: any) => Number(e.score))
+      .filter((s: number) => Number.isFinite(s))
+      .map((s: number) => Math.max(0, Math.min(100, s)));
+
+    const clinicalScores = clinicals
+      .map((c: any) => Number(c.final_score))
+      .filter((s: number) => Number.isFinite(s))
+      .map((s: number) => Math.max(0, Math.min(100, s)));
+
     const allSimScores = [...examScores, ...clinicalScores];
     const simulationScore =
       allSimScores.length > 0
@@ -143,7 +151,7 @@ Deno.serve(async (req) => {
     const activeErrors = errors.filter((e: any) => !e.dominado);
     const totalErrorWeight = activeErrors.reduce(
       (s: number, e: any) => s + (e.vezes_errado || 1),
-      0
+      0,
     );
     const rawPenalty = Math.min(totalErrorWeight / 20, 1) * 100;
     const errorComponent = 100 - rawPenalty;
@@ -159,15 +167,16 @@ Deno.serve(async (req) => {
     const remainingWeight = 1 - diagnosticWeight;
 
     // ── Final score (dynamic weighting) ──────────────────────
-    const score = Math.round(
+    const rawScore =
       accuracy * 0.25 * remainingWeight +
       domainScore * 0.15 * remainingWeight +
       reviewScore * 0.15 * remainingWeight +
       consistencyScore * 0.15 * remainingWeight +
       simulationScore * 0.20 * remainingWeight +
       errorComponent * 0.10 * remainingWeight +
-      diagnosticScore * diagnosticWeight
-    );
+      diagnosticScore * diagnosticWeight;
+
+    const score = Math.max(0, Math.min(100, Math.round(rawScore)));
 
     // ── Persist ──────────────────────────────────────────────
     const { error: insertError } = await adminClient

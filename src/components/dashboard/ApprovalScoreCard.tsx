@@ -71,13 +71,15 @@ export default function ApprovalScoreCard() {
     }
   };
 
-  const score = scoreData?.score ?? 0;
+  const clampPercent = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
+
+  const score = clampPercent(scoreData?.score ?? 0);
   const status = getStatus(score);
 
   // Build weak points from sub-dimensions
   const issues: string[] = [];
   if (scoreData) {
-    if (scoreData.accuracy < 60) issues.push(`Acurácia baixa (${Math.round(scoreData.accuracy)}%)`);
+    if (scoreData.accuracy < 60) issues.push(`Acurácia baixa (${clampPercent(scoreData.accuracy)}%)`);
     if (scoreData.review_score < 50) issues.push("Revisões atrasadas");
     if (scoreData.consistency_score < 40) issues.push("Baixa consistência de estudo");
     if (scoreData.simulation_score < 50) issues.push("Poucos simulados realizados");
@@ -127,15 +129,15 @@ export default function ApprovalScoreCard() {
         {scoreData && (
           <div className="px-4 pb-2 grid grid-cols-3 gap-2 text-[11px]">
             <div className="text-center">
-              <p className="font-semibold text-foreground">{Math.round(scoreData.accuracy)}%</p>
+              <p className="font-semibold text-foreground">{clampPercent(scoreData.accuracy)}%</p>
               <p className="text-muted-foreground">Acurácia</p>
             </div>
             <div className="text-center">
-              <p className="font-semibold text-foreground">{Math.round(scoreData.review_score)}%</p>
+              <p className="font-semibold text-foreground">{clampPercent(scoreData.review_score)}%</p>
               <p className="text-muted-foreground">Revisões</p>
             </div>
             <div className="text-center">
-              <p className="font-semibold text-foreground">{Math.round(scoreData.simulation_score)}%</p>
+              <p className="font-semibold text-foreground">{clampPercent(scoreData.simulation_score)}%</p>
               <p className="text-muted-foreground">Simulados</p>
             </div>
           </div>
