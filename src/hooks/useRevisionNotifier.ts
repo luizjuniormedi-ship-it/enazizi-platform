@@ -85,7 +85,8 @@ export function useRevisionNotifier() {
 
       // 3. Study Engine — topic-specific notifications
       try {
-        const recs = await generateRecommendations({ userId: user.id });
+        const engineResult = await generateRecommendations({ userId: user.id });
+        const recs = engineResult.recommendations;
         
         // High-priority error review notification
         const errorRec = recs.find(r => r.type === "error_review" && r.priority >= 70);
