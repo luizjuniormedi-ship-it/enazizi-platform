@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { adjustPlanByApprovalScore, type PlanWeights } from "./approvalScoreWeights";
+import { adjustNewTopicsByLock, type ContentLockStatus } from "@/hooks/useContentLock";
 
 export type RecommendationType = "review" | "practice" | "clinical" | "new" | "error_review" | "simulado";
 export type TargetModule = "tutor" | "questoes" | "flashcards" | "plantao" | "anamnese" | "simulado" | "cronograma" | "banco-erros";
