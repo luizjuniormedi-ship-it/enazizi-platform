@@ -1,9 +1,19 @@
 import { forwardRef } from "react";
 import { User, Copy } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import MultimediaControls from "@/components/agents/MultimediaControls";
 import type { Msg } from "@/components/tutor/TutorConstants";
+
+/** Convert bare URLs in text to markdown links so ReactMarkdown renders them clickable */
+function linkifyBareUrls(text: string): string {
+  // Don't touch URLs already inside markdown link syntax [text](url)
+  return text.replace(
+    /(?<!\]\()(?<!\()(https?:\/\/[^\s\)>\]]+)/g,
+    (url) => `[${url.includes('pubmed') ? 'Ver no PubMed' : url.includes('doi.org') ? 'Ver DOI' : 'Abrir link'}](${url})`
+  );
+}
 
 interface TutorMessageListProps {
   messages: Msg[];
