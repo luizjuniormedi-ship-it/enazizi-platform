@@ -109,14 +109,14 @@ export default function TodayStudyCard() {
           <TaskRow
             key={task.id}
             task={task}
-            onStart={() => navigate(buildStudyPath(task))}
+            onStart={() => navigate(buildStudyPath(task, "daily-plan"))}
           />
         ))}
 
         <div className="flex items-center gap-2 pt-1">
           <Button
             className="flex-1 gap-1.5 font-semibold"
-            onClick={() => navigate(buildStudyPath(topTask))}
+            onClick={() => navigate(buildStudyPath(topTask, "daily-plan"))}
           >
             <Play className="h-4 w-4" />
             Iniciar próximo bloco

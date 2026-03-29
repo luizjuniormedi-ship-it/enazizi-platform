@@ -13,6 +13,8 @@ import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import ModuleEmptyState from "@/components/layout/ModuleEmptyState";
 import { exportToPdf } from "@/lib/exportPdf";
 import { useNavigate } from "react-router-dom";
+import { useStudyContext } from "@/lib/studyContext";
+import StudyContextBanner from "@/components/study/StudyContextBanner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,6 +39,7 @@ interface FsrsReviewState {
 
 const Flashcards = () => {
   const navigate = useNavigate();
+  const studyCtx = useStudyContext();
   const [allCards, setAllCards] = useState<Flashcard[]>([]);
   const [dueCards, setDueCards] = useState<Flashcard[]>([]);
   const [fsrsStates, setFsrsStates] = useState<Map<string, FsrsReviewState>>(new Map());
@@ -46,7 +49,10 @@ const Flashcards = () => {
   const [userAnswer, setUserAnswer] = useState("");
   const [answerSubmitted, setAnswerSubmitted] = useState(false);
   const [mode, setMode] = useState<"due" | "all" | "sprint">("due");
-  const [selectedTopics, setSelectedTopics] = useState<Set<string>>(new Set());
+  const [selectedTopics, setSelectedTopics] = useState<Set<string>>(() => {
+    if (studyCtx?.topic) return new Set([studyCtx.topic]);
+    return new Set();
+  });
   const [showTopicFilter, setShowTopicFilter] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -341,6 +347,7 @@ const Flashcards = () => {
           onDiscard={abandonSession}
         />
       )}
+      <StudyContextBanner />
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">

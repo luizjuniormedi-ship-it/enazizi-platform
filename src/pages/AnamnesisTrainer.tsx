@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useStudyContext } from "@/lib/studyContext";
+import StudyContextBanner from "@/components/study/StudyContextBanner";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -222,13 +224,14 @@ const AnamnesisTrainer = () => {
   const { addXp } = useGamification();
   const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
+  const studyCtx = useStudyContext();
   const paramOrigin = (searchParams.get("origin") as SessionOrigin) || "manual";
   const { startSession: startTrackedSession, completeSession: completeTrackedSession } = useSessionTracking();
 
   const [phase, setPhase] = useState<Phase>("lobby");
-  const [specialty, setSpecialty] = useState("Clínica Médica");
-  const [subtopic, setSubtopic] = useState("");
-  const [difficulty, setDifficulty] = useState("intermediário");
+  const [specialty, setSpecialty] = useState(studyCtx?.specialty || "Clínica Médica");
+  const [subtopic, setSubtopic] = useState(studyCtx?.subtopic || "");
+  const [difficulty, setDifficulty] = useState(studyCtx?.difficulty || "intermediário");
   const [pediatricAge, setPediatricAge] = useState("aleatorio");
 
   const { recent: recentlyCompleted, addRecent: addRecentlyCompleted } = useRecentlyCompleted();
@@ -559,6 +562,7 @@ const AnamnesisTrainer = () => {
     const gradeColor: Record<string, string> = { A: "text-green-400", B: "text-blue-400", C: "text-yellow-400", D: "text-orange-400", F: "text-red-400" };
     return (
       <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
+        <StudyContextBanner />
         {checked && pendingSession && (
           <ResumeSessionBanner
             updatedAt={pendingSession.updated_at}

@@ -1,6 +1,7 @@
 import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check, FileDown, Bell, BellOff, GripVertical, CheckCircle2, Circle, MessageSquare, Layers, Sparkles, ArrowRight } from "lucide-react";
 import StudyBlockActions from "./StudyBlockActions";
 import { useNavigate } from "react-router-dom";
+import { encodeStudyContext } from "@/lib/studyContext";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
@@ -635,13 +636,13 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
                       {!isCompleted && (
                         <div className="flex gap-1.5 mt-2 ml-10">
                           <button
-                            onClick={() => navigate(`/dashboard/chatgpt?topic=${encodeURIComponent(task.subject)}`)}
+                            onClick={() => navigate(`/dashboard/chatgpt?${encodeStudyContext({ source: "planner", topic: task.subject, objective: "new_content" })}`)}
                             className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-md bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 transition-colors font-medium"
                           >
                             <MessageSquare className="h-3 w-3" /> Tutor IA
                           </button>
                           <button
-                            onClick={() => navigate(`/dashboard/flashcards?topic=${encodeURIComponent(task.subject)}`)}
+                            onClick={() => navigate(`/dashboard/flashcards?${encodeStudyContext({ source: "planner", topic: task.subject, objective: "review" })}`)}
                             className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-md bg-violet-500/10 text-violet-600 hover:bg-violet-500/20 transition-colors font-medium"
                           >
                             <Layers className="h-3 w-3" /> Flashcards
@@ -689,7 +690,7 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-sm font-semibold">{item.topic}</span>
                   <button
-                    onClick={() => navigate(`/dashboard/chatgpt?topic=${encodeURIComponent(item.topic)}`)}
+                    onClick={() => navigate(`/dashboard/chatgpt?${encodeStudyContext({ source: "planner", topic: item.topic, objective: "new_content" })}`)}
                     className="ml-auto flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 transition-colors font-medium"
                   >
                     <MessageSquare className="h-3 w-3" /> Estudar

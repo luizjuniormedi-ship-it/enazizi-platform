@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { encodeStudyContext } from "@/lib/studyContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Play, CalendarDays, AlertTriangle, Clock, CheckCircle2, ShieldAlert, Layers, BookOpen } from "lucide-react";
@@ -57,7 +58,7 @@ const CronogramaAgendaHoje = ({ revisoes, temas, temasComputados, onStartRevisao
         </div>
         <div className="flex items-center gap-1 flex-shrink-0 ml-2">
           <button
-            onClick={() => navigate(`/dashboard/flashcards?topic=${encodeURIComponent(tema.tema)}`)}
+            onClick={() => navigate(`/dashboard/flashcards?${encodeStudyContext({ source: "planner", topic: tema.tema, specialty: tema.especialidade, objective: "review" })}`)}
             className="p-1.5 rounded-md text-muted-foreground hover:text-violet-500 hover:bg-violet-500/10 transition-colors"
             aria-label="Flashcards"
             title="Flashcards do tema"
@@ -65,7 +66,7 @@ const CronogramaAgendaHoje = ({ revisoes, temas, temasComputados, onStartRevisao
             <Layers className="h-3.5 w-3.5" />
           </button>
           <button
-            onClick={() => navigate(`/dashboard/banco-questoes?topic=${encodeURIComponent(tema.tema)}`)}
+            onClick={() => navigate(`/dashboard/banco-questoes?${encodeStudyContext({ source: "planner", topic: tema.tema, specialty: tema.especialidade, objective: "practice" })}`)}
             className="p-1.5 rounded-md text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10 transition-colors"
             aria-label="Questões"
             title="Questões do tema"

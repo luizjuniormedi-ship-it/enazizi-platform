@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
+import { useStudyContext } from "@/lib/studyContext";
+import StudyContextBanner from "@/components/study/StudyContextBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionTracking, SessionOrigin } from "@/hooks/useSessionTracking";
 import { logErrorToBank } from "@/lib/errorBankLogger";
@@ -284,14 +286,15 @@ const ClinicalSimulation = () => {
   const { toast } = useToast();
   const { addXp } = useGamification();
   const [searchParams] = useSearchParams();
+  const studyCtx = useStudyContext();
   const teacherCaseId = searchParams.get("teacher_case_id");
   const paramOrigin = (searchParams.get("origin") as SessionOrigin) || "manual";
   const { startSession: startTrackedSession, completeSession: completeTrackedSession, abandonSession: abandonTrackedSession } = useSessionTracking();
 
   const [phase, setPhase] = useState<Phase>("lobby");
-  const [specialty, setSpecialty] = useState("Clínica Médica");
+  const [specialty, setSpecialty] = useState(studyCtx?.specialty || "Clínica Médica");
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
-  const [subtopic, setSubtopic] = useState("");
+  const [subtopic, setSubtopic] = useState(studyCtx?.subtopic || "");
   const [difficulty, setDifficulty] = useState("intermediário");
   const [pediatricAge, setPediatricAge] = useState("aleatorio");
   const [realisticMode, setRealisticMode] = useState(false);
@@ -1171,6 +1174,7 @@ const ClinicalSimulation = () => {
       {/* LOBBY */}
       {phase === "lobby" && (
         <div className="space-y-4">
+        <StudyContextBanner />
         {checked && pendingSession && (
           <ResumeSessionBanner
             updatedAt={pendingSession.updated_at}

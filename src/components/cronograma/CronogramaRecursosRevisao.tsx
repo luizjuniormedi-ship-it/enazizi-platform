@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { encodeStudyContext } from "@/lib/studyContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -170,7 +171,7 @@ const CronogramaRecursosRevisao = ({ tema, especialidade }: Props) => {
           variant="outline"
           size="sm"
           className="text-xs"
-          onClick={() => navigate(`/dashboard/chatgpt?topic=${encodeURIComponent(tema)}`)}
+          onClick={() => navigate(`/dashboard/chatgpt?${encodeStudyContext({ source: "planner", topic: tema, objective: "review" })}`)}
         >
           <Brain className="h-3 w-3 mr-1" /> Tutor IA
           <ExternalLink className="h-3 w-3 ml-1" />

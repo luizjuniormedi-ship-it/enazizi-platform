@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
+import { useStudyContext } from "@/lib/studyContext";
+import StudyContextBanner from "@/components/study/StudyContextBanner";
 import { useAuth } from "@/hooks/useAuth";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import { useToast } from "@/hooks/use-toast";
@@ -107,7 +109,31 @@ const ChatGPT = () => {
     });
   }, [registerAutoSave, studyStarted, messages, currentTopic, enaziziStep, performance, selectedUploadIds, sessionQuestions, sessionCorrect]);
 
-  // Location-state driven auto-start
+  // StudyContext-driven auto-start (from guided flows via URL params)
+  const studyCtx = useStudyContext();
+  const ctxHandled = useRef(false);
+  useEffect(() => {
+    if (!studyCtx || !user || ctxHandled.current) return;
+    if (studyCtx.topic) {
+      ctxHandled.current = true;
+      const objectiveMap: Record<string, string> = {
+        review: "revisão aprofundada",
+        reinforcement: "reforço e consolidação",
+        new_content: "aprendizado detalhado",
+        correction: "correção de erros e reforço",
+        practice: "prática e questões",
+      };
+      const obj = objectiveMap[studyCtx.objective || ""] || "estudo completo";
+      const msg = `Quero estudar ${studyCtx.topic}${studyCtx.specialty ? ` (${studyCtx.specialty})` : ""}. Objetivo: ${obj}. Siga o Protocolo ENAZIZI.`;
+      setStudyStarted(true);
+      setMetricsCollapsed(true);
+      setCurrentTopic(studyCtx.topic);
+      setTopic(studyCtx.topic);
+      setTimeout(() => sendMessage(ensureSequentialInitialMessage(msg)), 500);
+    }
+  }, [studyCtx, user]);
+
+  // Location-state driven auto-start (legacy)
   const errorBankHandled = useRef(false);
   const summaryHandled = useRef(false);
   useEffect(() => {
@@ -367,6 +393,8 @@ const ChatGPT = () => {
         onFinishSession={onFinishSession} onNewSession={onNewSession}
         onShowOnboarding={() => setShowOnboarding(true)}
       />
+
+      <StudyContextBanner />
 
       {sessionChecked && pendingSession && !studyStarted && (
         <ResumeSessionBanner updatedAt={pendingSession.updated_at} onResume={handleRestoreSession} onDiscard={abandonSession} />

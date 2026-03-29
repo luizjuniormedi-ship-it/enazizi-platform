@@ -166,7 +166,7 @@ export default function MissionMode() {
                 <Button
                   className="w-full gap-2 text-base py-6"
                   size="lg"
-                  onClick={() => navigate(buildStudyPath(currentTask))}
+                  onClick={() => navigate(buildStudyPath(currentTask, "mission"))}
                 >
                   <Play className="h-5 w-5" />
                   Iniciar Atividade

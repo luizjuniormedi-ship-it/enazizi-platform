@@ -6,7 +6,9 @@ import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
 import { Database, Play, Trash2, ChevronDown, ChevronUp, Search, BarChart3, Target, TrendingUp, GraduationCap, Download, HelpCircle, Zap } from "lucide-react";
 import { exportToPdf } from "@/lib/exportPdf";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useStudyContext } from "@/lib/studyContext";
+import StudyContextBanner from "@/components/study/StudyContextBanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -48,11 +50,12 @@ const QuestionsBank = () => {
   const { toast } = useToast();
   const { addXp } = useGamification();
   const navigate = useNavigate();
+  const studyCtx = useStudyContext();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [topicFilter, setTopicFilter] = useState("all");
+  const [topicFilter, setTopicFilter] = useState(studyCtx?.topic || "all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(0);
@@ -348,6 +351,7 @@ const QuestionsBank = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <StudyContextBanner />
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
