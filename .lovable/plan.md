@@ -1,128 +1,105 @@
 
 
-# ENAZIZI 2.0 — Plano de Evolução Incremental
+# Refactoring Tutor IA (ChatGPT.tsx) — Plan
 
-## Visão geral
+## Problem
+`ChatGPT.tsx` is 1373 lines containing UI, streaming logic, data fetching, session management, TTS/STT, and study flow state all in one file. The streaming logic (lines 651-703) has careful buffering to prevent cut sentences — this must be preserved exactly.
 
-Transformar a plataforma de "coleção de módulos independentes" para um **sistema com motor de decisão central (Study Engine)** que conecta desempenho, erros, revisões, simulados e prática clínica — sem quebrar nada.
+## Architecture
 
-## Fases de implementação
-
----
-
-### FASE 1 — Study Engine (núcleo de decisão)
-
-**O que é**: Um serviço central que analisa todos os dados do aluno e decide o que ele deve estudar agora.
-
-**Arquivos a criar**:
-- `src/lib/studyEngine.ts` — Lógica pura que consulta `practice_attempts`, `error_bank`, `revisoes`, `temas_estudados`, `desempenho_questoes`, `anamnesis_results` e `exam_sessions` para gerar recomendações priorizadas
-- `src/hooks/useStudyEngine.ts` — React Query hook que expõe as recomendações
-
-**Lógica do motor**:
 ```text
-┌─────────────────────────────────────────┐
-│            STUDY ENGINE                 │
-│                                         │
-│  Inputs:                                │
-│  ├─ practice_attempts (acertos/erros)   │
-│  ├─ error_bank (temas fracos)           │
-│  ├─ revisoes (pendentes/atrasadas)      │
-│  ├─ desempenho_questoes (taxa_acerto)   │
-│  ├─ anamnesis_results (scores)          │
-│  ├─ exam_sessions (simulados)           │
-│  └─ temas_estudados (progresso)         │
-│                                         │
-│  Output: StudyRecommendation[]          │
-│  ├─ type: review|practice|clinical|new  │
-│  ├─ topic + specialty                   │
-│  ├─ priority (0-100)                    │
-│  ├─ reason (texto explicativo)          │
-│  ├─ targetModule (tutor|questoes|flash  │
-│  │   cards|plantao|anamnese|simulado)   │
-│  └─ estimatedMinutes                    │
-└─────────────────────────────────────────┘
+src/pages/ChatGPT.tsx (orchestrator, ~150 lines)
+├── src/hooks/tutor/
+│   ├── useStreamingResponse.ts   — SSE reader, chunk assembly, buffer
+│   ├── useChatMessages.ts        — messages state, conversation CRUD
+│   ├── useChatProgress.ts        — ENAZIZI 14-step flow, phase actions
+│   ├── useChatContext.ts         — uploads, error bank, question bank, context builder
+│   ├── useTutorPerformance.ts    — study_performance + domain map + session stats
+│   ├── useTutorAudio.ts          — TTS (speakText, stopSpeaking, autoSpeak)
+│   └── useSpeechToText.ts        — STT (mic recognition)
+├── src/components/tutor/
+│   ├── TutorHeader.tsx           — avatar, title, dropdown menu
+│   ├── TutorStartScreen.tsx      — topic input, quick topics, weak topics, history, uploads
+│   ├── TutorStepTracker.tsx      — progress bar, step info, phase advance buttons
+│   ├── TutorMessageList.tsx      — scrollable chat area with message items
+│   ├── TutorMessageItem.tsx      — single message (markdown, copy, MultimediaControls)
+│   ├── TutorInputBar.tsx         — text input + mic + send + stop speaking
+│   ├── TutorMetricsBar.tsx       — collapsible metrics cards
+│   └── TutorOnboardingCard.tsx   — how-it-works card
+│   └── TutorConstants.ts         — MEDSTUDY_STEPS, QUICK_TOPICS, FUNCTION_NAME
 ```
 
-**Impacto zero**: Nenhum módulo existente é alterado. O engine é apenas um novo serviço que lê dados existentes.
+## Critical Streaming Logic (preserved exactly)
 
----
+The current streaming implementation at lines 651-703 uses a careful SSE parsing approach:
 
-### FASE 2 — Smart Planner (substituição incremental do Cronograma)
+1. **TextBuffer accumulation** — chunks decoded with `{ stream: true }` to handle multi-byte chars
+2. **Line-by-line processing** — only processes complete lines (split on `\n`)
+3. **Incomplete JSON recovery** — if `JSON.parse` fails, the line is prepended back to the buffer (`"incomplete"` result)
+4. **Final flush** — after reader is done, `decoder.decode()` flushes remaining bytes, then processes remaining lines
+5. **Single `assistantSoFar` variable** — accumulates full text, updates state atomically via closure
+6. **TTS only after stream completes** — `autoSpeak` fires only after the while loop exits (line 705)
 
-**O que é**: Nova página `/dashboard/planner` que usa o Study Engine para gerar planos automáticos, coexistindo com o cronograma atual.
+This logic moves **intact** into `useStreamingResponse.ts` as a single `streamResponse()` function. The `assistantSoFar` accumulator becomes a `useRef` to prevent stale closure issues. The `onComplete` callback (for TTS, DB save, error detection) fires only after the full stream is consumed.
 
-**Arquivos a criar**:
-- `src/pages/SmartPlanner.tsx` — Interface do planner com dois modos:
-  - **Modo Guiado**: o sistema monta o plano do dia automaticamente
-  - **Modo Livre**: o aluno escolhe o que estudar, mas vê sugestões do engine
-- `src/components/planner/PlannerDayView.tsx` — Visão do dia com blocos
-- `src/components/planner/PlannerSuggestions.tsx` — Sugestões do engine
-- `src/components/planner/PlannerModeToggle.tsx` — Toggle guiado/livre
+### useStreamingResponse.ts key design:
+```typescript
+// Ref-based accumulator prevents race conditions
+const accumulatorRef = useRef("");
 
-**Arquivos a editar**:
-- `src/App.tsx` — Adicionar rota `/dashboard/planner`
-- `src/components/layout/DashboardSidebar.tsx` — Adicionar item "Planner" no menu
-- `src/components/layout/DashboardLayout.tsx` — Adicionar no menu mobile
+// appendChunk updates both ref and state atomically
+const appendChunk = (chunk: string) => {
+  accumulatorRef.current += chunk;
+  setMessages(prev => /* update last assistant msg with accumulatorRef.current */);
+};
 
-**Regra**: O cronograma atual (`/dashboard/cronograma`) permanece intacto e acessível. O Planner é uma alternativa nova.
+// onComplete only fires after [DONE] or reader.done
+// This is where autoSpeak, DB save, and error detection happen
+```
 
----
+## Files to Create (11 files)
 
-### FASE 3 — Integração dos módulos com o Study Engine
+### Hooks (7 files)
+1. **`src/hooks/tutor/useStreamingResponse.ts`** — SSE reader with buffer, incomplete-line recovery, ref-based accumulator, onComplete callback
+2. **`src/hooks/tutor/useChatMessages.ts`** — messages state, loadConversation, saveMessage, deleteConversation, startNewSession
+3. **`src/hooks/tutor/useChatProgress.ts`** — enaziziStep, saveEnaziziStep, handlePhaseAction, getNextPhaseInfo, handleChangeTopic
+4. **`src/hooks/tutor/useChatContext.ts`** — uploads, errorBank, bankQuestions, buildUserContext, selectedUploadIds
+5. **`src/hooks/tutor/useTutorPerformance.ts`** — performance state, savePerformance, handleFinishSession, session stats
+6. **`src/hooks/tutor/useTutorAudio.ts`** — speakText, stopSpeaking, autoSpeak toggle, isSpeaking state
+7. **`src/hooks/tutor/useSpeechToText.ts`** — toggleListening, isListening, recognition ref
 
-**O que é**: Conectar os módulos existentes para receberem contexto do engine.
+### Components (9 files)
+8. **`src/components/tutor/TutorConstants.ts`** — MEDSTUDY_STEPS, QUICK_TOPICS, FUNCTION_NAME, NON_MEDICAL_KEYWORDS, MEDSTUDY_SEQUENTIAL_APPENDIX
+9. **`src/components/tutor/TutorHeader.tsx`** — ~50 lines, avatar + title + dropdown
+10. **`src/components/tutor/TutorStartScreen.tsx`** — ~150 lines, topic input, quick topics, weak topics, recent history, uploads
+11. **`src/components/tutor/TutorStepTracker.tsx`** — ~80 lines, progress bar + step info + phase buttons
+12. **`src/components/tutor/TutorMessageList.tsx`** — ~40 lines, scroll container + loading indicator
+13. **`src/components/tutor/TutorMessageItem.tsx`** — ~40 lines, single message bubble with markdown + copy + MultimediaControls
+14. **`src/components/tutor/TutorMetricsBar.tsx`** — ~60 lines, collapsible metrics
+15. **`src/components/tutor/TutorOnboardingCard.tsx`** — ~40 lines, how-it-works card
+16. **`src/components/tutor/TutorInputBar.tsx`** — ~40 lines, input + mic + send
 
-**Arquivos a editar**:
-- `src/pages/Dashboard.tsx` — Substituir `SmartRecommendations` pelas recomendações do Study Engine
-- `src/pages/DailyPlan.tsx` — Usar Study Engine como fonte de dados para blocos do dia (fallback para lógica atual se engine vazio)
-- `src/components/dashboard/SmartRecommendations.tsx` — Refatorar para consumir `useStudyEngine()`
+### Modified Files
+17. **`src/pages/ChatGPT.tsx`** — reduced to ~150 lines, composing hooks and components
 
-**Novos componentes**:
-- `src/components/dashboard/StudyEngineWidget.tsx` — Widget compacto no dashboard: "O que estudar agora" com 1 clique para iniciar
+## Streaming Integrity Guarantees
 
-**Regra**: Toda mudança mantém fallback. Se o engine não retornar dados, o comportamento atual é preservado.
+| Risk | Mitigation |
+|------|-----------|
+| Cut sentences mid-chunk | `assistantSoFar` ref accumulates; state updated with full ref value |
+| Incomplete SSE JSON | `"incomplete"` result prepends line back to buffer (preserved exactly) |
+| Multi-byte char split | `decoder.decode(value, { stream: true })` preserved |
+| TTS before message done | `onComplete` callback fires only after stream loop exits |
+| Race condition on state | Single `useRef` accumulator; `setMessages` uses functional updater |
+| Premature finalization | Message marked complete only on `[DONE]` or `reader.done` |
+| Duplicated state updates | `appendChunk` is the single path for content updates |
 
----
-
-### FASE 4 — Acionamento automático de Plantão e Anamnese
-
-**O que é**: O Study Engine pode sugerir sessões de Plantão ou Anamnese quando detecta que o aluno precisa de prática clínica.
-
-**Lógica**:
-- Se o aluno tem acurácia alta em teoria (>75%) mas poucas sessões clínicas → sugerir Plantão
-- Se o aluno estudou semiologia recentemente mas não praticou anamnese → sugerir Anamnese
-- Se o aluno errou questões clínicas → sugerir caso clínico no Plantão
-
-**Arquivos a editar**:
-- `src/lib/studyEngine.ts` — Adicionar regras clínicas
-- `src/components/planner/PlannerSuggestions.tsx` — Renderizar sugestões clínicas com navegação direta
-
-**Nenhuma alteração** nos módulos Plantão e Anamnese — apenas o engine os sugere.
-
----
-
-### FASE 5 — Transição suave do Cronograma para Planner
-
-**O que é**: Migrar gradualmente usuários do cronograma para o planner.
-
-**Ações**:
-- Adicionar banner no cronograma: "Experimente o novo Planner Inteligente"
-- Importar temas do cronograma para o Planner automaticamente
-- Manter cronograma funcional indefinidamente (sem data de remoção)
-
----
-
-## Resumo de entregas por fase
-
-| Fase | Entrega | Risco |
-|------|---------|-------|
-| 1 | Study Engine (serviço puro) | Zero — só lê dados |
-| 2 | Smart Planner (nova página) | Baixo — nova rota |
-| 3 | Dashboard + DailyPlan usam engine | Baixo — com fallback |
-| 4 | Sugestões clínicas automáticas | Zero — só sugestões |
-| 5 | Banner de migração | Zero — informativo |
-
-## Proposta
-
-Implementar a **Fase 1** agora (Study Engine). Após validação, avançar para a Fase 2.
+## What stays unchanged
+- Edge function `chatgpt-agent` — untouched
+- `MultimediaControls` component — untouched  
+- `CinematicAvatar` component — untouched
+- `ResumeSessionBanner` — untouched
+- All Supabase table interactions — same queries
+- 14-step ENAZIZI flow — same prompts and step numbers
+- Visual appearance — identical UI output
 
