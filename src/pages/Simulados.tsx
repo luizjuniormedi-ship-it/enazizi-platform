@@ -37,6 +37,8 @@ function buildPrompt(topics: string[], count: number, difficulty: string): strin
 
   return `Gere exatamente ${count} questões de múltipla escolha para simulado de residência médica.
 
+IDIOMA OBRIGATÓRIO: TUDO deve ser escrito em PORTUGUÊS BRASILEIRO. Enunciados, alternativas, explicações — TUDO em pt-BR. NUNCA use inglês.
+
 TEMAS: ${topicsStr}
 DISTRIBUIÇÃO: aproximadamente ${perTopic} questões por tema. Distribua igualmente.
 ${difficultyInstruction}
@@ -48,15 +50,16 @@ REGRAS OBRIGATÓRIAS:
 4. A explicação deve citar a referência bibliográfica (ex: Harrison, Nelson, Sabiston, etc.)
 5. O campo "correct_index" deve ser o índice (0-4) da alternativa correta
 6. 70% das questões devem envolver raciocínio clínico (diagnóstico, conduta ou tratamento), 30% podem ser teóricas
+7. TODOS os textos DEVEM estar em português brasileiro. PROIBIDO qualquer texto em inglês.
 
 FORMATO: Retorne APENAS um array JSON puro, sem markdown, sem \`\`\`, neste formato:
 [
   {
-    "statement": "Caso clínico completo...",
-    "options": ["alternativa A", "alternativa B", "alternativa C", "alternativa D", "alternativa E"],
+    "statement": "Caso clínico completo em português...",
+    "options": ["alternativa A em português", "alternativa B em português", "alternativa C em português", "alternativa D em português", "alternativa E em português"],
     "correct_index": 0,
-    "topic": "tema da questão",
-    "explanation": "Explicação detalhada com referência bibliográfica..."
+    "topic": "tema da questão em português",
+    "explanation": "Explicação detalhada em português com referência bibliográfica..."
   }
 ]`;
 }
