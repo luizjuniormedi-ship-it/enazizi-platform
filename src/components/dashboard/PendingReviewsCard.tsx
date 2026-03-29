@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Brain, AlertTriangle, ChevronRight } from "lucide-react";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
+import { buildStudyPath } from "@/lib/studyRouter";
 
 export default function PendingReviewsCard() {
   const navigate = useNavigate();
@@ -36,7 +37,7 @@ export default function PendingReviewsCard() {
           <div
             key={rev.id}
             className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors group"
-            onClick={() => navigate(rev.targetPath)}
+            onClick={() => navigate(buildStudyPath(rev))}
           >
             {rev.priority >= 85 && (
               <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />

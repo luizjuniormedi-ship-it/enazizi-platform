@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingDown, ChevronRight } from "lucide-react";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
+import { buildStudyPath } from "@/lib/studyRouter";
 
 export default function WeakTopicsCard() {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ export default function WeakTopicsCard() {
           <div
             key={item.id}
             className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors group"
-            onClick={() => navigate(item.targetPath)}
+            onClick={() => navigate(buildStudyPath(item))}
           >
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium truncate">{item.topic}</p>

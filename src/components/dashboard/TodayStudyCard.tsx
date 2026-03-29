@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Play, Sparkles, Clock, CheckCircle2 } from "lucide-react";
 import { useStudyEngine, type StudyRecommendation } from "@/hooks/useStudyEngine";
+import { buildStudyPath } from "@/lib/studyRouter";
 
 export default function TodayStudyCard() {
   const navigate = useNavigate();
@@ -82,7 +83,7 @@ export default function TodayStudyCard() {
           <Button
             size="sm"
             className="gap-1.5 font-semibold"
-            onClick={() => navigate(topTask.targetPath)}
+            onClick={() => navigate(buildStudyPath(topTask))}
           >
             <Play className="h-3.5 w-3.5" />
             Iniciar próximo bloco
