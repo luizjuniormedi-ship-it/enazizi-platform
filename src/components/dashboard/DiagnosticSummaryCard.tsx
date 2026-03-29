@@ -89,7 +89,7 @@ export default function DiagnosticSummaryCard() {
           <div className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">
             <AlertTriangle className="h-4 w-4 shrink-0" />
             <p className="text-xs font-medium">
-              Nivelamento desatualizado ({Math.round(daysSince)} dias). Refaça para atualizar seu perfil.
+              Nivelamento desatualizado ({Math.round(daysSince)} dias). Refaça para ajustar seu plano.
             </p>
           </div>
         )}
@@ -134,7 +134,7 @@ export default function DiagnosticSummaryCard() {
         {/* Weak topics */}
         {weakTopics.length > 0 && !evolutions.length && (
           <div className="mb-3">
-            <p className="text-[11px] font-medium text-muted-foreground mb-1">Áreas mais fracas:</p>
+            <p className="text-[11px] font-medium text-muted-foreground mb-1">Temas que precisam de reforço:</p>
             <div className="flex flex-wrap gap-1.5">
               {weakTopics.map((t: any) => (
                 <span
@@ -155,7 +155,7 @@ export default function DiagnosticSummaryCard() {
             className="flex-1 justify-between text-xs h-8 text-primary"
             onClick={() => navigate("/dashboard/planner")}
           >
-            <span>Ver plano baseado no nivelamento</span>
+            <span>Ver Plano Geral</span>
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>
           {canRetake && (

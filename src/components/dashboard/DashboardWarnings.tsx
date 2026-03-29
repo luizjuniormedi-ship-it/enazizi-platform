@@ -33,58 +33,54 @@ const DashboardWarnings = ({
   // Real activity: no questions answered today and it's past noon
   if (questionsToday === 0 && hour >= 12) {
     warnings.push({
-      title: "Você ainda não estudou hoje!",
-      message: "O dia está passando e você não respondeu nenhuma questão. Cada dia sem estudar é um dia mais longe do seu sonho!",
-      severity: "red",
-      action: { label: "Estudar Agora", path: "/dashboard/simulados" },
+      title: "Você ainda não estudou hoje",
+      message: "Que tal começar com uma sessão rápida? Mesmo 20 minutos fazem diferença.",
+      severity: "orange",
+      action: { label: "Começar agora", path: "/dashboard/simulados" },
     });
   }
 
-  // Schedule warnings only if user has a study plan
   if (hasStudyPlan) {
     if (todayTotal > 2 && todayCompleted > 0 && todayCompleted < todayTotal * 0.5 && hour >= 17) {
       warnings.push({
-        title: "Seu progresso de hoje está baixo",
-        message: `Você completou apenas ${todayCompleted} de ${todayTotal} blocos. Aproveite o tempo que resta!`,
+        title: "Progresso de hoje abaixo do esperado",
+        message: `Você completou ${todayCompleted} de ${todayTotal} blocos. Ainda dá tempo de avançar.`,
         severity: "orange",
       });
     }
 
     if (totalTasks > 5 && taskPercent < 30) {
       warnings.push({
-        title: "Seu cronograma está ficando para trás!",
-        message: `Apenas ${taskPercent}% das suas tarefas foram concluídas. Retome o foco agora!`,
+        title: "Seu plano precisa de atenção",
+        message: `Apenas ${taskPercent}% das tarefas concluídas. Retome o ritmo para não acumular.`,
         severity: "red",
-        action: { label: "Ver Planner", path: "/dashboard/planner" },
+        action: { label: "Ver Plano Geral", path: "/dashboard/planner" },
       });
     }
   }
 
-  // No study plan configured — suggest creating one
   if (!hasStudyPlan && totalTasks === 0) {
     warnings.push({
-      title: "Configure seu cronograma de estudos",
-      message: "Crie um plano de estudo personalizado para acompanhar seu progresso e receber lembretes inteligentes.",
+      title: "Crie seu Plano Geral",
+      message: "Com um plano definido, o sistema organiza suas revisões e acompanha seu progresso.",
       severity: "orange",
-      action: { label: "Criar Plano", path: "/dashboard/planner" },
+      action: { label: "Criar plano", path: "/dashboard/planner" },
     });
   }
 
-  // Lost streak
   if (streak === 0 && questionsToday === 0 && hour >= 14) {
     warnings.push({
-      title: "Sua sequência de estudos zerou!",
-      message: "Grandes aprovações exigem constância. Comece uma nova sequência hoje!",
+      title: "Sua sequência de estudos zerou",
+      message: "Constância é o que diferencia quem passa. Comece uma nova sequência hoje.",
       severity: "orange",
-      action: { label: "Começar Agora", path: "/dashboard/chatgpt" },
+      action: { label: "Começar agora", path: "/dashboard/chatgpt" },
     });
   }
 
-  // Close to exam with low progress
   if (daysUntilExam !== null && daysUntilExam <= 30 && taskPercent < 50 && hasStudyPlan) {
     warnings.push({
-      title: `⚠️ Faltam ${daysUntilExam} dias para a prova!`,
-      message: `Restam ${daysUntilExam} dias e você só completou ${taskPercent}% do cronograma. Intensifique seus estudos!`,
+      title: `Faltam ${daysUntilExam} dias para a prova`,
+      message: `Progresso em ${taskPercent}%. Foque nas revisões e nos temas com mais peso.`,
       severity: "red",
     });
   }

@@ -63,9 +63,9 @@ export default function ApprovalScoreCard() {
       });
       if (res.error) throw res.error;
       await refetch();
-      toast.success("Score atualizado!");
+      toast.success("Score atualizado com sucesso");
     } catch {
-      toast.error("Erro ao recalcular score");
+      toast.error("Não foi possível atualizar. Tente novamente.");
     } finally {
       setIsRecalculating(false);
     }
@@ -79,12 +79,12 @@ export default function ApprovalScoreCard() {
   // Build weak points from sub-dimensions
   const issues: string[] = [];
   if (scoreData) {
-    if (scoreData.accuracy < 60) issues.push(`Acurácia baixa (${clampPercent(scoreData.accuracy)}%)`);
-    if (scoreData.review_score < 50) issues.push("Revisões atrasadas");
-    if (scoreData.consistency_score < 40) issues.push("Baixa consistência de estudo");
-    if (scoreData.simulation_score < 50) issues.push("Poucos simulados realizados");
-    if (scoreData.error_penalty > 50) issues.push("Muitos erros recorrentes");
-    if (scoreData.domain_score < 50) issues.push("Domínio fraco em especialidades");
+    if (scoreData.accuracy < 60) issues.push(`Acurácia em ${clampPercent(scoreData.accuracy)}% — revise os temas errados`);
+    if (scoreData.review_score < 50) issues.push("Revisões acumuladas — priorize retomar");
+    if (scoreData.consistency_score < 40) issues.push("Estudo irregular — tente manter frequência diária");
+    if (scoreData.simulation_score < 50) issues.push("Poucos simulados — pratique mais provas completas");
+    if (scoreData.error_penalty > 50) issues.push("Erros recorrentes — foque nos temas que mais erra");
+    if (scoreData.domain_score < 50) issues.push("Algumas especialidades precisam de mais atenção");
   }
 
   return (
@@ -148,7 +148,7 @@ export default function ApprovalScoreCard() {
           <div className="px-4 pb-3">
             <p className="text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
               <AlertTriangle className="h-3 w-3" />
-              Você precisa melhorar:
+              Pontos para melhorar:
             </p>
             <div className="space-y-1">
               {issues.slice(0, 3).map((issue) => (
@@ -163,15 +163,15 @@ export default function ApprovalScoreCard() {
         {/* No data state — uncertainty framing */}
         {!scoreData && (
           <div className="px-4 pb-3 text-center">
-            <p className="text-xs text-muted-foreground mb-1">
-              Você ainda não sabe sua chance de aprovação
+           <p className="text-xs text-muted-foreground mb-1">
+              Descubra sua chance de aprovação
             </p>
             <p className="text-[11px] text-muted-foreground/70 mb-2">
-              Sem esse dado, é difícil saber se está no caminho certo
+              Analisamos seu desempenho e calculamos sua probabilidade
             </p>
             <Button size="sm" variant="outline" onClick={handleRecalculate} disabled={isRecalculating}>
               <RefreshCw className={`h-3.5 w-3.5 mr-1 ${isRecalculating ? "animate-spin" : ""}`} />
-              Descobrir agora
+              Calcular agora
             </Button>
           </div>
         )}
@@ -186,7 +186,7 @@ export default function ApprovalScoreCard() {
           >
             <span className="flex items-center gap-1">
               <TrendingUp className="h-3.5 w-3.5" />
-              Ver plano para melhorar
+              Ver Plano Geral
             </span>
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>

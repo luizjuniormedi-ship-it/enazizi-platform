@@ -20,11 +20,11 @@ export default function WeakTopicsCard() {
         <CardHeader className="pb-2 pt-4 px-4">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold">
             <TrendingDown className="h-4 w-4 text-rose-500" />
-            Pontos Fracos
+            Temas para Reforçar
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4">
-          <p className="text-xs text-muted-foreground">✅ Nenhum ponto crítico identificado</p>
+          <p className="text-xs text-muted-foreground">✅ Nenhum tema crítico no momento</p>
         </CardContent>
       </Card>
     );
@@ -35,7 +35,7 @@ export default function WeakTopicsCard() {
       <CardHeader className="pb-2 pt-4 px-4">
         <CardTitle className="flex items-center gap-2 text-sm font-semibold">
           <TrendingDown className="h-4 w-4 text-rose-500" />
-          Pontos Fracos
+          Temas para Reforçar
           <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-rose-500/10 text-rose-500 ml-auto border-0">
             {weakTopics.length}
           </Badge>
@@ -53,7 +53,7 @@ export default function WeakTopicsCard() {
               <p className="text-[10px] text-muted-foreground">{item.reason}</p>
             </div>
             <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-primary shrink-0">
-              Treinar
+              Reforçar
             </Button>
           </div>
         ))}

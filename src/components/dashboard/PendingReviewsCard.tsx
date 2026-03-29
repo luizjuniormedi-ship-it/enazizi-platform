@@ -24,7 +24,7 @@ export default function PendingReviewsCard() {
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4">
-          <p className="text-xs text-muted-foreground">✅ Nenhuma revisão pendente</p>
+          <p className="text-xs text-muted-foreground">✅ Revisões em dia</p>
         </CardContent>
       </Card>
     );
@@ -62,8 +62,8 @@ export default function PendingReviewsCard() {
           </div>
         ))}
         {reviews.length > 4 && (
-          <Button variant="ghost" size="sm" className="w-full text-xs h-7 text-muted-foreground" onClick={() => navigate("/dashboard/planner")}>
-            + {reviews.length - 4} mais
+          <Button variant="ghost" size="sm" className="w-full text-xs h-7 text-muted-foreground" onClick={() => navigate("/dashboard/plano-dia")}>
+            Ver todas as revisões
           </Button>
         )}
       </CardContent>
