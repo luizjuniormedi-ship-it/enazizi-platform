@@ -210,6 +210,15 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
 
   // ── 1. Overdue / pending reviews ─────────────────────────────
 
+  // Track seen topic keys to avoid duplicates
+  const seenTopics = new Set<string>();
+  const addRec = (rec: StudyRecommendation) => {
+    const groupKey = rec._groupKey || `${rec.type}:${rec.topic}`;
+    if (seenTopics.has(groupKey)) return;
+    seenTopics.add(groupKey);
+    recs.push(rec);
+  };
+
   for (let i = 0; i < Math.min(pendingReviews.length, 5); i++) {
     const rev = pendingReviews[i];
     const isOverdue = rev.data_revisao <= today;
@@ -220,7 +229,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     // Boost review priority in critical phase
     const phaseBonus = weights.phase === "critico" ? 5 : 0;
 
-    recs.push({
+    addRec({
       id: id("rev", i),
       type: "review",
       topic: tema,
@@ -229,9 +238,11 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       reason: isOverdue
         ? `Revisão atrasada de "${tema}" — risco de esquecer!`
         : `Revisão programada de "${tema}" para hoje.`,
-      targetModule: "cronograma",
-      targetPath: "/dashboard/planner",
+      targetModule: "tutor",
+      targetPath: "/dashboard/chatgpt",
       estimatedMinutes: 15,
+      objective: "review",
+      _groupKey: `review:${tema}`,
     });
   }
 
