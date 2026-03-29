@@ -58,7 +58,7 @@ const CronogramaAgendaHoje = ({ revisoes, temas, temasComputados, onStartRevisao
         </div>
         <div className="flex items-center gap-1 flex-shrink-0 ml-2">
           <button
-            onClick={() => navigate(`/dashboard/flashcards?topic=${encodeURIComponent(tema.tema)}`)}
+            onClick={() => navigate(`/dashboard/flashcards?${encodeStudyContext({ source: "planner", topic: tema.tema, specialty: tema.especialidade, objective: "review" })}`)}
             className="p-1.5 rounded-md text-muted-foreground hover:text-violet-500 hover:bg-violet-500/10 transition-colors"
             aria-label="Flashcards"
             title="Flashcards do tema"
