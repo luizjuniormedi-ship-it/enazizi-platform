@@ -239,6 +239,7 @@ NÃO inclua texto extra, APENAS o JSON.` }],
   };
 
   const startExam = async (cycle: string) => {
+    setSelectedCycle(cycle);
     setPhase("loading");
     try {
       const allQuestions: DiagQuestion[] = [];
