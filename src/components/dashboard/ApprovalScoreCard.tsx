@@ -63,7 +63,7 @@ export default function ApprovalScoreCard() {
       });
       if (res.error) throw res.error;
       await refetch();
-      toast.success("Score atualizado!");
+      toast.success("Score atualizado com sucesso");
     } catch {
       toast.error("Erro ao recalcular score");
     } finally {
