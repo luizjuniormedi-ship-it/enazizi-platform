@@ -562,6 +562,7 @@ const AnamnesisTrainer = () => {
     const gradeColor: Record<string, string> = { A: "text-green-400", B: "text-blue-400", C: "text-yellow-400", D: "text-orange-400", F: "text-red-400" };
     return (
       <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
+        <StudyContextBanner />
         {checked && pendingSession && (
           <ResumeSessionBanner
             updatedAt={pendingSession.updated_at}

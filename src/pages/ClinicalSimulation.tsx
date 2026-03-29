@@ -1174,6 +1174,7 @@ const ClinicalSimulation = () => {
       {/* LOBBY */}
       {phase === "lobby" && (
         <div className="space-y-4">
+        <StudyContextBanner />
         {checked && pendingSession && (
           <ResumeSessionBanner
             updatedAt={pendingSession.updated_at}
