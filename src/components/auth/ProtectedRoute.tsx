@@ -306,6 +306,30 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
+  // V2 Welcome screen for existing users
+  if (showWelcome) {
+    return (
+      <WelcomeBackScreen
+        onStart={() => {
+          localStorage.setItem("enazizi_v2_welcome_seen", "true");
+          setShowWelcome(false);
+          setShowOnboarding(true);
+        }}
+      />
+    );
+  }
+
+  // V2 Onboarding flow
+  if (showOnboarding) {
+    return (
+      <OnboardingV2Flow
+        onComplete={() => {
+          setShowOnboarding(false);
+          setOnboardingVersion(2);
+        }}
+      />
+    );
+  }
 
   return <>{children}</>;
 };
