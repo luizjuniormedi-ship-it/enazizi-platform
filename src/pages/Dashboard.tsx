@@ -152,6 +152,10 @@ const Dashboard = () => {
       )}
 
       {/* ══════════════════════════════════════════
+          BLOCO 2.5 — NIVELAMENTO
+         ══════════════════════════════════════════ */}
+      <DiagnosticSummaryCard />
+
           BLOCO 3 — REVISÕES E FRAQUEZAS
          ══════════════════════════════════════════ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
