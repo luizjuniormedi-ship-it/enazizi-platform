@@ -37,7 +37,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const check = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("is_blocked, status, display_name, phone, periodo, faculdade")
+        .select("is_blocked, status, display_name, phone, periodo, faculdade, onboarding_version")
         .eq("user_id", user.id)
         .maybeSingle();
       if (data?.is_blocked) {
