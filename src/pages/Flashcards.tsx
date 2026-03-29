@@ -39,7 +39,7 @@ const Flashcards = () => {
   const navigate = useNavigate();
   const [allCards, setAllCards] = useState<Flashcard[]>([]);
   const [dueCards, setDueCards] = useState<Flashcard[]>([]);
-  const [reviews, setReviews] = useState<Map<string, Review>>(new Map());
+  const [fsrsStates, setFsrsStates] = useState<Map<string, FsrsReviewState>>(new Map());
   const [loading, setLoading] = useState(true);
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
