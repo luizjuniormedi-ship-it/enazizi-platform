@@ -510,10 +510,10 @@ const Flashcards = () => {
               <div className="absolute top-4 right-4 text-xs text-muted-foreground">
                 {idx + 1}/{filteredCards.length}
               </div>
-              {reviews.get(card.id) && (
+              {fsrsStates.get(card.id) && (
                 <div className="absolute bottom-4 left-4 text-xs text-muted-foreground flex items-center gap-1">
                   <CalendarDays className="h-3 w-3" />
-                  Intervalo: {reviews.get(card.id)!.interval_days}d
+                  Estabilidade: {fsrsStates.get(card.id)!.stability.toFixed(1)}d
                 </div>
               )}
 
