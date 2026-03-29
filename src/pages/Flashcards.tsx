@@ -39,6 +39,7 @@ interface FsrsReviewState {
 
 const Flashcards = () => {
   const navigate = useNavigate();
+  const studyCtx = useStudyContext();
   const [allCards, setAllCards] = useState<Flashcard[]>([]);
   const [dueCards, setDueCards] = useState<Flashcard[]>([]);
   const [fsrsStates, setFsrsStates] = useState<Map<string, FsrsReviewState>>(new Map());
@@ -48,7 +49,10 @@ const Flashcards = () => {
   const [userAnswer, setUserAnswer] = useState("");
   const [answerSubmitted, setAnswerSubmitted] = useState(false);
   const [mode, setMode] = useState<"due" | "all" | "sprint">("due");
-  const [selectedTopics, setSelectedTopics] = useState<Set<string>>(new Set());
+  const [selectedTopics, setSelectedTopics] = useState<Set<string>>(() => {
+    if (studyCtx?.topic) return new Set([studyCtx.topic]);
+    return new Set();
+  });
   const [showTopicFilter, setShowTopicFilter] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
