@@ -420,14 +420,19 @@ const Flashcards = () => {
         </div>
       )}
 
-      {/* Stats bar */}
-      <div className="grid grid-cols-5 gap-2">
-        {INTERVALS.map((interval) => {
-          const count = Array.from(reviews.values()).filter((r) => r.interval_days === interval).length;
+      {/* FSRS Stats bar */}
+      <div className="grid grid-cols-4 gap-2">
+        {[
+          { label: "Novos", filter: (s: FsrsReviewState) => s.state === 0 },
+          { label: "Aprendendo", filter: (s: FsrsReviewState) => s.state === 1 || s.state === 3 },
+          { label: "Revisão", filter: (s: FsrsReviewState) => s.state === 2 },
+          { label: "Total", filter: () => true },
+        ].map(({ label, filter }) => {
+          const count = Array.from(fsrsStates.values()).filter(filter).length;
           return (
-            <div key={interval} className="glass-card p-3 text-center">
+            <div key={label} className="glass-card p-3 text-center">
               <div className="text-lg font-bold text-primary">{count}</div>
-              <div className="text-xs text-muted-foreground">{interval}d</div>
+              <div className="text-xs text-muted-foreground">{label}</div>
             </div>
           );
         })}
