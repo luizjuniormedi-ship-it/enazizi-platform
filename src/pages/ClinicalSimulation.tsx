@@ -292,9 +292,9 @@ const ClinicalSimulation = () => {
   const { startSession: startTrackedSession, completeSession: completeTrackedSession, abandonSession: abandonTrackedSession } = useSessionTracking();
 
   const [phase, setPhase] = useState<Phase>("lobby");
-  const [specialty, setSpecialty] = useState("Clínica Médica");
+  const [specialty, setSpecialty] = useState(studyCtx?.specialty || "Clínica Médica");
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
-  const [subtopic, setSubtopic] = useState("");
+  const [subtopic, setSubtopic] = useState(studyCtx?.subtopic || "");
   const [difficulty, setDifficulty] = useState("intermediário");
   const [pediatricAge, setPediatricAge] = useState("aleatorio");
   const [realisticMode, setRealisticMode] = useState(false);
