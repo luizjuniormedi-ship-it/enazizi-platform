@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Trophy, Flame, Target, BookOpen, Users, Loader2, Medal } from "lucide-react";
-import { ACHIEVEMENTS, useGamification, levelFromXp, type Achievement } from "@/hooks/useGamification";
+import { ACHIEVEMENTS, useGamification, levelFromXp, getLevelName, type Achievement } from "@/hooks/useGamification";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -90,7 +90,8 @@ const Achievements = () => {
           <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-lg font-bold shadow-lg mb-2">
             {gamification?.level || 1}
           </div>
-          <div className="text-xs text-muted-foreground">Nível atual</div>
+          <div className="text-sm font-semibold text-foreground">{getLevelName(gamification?.level || 1)}</div>
+          <div className="text-xs text-muted-foreground">Nível {gamification?.level || 1}</div>
           <div className="w-full h-2 bg-muted rounded-full mt-2 overflow-hidden">
             <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500" style={{ width: `${progress}%` }} />
           </div>
