@@ -1,6 +1,7 @@
 import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check, FileDown, Bell, BellOff, GripVertical, CheckCircle2, Circle, MessageSquare, Layers, Sparkles, ArrowRight } from "lucide-react";
 import StudyBlockActions from "./StudyBlockActions";
 import { useNavigate } from "react-router-dom";
+import { encodeStudyContext } from "@/lib/studyContext";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
