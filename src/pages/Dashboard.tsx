@@ -95,6 +95,11 @@ const Dashboard = () => {
     prevStreakRef.current = stats.streak;
   }, [data]);
 
+  // Smart message delivery — contextual notifications based on student profile
+  useEffect(() => {
+    if (data) evaluateAndDeliver();
+  }, [data, evaluateAndDeliver]);
+
   if (isLoading || !data) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
