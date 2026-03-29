@@ -224,6 +224,7 @@ const AnamnesisTrainer = () => {
   const { addXp } = useGamification();
   const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
+  const studyCtx = useStudyContext();
   const paramOrigin = (searchParams.get("origin") as SessionOrigin) || "manual";
   const { startSession: startTrackedSession, completeSession: completeTrackedSession } = useSessionTracking();
 

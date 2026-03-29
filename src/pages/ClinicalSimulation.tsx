@@ -286,6 +286,7 @@ const ClinicalSimulation = () => {
   const { toast } = useToast();
   const { addXp } = useGamification();
   const [searchParams] = useSearchParams();
+  const studyCtx = useStudyContext();
   const teacherCaseId = searchParams.get("teacher_case_id");
   const paramOrigin = (searchParams.get("origin") as SessionOrigin) || "manual";
   const { startSession: startTrackedSession, completeSession: completeTrackedSession, abandonSession: abandonTrackedSession } = useSessionTracking();
