@@ -2,20 +2,16 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { adjustPlanByApprovalScore } from "@/lib/approvalScoreWeights";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Shield, AlertTriangle, TrendingUp, ChevronRight } from "lucide-react";
-import type { DashboardMetrics } from "@/hooks/useDashboardData";
-
-interface Props {
-  metrics: DashboardMetrics;
-}
+import { Shield, AlertTriangle, TrendingUp, ChevronRight, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+import { useState } from "react";
 
 const STATUS_CONFIG = [
   { max: 50, label: "Crítico", color: "text-destructive", bg: "bg-destructive", border: "border-destructive/30", emoji: "🔴" },
-  { max: 70, label: "Atenção", color: "text-warning", bg: "bg-warning", border: "border-warning/30", emoji: "🟡" },
+  { max: 70, label: "Atenção", color: "text-yellow-500", bg: "bg-yellow-500", border: "border-yellow-500/30", emoji: "🟡" },
   { max: 85, label: "Competitivo", color: "text-emerald-500", bg: "bg-emerald-500", border: "border-emerald-500/30", emoji: "🟢" },
   { max: 100, label: "Pronto!", color: "text-primary", bg: "bg-primary", border: "border-primary/30", emoji: "🏆" },
 ];
@@ -24,73 +20,70 @@ function getStatus(score: number) {
   return STATUS_CONFIG.find((s) => score <= s.max) || STATUS_CONFIG[STATUS_CONFIG.length - 1];
 }
 
-export default function ApprovalScoreCard({ metrics }: Props) {
+interface ScoreData {
+  score: number;
+  accuracy: number;
+  domain_score: number;
+  review_score: number;
+  consistency_score: number;
+  simulation_score: number;
+  error_penalty: number;
+  details_json?: Record<string, any>;
+}
+
+export default function ApprovalScoreCard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [isRecalculating, setIsRecalculating] = useState(false);
 
-  const { data: domainData } = useQuery({
-    queryKey: ["approval-score-domains", user?.id],
+  // Read latest persisted score
+  const { data: scoreData, refetch } = useQuery({
+    queryKey: ["approval-score-latest", user?.id],
     queryFn: async () => {
       const { data } = await supabase
-        .from("medical_domain_map")
-        .select("specialty, domain_score, questions_answered")
-        .eq("user_id", user!.id);
-      return data || [];
-    },
-    enabled: !!user,
-    staleTime: 3 * 60 * 1000,
-  });
-
-  const { data: reviewCount } = useQuery({
-    queryKey: ["pending-reviews-count", user?.id],
-    queryFn: async () => {
-      const today = new Date().toISOString().split("T")[0];
-      const { count } = await supabase
-        .from("revisoes")
-        .select("id", { count: "exact", head: true })
+        .from("approval_scores")
+        .select("*")
         .eq("user_id", user!.id)
-        .eq("status", "pendente")
-        .lte("data_revisao", today);
-      return count || 0;
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+      return data as ScoreData | null;
     },
     enabled: !!user,
-    staleTime: 60_000,
+    staleTime: 5 * 60 * 1000,
   });
 
-  const specialties = domainData || [];
-  const avgDomain = specialties.length > 0
-    ? specialties.reduce((s, d) => s + (d.domain_score || 0), 0) / specialties.length
-    : 0;
+  const handleRecalculate = async () => {
+    if (!user) return;
+    setIsRecalculating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke("calculate-approval-score", {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (res.error) throw res.error;
+      await refetch();
+      toast.success("Score atualizado!");
+    } catch {
+      toast.error("Erro ao recalcular score");
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
 
-  const volumeScore = Math.min((metrics.questionsAnswered / 500) * 100, 100);
-  const activities = [
-    metrics.questionsAnswered > 0,
-    metrics.simuladosCompleted > 0,
-    metrics.clinicalSimulations > 0,
-    metrics.anamnesisCompleted > 0,
-    metrics.discursivasCompleted > 0,
-    metrics.summariesCreated > 0,
-  ].filter(Boolean).length;
-  const diversityScore = (activities / 6) * 100;
+  const score = scoreData?.score ?? 0;
+  const status = getStatus(score);
 
-  const readiness = Math.round(
-    metrics.accuracy * 0.35 +
-    avgDomain * 0.25 +
-    volumeScore * 0.20 +
-    diversityScore * 0.20
-  );
-
-  const status = getStatus(readiness);
-
-  // Build improvement points
+  // Build weak points from sub-dimensions
   const issues: string[] = [];
-  const weakSpecs = specialties
-    .filter((s) => s.domain_score < 50 && s.questions_answered > 0)
-    .sort((a, b) => a.domain_score - b.domain_score);
-  if (weakSpecs.length > 0) issues.push(`${weakSpecs[0].specialty} abaixo do esperado`);
-  if ((reviewCount || 0) > 3) issues.push(`${reviewCount} revisões atrasadas`);
-  if (metrics.questionsAnswered < 100) issues.push("Volume de questões baixo");
-  if (activities < 3) issues.push("Baixa diversidade de módulos");
+  if (scoreData) {
+    if (scoreData.accuracy < 60) issues.push(`Acurácia baixa (${Math.round(scoreData.accuracy)}%)`);
+    if (scoreData.review_score < 50) issues.push("Revisões atrasadas");
+    if (scoreData.consistency_score < 40) issues.push("Baixa consistência de estudo");
+    if (scoreData.simulation_score < 50) issues.push("Poucos simulados realizados");
+    if (scoreData.error_penalty > 50) issues.push("Muitos erros recorrentes");
+    if (scoreData.domain_score < 50) issues.push("Domínio fraco em especialidades");
+  }
 
   return (
     <Card className={`${status.border} overflow-hidden`}>
@@ -99,8 +92,13 @@ export default function ApprovalScoreCard({ metrics }: Props) {
         <div className="flex items-center gap-4 p-4 pb-3">
           <div className="relative">
             <div className={`h-16 w-16 rounded-2xl ${status.bg}/10 flex items-center justify-center`}>
-              <span className="text-2xl font-black tabular-nums" style={{ color: `hsl(var(--${readiness > 70 ? 'primary' : readiness > 50 ? 'warning' : 'destructive'}))` }}>
-                {readiness}%
+              <span
+                className="text-2xl font-black tabular-nums"
+                style={{
+                  color: `hsl(var(--${score > 70 ? "primary" : score > 50 ? "warning" : "destructive"}))`,
+                }}
+              >
+                {score}%
               </span>
             </div>
           </div>
@@ -112,9 +110,36 @@ export default function ApprovalScoreCard({ metrics }: Props) {
               </span>
             </div>
             <p className="text-xs text-muted-foreground">Chance de aprovação</p>
-            <Progress value={readiness} className="h-2 mt-1.5" />
+            <Progress value={score} className="h-2 mt-1.5" />
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            onClick={handleRecalculate}
+            disabled={isRecalculating}
+          >
+            <RefreshCw className={`h-4 w-4 ${isRecalculating ? "animate-spin" : ""}`} />
+          </Button>
         </div>
+
+        {/* Sub-dimensions */}
+        {scoreData && (
+          <div className="px-4 pb-2 grid grid-cols-3 gap-2 text-[11px]">
+            <div className="text-center">
+              <p className="font-semibold text-foreground">{Math.round(scoreData.accuracy)}%</p>
+              <p className="text-muted-foreground">Acurácia</p>
+            </div>
+            <div className="text-center">
+              <p className="font-semibold text-foreground">{Math.round(scoreData.review_score)}%</p>
+              <p className="text-muted-foreground">Revisões</p>
+            </div>
+            <div className="text-center">
+              <p className="font-semibold text-foreground">{Math.round(scoreData.simulation_score)}%</p>
+              <p className="text-muted-foreground">Simulados</p>
+            </div>
+          </div>
+        )}
 
         {/* Improvement points */}
         {issues.length > 0 && (
@@ -125,9 +150,24 @@ export default function ApprovalScoreCard({ metrics }: Props) {
             </p>
             <div className="space-y-1">
               {issues.slice(0, 3).map((issue) => (
-                <p key={issue} className="text-xs text-foreground/80 pl-4">• {issue}</p>
+                <p key={issue} className="text-xs text-foreground/80 pl-4">
+                  • {issue}
+                </p>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* No data state */}
+        {!scoreData && (
+          <div className="px-4 pb-3 text-center">
+            <p className="text-xs text-muted-foreground mb-2">
+              Nenhum score calculado ainda
+            </p>
+            <Button size="sm" variant="outline" onClick={handleRecalculate} disabled={isRecalculating}>
+              <RefreshCw className={`h-3.5 w-3.5 mr-1 ${isRecalculating ? "animate-spin" : ""}`} />
+              Calcular agora
+            </Button>
           </div>
         )}
 
