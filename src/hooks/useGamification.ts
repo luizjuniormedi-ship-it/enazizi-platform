@@ -241,17 +241,26 @@ export function useGamification() {
     // Check achievements
     const stats: GamificationStats = {
       xp: newXp, level, currentStreak: newStreak, longestStreak,
-      weeklyXp: newWeeklyXp, totalQuestions: 0, totalSimulados: 0, totalFlashcards: 0, totalPlantao: 0,
+      weeklyXp: newWeeklyXp, totalQuestions: 0, totalSimulados: 0, totalFlashcards: 0,
+      totalPlantao: 0, totalAnamnese: 0, totalReviews: 0, totalMissions: 0, approvalScore: 0,
     };
 
-    const [qRes, simRes, fcRes] = await Promise.all([
+    const [qRes, simRes, fcRes, plRes, anRes, revRes, apRes] = await Promise.all([
       supabase.from("practice_attempts").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       supabase.from("exam_sessions").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "finished"),
       supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+      supabase.from("simulation_history").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+      supabase.from("anamnesis_results").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+      supabase.from("revisoes").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "concluida"),
+      supabase.from("approval_scores").select("score").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1),
     ]);
     stats.totalQuestions = qRes.count || 0;
     stats.totalSimulados = simRes.count || 0;
     stats.totalFlashcards = fcRes.count || 0;
+    stats.totalPlantao = plRes.count || 0;
+    stats.totalAnamnese = anRes.count || 0;
+    stats.totalReviews = revRes.count || 0;
+    stats.approvalScore = (apRes.data && apRes.data[0]) ? Number((apRes.data[0] as any).score) : 0;
 
     for (const ach of ACHIEVEMENTS) {
       if (!unlockedKeys.has(ach.key) && ach.condition(stats)) {
