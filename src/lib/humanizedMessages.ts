@@ -81,3 +81,11 @@ export function getProgressReinforcement(accuracy: number, questionsToday: numbe
   if (questionsToday >= 10) return "Bom progresso! Continue para consolidar 📈";
   return "Cada questão conta. Continue! 🚀";
 }
+
+/** Escalating re-engagement messages based on days inactive */
+export function getReEngagementMessage(daysInactive: number): string {
+  if (daysInactive <= 1) return "Ontem você mandou bem. Vamos manter o ritmo hoje? 💪";
+  if (daysInactive <= 3) return "Já são " + daysInactive + " dias parado. A curva de esquecimento não espera ⏳";
+  if (daysInactive <= 7) return "Uma semana sem estudar pode custar semanas de recuperação. Volte agora 🔴";
+  return "Padrão de abandono detectado. Seus concorrentes estão estudando agora 🚨";
+}
