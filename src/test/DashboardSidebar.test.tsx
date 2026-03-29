@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({
@@ -33,31 +34,40 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 describe("DashboardSidebar", () => {
   it("renders ENAZIZI branding", async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const DashboardSidebar = (await import("@/components/layout/DashboardSidebar")).default;
     render(
-      <MemoryRouter>
-        <DashboardSidebar />
-      </MemoryRouter>
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <DashboardSidebar />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
     expect(screen.getByText("ENAZIZI")).toBeInTheDocument();
   });
 
   it("renders tutor IA link as priority item", async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const DashboardSidebar = (await import("@/components/layout/DashboardSidebar")).default;
     render(
-      <MemoryRouter>
-        <DashboardSidebar />
-      </MemoryRouter>
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <DashboardSidebar />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
     expect(screen.getByText("Tutor")).toBeInTheDocument();
   });
 
   it("renders core navigation items", async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const DashboardSidebar = (await import("@/components/layout/DashboardSidebar")).default;
     render(
-      <MemoryRouter>
-        <DashboardSidebar />
-      </MemoryRouter>
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <DashboardSidebar />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
     expect(screen.getByText("Meu Perfil")).toBeInTheDocument();
