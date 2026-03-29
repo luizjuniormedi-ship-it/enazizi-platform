@@ -333,14 +333,16 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   ];
   const unexplored = CORE_SPECIALTIES.filter((s) => !studiedSpecialties.has(s));
 
-  const maxNew = weights.maxNewTopics;
+  // For new users (no data at all), boost maxNewTopics so they get a meaningful session
+  const isNewUser = temas.length === 0 && practiceAttempts.length === 0;
+  const maxNew = isNewUser ? Math.max(weights.maxNewTopics, 3) : weights.maxNewTopics;
   for (let i = 0; i < Math.min(unexplored.length, maxNew); i++) {
     recs.push({
       id: id("new", i),
       type: "new",
       topic: unexplored[i],
       specialty: unexplored[i],
-      priority: cap(35 - i * 5),
+      priority: cap(isNewUser ? 80 - i * 5 : 35 - i * 5),
       reason: `Você ainda não estudou "${unexplored[i]}". Comece pelo tutor!`,
       targetModule: "tutor",
       targetPath: "/dashboard/chatgpt",
