@@ -35,11 +35,8 @@ const TRUSTED_DOMAINS = [
   "medgrupo.com.br", "sanarmed.com", "editorasanar.com.br",
   "jaleko.com.br", "afya.com.br", "medblog.estrategiaeducacional.com.br",
   "med.estrategia.com",
-  // Sites internacionais
-  "amboss.com", "usmle.org", "nbme.org", "pubmed.ncbi.nlm.nih.gov",
-  "medscape.com", "lecturio.com", "osmosis.org", "kenhub.com",
-  "radiopaedia.org", "teachmemedicine.org", "geekymedics.com",
-  "passmedicine.com", "bmj.com", "nejm.org", "thelancet.com",
+  // Referências bibliográficas internacionais (apenas leitura, não fontes de questões)
+  "pubmed.ncbi.nlm.nih.gov", "medscape.com", "bmj.com", "nejm.org", "thelancet.com",
 ];
 
 const CLINICAL_CONTENT_MARKERS = [
