@@ -299,19 +299,79 @@ NÃO inclua texto extra, APENAS o JSON.` }],
     // Calculate & save score
     const correctCount = finalAnswers.filter(a => a.correct).length;
     const score = questions.length > 0 ? (correctCount / questions.length) * 100 : 0;
-    const areaResults: Record<string, { correct: number; total: number }> = {};
+    const areaResults: Record<string, { correct: number; total: number; totalTime: number }> = {};
     for (const a of finalAnswers) {
-      if (!areaResults[a.topic]) areaResults[a.topic] = { correct: 0, total: 0 };
+      if (!areaResults[a.topic]) areaResults[a.topic] = { correct: 0, total: 0, totalTime: 0 };
       areaResults[a.topic].total++;
+      areaResults[a.topic].totalTime += a.timeSpent || 0;
       if (a.correct) areaResults[a.topic].correct++;
     }
 
+    // Legacy diagnostic_results (keep for compatibility)
     await supabase.from("diagnostic_results").insert([{
       user_id: user.id,
       score,
       total_questions: questions.length,
       results_json: { answers: finalAnswers, areaResults } as any,
     }]);
+
+    // NEW: persist diagnostic_sessions + diagnostic_topic_results
+    const { data: sessionData } = await supabase.from("diagnostic_sessions" as any).insert([{
+      user_id: user.id,
+      cycle: "clinico",
+      score,
+      total_questions: questions.length,
+      correct_count: correctCount,
+      areas_evaluated: Object.keys(areaResults),
+      finished_at: new Date().toISOString(),
+    }]).select("id").single();
+
+    const sessionId = (sessionData as any)?.id;
+
+    if (sessionId) {
+      const topicRows = Object.entries(areaResults).map(([topic, r]) => ({
+        session_id: sessionId,
+        user_id: user.id,
+        topic,
+        correct: r.correct,
+        total: r.total,
+        accuracy: r.total > 0 ? (r.correct / r.total) * 100 : 0,
+        avg_time_seconds: r.total > 0 ? Math.round(r.totalTime / r.total) : 0,
+      }));
+      await supabase.from("diagnostic_topic_results" as any).insert(topicRows);
+
+      // Feed user_topic_profiles with diagnostic data
+      for (const row of topicRows) {
+        const existing = await supabase
+          .from("user_topic_profiles")
+          .select("id, total_questions, correct_answers")
+          .eq("user_id", user.id)
+          .eq("topic", row.topic)
+          .maybeSingle();
+
+        if (existing.data) {
+          const newTotal = (existing.data.total_questions || 0) + row.total;
+          const newCorrect = (existing.data.correct_answers || 0) + row.correct;
+          await supabase.from("user_topic_profiles").update({
+            total_questions: newTotal,
+            correct_answers: newCorrect,
+            accuracy: newTotal > 0 ? (newCorrect / newTotal) * 100 : 0,
+            last_practiced_at: new Date().toISOString(),
+          }).eq("id", existing.data.id);
+        } else {
+          await supabase.from("user_topic_profiles").insert({
+            user_id: user.id,
+            topic: row.topic,
+            specialty: row.topic,
+            total_questions: row.total,
+            correct_answers: row.correct,
+            accuracy: row.accuracy,
+            last_practiced_at: new Date().toISOString(),
+          });
+        }
+      }
+    }
+
     await supabase.from("profiles").update({ has_completed_diagnostic: true }).eq("user_id", user.id);
 
     // Gamification: award XP
@@ -323,6 +383,16 @@ NÃO inclua texto extra, APENAS o JSON.` }],
 
     // Update medical domain map with normalized specialties
     await updateMedicalDomainMap(finalAnswers);
+
+    // Trigger daily plan generation after diagnostic
+    try {
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      if (authSession?.access_token) {
+        supabase.functions.invoke("generate-daily-plan", {
+          headers: { Authorization: `Bearer ${authSession.access_token}` },
+        }).catch(() => {});
+      }
+    } catch {}
 
     setPhase("result");
   };
