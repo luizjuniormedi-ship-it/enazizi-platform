@@ -84,8 +84,8 @@ export function getProgressReinforcement(accuracy: number, questionsToday: numbe
 
 /** Escalating re-engagement messages based on days inactive */
 export function getReEngagementMessage(daysInactive: number): string {
-  if (daysInactive <= 1) return "Ontem você mandou bem. Vamos manter o ritmo hoje? 💪";
-  if (daysInactive <= 3) return "Já são " + daysInactive + " dias parado. A curva de esquecimento não espera ⏳";
-  if (daysInactive <= 7) return "Uma semana sem estudar pode custar semanas de recuperação. Volte agora 🔴";
-  return "Padrão de abandono detectado. Seus concorrentes estão estudando agora 🚨";
+  if (daysInactive <= 1) return "Sentimos sua falta ontem. Volte hoje e mantenha o que construiu 💪";
+  if (daysInactive <= 3) return "Já são " + daysInactive + " dias sem entrar. A curva de esquecimento está agindo. O sistema preparou um retorno leve ⏳";
+  if (daysInactive <= 7) return "Uma semana sem estudar pode custar semanas de recuperação. Seus concorrentes continuaram 🔴";
+  return "O sistema recalibrou um retorno acessível para você. Volte agora e retome o controle 🚨";
 }

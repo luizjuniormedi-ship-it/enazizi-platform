@@ -35,6 +35,7 @@ import ExamSetupConfirmation from "@/components/onboarding/ExamSetupConfirmation
 import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
 import DashboardSummaryCard from "@/components/dashboard/DashboardSummaryCard";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
+import { useMessageDelivery } from "@/hooks/useMessageDelivery";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { fireCelebration } from "@/lib/celebrations";
 import { Card, CardContent } from "@/components/ui/card";
@@ -71,6 +72,7 @@ type SectionKey = "desempenho" | "cronograma" | "streak" | "simulados" | null;
 
 const Dashboard = () => {
   useRevisionNotifier();
+  const { evaluateAndDeliver } = useMessageDelivery();
   const { data, isLoading } = useDashboardData();
   const prevLevelRef = useRef<number | null>(null);
   const prevStreakRef = useRef<number | null>(null);
@@ -92,6 +94,11 @@ const Dashboard = () => {
     }
     prevStreakRef.current = stats.streak;
   }, [data]);
+
+  // Smart message delivery — contextual notifications based on student profile
+  useEffect(() => {
+    if (data) evaluateAndDeliver();
+  }, [data, evaluateAndDeliver]);
 
   if (isLoading || !data) {
     return (
