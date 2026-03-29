@@ -1,25 +1,23 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
-  LayoutDashboard, BookOpen, Upload, CalendarDays, History,
-  Loader2, Brain, AlertTriangle
+  Target, BookOpen, CalendarDays, History,
+  Loader2, Brain, AlertTriangle, GraduationCap, Clock, TrendingUp, BarChart3
 } from "lucide-react";
 
 // Reuse existing cronograma components
-import CronogramaVisaoGeral from "@/components/cronograma/CronogramaVisaoGeral";
 import CronogramaNovoTema from "@/components/cronograma/CronogramaNovoTema";
 import CronogramaTemas from "@/components/cronograma/CronogramaTemas";
 import CronogramaHistorico from "@/components/cronograma/CronogramaHistorico";
 import CronogramaRevisaoAtiva from "@/components/cronograma/CronogramaRevisaoAtiva";
 import StudyPlanContent from "@/components/cronograma/StudyPlanContent";
 import { syncTemasToModules, updateStudyPerformanceContext } from "@/lib/cronogramaSync";
-import { useStudyEngine } from "@/hooks/useStudyEngine";
 
 // Import types and algorithms from cronograma
 import {
@@ -28,9 +26,6 @@ import {
   computeTema, calcPreparation, getPreparationLevel,
   generateReviewsByError, REVIEW_DAYS, SPECIALTIES,
 } from "@/pages/CronogramaInteligente";
-
-// Planner components
-import PlannerDayView from "@/components/planner/PlannerDayView";
 
 const DEFAULT_PESOS: PesosAlgoritmo = { erro: 0.3, tempo: 0.2, atraso: 0.2, dificuldade: 0.15, confianca: 0.15 };
 
@@ -42,9 +37,7 @@ const SmartPlanner = () => {
   const [config, setConfig] = useState<CronogramaConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeRevisao, setActiveRevisao] = useState<(Revisao & { tema: TemaEstudado }) | null>(null);
-  const [activeTab, setActiveTab] = useState("visao");
-
-  const { data: engineRecs } = useStudyEngine();
+  const [activeTab, setActiveTab] = useState("objetivo");
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -73,14 +66,13 @@ const SmartPlanner = () => {
   const totalQuestoes = desempenhos.reduce((s, d) => s + d.questoes_feitas, 0);
   const totalErros = desempenhos.reduce((s, d) => s + d.questoes_erradas, 0);
   const taxaGeralAcerto = totalQuestoes > 0 ? Math.round(((totalQuestoes - totalErros) / totalQuestoes) * 100) : 0;
-  const taxaGeralErro = totalQuestoes > 0 ? Math.round((totalErros / totalQuestoes) * 100) : 0;
   const preparation = calcPreparation(temas, revisoes, desempenhos);
   const prepLevel = getPreparationLevel(preparation);
 
   const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
   const revisoesSemana = revisoes.filter(r => r.status === "concluida" && r.concluida_em && new Date(r.concluida_em) >= weekAgo).length;
-  const revisoesNaoConcluidas = revisoes.filter(r => r.status === "pendente" && r.data_revisao < today).length;
 
+  // Specialty performance
   const specPerf: Record<string, { feitas: number; erros: number }> = {};
   desempenhos.forEach(d => {
     const t = temas.find(t => t.id === d.tema_id);
@@ -90,10 +82,8 @@ const SmartPlanner = () => {
     specPerf[t.especialidade].erros += d.questoes_erradas;
   });
   const specEntries = Object.entries(specPerf).filter(([, v]) => v.feitas > 0).map(([name, v]) => ({
-    name, taxa: Math.round(((v.feitas - v.erros) / v.feitas) * 100)
+    name, taxa: Math.round(((v.feitas - v.erros) / v.feitas) * 100), feitas: v.feitas
   }));
-  const melhorEspec = specEntries.length > 0 ? specEntries.sort((a, b) => b.taxa - a.taxa)[0]?.name : null;
-  const piorEspec = specEntries.length > 0 ? specEntries.sort((a, b) => a.taxa - b.taxa)[0]?.name : null;
 
   // Handlers (reused from cronograma)
   const handleAddTema = async (
@@ -141,7 +131,7 @@ const SmartPlanner = () => {
     await supabase.from("revisoes").insert(reviewRows as any);
 
     toast({ title: "✅ Tema registrado!", description: `${reviews.length} revisões agendadas.` });
-    setActiveTab("visao");
+    setActiveTab("conteudo");
     loadData();
   };
 
@@ -235,6 +225,12 @@ const SmartPlanner = () => {
     );
   }
 
+  // Count topics per specialty
+  const specTopicCount: Record<string, number> = {};
+  temas.forEach(t => { specTopicCount[t.especialidade] = (specTopicCount[t.especialidade] || 0) + 1; });
+  const totalRevisoesPendentes = revisoes.filter(r => r.status === "pendente").length;
+  const totalRevisoesConcluidas = revisoes.filter(r => r.status === "concluida").length;
+
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Header */}
@@ -242,18 +238,13 @@ const SmartPlanner = () => {
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2">
             <Brain className="h-6 w-6 text-primary" />
-            Planner Inteligente
+            Plano Geral
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Planejamento adaptativo com IA
+            Estratégia macro de estudos — planeje aqui, execute no Dashboard
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {revisoesHoje.length > 0 && (
-            <Badge variant="destructive" className="text-xs">
-              {revisoesHoje.length} revisões
-            </Badge>
-          )}
           {revisoesAtrasadas.length > 0 && (
             <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
               <AlertTriangle className="h-3 w-3 mr-1" />
@@ -263,23 +254,18 @@ const SmartPlanner = () => {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs — 4 seções claras */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-5 h-auto">
-          <TabsTrigger value="visao" className="text-xs py-2 flex flex-col gap-0.5 items-center">
-            <LayoutDashboard className="h-4 w-4" />
-            <span className="hidden sm:inline">Visão Geral</span>
-            <span className="sm:hidden">Geral</span>
+        <TabsList className="w-full grid grid-cols-4 h-auto">
+          <TabsTrigger value="objetivo" className="text-xs py-2 flex flex-col gap-0.5 items-center">
+            <Target className="h-4 w-4" />
+            <span className="hidden sm:inline">Prova & Objetivo</span>
+            <span className="sm:hidden">Objetivo</span>
           </TabsTrigger>
           <TabsTrigger value="conteudo" className="text-xs py-2 flex flex-col gap-0.5 items-center">
             <BookOpen className="h-4 w-4" />
             <span className="hidden sm:inline">Conteúdo</span>
             <span className="sm:hidden">Temas</span>
-          </TabsTrigger>
-          <TabsTrigger value="importar" className="text-xs py-2 flex flex-col gap-0.5 items-center">
-            <Upload className="h-4 w-4" />
-            <span className="hidden sm:inline">Importar</span>
-            <span className="sm:hidden">Import</span>
           </TabsTrigger>
           <TabsTrigger value="calendario" className="text-xs py-2 flex flex-col gap-0.5 items-center">
             <CalendarDays className="h-4 w-4" />
@@ -293,39 +279,45 @@ const SmartPlanner = () => {
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab 1 — Visão Geral + Tarefas do Dia */}
-        <TabsContent value="visao" className="space-y-4 mt-4">
-          <PlannerDayView
-            revisoes={revisoes}
-            temas={temas}
-            temasComputados={temasComputados}
-            engineRecs={engineRecs || []}
-            onStartRevisao={startRevisao}
-          />
-          <CronogramaVisaoGeral
-            temas={temas} temasComputados={temasComputados} revisoes={revisoes}
-            revisoesHoje={revisoesHoje} totalQuestoes={totalQuestoes} totalErros={totalErros}
-            taxaGeralAcerto={taxaGeralAcerto} taxaGeralErro={taxaGeralErro}
-            preparation={preparation} prepLevel={prepLevel}
-            revisoesSemana={revisoesSemana} revisoesNaoConcluidas={revisoesNaoConcluidas}
-            melhorEspec={melhorEspec} piorEspec={piorEspec}
-            loading={loading}
-          />
-        </TabsContent>
+        {/* ──────────────────────────────────────── */}
+        {/* SEÇÃO 1 — PROVA E OBJETIVO */}
+        {/* ──────────────────────────────────────── */}
+        <TabsContent value="objetivo" className="space-y-4 mt-4">
+          {/* Overview cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card>
+              <CardContent className="p-3 text-center">
+                <GraduationCap className="h-5 w-5 text-primary mx-auto mb-1" />
+                <p className="text-lg font-bold">{temas.length}</p>
+                <p className="text-[10px] text-muted-foreground">Temas cadastrados</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3 text-center">
+                <TrendingUp className="h-5 w-5 text-emerald-500 mx-auto mb-1" />
+                <p className="text-lg font-bold">{preparation}%</p>
+                <p className="text-[10px] text-muted-foreground">Preparação ({prepLevel})</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3 text-center">
+                <BarChart3 className="h-5 w-5 text-blue-500 mx-auto mb-1" />
+                <p className="text-lg font-bold">{taxaGeralAcerto}%</p>
+                <p className="text-[10px] text-muted-foreground">Acerto geral ({totalQuestoes} Q)</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3 text-center">
+                <CalendarDays className="h-5 w-5 text-amber-500 mx-auto mb-1" />
+                <p className="text-lg font-bold">{totalRevisoesPendentes}</p>
+                <p className="text-[10px] text-muted-foreground">Revisões pendentes</p>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Tab 2 — Conteúdo Programático */}
-        <TabsContent value="conteudo" className="space-y-4 mt-4">
-          <CronogramaNovoTema specialties={SPECIALTIES} onAdd={handleAddTema} />
-          <CronogramaTemas
-            temasComRisco={temasComputados} revisoes={revisoes} desempenhos={desempenhos}
-            onDelete={handleDeleteTema} onStartRevisao={startRevisao}
-          />
-        </TabsContent>
-
-        {/* Tab 3 — Importar Edital */}
-        <TabsContent value="importar" className="space-y-4 mt-4">
+          {/* Importar edital / configurar prova */}
           <StudyPlanContent
-            onSyncComplete={async () => { await loadData(); setActiveTab("visao"); }}
+            onSyncComplete={async () => { await loadData(); setActiveTab("conteudo"); }}
             onSubjectsGenerated={async (subjects: string[]) => {
               if (!user) return;
               const today = new Date().toISOString().split("T")[0];
@@ -352,7 +344,7 @@ const SmartPlanner = () => {
                 const { data, error } = await supabase.from("temas_estudados").insert({
                   user_id: user.id, tema: subject, especialidade,
                   data_estudo: today, fonte: "plano_estudos", dificuldade: "medio",
-                  subtopico, observacoes: "Registrado pelo Planner Inteligente", status: "ativo",
+                  subtopico, observacoes: "Registrado pelo Plano Geral", status: "ativo",
                 } as any).select().single();
                 if (error || !data) continue;
                 const temaId = (data as any).id;
@@ -380,14 +372,63 @@ const SmartPlanner = () => {
               return { temasRegistrados: registeredTemas.length, flashcardsCriados, questoesVinculadas, revisoesAgendadas: totalReviews };
             }}
           />
+
+          {/* Specialty distribution */}
+          {specEntries.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2 pt-3 px-4">
+                <CardTitle className="text-sm font-semibold">Desempenho por Especialidade</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3 space-y-2">
+                {specEntries.sort((a, b) => a.taxa - b.taxa).map(s => (
+                  <div key={s.name} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs truncate max-w-[60%]">{s.name}</span>
+                      <span className="text-xs font-medium">{s.taxa}% ({s.feitas} Q)</span>
+                    </div>
+                    <Progress value={s.taxa} className="h-1.5" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Week summary */}
+          <Card>
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Revisões concluídas esta semana</span>
+                <span className="font-bold">{revisoesSemana}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs mt-1">
+                <span className="text-muted-foreground">Total de revisões concluídas</span>
+                <span className="font-bold">{totalRevisoesConcluidas}</span>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        {/* Tab 4 — Calendário (day view with reviews scheduled) */}
+        {/* ──────────────────────────────────────── */}
+        {/* SEÇÃO 2 — DISTRIBUIÇÃO DE CONTEÚDO */}
+        {/* ──────────────────────────────────────── */}
+        <TabsContent value="conteudo" className="space-y-4 mt-4">
+          <CronogramaNovoTema specialties={SPECIALTIES} onAdd={handleAddTema} />
+          <CronogramaTemas
+            temasComRisco={temasComputados} revisoes={revisoes} desempenhos={desempenhos}
+            onDelete={handleDeleteTema} onStartRevisao={startRevisao}
+          />
+        </TabsContent>
+
+        {/* ──────────────────────────────────────── */}
+        {/* SEÇÃO 3 — CALENDÁRIO MACRO */}
+        {/* ──────────────────────────────────────── */}
         <TabsContent value="calendario" className="space-y-4 mt-4">
           <PlannerCalendarView revisoes={revisoes} temas={temas} />
         </TabsContent>
 
-        {/* Tab 5 — Histórico */}
+        {/* ──────────────────────────────────────── */}
+        {/* SEÇÃO 4 — HISTÓRICO E AJUSTES */}
+        {/* ──────────────────────────────────────── */}
         <TabsContent value="historico" className="space-y-4 mt-4">
           <CronogramaHistorico
             temas={temas} revisoes={revisoes} desempenhos={desempenhos}
@@ -398,12 +439,12 @@ const SmartPlanner = () => {
   );
 };
 
-// Simple calendar view showing review distribution
+// Macro calendar view — strategy overview, no execution buttons
 function PlannerCalendarView({ revisoes, temas }: { revisoes: Revisao[]; temas: TemaEstudado[] }) {
   const today = new Date();
   const days: { date: string; label: string; reviews: (Revisao & { temaNome: string })[] }[] = [];
 
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < 30; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     const dateStr = d.toISOString().split("T")[0];
@@ -422,13 +463,19 @@ function PlannerCalendarView({ revisoes, temas }: { revisoes: Revisao[]; temas: 
     });
   }
 
+  // Only show days with reviews or first 7 days
+  const visibleDays = days.filter((d, i) => i < 7 || d.reviews.length > 0);
+
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-semibold flex items-center gap-2">
         <CalendarDays className="h-4 w-4 text-primary" />
-        Próximos 14 dias
+        Visão macro — Próximos 30 dias
       </h3>
-      {days.map(day => (
+      <p className="text-[10px] text-muted-foreground">
+        Planejamento de revisões. Para executar, acesse o Dashboard ou Plano do Dia.
+      </p>
+      {visibleDays.map(day => (
         <Card key={day.date} className={`${day.reviews.length > 0 ? "border-primary/20" : "border-border/50"}`}>
           <CardContent className="p-3">
             <div className="flex items-center justify-between mb-1">
@@ -446,7 +493,7 @@ function PlannerCalendarView({ revisoes, temas }: { revisoes: Revisao[]; temas: 
                 {day.reviews.slice(0, 5).map(r => (
                   <div key={r.id} className="text-[11px] flex items-center gap-1.5">
                     <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                      r.risco_esquecimento === "alto" ? "bg-red-500" : r.risco_esquecimento === "medio" ? "bg-amber-500" : "bg-emerald-500"
+                      r.risco_esquecimento === "alto" ? "bg-destructive" : r.risco_esquecimento === "medio" ? "bg-amber-500" : "bg-emerald-500"
                     }`} />
                     <span className="truncate">{r.temaNome}</span>
                     <span className="text-muted-foreground ml-auto shrink-0">{r.tipo_revisao}</span>
