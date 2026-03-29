@@ -15,6 +15,13 @@ import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner"
 import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
 import QuickStartCard from "@/components/dashboard/QuickStartCard";
 const SmartRecommendations = lazy(() => import("@/components/dashboard/SmartRecommendations"));
+
+// Dashboard 2.0 — Study Engine components
+import TodayStudyCard from "@/components/dashboard/TodayStudyCard";
+import PendingReviewsCard from "@/components/dashboard/PendingReviewsCard";
+import WeakTopicsCard from "@/components/dashboard/WeakTopicsCard";
+import FreeStudyCard from "@/components/dashboard/FreeStudyCard";
+import PracticalTrainingCard from "@/components/dashboard/PracticalTrainingCard";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import AdminSystemAlerts from "@/components/admin/AdminSystemAlerts";
 import InstallAppBanner from "@/components/dashboard/InstallAppBanner";
