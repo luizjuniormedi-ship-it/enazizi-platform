@@ -35,6 +35,7 @@ import ExamSetupConfirmation from "@/components/onboarding/ExamSetupConfirmation
 import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
 import DashboardSummaryCard from "@/components/dashboard/DashboardSummaryCard";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
+import { useMessageDelivery } from "@/hooks/useMessageDelivery";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { fireCelebration } from "@/lib/celebrations";
 import { Card, CardContent } from "@/components/ui/card";
