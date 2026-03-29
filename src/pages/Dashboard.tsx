@@ -23,6 +23,7 @@ import PendingReviewsCard from "@/components/dashboard/PendingReviewsCard";
 import WeakTopicsCard from "@/components/dashboard/WeakTopicsCard";
 import FreeStudyCard from "@/components/dashboard/FreeStudyCard";
 import PracticalTrainingCard from "@/components/dashboard/PracticalTrainingCard";
+import DiagnosticSummaryCard from "@/components/dashboard/DiagnosticSummaryCard";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import AdminSystemAlerts from "@/components/admin/AdminSystemAlerts";
 import InstallAppBanner from "@/components/dashboard/InstallAppBanner";

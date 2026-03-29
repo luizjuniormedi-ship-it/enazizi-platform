@@ -50,6 +50,7 @@ Deno.serve(async (req) => {
       errorRes,
       streakRes,
       clinicalRes,
+      diagnosticRes,
     ] = await Promise.all([
       adminClient
         .from("practice_attempts")
@@ -87,6 +88,12 @@ Deno.serve(async (req) => {
         .select("final_score")
         .eq("user_id", userId)
         .limit(20),
+      adminClient
+        .from("diagnostic_sessions")
+        .select("score")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1),
     ]);
 
     // ── 1. Accuracy (0-100) ───────────────────────────────────
@@ -138,19 +145,28 @@ Deno.serve(async (req) => {
       (s: number, e: any) => s + (e.vezes_errado || 1),
       0
     );
-    // Normalize: 20+ weighted errors = max penalty
     const rawPenalty = Math.min(totalErrorWeight / 20, 1) * 100;
-    // Invert: high errors = low contribution
     const errorComponent = 100 - rawPenalty;
 
-    // ── Final score ──────────────────────────────────────────
+    // ── 7. Diagnostic score with dynamic weight ──────────────
+    const diagnosticSessions = diagnosticRes.data || [];
+    const hasDiagnostic = diagnosticSessions.length > 0;
+    const diagnosticScore = hasDiagnostic ? (diagnosticSessions[0] as any).score : 0;
+    // Dynamic weight: 40% if little history, 10% if sufficient
+    const hasEnoughHistory = totalAttempts >= 50 && totalReviews >= 10;
+    const diagnosticWeight = hasDiagnostic ? (hasEnoughHistory ? 0.10 : 0.40) : 0;
+    // Redistribute remaining weight proportionally
+    const remainingWeight = 1 - diagnosticWeight;
+
+    // ── Final score (dynamic weighting) ──────────────────────
     const score = Math.round(
-      accuracy * 0.25 +
-        domainScore * 0.15 +
-        reviewScore * 0.15 +
-        consistencyScore * 0.15 +
-        simulationScore * 0.2 +
-        errorComponent * 0.1
+      accuracy * 0.25 * remainingWeight +
+      domainScore * 0.15 * remainingWeight +
+      reviewScore * 0.15 * remainingWeight +
+      consistencyScore * 0.15 * remainingWeight +
+      simulationScore * 0.20 * remainingWeight +
+      errorComponent * 0.10 * remainingWeight +
+      diagnosticScore * diagnosticWeight
     );
 
     // ── Persist ──────────────────────────────────────────────
