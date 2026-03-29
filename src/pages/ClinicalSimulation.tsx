@@ -726,6 +726,12 @@ const ClinicalSimulation = () => {
       setPhase("active");
       addToTimeline("Caso iniciado", "🏥");
 
+      // Track session origin
+      if (user) {
+        const origin = teacherCaseId ? "assigned" as SessionOrigin : paramOrigin;
+        startTrackedSession({ type: "simulation", userId: user.id, specialty, difficulty, origin });
+      }
+
       setTimeout(() => inputRef.current?.focus(), 300);
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao iniciar", variant: "destructive" });
