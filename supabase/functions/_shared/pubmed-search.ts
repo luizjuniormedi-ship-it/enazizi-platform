@@ -111,8 +111,8 @@ export function formatPubMedForPrompt(articles: PubMedArticle[]): string {
   
   const lines = articles.map((a, i) => {
     let entry = `${i + 1}. "${a.title}" — ${a.authors} (${a.journal}, ${a.year})`;
-    entry += `\n   Link: ${a.url}`;
-    if (a.doi) entry += ` | DOI: https://doi.org/${a.doi}`;
+    entry += `\n   Link: [Ver no PubMed](${a.url})`;
+    if (a.doi) entry += ` | [DOI](https://doi.org/${a.doi})`;
     if (a.abstract) entry += `\n   Resumo: ${a.abstract}`;
     return entry;
   });

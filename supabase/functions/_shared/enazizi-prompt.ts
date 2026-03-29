@@ -667,7 +667,7 @@ Ao final do bloco, incluir seção:
 
 📚 REFERÊNCIAS
 - Nome da obra ou diretriz
-- Link oficial quando disponível
+- Link oficial quando disponível, SEMPRE formatado como markdown clicável: [texto](url)
 
 REGRAS:
 - Apresentar entre 3 e 6 referências por bloco
