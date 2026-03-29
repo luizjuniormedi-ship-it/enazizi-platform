@@ -35,7 +35,7 @@ export default function WeakTopicsCard() {
       <CardHeader className="pb-2 pt-4 px-4">
         <CardTitle className="flex items-center gap-2 text-sm font-semibold">
           <TrendingDown className="h-4 w-4 text-rose-500" />
-          Pontos Fracos
+          Temas para Reforçar
           <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-rose-500/10 text-rose-500 ml-auto border-0">
             {weakTopics.length}
           </Badge>
