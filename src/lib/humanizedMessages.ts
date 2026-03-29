@@ -23,16 +23,16 @@ const greetings: Record<string, string[]> = {
 
 const streakMessages: Record<string, string[]> = {
   low: [
-    "Vamos construir sua sequência! Comece com 10 minutinhos 💡",
-    "Cada dia conta. Comece por uma revisão rápida!",
+    "Cada dia sem estudar é um dia que a curva de esquecimento vence 💡",
+    "10 minutos hoje valem mais que 2 horas amanhã. Comece agora!",
   ],
   medium: [
-    "Streak crescendo! Não quebre o ritmo 🔥",
-    "Consistência é a chave. Continue assim!",
+    "Streak crescendo! Quem para agora, perde o que construiu 🔥",
+    "Consistência separa quem passa de quem quase passa. Continue!",
   ],
   high: [
-    "Impressionante! Sua dedicação vai fazer a diferença 🏆",
-    "Você está entre os mais dedicados! Parabéns 🌟",
+    "Seu padrão é de quem vai passar. Não desacelere agora 🏆",
+    "Poucos chegam nesse nível de consistência. Você está entre eles 🌟",
   ],
 };
 

@@ -33,13 +33,13 @@ export default function ExamSetupReminder() {
           <Target className="h-5 w-5 text-destructive" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold">Complete sua prova-alvo</p>
+          <p className="text-sm font-semibold">Seu plano pode estar atrasando sua aprovação</p>
           <p className="text-xs text-muted-foreground">
-            Personalize seu plano definindo a prova e data do exame.
+            Sem a prova-alvo definida, o sistema não consegue otimizar seu estudo.
           </p>
         </div>
         <Button size="sm" variant="outline" onClick={() => navigate("/profile")} className="shrink-0 gap-1">
-          Configurar <ArrowRight className="h-3 w-3" />
+          Corrigir agora <ArrowRight className="h-3 w-3" />
         </Button>
       </CardContent>
     </Card>
