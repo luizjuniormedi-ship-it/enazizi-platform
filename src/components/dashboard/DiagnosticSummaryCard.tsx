@@ -134,7 +134,7 @@ export default function DiagnosticSummaryCard() {
         {/* Weak topics */}
         {weakTopics.length > 0 && !evolutions.length && (
           <div className="mb-3">
-            <p className="text-[11px] font-medium text-muted-foreground mb-1">Áreas mais fracas:</p>
+            <p className="text-[11px] font-medium text-muted-foreground mb-1">Temas que precisam de reforço:</p>
             <div className="flex flex-wrap gap-1.5">
               {weakTopics.map((t: any) => (
                 <span
