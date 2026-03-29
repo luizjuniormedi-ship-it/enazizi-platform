@@ -296,7 +296,7 @@ const SmartPlanner = () => {
               <CardContent className="p-3 text-center">
                 <TrendingUp className="h-5 w-5 text-emerald-500 mx-auto mb-1" />
                 <p className="text-lg font-bold">{preparation}%</p>
-                <p className="text-[10px] text-muted-foreground">Preparação ({prepLevel})</p>
+                <p className="text-[10px] text-muted-foreground">Preparação ({typeof prepLevel === 'object' ? prepLevel.label : prepLevel})</p>
               </CardContent>
             </Card>
             <Card>
