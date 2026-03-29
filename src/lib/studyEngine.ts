@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { adjustPlanByApprovalScore, type PlanWeights } from "./approvalScoreWeights";
 import { adjustNewTopicsByLock, type ContentLockStatus } from "@/hooks/useContentLock";
 import { retrievability as fsrsRetrievability, State as FsrsState } from "./fsrs";
+import type { StudyTaskType, StudyObjective } from "./studyContext";
 
 export type RecommendationType = "review" | "practice" | "clinical" | "new" | "error_review" | "simulado";
 export type TargetModule = "tutor" | "questoes" | "flashcards" | "plantao" | "anamnese" | "simulado" | "cronograma" | "banco-erros";
@@ -11,11 +12,16 @@ export interface StudyRecommendation {
   type: RecommendationType;
   topic: string;
   specialty: string;
+  subtopic?: string;
   priority: number; // 0-100
   reason: string;
   targetModule: TargetModule;
   targetPath: string;
   estimatedMinutes: number;
+  difficulty?: string;
+  objective?: StudyObjective;
+  /** Category tag for anti-duplicate grouping */
+  _groupKey?: string;
 }
 
 interface EngineInput {
