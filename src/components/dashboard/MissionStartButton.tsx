@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Rocket, Play, Loader2, ArrowRight } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useSafeCta } from "@/hooks/useSafeCta";
 
 export default function MissionStartButton() {
   const navigate = useNavigate();
