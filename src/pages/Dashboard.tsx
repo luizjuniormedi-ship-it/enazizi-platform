@@ -5,6 +5,8 @@ import AchievementToast from "@/components/gamification/AchievementToast";
 import DashboardWarnings from "@/components/dashboard/DashboardWarnings";
 import MotivationalGreeting from "@/components/dashboard/MotivationalGreeting";
 import PerformanceReport from "@/components/dashboard/PerformanceReport";
+import DailyPlanWidget from "@/components/dashboard/DailyPlanWidget";
+import DailyGoalWidget from "@/components/dashboard/DailyGoalWidget";
 import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner";
 import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
 
