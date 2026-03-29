@@ -765,18 +765,19 @@ FORMATO OBRIGATÓRIO:
 
 1. **Título do artigo** — Autores principais
    📖 *Journal, Ano*
-   🔗 [Ver no PubMed](https://pubmed.ncbi.nlm.nih.gov/PMID) ou [DOI](https://doi.org/DOI)
+   🔗 [Ver no PubMed](https://pubmed.ncbi.nlm.nih.gov/?term=insuficiencia+cardiaca+neurohormonal) ou [DOI](https://doi.org/)
    📝 Resumo em 1-2 frases do achado principal
 
 2. **Título do artigo** — Autores principais
    📖 *Journal, Ano*
-   🔗 [Ver no PubMed](URL_DO_PUBMED) ou [DOI](URL_DO_DOI)
+   🔗 [Ver no PubMed](https://pubmed.ncbi.nlm.nih.gov/?term=tema+clinico+especifico) ou [DOI](https://doi.org/)
    📝 Resumo em 1-2 frases do achado principal
 
 IMPORTANTE: Links DEVEM ser formatados como markdown clicável: [texto](url). NUNCA colocar URL como texto puro.
 
 REGRAS:
 - SEMPRE incluir link real (PubMed ou DOI)
+- PROIBIDO usar placeholders como "PMID", "DOI", "URL_DO_PUBMED" ou "URL_DO_DOI" dentro do link
 - NUNCA inventar artigos fictícios — se não tiver certeza do PMID exato, usar formato de busca PubMed: https://pubmed.ncbi.nlm.nih.gov/?term=TERMO+DE+BUSCA
 - Filtrar apenas fontes validadas pela comunidade científica internacional
 - Aparecem APÓS as referências bibliográficas (📚 REFERÊNCIAS), ANTES da pergunta ao usuário (❓)
