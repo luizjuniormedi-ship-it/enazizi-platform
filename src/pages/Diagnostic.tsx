@@ -342,7 +342,7 @@ NÃO inclua texto extra, APENAS o JSON.` }],
     // NEW: persist diagnostic_sessions + diagnostic_topic_results
     const { data: sessionData } = await supabase.from("diagnostic_sessions" as any).insert([{
       user_id: user.id,
-      cycle: "clinico",
+      cycle: selectedCycle,
       score,
       total_questions: questions.length,
       correct_count: correctCount,
