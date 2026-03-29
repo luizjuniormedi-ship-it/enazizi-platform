@@ -11,7 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { FACULDADES } from "@/constants/faculdades";
 import FaculdadeCombobox from "@/components/FaculdadeCombobox";
 import { isValidPhone, isValidName, isProfileComplete } from "@/lib/profileValidation";
-
+import WelcomeBackScreen from "@/components/onboarding/WelcomeBackScreen";
+import OnboardingV2Flow from "@/components/onboarding/OnboardingV2Flow";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, signOut } = useAuth();
