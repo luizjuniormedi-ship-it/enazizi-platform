@@ -26,7 +26,7 @@ export default function PracticalTrainingCard() {
           <div
             key={item.id}
             className="flex items-center gap-3 p-2.5 rounded-lg bg-teal-500/5 hover:bg-teal-500/10 border border-teal-500/10 cursor-pointer transition-colors group"
-            onClick={() => navigate(item.targetPath)}
+            onClick={() => navigate(buildStudyPath(item))}
           >
             {item.targetModule === "anamnese" ? (
               <HeartPulse className="h-4 w-4 text-rose-500 shrink-0" />
