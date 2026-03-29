@@ -1,9 +1,19 @@
 import { forwardRef } from "react";
 import { User, Copy } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import MultimediaControls from "@/components/agents/MultimediaControls";
 import type { Msg } from "@/components/tutor/TutorConstants";
+
+/** Convert bare URLs in text to markdown links so ReactMarkdown renders them clickable */
+function linkifyBareUrls(text: string): string {
+  // Don't touch URLs already inside markdown link syntax [text](url)
+  return text.replace(
+    /(?<!\]\()(?<!\()(https?:\/\/[^\s\)>\]]+)/g,
+    (url) => `[${url.includes('pubmed') ? 'Ver no PubMed' : url.includes('doi.org') ? 'Ver DOI' : 'Abrir link'}](${url})`
+  );
+}
 
 interface TutorMessageListProps {
   messages: Msg[];
@@ -30,12 +40,13 @@ const TutorMessageList = forwardRef<HTMLDivElement, TutorMessageListProps>(
               <>
                 <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-xs sm:text-sm prose-p:my-3 prose-headings:mt-5 prose-headings:mb-2 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 [&_p:has(+ul)]:mb-1 [&_p:has(+ol)]:mb-1 [&>p+p]:mt-4 [&_strong]:text-foreground [&_hr]:my-4 [&_blockquote]:my-3">
                   <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
                     components={{
                       a: ({ href, children, ...props }) => (
                         <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80" {...props}>{children}</a>
                       ),
                     }}
-                  >{msg.content}</ReactMarkdown>
+                  >{linkifyBareUrls(msg.content)}</ReactMarkdown>
                 </div>
                 <MultimediaControls text={msg.content} />
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
