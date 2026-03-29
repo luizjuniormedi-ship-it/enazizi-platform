@@ -398,10 +398,14 @@ function extractIndividualObjects(text: string): any[] {
 function isValidQuestion(q: any): { valid: boolean; reason: string } {
   if (!q?.statement) return { valid: false, reason: "no_statement" };
   const stmt = String(q.statement).trim();
-  if (stmt.length < 180) return { valid: false, reason: `too_short_${stmt.length}` };
+  if (stmt.length < 120) return { valid: false, reason: `too_short_${stmt.length}` };
   if (!Array.isArray(q.options) || q.options.length < 4) return { valid: false, reason: "less_than_4_options" };
 
-  const validOpts = q.options.filter((opt: string) => OPTION_PATTERN.test(String(opt).trim()));
+  // Options are already normalized by normalizeOptionPrefixes, just check we have 4+
+  const validOpts = q.options.filter((opt: string) => {
+    const trimmed = String(opt).trim();
+    return trimmed.length > 0 && OPTION_PATTERN.test(trimmed);
+  });
   if (validOpts.length < 4) return { valid: false, reason: "options_bad_format" };
 
   if (!q.source_url) return { valid: false, reason: "no_source_url" };
@@ -417,8 +421,27 @@ function isValidQuestion(q: any): { valid: boolean; reason: string } {
   return { valid: true, reason: "" };
 }
 
+function normalizeOptionPrefixes(options: any[]): string[] {
+  const LETTERS = ["A", "B", "C", "D", "E"];
+  // Strip existing prefixes and re-add canonical format
+  const STRIP_PATTERN = /^\s*(?:\(?[A-Ea-e]\)?[\.\)\-:\s]+)/;
+  return options.map((opt: any, i: number) => {
+    const s = String(opt).trim();
+    const stripped = s.replace(STRIP_PATTERN, "").trim();
+    const letter = LETTERS[i] || LETTERS[0];
+    // If already correct format, keep as-is
+    if (new RegExp(`^${letter}\\)\\s`).test(s)) return s;
+    return `${letter}) ${stripped}`;
+  });
+}
+
 function normalizeQuestion(q: any): any {
   const answerSource = q.answer_source || "unknown";
+
+  // Normalize option prefixes FIRST
+  if (Array.isArray(q.options)) {
+    q.options = normalizeOptionPrefixes(q.options);
+  }
 
   if (q.correct_index === undefined || q.correct_index === null) {
     if (q.correct_answer !== undefined) {
