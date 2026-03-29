@@ -5,8 +5,6 @@ import AchievementToast from "@/components/gamification/AchievementToast";
 import DashboardWarnings from "@/components/dashboard/DashboardWarnings";
 import MotivationalGreeting from "@/components/dashboard/MotivationalGreeting";
 import PerformanceReport from "@/components/dashboard/PerformanceReport";
-import DailyPlanWidget from "@/components/dashboard/DailyPlanWidget";
-import DailyGoalWidget from "@/components/dashboard/DailyGoalWidget";
 import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner";
 import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
 
@@ -20,7 +18,6 @@ import PracticalTrainingCard from "@/components/dashboard/PracticalTrainingCard"
 import DiagnosticSummaryCard from "@/components/dashboard/DiagnosticSummaryCard";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import AdminSystemAlerts from "@/components/admin/AdminSystemAlerts";
-import InstallAppBanner from "@/components/dashboard/InstallAppBanner";
 import MissionStartButton from "@/components/dashboard/MissionStartButton";
 import AdaptiveModeCard from "@/components/dashboard/AdaptiveModeCard";
 import ExamSetupReminder from "@/components/dashboard/ExamSetupReminder";
@@ -53,6 +50,7 @@ const MiniLeaderboard = lazy(() => import("@/components/dashboard/MiniLeaderboar
 const ApprovalThermometer = lazy(() => import("@/components/dashboard/ApprovalThermometer"));
 const TopicEvolution = lazy(() => import("@/components/dashboard/TopicEvolution"));
 const SpecialtyBenchmark = lazy(() => import("@/components/dashboard/SpecialtyBenchmark"));
+const InstallAppBanner = lazy(() => import("@/components/dashboard/InstallAppBanner"));
 
 const ChartFallback = () => (
   <Card>
@@ -125,7 +123,7 @@ const Dashboard = () => {
       </Suspense>
 
       {/* ══════════════════════════════════════════
-          TOP — Saudação + XP
+          TOP — Saudação + XP (mínimo de ruído)
          ══════════════════════════════════════════ */}
       <div>
         <MotivationalGreeting
@@ -144,13 +142,14 @@ const Dashboard = () => {
           <PerformanceReport />
         </div>
         <AchievementToast />
-        <InstallAppBanner />
-        <AdminMessagesBanner />
+        {/* Video room is urgent — stays at top */}
         <ActiveVideoRoomBanner />
-        <ExamSetupReminder />
       </div>
 
-      {/* Warning — only most urgent (component already limits internally) */}
+      {/* Configuração obrigatória — action-driven, bloqueia progresso */}
+      <ExamSetupReminder />
+
+      {/* Warning — only most urgent (component already limits to 1) */}
       <DashboardWarnings
         todayCompleted={stats.todayCompleted}
         todayTotal={stats.todayTotal}
@@ -167,13 +166,22 @@ const Dashboard = () => {
          ══════════════════════════════════════════ */}
       <MissionStartButton />
 
+      {/* Onboarding checklist — high visibility for new users */}
+      {isNewUser && (
+        <OnboardingChecklist
+          stats={stats}
+          metrics={metrics}
+          hasCompletedDiagnostic={hasCompletedDiagnostic}
+        />
+      )}
+
       {/* ══════════════════════════════════════════
           BLOCO 1 — O que estudar hoje
          ══════════════════════════════════════════ */}
       <TodayStudyCard />
 
       {/* ══════════════════════════════════════════
-          BLOCO 1.5 — MODO ADAPTATIVO (feedback sutil)
+          BLOCO 1.5 — MODO ADAPTATIVO (feedback sutil + ação)
          ══════════════════════════════════════════ */}
       {!isNewUser && <AdaptiveModeCard />}
 
@@ -182,7 +190,7 @@ const Dashboard = () => {
          ══════════════════════════════════════════ */}
       {!isNewUser && <ApprovalScoreCard />}
 
-      {/* Nivelamento */}
+      {/* Nivelamento — only if user has completed it */}
       <DiagnosticSummaryCard />
 
       {/* ══════════════════════════════════════════
@@ -253,12 +261,22 @@ const Dashboard = () => {
          ══════════════════════════════════════════ */}
       <FreeStudyCard />
 
-      {/* Onboarding checklist for new users */}
-      <OnboardingChecklist
-        stats={stats}
-        metrics={metrics}
-        hasCompletedDiagnostic={hasCompletedDiagnostic}
-      />
+      {/* Mensagens do admin — secundário */}
+      <AdminMessagesBanner />
+
+      {/* Install app — secundário, lazy loaded */}
+      <Suspense fallback={null}>
+        <InstallAppBanner />
+      </Suspense>
+
+      {/* Onboarding checklist for returning users (non-new) */}
+      {!isNewUser && (
+        <OnboardingChecklist
+          stats={stats}
+          metrics={metrics}
+          hasCompletedDiagnostic={hasCompletedDiagnostic}
+        />
+      )}
 
       {/* ===== Drill-down Sheets ===== */}
       <Sheet open={openSection === "desempenho"} onOpenChange={(o) => !o && setOpenSection(null)}>
@@ -281,12 +299,14 @@ const Dashboard = () => {
       <Sheet open={openSection === "cronograma"} onOpenChange={(o) => !o && setOpenSection(null)}>
         <SheetContent side={sheetSide} className={isMobile ? "h-[85vh] overflow-y-auto" : "sm:max-w-lg overflow-y-auto"}>
           <SheetHeader>
-            <SheetTitle>Planner & Revisões</SheetTitle>
-            <SheetDescription>Plano do dia e metas de estudo</SheetDescription>
+            <SheetTitle>Plano Geral & Revisões</SheetTitle>
+            <SheetDescription>Visão geral do seu plano de estudo</SheetDescription>
           </SheetHeader>
           <div className="space-y-6 mt-4">
-            <DailyPlanWidget />
-            <DailyGoalWidget />
+            <Suspense fallback={<ChartFallback />}>
+              <lazy.DailyPlanWidget />
+              <lazy.DailyGoalWidget />
+            </Suspense>
           </div>
         </SheetContent>
       </Sheet>

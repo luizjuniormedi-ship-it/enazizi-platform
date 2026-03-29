@@ -1,6 +1,8 @@
+import { useNavigate } from "react-router-dom";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
+import { useMissionMode } from "@/hooks/useMissionMode";
 import { Badge } from "@/components/ui/badge";
-import { Lock, ShieldAlert, Zap } from "lucide-react";
+import { Lock, ShieldAlert, Zap, ChevronRight } from "lucide-react";
 
 const PHASE_COLORS: Record<string, string> = {
   critico: "bg-destructive/10 text-destructive border-destructive/30",
@@ -21,16 +23,35 @@ const LOCK_LABELS: Record<string, string> = {
   allowed: "Avanço Liberado",
 };
 
+const LOCK_ACTIONS: Record<string, { label: string; path: string }> = {
+  blocked: { label: "Revisar agora", path: "/dashboard/plano-dia" },
+  limited: { label: "Ver plano", path: "/dashboard/plano-dia" },
+  allowed: { label: "Avançar", path: "/dashboard/missao" },
+};
+
 export default function AdaptiveModeCard() {
+  const navigate = useNavigate();
   const { adaptive } = useStudyEngine();
+  const { startMission } = useMissionMode();
 
   if (!adaptive) return null;
 
-  const { mode, lockStatus, focusReason, memoryPressure } = adaptive;
+  const { mode, lockStatus, focusReason } = adaptive;
   const colorClass = PHASE_COLORS[mode.phase] || PHASE_COLORS.atencao;
+  const action = LOCK_ACTIONS[lockStatus] || LOCK_ACTIONS.limited;
+
+  const handleAction = () => {
+    if (lockStatus === "allowed") {
+      startMission();
+    }
+    navigate(action.path);
+  };
 
   return (
-    <div className={`rounded-lg border px-3 py-2.5 ${colorClass}`}>
+    <div
+      className={`rounded-lg border px-3 py-2.5 cursor-pointer hover:opacity-90 transition-opacity ${colorClass}`}
+      onClick={handleAction}
+    >
       <div className="flex items-center gap-2">
         <span className="text-sm">{mode.icon}</span>
         <span className="text-xs font-semibold flex-1">{focusReason}</span>
@@ -38,6 +59,7 @@ export default function AdaptiveModeCard() {
           {LOCK_ICONS[lockStatus]}
           {LOCK_LABELS[lockStatus]}
         </Badge>
+        <ChevronRight className="h-3.5 w-3.5 opacity-50 shrink-0" />
       </div>
     </div>
   );
