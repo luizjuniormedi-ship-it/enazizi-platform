@@ -285,6 +285,8 @@ const ClinicalSimulation = () => {
   const { addXp } = useGamification();
   const [searchParams] = useSearchParams();
   const teacherCaseId = searchParams.get("teacher_case_id");
+  const paramOrigin = (searchParams.get("origin") as SessionOrigin) || "manual";
+  const { startSession, completeSession: completeTrackedSession, abandonSession } = useSessionTracking();
 
   const [phase, setPhase] = useState<Phase>("lobby");
   const [specialty, setSpecialty] = useState("Clínica Médica");
