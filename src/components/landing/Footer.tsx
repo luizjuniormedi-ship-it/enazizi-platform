@@ -1,6 +1,7 @@
+import { forwardRef } from "react";
 import { Brain } from "lucide-react";
 
-const Footer = () => (
+const Footer = forwardRef<HTMLElement>((_, ref) => (
   <footer className="border-t border-border/50 py-12">
     <div className="container flex flex-col md:flex-row items-center justify-between gap-4">
       <div className="flex items-center gap-2">
