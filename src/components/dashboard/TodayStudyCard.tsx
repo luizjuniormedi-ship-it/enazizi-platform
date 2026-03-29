@@ -109,7 +109,7 @@ export default function TodayStudyCard() {
           <TaskRow
             key={task.id}
             task={task}
-            onStart={() => navigate(buildStudyPath(task))}
+            onStart={() => navigate(buildStudyPath(task, "daily-plan"))}
           />
         ))}
 
