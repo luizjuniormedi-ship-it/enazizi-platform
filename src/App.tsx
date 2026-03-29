@@ -56,6 +56,7 @@ const FeynmanTrainer = lazy(() => import("./pages/FeynmanTrainer"));
 const AIMentor = lazy(() => import("./pages/AIMentor"));
 const SmartPlanner = lazy(() => import("./pages/SmartPlanner"));
 const AdminMonitoring = lazy(() => import("./pages/AdminMonitoring"));
+const MissionMode = lazy(() => import("./pages/MissionMode"));
 
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
@@ -128,6 +129,7 @@ const App = () => (
                 <Route path="feynman" element={<FeynmanTrainer />} />
                 <Route path="mentor" element={<AIMentor />} />
                 <Route path="planner" element={<SmartPlanner />} />
+                <Route path="missao" element={<MissionMode />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="perfil" element={<Profile />} />
               </Route>
