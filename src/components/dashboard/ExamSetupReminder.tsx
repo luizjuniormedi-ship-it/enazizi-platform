@@ -27,10 +27,10 @@ export default function ExamSetupReminder() {
   if (!show) return null;
 
   return (
-    <Card className="border-amber-500/30 bg-amber-500/5">
+    <Card className="border-destructive/30 bg-destructive/5">
       <CardContent className="p-4 flex items-center gap-3">
-        <div className="h-10 w-10 shrink-0 rounded-lg bg-amber-500/10 flex items-center justify-center">
-          <Target className="h-5 w-5 text-amber-500" />
+        <div className="h-10 w-10 shrink-0 rounded-lg bg-destructive/10 flex items-center justify-center">
+          <Target className="h-5 w-5 text-destructive" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold">Complete sua prova-alvo</p>
