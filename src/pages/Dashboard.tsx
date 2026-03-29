@@ -216,7 +216,7 @@ const Dashboard = () => {
             />
             <DashboardSummaryCard
               icon={Calendar}
-              title="Planner"
+              title="Plano Geral"
               accentClass="text-blue-500 bg-blue-500/10"
               onClick={() => setOpenSection("cronograma")}
               metrics={[
