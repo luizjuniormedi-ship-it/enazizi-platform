@@ -118,6 +118,8 @@ const Profile = () => {
         display_name: trimmed,
         phone: phone.replace(/\D/g, "") || null,
         user_type: userType,
+        exam_date: examDate || null,
+        daily_study_hours: parseFloat(dailyStudyHours) || 4,
       };
       if (userType === "estudante") {
         updateData.periodo = periodo ? parseInt(periodo) : null;
