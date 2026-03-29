@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { encodeStudyContext } from "@/lib/studyContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Play, CalendarDays, AlertTriangle, Clock, CheckCircle2, ShieldAlert, Layers, BookOpen } from "lucide-react";
