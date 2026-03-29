@@ -675,6 +675,89 @@ export type Database = {
         }
         Relationships: []
       }
+      diagnostic_sessions: {
+        Row: {
+          areas_evaluated: Json
+          correct_count: number
+          created_at: string
+          cycle: string
+          finished_at: string | null
+          id: string
+          score: number
+          started_at: string
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          areas_evaluated?: Json
+          correct_count?: number
+          created_at?: string
+          cycle?: string
+          finished_at?: string | null
+          id?: string
+          score?: number
+          started_at?: string
+          total_questions?: number
+          user_id: string
+        }
+        Update: {
+          areas_evaluated?: Json
+          correct_count?: number
+          created_at?: string
+          cycle?: string
+          finished_at?: string | null
+          id?: string
+          score?: number
+          started_at?: string
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      diagnostic_topic_results: {
+        Row: {
+          accuracy: number
+          avg_time_seconds: number | null
+          correct: number
+          created_at: string
+          id: string
+          session_id: string
+          topic: string
+          total: number
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number
+          avg_time_seconds?: number | null
+          correct?: number
+          created_at?: string
+          id?: string
+          session_id: string
+          topic: string
+          total?: number
+          user_id: string
+        }
+        Update: {
+          accuracy?: number
+          avg_time_seconds?: number | null
+          correct?: number
+          created_at?: string
+          id?: string
+          session_id?: string
+          topic?: string
+          total?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diagnostic_topic_results_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "diagnostic_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discursive_attempts: {
         Row: {
           ai_correction: Json | null
