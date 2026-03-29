@@ -34,11 +34,14 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 describe("DashboardSidebar", () => {
   it("renders ENAZIZI branding", async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const DashboardSidebar = (await import("@/components/layout/DashboardSidebar")).default;
     render(
-      <MemoryRouter>
-        <DashboardSidebar />
-      </MemoryRouter>
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <DashboardSidebar />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
     expect(screen.getByText("ENAZIZI")).toBeInTheDocument();
   });
