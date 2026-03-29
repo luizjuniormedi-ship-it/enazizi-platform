@@ -424,6 +424,8 @@ async function structureQuestions(
 
   const prompt = `Você é um especialista em extrair questões de provas de residência médica a partir de conteúdo web.
 
+IDIOMA OBRIGATÓRIO: Todas as questões DEVEM estar em PORTUGUÊS BRASILEIRO. Descarte COMPLETAMENTE qualquer questão em inglês, espanhol ou outro idioma que não seja português. NÃO traduza questões — apenas extraia as que já estão em português.
+
 CONTEÚDO EXTRAÍDO DA WEB (fontes reais de provas):
 ${contentBlock}
 
@@ -431,6 +433,7 @@ TAREFA: Extraia no MÁXIMO 5 questões de múltipla escolha encontradas no conte
 
 REGRAS:
 1. Extraia APENAS questões que realmente existem no texto — NÃO invente questões
+1b. APENAS questões em PORTUGUÊS BRASILEIRO — rejeite qualquer conteúdo em inglês
 2. Preserve o enunciado original o mais fielmente possível
 3. Preserve as alternativas originais (mínimo 4 alternativas)
 4. Identifique a alternativa correta (se o gabarito estiver disponível)
