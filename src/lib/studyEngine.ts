@@ -377,5 +377,37 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
 
   // ── Sort by priority then apply weight-based slot limits ─────
   recs.sort((a, b) => b.priority - a.priority);
-  return applyWeights(recs, weights, 8);
+  const result = applyWeights(recs, weights, 8);
+
+  // ── FALLBACK: guarantee at least 1 task for any user ─────────
+  if (result.length === 0) {
+    return [{
+      id: "fallback-start",
+      type: "new",
+      topic: "Clínica Médica",
+      specialty: "Clínica Médica",
+      priority: 90,
+      reason: "Vamos começar! Estude com o Tutor IA.",
+      targetModule: "tutor",
+      targetPath: "/dashboard/chatgpt",
+      estimatedMinutes: 20,
+    }];
+  }
+
+  return result;
+ } catch (err) {
+  console.error("[StudyEngine] Error generating recommendations:", err);
+  // Return fallback task so the user is never stuck
+  return [{
+    id: "fallback-error",
+    type: "new",
+    topic: "Clínica Médica",
+    specialty: "Clínica Médica",
+    priority: 90,
+    reason: "Vamos começar! Estude com o Tutor IA.",
+    targetModule: "tutor",
+    targetPath: "/dashboard/chatgpt",
+    estimatedMinutes: 20,
+  }];
+ }
 }
