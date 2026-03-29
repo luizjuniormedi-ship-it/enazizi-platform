@@ -163,7 +163,7 @@ export default function DiagnosticSummaryCard() {
               variant="outline"
               size="sm"
               className="text-xs h-8 gap-1"
-              onClick={() => navigate("/dashboard/nivelamento")}
+              onClick={() => navigate("/dashboard/diagnostico")}
             >
               <RotateCcw className="h-3 w-3" />
               Refazer

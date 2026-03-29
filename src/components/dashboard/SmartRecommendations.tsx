@@ -135,7 +135,7 @@ export default function SmartRecommendations({ stats, metrics, hasCompletedDiagn
         icon: <Zap className="h-5 w-5 text-yellow-500" />,
         title: "Comece uma Sequência",
         description: "Estude hoje para iniciar seu streak e ganhar XP bônus!",
-        path: "/dashboard/plano-diario",
+        path: "/dashboard/plano-dia",
         priority: "baixa",
         reason: "Sem sequência ativa",
       });
