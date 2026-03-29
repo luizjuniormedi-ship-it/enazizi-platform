@@ -112,8 +112,10 @@ Se não encontrar questões, retorne {"questions": []}`
 
     if (!parsed) return 0;
 
+    const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
     const questions = (parsed.questions || []).filter((q: any) =>
-      q.statement && Array.isArray(q.options) && q.options.length >= 2 && typeof q.correct_index === "number"
+      q.statement && Array.isArray(q.options) && q.options.length >= 2 && typeof q.correct_index === "number" &&
+      !ENGLISH_PATTERN.test(q.statement)
     );
 
     if (questions.length > 0) {
