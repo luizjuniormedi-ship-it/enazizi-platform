@@ -1646,6 +1646,66 @@ export type Database = {
           },
         ]
       }
+      real_exam_questions: {
+        Row: {
+          answer_source: string
+          confidence_score: number
+          correct_index: number | null
+          created_at: string
+          difficulty: number
+          exam_info: string | null
+          explanation: string | null
+          id: string
+          is_active: boolean
+          options: Json
+          quality_score: number
+          source_url: string
+          statement: string
+          statement_hash: string
+          subtopic: string | null
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          answer_source?: string
+          confidence_score?: number
+          correct_index?: number | null
+          created_at?: string
+          difficulty?: number
+          exam_info?: string | null
+          explanation?: string | null
+          id?: string
+          is_active?: boolean
+          options?: Json
+          quality_score?: number
+          source_url: string
+          statement: string
+          statement_hash: string
+          subtopic?: string | null
+          topic: string
+          updated_at?: string
+        }
+        Update: {
+          answer_source?: string
+          confidence_score?: number
+          correct_index?: number | null
+          created_at?: string
+          difficulty?: number
+          exam_info?: string | null
+          explanation?: string | null
+          id?: string
+          is_active?: boolean
+          options?: Json
+          quality_score?: number
+          source_url?: string
+          statement?: string
+          statement_hash?: string
+          subtopic?: string | null
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           created_at: string
@@ -1727,6 +1787,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      scraping_runs: {
+        Row: {
+          banca: string | null
+          candidate_blocks_found: number
+          created_at: string
+          duplicates_found: number
+          english_leaked: number
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          queries_executed: number
+          questions_accepted: number
+          questions_extracted: number
+          questions_rejected: number
+          rejection_reasons: Json
+          sources_used: Json
+          specialty: string
+          started_at: string
+          status: string
+          urls_tested: number
+        }
+        Insert: {
+          banca?: string | null
+          candidate_blocks_found?: number
+          created_at?: string
+          duplicates_found?: number
+          english_leaked?: number
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          queries_executed?: number
+          questions_accepted?: number
+          questions_extracted?: number
+          questions_rejected?: number
+          rejection_reasons?: Json
+          sources_used?: Json
+          specialty: string
+          started_at?: string
+          status?: string
+          urls_tested?: number
+        }
+        Update: {
+          banca?: string | null
+          candidate_blocks_found?: number
+          created_at?: string
+          duplicates_found?: number
+          english_leaked?: number
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          queries_executed?: number
+          questions_accepted?: number
+          questions_extracted?: number
+          questions_rejected?: number
+          rejection_reasons?: Json
+          sources_used?: Json
+          specialty?: string
+          started_at?: string
+          status?: string
+          urls_tested?: number
+        }
+        Relationships: []
       }
       simulation_history: {
         Row: {
