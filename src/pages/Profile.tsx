@@ -322,6 +322,7 @@ const Profile = () => {
           </div>
         </div>
 
+        <div className="space-y-2">
           <Label className="flex items-center gap-1.5">
             <Phone className="h-3.5 w-3.5 text-muted-foreground" />
             WhatsApp
