@@ -490,9 +490,13 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
 
 
     // Normalize and filter valid questions
+    const englishPattern = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice)\b/i;
     const validQuestions = questions.filter((q: any) => {
       if (!q.statement) { console.log("Rejected: no statement"); return false; }
       if (!Array.isArray(q.options) || q.options.length < 2) { console.log("Rejected: bad options"); return false; }
+      // Reject English questions
+      const stText = String(q.statement);
+      if (englishPattern.test(stText)) { console.log("Rejected: English content detected"); return false; }
       // Accept correct_index as number or string, default to 0
       if (q.correct_index === undefined || q.correct_index === null) {
         if (q.correct_answer !== undefined) {
