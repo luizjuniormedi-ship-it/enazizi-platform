@@ -8,23 +8,21 @@ export const ALL_MODULES = [
   { key: "chatgpt", label: "Tutor" },
   { key: "plano-dia", label: "⚡ Plano do Dia" },
   { key: "diagnostico", label: "🩺 Nivelamento" },
-  { key: "cronograma", label: "📅 Cronograma" },
+  { key: "planner", label: "🧠 Planner IA" },
   { key: "flashcards", label: "🃏 Flashcards" },
   { key: "gerar-flashcards", label: "🃏 Gerador Flashcards" },
   { key: "resumos", label: "📖 Resumidor" },
   { key: "apostilas", label: "📚 Apostilas & Resumos" },
   { key: "cronicas", label: "📖 Crônicas Médicas" },
-  { key: "cursos", label: "📚 Cursos ECG & RX" },
-  
+  { key: "feynman", label: "💡 Método Feynman" },
   { key: "entrevista", label: "🎤 Entrevista" },
-
   { key: "simulados", label: "📝 Simulados" },
-  
   { key: "questoes", label: "❓ Gerador Questões" },
   { key: "banco-questoes", label: "🗃️ Banco de Questões" },
   { key: "discursivas", label: "✍️ Discursivas" },
   { key: "anamnese", label: "🩺 Anamnese" },
   { key: "plantao", label: "🚨 Modo Plantão" },
+  { key: "simulacao-clinica", label: "🚨 Simulação Clínica" },
   { key: "predictor", label: "📈 Previsão" },
   { key: "banco-erros", label: "🚨 Banco de Erros" },
   { key: "mapa-dominio", label: "🗺️ Mapa Evolução" },
@@ -32,6 +30,11 @@ export const ALL_MODULES = [
   { key: "coach", label: "💪 Coach" },
   { key: "conquistas", label: "🏆 Conquistas" },
   { key: "analytics", label: "📊 Analytics" },
+  { key: "mentor", label: "🤖 Mentor IA" },
+  { key: "missao", label: "🎯 Modo Missão" },
+  { key: "image-quiz", label: "🖼️ Quiz de Imagens" },
+  { key: "revisor", label: "📋 Revisor Médico" },
+  { key: "sessao-estudo", label: "📖 Sessão de Estudo" },
 ] as const;
 
 export type ModuleKey = typeof ALL_MODULES[number]["key"];
