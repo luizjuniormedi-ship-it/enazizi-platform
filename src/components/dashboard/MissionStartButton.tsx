@@ -3,10 +3,14 @@ import { useMissionMode } from "@/hooks/useMissionMode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Rocket, Play, Loader2, Clock, ArrowRight } from "lucide-react";
+import { Rocket, Play, Loader2, ArrowRight } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 export default function MissionStartButton() {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [starting, setStarting] = useState(false);
   const {
     state, progress, totalMinutes, completedMinutes,
     engineLoading, hasTasks, startMission, resumeMission,
@@ -47,6 +51,25 @@ export default function MissionStartButton() {
     );
   }
 
+  const handleStart = () => {
+    setStarting(true);
+    try {
+      startMission();
+      navigate("/dashboard/missao");
+    } catch (err) {
+      console.error("[MissionStart] Error:", err);
+      toast({
+        title: "Não foi possível iniciar a sessão",
+        description: "Tente novamente em alguns segundos.",
+        variant: "destructive",
+      });
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const isLoading = engineLoading || starting;
+
   // Idle — show start button
   return (
     <Card className="border-primary/40 bg-gradient-to-br from-primary/10 via-primary/5 to-background shadow-[0_0_40px_hsl(var(--primary)/0.1)] animate-fade-in">
@@ -66,13 +89,10 @@ export default function MissionStartButton() {
         <Button
           className="w-full gap-2 font-bold text-lg py-6 shadow-lg shadow-primary/20"
           size="lg"
-          disabled={engineLoading || !hasTasks}
-          onClick={() => {
-            startMission();
-            navigate("/dashboard/missao");
-          }}
+          disabled={isLoading}
+          onClick={handleStart}
         >
-          {engineLoading ? (
+          {isLoading ? (
             <>
               <Loader2 className="h-5 w-5 animate-spin" />
               Preparando...
@@ -85,7 +105,7 @@ export default function MissionStartButton() {
           )}
         </Button>
 
-        {!engineLoading && hasTasks && (
+        {!isLoading && hasTasks && (
           <p className="text-[10px] text-center text-muted-foreground">
             Revisões → Conteúdo → Questões → Reforço → Avaliação
           </p>
