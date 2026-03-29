@@ -72,6 +72,7 @@ type SectionKey = "desempenho" | "cronograma" | "streak" | "simulados" | null;
 
 const Dashboard = () => {
   useRevisionNotifier();
+  const { evaluateAndDeliver } = useMessageDelivery();
   const { data, isLoading } = useDashboardData();
   const prevLevelRef = useRef<number | null>(null);
   const prevStreakRef = useRef<number | null>(null);
