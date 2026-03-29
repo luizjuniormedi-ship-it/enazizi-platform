@@ -57,6 +57,9 @@ const AIMentor = lazy(() => import("./pages/AIMentor"));
 const SmartPlanner = lazy(() => import("./pages/SmartPlanner"));
 const AdminMonitoring = lazy(() => import("./pages/AdminMonitoring"));
 const MissionMode = lazy(() => import("./pages/MissionMode"));
+const StudySession = lazy(() => import("./pages/StudySession"));
+const MedicalImageQuiz = lazy(() => import("./pages/MedicalImageQuiz"));
+
 
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
@@ -121,6 +124,7 @@ const App = () => (
                 <Route path="proficiencia" element={<StudentSimulados />} />
                 <Route path="discursivas" element={<DiscursiveQuestions />} />
                 <Route path="plantao" element={<ClinicalSimulation />} />
+                <Route path="simulacao-clinica" element={<ClinicalSimulation />} />
                 <Route path="revisor" element={<MedicalReviewer />} />
                 <Route path="entrevista" element={<InterviewSimulator />} />
                 <Route path="conquistas" element={<Achievements />} />
@@ -132,6 +136,8 @@ const App = () => (
                 <Route path="missao" element={<MissionMode />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="perfil" element={<Profile />} />
+                <Route path="sessao-estudo" element={<StudySession />} />
+                <Route path="image-quiz" element={<MedicalImageQuiz />} />
               </Route>
               <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />
