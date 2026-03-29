@@ -24,7 +24,9 @@ serve(async (req) => {
       revisao: "Crie um ROTEIRO DE REVISÃO RÁPIDA (1-2 páginas) com os 20 conceitos mais importantes, formato pergunta-resposta, ideal para revisão de véspera de prova.",
     };
 
-    const prompt = `Você é um professor de medicina especialista em preparação para Residência Médica (ENARE, USP, UNIFESP, Revalida).
+    const prompt = `IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês como idioma principal.
+
+Você é um professor de medicina especialista em preparação para Residência Médica (ENARE, USP, UNIFESP, Revalida).
 
 TAREFA: Gere material de estudo estruturado sobre ${topic ? `"${topic}" dentro de` : ""} ${specialty}.
 

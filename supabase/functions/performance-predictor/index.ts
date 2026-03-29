@@ -13,7 +13,9 @@ serve(async (req) => {
     const { totalQuestions, correctAnswers, areaBreakdown, studyHoursPerWeek, daysUntilExam, diagnosticScore, streakDays, flashcardsReviewed, simuladoScores } = await req.json();
     
 
-    const systemPrompt = `Você é o Performance Predictor Agent, especializado em prever o desempenho de candidatos a Residência Médica.
+    const systemPrompt = `IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês.
+
+Você é o Performance Predictor Agent, especializado em prever o desempenho de candidatos a Residência Médica.
 
 DADOS DO CANDIDATO:
 - Questões respondidas: ${totalQuestions || 0}

@@ -53,7 +53,7 @@ serve(async (req) => {
     }
 
     // Generate with AI
-    const systemPrompt = `Você é um professor de medicina especialista. Gere uma explicação estruturada sobre o termo médico solicitado, voltada para estudantes de residência médica no Brasil. Use referências de Harrison, Sabiston, diretrizes SBC, MS e FEBRASGO quando aplicável. Responda SEMPRE em português brasileiro.`;
+    const systemPrompt = `IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA responda em inglês. Inglês permitido APENAS em nomes de artigos/guidelines.\n\nVocê é um professor de medicina especialista. Gere uma explicação estruturada sobre o termo médico solicitado, voltada para estudantes de residência médica no Brasil. Use referências de Harrison, Sabiston, diretrizes SBC, MS e FEBRASGO quando aplicável.`;
 
     const response = await aiFetch({
       model: "google/gemini-2.5-flash",

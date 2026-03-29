@@ -142,9 +142,11 @@ FORMATO JSON OBRIGATÓRIO:
     if (!parsed) return { questions: 0, flashcards: 0 };
 
     // Insert questions
+    const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
     const questions = (parsed.questions || []).filter((q: any) =>
       q.statement && Array.isArray(q.options) && q.options.length >= 2 && typeof q.correct_index === "number" &&
-      !INVALID_CONTENT_REGEX.test(q.statement) && !INVALID_CONTENT_REGEX.test(q.explanation || "")
+      !INVALID_CONTENT_REGEX.test(q.statement) && !INVALID_CONTENT_REGEX.test(q.explanation || "") &&
+      !ENGLISH_PATTERN.test(q.statement)
     );
 
     let qCount = 0;

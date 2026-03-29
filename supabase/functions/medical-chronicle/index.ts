@@ -5,7 +5,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `Você é um escritor médico especializado em crônicas clínicas imersivas para estudantes de Medicina que se preparam para Residência Médica e Revalida.
+const SYSTEM_PROMPT = `IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês como idioma principal. Inglês permitido APENAS em nomes de artigos/guidelines.
+
+Você é um escritor médico especializado em crônicas clínicas imersivas para estudantes de Medicina que se preparam para Residência Médica e Revalida.
 
 ## OBJETIVO
 Criar CRÔNICAS MÉDICAS AVANÇADAS no estilo "Mente de Residente" — narrativas imersivas em segunda pessoa que combinam:

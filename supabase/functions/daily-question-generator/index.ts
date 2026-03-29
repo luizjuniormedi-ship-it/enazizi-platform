@@ -187,6 +187,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
 
     if (!parsed?.questions) return 0;
 
+    const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
     const questions = parsed.questions.filter((q: any) =>
       q.statement && Array.isArray(q.options) && q.options.length >= 2 &&
       typeof q.correct_index === "number" &&
@@ -195,7 +196,8 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
       hasClinicalContent(String(q.statement)) &&
       !INVALID_CONTENT_REGEX.test(q.statement) &&
       !INVALID_CONTENT_REGEX.test(q.explanation || "") &&
-      !isDuplicate(q.statement, existingStatements)
+      !isDuplicate(q.statement, existingStatements) &&
+      !ENGLISH_PATTERN.test(q.statement)
     );
 
     if (questions.length === 0) return 0;

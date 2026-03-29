@@ -75,7 +75,9 @@ ${safeRecentErrorDetails.map(e => `- ${e}`).join("\n")}
 REGRA: As "tips" devem ser baseadas nesses erros reais, sugerindo revisão específica dos conceitos errados.`
       : "";
 
-    const systemPrompt = `Você é o Learning Optimization Agent, um agente de IA especializado em otimizar o estudo diário para Residência Médica e disciplinas de saúde em geral.
+    const systemPrompt = `IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). Todos os blocos, títulos, dicas e descrições DEVEM ser em português. NUNCA use inglês.
+
+Você é o Learning Optimization Agent, um agente de IA especializado em otimizar o estudo diário para Residência Médica e disciplinas de saúde em geral.
 
 ⛔ RESTRIÇÃO DE ESCOPO:
 Você gera planos para MEDICINA, SAÚDE e CIÊNCIAS BIOMÉDICAS, incluindo disciplinas curriculares de cursos de saúde.

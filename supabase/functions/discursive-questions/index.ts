@@ -34,7 +34,9 @@ serve(async (req) => {
         const { specialty, difficulty = "intermediário" } = params;
         if (!specialty) throw new Error("Especialidade obrigatória");
 
-        const prompt = `Gere UMA questão discursiva de residência médica sobre ${specialty}, nível ${difficulty}.
+        const prompt = `IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês.
+
+Gere UMA questão discursiva de residência médica sobre ${specialty}, nível ${difficulty}.
 
 A questão DEVE conter:
 - Um caso clínico detalhado (história, exame físico, exames complementares quando pertinente)

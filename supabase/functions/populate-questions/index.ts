@@ -73,6 +73,8 @@ async function processTextToQuestions(
           role: "system",
           content: `Extraia TODAS as questões de múltipla escolha do texto. Se encontrar questões já formatadas, converta para JSON preservando EXATAMENTE o enunciado e alternativas originais. Se for texto teórico, gere questões baseadas no conteúdo.
 
+IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). Se o texto original estiver em inglês, TRADUZA para português. NUNCA retorne questões em inglês.
+
 GERE O MÁXIMO POSSÍVEL (10-30 por bloco).
 
 IMPORTANTE: Para questões que já existem no texto com gabarito/comentário, use o correct_index correto baseado no gabarito fornecido. Se não houver gabarito, use seu conhecimento médico para determinar a resposta correta.
