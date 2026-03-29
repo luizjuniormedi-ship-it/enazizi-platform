@@ -98,7 +98,8 @@ Deno.serve(async (req) => {
     for (const plan of (pastPlans || []) as any[]) {
       if (plan.completed_count >= plan.total_blocks) continue;
 
-      const tasks = (plan.plan_json || []) as any[];
+      const raw = plan.plan_json || {};
+      const tasks = (Array.isArray(raw) ? raw : (raw as any).blocks || []) as any[];
       const completedSet = new Set(
         ((plan.completed_blocks || []) as string[])
       );
