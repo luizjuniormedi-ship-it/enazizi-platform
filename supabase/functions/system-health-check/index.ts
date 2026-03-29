@@ -184,6 +184,100 @@ Deno.serve(async (req) => {
         ? Math.round((totalTasksCompleted / tasksData.reduce((s: number, d: any) => s + (d.total_blocks || 1), 0)) * 100)
         : 0;
 
+      // ── STUDENTS & RISK DATA ──
+      const [profilesRes, presenceRes, latestScoresRes, plansYesterdayPerUser] = await Promise.all([
+        supabase.from("profiles").select("user_id, display_name, email, status").eq("status", "approved").limit(500),
+        supabase.from("user_presence").select("user_id, last_seen_at").order("last_seen_at", { ascending: false }).limit(500),
+        supabase.from("approval_scores").select("user_id, score, accuracy").order("created_at", { ascending: false }).limit(500),
+        supabase.from("daily_plans").select("user_id, completed_count, total_blocks").eq("plan_date", new Date(now.getTime() - 86400000).toISOString().split("T")[0]).limit(500),
+      ]);
+
+      const presenceMap: Record<string, string> = {};
+      for (const p of (presenceRes.data || [])) presenceMap[p.user_id] = p.last_seen_at;
+
+      const scoreMap: Record<string, { score: number; accuracy: number }> = {};
+      for (const s of (latestScoresRes.data || [])) {
+        if (!scoreMap[s.user_id]) scoreMap[s.user_id] = { score: s.score, accuracy: s.accuracy };
+      }
+
+      const planMap: Record<string, { completed: number; total: number }> = {};
+      for (const p of (plansYesterdayPerUser.data || [])) {
+        if (!planMap[p.user_id]) planMap[p.user_id] = { completed: 0, total: 0 };
+        planMap[p.user_id].completed += p.completed_count || 0;
+        planMap[p.user_id].total += p.total_blocks || 0;
+      }
+
+      const threeDaysAgo = new Date(now.getTime() - 3 * 86400000).toISOString();
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000).toISOString();
+
+      const students = (profilesRes.data || []).map((p: any) => {
+        const lastSeen = presenceMap[p.user_id] || null;
+        const sc = scoreMap[p.user_id] || { score: 0, accuracy: 0 };
+        const plan = planMap[p.user_id] || { completed: 0, total: 0 };
+        const overdue = Math.max(0, plan.total - plan.completed);
+
+        let status: "green" | "yellow" | "red" = "green";
+        if (!lastSeen || lastSeen < sevenDaysAgo || sc.score < 30) status = "red";
+        else if (lastSeen < threeDaysAgo || sc.score < 50 || overdue > 3) status = "yellow";
+
+        return {
+          user_id: p.user_id,
+          display_name: p.display_name || p.email?.split("@")[0] || "—",
+          email: p.email || "",
+          last_seen_at: lastSeen,
+          approval_score: Math.round(sc.score),
+          accuracy: Math.round(sc.accuracy),
+          tasks_completed: plan.completed,
+          tasks_overdue: overdue,
+          total_study_minutes: 0,
+          status,
+        };
+      });
+
+      const riskAlerts = students
+        .filter((s: any) => s.status === "red" || s.status === "yellow")
+        .map((s: any) => {
+          let reason = "";
+          let severity: "low" | "medium" | "high" = "low";
+          const details: string[] = [];
+
+          if (!s.last_seen_at || s.last_seen_at < sevenDaysAgo) {
+            reason = "Aluno inativo";
+            severity = "high";
+            details.push("Sem atividade há mais de 7 dias");
+          } else if (s.last_seen_at < threeDaysAgo) {
+            reason = "Baixo engajamento";
+            severity = "medium";
+            details.push("Sem atividade há mais de 3 dias");
+          }
+
+          if (s.approval_score < 30) {
+            reason = reason || "Score crítico";
+            severity = "high";
+            details.push(`Score de aprovação: ${s.approval_score}%`);
+          } else if (s.approval_score < 50) {
+            reason = reason || "Score baixo";
+            severity = severity === "high" ? "high" : "medium";
+            details.push(`Score de aprovação: ${s.approval_score}%`);
+          }
+
+          if (s.tasks_overdue > 3) {
+            details.push(`${s.tasks_overdue} tarefas atrasadas`);
+          }
+
+          return {
+            user_id: s.user_id,
+            display_name: s.display_name,
+            reason,
+            severity,
+            details: details.join(" · "),
+          };
+        })
+        .sort((a: any, b: any) => {
+          const order = { high: 0, medium: 1, low: 2 };
+          return order[a.severity] - order[b.severity];
+        });
+
       const dashboard = {
         system: {
           status: "online",
@@ -222,6 +316,8 @@ Deno.serve(async (req) => {
           topTopics,
           weakTopics,
         },
+        students,
+        riskAlerts,
         timestamp: now.toISOString(),
       };
 
