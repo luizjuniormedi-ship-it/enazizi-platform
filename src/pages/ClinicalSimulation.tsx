@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useSessionTracking, SessionOrigin } from "@/hooks/useSessionTracking";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { exportToPdf } from "@/lib/exportPdf";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
@@ -284,6 +285,8 @@ const ClinicalSimulation = () => {
   const { addXp } = useGamification();
   const [searchParams] = useSearchParams();
   const teacherCaseId = searchParams.get("teacher_case_id");
+  const paramOrigin = (searchParams.get("origin") as SessionOrigin) || "manual";
+  const { startSession: startTrackedSession, completeSession: completeTrackedSession, abandonSession: abandonTrackedSession } = useSessionTracking();
 
   const [phase, setPhase] = useState<Phase>("lobby");
   const [specialty, setSpecialty] = useState("Clínica Médica");
@@ -543,6 +546,11 @@ const ClinicalSimulation = () => {
         ideal_prescription: evalData.ideal_prescription || null,
         xp_earned: evalData.xp_earned,
       });
+      // Complete tracked session
+      await completeTrackedSession("simulation", {
+        finalScore: evalData.final_score,
+        sessionData: { grade: evalData.grade, correct_diagnosis: evalData.correct_diagnosis },
+      });
     } catch (e) {
       console.error("Error saving simulation:", e);
     }
@@ -722,6 +730,12 @@ const ClinicalSimulation = () => {
       setConversationHistory(startHistory);
       setPhase("active");
       addToTimeline("Caso iniciado", "🏥");
+
+      // Track session origin
+      if (user) {
+        const origin = teacherCaseId ? "assigned" as SessionOrigin : paramOrigin;
+        startTrackedSession({ type: "simulation", userId: user.id, specialty, difficulty, origin });
+      }
 
       setTimeout(() => inputRef.current?.focus(), 300);
     } catch (e) {
