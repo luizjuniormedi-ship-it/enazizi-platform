@@ -537,7 +537,7 @@ const DailyPlan = () => {
             Configure seu plano de estudos no <strong>Plano Geral</strong> para ver tarefas aqui.
           </p>
           <Button variant="outline" size="sm" onClick={() => navigate("/dashboard/planner")}>
-            <CalendarDays className="h-4 w-4 mr-2" /> Ir para o Plano Geral
+            <Calendar className="h-4 w-4 mr-2" /> Ir para o Plano Geral
           </Button>
         </div>
       )}
