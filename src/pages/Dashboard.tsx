@@ -29,6 +29,7 @@ import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import AdminSystemAlerts from "@/components/admin/AdminSystemAlerts";
 import InstallAppBanner from "@/components/dashboard/InstallAppBanner";
 import MissionStartButton from "@/components/dashboard/MissionStartButton";
+import ContentLockStatusCard from "@/components/dashboard/ContentLockStatusCard";
 import ExamSetupReminder from "@/components/dashboard/ExamSetupReminder";
 import ExamSetupConfirmation from "@/components/onboarding/ExamSetupConfirmation";
 import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
@@ -157,6 +158,9 @@ const Dashboard = () => {
           BLOCO 0 — MISSÃO DO DIA (CTA principal)
          ══════════════════════════════════════════ */}
       <MissionStartButton />
+
+      {/* Content Lock alert */}
+      <ContentLockStatusCard />
 
       {/* ══════════════════════════════════════════
           BLOCO 1 — FOCO TOTAL: O que estudar hoje
