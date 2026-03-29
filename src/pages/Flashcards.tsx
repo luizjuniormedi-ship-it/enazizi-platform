@@ -347,6 +347,7 @@ const Flashcards = () => {
           onDiscard={abandonSession}
         />
       )}
+      <StudyContextBanner />
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
