@@ -3,10 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { generateRecommendations } from "@/lib/studyEngine";
 
 /**
- * Checks for pending reviews and streak risk on mount,
- * then shows toast + browser notifications once per session.
+ * Checks for pending reviews, streak risk, study engine recommendations
+ * on mount, then shows toast + browser notifications once per session.
  */
 export function useRevisionNotifier() {
   const { user } = useAuth();
@@ -41,6 +42,7 @@ export function useRevisionNotifier() {
 
       hasNotified.current = true;
 
+      // 1. Pending reviews notification
       const pendingCount = pendingRes.count || 0;
       if (pendingCount > 0) {
         toast({
@@ -49,14 +51,13 @@ export function useRevisionNotifier() {
           duration: 8000,
         });
 
-        // Browser notification
         sendNotification(`📚 ${pendingCount} revisão(ões) pendente(s)!`, {
           body: "Revise agora para manter o conhecimento fresco.",
           tag: "revision-pending",
         });
       }
 
-      // Streak risk: last activity was yesterday and no activity today yet
+      // 2. Streak risk notification
       const gamif = gamifRes.data;
       if (gamif && gamif.current_streak >= 3) {
         const lastDate = gamif.last_activity_date;
@@ -80,6 +81,47 @@ export function useRevisionNotifier() {
             }, 3000);
           }
         }
+      }
+
+      // 3. Study Engine — topic-specific notifications
+      try {
+        const recs = await generateRecommendations({ userId: user.id });
+        
+        // High-priority error review notification
+        const errorRec = recs.find(r => r.type === "error_review" && r.priority >= 70);
+        if (errorRec) {
+          setTimeout(() => {
+            toast({
+              title: `⚠️ Tema recorrente: "${errorRec.topic}"`,
+              description: errorRec.reason,
+              duration: 8000,
+            });
+
+            sendNotification(`⚠️ Tema recorrente: "${errorRec.topic}"`, {
+              body: errorRec.reason,
+              tag: "error-review",
+            });
+          }, 6000);
+        }
+
+        // Clinical practice gap notification
+        const clinicalRec = recs.find(r => r.type === "clinical");
+        if (clinicalRec && !errorRec) {
+          setTimeout(() => {
+            toast({
+              title: `🩺 ${clinicalRec.topic}`,
+              description: clinicalRec.reason,
+              duration: 8000,
+            });
+
+            sendNotification(`🩺 ${clinicalRec.topic}`, {
+              body: clinicalRec.reason,
+              tag: "clinical-gap",
+            });
+          }, 6000);
+        }
+      } catch (e) {
+        console.error("[RevisionNotifier] Error fetching recommendations:", e);
       }
     };
 
