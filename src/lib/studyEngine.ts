@@ -192,8 +192,6 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   weights.maxNewTopics = adjustNewTopicsByLock(weights.maxNewTopics, lockStatus);
 
   // ── 1. Overdue / pending reviews ─────────────────────────────
-  const today = new Date().toISOString().split("T")[0];
-  const pendingReviews = (revisoesRes.data || []) as any[];
 
   for (let i = 0; i < Math.min(pendingReviews.length, 5); i++) {
     const rev = pendingReviews[i];
