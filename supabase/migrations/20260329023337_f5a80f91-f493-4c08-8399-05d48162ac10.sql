@@ -1,0 +1,26 @@
+-- Performance indexes for tables missing user_id index
+CREATE INDEX IF NOT EXISTS idx_error_bank_user ON public.error_bank (user_id);
+CREATE INDEX IF NOT EXISTS idx_exam_sessions_user ON public.exam_sessions (user_id, status);
+CREATE INDEX IF NOT EXISTS idx_flashcards_user ON public.flashcards (user_id);
+CREATE INDEX IF NOT EXISTS idx_revisoes_user_status ON public.revisoes (user_id, status, data_revisao);
+CREATE INDEX IF NOT EXISTS idx_temas_estudados_user ON public.temas_estudados (user_id);
+CREATE INDEX IF NOT EXISTS idx_study_tasks_user ON public.study_tasks (user_id);
+CREATE INDEX IF NOT EXISTS idx_simulation_history_user ON public.simulation_history (user_id);
+CREATE INDEX IF NOT EXISTS idx_simulation_sessions_user ON public.simulation_sessions (user_id, status);
+CREATE INDEX IF NOT EXISTS idx_anamnesis_sessions_user ON public.anamnesis_sessions (user_id, status);
+CREATE INDEX IF NOT EXISTS idx_anamnesis_results_user ON public.anamnesis_results (user_id);
+CREATE INDEX IF NOT EXISTS idx_discursive_attempts_user ON public.discursive_attempts (user_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_user ON public.reviews (user_id);
+CREATE INDEX IF NOT EXISTS idx_desempenho_questoes_user ON public.desempenho_questoes (user_id);
+CREATE INDEX IF NOT EXISTS idx_questions_bank_user ON public.questions_bank (user_id);
+CREATE INDEX IF NOT EXISTS idx_uploads_user ON public.uploads (user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON public.subscriptions (user_id);
+CREATE INDEX IF NOT EXISTS idx_study_plans_user ON public.study_plans (user_id);
+CREATE INDEX IF NOT EXISTS idx_performance_predictions_user ON public.performance_predictions (user_id);
+CREATE INDEX IF NOT EXISTS idx_diagnostic_results_user ON public.diagnostic_results (user_id);
+CREATE INDEX IF NOT EXISTS idx_clinical_cases_user ON public.clinical_cases (user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_user ON public.chat_messages (user_id);
+CREATE INDEX IF NOT EXISTS idx_error_bank_user_dominado ON public.error_bank (user_id, dominado);
+CREATE INDEX IF NOT EXISTS idx_practice_attempts_user_created ON public.practice_attempts (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_topic_profiles_user_topic ON public.user_topic_profiles (user_id, topic);
+CREATE INDEX IF NOT EXISTS idx_revisoes_user_date ON public.revisoes (user_id, data_revisao);
