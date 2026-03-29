@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { User, Camera, Loader2, Save, GraduationCap, Building, Phone, Stethoscope } from "lucide-react";
+import { User, Camera, Loader2, Save, GraduationCap, Building, Phone, Stethoscope, CalendarDays, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,8 @@ const Profile = () => {
   const [phone, setPhone] = useState("");
   const [userType, setUserType] = useState("estudante");
   const [targetSpecialty, setTargetSpecialty] = useState("");
+  const [examDate, setExamDate] = useState("");
+  const [dailyStudyHours, setDailyStudyHours] = useState("4");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -33,7 +35,7 @@ const Profile = () => {
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, email, periodo, faculdade, phone, user_type, target_specialty")
+        .select("display_name, avatar_url, email, periodo, faculdade, phone, user_type, target_specialty, exam_date, daily_study_hours")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -45,6 +47,8 @@ const Profile = () => {
         setPhone(data.phone || "");
         setUserType(data.user_type || "estudante");
         setTargetSpecialty(data.target_specialty || "");
+        setExamDate(data.exam_date || "");
+        setDailyStudyHours(data.daily_study_hours ? String(data.daily_study_hours) : "4");
       }
       setLoading(false);
     };
@@ -114,6 +118,8 @@ const Profile = () => {
         display_name: trimmed,
         phone: phone.replace(/\D/g, "") || null,
         user_type: userType,
+        exam_date: examDate || null,
+        daily_study_hours: parseFloat(dailyStudyHours) || 4,
       };
       if (userType === "estudante") {
         updateData.periodo = periodo ? parseInt(periodo) : null;
@@ -282,6 +288,39 @@ const Profile = () => {
             </div>
           </div>
         )}
+
+        {/* Exam & Study Config */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">
+              <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+              Data da prova
+            </Label>
+            <Input
+              type="date"
+              value={examDate}
+              onChange={(e) => setExamDate(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">Define a contagem regressiva e o plano de estudo.</p>
+          </div>
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+              Horas/dia
+            </Label>
+            <Select value={dailyStudyHours} onValueChange={setDailyStudyHours}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5, 6, 8, 10, 12].map((h) => (
+                  <SelectItem key={h} value={String(h)}>{h}h</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">Quantas horas estuda por dia.</p>
+          </div>
+        </div>
 
         <div className="space-y-2">
           <Label className="flex items-center gap-1.5">
