@@ -511,33 +511,50 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
     console.log(`AI returned ${questions.length} raw questions (robust extraction)`);
 
 
+    // Strict validation function
+    const optionPattern = /^[A-E]\)/;
+    function isValidQuestion(q: any): boolean {
+      if (!q?.statement || String(q.statement).trim().length < 180) return false;
+      if (!Array.isArray(q.options) || q.options.length < 4) return false;
+      const validOpts = q.options.filter((opt: string) => optionPattern.test(String(opt).trim()));
+      if (validOpts.length < 4) return false;
+      if (!q.source_url) return false;
+      if (q.correct_index !== null && q.correct_index !== undefined) {
+        if (typeof q.correct_index !== 'number') return false;
+        if (q.correct_index < 0 || q.correct_index >= q.options.length) return false;
+      }
+      return true;
+    }
+
     // Normalize and filter valid questions
     const englishPattern = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice)\b/i;
     const validQuestions = questions.filter((q: any) => {
-      if (!q.statement) { console.log("Rejected: no statement"); return false; }
-      if (!Array.isArray(q.options) || q.options.length < 4) { console.log("Rejected: less than 4 options"); return false; }
-      // Reject English questions
-      const stText = String(q.statement);
+      // Reject English content
+      const stText = String(q.statement || "");
       if (englishPattern.test(stText)) { console.log("Rejected: English content detected"); return false; }
-      // Handle answer_source and correct_index
+
+      // Handle answer_source and correct_index normalization
       const answerSource = q.answer_source || "unknown";
       if (q.correct_index === undefined || q.correct_index === null) {
-        if (answerSource === "unknown") {
-          // No reliable answer — skip setting a default, use 0 as fallback
-          q.correct_index = 0;
-          q.explanation = q.explanation || "Gabarito não confirmado — verificação manual recomendada.";
-        } else if (q.correct_answer !== undefined) {
+        if (q.correct_answer !== undefined) {
           const letterMap: Record<string, number> = { "A": 0, "B": 1, "C": 2, "D": 3, "E": 4 };
-          q.correct_index = letterMap[String(q.correct_answer).toUpperCase().trim()] ?? 0;
-        } else {
-          q.correct_index = 0;
+          q.correct_index = letterMap[String(q.correct_answer).toUpperCase().trim()] ?? null;
         }
-        console.log(`Fixed missing correct_index, set to ${q.correct_index} (source: ${answerSource})`);
+        if (q.correct_index === undefined || q.correct_index === null) {
+          if (answerSource === "unknown") {
+            q.correct_index = 0;
+            q.explanation = q.explanation || "Gabarito não confirmado — verificação manual recomendada.";
+          } else {
+            q.correct_index = 0;
+          }
+        }
+        console.log(`Fixed correct_index to ${q.correct_index} (source: ${answerSource})`);
       }
       q.correct_index = Number(q.correct_index);
       if (isNaN(q.correct_index)) q.correct_index = 0;
-      const len = String(q.statement).trim().length;
-      if (len < 150) { console.log(`Rejected: too short (${len} chars)`); return false; }
+
+      // Apply strict validation
+      if (!isValidQuestion(q)) { console.log(`Rejected: failed isValidQuestion (${stText.length} chars)`); return false; }
       if (isDuplicate(q.statement, existingStatements)) { console.log("Rejected: duplicate"); return false; }
       return true;
     });
