@@ -13,6 +13,8 @@ import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import ModuleEmptyState from "@/components/layout/ModuleEmptyState";
 import { exportToPdf } from "@/lib/exportPdf";
 import { useNavigate } from "react-router-dom";
+import { useStudyContext } from "@/lib/studyContext";
+import StudyContextBanner from "@/components/study/StudyContextBanner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
