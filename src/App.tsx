@@ -59,7 +59,7 @@ const AdminMonitoring = lazy(() => import("./pages/AdminMonitoring"));
 const MissionMode = lazy(() => import("./pages/MissionMode"));
 const StudySession = lazy(() => import("./pages/StudySession"));
 const MedicalImageQuiz = lazy(() => import("./pages/MedicalImageQuiz"));
-const Landing = lazy(() => import("./pages/Landing"));
+
 
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
