@@ -61,7 +61,7 @@ export default function MissionStartButton() {
 
   // Idle — show start button
   return (
-    <Card className="border-primary/40 bg-gradient-to-br from-primary/10 via-primary/5 to-background shadow-[0_0_40px_hsl(var(--primary)/0.1)] animate-fade-in">
+    <Card data-mission-cta className="border-primary/40 bg-gradient-to-br from-primary/10 via-primary/5 to-background shadow-[0_0_40px_hsl(var(--primary)/0.1)] animate-fade-in">
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center">

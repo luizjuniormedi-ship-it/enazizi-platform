@@ -43,6 +43,11 @@ export default function SmartPopup({
     else localStorage.setItem(storageKey, "seen");
     setOpen(false);
     onCta?.();
+    // Scroll to main CTA after popup closes
+    setTimeout(() => {
+      const cta = document.querySelector("[data-mission-cta]");
+      if (cta) cta.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 300);
   };
 
   // If already dismissed permanently, never render

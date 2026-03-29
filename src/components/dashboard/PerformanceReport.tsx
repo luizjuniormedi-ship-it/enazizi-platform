@@ -32,6 +32,12 @@ const PerformanceReport = () => {
       const exams = examsRes.data || [];
       const diag = diagRes.data?.[0];
 
+      // No data guard — show message instead of empty PDF
+      if (!perf && errors.length === 0 && domains.length === 0 && exams.length === 0 && !diag) {
+        toast({ title: "Sem dados para exportar", description: "Estude um pouco primeiro para gerar seu relatório!", variant: "destructive" });
+        return;
+      }
+
       const doc = new jsPDF({ unit: "mm", format: "a4" });
       const W = doc.internal.pageSize.getWidth();
       const M = 15;
