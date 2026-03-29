@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { User, Camera, Loader2, Save, GraduationCap, Building, Phone, Stethoscope } from "lucide-react";
+import { User, Camera, Loader2, Save, GraduationCap, Building, Phone, Stethoscope, CalendarDays, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,8 @@ const Profile = () => {
   const [phone, setPhone] = useState("");
   const [userType, setUserType] = useState("estudante");
   const [targetSpecialty, setTargetSpecialty] = useState("");
+  const [examDate, setExamDate] = useState("");
+  const [dailyStudyHours, setDailyStudyHours] = useState("4");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -33,7 +35,7 @@ const Profile = () => {
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, email, periodo, faculdade, phone, user_type, target_specialty")
+        .select("display_name, avatar_url, email, periodo, faculdade, phone, user_type, target_specialty, exam_date, daily_study_hours")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -45,6 +47,8 @@ const Profile = () => {
         setPhone(data.phone || "");
         setUserType(data.user_type || "estudante");
         setTargetSpecialty(data.target_specialty || "");
+        setExamDate(data.exam_date || "");
+        setDailyStudyHours(data.daily_study_hours ? String(data.daily_study_hours) : "4");
       }
       setLoading(false);
     };
