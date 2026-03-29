@@ -75,7 +75,7 @@ export default function OnboardingChecklist({ stats, metrics, hasCompletedDiagno
       title: "Crie seus Flashcards",
       description: "Gere flashcards com IA sobre um tema",
       xp: 30,
-      path: "/dashboard/agentes/flashcards",
+      path: "/dashboard/gerar-flashcards",
       isComplete: stats.flashcards > 0,
     },
     {
