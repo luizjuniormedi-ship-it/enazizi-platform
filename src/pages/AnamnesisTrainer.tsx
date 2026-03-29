@@ -495,6 +495,12 @@ const AnamnesisTrainer = () => {
           xp_earned: data.xp_earned || 0,
         } as any);
 
+        // Complete tracked session
+        await completeTrackedSession("anamnesis", {
+          finalScore: data.final_score || 0,
+          categoriesCovered: Object.keys(data.categories_summary || {}),
+        });
+
         if ((data.final_score || 0) < 70) {
           const missedCategories = Object.entries(data.categories_summary || {})
             .filter(([, v]: [string, any]) => !v)
