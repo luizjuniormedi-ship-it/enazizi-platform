@@ -221,6 +221,9 @@ const AnamnesisTrainer = () => {
   const { toast } = useToast();
   const { addXp } = useGamification();
   const isMobile = useIsMobile();
+  const [searchParams] = useSearchParams();
+  const paramOrigin = (searchParams.get("origin") as SessionOrigin) || "manual";
+  const { startSession: startTrackedSession, completeSession: completeTrackedSession } = useSessionTracking();
 
   const [phase, setPhase] = useState<Phase>("lobby");
   const [specialty, setSpecialty] = useState("Clínica Médica");
