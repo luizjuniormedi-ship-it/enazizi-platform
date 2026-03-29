@@ -1,7 +1,7 @@
-import { AlertTriangle, BookOpen } from "lucide-react";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle, Play, Flame, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useMissionMode } from "@/hooks/useMissionMode";
 
 interface WarningProps {
   todayCompleted: number;
@@ -14,11 +14,13 @@ interface WarningProps {
   hasStudyPlan?: boolean;
 }
 
-interface Warning {
+interface ActionAlert {
+  icon: React.ReactNode;
   title: string;
   message: string;
-  severity: "red" | "orange";
-  action?: { label: string; path: string };
+  buttonLabel: string;
+  onAction: () => void;
+  colorClass: string;
 }
 
 const DashboardWarnings = ({
@@ -26,95 +28,91 @@ const DashboardWarnings = ({
   streak, daysUntilExam, questionsToday = 0, hasStudyPlan = false,
 }: WarningProps) => {
   const navigate = useNavigate();
-  const warnings: Warning[] = [];
-  const taskPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const { startMission } = useMissionMode();
   const hour = new Date().getHours();
 
-  // Real activity: no questions answered today and it's past noon
-  if (questionsToday === 0 && hour >= 12) {
-    warnings.push({
-      title: "Você ainda não estudou hoje",
-      message: "Que tal começar com uma sessão rápida? Mesmo 20 minutos fazem diferença.",
-      severity: "orange",
-      action: { label: "Começar agora", path: "/dashboard/simulados" },
-    });
-  }
-
-  if (hasStudyPlan) {
-    if (todayTotal > 2 && todayCompleted > 0 && todayCompleted < todayTotal * 0.5 && hour >= 17) {
-      warnings.push({
-        title: "Progresso de hoje abaixo do esperado",
-        message: `Você completou ${todayCompleted} de ${todayTotal} blocos. Ainda dá tempo de avançar.`,
-        severity: "orange",
-      });
-    }
-
-    if (totalTasks > 5 && taskPercent < 30) {
-      warnings.push({
-        title: "Seu plano precisa de atenção",
-        message: `Apenas ${taskPercent}% das tarefas concluídas. Retome o ritmo para não acumular.`,
-        severity: "red",
-        action: { label: "Ver Plano Geral", path: "/dashboard/planner" },
-      });
-    }
-  }
-
-  if (!hasStudyPlan && totalTasks === 0) {
-    warnings.push({
-      title: "Crie seu Plano Geral",
-      message: "Com um plano definido, o sistema organiza suas revisões e acompanha seu progresso.",
-      severity: "orange",
-      action: { label: "Criar plano", path: "/dashboard/planner" },
-    });
-  }
-
-  if (streak === 0 && questionsToday === 0 && hour >= 14) {
-    warnings.push({
-      title: "Sua sequência de estudos zerou",
-      message: "Constância é o que diferencia quem passa. Comece uma nova sequência hoje.",
-      severity: "orange",
-      action: { label: "Começar agora", path: "/dashboard/chatgpt" },
-    });
-  }
-
-  if (daysUntilExam !== null && daysUntilExam <= 30 && taskPercent < 50 && hasStudyPlan) {
-    warnings.push({
-      title: `Faltam ${daysUntilExam} dias para a prova`,
-      message: `Progresso em ${taskPercent}%. Foque nas revisões e nos temas com mais peso.`,
-      severity: "red",
-    });
-  }
-
-  if (warnings.length === 0) return null;
-
-  const severityStyles = {
-    red: "border-destructive/50 bg-destructive/5 text-destructive",
-    orange: "border-orange-500/50 bg-orange-500/5 text-orange-700 dark:text-orange-400",
+  const startAndGo = () => {
+    startMission();
+    navigate("/dashboard/missao");
   };
 
+  // Build prioritized list — only show the FIRST match
+  // Priority 1: not studied today (after noon)
+  if (questionsToday === 0 && hour >= 10) {
+    return (
+      <AlertBanner
+        icon={<Play className="h-4 w-4" />}
+        title="Você ainda não estudou hoje"
+        message="Uma sessão rápida já faz diferença."
+        buttonLabel="Começar agora"
+        onAction={startAndGo}
+        colorClass="border-primary/40 bg-primary/5 text-primary"
+      />
+    );
+  }
+
+  // Priority 2: exam close (<=15 days)
+  if (daysUntilExam !== null && daysUntilExam <= 15) {
+    return (
+      <AlertBanner
+        icon={<Clock className="h-4 w-4" />}
+        title={`Faltam ${daysUntilExam} dias para a prova`}
+        message="Foque nas revisões e nos temas com mais peso."
+        buttonLabel="Modo intensivo"
+        onAction={startAndGo}
+        colorClass="border-destructive/40 bg-destructive/5 text-destructive"
+      />
+    );
+  }
+
+  // Priority 3: streak broken
+  if (streak === 0 && questionsToday === 0 && hour >= 12) {
+    return (
+      <AlertBanner
+        icon={<Flame className="h-4 w-4" />}
+        title="Sua sequência de estudos zerou"
+        message="Comece uma nova sequência agora."
+        buttonLabel="Recomeçar"
+        onAction={startAndGo}
+        colorClass="border-orange-500/40 bg-orange-500/5 text-orange-600 dark:text-orange-400"
+      />
+    );
+  }
+
+  // Priority 4: no study plan
+  if (!hasStudyPlan && totalTasks === 0) {
+    return (
+      <AlertBanner
+        icon={<AlertTriangle className="h-4 w-4" />}
+        title="Crie seu Plano Geral"
+        message="Com um plano, o sistema organiza suas revisões automaticamente."
+        buttonLabel="Criar plano"
+        onAction={() => navigate("/dashboard/planner")}
+        colorClass="border-amber-500/40 bg-amber-500/5 text-amber-600 dark:text-amber-400"
+      />
+    );
+  }
+
+  return null;
+};
+
+function AlertBanner({ icon, title, message, buttonLabel, onAction, colorClass }: ActionAlert) {
   return (
-    <div className="space-y-3">
-      {warnings.map((w, i) => (
-        <Alert key={i} className={`${severityStyles[w.severity]} animate-fade-in`}>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle className="font-bold">{w.title}</AlertTitle>
-          <AlertDescription className="flex items-center justify-between gap-2">
-            <span>{w.message}</span>
-            {w.action && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="shrink-0 text-xs h-7"
-                onClick={() => navigate(w.action!.path)}
-              >
-                {w.action.label}
-              </Button>
-            )}
-          </AlertDescription>
-        </Alert>
-      ))}
+    <div className={`flex items-center gap-3 rounded-xl border p-3 animate-fade-in ${colorClass}`}>
+      <div className="shrink-0">{icon}</div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold">{title}</p>
+        <p className="text-xs opacity-80">{message}</p>
+      </div>
+      <Button
+        size="sm"
+        className="shrink-0 text-xs h-8 gap-1.5 font-semibold"
+        onClick={onAction}
+      >
+        {buttonLabel}
+      </Button>
     </div>
   );
-};
+}
 
 export default DashboardWarnings;
