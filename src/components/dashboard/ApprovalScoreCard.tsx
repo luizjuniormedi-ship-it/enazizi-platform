@@ -148,7 +148,7 @@ export default function ApprovalScoreCard() {
           <div className="px-4 pb-3">
             <p className="text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
               <AlertTriangle className="h-3 w-3" />
-              Você precisa melhorar:
+              Pontos para melhorar:
             </p>
             <div className="space-y-1">
               {issues.slice(0, 3).map((issue) => (
