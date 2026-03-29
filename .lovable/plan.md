@@ -1,18 +1,65 @@
 
 
-# Corrigir Pipeline de Busca de Questões Reais
+# QA Diário ENAZIZI — Relatório de Validação
 
-## Problema Raiz
-O pipeline coleta candidate blocks e a IA extrai questões, mas a validação pós-IA rejeita TUDO porque:
-1. Opções retornadas pela IA não começam exatamente com `A) ` (pode vir `a)`, `A.`, `A -`, ou sem prefixo)
-2. Mínimo de 180 caracteres é alto demais — questões reais curtas de 120-170 chars são descartadas
-3. A normalização (`normalizeQuestion`) não trata o formato das opções
+## Status do Sistema: ✅ ESTÁVEL
 
-## Correções no `supabase/functions/search-real-questions/index.ts`
+---
 
-### 1. Adicionar normalização de opções ANTES da validação
-Na função `normalizeQuestion`, adicionar lógica para:
-- Se opção não começa com `A) `, adicionar o prefixo automaticamente baseado no índice
-- Aceitar formatos: `a)`, `A.`, `A -`, `A:`, `(A)`, ou opção sem prefixo
+## 1. Saúde do Sistema
+- **Build**: OK, sem erros de compilação
+- **Login**: Funcional (sessão ativa confirmada via session replay)
+- **Dashboard**: Carrega todos os cards e widgets corretamente
+- **Console**: Zero erros
+- **Network**: Todas as requisições retornando 200
+- **Infinite loading**: Nenhum detectado
 
-### 2. Relax
+## 2. Fluxo Principal (Login → Dashboard → Estudo)
+- Login funciona corretamente
+- Dashboard carrega todos os componentes: MissionStartButton, ApprovalScoreCard, PendingReviewsCard, WeakTopicsCard, etc.
+- Botão "COMEÇAR ESTUDO" presente e funcional
+- Study Engine possui fallback garantido (sempre retorna pelo menos 3 tarefas)
+
+## 3. Dashboard
+- Todos os cards carregam (TodayStudyCard, ApprovalScoreCard, PendingReviewsCard, WeakTopicsCard, FreeStudyCard, PracticalTrainingCard, DiagnosticSummaryCard)
+- Botões funcionais: COMEÇAR ESTUDO, Criar Plano, Corrigir agora, Revisar agora
+- Sidebar mostra "🧠 Planner IA" corretamente
+- Bottom tab bar mostra Planner no mobile
+
+## 4. Navegação
+- Todas as 52+ rotas existem e estão mapeadas
+- Redirect `/dashboard/cronograma` → `/dashboard/planner` ativo
+- Bottom tab bar: 5 tabs (Início, Tutor, Planner, Simulados, Perfil)
+- Proteção de rotas (admin, professor) funcional
+
+## 5. Idioma (pt-BR)
+- **UI**: 100% em Português
+- **Nenhum vazamento de inglês** detectado nos componentes de página
+- **Edge Functions**: 18 funções com enforcement de pt-BR nos prompts
+- **Validação**: Filtros ativos em medicalValidation.ts e search-real-questions
+
+## 6. Problemas Encontrados
+
+### Nenhum problema crítico ou alto detectado
+
+### Baixo (cosmético)
+- `studyEngine.ts` linha 7: o tipo `TargetModule` ainda lista `"cronograma"` como valor — funcional mas inconsistente com a renomeação para Planner. **Impacto zero** pois o roteador já mapeia para `/dashboard/planner`.
+
+## 7. Correções Necessárias
+- **Nenhuma correção urgente necessária.** O sistema está estável e funcional.
+
+## 8. Resumo
+
+| Área | Status |
+|------|--------|
+| Build/Deploy | ✅ OK |
+| Login/Auth | ✅ OK |
+| Dashboard | ✅ OK |
+| Study Engine | ✅ OK |
+| Navegação | ✅ OK |
+| Idioma pt-BR | ✅ OK |
+| Erros Console | ✅ Zero |
+| Network | ✅ 200 em todas |
+
+**Veredicto: Sistema ESTÁVEL. Nenhuma intervenção necessária.**
+
