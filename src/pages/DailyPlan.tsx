@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { updateStudyPerformanceContext } from "@/lib/cronogramaSync";
+import { buildStudyPath } from "@/lib/studyRouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
@@ -508,23 +509,26 @@ const DailyPlan = () => {
             <Brain className="h-4 w-4 text-primary" />
             Recomendações Inteligentes
           </h2>
-          {engineRecs.slice(0, 3).map(rec => (
-            <div
-              key={rec.id}
-              className="rounded-lg border border-border/60 p-3 flex items-center gap-3 cursor-pointer hover:border-primary/30 transition-colors"
-              onClick={() => navigate(rec.targetPath)}
-            >
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{rec.topic}</p>
-                <p className="text-[10px] text-muted-foreground">{rec.reason}</p>
+          {engineRecs.slice(0, 3).map(rec => {
+            const path = buildStudyPath(rec, "daily-plan");
+            return (
+              <div
+                key={rec.id}
+                className="rounded-lg border border-border/60 p-3 flex items-center gap-3 cursor-pointer hover:border-primary/30 transition-colors"
+                onClick={() => navigate(path)}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{rec.topic}</p>
+                  <p className="text-[10px] text-muted-foreground">{rec.reason}</p>
+                </div>
+                <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 shrink-0">
+                  <Clock className="h-3 w-3" />
+                  {rec.estimatedMinutes}min
+                </span>
+                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               </div>
-              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 shrink-0">
-                <Clock className="h-3 w-3" />
-                {rec.estimatedMinutes}min
-              </span>
-              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

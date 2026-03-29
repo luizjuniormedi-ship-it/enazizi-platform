@@ -17,8 +17,10 @@ export function buildStudyContext(
     source,
     specialty: rec.specialty,
     topic: rec.topic,
+    subtopic: rec.subtopic,
     taskType: rec.type,
-    objective: objectiveFromTaskType(rec.type),
+    objective: rec.objective || objectiveFromTaskType(rec.type),
+    difficulty: rec.difficulty,
     priority: rec.priority,
     reason: rec.reason,
   };
