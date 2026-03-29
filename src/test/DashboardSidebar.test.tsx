@@ -60,11 +60,14 @@ describe("DashboardSidebar", () => {
   });
 
   it("renders core navigation items", async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const DashboardSidebar = (await import("@/components/layout/DashboardSidebar")).default;
     render(
-      <MemoryRouter>
-        <DashboardSidebar />
-      </MemoryRouter>
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <DashboardSidebar />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
     expect(screen.getByText("Meu Perfil")).toBeInTheDocument();

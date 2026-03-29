@@ -68,7 +68,7 @@ describe("AgentsHub Page", () => {
     expect(screen.getByText(/Coach Motivacional/)).toBeInTheDocument();
   });
 
-  it("has correct number of agents (8)", async () => {
+  it("has correct number of agents (9)", async () => {
     const AgentsHub = (await import("@/pages/AgentsHub")).default;
     render(
       <MemoryRouter>
@@ -76,7 +76,7 @@ describe("AgentsHub Page", () => {
       </MemoryRouter>
     );
     const links = screen.getAllByText("Acessar");
-    expect(links.length).toBe(8);
+    expect(links.length).toBe(9);
   });
 
   it("displays residência médica subtitle", async () => {
