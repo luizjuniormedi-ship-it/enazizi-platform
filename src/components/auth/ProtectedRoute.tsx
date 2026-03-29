@@ -62,6 +62,15 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         setFormFaculdade(data?.faculdade || "");
         setFormUserType(userType);
       }
+      // Check onboarding version for v2 flow
+      const obVersion = (data as any)?.onboarding_version ?? 1;
+      setOnboardingVersion(obVersion);
+      if (obVersion < 2 && !incomplete && data?.status === "active") {
+        const welcomeSeen = localStorage.getItem("enazizi_v2_welcome_seen") === "true";
+        const onboardingDone = localStorage.getItem("enazizi_v2_onboarding_done") === "true";
+        if (!welcomeSeen) setShowWelcome(true);
+        else if (!onboardingDone) setShowOnboarding(true);
+      }
       setCheckingProfile(false);
     };
     check();
