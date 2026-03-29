@@ -42,6 +42,7 @@ const navGroups: NavGroup[] = [
     title: "Estudo",
     defaultOpen: false,
     items: [
+      { to: "/dashboard/planner", icon: CalendarDays, label: "🧠 Planner" },
       { to: "/dashboard/cronograma", icon: CalendarDays, label: "📅 Cronograma" },
       { to: "/dashboard/flashcards", icon: FlipVertical, label: "🃏 Flashcards" },
       { to: "/dashboard/gerar-flashcards", icon: FlipVertical, label: "🃏 Gerador Flashcards" },
