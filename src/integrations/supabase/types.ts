@@ -2197,6 +2197,57 @@ export type Database = {
         }
         Relationships: []
       }
+      user_topic_profiles: {
+        Row: {
+          accuracy: number
+          confidence_level: string
+          correct_answers: number
+          created_at: string
+          id: string
+          last_practiced_at: string | null
+          mastery_level: number
+          next_review_at: string | null
+          review_interval_days: number
+          specialty: string
+          topic: string
+          total_questions: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number
+          confidence_level?: string
+          correct_answers?: number
+          created_at?: string
+          id?: string
+          last_practiced_at?: string | null
+          mastery_level?: number
+          next_review_at?: string | null
+          review_interval_days?: number
+          specialty?: string
+          topic: string
+          total_questions?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accuracy?: number
+          confidence_level?: string
+          correct_answers?: number
+          created_at?: string
+          id?: string
+          last_practiced_at?: string | null
+          mastery_level?: number
+          next_review_at?: string | null
+          review_interval_days?: number
+          specialty?: string
+          topic?: string
+          total_questions?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       video_rooms: {
         Row: {
           created_at: string
