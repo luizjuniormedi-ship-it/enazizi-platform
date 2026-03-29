@@ -89,7 +89,7 @@ export default function DiagnosticSummaryCard() {
           <div className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">
             <AlertTriangle className="h-4 w-4 shrink-0" />
             <p className="text-xs font-medium">
-              Nivelamento desatualizado ({Math.round(daysSince)} dias). Refaça para atualizar seu perfil.
+              Nivelamento desatualizado ({Math.round(daysSince)} dias). Refaça para ajustar seu plano.
             </p>
           </div>
         )}
