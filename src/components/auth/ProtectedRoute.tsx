@@ -20,6 +20,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [profileStatus, setProfileStatus] = useState<string | null>(null);
   const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [checkingProfile, setCheckingProfile] = useState(true);
+  const [onboardingVersion, setOnboardingVersion] = useState<number>(2);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Onboarding form state
   const [formName, setFormName] = useState("");
