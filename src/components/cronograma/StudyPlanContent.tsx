@@ -642,7 +642,7 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
                             <MessageSquare className="h-3 w-3" /> Tutor IA
                           </button>
                           <button
-                            onClick={() => navigate(`/dashboard/flashcards?topic=${encodeURIComponent(task.subject)}`)}
+                            onClick={() => navigate(`/dashboard/flashcards?${encodeStudyContext({ source: "planner", topic: task.subject, objective: "review" })}`)}
                             className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-md bg-violet-500/10 text-violet-600 hover:bg-violet-500/20 transition-colors font-medium"
                           >
                             <Layers className="h-3 w-3" /> Flashcards
