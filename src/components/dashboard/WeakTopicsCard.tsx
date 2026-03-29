@@ -24,7 +24,7 @@ export default function WeakTopicsCard() {
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4">
-          <p className="text-xs text-muted-foreground">✅ Nenhum ponto crítico identificado</p>
+          <p className="text-xs text-muted-foreground">✅ Nenhum tema crítico no momento</p>
         </CardContent>
       </Card>
     );
