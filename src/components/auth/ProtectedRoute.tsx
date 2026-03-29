@@ -33,6 +33,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    // Version-based localStorage reset
+    const RESET_VERSION = "4";
+    if (localStorage.getItem("enazizi_onboarding_reset_v") !== RESET_VERSION) {
+      localStorage.removeItem("enazizi_v2_welcome_seen");
+      localStorage.removeItem("enazizi_v2_onboarding_done");
+      localStorage.removeItem("enazizi_exam_setup_skipped");
+      localStorage.setItem("enazizi_onboarding_reset_v", RESET_VERSION);
+    }
     if (!user) { setCheckingProfile(false); return; }
     const check = async () => {
       const { data } = await supabase
