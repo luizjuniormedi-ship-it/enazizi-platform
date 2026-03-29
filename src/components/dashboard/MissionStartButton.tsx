@@ -4,13 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Rocket, Play, Loader2, ArrowRight } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useSafeCta } from "@/hooks/useSafeCta";
 
 export default function MissionStartButton() {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [starting, setStarting] = useState(false);
+  const { loading: starting, execute: safeCta } = useSafeCta();
   const {
     state, progress, totalMinutes, completedMinutes,
     engineLoading, hasTasks, startMission, resumeMission,
@@ -52,20 +50,11 @@ export default function MissionStartButton() {
   }
 
   const handleStart = () => {
-    setStarting(true);
-    try {
-      startMission();
-      navigate("/dashboard/missao");
-    } catch (err) {
-      console.error("[MissionStart] Error:", err);
-      toast({
-        title: "Não foi possível iniciar a sessão",
-        description: "Tente novamente em alguns segundos.",
-        variant: "destructive",
-      });
-    } finally {
-      setStarting(false);
-    }
+    safeCta({
+      action: () => { startMission(); },
+      nextStep: "/dashboard/missao",
+      errorMessage: "Não foi possível iniciar a sessão. Tente novamente em alguns segundos.",
+    });
   };
 
   const isLoading = engineLoading || starting;
