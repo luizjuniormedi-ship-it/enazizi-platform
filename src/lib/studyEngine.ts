@@ -251,16 +251,19 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   for (let i = 0; i < Math.min(errors.length, 3); i++) {
     const err = errors[i];
     const priority = cap(70 + err.vezes_errado * 5 - i * 2);
-    recs.push({
+    addRec({
       id: id("err", i),
       type: "error_review",
       topic: err.tema,
       specialty: err.subtema || "Geral",
+      subtopic: err.subtema || undefined,
       priority,
       reason: `Você errou "${err.tema}" ${err.vezes_errado}x. Revise para fixar.`,
-      targetModule: "banco-erros",
-      targetPath: "/dashboard/banco-erros",
+      targetModule: "tutor",
+      targetPath: "/dashboard/chatgpt",
       estimatedMinutes: 10,
+      objective: "correction",
+      _groupKey: `error:${err.tema}`,
     });
   }
 
