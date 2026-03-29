@@ -118,9 +118,13 @@ export const XP_REWARDS = {
   simulado_completed: 50,
   flashcard_created: 3,
   plantao_completed: 75,
+  anamnese_completed: 60,
   discursive_completed: 30,
   daily_login: 10,
   streak_bonus: 5,
+  mission_completed: 100,
+  review_on_time: 15,
+  approval_improvement: 25,
 };
 
 interface GamificationData {
