@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Stethoscope, HeartPulse, ChevronRight } from "lucide-react";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
+import { buildStudyPath } from "@/lib/studyRouter";
 
 export default function PracticalTrainingCard() {
   const navigate = useNavigate();
