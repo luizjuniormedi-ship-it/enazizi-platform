@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Trophy, Flame, Target, BookOpen, Users, Loader2, Medal } from "lucide-react";
-import { ACHIEVEMENTS, useGamification, levelFromXp, type Achievement } from "@/hooks/useGamification";
+import { ACHIEVEMENTS, useGamification, levelFromXp, getLevelName, type Achievement } from "@/hooks/useGamification";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
