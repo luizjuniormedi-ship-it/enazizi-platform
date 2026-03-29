@@ -289,7 +289,39 @@ const Profile = () => {
           </div>
         )}
 
-        <div className="space-y-2">
+        {/* Exam & Study Config */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">
+              <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+              Data da prova
+            </Label>
+            <Input
+              type="date"
+              value={examDate}
+              onChange={(e) => setExamDate(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">Define a contagem regressiva e o plano de estudo.</p>
+          </div>
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+              Horas/dia
+            </Label>
+            <Select value={dailyStudyHours} onValueChange={setDailyStudyHours}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5, 6, 8, 10, 12].map((h) => (
+                  <SelectItem key={h} value={String(h)}>{h}h</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">Quantas horas estuda por dia.</p>
+          </div>
+        </div>
+
           <Label className="flex items-center gap-1.5">
             <Phone className="h-3.5 w-3.5 text-muted-foreground" />
             WhatsApp
