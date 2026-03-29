@@ -129,6 +129,7 @@ const App = () => (
                 <Route path="feynman" element={<FeynmanTrainer />} />
                 <Route path="mentor" element={<AIMentor />} />
                 <Route path="planner" element={<SmartPlanner />} />
+                <Route path="missao" element={<MissionMode />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="perfil" element={<Profile />} />
               </Route>

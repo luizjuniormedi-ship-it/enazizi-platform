@@ -28,6 +28,7 @@ import DiagnosticSummaryCard from "@/components/dashboard/DiagnosticSummaryCard"
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import AdminSystemAlerts from "@/components/admin/AdminSystemAlerts";
 import InstallAppBanner from "@/components/dashboard/InstallAppBanner";
+import MissionStartButton from "@/components/dashboard/MissionStartButton";
 import ExamSetupReminder from "@/components/dashboard/ExamSetupReminder";
 import ExamSetupConfirmation from "@/components/onboarding/ExamSetupConfirmation";
 import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
