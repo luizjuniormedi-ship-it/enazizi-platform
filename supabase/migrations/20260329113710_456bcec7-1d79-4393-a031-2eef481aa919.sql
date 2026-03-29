@@ -1,0 +1,10 @@
+CREATE INDEX IF NOT EXISTS idx_ai_usage_logs_user ON public.ai_usage_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_anamnesis_interactions_user ON public.anamnesis_interactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_medical_image_attempts_user ON public.medical_image_attempts(user_id);
+CREATE INDEX IF NOT EXISTS idx_summaries_user ON public.summaries(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_feedback_user ON public.user_feedback(user_id);
+CREATE INDEX IF NOT EXISTS idx_study_tasks_completed ON public.study_tasks(user_id, completed);
+CREATE INDEX IF NOT EXISTS idx_user_topic_profiles_user_topic ON public.user_topic_profiles(user_id, topic);
+CREATE INDEX IF NOT EXISTS idx_error_bank_user_tema ON public.error_bank(user_id, tema);
+CREATE INDEX IF NOT EXISTS idx_chat_conversations_user_updated ON public.chat_conversations(user_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_message_log_target ON public.whatsapp_message_log(target_user_id);
