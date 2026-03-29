@@ -110,6 +110,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     examRes,
     anamnesisRes,
     clinicalSimRes,
+    fsrsDueRes,
   ] = await Promise.all([
     supabase
       .from("revisoes")
@@ -162,6 +163,14 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(10),
+    // FSRS due cards — all types
+    supabase
+      .from("fsrs_cards")
+      .select("id, card_type, card_ref_id, stability, difficulty, state, due, lapses")
+      .eq("user_id", userId)
+      .lte("due", new Date().toISOString())
+      .order("due", { ascending: true })
+      .limit(30),
   ]);
 
   // ── Compute approval score & weights ─────────────────────────
