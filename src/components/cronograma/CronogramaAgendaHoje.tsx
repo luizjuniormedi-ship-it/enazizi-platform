@@ -66,7 +66,7 @@ const CronogramaAgendaHoje = ({ revisoes, temas, temasComputados, onStartRevisao
             <Layers className="h-3.5 w-3.5" />
           </button>
           <button
-            onClick={() => navigate(`/dashboard/banco-questoes?topic=${encodeURIComponent(tema.tema)}`)}
+            onClick={() => navigate(`/dashboard/banco-questoes?${encodeStudyContext({ source: "planner", topic: tema.tema, specialty: tema.especialidade, objective: "practice" })}`)}
             className="p-1.5 rounded-md text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10 transition-colors"
             aria-label="Questões"
             title="Questões do tema"
