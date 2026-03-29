@@ -29,7 +29,7 @@ const DailyPlanWidget = () => {
   const pct = Math.round((data.completed / data.total) * 100);
 
   return (
-    <Link to="/dashboard/plano-do-dia" className="glass-card p-4 hover:border-primary/30 transition-all flex items-center gap-4">
+    <Link to="/dashboard/plano-dia" className="glass-card p-4 hover:border-primary/30 transition-all flex items-center gap-4">
       <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
         <Zap className="h-5 w-5 text-primary" />
       </div>
