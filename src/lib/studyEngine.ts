@@ -172,6 +172,25 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   const approvalScore = await computeApprovalScore(userId, practiceAttempts, exams, anamnesisResults, clinicalSims);
   const weights = adjustPlanByApprovalScore(approvalScore);
 
+  // ── Content Lock — compute inline for engine use ─────────────
+  const today = new Date().toISOString().split("T")[0];
+  const pendingReviews = (revisoesRes.data || []) as any[];
+  const overdueCount = pendingReviews.filter((r: any) => r.data_revisao <= today).length;
+  const recentTotal = practiceAttempts.length;
+  const recentErrors = practiceAttempts.filter((a: any) => !a.correct).length;
+  const recentErrorRate = recentTotal > 0 ? (recentErrors / recentTotal) * 100 : 0;
+
+  let lockStatus: ContentLockStatus = "allowed";
+  const blockHits = [overdueCount > 20, recentErrorRate > 70 && recentTotal >= 10].filter(Boolean).length;
+  if (blockHits >= 2) {
+    lockStatus = "blocked";
+  } else {
+    const limitHits = [overdueCount >= 10, approvalScore < 50, recentErrorRate > 50 && recentTotal >= 5].filter(Boolean).length;
+    if (limitHits >= 2) lockStatus = "limited";
+  }
+  // Adjust max new topics based on content lock
+  weights.maxNewTopics = adjustNewTopicsByLock(weights.maxNewTopics, lockStatus);
+
   // ── 1. Overdue / pending reviews ─────────────────────────────
   const today = new Date().toISOString().split("T")[0];
   const pendingReviews = (revisoesRes.data || []) as any[];
