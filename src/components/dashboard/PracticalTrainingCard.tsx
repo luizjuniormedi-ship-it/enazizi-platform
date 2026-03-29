@@ -39,7 +39,7 @@ export default function PracticalTrainingCard() {
           Treino Clínico
           {hasRecommendation && (
             <span className="text-[10px] text-teal-500 font-normal ml-1">
-              • Recomendado pelo sistema
+              • Recomendado para você
             </span>
           )}
         </CardTitle>
