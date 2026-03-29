@@ -136,6 +136,8 @@ const App = () => (
                 <Route path="missao" element={<MissionMode />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="perfil" element={<Profile />} />
+                <Route path="sessao-estudo" element={<StudySession />} />
+                <Route path="image-quiz" element={<MedicalImageQuiz />} />
               </Route>
               <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />
