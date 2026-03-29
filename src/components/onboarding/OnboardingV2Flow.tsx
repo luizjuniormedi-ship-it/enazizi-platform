@@ -11,9 +11,10 @@ import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   onComplete: () => void;
+  onSkip?: () => void;
 }
 
-export default function OnboardingV2Flow({ onComplete }: Props) {
+export default function OnboardingV2Flow({ onComplete, onSkip }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -21,6 +22,29 @@ export default function OnboardingV2Flow({ onComplete }: Props) {
   const [examDate, setExamDate] = useState("");
   const [dailyHours, setDailyHours] = useState("4");
   const [saving, setSaving] = useState(false);
+
+  const handleSkip = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      await supabase.from("profiles").update({
+        onboarding_version: 2,
+        experience_reset_at: new Date().toISOString(),
+        last_onboarding_step: 0,
+        daily_study_hours: 4,
+      }).eq("user_id", user.id);
+
+      localStorage.setItem("enazizi_v2_welcome_seen", "true");
+      localStorage.setItem("enazizi_v2_onboarding_done", "true");
+      localStorage.setItem("enazizi_exam_setup_skipped", "true");
+
+      onSkip ? onSkip() : onComplete();
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleSaveAndFinish = async (doDiagnostic: boolean) => {
     if (!user) return;
@@ -36,11 +60,11 @@ export default function OnboardingV2Flow({ onComplete }: Props) {
 
       await supabase.from("profiles").update(updates).eq("user_id", user.id);
 
-      // Clear old localStorage flags to show new popups
       localStorage.removeItem("enazizi_onboarding_completed_v2");
       localStorage.removeItem("onboarding_checklist_dismissed_v2");
       localStorage.setItem("enazizi_v2_welcome_seen", "true");
       localStorage.setItem("enazizi_v2_onboarding_done", "true");
+      localStorage.removeItem("enazizi_exam_setup_skipped");
 
       onComplete();
 
@@ -89,6 +113,14 @@ export default function OnboardingV2Flow({ onComplete }: Props) {
             <Button onClick={() => setStep(2)} className="w-full gap-2">
               Continuar <ChevronRight className="h-4 w-4" />
             </Button>
+            <button
+              type="button"
+              onClick={handleSkip}
+              disabled={saving}
+              className="text-xs text-muted-foreground hover:underline mx-auto block"
+            >
+              Pular configuração e entrar
+            </button>
           </div>
         )}
 
