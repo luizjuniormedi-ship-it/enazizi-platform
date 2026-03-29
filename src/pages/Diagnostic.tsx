@@ -90,6 +90,8 @@ const Diagnostic = () => {
   const [resumeIdx, setResumeIdx] = useState(0);
   const [xpEarned, setXpEarned] = useState(0);
   const [userPeriodo, setUserPeriodo] = useState<number | null>(null);
+  const [selectedCycle, setSelectedCycle] = useState("clinico");
+  const [previousTopicResults, setPreviousTopicResults] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!user) return;
@@ -103,6 +105,27 @@ const Diagnostic = () => {
     supabase.from("diagnostic_results").select("id").eq("user_id", user.id).limit(1).then(({ data }) => {
       if (data && data.length > 0) setAlreadyDone(true);
     });
+    // Load previous session topic results for comparison
+    supabase.from("diagnostic_sessions" as any)
+      .select("id")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data: session }) => {
+        if (session) {
+          supabase.from("diagnostic_topic_results" as any)
+            .select("topic, accuracy")
+            .eq("session_id", (session as any).id)
+            .then(({ data: topics }) => {
+              if (topics) {
+                const map: Record<string, number> = {};
+                for (const t of topics as any[]) map[t.topic] = t.accuracy;
+                setPreviousTopicResults(map);
+              }
+            });
+        }
+      });
   }, [user]);
 
   const getDifficultyForArea = (area: string, prevAnswers: AnswerRecord[]): string => {
@@ -216,6 +239,7 @@ NÃO inclua texto extra, APENAS o JSON.` }],
   };
 
   const startExam = async (cycle: string) => {
+    setSelectedCycle(cycle);
     setPhase("loading");
     try {
       const allQuestions: DiagQuestion[] = [];
@@ -318,7 +342,7 @@ NÃO inclua texto extra, APENAS o JSON.` }],
     // NEW: persist diagnostic_sessions + diagnostic_topic_results
     const { data: sessionData } = await supabase.from("diagnostic_sessions" as any).insert([{
       user_id: user.id,
-      cycle: "clinico",
+      cycle: selectedCycle,
       score,
       total_questions: questions.length,
       correct_count: correctCount,
@@ -439,7 +463,7 @@ NÃO inclua texto extra, APENAS o JSON.` }],
     );
   }
 
-  return <DiagnosticResult questions={questions} answers={answers} xpEarned={xpEarned} />;
+  return <DiagnosticResult questions={questions} answers={answers} xpEarned={xpEarned} previousTopicResults={previousTopicResults} />;
 };
 
 export default Diagnostic;
