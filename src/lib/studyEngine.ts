@@ -99,6 +99,7 @@ function applyWeights(recs: StudyRecommendation[], weights: PlanWeights, maxTota
 
 // ── main engine ────────────────────────────────────────────────
 export async function generateRecommendations({ userId }: EngineInput): Promise<StudyRecommendation[]> {
+ try {
   const recs: StudyRecommendation[] = [];
 
   const [
