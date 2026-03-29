@@ -1,5 +1,5 @@
 import { Flame, Star, TrendingUp } from "lucide-react";
-import { useGamification, levelFromXp } from "@/hooks/useGamification";
+import { useGamification, levelFromXp, getLevelName } from "@/hooks/useGamification";
 import { Link } from "react-router-dom";
 
 const XpWidget = () => {
@@ -9,6 +9,7 @@ const XpWidget = () => {
 
   const { currentLevelXp, nextLevelXp } = levelFromXp(gamification.xp);
   const progress = Math.round((currentLevelXp / nextLevelXp) * 100);
+  const levelName = getLevelName(gamification.level);
 
   return (
     <Link to="/dashboard/conquistas" className="block">
@@ -19,7 +20,7 @@ const XpWidget = () => {
               {gamification.level}
             </div>
             <div>
-              <div className="text-xs font-semibold text-foreground">Nível {gamification.level}</div>
+              <div className="text-xs font-semibold text-foreground">{levelName}</div>
               <div className="text-[10px] text-muted-foreground">{gamification.xp.toLocaleString()} XP total</div>
             </div>
           </div>
