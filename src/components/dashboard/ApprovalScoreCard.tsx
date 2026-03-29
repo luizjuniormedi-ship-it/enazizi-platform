@@ -79,12 +79,12 @@ export default function ApprovalScoreCard() {
   // Build weak points from sub-dimensions
   const issues: string[] = [];
   if (scoreData) {
-    if (scoreData.accuracy < 60) issues.push(`Acurácia baixa (${clampPercent(scoreData.accuracy)}%)`);
-    if (scoreData.review_score < 50) issues.push("Revisões atrasadas");
-    if (scoreData.consistency_score < 40) issues.push("Baixa consistência de estudo");
-    if (scoreData.simulation_score < 50) issues.push("Poucos simulados realizados");
-    if (scoreData.error_penalty > 50) issues.push("Muitos erros recorrentes");
-    if (scoreData.domain_score < 50) issues.push("Domínio fraco em especialidades");
+    if (scoreData.accuracy < 60) issues.push(`Acurácia em ${clampPercent(scoreData.accuracy)}% — revise os temas errados`);
+    if (scoreData.review_score < 50) issues.push("Revisões acumuladas — priorize retomar");
+    if (scoreData.consistency_score < 40) issues.push("Estudo irregular — tente manter frequência diária");
+    if (scoreData.simulation_score < 50) issues.push("Poucos simulados — pratique mais provas completas");
+    if (scoreData.error_penalty > 50) issues.push("Erros recorrentes — foque nos temas que mais erra");
+    if (scoreData.domain_score < 50) issues.push("Algumas especialidades precisam de mais atenção");
   }
 
   return (
