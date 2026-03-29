@@ -303,10 +303,8 @@ const Dashboard = () => {
             <SheetDescription>Visão geral do seu plano de estudo</SheetDescription>
           </SheetHeader>
           <div className="space-y-6 mt-4">
-            <Suspense fallback={<ChartFallback />}>
-              <lazy.DailyPlanWidget />
-              <lazy.DailyGoalWidget />
-            </Suspense>
+            <DailyPlanWidget />
+            <DailyGoalWidget />
           </div>
         </SheetContent>
       </Sheet>
