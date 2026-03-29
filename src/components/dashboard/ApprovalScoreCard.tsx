@@ -65,7 +65,7 @@ export default function ApprovalScoreCard() {
       await refetch();
       toast.success("Score atualizado com sucesso");
     } catch {
-      toast.error("Erro ao recalcular score");
+      toast.error("Não foi possível atualizar. Tente novamente.");
     } finally {
       setIsRecalculating(false);
     }
