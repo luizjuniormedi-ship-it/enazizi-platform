@@ -1,4 +1,4 @@
-import { Award, GraduationCap, TrendingUp, Clock, Target, BarChart3, Zap } from "lucide-react";
+import { Award, GraduationCap, TrendingUp, TrendingDown, Clock, Target, BarChart3, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -9,9 +9,10 @@ interface DiagnosticResultProps {
   questions: DiagQuestion[];
   answers: AnswerRecord[];
   xpEarned?: number;
+  previousTopicResults?: Record<string, number>;
 }
 
-const DiagnosticResult = ({ questions, answers, xpEarned = 0 }: DiagnosticResultProps) => {
+const DiagnosticResult = ({ questions, answers, xpEarned = 0, previousTopicResults = {} }: DiagnosticResultProps) => {
   const navigate = useNavigate();
   const correctCount = answers.filter(a => a.correct).length;
   const score = questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0;
@@ -37,6 +38,7 @@ const DiagnosticResult = ({ questions, answers, xpEarned = 0 }: DiagnosticResult
   });
 
   const weakAreas = sortedAreas.filter(([, v]) => (v.correct / v.total) < 0.6);
+  const hasPrevious = Object.keys(previousTopicResults).length > 0;
 
   const getScoreColor = (pct: number) =>
     pct >= 80 ? "text-green-500" : pct >= 60 ? "text-primary" : pct >= 40 ? "text-warning" : "text-destructive";
@@ -86,6 +88,36 @@ const DiagnosticResult = ({ questions, answers, xpEarned = 0 }: DiagnosticResult
           <p className="text-xs text-muted-foreground">Áreas avaliadas</p>
         </div>
       </div>
+
+      {/* Evolution comparison */}
+      {hasPrevious && (
+        <div className="glass-card p-5 border-primary/20">
+          <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            Evolução desde o último nivelamento
+          </h3>
+          <div className="space-y-2">
+            {sortedAreas.map(([area, { correct, total }]) => {
+              const currentPct = Math.round((correct / total) * 100);
+              const prevPct = previousTopicResults[area];
+              if (prevPct === undefined) return null;
+              const diff = Math.round(currentPct - prevPct);
+              if (diff === 0) return null;
+              return (
+                <div key={area} className="flex items-center justify-between text-sm">
+                  <span className="text-foreground/80">{area}</span>
+                  <span className={cn("font-semibold flex items-center gap-1",
+                    diff > 0 ? "text-green-500" : "text-destructive"
+                  )}>
+                    {diff > 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+                    {diff > 0 ? "+" : ""}{diff}%
+                  </span>
+                </div>
+              );
+            }).filter(Boolean)}
+          </div>
+        </div>
+      )}
 
       {/* Area breakdown */}
       <div className="glass-card p-6">
