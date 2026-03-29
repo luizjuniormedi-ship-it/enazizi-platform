@@ -364,6 +364,11 @@ const AnamnesisTrainer = () => {
       setDifferentials("");
       setProposedConduct("");
       setPhase("active");
+
+      // Track session
+      if (user) {
+        startTrackedSession({ type: "anamnesis", userId: user.id, specialty, difficulty, origin: paramOrigin });
+      }
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
     } finally {
