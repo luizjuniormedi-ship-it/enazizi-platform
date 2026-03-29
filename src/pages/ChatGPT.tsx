@@ -394,6 +394,8 @@ const ChatGPT = () => {
         onShowOnboarding={() => setShowOnboarding(true)}
       />
 
+      <StudyContextBanner />
+
       {sessionChecked && pendingSession && !studyStarted && (
         <ResumeSessionBanner updatedAt={pendingSession.updated_at} onResume={handleRestoreSession} onDiscard={abandonSession} />
       )}
