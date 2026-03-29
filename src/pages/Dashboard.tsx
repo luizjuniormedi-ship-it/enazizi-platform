@@ -168,6 +168,11 @@ const Dashboard = () => {
       <MissionStartButton />
 
       {/* ══════════════════════════════════════════
+          BLOCO 0.5 — MODO ADAPTATIVO (feedback)
+         ══════════════════════════════════════════ */}
+      {!isNewUser && <AdaptiveModeCard />}
+
+      {/* ══════════════════════════════════════════
           BLOCO 1 — O que estudar hoje
          ══════════════════════════════════════════ */}
       <TodayStudyCard />
