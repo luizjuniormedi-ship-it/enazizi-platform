@@ -422,36 +422,58 @@ async function structureQuestions(
     .join("\n\n");
   contentBlock = contentBlock.slice(0, 30000);
 
-  const prompt = `Você é um especialista em extrair questões de provas de residência médica a partir de conteúdo web.
+  const prompt = `Você é um especialista em extrair questões reais de provas de residência médica a partir de conteúdo web.
 
-IDIOMA OBRIGATÓRIO: Todas as questões DEVEM estar em PORTUGUÊS BRASILEIRO. Descarte COMPLETAMENTE qualquer questão em inglês, espanhol ou outro idioma que não seja português. NÃO traduza questões — apenas extraia as que já estão em português.
+OBJETIVO:
+Extrair SOMENTE questões reais, completas e em português brasileiro, sem inventar, resumir ou reescrever.
+
+IDIOMA OBRIGATÓRIO:
+Extraia apenas questões já escritas em português brasileiro.
+Descarte integralmente qualquer questão em inglês, espanhol ou outro idioma.
+NÃO traduza. NÃO adapte. NÃO invente.
 
 CONTEÚDO EXTRAÍDO DA WEB (fontes reais de provas):
 ${contentBlock}
 
-TAREFA: Extraia no MÁXIMO 5 questões de múltipla escolha encontradas no conteúdo acima que sejam de ${specialty} ou áreas correlatas. Priorize as questões mais completas e com gabarito identificável.
+TAREFA: Extraia no MÁXIMO 5 questões de ${specialty} ou áreas correlatas.
 
-REGRAS:
-1. Extraia APENAS questões que realmente existem no texto — NÃO invente questões
-1b. APENAS questões em PORTUGUÊS BRASILEIRO — rejeite qualquer conteúdo em inglês
-2. Preserve o enunciado original o mais fielmente possível
-3. Preserve as alternativas originais (mínimo 4 alternativas)
-4. Identifique a alternativa correta (se o gabarito estiver disponível)
-5. Se não houver gabarito, tente identificar a resposta correta pelo contexto
-6. Indique a fonte URL de onde a questão foi extraída
-7. Mínimo 200 caracteres no enunciado para ser considerada válida
-8. Ignore questões sobre declarações financeiras ou conflitos de interesse
-9. MÁXIMO 5 questões para garantir JSON completo
+REGRAS CRÍTICAS:
+1. Extraia apenas questões que estejam claramente presentes no conteúdo.
+2. Não combine partes de questões diferentes.
+3. Não crie alternativas ausentes.
+4. Preserve o enunciado o mais fielmente possível.
+5. Preserve as alternativas originais.
+6. Só aceite questões com no mínimo 4 alternativas.
+7. Só aceite questões com contexto médico real e enunciado minimamente completo (mínimo 200 caracteres).
+8. Se houver gabarito explícito, use-o.
+9. Se não houver gabarito explícito, marque isso claramente.
+10. Se houver dúvida, descarte a questão.
+11. Ignore questões sobre declarações financeiras ou conflitos de interesse.
+12. MÁXIMO 5 questões para garantir JSON completo.
+
+CLASSIFICAÇÃO DO GABARITO:
+Use:
+- "answer_source": "explicit_gabarito" — quando o gabarito está explícito no conteúdo
+- "answer_source": "context_inferred" — quando inferido pelo contexto
+- "answer_source": "unknown" — quando não há segurança suficiente
+
+Se não houver segurança suficiente no gabarito, use:
+- "correct_index": null
+- "explanation": ""
+- "answer_source": "unknown"
 
 FORMATO JSON OBRIGATÓRIO (responda APENAS com este JSON, sem texto adicional):
 {
   "questions": [
     {
-      "statement": "Enunciado original completo da questão...",
+      "statement": "Enunciado original completo...",
       "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
       "correct_index": 0,
-      "explanation": "Explicação do gabarito se disponível...",
+      "answer_source": "explicit_gabarito",
+      "confidence_score": 0.95,
+      "explanation": "Explicação curta e objetiva apenas se o gabarito estiver claro.",
       "topic": "${specialty}",
+      "subtopic": "",
       "difficulty": 4,
       "source_url": "URL de onde foi extraída",
       "exam_info": "Nome da prova e ano se identificável"
@@ -493,20 +515,24 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
     const englishPattern = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice)\b/i;
     const validQuestions = questions.filter((q: any) => {
       if (!q.statement) { console.log("Rejected: no statement"); return false; }
-      if (!Array.isArray(q.options) || q.options.length < 2) { console.log("Rejected: bad options"); return false; }
+      if (!Array.isArray(q.options) || q.options.length < 4) { console.log("Rejected: less than 4 options"); return false; }
       // Reject English questions
       const stText = String(q.statement);
       if (englishPattern.test(stText)) { console.log("Rejected: English content detected"); return false; }
-      // Accept correct_index as number or string, default to 0
+      // Handle answer_source and correct_index
+      const answerSource = q.answer_source || "unknown";
       if (q.correct_index === undefined || q.correct_index === null) {
-        if (q.correct_answer !== undefined) {
-          // Try to map letter answer to index
+        if (answerSource === "unknown") {
+          // No reliable answer — skip setting a default, use 0 as fallback
+          q.correct_index = 0;
+          q.explanation = q.explanation || "Gabarito não confirmado — verificação manual recomendada.";
+        } else if (q.correct_answer !== undefined) {
           const letterMap: Record<string, number> = { "A": 0, "B": 1, "C": 2, "D": 3, "E": 4 };
           q.correct_index = letterMap[String(q.correct_answer).toUpperCase().trim()] ?? 0;
         } else {
           q.correct_index = 0;
         }
-        console.log(`Fixed missing correct_index, set to ${q.correct_index}`);
+        console.log(`Fixed missing correct_index, set to ${q.correct_index} (source: ${answerSource})`);
       }
       q.correct_index = Number(q.correct_index);
       if (isNaN(q.correct_index)) q.correct_index = 0;
