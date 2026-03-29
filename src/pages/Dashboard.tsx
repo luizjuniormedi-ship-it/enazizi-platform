@@ -159,6 +159,9 @@ const Dashboard = () => {
          ══════════════════════════════════════════ */}
       <MissionStartButton />
 
+      {/* Content Lock alert */}
+      <ContentLockStatusCard />
+
       {/* ══════════════════════════════════════════
           BLOCO 1 — FOCO TOTAL: O que estudar hoje
          ══════════════════════════════════════════ */}
