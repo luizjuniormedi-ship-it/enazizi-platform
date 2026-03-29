@@ -269,13 +269,13 @@ function buildQueryPool(specialty: string, banca: string | null): string[] {
     `${specialty} questões objetivas residência médica 2024 2025 2026`,
     `"residência médica" "${specialty}" questões resolvidas alternativas`,
     `${specialty} simulado residência médica questões com gabarito`,
-    // Sites internacionais (traduzidos)
-    `site:amboss.com ${specialty} multiple choice questions`,
-    `site:radiopaedia.org ${specialty} quiz cases`,
-    `site:geekymedics.com ${specialty} questions answers`,
-    `site:lecturio.com ${specialty} board review questions`,
-    `${specialty} USMLE step 2 questions explanations`,
-    `${specialty} medical residency exam MCQ answers`,
+    // Mais fontes brasileiras
+    `site:jaleko.com.br ${specialty} questões comentadas residência`,
+    `site:afya.com.br ${specialty} questões provas residência médica`,
+    `site:editorasanar.com.br ${specialty} questões gabarito comentado`,
+    `site:residenciamedicasp.com.br ${specialty} provas anteriores`,
+    `site:provamedicina.com.br ${specialty} questões provas residência`,
+    `${specialty} prova residência médica questões comentadas site:.br`,
     // Provas estaduais
     `${specialty} prova residência AMRIGS questões gabarito`,
     `${specialty} prova residência FAMERP questões comentadas`,
