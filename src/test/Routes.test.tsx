@@ -173,8 +173,8 @@ describe("Route Validation", () => {
   });
 
   it("expected total route count matches", () => {
-    // 25 dashboard routes + 6 top-level = 31 total
-    expect(VALID_DASHBOARD_ROUTES.length).toBe(25);
+    // 31 dashboard routes + 6 top-level = 37 total
+    expect(VALID_DASHBOARD_ROUTES.length).toBe(31);
     expect(VALID_TOP_ROUTES.length).toBe(6);
   });
 });
