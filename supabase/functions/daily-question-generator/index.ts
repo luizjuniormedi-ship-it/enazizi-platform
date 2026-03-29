@@ -159,7 +159,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
     const response = await aiFetch({
       model: "google/gemini-2.5-flash",
       messages: [
-        { role: "system", content: "Você é um professor de medicina que cria questões de altíssima qualidade no estilo de provas reais de residência médica brasileira. Responda APENAS com JSON válido, sem markdown. Cada questão DEVE ter caso clínico completo." },
+        { role: "system", content: "Você é um professor de medicina que cria questões de altíssima qualidade no estilo de provas reais de residência médica brasileira. Responda APENAS com JSON válido, sem markdown. Cada questão DEVE ter caso clínico completo.\n\nIDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA gere questões, alternativas ou explicações em inglês." },
         { role: "user", content: prompt },
       ],
       timeoutMs: 90000,
