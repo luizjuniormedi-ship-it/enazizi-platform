@@ -1,75 +1,45 @@
 
 
-# Plano: Avatar Cinemático Oficial do Tutor
+# Plano: Voz Premium ElevenLabs (sem avatar)
 
 ## Resumo
-Substituir o avatar 3D procedural pelo personagem enviado pelo usuário como avatar oficial da plataforma, criando uma experiência cinematográfica premium de "professor particular" com narração, lip-sync visual e apresentação de alta qualidade.
-
-## Abordagem
-Como não temos um serviço de vídeo-avatar real (ex: HeyGen, Synthesia), a solução será uma **apresentação cinemática estática + animada** usando a imagem do personagem com efeitos visuais premium (breathing, glow, parallax sutil) sincronizados com a narração TTS do navegador. Isso cria a percepção de um avatar falante sem custo de API externo, mantendo a estrutura pronta para integração futura com serviços de vídeo-avatar.
+Integrar ElevenLabs TTS para que todas as explicações do tutor possam ser ouvidas com voz natural em português brasileiro. Sem avatar — apenas áudio premium.
 
 ## Implementação
 
-### 1. Salvar imagem do avatar oficial
-- Copiar `IMG_8629.jpeg` para `src/assets/tutor-cinematic-avatar.png`
-- Este será o avatar oficial em toda a plataforma
+### 1. Conectar ElevenLabs e adicionar API key
+- Usar `add_secret` para `ELEVENLABS_API_KEY`
+- Voz padrão: Daniel (`onwK4e9ZLuTAKqWW03F9`) — masculina, PT-BR natural
 
-### 2. Criar componente `CinematicAvatar.tsx`
-Novo componente que substitui o `TutorAvatar3D` no modal de "Assistir explicação":
-- Fundo com gradiente escuro premium (studio acadêmico moderno)
-- Avatar centralizado com enquadramento cinematográfico (medium shot)
-- Efeitos quando falando: pulsação sutil, glow ao redor, ondas de áudio animadas
-- Efeito de "breathing" idle quando não está falando
-- Área de legendas na parte inferior
-- Controles de playback elegantes (play, pause, replay, velocidade 1x/1.25x/1.5x/2x)
-- Grading de cor premium com vinheta sutil
+### 2. Criar Edge Function `elevenlabs-tts`
+- Recebe `text` do frontend
+- Normaliza texto (remove markdown, expande abreviações médicas)
+- Chama ElevenLabs API com `eleven_multilingual_v2`
+- Retorna áudio MP3 binário
+- Voice settings: stability 0.5, similarity_boost 0.75, style 0.3 (tom professor)
 
-### 3. Atualizar `MultimediaControls.tsx`
-- Renomear botão "Avatar" → **"Assistir explicação"**
-- Renomear botão "Ouvir" → **"Ouvir explicação"**
-- Adicionar label "Ler explicação" implícito (texto já visível)
-- No modal: substituir `TutorAvatar3D` pelo novo `CinematicAvatar`
-- Loading states elegantes: "Preparando tutor...", "Gerando explicação narrada..."
-- Modal maior e mais cinematográfico com aspect ratio 16:9
-- Legendas sincronizadas word-by-word durante narração
-- Velocidades: 1x, 1.25x, 1.5x, 2x
+### 3. Atualizar `multimediaService.ts`
+- Remover toda lógica de avatar (generateAvatar, avatar_video_url, etc.)
+- `generateAudio()` passa a chamar a edge function via `fetch()`
+- Cache por hash do texto (reusa áudio já gerado)
+- Estados: idle → generating → ready → error
 
-### 4. Atualizar `ChatGPT.tsx`
-- Substituir o bloco `TutorAvatar3D` inline por uma versão compacta do avatar cinemático
-- Manter a imagem do avatar nos balões de mensagem como já está
-- Remover dependência do `TutorAvatar3D` e `useLipSync` do componente principal (movidos para dentro do CinematicAvatar)
+### 4. Simplificar `MultimediaControls.tsx`
+- Remover botão "Assistir explicação" e modal do avatar cinemático
+- Manter apenas botão **"Ouvir explicação"** com controles:
+  - Play / Pause / Replay
+  - Velocidade: 1x, 1.1x, 1.25x, 1.5x, 2x
+- Playback via `<audio>` element (não Web Speech API)
+- Estados visuais: "Gerando áudio...", ícone de erro
 
-### 5. Atualizar tipagens em `multimediaService.ts`
-- Adicionar `avatar_style: "cinematic"` como padrão
-- Adicionar velocidade 1.25x às opções
-- Manter estrutura de cache e status existente
-
-## Componente Visual do CinematicAvatar
-
-```text
-┌─────────────────────────────────────────┐
-│  ░░░░░░░░░  FUNDO CINEMATOGRÁFICO ░░░░░│
-│  ░░ gradiente escuro + vinheta sutil ░░░│
-│                                         │
-│         ┌─────────────────┐             │
-│         │                 │             │
-│         │   AVATAR IMG    │  ← glow    │
-│         │   (personagem)  │    pulsante │
-│         │                 │             │
-│         └─────────────────┘             │
-│                                         │
-│  ┌─────────────────────────────────┐    │
-│  │  "Explicação narrada aqui..."   │    │
-│  └─────────────────────────────────┘    │
-│                                         │
-│     ◄◄   ▶/❚❚   ►►   🔄   1.5x        │
-└─────────────────────────────────────────┘
-```
+### 5. Atualizar `ChatGPT.tsx`
+- Remover imports e referências ao `CinematicAvatar` e `TutorAvatar3D`
+- Remover toggle "Mostrar Avatar 3D" do menu
+- Manter `MultimediaControls` em cada resposta do assistente
 
 ## Arquivos
-- Copiar: `IMG_8629.jpeg` → `src/assets/tutor-cinematic-avatar.png`
-- Criar: `src/components/agents/CinematicAvatar.tsx`
-- Editar: `src/components/agents/MultimediaControls.tsx`
-- Editar: `src/pages/ChatGPT.tsx`
-- Editar: `src/lib/multimediaService.ts` (adicionar speed 1.25x)
+- Criar: `supabase/functions/elevenlabs-tts/index.ts`
+- Editar: `src/lib/multimediaService.ts` (remover avatar, usar edge function)
+- Editar: `src/components/agents/MultimediaControls.tsx` (remover avatar modal, simplificar)
+- Editar: `src/pages/ChatGPT.tsx` (remover avatar 3D/cinemático)
 
