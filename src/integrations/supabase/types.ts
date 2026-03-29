@@ -1373,10 +1373,13 @@ export type Database = {
           display_name: string | null
           email: string | null
           exam_date: string | null
+          experience_reset_at: string | null
           faculdade: string | null
           has_completed_diagnostic: boolean | null
           id: string
           is_blocked: boolean
+          last_onboarding_step: number | null
+          onboarding_version: number
           organization_id: string | null
           periodo: number | null
           phone: string | null
@@ -1395,10 +1398,13 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           exam_date?: string | null
+          experience_reset_at?: string | null
           faculdade?: string | null
           has_completed_diagnostic?: boolean | null
           id?: string
           is_blocked?: boolean
+          last_onboarding_step?: number | null
+          onboarding_version?: number
           organization_id?: string | null
           periodo?: number | null
           phone?: string | null
@@ -1417,10 +1423,13 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           exam_date?: string | null
+          experience_reset_at?: string | null
           faculdade?: string | null
           has_completed_diagnostic?: boolean | null
           id?: string
           is_blocked?: boolean
+          last_onboarding_step?: number | null
+          onboarding_version?: number
           organization_id?: string | null
           periodo?: number | null
           phone?: string | null

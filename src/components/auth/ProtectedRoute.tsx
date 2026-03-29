@@ -11,7 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { FACULDADES } from "@/constants/faculdades";
 import FaculdadeCombobox from "@/components/FaculdadeCombobox";
 import { isValidPhone, isValidName, isProfileComplete } from "@/lib/profileValidation";
-
+import WelcomeBackScreen from "@/components/onboarding/WelcomeBackScreen";
+import OnboardingV2Flow from "@/components/onboarding/OnboardingV2Flow";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, signOut } = useAuth();
@@ -19,6 +20,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [profileStatus, setProfileStatus] = useState<string | null>(null);
   const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [checkingProfile, setCheckingProfile] = useState(true);
+  const [onboardingVersion, setOnboardingVersion] = useState<number>(2);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Onboarding form state
   const [formName, setFormName] = useState("");
@@ -33,7 +37,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const check = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("is_blocked, status, display_name, phone, periodo, faculdade")
+        .select("is_blocked, status, display_name, phone, periodo, faculdade, onboarding_version")
         .eq("user_id", user.id)
         .maybeSingle();
       if (data?.is_blocked) {
@@ -57,6 +61,15 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         setFormPeriodo(data?.periodo ? String(data.periodo) : "");
         setFormFaculdade(data?.faculdade || "");
         setFormUserType(userType);
+      }
+      // Check onboarding version for v2 flow
+      const obVersion = (data as any)?.onboarding_version ?? 1;
+      setOnboardingVersion(obVersion);
+      if (obVersion < 2 && !incomplete && data?.status === "active") {
+        const welcomeSeen = localStorage.getItem("enazizi_v2_welcome_seen") === "true";
+        const onboardingDone = localStorage.getItem("enazizi_v2_onboarding_done") === "true";
+        if (!welcomeSeen) setShowWelcome(true);
+        else if (!onboardingDone) setShowOnboarding(true);
       }
       setCheckingProfile(false);
     };
@@ -293,6 +306,30 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
+  // V2 Welcome screen for existing users
+  if (showWelcome) {
+    return (
+      <WelcomeBackScreen
+        onStart={() => {
+          localStorage.setItem("enazizi_v2_welcome_seen", "true");
+          setShowWelcome(false);
+          setShowOnboarding(true);
+        }}
+      />
+    );
+  }
+
+  // V2 Onboarding flow
+  if (showOnboarding) {
+    return (
+      <OnboardingV2Flow
+        onComplete={() => {
+          setShowOnboarding(false);
+          setOnboardingVersion(2);
+        }}
+      />
+    );
+  }
 
   return <>{children}</>;
 };

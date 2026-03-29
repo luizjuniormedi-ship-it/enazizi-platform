@@ -8,6 +8,7 @@ import WhatsNewPopup from "@/components/dashboard/WhatsNewPopup";
 import FeedbackSurveyPopup from "@/components/dashboard/FeedbackSurveyPopup";
 import SystemGuidePopup from "@/components/dashboard/SystemGuidePopup";
 import OnboardingTour from "@/components/dashboard/OnboardingTour";
+import DashboardSmartPopups from "@/components/onboarding/DashboardSmartPopups";
 import PerformanceReport from "@/components/dashboard/PerformanceReport";
 import DailyPlanWidget from "@/components/dashboard/DailyPlanWidget";
 import DailyGoalWidget from "@/components/dashboard/DailyGoalWidget";
@@ -104,6 +105,7 @@ const Dashboard = () => {
       <SystemGuidePopup />
       <FeedbackSurveyPopup />
       <OnboardingTour />
+      <DashboardSmartPopups />
 
       {/* Top bar — greeting & XP */}
       <div>
