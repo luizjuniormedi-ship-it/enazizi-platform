@@ -765,13 +765,15 @@ FORMATO OBRIGATÓRIO:
 
 1. **Título do artigo** — Autores principais
    📖 *Journal, Ano*
-   🔗 https://pubmed.ncbi.nlm.nih.gov/PMID ou https://doi.org/DOI
+   🔗 [Ver no PubMed](https://pubmed.ncbi.nlm.nih.gov/PMID) ou [DOI](https://doi.org/DOI)
    📝 Resumo em 1-2 frases do achado principal
 
 2. **Título do artigo** — Autores principais
    📖 *Journal, Ano*
-   🔗 URL do PubMed ou DOI
+   🔗 [Ver no PubMed](URL_DO_PUBMED) ou [DOI](URL_DO_DOI)
    📝 Resumo em 1-2 frases do achado principal
+
+IMPORTANTE: Links DEVEM ser formatados como markdown clicável: [texto](url). NUNCA colocar URL como texto puro.
 
 REGRAS:
 - SEMPRE incluir link real (PubMed ou DOI)
