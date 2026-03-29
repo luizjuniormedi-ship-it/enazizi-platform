@@ -57,10 +57,10 @@ export default function DashboardSmartPopups() {
       {activePopup === "v2_planner" && (
         <SmartPopup
           id="v2_planner"
-          title="Estudo organizado automaticamente 📅"
-          description="O Planner distribui seus temas ao longo da semana, agenda revisões e respeita suas horas disponíveis. Tudo adaptativo!"
+          title="Você está estudando… mas certo? 🤔"
+          description="O Planner garante que você estude os temas certos, na ordem certa, no momento certo. Sem ele, tempo de estudo pode virar tempo perdido."
           icon={<CalendarDays className="h-5 w-5 text-primary" />}
-          ctaLabel="Entendi!"
+          ctaLabel="Quero estudar certo!"
         />
       )}
       {activePopup === "v2_diagnostic" && (

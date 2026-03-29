@@ -9,18 +9,18 @@ interface Props {
 const features = [
   {
     icon: <Target className="h-5 w-5 text-primary" />,
-    title: "Plano automático de estudo",
-    desc: "O sistema gera seu plano diário baseado no que você mais precisa.",
+    title: "Plano feito para você",
+    desc: "Alunos com plano personalizado evoluem até 3x mais rápido.",
   },
   {
     icon: <BarChart3 className="h-5 w-5 text-primary" />,
-    title: "Percentual de aprovação",
-    desc: "Acompanhe em tempo real sua chance de ser aprovado.",
+    title: "Sua chance real de aprovação",
+    desc: "Acompanhe em tempo real o que falta para você passar.",
   },
   {
     icon: <Brain className="h-5 w-5 text-primary" />,
-    title: "Estudo guiado inteligente",
-    desc: "O sistema decide a melhor sequência: teoria, questões, revisão ou prática.",
+    title: "Cada minuto conta",
+    desc: "O sistema escolhe a sequência ideal: teoria, questões, revisão ou prática.",
   },
 ];
 
@@ -33,9 +33,9 @@ export default function WelcomeBackScreen({ onStart, onSkip }: Props) {
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold">Seu sistema de estudo evoluiu 🚀</h1>
+          <h1 className="text-2xl font-bold">Comece do jeito certo 🎯</h1>
           <p className="text-muted-foreground text-sm">
-            O ENAZIZI agora tem inteligência para guiar cada minuto do seu estudo.
+            Alunos que personalizam o plano evoluem até <span className="font-semibold text-primary">3x mais rápido</span>.
           </p>
         </div>
 
@@ -55,18 +55,14 @@ export default function WelcomeBackScreen({ onStart, onSkip }: Props) {
 
         <div className="space-y-2">
           <Button onClick={onStart} size="lg" className="w-full gap-2">
-            <Sparkles className="h-4 w-4" /> Configurar minha prova agora
+            <Sparkles className="h-4 w-4" /> Quero um plano personalizado
           </Button>
           <Button variant="outline" onClick={onSkip} size="lg" className="w-full gap-2 text-muted-foreground">
-            Pular e fazer depois <ArrowRight className="h-4 w-4" />
+            Continuar sem personalizar <ArrowRight className="h-4 w-4" />
           </Button>
-          <button
-            type="button"
-            onClick={onSkip}
-            className="text-xs text-muted-foreground hover:underline mx-auto block pt-1"
-          >
-            Ainda não sei qual prova escolher
-          </button>
+          <p className="text-[11px] text-muted-foreground/70 pt-1">
+            Sem personalização, seu plano ficará menos preciso
+          </p>
         </div>
       </div>
     </div>

@@ -29,6 +29,7 @@ import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import AdminSystemAlerts from "@/components/admin/AdminSystemAlerts";
 import InstallAppBanner from "@/components/dashboard/InstallAppBanner";
 import ExamSetupReminder from "@/components/dashboard/ExamSetupReminder";
+import ExamSetupConfirmation from "@/components/onboarding/ExamSetupConfirmation";
 import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
 import DashboardSummaryCard from "@/components/dashboard/DashboardSummaryCard";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
@@ -137,6 +138,7 @@ const Dashboard = () => {
         <AdminMessagesBanner />
         <ActiveVideoRoomBanner />
         <ExamSetupReminder />
+        <ExamSetupConfirmation />
       </div>
 
       <DashboardWarnings

@@ -23,16 +23,16 @@ const greetings: Record<string, string[]> = {
 
 const streakMessages: Record<string, string[]> = {
   low: [
-    "Vamos construir sua sequência! Comece com 10 minutinhos 💡",
-    "Cada dia conta. Comece por uma revisão rápida!",
+    "Cada dia sem estudar é um dia que a curva de esquecimento vence 💡",
+    "10 minutos hoje valem mais que 2 horas amanhã. Comece agora!",
   ],
   medium: [
-    "Streak crescendo! Não quebre o ritmo 🔥",
-    "Consistência é a chave. Continue assim!",
+    "Streak crescendo! Quem para agora, perde o que construiu 🔥",
+    "Consistência separa quem passa de quem quase passa. Continue!",
   ],
   high: [
-    "Impressionante! Sua dedicação vai fazer a diferença 🏆",
-    "Você está entre os mais dedicados! Parabéns 🌟",
+    "Seu padrão é de quem vai passar. Não desacelere agora 🏆",
+    "Poucos chegam nesse nível de consistência. Você está entre eles 🌟",
   ],
 };
 
@@ -80,4 +80,12 @@ export function getProgressReinforcement(accuracy: number, questionsToday: numbe
   if (accuracy >= 70) return `${accuracy}% de acerto — excelente precisão! 🎯`;
   if (questionsToday >= 10) return "Bom progresso! Continue para consolidar 📈";
   return "Cada questão conta. Continue! 🚀";
+}
+
+/** Escalating re-engagement messages based on days inactive */
+export function getReEngagementMessage(daysInactive: number): string {
+  if (daysInactive <= 1) return "Ontem você mandou bem. Vamos manter o ritmo hoje? 💪";
+  if (daysInactive <= 3) return "Já são " + daysInactive + " dias parado. A curva de esquecimento não espera ⏳";
+  if (daysInactive <= 7) return "Uma semana sem estudar pode custar semanas de recuperação. Volte agora 🔴";
+  return "Padrão de abandono detectado. Seus concorrentes estão estudando agora 🚨";
 }
