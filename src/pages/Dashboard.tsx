@@ -136,6 +136,7 @@ const Dashboard = () => {
         <InstallAppBanner />
         <AdminMessagesBanner />
         <ActiveVideoRoomBanner />
+        <ExamSetupReminder />
       </div>
 
       <DashboardWarnings
