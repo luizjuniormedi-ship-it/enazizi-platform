@@ -1,7 +1,6 @@
 import { useStudyEngine } from "@/hooks/useStudyEngine";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Info, Lock, ShieldAlert, TrendingUp, Zap } from "lucide-react";
+import { Lock, ShieldAlert, Zap } from "lucide-react";
 
 const PHASE_COLORS: Record<string, string> = {
   critico: "bg-destructive/10 text-destructive border-destructive/30",
