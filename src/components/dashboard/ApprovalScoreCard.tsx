@@ -46,7 +46,7 @@ export default function ApprovalScoreCard() {
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       return data as ScoreData | null;
     },
     enabled: !!user,
