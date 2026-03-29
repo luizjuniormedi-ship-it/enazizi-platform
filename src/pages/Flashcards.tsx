@@ -214,36 +214,17 @@ const Flashcards = () => {
   const handleReview = async (quality: "again" | "good" | "easy") => {
     if (!user || !card) return;
 
-    const existing = reviews.get(card.id);
-    const currentInterval = existing?.interval_days || 0;
+    // Map quality to FSRS Rating
+    const ratingMap: Record<string, Rating> = {
+      again: Rating.Again,
+      good: Rating.Good,
+      easy: Rating.Easy,
+    };
+    const rating = ratingMap[quality];
 
-    let newInterval: number;
-    if (quality === "again") {
-      newInterval = 1;
-    } else if (quality === "good") {
-      const currentIdx = INTERVALS.indexOf(currentInterval);
-      newInterval = INTERVALS[Math.min(currentIdx + 1, INTERVALS.length - 1)] || INTERVALS[1];
-    } else {
-      const currentIdx = INTERVALS.indexOf(currentInterval);
-      newInterval = INTERVALS[Math.min(currentIdx + 2, INTERVALS.length - 1)] || INTERVALS[INTERVALS.length - 1];
-    }
-
-    const nextReview = new Date();
-    nextReview.setDate(nextReview.getDate() + newInterval);
-
-    if (existing) {
-      await supabase.from("reviews").update({
-        interval_days: newInterval,
-        next_review: nextReview.toISOString(),
-      }).eq("id", existing.id);
-    } else {
-      await supabase.from("reviews").insert({
-        user_id: user.id,
-        flashcard_id: card.id,
-        interval_days: newInterval,
-        next_review: nextReview.toISOString(),
-      });
-    }
+    // Run FSRS review — handles card creation/update + logging
+    const updatedCard = await fsrsReview("flashcard", card.id, rating);
+    const scheduledDays = Math.round(updatedCard.scheduled_days);
 
     // Award XP for flashcard review
     const isCorrect = quality !== "again";
@@ -273,7 +254,6 @@ const Flashcards = () => {
       } else {
         setSprintStats(prev => ({ ...prev, correct: prev.correct + 1 }));
       }
-      // Move to next or end sprint
       if (idx + 1 >= Math.min(sprintConfig.cardCount, filteredCards.length)) {
         endSprint();
       } else {
@@ -290,7 +270,11 @@ const Flashcards = () => {
     setUserAnswer("");
     setAnswerSubmitted(false);
 
-    const labels = { again: "Revisar amanhã", good: `Próxima em ${newInterval} dias`, easy: `Próxima em ${newInterval} dias` };
+    const labels = {
+      again: "Revisar em breve",
+      good: scheduledDays > 0 ? `Próxima em ${scheduledDays} dias` : "Revisar em breve",
+      easy: scheduledDays > 0 ? `Próxima em ${scheduledDays} dias` : "Revisar em breve",
+    };
     toast({ title: labels[quality] });
   };
 
