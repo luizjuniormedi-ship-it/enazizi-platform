@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useStudyContext } from "@/lib/studyContext";
+import StudyContextBanner from "@/components/study/StudyContextBanner";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";

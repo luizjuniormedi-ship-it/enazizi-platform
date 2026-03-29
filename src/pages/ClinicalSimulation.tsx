@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
+import { useStudyContext } from "@/lib/studyContext";
+import StudyContextBanner from "@/components/study/StudyContextBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionTracking, SessionOrigin } from "@/hooks/useSessionTracking";
 import { logErrorToBank } from "@/lib/errorBankLogger";
