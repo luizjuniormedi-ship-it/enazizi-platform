@@ -105,6 +105,7 @@ const Dashboard = () => {
       <SystemGuidePopup />
       <FeedbackSurveyPopup />
       <OnboardingTour />
+      <DashboardSmartPopups />
 
       {/* Top bar — greeting & XP */}
       <div>

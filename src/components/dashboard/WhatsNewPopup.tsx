@@ -22,33 +22,33 @@ interface UpdateItem {
 const updates: UpdateItem[] = [
   {
     icon: "rocket",
-    title: "📋 Plano do Dia Inteligente",
+    title: "🚀 ENAZIZI 2.0 — Nova Jornada",
     description:
-      "O Plano do Dia agora respeita suas horas diárias de estudo, prioriza revisões atrasadas e limita temas novos a no máximo 5 por dia para uma carga realista.",
+      "O sistema agora guia seu estudo de forma inteligente com Study Engine, Approval Score e Planner integrado.",
   },
   {
     icon: "sparkles",
-    title: "🧠 Tutor IA contextual",
+    title: "📊 Percentual de Aprovação",
     description:
-      "Ao clicar em um tema no Plano do Dia, o Tutor IA já inicia a aula direto no assunto — sem precisar digitar nada.",
+      "Acompanhe em tempo real sua chance de aprovação baseada em desempenho, simulados, revisões e consistência.",
   },
   {
     icon: "rocket",
-    title: "🔄 Cronograma zera ao gerar novo plano",
+    title: "📋 Plano Automático",
     description:
-      "Ao gerar um novo plano de estudo, temas e revisões antigos são removidos automaticamente para evitar mistura de conteúdos.",
+      "O plano diário agora é gerado automaticamente pelo Study Engine, priorizando revisões atrasadas e pontos fracos.",
   },
   {
     icon: "check",
-    title: "📊 Sincronização em tempo real",
+    title: "🧠 Nivelamento Contínuo",
     description:
-      "Visão Geral, Temas, Críticos e demais abas do Cronograma agora atualizam imediatamente após criar ou modificar o plano.",
+      "Refaça o diagnóstico a cada 30 dias e veja sua evolução por especialidade com comparativo detalhado.",
   },
   {
     icon: "sparkles",
-    title: "⏱️ Micro-quiz, Pomodoro e Celebrações",
+    title: "🩺 Treino Clínico Integrado",
     description:
-      "Responda um micro-quiz antes de marcar concluído, use o timer Pomodoro integrado e receba celebração ao completar 100% do dia.",
+      "Plantão e Anamnese agora registram sessões e podem ser parte do plano guiado de estudo.",
   },
 ];
 
