@@ -131,33 +131,35 @@ const Flashcards = () => {
     setSprintFinished(true);
   };
 
+  const { review: fsrsReview, getDueCards: getFsrsDue } = useFsrs();
+
   const fetchData = useCallback(async () => {
     if (!user) return;
 
-    // Fetch own cards + global cards in parallel
-    const [ownRes, globalRes, reviewsRes] = await Promise.all([
+    // Fetch own cards + global cards + FSRS states in parallel
+    const [ownRes, globalRes, fsrsRes] = await Promise.all([
       supabase.from("flashcards").select("id, question, answer, topic, is_global, user_id").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10000),
       supabase.from("flashcards").select("id, question, answer, topic, is_global, user_id").eq("is_global", true).neq("user_id", user.id).order("created_at", { ascending: false }).limit(10000),
-      supabase.from("reviews").select("id, flashcard_id, interval_days, next_review").eq("user_id", user.id),
+      supabase.from("fsrs_cards").select("card_ref_id, due, stability, state").eq("user_id", user.id).eq("card_type", "flashcard"),
     ]);
 
     // Merge and deduplicate
     const ownCards = ownRes.data || [];
     const globalCards = globalRes.data || [];
     const ownIds = new Set(ownCards.map(c => c.id));
-     const merged = [...ownCards, ...globalCards.filter(c => !ownIds.has(c.id))]
+    const merged = [...ownCards, ...globalCards.filter(c => !ownIds.has(c.id))]
       .filter(c => isMedicalContent(`${c.question} ${c.answer}`));
 
     setAllCards(merged);
 
-    const reviewMap = new Map<string, Review>();
-    (reviewsRes.data || []).forEach((r) => reviewMap.set(r.flashcard_id, r));
-    setReviews(reviewMap);
+    const stateMap = new Map<string, FsrsReviewState>();
+    (fsrsRes.data || []).forEach((r: any) => stateMap.set(r.card_ref_id, { due: r.due, stability: r.stability, state: r.state }));
+    setFsrsStates(stateMap);
 
     const now = new Date().toISOString();
     const due = merged.filter((c) => {
-      const review = reviewMap.get(c.id);
-      return !review || review.next_review <= now;
+      const fsrs = stateMap.get(c.id);
+      return !fsrs || fsrs.due <= now;
     });
     setDueCards(due);
     setLoading(false);
