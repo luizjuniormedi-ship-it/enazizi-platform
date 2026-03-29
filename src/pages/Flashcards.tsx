@@ -29,14 +29,11 @@ interface Flashcard {
   user_id?: string;
 }
 
-interface Review {
-  id: string;
-  flashcard_id: string;
-  interval_days: number;
-  next_review: string;
+interface FsrsReviewState {
+  due: string;
+  stability: number;
+  state: number;
 }
-
-const INTERVALS = [1, 3, 7, 14, 30];
 
 const Flashcards = () => {
   const navigate = useNavigate();
