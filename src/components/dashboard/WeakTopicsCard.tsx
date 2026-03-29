@@ -20,7 +20,7 @@ export default function WeakTopicsCard() {
         <CardHeader className="pb-2 pt-4 px-4">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold">
             <TrendingDown className="h-4 w-4 text-rose-500" />
-            Pontos Fracos
+            Temas para Reforçar
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4">
