@@ -103,7 +103,7 @@ const App = () => (
               <Route path="/register" element={<Register />} />
               <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                 <Route index element={<Dashboard />} />
-                <Route path="cronograma" element={<CronogramaInteligente />} />
+                <Route path="cronograma" element={<Navigate to="/dashboard/planner" replace />} />
                 <Route path="flashcards" element={<Flashcards />} />
                 <Route path="gerar-flashcards" element={<FlashcardGenerator />} />
                 <Route path="simulados" element={<Simulados />} />
