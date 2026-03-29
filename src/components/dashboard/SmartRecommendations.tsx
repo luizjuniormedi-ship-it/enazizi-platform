@@ -96,7 +96,7 @@ export default function SmartRecommendations({ stats, metrics, hasCompletedDiagn
         icon: <BookOpen className="h-5 w-5 text-blue-500" />,
         title: "Crie Flashcards",
         description: "Flashcards com repetição espaçada fixam o conteúdo a longo prazo.",
-        path: "/dashboard/agentes/flashcards",
+        path: "/dashboard/gerar-flashcards",
         priority: "média",
         reason: "Nenhum flashcard criado",
       });
@@ -135,7 +135,7 @@ export default function SmartRecommendations({ stats, metrics, hasCompletedDiagn
         icon: <Zap className="h-5 w-5 text-yellow-500" />,
         title: "Comece uma Sequência",
         description: "Estude hoje para iniciar seu streak e ganhar XP bônus!",
-        path: "/dashboard/plano-diario",
+        path: "/dashboard/plano-dia",
         priority: "baixa",
         reason: "Sem sequência ativa",
       });

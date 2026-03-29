@@ -66,7 +66,7 @@ const DashboardWarnings = ({
       title: "Configure seu cronograma de estudos",
       message: "Crie um plano de estudo personalizado para acompanhar seu progresso e receber lembretes inteligentes.",
       severity: "orange",
-      action: { label: "Criar Plano", path: "/dashboard/plano-estudo" },
+      action: { label: "Criar Plano", path: "/dashboard/planner" },
     });
   }
 
