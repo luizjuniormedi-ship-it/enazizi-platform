@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { adjustPlanByApprovalScore, type PlanWeights } from "./approvalScoreWeights";
 import { adjustNewTopicsByLock, type ContentLockStatus } from "@/hooks/useContentLock";
+import { retrievability as fsrsRetrievability, State as FsrsState } from "./fsrs";
 
 export type RecommendationType = "review" | "practice" | "clinical" | "new" | "error_review" | "simulado";
 export type TargetModule = "tutor" | "questoes" | "flashcards" | "plantao" | "anamnese" | "simulado" | "cronograma" | "banco-erros";
@@ -109,6 +110,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     examRes,
     anamnesisRes,
     clinicalSimRes,
+    fsrsDueRes,
   ] = await Promise.all([
     supabase
       .from("revisoes")
@@ -161,6 +163,14 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(10),
+    // FSRS due cards — all types
+    supabase
+      .from("fsrs_cards")
+      .select("id, card_type, card_ref_id, stability, difficulty, state, due, lapses")
+      .eq("user_id", userId)
+      .lte("due", new Date().toISOString())
+      .order("due", { ascending: true })
+      .limit(30),
   ]);
 
   // ── Compute approval score & weights ─────────────────────────
@@ -335,6 +345,30 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       targetModule: "tutor",
       targetPath: "/dashboard/chatgpt",
       estimatedMinutes: 30,
+    });
+  }
+
+  // ── 7. FSRS due flashcard reviews ────────────────────────────
+  const fsrsDue = (fsrsDueRes.data || []) as any[];
+  const flashcardDue = fsrsDue.filter((c: any) => c.card_type === "flashcard");
+  if (flashcardDue.length > 0) {
+    const now = new Date();
+    // Sort by lowest stability first (most at risk of forgetting)
+    flashcardDue.sort((a: any, b: any) => a.stability - b.stability);
+    const count = Math.min(flashcardDue.length, 5);
+    const urgency = count > 10 ? "alta" : count > 3 ? "moderada" : "normal";
+    recs.push({
+      id: "fsrs-flashcards",
+      type: "review",
+      topic: `${flashcardDue.length} Flashcards`,
+      specialty: "Revisão Espaçada",
+      priority: cap(85 + Math.min(flashcardDue.length, 10)),
+      reason: flashcardDue.length > 5
+        ? `${flashcardDue.length} flashcards pendentes — prioridade ${urgency}!`
+        : `${flashcardDue.length} flashcard(s) pronto(s) para revisão.`,
+      targetModule: "flashcards",
+      targetPath: "/dashboard/flashcards",
+      estimatedMinutes: Math.max(5, flashcardDue.length * 2),
     });
   }
 

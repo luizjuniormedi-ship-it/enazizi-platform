@@ -1068,6 +1068,101 @@ export type Database = {
           },
         ]
       }
+      fsrs_cards: {
+        Row: {
+          card_ref_id: string
+          card_type: string
+          created_at: string
+          difficulty: number
+          due: string
+          elapsed_days: number
+          id: string
+          lapses: number
+          last_review: string | null
+          reps: number
+          scheduled_days: number
+          stability: number
+          state: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          card_ref_id: string
+          card_type?: string
+          created_at?: string
+          difficulty?: number
+          due?: string
+          elapsed_days?: number
+          id?: string
+          lapses?: number
+          last_review?: string | null
+          reps?: number
+          scheduled_days?: number
+          stability?: number
+          state?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          card_ref_id?: string
+          card_type?: string
+          created_at?: string
+          difficulty?: number
+          due?: string
+          elapsed_days?: number
+          id?: string
+          lapses?: number
+          last_review?: string | null
+          reps?: number
+          scheduled_days?: number
+          stability?: number
+          state?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      fsrs_review_log: {
+        Row: {
+          card_id: string
+          elapsed_days: number | null
+          id: string
+          rating: number
+          review_duration_ms: number | null
+          reviewed_at: string
+          scheduled_days: number | null
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          elapsed_days?: number | null
+          id?: string
+          rating: number
+          review_duration_ms?: number | null
+          reviewed_at?: string
+          scheduled_days?: number | null
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          elapsed_days?: number | null
+          id?: string
+          rating?: number
+          review_duration_ms?: number | null
+          reviewed_at?: string
+          scheduled_days?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fsrs_review_log_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "fsrs_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       medical_domain_map: {
         Row: {
           avg_difficulty: number

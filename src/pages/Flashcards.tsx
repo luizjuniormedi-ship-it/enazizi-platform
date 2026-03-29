@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
+import { useFsrs, Rating } from "@/hooks/useFsrs";
 import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays, Send, CheckCircle, XCircle, GraduationCap, Filter, Download, Zap, Clock, Award, Maximize2, Minimize2, MoreVertical, HelpCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
@@ -28,20 +29,17 @@ interface Flashcard {
   user_id?: string;
 }
 
-interface Review {
-  id: string;
-  flashcard_id: string;
-  interval_days: number;
-  next_review: string;
+interface FsrsReviewState {
+  due: string;
+  stability: number;
+  state: number;
 }
-
-const INTERVALS = [1, 3, 7, 14, 30];
 
 const Flashcards = () => {
   const navigate = useNavigate();
   const [allCards, setAllCards] = useState<Flashcard[]>([]);
   const [dueCards, setDueCards] = useState<Flashcard[]>([]);
-  const [reviews, setReviews] = useState<Map<string, Review>>(new Map());
+  const [fsrsStates, setFsrsStates] = useState<Map<string, FsrsReviewState>>(new Map());
   const [loading, setLoading] = useState(true);
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -133,33 +131,35 @@ const Flashcards = () => {
     setSprintFinished(true);
   };
 
+  const { review: fsrsReview, getDueCards: getFsrsDue } = useFsrs();
+
   const fetchData = useCallback(async () => {
     if (!user) return;
 
-    // Fetch own cards + global cards in parallel
-    const [ownRes, globalRes, reviewsRes] = await Promise.all([
+    // Fetch own cards + global cards + FSRS states in parallel
+    const [ownRes, globalRes, fsrsRes] = await Promise.all([
       supabase.from("flashcards").select("id, question, answer, topic, is_global, user_id").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10000),
       supabase.from("flashcards").select("id, question, answer, topic, is_global, user_id").eq("is_global", true).neq("user_id", user.id).order("created_at", { ascending: false }).limit(10000),
-      supabase.from("reviews").select("id, flashcard_id, interval_days, next_review").eq("user_id", user.id),
+      supabase.from("fsrs_cards").select("card_ref_id, due, stability, state").eq("user_id", user.id).eq("card_type", "flashcard"),
     ]);
 
     // Merge and deduplicate
     const ownCards = ownRes.data || [];
     const globalCards = globalRes.data || [];
     const ownIds = new Set(ownCards.map(c => c.id));
-     const merged = [...ownCards, ...globalCards.filter(c => !ownIds.has(c.id))]
+    const merged = [...ownCards, ...globalCards.filter(c => !ownIds.has(c.id))]
       .filter(c => isMedicalContent(`${c.question} ${c.answer}`));
 
     setAllCards(merged);
 
-    const reviewMap = new Map<string, Review>();
-    (reviewsRes.data || []).forEach((r) => reviewMap.set(r.flashcard_id, r));
-    setReviews(reviewMap);
+    const stateMap = new Map<string, FsrsReviewState>();
+    (fsrsRes.data || []).forEach((r: any) => stateMap.set(r.card_ref_id, { due: r.due, stability: r.stability, state: r.state }));
+    setFsrsStates(stateMap);
 
     const now = new Date().toISOString();
     const due = merged.filter((c) => {
-      const review = reviewMap.get(c.id);
-      return !review || review.next_review <= now;
+      const fsrs = stateMap.get(c.id);
+      return !fsrs || fsrs.due <= now;
     });
     setDueCards(due);
     setLoading(false);
@@ -214,36 +214,17 @@ const Flashcards = () => {
   const handleReview = async (quality: "again" | "good" | "easy") => {
     if (!user || !card) return;
 
-    const existing = reviews.get(card.id);
-    const currentInterval = existing?.interval_days || 0;
+    // Map quality to FSRS Rating
+    const ratingMap: Record<string, Rating> = {
+      again: Rating.Again,
+      good: Rating.Good,
+      easy: Rating.Easy,
+    };
+    const rating = ratingMap[quality];
 
-    let newInterval: number;
-    if (quality === "again") {
-      newInterval = 1;
-    } else if (quality === "good") {
-      const currentIdx = INTERVALS.indexOf(currentInterval);
-      newInterval = INTERVALS[Math.min(currentIdx + 1, INTERVALS.length - 1)] || INTERVALS[1];
-    } else {
-      const currentIdx = INTERVALS.indexOf(currentInterval);
-      newInterval = INTERVALS[Math.min(currentIdx + 2, INTERVALS.length - 1)] || INTERVALS[INTERVALS.length - 1];
-    }
-
-    const nextReview = new Date();
-    nextReview.setDate(nextReview.getDate() + newInterval);
-
-    if (existing) {
-      await supabase.from("reviews").update({
-        interval_days: newInterval,
-        next_review: nextReview.toISOString(),
-      }).eq("id", existing.id);
-    } else {
-      await supabase.from("reviews").insert({
-        user_id: user.id,
-        flashcard_id: card.id,
-        interval_days: newInterval,
-        next_review: nextReview.toISOString(),
-      });
-    }
+    // Run FSRS review — handles card creation/update + logging
+    const updatedCard = await fsrsReview("flashcard", card.id, rating);
+    const scheduledDays = Math.round(updatedCard.scheduled_days);
 
     // Award XP for flashcard review
     const isCorrect = quality !== "again";
@@ -273,7 +254,6 @@ const Flashcards = () => {
       } else {
         setSprintStats(prev => ({ ...prev, correct: prev.correct + 1 }));
       }
-      // Move to next or end sprint
       if (idx + 1 >= Math.min(sprintConfig.cardCount, filteredCards.length)) {
         endSprint();
       } else {
@@ -290,7 +270,11 @@ const Flashcards = () => {
     setUserAnswer("");
     setAnswerSubmitted(false);
 
-    const labels = { again: "Revisar amanhã", good: `Próxima em ${newInterval} dias`, easy: `Próxima em ${newInterval} dias` };
+    const labels = {
+      again: "Revisar em breve",
+      good: scheduledDays > 0 ? `Próxima em ${scheduledDays} dias` : "Revisar em breve",
+      easy: scheduledDays > 0 ? `Próxima em ${scheduledDays} dias` : "Revisar em breve",
+    };
     toast({ title: labels[quality] });
   };
 
@@ -436,14 +420,19 @@ const Flashcards = () => {
         </div>
       )}
 
-      {/* Stats bar */}
-      <div className="grid grid-cols-5 gap-2">
-        {INTERVALS.map((interval) => {
-          const count = Array.from(reviews.values()).filter((r) => r.interval_days === interval).length;
+      {/* FSRS Stats bar */}
+      <div className="grid grid-cols-4 gap-2">
+        {[
+          { label: "Novos", filter: (s: FsrsReviewState) => s.state === 0 },
+          { label: "Aprendendo", filter: (s: FsrsReviewState) => s.state === 1 || s.state === 3 },
+          { label: "Revisão", filter: (s: FsrsReviewState) => s.state === 2 },
+          { label: "Total", filter: () => true },
+        ].map(({ label, filter }) => {
+          const count = Array.from(fsrsStates.values()).filter(filter).length;
           return (
-            <div key={interval} className="glass-card p-3 text-center">
+            <div key={label} className="glass-card p-3 text-center">
               <div className="text-lg font-bold text-primary">{count}</div>
-              <div className="text-xs text-muted-foreground">{interval}d</div>
+              <div className="text-xs text-muted-foreground">{label}</div>
             </div>
           );
         })}
@@ -521,10 +510,10 @@ const Flashcards = () => {
               <div className="absolute top-4 right-4 text-xs text-muted-foreground">
                 {idx + 1}/{filteredCards.length}
               </div>
-              {reviews.get(card.id) && (
+              {fsrsStates.get(card.id) && (
                 <div className="absolute bottom-4 left-4 text-xs text-muted-foreground flex items-center gap-1">
                   <CalendarDays className="h-3 w-3" />
-                  Intervalo: {reviews.get(card.id)!.interval_days}d
+                  Estabilidade: {fsrsStates.get(card.id)!.stability.toFixed(1)}d
                 </div>
               )}
 
