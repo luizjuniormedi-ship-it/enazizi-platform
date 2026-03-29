@@ -136,6 +136,17 @@ const Dashboard = () => {
         hasStudyPlan={stats.hasStudyPlan}
       />
 
+      {/* ===== Dashboard 2.0 — Guided Study Flow ===== */}
+      <TodayStudyCard />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <PendingReviewsCard />
+        <WeakTopicsCard />
+      </div>
+
+      <PracticalTrainingCard />
+      <FreeStudyCard />
+
       {/* Quick Start for new users */}
       <QuickStartCard
         questionsAnswered={metrics.questionsAnswered}
