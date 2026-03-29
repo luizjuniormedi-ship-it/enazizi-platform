@@ -10,6 +10,8 @@ export interface SimQuestion {
   correct: number;
   topic: string;
   explanation?: string;
+  bankId?: string;
+  source?: string;
 }
 
 interface SimuladoExamProps {
