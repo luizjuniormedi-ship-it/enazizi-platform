@@ -690,7 +690,7 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-sm font-semibold">{item.topic}</span>
                   <button
-                    onClick={() => navigate(`/dashboard/chatgpt?topic=${encodeURIComponent(item.topic)}`)}
+                    onClick={() => navigate(`/dashboard/chatgpt?${encodeStudyContext({ source: "planner", topic: item.topic, objective: "new_content" })}`)}
                     className="ml-auto flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 transition-colors font-medium"
                   >
                     <MessageSquare className="h-3 w-3" /> Estudar
