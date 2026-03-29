@@ -17,6 +17,7 @@ const VALID_DASHBOARD_ROUTES = [
   "/dashboard/questoes",
   "/dashboard/banco-questoes",
   "/dashboard/resumos",
+  "/dashboard/apostilas",
   "/dashboard/coach",
   "/dashboard/chatgpt",
   "/dashboard/plano-dia",
@@ -30,6 +31,11 @@ const VALID_DASHBOARD_ROUTES = [
   "/dashboard/revisor",
   "/dashboard/entrevista",
   "/dashboard/conquistas",
+  "/dashboard/anamnese",
+  "/dashboard/cronicas",
+  "/dashboard/feynman",
+  "/dashboard/mentor",
+  "/dashboard/planner",
   "/dashboard/analytics",
   "/dashboard/perfil",
 ];
@@ -49,23 +55,28 @@ const SIDEBAR_ROUTES = [
   "/dashboard/chatgpt",
   "/dashboard/plano-dia",
   "/dashboard/diagnostico",
+  "/dashboard/planner",
   "/dashboard/cronograma",
   "/dashboard/flashcards",
   "/dashboard/gerar-flashcards",
+  "/dashboard/resumos",
+  "/dashboard/apostilas",
+  "/dashboard/cronicas",
+  "/dashboard/feynman",
   "/dashboard/simulados",
   "/dashboard/questoes",
   "/dashboard/banco-questoes",
-  "/dashboard/resumos",
-  "/dashboard/coach",
+  "/dashboard/discursivas",
+  "/dashboard/anamnese",
+  "/dashboard/plantao",
   "/dashboard/predictor",
   "/dashboard/banco-erros",
   "/dashboard/mapa-dominio",
   "/dashboard/proficiencia",
-  "/dashboard/discursivas",
-  "/dashboard/plantao",
-  "/dashboard/uploads",
+  "/dashboard/coach",
   "/dashboard/conquistas",
   "/dashboard/analytics",
+  "/dashboard/uploads",
   "/dashboard/perfil",
 ];
 
@@ -78,18 +89,20 @@ const MOBILE_NAV_ROUTES = [
   "/dashboard/cronograma",
   "/dashboard/flashcards",
   "/dashboard/gerar-flashcards",
+  "/dashboard/resumos",
+  "/dashboard/apostilas",
+  "/dashboard/cronicas",
   "/dashboard/simulados",
   "/dashboard/questoes",
   "/dashboard/banco-questoes",
-  "/dashboard/resumos",
-  "/dashboard/coach",
+  "/dashboard/discursivas",
+  "/dashboard/anamnese",
+  "/dashboard/plantao",
   "/dashboard/predictor",
   "/dashboard/banco-erros",
   "/dashboard/mapa-dominio",
   "/dashboard/proficiencia",
-  "/dashboard/discursivas",
-  "/dashboard/plantao",
-  "/dashboard/uploads",
+  "/dashboard/coach",
   "/dashboard/conquistas",
   "/dashboard/analytics",
 ];
@@ -166,8 +179,8 @@ describe("Route Validation", () => {
   });
 
   it("expected total route count matches", () => {
-    // 25 dashboard routes + 6 top-level = 31 total
-    expect(VALID_DASHBOARD_ROUTES.length).toBe(25);
+    // 31 dashboard routes + 6 top-level = 37 total
+    expect(VALID_DASHBOARD_ROUTES.length).toBe(31);
     expect(VALID_TOP_ROUTES.length).toBe(6);
   });
 });
