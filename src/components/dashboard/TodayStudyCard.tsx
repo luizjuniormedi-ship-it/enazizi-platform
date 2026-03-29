@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Play, Sparkles, Clock, CheckCircle2 } from "lucide-react";
 import { useStudyEngine, type StudyRecommendation } from "@/hooks/useStudyEngine";
+import { buildStudyPath } from "@/lib/studyRouter";
 
 export default function TodayStudyCard() {
   const navigate = useNavigate();
