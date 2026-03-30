@@ -38,6 +38,7 @@ export default function MissionMode() {
     completeCurrentTask, skipCurrentTask,
     pauseMission, resumeMission, endMission,
   } = useMissionMode();
+  const [taskListOpen, setTaskListOpen] = useState(false);
 
   // Redirect if no active mission
   useEffect(() => {
