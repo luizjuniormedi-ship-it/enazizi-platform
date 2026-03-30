@@ -148,7 +148,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   const recs: StudyRecommendation[] = [];
 
   // Individual queries with safe fallback — one failure never breaks the engine
-  const safe = async <T>(fn: () => Promise<{ data: T | null; error: any }>, label: string): Promise<T | null> => {
+  const safe = async <T>(fn: () => PromiseLike<{ data: T | null; error: any }>, label: string): Promise<T | null> => {
     try {
       const { data, error } = await fn();
       if (error) console.warn(`[StudyEngine] ${label}:`, error.message);
