@@ -48,7 +48,8 @@ function parseFlashcardsFromText(content: string): Array<{ question: string; ans
 const FlashcardGenerator = () => {
   const { user } = useAuth();
   const { addXp } = useGamification();
-  const [specialty, setSpecialty] = useState<string>("");
+  const studyCtx = useStudyContext();
+  const [specialty, setSpecialty] = useState<string>(studyCtx?.specialty || "");
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(10);
   const [showSetup, setShowSetup] = useState(true);
