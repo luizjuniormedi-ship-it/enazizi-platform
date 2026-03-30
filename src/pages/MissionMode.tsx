@@ -51,10 +51,15 @@ export default function MissionMode() {
   useEffect(() => {
     if (!user || !adaptive) return;
     const checkFocusHard = async () => {
-      const { data: profile } = await supabase.from("profiles").select("exam_date").eq("user_id", user.id).maybeSingle();
-      const examDate = profile?.exam_date;
-      const daysToExam = examDate ? Math.ceil((new Date(examDate).getTime() - Date.now()) / 86400000) : 999;
-      setUseFocusHard(daysToExam <= 15 || (adaptive.approvalScore < 40 && adaptive.approvalScore > 0));
+      try {
+        const { data: profile } = await supabase.from("profiles").select("exam_date").eq("user_id", user.id).maybeSingle();
+        const examDate = profile?.exam_date;
+        const daysToExam = examDate ? Math.ceil((new Date(examDate).getTime() - Date.now()) / 86400000) : 999;
+        setUseFocusHard(daysToExam <= 15 || (adaptive.approvalScore < 40 && adaptive.approvalScore > 0));
+      } catch (e) {
+        console.warn("[MissionMode] Erro ao verificar Focus Hard:", e);
+        setUseFocusHard(false);
+      }
     };
     checkFocusHard();
   }, [user, adaptive]);
