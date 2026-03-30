@@ -148,8 +148,11 @@ Responda em JSON:
     "summary": "resumo curto do achado principal (1 frase)",
     "system": "sistema examinado se physical_exam (cardiovascular, respiratório, etc), null caso contrário"
   },
-  "teaching_tip": "dica didática contextual se learner_mode estiver ativo (opcional, null se não)"
+  "teaching_tip": "dica didática contextual se learner_mode estiver ativo (opcional, null se não)",
+  "maneuvers_performed": [{"name":"Nome da manobra","technique":"Como realizar","finding":"Achado encontrado","interpretation":"Significado clínico"}]
 }
+
+REGRA OBRIGATÓRIA: Quando response_type = "physical_exam", o campo "maneuvers_performed" é OBRIGATÓRIO e deve conter no mínimo 2 manobras semiológicas relevantes ao sistema examinado, com técnica de execução e interpretação clínica detalhadas.
 
 Critérios de score_delta:
 - Pergunta relevante na anamnese: +1
