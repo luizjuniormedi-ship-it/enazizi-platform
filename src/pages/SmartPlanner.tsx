@@ -212,18 +212,6 @@ const SmartPlanner = () => {
     );
   }
 
-  if (activeRevisao) {
-    const temaComp = temasComputados.find(t => t.id === activeRevisao.tema_id);
-    return (
-      <CronogramaRevisaoAtiva
-        revisao={activeRevisao}
-        temaComputado={temaComp || null}
-        desempenhos={desempenhos.filter(d => d.tema_id === activeRevisao.tema_id)}
-        onComplete={handleCompleteRevisao}
-        onBack={() => setActiveRevisao(null)}
-      />
-    );
-  }
 
   // Count topics per specialty
   const specTopicCount: Record<string, number> = {};

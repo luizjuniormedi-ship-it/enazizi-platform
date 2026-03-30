@@ -67,9 +67,9 @@ const navGroups: NavGroup[] = [
     items: [
       { to: "/dashboard/questoes", icon: HelpCircle, label: "Gerador Questões" },
       { to: "/dashboard/gerar-flashcards", icon: FlipVertical, label: "Gerador Flashcards" },
-      { to: "/dashboard/apostilas", icon: BookOpen, label: "Apostilas" },
-      { to: "/dashboard/cronicas", icon: BookOpen, label: "Crônicas Médicas" },
-      { to: "/dashboard/feynman", icon: BookOpen, label: "Método Feynman" },
+      { to: "/dashboard/apostilas", icon: FileText, label: "Apostilas" },
+      { to: "/dashboard/cronicas", icon: Scroll, label: "Crônicas Médicas" },
+      { to: "/dashboard/feynman", icon: Lightbulb, label: "Método Feynman" },
       { to: "/dashboard/discursivas", icon: PenLine, label: "Discursivas" },
       { to: "/dashboard/predictor", icon: TrendingUp, label: "Previsão" },
       { to: "/dashboard/proficiencia", icon: GraduationCap, label: "Proficiência" },
