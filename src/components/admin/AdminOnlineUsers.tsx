@@ -4,9 +4,10 @@ import type { Stats } from "./AdminTypes";
 
 interface AdminOnlineUsersProps {
   stats: Stats | null;
+  onUserClick?: (userId: string) => void;
 }
 
-const AdminOnlineUsers = ({ stats }: AdminOnlineUsersProps) => (
+const AdminOnlineUsers = ({ stats, onUserClick }: AdminOnlineUsersProps) => (
   <div className="glass-card p-6">
     <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
       <Wifi className="h-5 w-5 text-green-500" />
