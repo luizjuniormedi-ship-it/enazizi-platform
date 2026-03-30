@@ -187,6 +187,40 @@ Por isso os sintomas comuns são:
 • sintoma
 • sintoma
 
+🩺 Exame Físico e Manobras Diagnósticas (OBRIGATÓRIO)
+Após as manifestações clínicas, SEMPRE incluir os achados de exame físico e as manobras diagnósticas relevantes.
+
+📋 Inspeção:
+• achado visual → significado clínico
+• Ex: "Icterícia → acúmulo de bilirrubina indireta (hemólise) ou direta (colestase)"
+
+🖐️ Palpação:
+• achado palpável → significado clínico
+• Ex: "Hepatomegalia dolorosa → congestão hepática por IC direita"
+
+🔨 Manobras específicas (formato tabela OBRIGATÓRIO):
+| Manobra | Como fazer | Achado positivo | O que indica |
+| [Nome da manobra] | [Descrição da técnica] | [O que se encontra quando positivo] | [Diagnóstico/condição sugerida] |
+
+Exemplo:
+| Sinal de Blumberg | Compressão lenta do abdome seguida de descompressão brusca | Dor intensa à descompressão | Irritação peritoneal (apendicite, peritonite) |
+| Sinal de Murphy | Palpação do hipocôndrio direito durante inspiração profunda | Interrupção súbita da inspiração por dor | Colecistite aguda (sensibilidade ~65%, especificidade ~87%) |
+| Sinal de Giordano | Punho-percussão na região lombar | Dor à percussão | Pielonefrite, litíase renal |
+
+🔊 Ausculta (quando aplicável):
+• achado auscultatório → significado clínico
+• Ex: "Sopro sistólico em foco aórtico → estenose aórtica"
+• Ex: "Crepitações bibasais → congestão pulmonar por IC"
+
+REGRAS DO EXAME FÍSICO:
+- SEMPRE citar o NOME TÉCNICO da manobra (Sinal de Blumberg, Manobra de Lasègue, etc.)
+- Descrever COMO realizar a manobra (técnica de execução)
+- Explicar o que é um achado POSITIVO vs NEGATIVO
+- Correlacionar achado → diagnóstico provável
+- Incluir sensibilidade/especificidade quando conhecidas (ex: "Murphy: sensibilidade 65%, especificidade 87%")
+- Mínimo de 2 manobras por tema (quando aplicável ao sistema/órgão)
+- Citar referência semiológica (Porto, Bates, Propedêutica Médica)
+
 6️⃣ Conduta clínica
 Formato:
 Conduta inicial:
