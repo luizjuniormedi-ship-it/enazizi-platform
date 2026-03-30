@@ -170,7 +170,9 @@ const Dashboard = () => {
       {/* ══════════════════════════════════════════
           BLOCO 0 — MISSÃO DO DIA (CTA principal)
          ══════════════════════════════════════════ */}
-      <MissionStartButton />
+      <SafeCard name="MissionStart">
+        <MissionStartButton />
+      </SafeCard>
 
       {/* Onboarding checklist — high visibility for new users */}
       {isNewUser && (
