@@ -15,7 +15,7 @@ import {
 import CronogramaNovoTema from "@/components/cronograma/CronogramaNovoTema";
 import CronogramaTemas from "@/components/cronograma/CronogramaTemas";
 import CronogramaHistorico from "@/components/cronograma/CronogramaHistorico";
-import CronogramaRevisaoAtiva from "@/components/cronograma/CronogramaRevisaoAtiva";
+import { useNavigate } from "react-router-dom";
 import StudyPlanContent from "@/components/cronograma/StudyPlanContent";
 import { syncTemasToModules, updateStudyPerformanceContext } from "@/lib/cronogramaSync";
 
@@ -31,12 +31,12 @@ const DEFAULT_PESOS: PesosAlgoritmo = { erro: 0.3, tempo: 0.2, atraso: 0.2, difi
 
 const SmartPlanner = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [temas, setTemas] = useState<TemaEstudado[]>([]);
   const [revisoes, setRevisoes] = useState<Revisao[]>([]);
   const [desempenhos, setDesempenhos] = useState<Desempenho[]>([]);
   const [config, setConfig] = useState<CronogramaConfig | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeRevisao, setActiveRevisao] = useState<(Revisao & { tema: TemaEstudado }) | null>(null);
   const [activeTab, setActiveTab] = useState("objetivo");
 
   const loadData = useCallback(async () => {
@@ -183,7 +183,7 @@ const SmartPlanner = () => {
     }
 
     toast({ title: "✅ Revisão concluída!", description: `Acerto: ${taxa}%` });
-    setActiveRevisao(null);
+    // Inline execution removed — revision completed via callback
     const tema = temas.find(t => t.id === revisao.tema_id);
     if (tema) {
       updateStudyPerformanceContext(user.id, [{ id: tema.id, tema: tema.tema, especialidade: tema.especialidade }]).catch(() => {});
@@ -199,9 +199,9 @@ const SmartPlanner = () => {
     loadData();
   };
 
-  const startRevisao = (revisao: Revisao) => {
-    const tema = temas.find(t => t.id === revisao.tema_id);
-    if (tema) setActiveRevisao({ ...revisao, tema });
+  // Redirect to Daily Plan instead of inline execution
+  const startRevisao = (_revisao: Revisao) => {
+    navigate("/dashboard/plano-dia");
   };
 
   if (loading) {
@@ -212,18 +212,6 @@ const SmartPlanner = () => {
     );
   }
 
-  if (activeRevisao) {
-    const temaComp = temasComputados.find(t => t.id === activeRevisao.tema_id);
-    return (
-      <CronogramaRevisaoAtiva
-        revisao={activeRevisao}
-        temaComputado={temaComp || null}
-        desempenhos={desempenhos.filter(d => d.tema_id === activeRevisao.tema_id)}
-        onComplete={handleCompleteRevisao}
-        onBack={() => setActiveRevisao(null)}
-      />
-    );
-  }
 
   // Count topics per specialty
   const specTopicCount: Record<string, number> = {};
