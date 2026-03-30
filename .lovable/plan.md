@@ -1,47 +1,26 @@
 
 
-# Adicionar Diagnóstico Diferencial + Link para Tutor na Correção da Anamnese e Plantão
+# Tornar Manobras de Exame Físico Visíveis no Plantão
 
-## Resumo
+## Problema
 
-Duas mudanças principais:
-1. **Anamnese**: Adicionar seção de diagnósticos diferenciais na correção final (o Plantão já tem, a Anamnese não)
-2. **Ambos**: Adicionar botão "Estudar no Tutor IA" nos erros/pontos fracos, que abre o Tutor com contexto do erro
+O prompt do Plantão **descreve** que deve incluir `maneuvers_performed` nas respostas de exame físico (linha 99-101), mas o **template JSON de resposta** (linhas 131-152) não lista esse campo. A IA segue o template e omite as manobras estruturadas. O frontend já tem o código para renderizar os cards -- só não recebe os dados.
 
-## Mudanças
+## Solução
 
-### 1. `supabase/functions/anamnesis-trainer/index.ts`
-No JSON de finalização (action="finish"), adicionar campo `differential_diagnosis`:
+### `supabase/functions/clinical-simulation/index.ts`
+
+Adicionar `maneuvers_performed` ao template JSON de resposta (após `teaching_tip`, linha ~151):
+
 ```json
-"differential_diagnosis": [
-  { "diagnosis": "...", "reasoning": "por que considerar", "how_to_rule_out": "como descartar", "student_considered": true/false }
-]
+"maneuvers_performed": [{"name":"...","technique":"...","finding":"...","interpretation":"..."}],
 ```
-Mesma estrutura já usada no Plantão.
 
-### 2. `src/pages/AnamnesisTrainer.tsx`
-- Adicionar `useNavigate` do react-router-dom
-- Adicionar interface `DifferentialDiagnosis` ao `FinalEval`
-- Na tela de resultado, renderizar seção de **Diagnósticos Diferenciais** (cards com ícone, reasoning, how_to_rule_out — mesmo visual do Plantão)
-- Adicionar botão **"📚 Aprofundar no Tutor IA"** após o diagnóstico correto e nos pontos a melhorar, que navega para `/dashboard/chatgpt` com `state.initialMessage` contendo o contexto do erro/tema
-
-### 3. `src/pages/ClinicalSimulation.tsx`
-- Adicionar `useNavigate` do react-router-dom
-- Adicionar botão **"📚 Aprofundar no Tutor IA"** na seção de diagnósticos diferenciais e nos pontos a melhorar, com mesmo padrão de navegação
-
-### Navegação para o Tutor
-O botão enviará o aluno para `/dashboard/chatgpt` com `state`:
-```ts
-navigate("/dashboard/chatgpt", {
-  state: {
-    initialMessage: `🔬 MODO REVISÃO CLÍNICA\n\nO aluno errou/teve dificuldade no seguinte caso:\n- Diagnóstico correto: ${correctDiagnosis}\n- Diferenciais não considerados: ${missed}\n- Pontos fracos: ${improvements}\n\nExplique detalhadamente...`,
-  }
-});
-```
+E adicionar uma nota explícita: **"OBRIGATÓRIO quando response_type = 'physical_exam': inclua maneuvers_performed com no mínimo 2 manobras."**
 
 ## Impacto
-- 3 arquivos editados
-- 1 edge function atualizada
-- Zero mudança em rotas ou lógica de negócio
-- Reutiliza o visual de diferenciais já existente no Plantão
+
+- 1 arquivo editado (edge function)
+- Zero mudança no frontend (já renderiza os cards)
+- As manobras passarão a aparecer automaticamente nas respostas de exame físico
 
