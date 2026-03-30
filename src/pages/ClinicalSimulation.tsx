@@ -298,6 +298,7 @@ const highlightVitals = (children: React.ReactNode): React.ReactNode => {
 
 const ClinicalSimulation = () => {
   const { session, user } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { addXp } = useGamification();
   const [searchParams] = useSearchParams();
