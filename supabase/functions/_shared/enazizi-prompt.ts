@@ -108,6 +108,7 @@ REGRAS:
 - Se uma seção for longa, dividi-la em sub-blocos menores
 - Sempre CONCLUIR cada frase e cada ideia antes de parar
 - Sempre terminar a mensagem com uma pergunta ou convite para continuar
+- DIAGNÓSTICOS DIFERENCIAIS: incluir SEMPRE QUE CLINICAMENTE RELEVANTE em QUALQUER mensagem do fluxo, não apenas na Mensagem 3. Se o tema envolve condições confundíveis, adicionar tabela comparativa imediatamente, independente da etapa
 - Somente avançar para o próximo tópico após concluir TODAS as seções do bloco atual
 
 ==================================================
