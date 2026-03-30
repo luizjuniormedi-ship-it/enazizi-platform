@@ -310,6 +310,7 @@ const ChatGPT = () => {
     setStudyStarted(true);
     setMetricsCollapsed(true);
     setCurrentTopic(t);
+    sessionMemory.recordTopicChange(t);
     setSessionQuestions(0);
     setSessionCorrect(0);
     setEnaziziStep(3);
