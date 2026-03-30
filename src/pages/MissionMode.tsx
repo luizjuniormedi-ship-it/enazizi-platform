@@ -109,6 +109,39 @@ export default function MissionMode() {
     );
   }
 
+  // ── Focus Hard Mode (auto-activated) ──
+  if (useFocusHard && state.status === "active" && currentTask) {
+    const focusReason = adaptive?.approvalScore && adaptive.approvalScore < 40
+      ? "Score baixo — foco total necessário"
+      : "Prova próxima — concentração máxima";
+    return (
+      <FocusHardMode
+        taskTitle={currentTask.topic}
+        taskType={currentTask.type}
+        estimatedMinutes={currentTask.estimatedMinutes}
+        reason={focusReason}
+        onClose={() => { endMission(); navigate("/dashboard"); }}
+        onComplete={() => { completeCurrentTask(); }}
+      >
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">{TYPE_ICONS[currentTask.type] || "📋"}</span>
+            <Badge variant="secondary">{TYPE_LABELS[currentTask.type]}</Badge>
+          </div>
+          <p className="text-muted-foreground">{currentTask.reason}</p>
+          <Button
+            className="w-full gap-2 py-6"
+            size="lg"
+            onClick={() => navigate(buildStudyPath(currentTask, "mission"))}
+          >
+            <Play className="h-5 w-5" />
+            Iniciar Atividade
+          </Button>
+        </div>
+      </FocusHardMode>
+    );
+  }
+
   // ── Active / Paused Mission ──
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
