@@ -361,7 +361,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   }
 
   // ── 3. Low-accuracy topics ───────────────────────────────────
-  const weakTopics = (desempenhoRes.data || []).filter((d: any) => d.taxa_acerto < 60 && d.questoes_feitas >= 3) as any[];
+  const weakTopics = (desempenhoData || []).filter((d: any) => d.taxa_acerto < 60 && d.questoes_feitas >= 3) as any[];
   for (let i = 0; i < Math.min(weakTopics.length, 3); i++) {
     const w = weakTopics[i];
     const tema = w.temas_estudados?.tema || "Tema";
