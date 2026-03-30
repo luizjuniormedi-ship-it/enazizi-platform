@@ -1,4 +1,5 @@
 import { useEffect, useRef, lazy, Suspense, useState } from "react";
+import SafeCard from "@/components/layout/SafeCard";
 import { Loader2, Target, Calendar, Flame, ClipboardList } from "lucide-react";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
