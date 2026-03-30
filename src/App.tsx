@@ -8,6 +8,7 @@ import { MedicalTermProvider } from "@/contexts/MedicalTermContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AdminRoute from "@/components/auth/AdminRoute";
 import ProfessorRoute from "@/components/auth/ProfessorRoute";
+import InstitutionalRoute from "@/components/auth/InstitutionalRoute";
 import { lazy, Suspense } from "react";
 import { Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
@@ -61,7 +62,7 @@ const MissionMode = lazy(() => import("./pages/MissionMode"));
 const StudySession = lazy(() => import("./pages/StudySession"));
 const Rankings = lazy(() => import("./pages/Rankings"));
 const MedicalImageQuiz = lazy(() => import("./pages/MedicalImageQuiz"));
-
+const InstitutionalDashboard = lazy(() => import("./pages/InstitutionalDashboard"));
 
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
@@ -148,6 +149,9 @@ const App = () => (
               </Route>
               <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
+              </Route>
+              <Route path="/institucional" element={<InstitutionalRoute><DashboardLayout /></InstitutionalRoute>}>
+                <Route index element={<InstitutionalDashboard />} />
               </Route>
               <Route path="/install" element={<Install />} />
               <Route path="/reset-password" element={<ResetPassword />} />

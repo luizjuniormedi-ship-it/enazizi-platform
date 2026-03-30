@@ -3,12 +3,13 @@ import {
   LayoutDashboard, CalendarDays, FlipVertical,
   FileText, Upload, BarChart3, LogOut, Shield, User,
   HelpCircle, BookOpen, Heart, Database, Zap, TrendingUp, Stethoscope, Award, Sparkles, AlertTriangle, Map, GraduationCap, PenLine, Activity, Trophy, Crown,
-  ChevronDown, MessageCircle, Scroll, Lightbulb
+  ChevronDown, MessageCircle, Scroll, Lightbulb, Building2
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
+import { useInstitution } from "@/hooks/useInstitution";
 import enazizi from "@/assets/enazizi-mascot.png";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import StudyTimer from "@/components/dashboard/StudyTimer";
@@ -131,6 +132,7 @@ const DashboardSidebar = () => {
   const { signOut } = useAuth();
   const { isAdmin } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
+  const { isStaff: isInstitutionalStaff } = useInstitution();
   const { isModuleEnabled } = useModuleAccess();
 
   // Only auto-open group with active route + "Principal" always open
@@ -206,6 +208,20 @@ const DashboardSidebar = () => {
             >
               <GraduationCap className="h-4 w-4" />
               Painel Professor
+            </Link>
+          )}
+          {isInstitutionalStaff && (
+            <Link
+              to="/institucional"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                location.pathname === "/institucional"
+                  ? "bg-sidebar-accent text-sidebar-primary"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+              )}
+            >
+              <Building2 className="h-4 w-4" />
+              Painel Institucional
             </Link>
           )}
           {isAdmin && (
