@@ -260,6 +260,8 @@ const ChatGPT = () => {
               /a resposta (?:correta|certa) (?:é|seria|era)/i,
             ];
             const hasError = errorPatterns.some(p => p.test(finalText));
+            // Record in session memory
+            sessionMemory.recordAnswer(currentTopic, !hasError, text, hasError ? finalText.slice(0, 200) : undefined);
             if (hasError) {
               const subtemaMatch = finalText.match(/(?:subtema|tópico|sobre):\s*([^\n.]+)/i);
               const categoriaMatch = finalText.match(/\[ERRO_TIPO:(\w+)\]/i);
