@@ -1754,6 +1754,22 @@ const ClinicalSimulation = () => {
                             <p className="whitespace-pre-wrap">{msg.content}</p>
                           )}
                         </div>
+                        {/* Maneuvers Performed (Physical Exam) */}
+                        {msg.maneuversPerformed && msg.maneuversPerformed.length > 0 && (
+                          <div className="mt-2 space-y-1.5">
+                            <p className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1">
+                              <Bone className="h-3 w-3" /> Manobras Realizadas
+                            </p>
+                            {msg.maneuversPerformed.map((m, mi) => (
+                              <div key={mi} className="p-2 rounded-lg bg-accent/10 border border-accent/20 space-y-0.5">
+                                <p className="text-[11px] font-bold text-accent-foreground">{m.name}</p>
+                                <p className="text-[10px] text-muted-foreground"><strong>Técnica:</strong> {m.technique}</p>
+                                <p className="text-[10px] text-muted-foreground"><strong>Achado:</strong> {m.finding}</p>
+                                <p className="text-[10px] text-muted-foreground"><strong>Significado:</strong> {m.interpretation}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         {/* Teaching Tip (Learner Mode) */}
                         {msg.teachingTip && (
                           <div className="mt-2 p-2 rounded-lg bg-primary/5 border border-primary/20 flex items-start gap-1.5">
