@@ -7,6 +7,8 @@ import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
+import { useStudyContext } from "@/lib/studyContext";
+import StudyContextBanner from "@/components/study/StudyContextBanner";
 
 const QUANTITY_OPTIONS = [5, 10, 15, 20];
 
