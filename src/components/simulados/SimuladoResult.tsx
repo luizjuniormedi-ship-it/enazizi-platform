@@ -93,17 +93,44 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
     }
   };
 
+  const isExtremo = mode === "extremo";
+  const sortedAreas = Object.entries(areaResults).sort((a, b) => {
+    const pctA = a[1].total > 0 ? (a[1].correct / a[1].total) * 100 : 0;
+    const pctB = b[1].total > 0 ? (b[1].correct / b[1].total) * 100 : 0;
+    return pctA - pctB;
+  });
+  const weakAreas = sortedAreas.filter(([, v]) => v.total > 0 && (v.correct / v.total) * 100 < 60);
+
   return (
     <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
       <div className="text-center py-6">
-        <Award className="h-16 w-16 text-primary mx-auto mb-4" />
-        <h1 className="text-3xl font-bold mb-2">Simulado Concluído!</h1>
-        <div className="text-5xl font-black text-primary">{pct}%</div>
+        {isExtremo ? (
+          <Skull className="h-16 w-16 text-destructive mx-auto mb-4" />
+        ) : (
+          <Award className="h-16 w-16 text-primary mx-auto mb-4" />
+        )}
+        <h1 className="text-3xl font-bold mb-2">
+          {isExtremo ? "Prova Extrema Concluída!" : "Simulado Concluído!"}
+        </h1>
+        <div className={`text-5xl font-black ${isExtremo && pct < 60 ? "text-destructive" : "text-primary"}`}>{pct}%</div>
         <p className="text-muted-foreground mt-2">{correctCount} de {questions.length} questões corretas</p>
         {totalAnswered < questions.length && (
           <p className="text-xs text-yellow-600 mt-1">{questions.length - totalAnswered} questões não respondidas</p>
         )}
         <p className="text-xs text-muted-foreground mt-1">+{XP_REWARDS.simulado_completed} XP ganhos 🎉</p>
+
+        {/* Extreme verdict */}
+        {isExtremo && (
+          <div className={`mt-4 inline-block px-4 py-2 rounded-full text-sm font-semibold ${
+            pct >= 80 ? "bg-emerald-100 text-emerald-700" :
+            pct >= 60 ? "bg-amber-100 text-amber-700" :
+            "bg-red-100 text-red-700"
+          }`}>
+            {pct >= 80 ? "🏆 Aprovado com distinção" :
+             pct >= 60 ? "✅ Aprovado — mas pode melhorar" :
+             "⚠️ Reprovado — foco nas áreas fracas"}
+          </div>
+        )}
 
         {/* Time stats */}
         {avgTimePerQuestion && (
