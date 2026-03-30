@@ -2382,6 +2382,57 @@ export type Database = {
           },
         ]
       }
+      system_health_logs: {
+        Row: {
+          active_users: number | null
+          ai_ok: boolean
+          avg_ai_response_ms: number | null
+          checks_json: Json
+          created_at: string
+          critical_count: number
+          id: string
+          info_count: number
+          metrics_json: Json
+          overall_status: string
+          run_date: string
+          study_engine_ok: boolean
+          total_checks: number | null
+          warning_count: number
+        }
+        Insert: {
+          active_users?: number | null
+          ai_ok?: boolean
+          avg_ai_response_ms?: number | null
+          checks_json?: Json
+          created_at?: string
+          critical_count?: number
+          id?: string
+          info_count?: number
+          metrics_json?: Json
+          overall_status?: string
+          run_date?: string
+          study_engine_ok?: boolean
+          total_checks?: number | null
+          warning_count?: number
+        }
+        Update: {
+          active_users?: number | null
+          ai_ok?: boolean
+          avg_ai_response_ms?: number | null
+          checks_json?: Json
+          created_at?: string
+          critical_count?: number
+          id?: string
+          info_count?: number
+          metrics_json?: Json
+          overall_status?: string
+          run_date?: string
+          study_engine_ok?: boolean
+          total_checks?: number | null
+          warning_count?: number
+        }
+        Relationships: []
+      }
       system_health_reports: {
         Row: {
           alerts: Json
