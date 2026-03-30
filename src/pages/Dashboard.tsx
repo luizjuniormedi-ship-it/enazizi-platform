@@ -1,4 +1,5 @@
 import { useEffect, useRef, lazy, Suspense, useState } from "react";
+import SafeCard from "@/components/layout/SafeCard";
 import { Loader2, Target, Calendar, Flame, ClipboardList } from "lucide-react";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
@@ -113,7 +114,9 @@ const Dashboard = () => {
   return (
     <div className="space-y-4 animate-fade-in pb-16 lg:pb-0">
       {/* System alerts (admin only) */}
-      <AdminSystemAlerts />
+      <SafeCard name="AdminAlerts" fallback={null}>
+        <AdminSystemAlerts />
+      </SafeCard>
 
       {/* Popup queue — lazy loaded, each checks internally if should show */}
       <Suspense fallback={null}>
@@ -167,7 +170,9 @@ const Dashboard = () => {
       {/* ══════════════════════════════════════════
           BLOCO 0 — MISSÃO DO DIA (CTA principal)
          ══════════════════════════════════════════ */}
-      <MissionStartButton />
+      <SafeCard name="MissionStart">
+        <MissionStartButton />
+      </SafeCard>
 
       {/* Onboarding checklist — high visibility for new users */}
       {isNewUser && (
@@ -181,17 +186,19 @@ const Dashboard = () => {
       {/* ══════════════════════════════════════════
           BLOCO 1 — O que estudar hoje
          ══════════════════════════════════════════ */}
-      <TodayStudyCard />
+      <SafeCard name="TodayStudy">
+        <TodayStudyCard />
+      </SafeCard>
 
       {/* ══════════════════════════════════════════
           BLOCO 1.5 — MODO ADAPTATIVO (feedback sutil + ação)
          ══════════════════════════════════════════ */}
-      {!isNewUser && <AdaptiveModeCard />}
+      {!isNewUser && <SafeCard name="AdaptiveMode"><AdaptiveModeCard /></SafeCard>}
 
       {/* ══════════════════════════════════════════
           BLOCO 2 — PROGRESSO E APROVAÇÃO
          ══════════════════════════════════════════ */}
-      {!isNewUser && <ApprovalScoreCard />}
+      {!isNewUser && <SafeCard name="ApprovalScore"><ApprovalScoreCard /></SafeCard>}
 
       {/* Nivelamento — only if user has completed it */}
       <DiagnosticSummaryCard />
@@ -208,14 +215,14 @@ const Dashboard = () => {
           BLOCO 3 — REVISÕES E FRAQUEZAS
          ══════════════════════════════════════════ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <PendingReviewsCard />
-        <WeakTopicsCard />
+        <SafeCard name="PendingReviews"><PendingReviewsCard /></SafeCard>
+        <SafeCard name="WeakTopics"><WeakTopicsCard /></SafeCard>
       </div>
 
       {/* ══════════════════════════════════════════
           BLOCO 4 — TREINO PRÁTICO
          ══════════════════════════════════════════ */}
-      <PracticalTrainingCard />
+      <SafeCard name="PracticalTraining"><PracticalTrainingCard /></SafeCard>
 
       {/* ══════════════════════════════════════════
           BLOCO 5 — MÉTRICAS DRILL-DOWN
