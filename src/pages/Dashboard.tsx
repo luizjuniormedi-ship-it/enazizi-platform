@@ -215,8 +215,8 @@ const Dashboard = () => {
           BLOCO 3 — REVISÕES E FRAQUEZAS
          ══════════════════════════════════════════ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <PendingReviewsCard />
-        <WeakTopicsCard />
+        <SafeCard name="PendingReviews"><PendingReviewsCard /></SafeCard>
+        <SafeCard name="WeakTopics"><WeakTopicsCard /></SafeCard>
       </div>
 
       {/* ══════════════════════════════════════════
