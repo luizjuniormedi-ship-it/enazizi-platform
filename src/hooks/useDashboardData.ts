@@ -226,6 +226,25 @@ async function fetchDashboardData(userId: string) {
   };
 
   return { stats, metrics, displayName, hasCompletedDiagnostic };
+ } catch (err: any) {
+    console.warn("[Dashboard] fetchDashboardData falhou:", err?.message || err);
+    // Return safe defaults so Dashboard never crashes
+    const emptyStats: DashboardStats = {
+      flashcards: 0, uploads: 0, completedTasks: 0, totalTasks: 0,
+      totalStudyHours: 0, subjects: [], subjectHours: {},
+      upcomingReviews: [], daysUntilExam: null, weeklyChart: [],
+      streak: 0, todayCompleted: 0, todayTotal: 0, questionsToday: 0, hasStudyPlan: false,
+    };
+    const emptyMetrics: DashboardMetrics = {
+      questionsAnswered: 0, accuracy: 0, errorsCount: 0, pendingRevisoes: 0,
+      simuladosCompleted: 0, discursivasCompleted: 0,
+      gamificationStreak: 0, gamificationXp: 0, gamificationLevel: 1,
+      globalFlashcards: 0, globalQuestions: 0, questionsCreated: 0,
+      clinicalSimulations: 0, anamnesisCompleted: 0, summariesCreated: 0,
+      chroniclesCompleted: 0, imageQuizAttempts: 0, diagnosticCompleted: 0, chatConversations: 0,
+    };
+    return { stats: emptyStats, metrics: emptyMetrics, displayName: null, hasCompletedDiagnostic: false };
+  }
 }
 
 export const useDashboardData = () => {
