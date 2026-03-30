@@ -8,8 +8,9 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
   Play, Pause, SkipForward, CheckCircle2, Trophy,
-  ArrowRight, X, Clock, Sparkles, Rocket, Target,
+  ArrowRight, X, Clock, Sparkles, Rocket, Target, ChevronDown,
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const TYPE_LABELS: Record<string, string> = {
   review: "Revisão",
