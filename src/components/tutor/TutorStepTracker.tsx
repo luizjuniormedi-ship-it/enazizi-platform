@@ -23,7 +23,7 @@ const TutorStepTracker = ({
   isLoading, changingTopic, setChangingTopic, newTopic, setNewTopic,
   onChangeTopic, onPhaseAction, nextPhase,
 }: TutorStepTrackerProps) => {
-  const progressPercent = Math.round((enaziziStep / 14) * 100);
+  const progressPercent = Math.round((enaziziStep / 15) * 100);
 
   return (
     <div className="mb-2 sm:mb-3">
