@@ -23,7 +23,7 @@ const TutorStepTracker = ({
   isLoading, changingTopic, setChangingTopic, newTopic, setNewTopic,
   onChangeTopic, onPhaseAction, nextPhase,
 }: TutorStepTrackerProps) => {
-  const progressPercent = Math.round((enaziziStep / 14) * 100);
+  const progressPercent = Math.round((enaziziStep / 15) * 100);
 
   return (
     <div className="mb-2 sm:mb-3">
@@ -32,7 +32,7 @@ const TutorStepTracker = ({
           📚 {currentTopic}
         </span>
         <span className="px-2 py-1 rounded-full bg-secondary text-muted-foreground text-[10px] sm:text-xs font-medium">
-          Etapa {enaziziStep}/14
+          Etapa {enaziziStep}/15
         </span>
         {sessionQuestions > 0 && (
           <span className={`px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium ${Math.round((sessionCorrect / sessionQuestions) * 100) >= 70 ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}>
@@ -64,7 +64,7 @@ const TutorStepTracker = ({
               <TooltipContent side="bottom" className="text-xs max-w-[200px]">
                 {nextPhase ? (
                   <>
-                    <p className="font-semibold">{nextPhase.icon} Etapa {enaziziStep}/14</p>
+                    <p className="font-semibold">{nextPhase.icon} Etapa {enaziziStep}/15</p>
                     <p className="text-muted-foreground">{nextPhase.desc}</p>
                   </>
                 ) : <p>Todas as etapas concluídas!</p>}
@@ -72,7 +72,7 @@ const TutorStepTracker = ({
             </Tooltip>
           </TooltipProvider>
           <span className="text-muted-foreground">•</span>
-          <span className="text-muted-foreground">{enaziziStep}/14 ({progressPercent}%)</span>
+          <span className="text-muted-foreground">{enaziziStep}/15 ({progressPercent}%)</span>
           {nextPhase && (
             <>
               <Button

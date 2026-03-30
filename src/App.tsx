@@ -54,7 +54,7 @@ const AnamnesisTrainer = lazy(() => import("./pages/AnamnesisTrainer"));
 const Install = lazy(() => import("./pages/Install"));
 const StudyGuides = lazy(() => import("./pages/StudyGuides"));
 const MedicalChronicles = lazy(() => import("./pages/MedicalChronicles"));
-const FeynmanTrainer = lazy(() => import("./pages/FeynmanTrainer"));
+
 const AIMentor = lazy(() => import("./pages/AIMentor"));
 const SmartPlanner = lazy(() => import("./pages/SmartPlanner"));
 const AdminMonitoring = lazy(() => import("./pages/AdminMonitoring"));
@@ -133,7 +133,7 @@ const App = () => (
                 <Route path="conquistas" element={<Achievements />} />
                 <Route path="anamnese" element={<AnamnesisTrainer />} />
                 <Route path="cronicas" element={<MedicalChronicles />} />
-                <Route path="feynman" element={<FeynmanTrainer />} />
+                <Route path="feynman" element={<Navigate to="/dashboard/chatgpt" replace />} />
                 <Route path="mentor" element={<AIMentor />} />
                 <Route path="planner" element={<SmartPlanner />} />
                 <Route path="missao" element={<MissionMode />} />
