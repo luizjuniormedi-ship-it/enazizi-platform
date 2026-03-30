@@ -404,9 +404,21 @@ const AnamnesisTrainer = () => {
         conversationHistory: allMessages.map(m => ({ role: m.role, content: m.content })),
       });
 
+      // Sanitize: if data.response is missing or looks like raw JSON, extract text
+      let patientContent = data.response || "";
+      if (!patientContent || patientContent.trim().startsWith("{") || patientContent.trim().startsWith('"')) {
+        // Try to extract response from raw JSON string
+        try {
+          const parsed = typeof data === "string" ? JSON.parse(data) : data;
+          patientContent = parsed.response || "Hmm... pode repetir a pergunta?";
+        } catch {
+          patientContent = "Hmm... pode repetir a pergunta?";
+        }
+      }
+
       const patientMsg: ChatMessage = {
         role: "patient",
-        content: data.response || "...",
+        content: patientContent,
         categories: data.categories_touched || [],
         quality: data.question_quality,
         timestamp: Date.now(),
