@@ -243,7 +243,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
 
   // ── Content Lock — compute inline for engine use ─────────────
   const today = new Date().toISOString().split("T")[0];
-  const pendingReviews = (revisoesRes.data || []) as any[];
+  const pendingReviews = (revisoesData || []) as any[];
   const overdueCount = pendingReviews.filter((r: any) => r.data_revisao <= today).length;
   const recentTotal = practiceAttempts.length;
   const recentErrors = practiceAttempts.filter((a: any) => !a.correct).length;
