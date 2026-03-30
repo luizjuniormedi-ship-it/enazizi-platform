@@ -3,12 +3,13 @@ import {
   LayoutDashboard, CalendarDays, FlipVertical,
   FileText, Upload, BarChart3, LogOut, Shield, User,
   HelpCircle, BookOpen, Heart, Database, Zap, TrendingUp, Stethoscope, Award, Sparkles, AlertTriangle, Map, GraduationCap, PenLine, Activity, Trophy, Crown,
-  ChevronDown, MessageCircle, Scroll, Lightbulb
+  ChevronDown, MessageCircle, Scroll, Lightbulb, Building2
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
+import { useInstitution } from "@/hooks/useInstitution";
 import enazizi from "@/assets/enazizi-mascot.png";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import StudyTimer from "@/components/dashboard/StudyTimer";
