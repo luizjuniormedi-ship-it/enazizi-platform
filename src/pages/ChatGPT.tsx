@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import CinematicAvatar from "@/components/agents/CinematicAvatar";
 import { Trash2 } from "lucide-react";
+import { useSessionMemory } from "@/contexts/SessionMemoryContext";
 
 import { FUNCTION_NAME, NON_MEDICAL_KEYWORDS, ensureSequentialInitialMessage } from "@/components/tutor/TutorConstants";
 import type { Msg } from "@/components/tutor/TutorConstants";
