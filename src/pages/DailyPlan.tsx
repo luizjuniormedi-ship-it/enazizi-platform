@@ -523,6 +523,27 @@ const DailyPlan = () => {
         </div>
       )}
 
+      {/* ── Mission CTA — start full guided flow ── */}
+      {hasContent && missionState.status === "idle" && missionHasTasks && (
+        <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-background p-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Rocket className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-sm">Executar tudo como Missão</p>
+              <p className="text-[10px] text-muted-foreground">O sistema guia você passo a passo por todas as tarefas.</p>
+            </div>
+          </div>
+          <Button
+            className="w-full gap-2 font-semibold"
+            onClick={() => { startMission(); navigate("/dashboard/missao"); }}
+          >
+            <Play className="h-4 w-4" /> INICIAR MISSÃO DO DIA
+          </Button>
+        </div>
+      )}
+
       {/* Empty state */}
       {!hasContent && (
         <div className="text-center py-16 space-y-3">
@@ -536,9 +557,6 @@ const DailyPlan = () => {
           </Button>
         </div>
       )}
-
-      {/* Pomodoro Timer */}
-      <PomodoroTimer open={pomodoroOpen} onOpenChange={setPomodoroOpen} topic={pomodoroTopic} />
 
       {/* Micro Quiz */}
       {quizReview && (
