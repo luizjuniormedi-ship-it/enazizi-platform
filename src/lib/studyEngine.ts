@@ -293,15 +293,20 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     const basePriority = isOverdue ? 95 : 80;
     const riskBonus = rev.risco_esquecimento === "alto" ? 5 : rev.risco_esquecimento === "medio" ? 2 : 0;
     const phaseBonus = weights.phase === "critico" ? 5 : 0;
+    // Aggressive: overdue > 3 days gets extra boost
+    const daysOverdue = isOverdue ? Math.max(0, Math.floor((Date.now() - new Date(rev.data_revisao).getTime()) / 86400000)) : 0;
+    const overdueBoost = daysOverdue > 3 ? 10 : 0;
 
     addRec({
       id: id("rev", i),
       type: "review",
       topic: tema,
       specialty: spec,
-      priority: cap(basePriority + riskBonus + phaseBonus - i),
+      priority: cap(basePriority + riskBonus + phaseBonus + overdueBoost - i),
       reason: isOverdue
-        ? `Revisão atrasada de "${tema}" — risco de esquecer!`
+        ? daysOverdue > 3
+          ? `⚠️ Revisão de "${tema}" atrasada ${daysOverdue} dias — prioridade máxima!`
+          : `Revisão atrasada de "${tema}" — risco de esquecer!`
         : `Revisão programada de "${tema}" para hoje.`,
       targetModule: "tutor",
       targetPath: "/dashboard/chatgpt",
