@@ -58,6 +58,7 @@ const navGroups: NavGroup[] = [
       { to: "/dashboard/banco-erros", icon: AlertTriangle, label: "Banco de Erros" },
       { to: "/dashboard/mapa-dominio", icon: Map, label: "Mapa de Evolução" },
       { to: "/dashboard/analytics", icon: BarChart3, label: "Analytics" },
+      { to: "/dashboard/rankings", icon: Crown, label: "Rankings" },
       { to: "/dashboard/conquistas", icon: Trophy, label: "Conquistas" },
     ],
   },
