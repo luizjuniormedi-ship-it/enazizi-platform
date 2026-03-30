@@ -1000,6 +1000,81 @@ const AnamnesisTrainer = () => {
           </Card>
         )}
 
+        {/* 🩺 Exame Físico Esperado */}
+        {(evalData as any).physical_exam_expected && (() => {
+          const pe = (evalData as any).physical_exam_expected;
+          return (
+            <Card className="glass-card border-emerald-500/20">
+              <CardContent className="p-6">
+                <h2 className="font-semibold mb-4 flex items-center gap-2">
+                  <Stethoscope className="h-5 w-5 text-emerald-400" /> Exame Físico Esperado
+                </h2>
+
+                <div className="space-y-4">
+                  {/* Inspeção */}
+                  {pe.inspection?.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-muted-foreground mb-1 flex items-center gap-1">
+                        <Eye className="h-3.5 w-3.5" /> Inspeção
+                      </h3>
+                      <ul className="text-sm space-y-1 pl-5 list-disc">
+                        {pe.inspection.map((item: string, i: number) => <li key={i}>{item}</li>)}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Palpação */}
+                  {pe.palpation?.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-muted-foreground mb-1">🖐️ Palpação</h3>
+                      <ul className="text-sm space-y-1 pl-5 list-disc">
+                        {pe.palpation.map((item: string, i: number) => <li key={i}>{item}</li>)}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Ausculta */}
+                  {pe.auscultation?.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-muted-foreground mb-1">🔊 Ausculta</h3>
+                      <ul className="text-sm space-y-1 pl-5 list-disc">
+                        {pe.auscultation.map((item: string, i: number) => <li key={i}>{item}</li>)}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Sinais Vitais */}
+                  {pe.vital_signs_expected && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-muted-foreground mb-1">📊 Sinais Vitais Esperados</h3>
+                      <p className="text-sm bg-muted/30 rounded-lg p-3">{pe.vital_signs_expected}</p>
+                    </div>
+                  )}
+
+                  {/* Manobras */}
+                  {pe.maneuvers?.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-emerald-400 mb-2">🔨 Manobras Diagnósticas</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {pe.maneuvers.map((m: any, i: number) => (
+                          <Card key={i} className="bg-muted/20 border-emerald-500/10">
+                            <CardContent className="p-3 space-y-1">
+                              <p className="text-sm font-bold text-emerald-400">{m.name}</p>
+                              <p className="text-xs"><span className="text-muted-foreground">Técnica:</span> {m.technique}</p>
+                              <p className="text-xs"><span className="text-muted-foreground">Achado positivo:</span> {m.positive_finding}</p>
+                              <p className="text-xs"><span className="text-muted-foreground">Indica:</span> {m.indicates}</p>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
         {evalData.clinical_reasoning && (
           <Card className="glass-card">
             <CardContent className="p-6">
