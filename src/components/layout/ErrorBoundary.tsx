@@ -1,29 +1,41 @@
 import { Component, ErrorInfo, ReactNode } from "react";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Props {
   children: ReactNode;
+  /** Optional fallback UI instead of default error screen */
+  fallback?: ReactNode;
 }
 
 interface State {
   hasError: boolean;
   error: Error | null;
+  retryCount: number;
 }
 
 class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, retryCount: 0 };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("[ErrorBoundary]", error, errorInfo);
+    console.warn("[ErrorBoundary] Erro capturado:", error.message);
+    // Silent log — no stack traces exposed to user
   }
+
+  handleRetry = () => {
+    this.setState((prev) => ({
+      hasError: false,
+      error: null,
+      retryCount: prev.retryCount + 1,
+    }));
+  };
 
   handleReload = () => {
     window.location.reload();
@@ -35,6 +47,10 @@ class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      if (this.props.fallback) return this.props.fallback;
+
+      const canRetry = this.state.retryCount < 2;
+
       return (
         <div className="min-h-screen flex items-center justify-center bg-background p-6">
           <div className="max-w-md w-full text-center space-y-6">
@@ -44,26 +60,26 @@ class ErrorBoundary extends Component<Props, State> {
             <div className="space-y-2">
               <h2 className="text-xl font-semibold text-foreground">Algo deu errado</h2>
               <p className="text-sm text-muted-foreground">
-                Ocorreu um erro inesperado. Tente recarregar a página.
+                Ocorreu um erro inesperado. {canRetry ? "Tente novamente." : "Recarregue a página."}
               </p>
             </div>
             <div className="flex gap-3 justify-center">
-              <Button onClick={this.handleReload} className="gap-2">
-                <RefreshCw className="w-4 h-4" />
-                Recarregar
-              </Button>
-              <Button variant="outline" onClick={this.handleGoHome}>
+              {canRetry ? (
+                <Button onClick={this.handleRetry} className="gap-2">
+                  <RefreshCw className="w-4 h-4" />
+                  Tentar Novamente
+                </Button>
+              ) : (
+                <Button onClick={this.handleReload} className="gap-2">
+                  <RefreshCw className="w-4 h-4" />
+                  Recarregar
+                </Button>
+              )}
+              <Button variant="outline" onClick={this.handleGoHome} className="gap-2">
+                <Home className="w-4 h-4" />
                 Ir ao Dashboard
               </Button>
             </div>
-            {this.state.error && (
-              <details className="text-left text-xs text-muted-foreground bg-muted p-3 rounded-lg">
-                <summary className="cursor-pointer">Detalhes técnicos</summary>
-                <pre className="mt-2 whitespace-pre-wrap break-all">
-                  {this.state.error.message}
-                </pre>
-              </details>
-            )}
           </div>
         </div>
       );
