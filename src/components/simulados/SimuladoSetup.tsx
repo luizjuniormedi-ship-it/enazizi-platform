@@ -32,8 +32,13 @@ interface SimuladoSetupProps {
 }
 
 const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErrors, pendingSession, checkedSession, userId }: SimuladoSetupProps) => {
+  const studyCtx = useStudyContext();
   const [tab, setTab] = useState<"novo" | "historico">("novo");
-  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>(() => {
+    if (studyCtx?.specialty) return [studyCtx.specialty];
+    if (studyCtx?.topic) return [studyCtx.topic];
+    return [];
+  });
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [questionCount, setQuestionCount] = useState(10);
   const [customCount, setCustomCount] = useState("");
