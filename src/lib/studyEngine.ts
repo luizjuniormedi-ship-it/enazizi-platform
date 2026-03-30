@@ -434,30 +434,33 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     });
   }
 
-  // ── 6. New topics ────────────────────────────────────────────
-  const temas = (temasRes.data || []) as any[];
-  const studiedSpecialties = new Set(temas.map((t: any) => t.especialidade));
-  const CORE_SPECIALTIES = [
-    "Clínica Médica", "Cirurgia", "Pediatria", "Ginecologia e Obstetrícia",
-    "Saúde Coletiva", "Medicina de Emergência",
-  ];
-  const unexplored = CORE_SPECIALTIES.filter((s) => !studiedSpecialties.has(s));
+  // ── 6. New topics (blocked if critical errors exist) ──────────
+  // Aggressive: if any topic has vezes_errado >= 5 and accuracy < 50%, block new topics
+  if (!hasCriticalBlock) {
+    const temas = (temasRes.data || []) as any[];
+    const studiedSpecialties = new Set(temas.map((t: any) => t.especialidade));
+    const CORE_SPECIALTIES = [
+      "Clínica Médica", "Cirurgia", "Pediatria", "Ginecologia e Obstetrícia",
+      "Saúde Coletiva", "Medicina de Emergência",
+    ];
+    const unexplored = CORE_SPECIALTIES.filter((s) => !studiedSpecialties.has(s));
 
-  const isNewUser = temas.length === 0 && practiceAttempts.length === 0;
-  const maxNew = isNewUser ? Math.max(weights.maxNewTopics, 3) : weights.maxNewTopics;
-  for (let i = 0; i < Math.min(unexplored.length, maxNew); i++) {
-    addRec({
-      id: id("new", i),
-      type: "new",
-      topic: unexplored[i],
-      specialty: unexplored[i],
-      priority: cap(isNewUser ? 80 - i * 5 : 35 - i * 5),
-      reason: `Você ainda não estudou "${unexplored[i]}". Comece pelo tutor!`,
-      targetModule: "tutor",
-      targetPath: "/dashboard/chatgpt",
-      estimatedMinutes: 30,
-      objective: "new_content",
-    });
+    const isNewUser = temas.length === 0 && practiceAttempts.length === 0;
+    const maxNew = isNewUser ? Math.max(weights.maxNewTopics, 3) : weights.maxNewTopics;
+    for (let i = 0; i < Math.min(unexplored.length, maxNew); i++) {
+      addRec({
+        id: id("new", i),
+        type: "new",
+        topic: unexplored[i],
+        specialty: unexplored[i],
+        priority: cap(isNewUser ? 80 - i * 5 : 35 - i * 5),
+        reason: `Você ainda não estudou "${unexplored[i]}". Comece pelo tutor!`,
+        targetModule: "tutor",
+        targetPath: "/dashboard/chatgpt",
+        estimatedMinutes: 30,
+        objective: "new_content",
+      });
+    }
   }
 
   // ── 7. FSRS due flashcard reviews ────────────────────────────
