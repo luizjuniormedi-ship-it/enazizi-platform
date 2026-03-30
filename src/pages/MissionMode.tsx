@@ -36,6 +36,8 @@ const TYPE_ICONS: Record<string, string> = {
 
 export default function MissionMode() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { adaptive } = useStudyEngine();
   const {
     state, currentTask, nextTask, progress,
     totalMinutes, completedMinutes,
@@ -43,6 +45,19 @@ export default function MissionMode() {
     pauseMission, resumeMission, endMission,
   } = useMissionMode();
   const [taskListOpen, setTaskListOpen] = useState(false);
+  const [useFocusHard, setUseFocusHard] = useState(false);
+
+  // Check if Focus Hard Mode should activate
+  useEffect(() => {
+    if (!user || !adaptive) return;
+    const checkFocusHard = async () => {
+      const { data: profile } = await supabase.from("profiles").select("exam_date").eq("user_id", user.id).maybeSingle();
+      const examDate = profile?.exam_date;
+      const daysToExam = examDate ? Math.ceil((new Date(examDate).getTime() - Date.now()) / 86400000) : 999;
+      setUseFocusHard(daysToExam <= 15 || (adaptive.approvalScore < 40 && adaptive.approvalScore > 0));
+    };
+    checkFocusHard();
+  }, [user, adaptive]);
 
   // Redirect if no active mission
   useEffect(() => {
