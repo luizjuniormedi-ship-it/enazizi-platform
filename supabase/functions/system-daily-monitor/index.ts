@@ -71,27 +71,35 @@ Deno.serve(async (req) => {
     // ══════════════════════════════════════════════════════════
     // 2. STUDY ENGINE VALIDATION
     // ══════════════════════════════════════════════════════════
-    // Check if core tables have data (proxy for engine health)
-    const [
-      revisoesData,
-      errorBankData,
-      temasData,
-      practiceData,
-      fsrsData,
-    ] = await Promise.all([
-      safe(() => supabase.from("revisoes").select("id", { count: "exact", head: true }).eq("status", "pendente"), "revisoes"),
-      safe(() => supabase.from("error_bank").select("id", { count: "exact", head: true }).eq("dominado", false), "error_bank"),
-      safe(() => supabase.from("temas_estudados").select("id", { count: "exact", head: true }), "temas"),
-      safe(() => supabase.from("practice_attempts").select("id", { count: "exact", head: true }).gte("created_at", weekAgo), "practice_week"),
-      safe(() => supabase.from("fsrs_cards").select("id", { count: "exact", head: true }).lte("due", now.toISOString()), "fsrs_due"),
+    // Check if core tables are accessible (use limit 1 instead of head-only count)
+    const safeTableCheck = async (table: string, label: string): Promise<boolean> => {
+      try {
+        const { error } = await supabase.from(table).select("id").limit(1);
+        if (error) {
+          checks.push({ name: `table_${label}`, status: "warning", message: `Tabela "${table}": ${error.message}` });
+          return false;
+        }
+        return true;
+      } catch (e) {
+        checks.push({ name: `table_${label}`, status: "warning", message: `Tabela "${table}" inacessível` });
+        return false;
+      }
+    };
+
+    const [revisoesOk, errorBankOk, temasOk, practiceOk, fsrsOk] = await Promise.all([
+      safeTableCheck("revisoes", "revisoes"),
+      safeTableCheck("error_bank", "error_bank"),
+      safeTableCheck("temas_estudados", "temas"),
+      safeTableCheck("practice_attempts", "practice"),
+      safeTableCheck("fsrs_cards", "fsrs"),
     ]);
 
-    const engineTablesOk = revisoesData !== null && errorBankData !== null && temasData !== null;
+    const engineTablesOk = revisoesOk && errorBankOk && temasOk;
     checks.push({
       name: "study_engine_tables",
       status: engineTablesOk ? "ok" : "critical",
       message: engineTablesOk
-        ? "Tabelas do Study Engine acessíveis e com dados."
+        ? "Tabelas do Study Engine acessíveis."
         : "Falha ao acessar tabelas críticas do Study Engine.",
     });
 
