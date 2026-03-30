@@ -132,6 +132,7 @@ const DashboardSidebar = () => {
   const { signOut } = useAuth();
   const { isAdmin } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
+  const { isStaff: isInstitutionalStaff } = useInstitution();
   const { isModuleEnabled } = useModuleAccess();
 
   // Only auto-open group with active route + "Principal" always open
