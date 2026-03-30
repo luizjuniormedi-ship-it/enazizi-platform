@@ -232,6 +232,7 @@ const ChatGPT = () => {
           temas_fracos: performance.temas_fracos,
         },
         error_bank: errorBankData.length > 0 ? errorBankData : undefined,
+        session_memory: sessionMemory.getMemoryPayload(),
       },
       onChunk: (fullText) => {
         setMessages(prev => {
