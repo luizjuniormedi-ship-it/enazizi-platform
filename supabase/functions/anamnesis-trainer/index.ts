@@ -290,9 +290,14 @@ Lembre-se: NUNCA repita pacientes anteriores. Varie todos os par√¢metros demogr√
       try {
         const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || content.match(/```\s*([\s\S]*?)\s*```/);
         parsed = JSON.parse(jsonMatch ? jsonMatch[1] : content);
+        // Ensure response field exists and is not raw JSON
+        if (!parsed.response || typeof parsed.response !== "string") {
+          parsed.response = "Hmm... pode repetir a pergunta?";
+        }
       } catch {
-        // Fallback: treat as plain text response
-        parsed = { response: content, categories_touched: [], empathy_score: 1, question_quality: 1 };
+        // Fallback: treat as plain text response, strip any JSON artifacts
+        const cleanContent = content.replace(/```json[\s\S]*?```/g, "").replace(/```[\s\S]*?```/g, "").replace(/[{}"\[\]]/g, "").trim();
+        parsed = { response: cleanContent || "Hmm... pode repetir a pergunta?", categories_touched: [], empathy_score: 1, question_quality: 1 };
       }
 
       return ok(parsed);
