@@ -385,10 +385,6 @@ const DailyPlan = () => {
                         onClick={() => goToFlashcards(review.tema, review.especialidade)}>
                         <FlipVertical className="h-3 w-3" /> Flashcards
                       </Button>
-                      <Button variant="ghost" size="sm" className="gap-1 text-[10px] h-6 px-2"
-                        onClick={() => { setPomodoroTopic(review.tema); setPomodoroOpen(true); }}>
-                        <Timer className="h-3 w-3" /> Pomodoro
-                      </Button>
                     </div>
                   )}
                 </div>
