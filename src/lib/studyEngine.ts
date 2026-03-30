@@ -463,7 +463,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     ];
     const unexplored = CORE_SPECIALTIES.filter((s) => !studiedSpecialties.has(s));
 
-    const isNewUser = temas.length === 0 && practiceAttempts.length === 0;
+    const isNewUser = temas.length === 0 && (practiceAttempts as any[]).length === 0;
     const maxNew = isNewUser ? Math.max(weights.maxNewTopics, 3) : weights.maxNewTopics;
     for (let i = 0; i < Math.min(unexplored.length, maxNew); i++) {
       addRec({
