@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   Brain, Clock, BookOpen, RefreshCw, CheckCircle2, Loader2, Zap,
   Target, FlipVertical, GraduationCap, Calendar, AlertTriangle,
-  Layers, Timer, ChevronDown, ArrowRight
+  Layers, ChevronDown, ArrowRight, Rocket, Play
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,8 +17,8 @@ import { useStudyEngine } from "@/hooks/useStudyEngine";
 import { encodeStudyContext, type StudyContext } from "@/lib/studyContext";
 import DailyPlanProgress from "@/components/daily-plan/DailyPlanProgress";
 import MasteryBadge, { getMasteryLevel } from "@/components/daily-plan/MasteryBadge";
-import PomodoroTimer from "@/components/daily-plan/PomodoroTimer";
 import MicroQuizDialog from "@/components/daily-plan/MicroQuizDialog";
+import { useMissionMode } from "@/hooks/useMissionMode";
 import SelfAssessmentDialog from "@/components/daily-plan/SelfAssessmentDialog";
 import type { ScheduledReview } from "@/components/daily-plan/DailyPlanTypes";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -50,9 +50,8 @@ const DailyPlan = () => {
   const [showOverflowReviews, setShowOverflowReviews] = useState(false);
   const [showOverflowTopics, setShowOverflowTopics] = useState(false);
 
-  // Pomodoro
-  const [pomodoroOpen, setPomodoroOpen] = useState(false);
-  const [pomodoroTopic, setPomodoroTopic] = useState("");
+  // Mission Mode integration
+  const { state: missionState, startMission, hasTasks: missionHasTasks } = useMissionMode();
 
   // Micro-quiz
   const [quizOpen, setQuizOpen] = useState(false);
@@ -386,10 +385,6 @@ const DailyPlan = () => {
                         onClick={() => goToFlashcards(review.tema, review.especialidade)}>
                         <FlipVertical className="h-3 w-3" /> Flashcards
                       </Button>
-                      <Button variant="ghost" size="sm" className="gap-1 text-[10px] h-6 px-2"
-                        onClick={() => { setPomodoroTopic(review.tema); setPomodoroOpen(true); }}>
-                        <Timer className="h-3 w-3" /> Pomodoro
-                      </Button>
                     </div>
                   )}
                 </div>
@@ -466,10 +461,6 @@ const DailyPlan = () => {
                         onClick={() => goToQuestions(topic.tema, topic.especialidade)}>
                         <Target className="h-3 w-3" /> Questões
                       </Button>
-                      <Button variant="ghost" size="sm" className="gap-1 text-[10px] h-6 px-2"
-                        onClick={() => { setPomodoroTopic(topic.tema); setPomodoroOpen(true); }}>
-                        <Timer className="h-3 w-3" /> Pomodoro
-                      </Button>
                     </div>
                   )}
                 </div>
@@ -532,6 +523,27 @@ const DailyPlan = () => {
         </div>
       )}
 
+      {/* ── Mission CTA — start full guided flow ── */}
+      {hasContent && missionState.status === "idle" && missionHasTasks && (
+        <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-background p-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Rocket className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-sm">Executar tudo como Missão</p>
+              <p className="text-[10px] text-muted-foreground">O sistema guia você passo a passo por todas as tarefas.</p>
+            </div>
+          </div>
+          <Button
+            className="w-full gap-2 font-semibold"
+            onClick={() => { startMission(); navigate("/dashboard/missao"); }}
+          >
+            <Play className="h-4 w-4" /> INICIAR MISSÃO DO DIA
+          </Button>
+        </div>
+      )}
+
       {/* Empty state */}
       {!hasContent && (
         <div className="text-center py-16 space-y-3">
@@ -545,9 +557,6 @@ const DailyPlan = () => {
           </Button>
         </div>
       )}
-
-      {/* Pomodoro Timer */}
-      <PomodoroTimer open={pomodoroOpen} onOpenChange={setPomodoroOpen} topic={pomodoroTopic} />
 
       {/* Micro Quiz */}
       {quizReview && (

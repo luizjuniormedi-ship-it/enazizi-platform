@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMissionMode } from "@/hooks/useMissionMode";
 import { buildStudyPath } from "@/lib/studyRouter";
@@ -8,8 +8,9 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
   Play, Pause, SkipForward, CheckCircle2, Trophy,
-  ArrowRight, X, Clock, Sparkles, Rocket, Target,
+  ArrowRight, X, Clock, Sparkles, Rocket, Target, ChevronDown,
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const TYPE_LABELS: Record<string, string> = {
   review: "Revisão",
@@ -37,6 +38,7 @@ export default function MissionMode() {
     completeCurrentTask, skipCurrentTask,
     pauseMission, resumeMission, endMission,
   } = useMissionMode();
+  const [taskListOpen, setTaskListOpen] = useState(false);
 
   // Redirect if no active mission
   useEffect(() => {
@@ -209,37 +211,45 @@ export default function MissionMode() {
               </Card>
             )}
 
-            {/* Task List */}
-            <div className="space-y-1.5">
-              {state.tasks.map((task, idx) => {
-                const isCompleted = state.completedIds.includes(task.id);
-                const isCurrent = idx === state.currentIndex;
-                return (
-                  <div
-                    key={task.id}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors ${
-                      isCurrent
-                        ? "bg-primary/10 border border-primary/30"
-                        : isCompleted
-                        ? "bg-muted/50 text-muted-foreground"
-                        : "bg-card/30"
-                    }`}
-                  >
-                    {isCompleted ? (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                    ) : isCurrent ? (
-                      <Target className="h-3.5 w-3.5 text-primary shrink-0" />
-                    ) : (
-                      <div className="h-3.5 w-3.5 rounded-full border border-border shrink-0" />
-                    )}
-                    <span className={`truncate ${isCompleted ? "line-through" : ""}`}>
-                      {task.topic}
-                    </span>
-                    <span className="ml-auto text-muted-foreground">{TYPE_ICONS[task.type]}</span>
-                  </div>
-                );
-              })}
-            </div>
+            {/* Task List — collapsible by default */}
+            <Collapsible open={taskListOpen} onOpenChange={setTaskListOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground text-xs">
+                  <span>Ver todas as tarefas ({state.tasks.length})</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${taskListOpen ? "rotate-180" : ""}`} />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-1.5 mt-1">
+                {state.tasks.map((task, idx) => {
+                  const isCompleted = state.completedIds.includes(task.id);
+                  const isCurrent = idx === state.currentIndex;
+                  return (
+                    <div
+                      key={task.id}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors ${
+                        isCurrent
+                          ? "bg-primary/10 border border-primary/30"
+                          : isCompleted
+                          ? "bg-muted/50 text-muted-foreground"
+                          : "bg-card/30"
+                      }`}
+                    >
+                      {isCompleted ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                      ) : isCurrent ? (
+                        <Target className="h-3.5 w-3.5 text-primary shrink-0" />
+                      ) : (
+                        <div className="h-3.5 w-3.5 rounded-full border border-border shrink-0" />
+                      )}
+                      <span className={`truncate ${isCompleted ? "line-through" : ""}`}>
+                        {task.topic}
+                      </span>
+                      <span className="ml-auto text-muted-foreground">{TYPE_ICONS[task.type]}</span>
+                    </div>
+                  );
+                })}
+              </CollapsibleContent>
+            </Collapsible>
 
             {/* Pause / Free mode */}
             <div className="flex gap-2 pt-2">
