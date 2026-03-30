@@ -182,6 +182,46 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
         </div>
       </div>
 
+      {/* Extreme Mode: Corrective Action Plan */}
+      {isExtremo && weakAreas.length > 0 && (
+        <div className="glass-card p-6 border-destructive/20">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <Target className="h-5 w-5 text-destructive" /> Plano Corretivo Pós-Prova
+          </h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Áreas com menos de 60% de acerto precisam de atenção imediata. Use o plano abaixo para direcionar seus estudos.
+          </p>
+          <div className="space-y-3">
+            {weakAreas.map(([area, { correct, total }], i) => {
+              const areaPct = Math.round((correct / total) * 100);
+              return (
+                <div key={area} className="p-3 rounded-lg bg-destructive/5 border border-destructive/10">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold">{i + 1}. {area}</span>
+                    <span className="text-xs text-destructive font-bold">{areaPct}%</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {areaPct < 30
+                      ? "Base teórica insuficiente. Comece pelo Tutor IA com revisão completa do tema."
+                      : areaPct < 50
+                      ? "Conceitos parciais. Revise os erros e pratique mais questões focadas."
+                      : "Quase lá. Foque nas pegadinhas e casos clínicos complexos."}
+                  </p>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => handleStudyWithTutor({ topic: area, statement: `Preciso revisar ${area} após resultado baixo na prova extrema`, options: [], correct: 0 })}>
+                      <GraduationCap className="h-3 w-3" /> Tutor IA
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => navigate(`/dashboard/banco-questoes?sc_topic=${encodeURIComponent(area)}&sc_objective=reforço`)}>
+                      <BarChart3 className="h-3 w-3" /> Questões
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Flagged questions */}
       {flaggedItems.length > 0 && (
         <div className="glass-card p-6">
