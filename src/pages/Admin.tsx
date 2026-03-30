@@ -283,7 +283,11 @@ const Admin = () => {
       )}
 
       <AdminStatsCards stats={stats} pendingCount={pendingCount} activeCount={activeCount} blockedCount={blockedCount} />
-      <AdminOnlineUsers stats={stats} />
+      <AdminOnlineUsers stats={stats} onUserClick={(userId) => {
+        const found = users.find(u => u.user_id === userId);
+        if (found) { setUserDetailDialog({ open: true, user: found }); }
+        else { toast({ title: "Usuário não encontrado na lista carregada" }); }
+      }} />
       <AdminPlanDistribution stats={stats} />
       <AdminDailyGenerationAlert />
       <AdminWebScrapingPanel />
