@@ -197,6 +197,13 @@ const Dashboard = () => {
       <DiagnosticSummaryCard />
 
       {/* ══════════════════════════════════════════
+          BLOCO 2.5 — NÍVEL POR ESPECIALIDADE
+         ══════════════════════════════════════════ */}
+      {!isNewUser && (
+        <Suspense fallback={<ChartFallback />}>
+          <SpecialtyLevelsCard />
+        </Suspense>
+      )}
           BLOCO 3 — REVISÕES E FRAQUEZAS
          ══════════════════════════════════════════ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
