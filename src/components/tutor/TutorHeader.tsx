@@ -1,4 +1,4 @@
-import { Maximize2, Minimize2, MoreVertical, Plus, History, Film, VolumeX, Volume2, HelpCircle, LogOut, Target } from "lucide-react";
+import { Maximize2, Minimize2, MoreVertical, Plus, History, HelpCircle, LogOut, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
@@ -8,10 +8,6 @@ interface TutorHeaderProps {
   setIsFullscreen: (v: boolean) => void;
   studyStarted: boolean;
   taxaAcerto: number;
-  showAvatar3D: boolean;
-  toggleAvatar3D: () => void;
-  autoSpeak: boolean;
-  toggleAutoSpeak: () => void;
   showHistory: boolean;
   setShowHistory: (v: boolean) => void;
   onFinishSession: () => void;
@@ -21,7 +17,6 @@ interface TutorHeaderProps {
 
 const TutorHeader = ({
   isFullscreen, setIsFullscreen, studyStarted, taxaAcerto,
-  showAvatar3D, toggleAvatar3D, autoSpeak, toggleAutoSpeak,
   showHistory, setShowHistory, onFinishSession, onNewSession, onShowOnboarding,
 }: TutorHeaderProps) => (
   <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2">
@@ -60,13 +55,6 @@ const TutorHeader = ({
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setShowHistory(!showHistory)}>
             <History className="h-4 w-4 mr-2" /> Histórico
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={toggleAvatar3D}>
-            <Film className="h-4 w-4 mr-2" /> {showAvatar3D ? "Ocultar Avatar" : "Mostrar Avatar"}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={toggleAutoSpeak}>
-            {autoSpeak ? <VolumeX className="h-4 w-4 mr-2" /> : <Volume2 className="h-4 w-4 mr-2" />}
-            {autoSpeak ? "Desativar auto-fala" : "Ativar auto-fala"}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onShowOnboarding}>
             <HelpCircle className="h-4 w-4 mr-2" /> Como usar

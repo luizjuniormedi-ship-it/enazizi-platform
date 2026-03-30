@@ -133,7 +133,7 @@ const App = () => (
                 <Route path="conquistas" element={<Achievements />} />
                 <Route path="anamnese" element={<AnamnesisTrainer />} />
                 <Route path="cronicas" element={<MedicalChronicles />} />
-                <Route path="feynman" element={<FeynmanTrainer />} />
+                <Route path="feynman" element={<Navigate to="/dashboard/chatgpt" replace />} />
                 <Route path="mentor" element={<AIMentor />} />
                 <Route path="planner" element={<SmartPlanner />} />
                 <Route path="missao" element={<MissionMode />} />

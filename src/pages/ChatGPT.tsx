@@ -8,7 +8,6 @@ import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
-import CinematicAvatar from "@/components/agents/CinematicAvatar";
 import { Trash2 } from "lucide-react";
 import { useSessionMemory } from "@/contexts/SessionMemoryContext";
 
@@ -20,8 +19,6 @@ import { useChatMessages } from "@/hooks/tutor/useChatMessages";
 import { useChatProgress } from "@/hooks/tutor/useChatProgress";
 import { useChatContext } from "@/hooks/tutor/useChatContext";
 import { useTutorPerformance } from "@/hooks/tutor/useTutorPerformance";
-import { useTutorAudio } from "@/hooks/tutor/useTutorAudio";
-import { useSpeechToText } from "@/hooks/tutor/useSpeechToText";
 
 import TutorHeader from "@/components/tutor/TutorHeader";
 import TutorOnboardingCard from "@/components/tutor/TutorOnboardingCard";
@@ -46,7 +43,6 @@ const ChatGPT = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [metricsCollapsed, setMetricsCollapsed] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showAvatar3D, setShowAvatar3D] = useState(() => localStorage.getItem("tutor-show-avatar3d") !== "false");
   const [changingTopic, setChangingTopic] = useState(false);
   const [newTopic, setNewTopic] = useState("");
 
@@ -62,14 +58,7 @@ const ChatGPT = () => {
     errorBankData, toggleUpload, buildUserContext } = context;
   const perf = useTutorPerformance(user?.id);
   const { performance, savePerformance, sessionQuestions, setSessionQuestions, sessionCorrect, setSessionCorrect, handleFinishSession } = perf;
-  const audio = useTutorAudio();
-  const { autoSpeak, isSpeaking, speakText, stopSpeaking, toggleAutoSpeak } = audio;
   const sessionMemory = useSessionMemory();
-
-  const handleTranscript = useCallback((transcript: string) => {
-    setInput(prev => prev ? `${prev} ${transcript}` : transcript);
-  }, []);
-  const stt = useSpeechToText(handleTranscript);
 
   // Session persistence
   const { pendingSession, checked: sessionChecked, saveSession: persistSession, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "chatgpt" });
@@ -244,9 +233,6 @@ const ChatGPT = () => {
         });
       },
       onComplete: async (finalText) => {
-        // TTS only after full stream
-        if (autoSpeak && finalText) speakText(finalText);
-
         // Save assistant message
         if (convId && finalText) {
           await saveMessage(convId, "assistant", finalText);
@@ -316,7 +302,7 @@ const ChatGPT = () => {
     setEnaziziStep(3);
     savePerformance({ tema_atual: t });
     saveEnaziziStep(3, t, performance, sessionQuestions);
-    sendMessage(`Quero estudar o tema: ${t}. Comece com o Bloco Técnico 1 (conceito e definição — explicação técnica baseada na literatura). Estou na etapa 3/13 do Protocolo ENAZIZI.`);
+    sendMessage(`Quero estudar o tema: ${t}. Comece com o Bloco Técnico 1 (conceito e definição — explicação técnica baseada na literatura). Estou na etapa 3/15 do Protocolo ENAZIZI.`);
   };
 
   const handleChangeTopic = () => {
@@ -381,10 +367,6 @@ const ChatGPT = () => {
     toast({ title: "Copiado!", description: "Texto copiado para a área de transferência." });
   };
 
-  const toggleAvatar3D = () => {
-    setShowAvatar3D(v => { const next = !v; localStorage.setItem("tutor-show-avatar3d", String(next)); return next; });
-  };
-
   const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Estudante";
   const nextPhase = getNextPhaseInfo(enaziziStep);
 
@@ -393,8 +375,6 @@ const ChatGPT = () => {
       <TutorHeader
         isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen}
         studyStarted={studyStarted} taxaAcerto={performance.taxa_acerto}
-        showAvatar3D={showAvatar3D} toggleAvatar3D={toggleAvatar3D}
-        autoSpeak={autoSpeak} toggleAutoSpeak={toggleAutoSpeak}
         showHistory={showHistory} setShowHistory={setShowHistory}
         onFinishSession={onFinishSession} onNewSession={onNewSession}
         onShowOnboarding={() => setShowOnboarding(true)}
@@ -448,15 +428,11 @@ const ChatGPT = () => {
             onPhaseAction={handlePhaseAction} nextPhase={nextPhase}
           />
 
-          {showAvatar3D && <CinematicAvatar isSpeaking={isSpeaking} compact className="h-32 sm:h-40 mb-2 rounded-xl" />}
-
           <TutorMessageList ref={scrollRef} messages={messages} isLoading={isLoading} onCopy={copyToClipboard} />
 
           <TutorInputBar
             input={input} setInput={setInput} isLoading={isLoading}
-            isSpeaking={isSpeaking} isListening={stt.isListening}
-            hasSpeechRecognition={stt.hasSpeechRecognition}
-            onSend={() => sendMessage(input)} onToggleListening={stt.toggleListening} onStopSpeaking={stopSpeaking}
+            onSend={() => sendMessage(input)}
           />
         </>
       )}

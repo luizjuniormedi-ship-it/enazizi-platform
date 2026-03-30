@@ -71,7 +71,7 @@ const navGroups: NavGroup[] = [
       { to: "/dashboard/gerar-flashcards", icon: FlipVertical, label: "Gerador Flashcards" },
       { to: "/dashboard/apostilas", icon: FileText, label: "Apostilas" },
       { to: "/dashboard/cronicas", icon: Scroll, label: "Crônicas Médicas" },
-      { to: "/dashboard/feynman", icon: Lightbulb, label: "Método Feynman" },
+      { to: "/dashboard/discursivas", icon: PenLine, label: "Discursivas" },
       { to: "/dashboard/discursivas", icon: PenLine, label: "Discursivas" },
       { to: "/dashboard/predictor", icon: TrendingUp, label: "Previsão" },
       { to: "/dashboard/proficiencia", icon: GraduationCap, label: "Proficiência" },
