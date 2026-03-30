@@ -202,7 +202,8 @@ const Simulados = () => {
 
   const startExamWithQuestions = (qs: SimQuestion[], config: any) => {
     setQuestions(qs);
-    const timeLeft = config.mode === "prova" ? qs.length * config.timePerQuestion * 60 : 0;
+    const isTimedMode = config.mode === "prova" || config.mode === "extremo";
+    const timeLeft = isTimedMode ? qs.length * config.timePerQuestion * 60 : 0;
     setRestoredState({ timeLeft });
     startTimeRef.current = new Date();
     setPhase("exam");
