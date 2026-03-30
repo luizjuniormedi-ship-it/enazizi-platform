@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMissionMode } from "@/hooks/useMissionMode";
+import { useStudyEngine } from "@/hooks/useStudyEngine";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { buildStudyPath } from "@/lib/studyRouter";
+import FocusHardMode from "@/components/study/FocusHardMode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
