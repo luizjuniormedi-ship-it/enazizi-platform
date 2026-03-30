@@ -190,6 +190,13 @@ interface FinalEval {
   improvements: string[];
   ideal_approach: string;
   ideal_prescription?: string;
+  physical_exam_expected?: {
+    inspection?: string[];
+    palpation?: string[];
+    auscultation?: string[];
+    vital_signs_expected?: string;
+    maneuvers?: { name: string; technique: string; positive_finding: string; indicates: string }[];
+  };
   xp_earned: number;
 }
 
