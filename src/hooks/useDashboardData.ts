@@ -50,6 +50,12 @@ interface PlanJson {
 }
 
 async function fetchDashboardData(userId: string) {
+ try {
+  const safeCount = async (fn: () => PromiseLike<{ count: number | null; error: any }>, label: string) => {
+    try { const { count, error } = await fn(); if (error) console.warn(`[Dashboard] ${label}:`, error.message); return count || 0; }
+    catch { return 0; }
+  };
+
   const [
     flashcardsRes, uploadsRes, tasksRes, plansRes, reviewsRes, profileRes,
     practiceRes, errorBankRes, pendingRevisoesRes, simuladosRes, discursivasRes,
