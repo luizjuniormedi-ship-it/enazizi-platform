@@ -72,7 +72,7 @@ async function fetchDashboardData(userId: string) {
     supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("is_global", true),
     supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("is_global", true),
     supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    supabase.from("simulation_history").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("simulation_sessions").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "finished"),
     supabase.from("anamnesis_results").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("summaries").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("chat_conversations").select("id, agent_type", { count: "exact" }).eq("user_id", userId),
