@@ -12,7 +12,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, userContext } = await req.json();
+    const { messages, userContext, session_memory } = await req.json();
 
     let systemPrompt = ENAZIZI_PROMPT;
     if (userContext) {
@@ -39,6 +39,14 @@ Estes são artigos REAIS indexados no PubMed. NÃO invente artigos.`;
       } catch (e) {
         console.error("PubMed enrichment failed (non-blocking):", e);
       }
+    }
+
+    if (session_memory) {
+      systemPrompt += `\n\n--- MEMÓRIA DE SESSÃO ---
+Último tema: ${session_memory.ultimo_tema || "nenhum"}
+Erros consecutivos: ${session_memory.erros_consecutivos || 0}
+Profundidade: ${session_memory.profundidade_resposta || "aprofundado"}
+--- FIM DA MEMÓRIA DE SESSÃO ---`;
     }
 
     const response = await aiFetch({

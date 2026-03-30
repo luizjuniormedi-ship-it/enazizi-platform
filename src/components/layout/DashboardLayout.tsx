@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import { SessionMemoryProvider } from "@/contexts/SessionMemoryContext";
 import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
 import { useLandscapeTablet } from "@/hooks/useLandscapeTablet";
 import DashboardSidebar from "./DashboardSidebar";
@@ -225,6 +226,7 @@ const DashboardLayout = () => {
   const location = useLocation();
 
   return (
+  <SessionMemoryProvider>
   <div className="flex min-h-[100dvh] min-h-screen bg-background w-full overflow-hidden">
     <DashboardSidebar />
     <div className="flex-1 flex flex-col min-w-0 w-full max-w-full">
@@ -266,6 +268,7 @@ const DashboardLayout = () => {
       <BottomTabBar />
     </div>
   </div>
+  </SessionMemoryProvider>
   );
 };
 

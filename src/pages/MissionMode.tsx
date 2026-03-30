@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMissionMode } from "@/hooks/useMissionMode";
+import { useStudyEngine } from "@/hooks/useStudyEngine";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { buildStudyPath } from "@/lib/studyRouter";
+import FocusHardMode from "@/components/study/FocusHardMode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -32,6 +36,8 @@ const TYPE_ICONS: Record<string, string> = {
 
 export default function MissionMode() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { adaptive } = useStudyEngine();
   const {
     state, currentTask, nextTask, progress,
     totalMinutes, completedMinutes,
@@ -39,6 +45,19 @@ export default function MissionMode() {
     pauseMission, resumeMission, endMission,
   } = useMissionMode();
   const [taskListOpen, setTaskListOpen] = useState(false);
+  const [useFocusHard, setUseFocusHard] = useState(false);
+
+  // Check if Focus Hard Mode should activate
+  useEffect(() => {
+    if (!user || !adaptive) return;
+    const checkFocusHard = async () => {
+      const { data: profile } = await supabase.from("profiles").select("exam_date").eq("user_id", user.id).maybeSingle();
+      const examDate = profile?.exam_date;
+      const daysToExam = examDate ? Math.ceil((new Date(examDate).getTime() - Date.now()) / 86400000) : 999;
+      setUseFocusHard(daysToExam <= 15 || (adaptive.approvalScore < 40 && adaptive.approvalScore > 0));
+    };
+    checkFocusHard();
+  }, [user, adaptive]);
 
   // Redirect if no active mission
   useEffect(() => {
@@ -87,6 +106,39 @@ export default function MissionMode() {
           </CardContent>
         </Card>
       </div>
+    );
+  }
+
+  // ── Focus Hard Mode (auto-activated) ──
+  if (useFocusHard && state.status === "active" && currentTask) {
+    const focusReason = adaptive?.approvalScore && adaptive.approvalScore < 40
+      ? "Score baixo — foco total necessário"
+      : "Prova próxima — concentração máxima";
+    return (
+      <FocusHardMode
+        taskTitle={currentTask.topic}
+        taskType={currentTask.type}
+        estimatedMinutes={currentTask.estimatedMinutes}
+        reason={focusReason}
+        onClose={() => { endMission(); navigate("/dashboard"); }}
+        onComplete={() => { completeCurrentTask(); }}
+      >
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">{TYPE_ICONS[currentTask.type] || "📋"}</span>
+            <Badge variant="secondary">{TYPE_LABELS[currentTask.type]}</Badge>
+          </div>
+          <p className="text-muted-foreground">{currentTask.reason}</p>
+          <Button
+            className="w-full gap-2 py-6"
+            size="lg"
+            onClick={() => navigate(buildStudyPath(currentTask, "mission"))}
+          >
+            <Play className="h-5 w-5" />
+            Iniciar Atividade
+          </Button>
+        </div>
+      </FocusHardMode>
     );
   }
 

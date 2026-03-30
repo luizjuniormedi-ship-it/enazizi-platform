@@ -13,7 +13,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, userContext, enazizi_progress, error_bank } = await req.json();
+    const { messages, userContext, enazizi_progress, error_bank, session_memory } = await req.json();
 
     let instructions = ENAZIZI_PROMPT;
 
@@ -69,6 +69,19 @@ NÃO repita estados anteriores. NÃO pule para estados futuros. Avance apenas UM
       }
       instructions += `\nUSE esses dados para reforçar temas fracos, priorizar revisão e gerar questões focadas nos pontos de erro.`;
       instructions += `\n--- FIM DO BANCO DE ERROS ---`;
+    }
+
+    if (session_memory) {
+      instructions += `\n\n--- MEMÓRIA DE SESSÃO ---
+Último tema: ${session_memory.ultimo_tema || "nenhum"}
+Última pergunta: ${session_memory.ultima_pergunta || "nenhuma"}
+Último erro: ${session_memory.ultimo_erro || "nenhum"}
+Erros consecutivos no tema atual: ${session_memory.erros_consecutivos || 0}
+Profundidade recomendada: ${session_memory.profundidade_resposta || "aprofundado"}
+Total erros na sessão: ${session_memory.total_erros_sessao || 0}
+Total acertos na sessão: ${session_memory.total_acertos_sessao || 0}
+${session_memory.erros_consecutivos >= 3 ? "\n⚠️ ALERTA DE TRAVAMENTO: O aluno errou 3+ vezes consecutivas neste tema. SIMPLIFIQUE a explicação." : ""}
+--- FIM DA MEMÓRIA DE SESSÃO ---`;
     }
 
     const allMessages = [{ role: "system", content: instructions }, ...messages];

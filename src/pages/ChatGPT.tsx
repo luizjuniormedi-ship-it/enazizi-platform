@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import CinematicAvatar from "@/components/agents/CinematicAvatar";
 import { Trash2 } from "lucide-react";
+import { useSessionMemory } from "@/contexts/SessionMemoryContext";
 
 import { FUNCTION_NAME, NON_MEDICAL_KEYWORDS, ensureSequentialInitialMessage } from "@/components/tutor/TutorConstants";
 import type { Msg } from "@/components/tutor/TutorConstants";
@@ -63,6 +64,7 @@ const ChatGPT = () => {
   const { performance, savePerformance, sessionQuestions, setSessionQuestions, sessionCorrect, setSessionCorrect, handleFinishSession } = perf;
   const audio = useTutorAudio();
   const { autoSpeak, isSpeaking, speakText, stopSpeaking, toggleAutoSpeak } = audio;
+  const sessionMemory = useSessionMemory();
 
   const handleTranscript = useCallback((transcript: string) => {
     setInput(prev => prev ? `${prev} ${transcript}` : transcript);
@@ -230,6 +232,7 @@ const ChatGPT = () => {
           temas_fracos: performance.temas_fracos,
         },
         error_bank: errorBankData.length > 0 ? errorBankData : undefined,
+        session_memory: sessionMemory.getMemoryPayload(),
       },
       onChunk: (fullText) => {
         setMessages(prev => {
@@ -257,6 +260,8 @@ const ChatGPT = () => {
               /a resposta (?:correta|certa) (?:é|seria|era)/i,
             ];
             const hasError = errorPatterns.some(p => p.test(finalText));
+            // Record in session memory
+            sessionMemory.recordAnswer(currentTopic, !hasError, text, hasError ? finalText.slice(0, 200) : undefined);
             if (hasError) {
               const subtemaMatch = finalText.match(/(?:subtema|tópico|sobre):\s*([^\n.]+)/i);
               const categoriaMatch = finalText.match(/\[ERRO_TIPO:(\w+)\]/i);
@@ -305,6 +310,7 @@ const ChatGPT = () => {
     setStudyStarted(true);
     setMetricsCollapsed(true);
     setCurrentTopic(t);
+    sessionMemory.recordTopicChange(t);
     setSessionQuestions(0);
     setSessionCorrect(0);
     setEnaziziStep(3);

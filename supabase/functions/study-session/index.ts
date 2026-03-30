@@ -294,11 +294,20 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, phase, topic, userContext, performanceData } = await req.json();
+    const { messages, phase, topic, userContext, performanceData, session_memory } = await req.json();
 
     let systemPrompt = getPhasePrompt(phase, topic, performanceData);
     if (userContext) {
       systemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
+    }
+
+    if (session_memory) {
+      systemPrompt += `\n\n--- MEMÓRIA DE SESSÃO ---
+Último tema: ${session_memory.ultimo_tema || "nenhum"}
+Erros consecutivos: ${session_memory.erros_consecutivos || 0}
+Profundidade: ${session_memory.profundidade_resposta || "aprofundado"}
+${session_memory.erros_consecutivos >= 3 ? "⚠️ TRAVAMENTO DETECTADO: Simplifique a explicação." : ""}
+--- FIM DA MEMÓRIA DE SESSÃO ---`;
     }
 
     const response = await aiFetch({

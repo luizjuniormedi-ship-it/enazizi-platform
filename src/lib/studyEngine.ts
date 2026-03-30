@@ -293,15 +293,20 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     const basePriority = isOverdue ? 95 : 80;
     const riskBonus = rev.risco_esquecimento === "alto" ? 5 : rev.risco_esquecimento === "medio" ? 2 : 0;
     const phaseBonus = weights.phase === "critico" ? 5 : 0;
+    // Aggressive: overdue > 3 days gets extra boost
+    const daysOverdue = isOverdue ? Math.max(0, Math.floor((Date.now() - new Date(rev.data_revisao).getTime()) / 86400000)) : 0;
+    const overdueBoost = daysOverdue > 3 ? 10 : 0;
 
     addRec({
       id: id("rev", i),
       type: "review",
       topic: tema,
       specialty: spec,
-      priority: cap(basePriority + riskBonus + phaseBonus - i),
+      priority: cap(basePriority + riskBonus + phaseBonus + overdueBoost - i),
       reason: isOverdue
-        ? `Revisão atrasada de "${tema}" — risco de esquecer!`
+        ? daysOverdue > 3
+          ? `⚠️ Revisão de "${tema}" atrasada ${daysOverdue} dias — prioridade máxima!`
+          : `Revisão atrasada de "${tema}" — risco de esquecer!`
         : `Revisão programada de "${tema}" para hoje.`,
       targetModule: "tutor",
       targetPath: "/dashboard/chatgpt",
@@ -314,9 +319,16 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   // ── 2. Error bank ────────────────────────────────────────────
   const errors = (errorBankRes.data || []) as any[];
   const errorLimit = weights.phase === "critico" ? 5 : 3;
+
+  // Aggressive priority: check if any topic has vezes_errado >= 5 with no mastery
+  const criticalErrors = errors.filter((e: any) => e.vezes_errado >= 5);
+  const hasCriticalBlock = criticalErrors.length > 0 && approvalScore < 50;
+
   for (let i = 0; i < Math.min(errors.length, errorLimit); i++) {
     const err = errors[i];
-    const priority = cap(70 + err.vezes_errado * 5 - i * 2 + (weights.phase === "critico" ? 10 : 0));
+    // Aggressive boost: +30 for 3+ errors, +15 for critical approval score
+    const aggressiveBoost = (err.vezes_errado >= 3 ? 30 : 0) + (approvalScore < 40 ? 15 : 0);
+    const priority = cap(70 + err.vezes_errado * 5 - i * 2 + (weights.phase === "critico" ? 10 : 0) + aggressiveBoost);
     addRec({
       id: id("err", i),
       type: "error_review",
@@ -324,7 +336,9 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       specialty: err.subtema || "Geral",
       subtopic: err.subtema || undefined,
       priority,
-      reason: `Você errou "${err.tema}" ${err.vezes_errado}x. Revise para fixar.`,
+      reason: err.vezes_errado >= 5
+        ? `⚠️ "${err.tema}" errado ${err.vezes_errado}x — bloqueio ativo até domínio.`
+        : `Você errou "${err.tema}" ${err.vezes_errado}x. Revise para fixar.`,
       targetModule: "tutor",
       targetPath: "/dashboard/chatgpt",
       estimatedMinutes: 10,
@@ -425,30 +439,33 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     });
   }
 
-  // ── 6. New topics ────────────────────────────────────────────
-  const temas = (temasRes.data || []) as any[];
-  const studiedSpecialties = new Set(temas.map((t: any) => t.especialidade));
-  const CORE_SPECIALTIES = [
-    "Clínica Médica", "Cirurgia", "Pediatria", "Ginecologia e Obstetrícia",
-    "Saúde Coletiva", "Medicina de Emergência",
-  ];
-  const unexplored = CORE_SPECIALTIES.filter((s) => !studiedSpecialties.has(s));
+  // ── 6. New topics (blocked if critical errors exist) ──────────
+  // Aggressive: if any topic has vezes_errado >= 5 and accuracy < 50%, block new topics
+  if (!hasCriticalBlock) {
+    const temas = (temasRes.data || []) as any[];
+    const studiedSpecialties = new Set(temas.map((t: any) => t.especialidade));
+    const CORE_SPECIALTIES = [
+      "Clínica Médica", "Cirurgia", "Pediatria", "Ginecologia e Obstetrícia",
+      "Saúde Coletiva", "Medicina de Emergência",
+    ];
+    const unexplored = CORE_SPECIALTIES.filter((s) => !studiedSpecialties.has(s));
 
-  const isNewUser = temas.length === 0 && practiceAttempts.length === 0;
-  const maxNew = isNewUser ? Math.max(weights.maxNewTopics, 3) : weights.maxNewTopics;
-  for (let i = 0; i < Math.min(unexplored.length, maxNew); i++) {
-    addRec({
-      id: id("new", i),
-      type: "new",
-      topic: unexplored[i],
-      specialty: unexplored[i],
-      priority: cap(isNewUser ? 80 - i * 5 : 35 - i * 5),
-      reason: `Você ainda não estudou "${unexplored[i]}". Comece pelo tutor!`,
-      targetModule: "tutor",
-      targetPath: "/dashboard/chatgpt",
-      estimatedMinutes: 30,
-      objective: "new_content",
-    });
+    const isNewUser = temas.length === 0 && practiceAttempts.length === 0;
+    const maxNew = isNewUser ? Math.max(weights.maxNewTopics, 3) : weights.maxNewTopics;
+    for (let i = 0; i < Math.min(unexplored.length, maxNew); i++) {
+      addRec({
+        id: id("new", i),
+        type: "new",
+        topic: unexplored[i],
+        specialty: unexplored[i],
+        priority: cap(isNewUser ? 80 - i * 5 : 35 - i * 5),
+        reason: `Você ainda não estudou "${unexplored[i]}". Comece pelo tutor!`,
+        targetModule: "tutor",
+        targetPath: "/dashboard/chatgpt",
+        estimatedMinutes: 30,
+        objective: "new_content",
+      });
+    }
   }
 
   // ── 7. FSRS due flashcard reviews ────────────────────────────
