@@ -110,6 +110,8 @@ Responda em JSON:
 Avalie o desempenho COMPLETO da anamnese E do raciocínio clínico do aluno.
 O aluno fornecerá sua hipótese diagnóstica, diagnósticos diferenciais e conduta proposta.
 
+Com base na anamnese coletada e no diagnóstico oculto, descreva TAMBÉM os achados de exame físico esperados, manobras específicas com nome técnico, e sinais vitais alterados.
+
 Responda em JSON:
 {
   "final_score": 0-100,
@@ -139,6 +141,15 @@ Responda em JSON:
   "correct_diagnosis": "o diagnóstico correto do caso",
   "ideal_conduct": "a conduta ideal completa (exames, tratamento, orientações, encaminhamentos)",
   "diagnostic_reasoning": "explicação do raciocínio clínico correto, conectando achados da anamnese ao diagnóstico",
+  "physical_exam_expected": {
+    "inspection": ["achado visual → significado clínico"],
+    "palpation": ["achado palpável → significado clínico"],
+    "maneuvers": [
+      { "name": "Nome da Manobra", "technique": "Como realizar a manobra", "positive_finding": "Achado positivo esperado", "indicates": "O que indica clinicamente" }
+    ],
+    "auscultation": ["achado auscultatório → significado (quando aplicável)"],
+    "vital_signs_expected": "sinais vitais esperados/alterados para este caso"
+  },
   "ideal_anamnesis": "texto COMPLETO da anamnese ideal para este caso, no formato acadêmico de prontuário",
   "clinical_reasoning": "que diagnósticos poderiam ser levantados com uma anamnese completa",
   "strengths": ["pontos fortes da entrevista"],
