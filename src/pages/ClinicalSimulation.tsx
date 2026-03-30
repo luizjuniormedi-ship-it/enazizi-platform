@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
 import { supabase } from "@/integrations/supabase/client";
@@ -298,6 +298,7 @@ const highlightVitals = (children: React.ReactNode): React.ReactNode => {
 
 const ClinicalSimulation = () => {
   const { session, user } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { addXp } = useGamification();
   const [searchParams] = useSearchParams();
@@ -2248,6 +2249,28 @@ const ClinicalSimulation = () => {
               </p>
             </CardContent>
           </Card>
+
+          {/* Tutor IA Link */}
+          {finalEval.correct_diagnosis && (
+            <Button
+              onClick={() => {
+                const missed = finalEval.differential_diagnosis
+                  ?.filter(d => !d.student_considered)
+                  .map(d => d.diagnosis)
+                  .join(", ") || "N/A";
+                navigate("/dashboard/chatgpt", {
+                  state: {
+                    initialMessage: `🔬 MODO REVISÃO CLÍNICA\n\nO aluno teve dificuldade no seguinte caso clínico:\n- Especialidade: ${specialty}\n- Diagnóstico correto: ${finalEval.correct_diagnosis}\n- Diferenciais não considerados: ${missed}\n- Pontos fracos: ${finalEval.improvements?.join(", ") || "N/A"}\n\nExplique detalhadamente o raciocínio clínico, os diagnósticos diferenciais e como chegar ao diagnóstico correto.`,
+                  },
+                });
+              }}
+              variant="outline"
+              className="w-full border-primary/30 hover:bg-primary/10 gap-2"
+            >
+              <BookOpen className="h-4 w-4 text-primary" />
+              📚 Aprofundar no Tutor IA
+            </Button>
+          )}
 
           {/* Actions */}
           <div className="flex gap-3 flex-wrap">

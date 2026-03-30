@@ -139,6 +139,9 @@ Responda em JSON:
     "partially_covered": ["categorias abordadas superficialmente"]
   },
   "correct_diagnosis": "o diagnóstico correto do caso",
+  "differential_diagnosis": [
+    { "diagnosis": "nome do diagnóstico diferencial", "reasoning": "por que considerar este diagnóstico", "how_to_rule_out": "como descartar (exames, achados que diferenciam)", "student_considered": true/false }
+  ],
   "ideal_conduct": "a conduta ideal completa (exames, tratamento, orientações, encaminhamentos)",
   "diagnostic_reasoning": "explicação do raciocínio clínico correto, conectando achados da anamnese ao diagnóstico",
   "physical_exam_expected": {

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
 import { logErrorToBank } from "@/lib/errorBankLogger";
@@ -165,6 +165,13 @@ interface EvalCategory {
   feedback: string;
 }
 
+interface DifferentialDiagnosis {
+  diagnosis: string;
+  reasoning: string;
+  how_to_rule_out: string;
+  student_considered: boolean;
+}
+
 interface FinalEval {
   final_score: number;
   grade: string;
@@ -174,6 +181,7 @@ interface FinalEval {
   ideal_anamnesis: string;
   clinical_reasoning: string;
   correct_diagnosis: string;
+  differential_diagnosis?: DifferentialDiagnosis[];
   ideal_conduct: string;
   diagnostic_reasoning: string;
   strengths: string[];
@@ -220,6 +228,7 @@ const TypingDots = () => (
 
 const AnamnesisTrainer = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { addXp } = useGamification();
   const isMobile = useIsMobile();
@@ -959,6 +968,75 @@ const AnamnesisTrainer = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Differential Diagnosis */}
+        {evalData.differential_diagnosis && evalData.differential_diagnosis.length > 0 && (
+          <Card className="glass-card border-purple-500/20">
+            <CardContent className="p-6">
+              <h2 className="font-semibold mb-4 flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-purple-400" /> Diagnósticos Diferenciais
+              </h2>
+              <p className="text-xs text-muted-foreground mb-3">
+                Diagnósticos que deveriam ser considerados neste caso.
+              </p>
+              <div className="space-y-3">
+                {evalData.differential_diagnosis.map((dd, i) => (
+                  <div
+                    key={i}
+                    className={`p-3 rounded-lg border ${
+                      dd.student_considered
+                        ? "bg-green-500/5 border-green-500/30"
+                        : "bg-muted/30 border-border/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      {dd.student_considered ? (
+                        <CheckCircle className="h-4 w-4 text-green-400 shrink-0" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-muted-foreground shrink-0" />
+                      )}
+                      <span className="text-sm font-bold">{dd.diagnosis}</span>
+                      <Badge
+                        variant={dd.student_considered ? "default" : "outline"}
+                        className={`text-[10px] ml-auto ${dd.student_considered ? "bg-green-500/20 text-green-400" : ""}`}
+                      >
+                        {dd.student_considered ? "Considerado" : "Não considerado"}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground ml-6 mb-1">
+                      <span className="font-semibold">Por que considerar:</span> {dd.reasoning}
+                    </p>
+                    <p className="text-xs text-muted-foreground ml-6">
+                      <span className="font-semibold">Como descartar:</span> {dd.how_to_rule_out}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Tutor IA Link */}
+        {evalData.correct_diagnosis && (
+          <Button
+            onClick={() => {
+              const missed = evalData.differential_diagnosis
+                ?.filter(d => !d.student_considered)
+                .map(d => d.diagnosis)
+                .join(", ") || "N/A";
+              navigate("/dashboard/chatgpt", {
+                state: {
+                  initialMessage: `🔬 MODO REVISÃO CLÍNICA\n\nO aluno teve dificuldade no seguinte caso de anamnese:\n- Especialidade: ${specialty}\n- Diagnóstico correto: ${evalData.correct_diagnosis}\n- Diferenciais não considerados: ${missed}\n- Pontos fracos: ${evalData.improvements?.join(", ") || "N/A"}\n\nExplique detalhadamente o raciocínio clínico, os diagnósticos diferenciais e como chegar ao diagnóstico correto.`,
+                },
+              });
+            }}
+            variant="outline"
+            className="w-full border-primary/30 hover:bg-primary/10 gap-2"
+          >
+            <BookOpen className="h-4 w-4 text-primary" />
+            📚 Aprofundar no Tutor IA
+          </Button>
+        )}
 
         {/* Missed / Strengths / Improvements */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
