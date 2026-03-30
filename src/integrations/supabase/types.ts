@@ -417,6 +417,88 @@ export type Database = {
           },
         ]
       }
+      class_members: {
+        Row: {
+          class_id: string
+          id: string
+          is_active: boolean | null
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          class_id: string
+          id?: string
+          is_active?: boolean | null
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          class_id?: string
+          id?: string
+          is_active?: boolean | null
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_members_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classes: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          institution_id: string
+          invite_code: string | null
+          is_active: boolean | null
+          name: string
+          period: number | null
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          institution_id: string
+          invite_code?: string | null
+          is_active?: boolean | null
+          name: string
+          period?: number | null
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          institution_id?: string
+          invite_code?: string | null
+          is_active?: boolean | null
+          name?: string
+          period?: number | null
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classes_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clinical_cases: {
         Row: {
           clinical_history: string
@@ -1162,6 +1244,77 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      institution_members: {
+        Row: {
+          id: string
+          institution_id: string
+          is_active: boolean | null
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          institution_id: string
+          is_active?: boolean | null
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          institution_id?: string
+          is_active?: boolean | null
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "institution_members_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      institutions: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          max_users: number | null
+          name: string
+          settings_json: Json | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          max_users?: number | null
+          name: string
+          settings_json?: Json | null
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          max_users?: number | null
+          name?: string
+          settings_json?: Json | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       medical_domain_map: {
         Row: {
@@ -3016,6 +3169,15 @@ export type Database = {
       }
       student_has_study_assignment_result: {
         Args: { _assignment_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_institution_id: { Args: { _user_id: string }; Returns: string }
+      user_is_institution_staff: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
+      users_share_institution: {
+        Args: { _target_user_id: string; _user_id: string }
         Returns: boolean
       }
     }
