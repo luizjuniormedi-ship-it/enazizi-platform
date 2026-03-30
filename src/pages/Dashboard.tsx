@@ -198,7 +198,7 @@ const Dashboard = () => {
       {/* ══════════════════════════════════════════
           BLOCO 2 — PROGRESSO E APROVAÇÃO
          ══════════════════════════════════════════ */}
-      {!isNewUser && <ApprovalScoreCard />}
+      {!isNewUser && <SafeCard name="ApprovalScore"><ApprovalScoreCard /></SafeCard>}
 
       {/* Nivelamento — only if user has completed it */}
       <DiagnosticSummaryCard />
