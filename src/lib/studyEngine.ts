@@ -455,7 +455,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   // ── 6. New topics (blocked if critical errors exist) ──────────
   // Aggressive: if any topic has vezes_errado >= 5 and accuracy < 50%, block new topics
   if (!hasCriticalBlock) {
-    const temas = (temasRes.data || []) as any[];
+    const temas = (temasData || []) as any[];
     const studiedSpecialties = new Set(temas.map((t: any) => t.especialidade));
     const CORE_SPECIALTIES = [
       "Clínica Médica", "Cirurgia", "Pediatria", "Ginecologia e Obstetrícia",
