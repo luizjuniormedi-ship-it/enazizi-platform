@@ -314,9 +314,16 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   // ── 2. Error bank ────────────────────────────────────────────
   const errors = (errorBankRes.data || []) as any[];
   const errorLimit = weights.phase === "critico" ? 5 : 3;
+
+  // Aggressive priority: check if any topic has vezes_errado >= 5 with no mastery
+  const criticalErrors = errors.filter((e: any) => e.vezes_errado >= 5);
+  const hasCriticalBlock = criticalErrors.length > 0 && approvalScore < 50;
+
   for (let i = 0; i < Math.min(errors.length, errorLimit); i++) {
     const err = errors[i];
-    const priority = cap(70 + err.vezes_errado * 5 - i * 2 + (weights.phase === "critico" ? 10 : 0));
+    // Aggressive boost: +30 for 3+ errors, +15 for critical approval score
+    const aggressiveBoost = (err.vezes_errado >= 3 ? 30 : 0) + (approvalScore < 40 ? 15 : 0);
+    const priority = cap(70 + err.vezes_errado * 5 - i * 2 + (weights.phase === "critico" ? 10 : 0) + aggressiveBoost);
     addRec({
       id: id("err", i),
       type: "error_review",
@@ -324,7 +331,9 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       specialty: err.subtema || "Geral",
       subtopic: err.subtema || undefined,
       priority,
-      reason: `Você errou "${err.tema}" ${err.vezes_errado}x. Revise para fixar.`,
+      reason: err.vezes_errado >= 5
+        ? `⚠️ "${err.tema}" errado ${err.vezes_errado}x — bloqueio ativo até domínio.`
+        : `Você errou "${err.tema}" ${err.vezes_errado}x. Revise para fixar.`,
       targetModule: "tutor",
       targetPath: "/dashboard/chatgpt",
       estimatedMinutes: 10,
