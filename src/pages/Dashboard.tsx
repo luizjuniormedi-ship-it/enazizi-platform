@@ -193,7 +193,7 @@ const Dashboard = () => {
       {/* ══════════════════════════════════════════
           BLOCO 1.5 — MODO ADAPTATIVO (feedback sutil + ação)
          ══════════════════════════════════════════ */}
-      {!isNewUser && <AdaptiveModeCard />}
+      {!isNewUser && <SafeCard name="AdaptiveMode"><AdaptiveModeCard /></SafeCard>}
 
       {/* ══════════════════════════════════════════
           BLOCO 2 — PROGRESSO E APROVAÇÃO
