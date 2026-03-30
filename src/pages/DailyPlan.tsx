@@ -50,9 +50,8 @@ const DailyPlan = () => {
   const [showOverflowReviews, setShowOverflowReviews] = useState(false);
   const [showOverflowTopics, setShowOverflowTopics] = useState(false);
 
-  // Pomodoro
-  const [pomodoroOpen, setPomodoroOpen] = useState(false);
-  const [pomodoroTopic, setPomodoroTopic] = useState("");
+  // Mission Mode integration
+  const { state: missionState, startMission, hasTasks: missionHasTasks } = useMissionMode();
 
   // Micro-quiz
   const [quizOpen, setQuizOpen] = useState(false);
