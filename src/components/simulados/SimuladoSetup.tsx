@@ -113,10 +113,10 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
           {/* Mode toggle */}
           <div>
             <label className="text-sm font-semibold mb-3 block">Modo do Simulado</label>
-            <div className="flex gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <button
                 onClick={() => setMode("estudo")}
-                className={`flex-1 p-4 rounded-xl border-2 transition-all text-left ${
+                className={`p-4 rounded-xl border-2 transition-all text-left ${
                   mode === "estudo"
                     ? "border-primary bg-primary/10"
                     : "border-border bg-secondary/30 hover:border-primary/30"
@@ -126,11 +126,11 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                   <BookOpen className="h-5 w-5 text-primary" />
                   <span className="font-semibold text-sm">Modo Estudo</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Feedback imediato após cada resposta. Sem cronômetro. Ideal para aprender.</p>
+                <p className="text-xs text-muted-foreground">Feedback imediato. Sem cronômetro. Ideal para aprender.</p>
               </button>
               <button
                 onClick={() => setMode("prova")}
-                className={`flex-1 p-4 rounded-xl border-2 transition-all text-left ${
+                className={`p-4 rounded-xl border-2 transition-all text-left ${
                   mode === "prova"
                     ? "border-primary bg-primary/10"
                     : "border-border bg-secondary/30 hover:border-primary/30"
@@ -140,7 +140,26 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                   <Timer className="h-5 w-5 text-primary" />
                   <span className="font-semibold text-sm">Modo Prova</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Cronômetro ativo. Resultado só no final. Simula condições reais.</p>
+                <p className="text-xs text-muted-foreground">Cronômetro ativo. Resultado só no final.</p>
+              </button>
+              <button
+                onClick={() => {
+                  setMode("extremo");
+                  setDifficulty("dificil");
+                  if (!customCount && questionCount < 50) setQuestionCount(50);
+                  setTimePerQuestion(2);
+                }}
+                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  mode === "extremo"
+                    ? "border-destructive bg-destructive/10"
+                    : "border-border bg-secondary/30 hover:border-destructive/30"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <Skull className="h-5 w-5 text-destructive" />
+                  <span className="font-semibold text-sm">Modo Extremo</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Prova real. 50+ questões. Dificuldade alta. Pressão máxima.</p>
               </button>
             </div>
           </div>
