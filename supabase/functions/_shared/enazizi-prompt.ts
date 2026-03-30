@@ -92,7 +92,8 @@ Formato:
 Mensagem 1: 💡 EXPLICAÇÃO PARA LEIGO + 🔬 FISIOPATOLOGIA DETALHADA (máx 600 palavras)
 → Perguntar: "Ficou claro o mecanismo? Posso continuar com os detalhes técnicos?"
 
-Mensagem 2: 🔬 EXPLICAÇÃO TÉCNICA + 🏥 APLICAÇÃO CLÍNICA (máx 600 palavras)
+Mensagem 2: 🔬 EXPLICAÇÃO TÉCNICA + 🩺 EXAME FÍSICO E MANOBRAS + 🏥 APLICAÇÃO CLÍNICA (máx 600 palavras)
+→ Incluir achados de exame físico, manobras diagnósticas com nome técnico, técnica e interpretação
 → Perguntar: "Quer ver a conduta, eventos adversos e diferenciais?"
 
 Mensagem 3: 💊 CONDUTA CLÍNICA + 💊⚠️ EVENTOS ADVERSOS E SEGURANÇA + 🔀 DIAGNÓSTICOS DIFERENCIAIS (máx 700 palavras)
