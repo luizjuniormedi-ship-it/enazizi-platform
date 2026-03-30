@@ -64,7 +64,7 @@ const TutorStepTracker = ({
               <TooltipContent side="bottom" className="text-xs max-w-[200px]">
                 {nextPhase ? (
                   <>
-                    <p className="font-semibold">{nextPhase.icon} Etapa {enaziziStep}/14</p>
+                    <p className="font-semibold">{nextPhase.icon} Etapa {enaziziStep}/15</p>
                     <p className="text-muted-foreground">{nextPhase.desc}</p>
                   </>
                 ) : <p>Todas as etapas concluídas!</p>}
