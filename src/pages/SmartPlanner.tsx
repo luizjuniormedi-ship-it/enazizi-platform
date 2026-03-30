@@ -15,7 +15,7 @@ import {
 import CronogramaNovoTema from "@/components/cronograma/CronogramaNovoTema";
 import CronogramaTemas from "@/components/cronograma/CronogramaTemas";
 import CronogramaHistorico from "@/components/cronograma/CronogramaHistorico";
-import CronogramaRevisaoAtiva from "@/components/cronograma/CronogramaRevisaoAtiva";
+import { useNavigate } from "react-router-dom";
 import StudyPlanContent from "@/components/cronograma/StudyPlanContent";
 import { syncTemasToModules, updateStudyPerformanceContext } from "@/lib/cronogramaSync";
 
