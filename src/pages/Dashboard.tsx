@@ -46,6 +46,7 @@ const EndOfDaySummary = lazy(() => import("@/components/dashboard/EndOfDaySummar
 // Lazy load heavy chart/analytics components
 const StreakCalendar = lazy(() => import("@/components/dashboard/StreakCalendar"));
 const SpecialtyProgressCard = lazy(() => import("@/components/dashboard/SpecialtyProgressCard"));
+const SpecialtyLevelsCard = lazy(() => import("@/components/dashboard/SpecialtyLevelsCard"));
 const DashboardCharts = lazy(() => import("@/components/dashboard/DashboardCharts"));
 const WeeklyProgressCard = lazy(() => import("@/components/dashboard/WeeklyProgressCard"));
 const MiniLeaderboard = lazy(() => import("@/components/dashboard/MiniLeaderboard"));
@@ -195,6 +196,14 @@ const Dashboard = () => {
       {/* Nivelamento — only if user has completed it */}
       <DiagnosticSummaryCard />
 
+      {/* ══════════════════════════════════════════
+          BLOCO 2.5 — NÍVEL POR ESPECIALIDADE
+         ══════════════════════════════════════════ */}
+      {!isNewUser && (
+        <Suspense fallback={<ChartFallback />}>
+          <SpecialtyLevelsCard />
+        </Suspense>
+      )}
       {/* ══════════════════════════════════════════
           BLOCO 3 — REVISÕES E FRAQUEZAS
          ══════════════════════════════════════════ */}
