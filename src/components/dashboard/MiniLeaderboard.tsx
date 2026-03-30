@@ -1,84 +1,68 @@
 import { useEffect, useState } from "react";
-import { Crown, ChevronRight, Trophy } from "lucide-react";
+import { Crown, ChevronRight, TrendingUp, ArrowUp, ArrowDown, Minus, Flame } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface RankEntry {
-  userId: string;
-  displayName: string;
-  weeklyXp: number;
-  xp: number;
-  level: number;
+interface RankInsight {
+  category: string;
+  rank: number;
+  delta: number;
+  percentile: number;
+  score: number;
 }
+
+const categoryLabels: Record<string, { label: string; emoji: string }> = {
+  consistency: { label: "Constância", emoji: "🔥" },
+  evolution: { label: "Evolução", emoji: "📈" },
+  performance: { label: "Desempenho", emoji: "🏆" },
+  practical: { label: "Prática", emoji: "🩺" },
+};
+
+const motivationalMessages = [
+  { check: (d: number) => d > 3, msg: "Evolução incrível! Subiu {d} posições 🚀" },
+  { check: (d: number) => d > 0, msg: "Subiu {d} posição(ões) — continue assim! 💪" },
+  { check: (d: number) => d === 0, msg: "Mantendo posição — consistência é chave! 🎯" },
+  { check: () => true, msg: "Cada sessão te aproxima do topo! 📚" },
+];
 
 const MiniLeaderboard = () => {
   const { user } = useAuth();
-  const [ranking, setRanking] = useState<RankEntry[]>([]);
+  const [insights, setInsights] = useState<RankInsight[]>([]);
+  const [bestCategory, setBestCategory] = useState<RankInsight | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userRank, setUserRank] = useState<number | null>(null);
-  const [isWeekly, setIsWeekly] = useState(true);
 
   useEffect(() => {
+    if (!user) return;
     const load = async () => {
-      const now = new Date().toISOString();
+      const today = new Date().toISOString().split("T")[0];
 
-      // Only count weekly_xp for users whose reset hasn't passed yet (current week)
-      const { data } = await supabase
-        .from("user_gamification")
-        .select("user_id, weekly_xp, xp, level, weekly_reset_at")
-        .order("weekly_xp", { ascending: false })
-        .limit(20);
+      const { data: snapshot } = await supabase
+        .from("ranking_snapshots")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("snapshot_date", today)
+        .maybeSingle();
 
-      if (!data || data.length === 0) {
+      if (!snapshot) {
+        // Fallback to old XP ranking
         setLoading(false);
         return;
       }
 
-      // Zero out weekly_xp for users whose week already expired
-      const adjusted = data.map((r: any) => ({
-        ...r,
-        weekly_xp: r.weekly_reset_at && new Date(r.weekly_reset_at) > new Date() ? r.weekly_xp : 0,
-      }));
+      const cats: RankInsight[] = [
+        { category: "consistency", rank: snapshot.consistency_rank || 0, delta: snapshot.consistency_rank_delta || 0, percentile: snapshot.percentile || 50, score: Number(snapshot.consistency_score) || 0 },
+        { category: "evolution", rank: snapshot.evolution_rank || 0, delta: snapshot.evolution_rank_delta || 0, percentile: snapshot.percentile || 50, score: Number(snapshot.evolution_score) || 0 },
+        { category: "performance", rank: snapshot.performance_rank || 0, delta: snapshot.performance_rank_delta || 0, percentile: snapshot.percentile || 50, score: Number(snapshot.performance_score) || 0 },
+        { category: "practical", rank: snapshot.practical_rank || 0, delta: snapshot.practical_rank_delta || 0, percentile: snapshot.percentile || 50, score: Number(snapshot.practical_score) || 0 },
+      ];
 
-      const hasWeeklyXp = adjusted.some((r: any) => r.weekly_xp > 0);
-      let finalData: any[];
+      setInsights(cats);
 
-      if (!hasWeeklyXp) {
-        finalData = [...adjusted].sort((a: any, b: any) => b.xp - a.xp).slice(0, 5);
-        setIsWeekly(false);
-      } else {
-        finalData = [...adjusted].sort((a: any, b: any) => b.weekly_xp - a.weekly_xp).slice(0, 5);
-        setIsWeekly(true);
-      }
-
-      const userIds = finalData.map((r: any) => r.user_id);
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, display_name")
-        .in("user_id", userIds);
-
-      const nameMap = new Map((profiles || []).map((p: any) => [p.user_id, p.display_name]));
-
-      const entries = finalData.map((r: any) => ({
-        userId: r.user_id,
-        displayName: nameMap.get(r.user_id) || "Anônimo",
-        weeklyXp: r.weekly_xp,
-        xp: r.xp,
-        level: r.level,
-      }));
-
-      setRanking(entries);
-
-      const idx = entries.findIndex((e) => e.userId === user?.id);
-      if (idx >= 0) {
-        setUserRank(idx + 1);
-      } else {
-        // User not in top 5; estimate position
-        const activeCount = adjusted.filter((r: any) => (hasWeeklyXp ? r.weekly_xp : r.xp) > 0).length;
-        setUserRank(activeCount ? activeCount + 1 : null);
-      }
+      // Best category = lowest rank number (highest position)
+      const best = [...cats].filter(c => c.rank > 0).sort((a, b) => a.rank - b.rank)[0] || cats[0];
+      setBestCategory(best);
 
       setLoading(false);
     };
@@ -96,76 +80,83 @@ const MiniLeaderboard = () => {
     );
   }
 
-  const medals = ["🥇", "🥈", "🥉"];
+  // If no snapshot data, show fallback encouragement
+  if (!bestCategory || insights.length === 0) {
+    return (
+      <div className="glass-card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Crown className="h-5 w-5 text-amber-500" />
+            Ranking
+          </h2>
+          <Link to="/dashboard/conquistas" className="text-xs text-primary hover:underline flex items-center gap-0.5">
+            Ver ranking <ChevronRight className="h-3 w-3" />
+          </Link>
+        </div>
+        <div className="text-center py-6">
+          <div className="text-3xl mb-2">🏆</div>
+          <p className="text-sm text-muted-foreground">
+            Continue estudando para aparecer no ranking!
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const getDeltaMessage = (delta: number) => {
+    const m = motivationalMessages.find((m) => m.check(delta));
+    return m ? m.msg.replace("{d}", String(Math.abs(delta))) : "";
+  };
 
   return (
     <div className="glass-card p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold flex items-center gap-2">
-          {isWeekly ? (
-            <Crown className="h-5 w-5 text-amber-500" />
-          ) : (
-            <Trophy className="h-5 w-5 text-amber-500" />
-          )}
-          {isWeekly ? "Ranking Semanal" : "Ranking Geral"}
+          <Crown className="h-5 w-5 text-amber-500" />
+          Seu Ranking
         </h2>
-        <Link
-          to="/dashboard/conquistas"
-          className="text-xs text-primary hover:underline flex items-center gap-0.5"
-        >
-          Ver tudo <ChevronRight className="h-3 w-3" />
+        <Link to="/dashboard/rankings" className="text-xs text-primary hover:underline flex items-center gap-0.5">
+          Ver completo <ChevronRight className="h-3 w-3" />
         </Link>
       </div>
 
-      {ranking.length === 0 ? (
-        <div className="text-center py-6">
-          <div className="text-3xl mb-2">🏆</div>
-          <p className="text-sm text-muted-foreground">
-            Comece a estudar para aparecer no ranking!
+      {/* Best position highlight */}
+      <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 mb-3 text-center">
+        <p className="text-xs text-muted-foreground mb-1">
+          {categoryLabels[bestCategory.category]?.emoji} Melhor posição
+        </p>
+        <p className="text-2xl font-bold text-primary">#{bestCategory.rank}</p>
+        <p className="text-xs font-medium">{categoryLabels[bestCategory.category]?.label}</p>
+        {bestCategory.delta !== 0 && (
+          <p className={`text-xs mt-1 flex items-center justify-center gap-1 ${bestCategory.delta > 0 ? "text-emerald-600" : "text-destructive"}`}>
+            {bestCategory.delta > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+            {bestCategory.delta > 0 ? "+" : ""}{bestCategory.delta} vs. ontem
           </p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {ranking.map((r, i) => {
-            const isMe = r.userId === user?.id;
-            const displayXp = isWeekly ? r.weeklyXp : r.xp;
-            return (
-              <div
-                key={r.userId}
-                className={`flex items-center gap-3 p-2.5 rounded-lg transition-colors ${
-                  isMe
-                    ? "bg-primary/10 border border-primary/20"
-                    : "bg-secondary/30"
-                }`}
-              >
-                <span className="text-lg w-7 text-center font-bold">
-                  {i < 3 ? medals[i] : i + 1}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">
-                    {isMe ? "Você" : r.displayName}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">
-                    Nível {r.level}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-bold text-primary">
-                    {isWeekly ? `+${displayXp}` : displayXp.toLocaleString()}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">XP</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+        )}
+      </div>
 
-      {userRank && userRank > 5 && (
-        <div className="mt-3 text-center text-xs text-muted-foreground">
-          Sua posição: <span className="font-bold text-foreground">#{userRank}</span>
-        </div>
-      )}
+      {/* Category summary */}
+      <div className="grid grid-cols-2 gap-2">
+        {insights.filter(i => i.rank > 0).slice(0, 4).map((ins) => {
+          const cat = categoryLabels[ins.category];
+          return (
+            <div key={ins.category} className="bg-secondary/30 rounded-lg p-2.5 text-center">
+              <p className="text-xs text-muted-foreground">{cat?.emoji} {cat?.label}</p>
+              <p className="text-sm font-bold">#{ins.rank}</p>
+              {ins.delta !== 0 && (
+                <p className={`text-[10px] ${ins.delta > 0 ? "text-emerald-600" : "text-destructive"}`}>
+                  {ins.delta > 0 ? "↑" : "↓"}{Math.abs(ins.delta)}
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Motivational message */}
+      <p className="text-xs text-center text-muted-foreground mt-3 italic">
+        {getDeltaMessage(bestCategory.delta)}
+      </p>
     </div>
   );
 };
