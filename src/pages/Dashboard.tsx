@@ -186,7 +186,9 @@ const Dashboard = () => {
       {/* ══════════════════════════════════════════
           BLOCO 1 — O que estudar hoje
          ══════════════════════════════════════════ */}
-      <TodayStudyCard />
+      <SafeCard name="TodayStudy">
+        <TodayStudyCard />
+      </SafeCard>
 
       {/* ══════════════════════════════════════════
           BLOCO 1.5 — MODO ADAPTATIVO (feedback sutil + ação)
