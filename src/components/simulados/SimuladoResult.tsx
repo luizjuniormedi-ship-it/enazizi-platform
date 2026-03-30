@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Award, BarChart3, AlertTriangle, GraduationCap, RotateCcw, Bookmark, BookOpen, Loader2, TrendingUp, Clock } from "lucide-react";
+import { Award, BarChart3, AlertTriangle, GraduationCap, RotateCcw, Bookmark, BookOpen, Loader2, TrendingUp, Clock, Skull, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -93,17 +93,44 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
     }
   };
 
+  const isExtremo = mode === "extremo";
+  const sortedAreas = Object.entries(areaResults).sort((a, b) => {
+    const pctA = a[1].total > 0 ? (a[1].correct / a[1].total) * 100 : 0;
+    const pctB = b[1].total > 0 ? (b[1].correct / b[1].total) * 100 : 0;
+    return pctA - pctB;
+  });
+  const weakAreas = sortedAreas.filter(([, v]) => v.total > 0 && (v.correct / v.total) * 100 < 60);
+
   return (
     <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
       <div className="text-center py-6">
-        <Award className="h-16 w-16 text-primary mx-auto mb-4" />
-        <h1 className="text-3xl font-bold mb-2">Simulado Concluído!</h1>
-        <div className="text-5xl font-black text-primary">{pct}%</div>
+        {isExtremo ? (
+          <Skull className="h-16 w-16 text-destructive mx-auto mb-4" />
+        ) : (
+          <Award className="h-16 w-16 text-primary mx-auto mb-4" />
+        )}
+        <h1 className="text-3xl font-bold mb-2">
+          {isExtremo ? "Prova Extrema Concluída!" : "Simulado Concluído!"}
+        </h1>
+        <div className={`text-5xl font-black ${isExtremo && pct < 60 ? "text-destructive" : "text-primary"}`}>{pct}%</div>
         <p className="text-muted-foreground mt-2">{correctCount} de {questions.length} questões corretas</p>
         {totalAnswered < questions.length && (
           <p className="text-xs text-yellow-600 mt-1">{questions.length - totalAnswered} questões não respondidas</p>
         )}
         <p className="text-xs text-muted-foreground mt-1">+{XP_REWARDS.simulado_completed} XP ganhos 🎉</p>
+
+        {/* Extreme verdict */}
+        {isExtremo && (
+          <div className={`mt-4 inline-block px-4 py-2 rounded-full text-sm font-semibold ${
+            pct >= 80 ? "bg-emerald-100 text-emerald-700" :
+            pct >= 60 ? "bg-amber-100 text-amber-700" :
+            "bg-red-100 text-red-700"
+          }`}>
+            {pct >= 80 ? "🏆 Aprovado com distinção" :
+             pct >= 60 ? "✅ Aprovado — mas pode melhorar" :
+             "⚠️ Reprovado — foco nas áreas fracas"}
+          </div>
+        )}
 
         {/* Time stats */}
         {avgTimePerQuestion && (
@@ -154,6 +181,46 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
           })}
         </div>
       </div>
+
+      {/* Extreme Mode: Corrective Action Plan */}
+      {isExtremo && weakAreas.length > 0 && (
+        <div className="glass-card p-6 border-destructive/20">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <Target className="h-5 w-5 text-destructive" /> Plano Corretivo Pós-Prova
+          </h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Áreas com menos de 60% de acerto precisam de atenção imediata. Use o plano abaixo para direcionar seus estudos.
+          </p>
+          <div className="space-y-3">
+            {weakAreas.map(([area, { correct, total }], i) => {
+              const areaPct = Math.round((correct / total) * 100);
+              return (
+                <div key={area} className="p-3 rounded-lg bg-destructive/5 border border-destructive/10">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold">{i + 1}. {area}</span>
+                    <span className="text-xs text-destructive font-bold">{areaPct}%</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {areaPct < 30
+                      ? "Base teórica insuficiente. Comece pelo Tutor IA com revisão completa do tema."
+                      : areaPct < 50
+                      ? "Conceitos parciais. Revise os erros e pratique mais questões focadas."
+                      : "Quase lá. Foque nas pegadinhas e casos clínicos complexos."}
+                  </p>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => handleStudyWithTutor({ topic: area, statement: `Preciso revisar ${area} após resultado baixo na prova extrema`, options: [], correct: 0 })}>
+                      <GraduationCap className="h-3 w-3" /> Tutor IA
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => navigate(`/dashboard/banco-questoes?sc_topic=${encodeURIComponent(area)}&sc_objective=reforço`)}>
+                      <BarChart3 className="h-3 w-3" /> Questões
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Flagged questions */}
       {flaggedItems.length > 0 && (

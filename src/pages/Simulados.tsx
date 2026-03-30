@@ -202,7 +202,8 @@ const Simulados = () => {
 
   const startExamWithQuestions = (qs: SimQuestion[], config: any) => {
     setQuestions(qs);
-    const timeLeft = config.mode === "prova" ? qs.length * config.timePerQuestion * 60 : 0;
+    const isTimedMode = config.mode === "prova" || config.mode === "extremo";
+    const timeLeft = isTimedMode ? qs.length * config.timePerQuestion * 60 : 0;
     setRestoredState({ timeLeft });
     startTimeRef.current = new Date();
     setPhase("exam");
@@ -407,7 +408,7 @@ const Simulados = () => {
 
       await supabase.from("exam_sessions").insert({
         user_id: user.id,
-        title: `Simulado - ${selectedTopics.slice(0, 3).join(", ")}${selectedTopics.length > 3 ? "..." : ""}`,
+        title: `${mode === "extremo" ? "🔥 Prova Extrema" : "Simulado"} - ${selectedTopics.slice(0, 3).join(", ")}${selectedTopics.length > 3 ? "..." : ""}`,
         total_questions: questions.length,
         time_limit_minutes: Math.round(elapsedSecondsRef.current / 60),
         status: "finished",
@@ -485,7 +486,7 @@ const Simulados = () => {
     setQuestions(errorQuestions);
     setFinalAnswers({});
     setFlaggedQuestions([]);
-    setRestoredState({ timeLeft: mode === "prova" ? errorQuestions.length * 3 * 60 : 0 });
+    setRestoredState({ timeLeft: (mode === "prova" || mode === "extremo") ? errorQuestions.length * 3 * 60 : 0 });
     startTimeRef.current = new Date();
     setPhase("exam");
   };
@@ -559,7 +560,7 @@ const Simulados = () => {
   return (
     <SimuladoExam
       questions={questions}
-      timeSeconds={restoredState?.timeLeft ?? (mode === "prova" ? questions.length * 3 * 60 : 0)}
+      timeSeconds={restoredState?.timeLeft ?? ((mode === "prova" || mode === "extremo") ? questions.length * 3 * 60 : 0)}
       onFinish={handleFinish}
       onAutoSaveState={() => ({ current: 0, selectedAnswers: {}, timeLeft: 0 })}
       initialState={restoredState ? {
