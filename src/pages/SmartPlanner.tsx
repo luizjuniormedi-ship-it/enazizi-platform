@@ -31,12 +31,12 @@ const DEFAULT_PESOS: PesosAlgoritmo = { erro: 0.3, tempo: 0.2, atraso: 0.2, difi
 
 const SmartPlanner = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [temas, setTemas] = useState<TemaEstudado[]>([]);
   const [revisoes, setRevisoes] = useState<Revisao[]>([]);
   const [desempenhos, setDesempenhos] = useState<Desempenho[]>([]);
   const [config, setConfig] = useState<CronogramaConfig | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeRevisao, setActiveRevisao] = useState<(Revisao & { tema: TemaEstudado }) | null>(null);
   const [activeTab, setActiveTab] = useState("objetivo");
 
   const loadData = useCallback(async () => {
