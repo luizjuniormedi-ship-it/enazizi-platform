@@ -108,19 +108,24 @@ export function encodeStudyContext(ctx: StudyContext, params?: URLSearchParams):
 
 /** Decode StudyContext from URLSearchParams. Returns null if no context present. */
 export function decodeStudyContext(params: URLSearchParams): StudyContext | null {
-  const source = params.get("sc_source") as StudySource | null;
-  if (!source || source === "free") return null;
+  try {
+    const source = params.get("sc_source") as StudySource | null;
+    if (!source || source === "free") return null;
 
-  const ctx: StudyContext = { source };
-  if (params.get("sc_specialty")) ctx.specialty = params.get("sc_specialty")!;
-  if (params.get("sc_topic")) ctx.topic = params.get("sc_topic")!;
-  if (params.get("sc_subtopic")) ctx.subtopic = params.get("sc_subtopic")!;
-  if (params.get("sc_taskType")) ctx.taskType = params.get("sc_taskType") as StudyTaskType;
-  if (params.get("sc_objective")) ctx.objective = params.get("sc_objective") as StudyObjective;
-  if (params.get("sc_difficulty")) ctx.difficulty = params.get("sc_difficulty")!;
-  if (params.get("sc_priority")) ctx.priority = Number(params.get("sc_priority"));
-  if (params.get("sc_reason")) ctx.reason = params.get("sc_reason")!;
-  return ctx;
+    const ctx: StudyContext = { source };
+    if (params.get("sc_specialty")) ctx.specialty = params.get("sc_specialty")!;
+    if (params.get("sc_topic")) ctx.topic = params.get("sc_topic")!;
+    if (params.get("sc_subtopic")) ctx.subtopic = params.get("sc_subtopic")!;
+    if (params.get("sc_taskType")) ctx.taskType = params.get("sc_taskType") as StudyTaskType;
+    if (params.get("sc_objective")) ctx.objective = params.get("sc_objective") as StudyObjective;
+    if (params.get("sc_difficulty")) ctx.difficulty = params.get("sc_difficulty")!;
+    if (params.get("sc_priority")) ctx.priority = Number(params.get("sc_priority"));
+    if (params.get("sc_reason")) ctx.reason = params.get("sc_reason")!;
+    return ctx;
+  } catch (e) {
+    console.warn("[StudyContext] Erro ao decodificar contexto:", e);
+    return null;
+  }
 }
 
 // ── React hook ──
