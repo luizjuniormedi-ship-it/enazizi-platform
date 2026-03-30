@@ -147,76 +147,89 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
  try {
   const recs: StudyRecommendation[] = [];
 
+  // Individual queries with safe fallback — one failure never breaks the engine
+  const safe = async <T>(fn: () => Promise<{ data: T | null; error: any }>, label: string): Promise<T | null> => {
+    try {
+      const { data, error } = await fn();
+      if (error) console.warn(`[StudyEngine] ${label}:`, error.message);
+      return data;
+    } catch (e) {
+      console.warn(`[StudyEngine] ${label} failed silently:`, e);
+      return null;
+    }
+  };
+
   const [
-    revisoesRes,
-    errorBankRes,
-    desempenhoRes,
-    temasRes,
-    practiceRes,
-    examRes,
-    anamnesisRes,
-    clinicalSimRes,
-    fsrsDueRes,
+    revisoesData,
+    errorBankData,
+    desempenhoData,
+    temasData,
+    practiceData,
+    examData,
+    anamnesisData,
+    clinicalSimData,
+    fsrsDueData,
   ] = await Promise.all([
-    supabase
+    safe(() => supabase
       .from("revisoes")
       .select("id, tema_id, data_revisao, status, prioridade, risco_esquecimento, temas_estudados(tema, especialidade)")
       .eq("user_id", userId)
       .eq("status", "pendente")
       .order("prioridade", { ascending: false })
-      .limit(20),
-    supabase
+      .limit(20), "revisoes"),
+    safe(() => supabase
       .from("error_bank")
       .select("id, tema, subtema, vezes_errado, dominado, categoria_erro")
       .eq("user_id", userId)
       .eq("dominado", false)
       .order("vezes_errado", { ascending: false })
-      .limit(20),
-    supabase
+      .limit(20), "error_bank"),
+    safe(() => supabase
       .from("desempenho_questoes")
       .select("tema_id, taxa_acerto, questoes_feitas, temas_estudados(tema, especialidade)")
       .eq("user_id", userId)
       .order("taxa_acerto", { ascending: true })
-      .limit(20),
-    supabase
+      .limit(20), "desempenho"),
+    safe(() => supabase
       .from("temas_estudados")
       .select("id, tema, especialidade, data_estudo, status, dificuldade")
       .eq("user_id", userId)
       .order("data_estudo", { ascending: false })
-      .limit(50),
-    supabase
+      .limit(50), "temas"),
+    safe(() => supabase
       .from("practice_attempts")
       .select("correct, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(200),
-    supabase
+      .limit(200), "practice"),
+    safe(() => supabase
       .from("exam_sessions")
       .select("id, score, total_questions, finished_at")
       .eq("user_id", userId)
       .eq("status", "finished")
       .order("finished_at", { ascending: false })
-      .limit(10),
-    supabase
+      .limit(10), "exams"),
+    safe(() => supabase
       .from("anamnesis_results")
       .select("id, specialty, final_score, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(10),
-    supabase
-      .from("simulation_history")
+      .limit(10), "anamnesis"),
+    // Use anamnesis_sessions as clinical simulation proxy (simulation_history doesn't exist)
+    safe(() => supabase
+      .from("anamnesis_sessions")
       .select("id, specialty, final_score, created_at")
       .eq("user_id", userId)
+      .eq("status", "finished")
       .order("created_at", { ascending: false })
-      .limit(10),
-    // FSRS due cards — all types
-    supabase
+      .limit(10), "clinical_sim"),
+    safe(() => supabase
       .from("fsrs_cards")
       .select("id, card_type, card_ref_id, stability, difficulty, state, due, lapses")
       .eq("user_id", userId)
       .lte("due", new Date().toISOString())
       .order("due", { ascending: true })
-      .limit(30),
+      .limit(30), "fsrs"),
   ]);
 
   // ── Compute approval score & weights ─────────────────────────
