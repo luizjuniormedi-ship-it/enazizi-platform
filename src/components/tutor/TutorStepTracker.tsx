@@ -72,7 +72,7 @@ const TutorStepTracker = ({
             </Tooltip>
           </TooltipProvider>
           <span className="text-muted-foreground">•</span>
-          <span className="text-muted-foreground">{enaziziStep}/14 ({progressPercent}%)</span>
+          <span className="text-muted-foreground">{enaziziStep}/15 ({progressPercent}%)</span>
           {nextPhase && (
             <>
               <Button

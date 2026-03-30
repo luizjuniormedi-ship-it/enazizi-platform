@@ -61,6 +61,7 @@ export function useChatProgress(userId: string | undefined) {
       11: { key: "correction", label: "Correção", icon: "✅", desc: "Correção detalhada com nota e feedback" },
       12: { key: "update", label: "Atualizar Painel", icon: "📈", desc: "Revisão do seu desempenho na sessão" },
       13: { key: "consolidation", label: "Consolidação", icon: "🔁", desc: "5 questões rápidas para consolidar o aprendizado" },
+      14: { key: "feynman", label: "Método Feynman", icon: "💡", desc: "Explique o tema com suas palavras como se fosse para um leigo" },
     };
     return phaseByStep[step] || null;
   }, []);
