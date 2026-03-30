@@ -486,7 +486,7 @@ const Simulados = () => {
     setQuestions(errorQuestions);
     setFinalAnswers({});
     setFlaggedQuestions([]);
-    setRestoredState({ timeLeft: mode === "prova" ? errorQuestions.length * 3 * 60 : 0 });
+    setRestoredState({ timeLeft: (mode === "prova" || mode === "extremo") ? errorQuestions.length * 3 * 60 : 0 });
     startTimeRef.current = new Date();
     setPhase("exam");
   };
