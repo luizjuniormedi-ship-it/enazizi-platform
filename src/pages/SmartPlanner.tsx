@@ -199,9 +199,9 @@ const SmartPlanner = () => {
     loadData();
   };
 
-  const startRevisao = (revisao: Revisao) => {
-    const tema = temas.find(t => t.id === revisao.tema_id);
-    if (tema) setActiveRevisao({ ...revisao, tema });
+  // Redirect to Daily Plan instead of inline execution
+  const startRevisao = (_revisao: Revisao) => {
+    navigate("/dashboard/plano-dia");
   };
 
   if (loading) {
