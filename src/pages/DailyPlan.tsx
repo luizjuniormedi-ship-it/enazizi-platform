@@ -461,10 +461,6 @@ const DailyPlan = () => {
                         onClick={() => goToQuestions(topic.tema, topic.especialidade)}>
                         <Target className="h-3 w-3" /> Questões
                       </Button>
-                      <Button variant="ghost" size="sm" className="gap-1 text-[10px] h-6 px-2"
-                        onClick={() => { setPomodoroTopic(topic.tema); setPomodoroOpen(true); }}>
-                        <Timer className="h-3 w-3" /> Pomodoro
-                      </Button>
                     </div>
                   )}
                 </div>
