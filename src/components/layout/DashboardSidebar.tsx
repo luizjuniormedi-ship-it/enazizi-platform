@@ -72,7 +72,6 @@ const navGroups: NavGroup[] = [
       { to: "/dashboard/apostilas", icon: FileText, label: "Apostilas" },
       { to: "/dashboard/cronicas", icon: Scroll, label: "Crônicas Médicas" },
       { to: "/dashboard/discursivas", icon: PenLine, label: "Discursivas" },
-      { to: "/dashboard/discursivas", icon: PenLine, label: "Discursivas" },
       { to: "/dashboard/predictor", icon: TrendingUp, label: "Previsão" },
       { to: "/dashboard/proficiencia", icon: GraduationCap, label: "Proficiência" },
       { to: "/dashboard/coach", icon: Heart, label: "Coach" },
