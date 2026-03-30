@@ -7,6 +7,8 @@ import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
+import { useStudyContext } from "@/lib/studyContext";
+import StudyContextBanner from "@/components/study/StudyContextBanner";
 
 const QUANTITY_OPTIONS = [5, 10, 15, 20];
 
@@ -46,7 +48,8 @@ function parseFlashcardsFromText(content: string): Array<{ question: string; ans
 const FlashcardGenerator = () => {
   const { user } = useAuth();
   const { addXp } = useGamification();
-  const [specialty, setSpecialty] = useState<string>("");
+  const studyCtx = useStudyContext();
+  const [specialty, setSpecialty] = useState<string>(studyCtx?.specialty || "");
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(10);
   const [showSetup, setShowSetup] = useState(true);
@@ -109,6 +112,7 @@ const FlashcardGenerator = () => {
     return (
       <div className="flex flex-col animate-fade-in h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)]">
         <div className="mb-4">
+          <StudyContextBanner />
           <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
             <FlipVertical className="h-6 w-6 text-primary" />
             Gerador de Flashcards Clínicos

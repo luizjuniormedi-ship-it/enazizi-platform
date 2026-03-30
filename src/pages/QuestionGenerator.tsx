@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { ALL_SPECIALTIES } from "@/constants/specialties";
 import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
+import { useStudyContext } from "@/lib/studyContext";
+import StudyContextBanner from "@/components/study/StudyContextBanner";
 
 const DIFFICULTY_OPTIONS = [
   { value: "facil", label: "Fácil", emoji: "🟢", desc: "Apresentações típicas" },
@@ -29,7 +31,8 @@ interface SessionStats {
 
 const QuestionGenerator = () => {
   const { user } = useAuth();
-  const [specialty, setSpecialty] = useState<string>("");
+  const studyCtx = useStudyContext();
+  const [specialty, setSpecialty] = useState<string>(studyCtx?.specialty || "");
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState("intermediario");
   const [quantity, setQuantity] = useState(10);
@@ -158,6 +161,7 @@ const QuestionGenerator = () => {
     return (
       <div className="flex flex-col animate-fade-in h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)]">
         <div className="mb-4">
+          <StudyContextBanner />
           <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
             <HelpCircle className="h-6 w-6 text-primary" />
             Gerador de Questões

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useStudyContext } from "@/lib/studyContext";
+import StudyContextBanner from "@/components/study/StudyContextBanner";
 import { FileText, Play, History, BookOpen, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,8 +32,13 @@ interface SimuladoSetupProps {
 }
 
 const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErrors, pendingSession, checkedSession, userId }: SimuladoSetupProps) => {
+  const studyCtx = useStudyContext();
   const [tab, setTab] = useState<"novo" | "historico">("novo");
-  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>(() => {
+    if (studyCtx?.specialty) return [studyCtx.specialty];
+    if (studyCtx?.topic) return [studyCtx.topic];
+    return [];
+  });
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [questionCount, setQuestionCount] = useState(10);
   const [customCount, setCustomCount] = useState("");
@@ -54,6 +61,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
 
   return (
     <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
+      <StudyContextBanner />
       {checkedSession && pendingSession && (
         <ResumeSessionBanner
           updatedAt={pendingSession.updated_at}
