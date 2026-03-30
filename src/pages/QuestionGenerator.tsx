@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { ALL_SPECIALTIES } from "@/constants/specialties";
 import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
+import { useStudyContext } from "@/lib/studyContext";
+import StudyContextBanner from "@/components/study/StudyContextBanner";
 
 const DIFFICULTY_OPTIONS = [
   { value: "facil", label: "Fácil", emoji: "🟢", desc: "Apresentações típicas" },
