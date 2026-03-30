@@ -150,6 +150,9 @@ const App = () => (
               <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
               </Route>
+              <Route path="/institucional" element={<InstitutionalRoute><DashboardLayout /></InstitutionalRoute>}>
+                <Route index element={<InstitutionalDashboard />} />
+              </Route>
               <Route path="/install" element={<Install />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="*" element={<NotFound />} />
