@@ -20,7 +20,6 @@ export const ALL_MODULES = [
   { key: "questoes", label: "❓ Gerador Questões" },
   { key: "banco-questoes", label: "🗃️ Banco de Questões" },
   { key: "anamnese", label: "🩺 Anamnese" },
-  { key: "anamnese", label: "🩺 Anamnese" },
   { key: "plantao", label: "🚨 Modo Plantão" },
   { key: "simulacao-clinica", label: "🚨 Simulação Clínica" },
   { key: "predictor", label: "📈 Previsão" },
