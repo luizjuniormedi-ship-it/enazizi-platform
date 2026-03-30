@@ -210,6 +210,20 @@ const DashboardSidebar = () => {
               Painel Professor
             </Link>
           )}
+          {isInstitutionalStaff && (
+            <Link
+              to="/institucional"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                location.pathname === "/institucional"
+                  ? "bg-sidebar-accent text-sidebar-primary"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+              )}
+            >
+              <Building2 className="h-4 w-4" />
+              Painel Institucional
+            </Link>
+          )}
           {isAdmin && (
             <Link
               to="/admin"
