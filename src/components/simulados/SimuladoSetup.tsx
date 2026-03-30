@@ -19,7 +19,7 @@ const DIFFICULTY_OPTIONS = [
   { value: "misto", label: "Misto" },
 ];
 
-export type SimuladoMode = "prova" | "estudo";
+export type SimuladoMode = "prova" | "estudo" | "extremo";
 
 interface SimuladoSetupProps {
   onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode }) => void;
