@@ -61,7 +61,7 @@ const MissionMode = lazy(() => import("./pages/MissionMode"));
 const StudySession = lazy(() => import("./pages/StudySession"));
 const Rankings = lazy(() => import("./pages/Rankings"));
 const MedicalImageQuiz = lazy(() => import("./pages/MedicalImageQuiz"));
-
+const InstitutionalDashboard = lazy(() => import("./pages/InstitutionalDashboard"));
 
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
