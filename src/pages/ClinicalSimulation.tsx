@@ -151,6 +151,13 @@ interface Vitals {
   SpO2: string;
 }
 
+interface ManeuverPerformed {
+  name: string;
+  technique: string;
+  finding: string;
+  interpretation: string;
+}
+
 interface ChatMessage {
   role: "doctor" | "simulation";
   content: string;
@@ -158,6 +165,7 @@ interface ChatMessage {
   scoreDelta?: number;
   timestamp: number;
   teachingTip?: string;
+  maneuversPerformed?: ManeuverPerformed[];
 }
 
 interface ActionTimelineEntry {
