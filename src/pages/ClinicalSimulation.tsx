@@ -2138,6 +2138,73 @@ const ClinicalSimulation = () => {
             </Card>
           </div>
 
+          {/* Physical Exam Expected */}
+          {finalEval.physical_exam_expected && (
+            <Card className="border border-teal-500/30">
+              <CardContent className="p-5 space-y-4">
+                <h4 className="text-sm font-semibold flex items-center gap-1.5">
+                  <Stethoscope className="h-4 w-4 text-teal-500" /> 🩺 Exame Físico Esperado
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {finalEval.physical_exam_expected.inspection?.length > 0 && (
+                    <div className="bg-teal-500/5 rounded-lg p-3 border border-teal-500/20">
+                      <p className="text-xs font-semibold flex items-center gap-1 mb-2"><Eye className="h-3 w-3 text-teal-500" /> Inspeção</p>
+                      <ul className="space-y-1">
+                        {finalEval.physical_exam_expected.inspection.map((item: string, i: number) => (
+                          <li key={i} className="text-xs text-muted-foreground">• {item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {finalEval.physical_exam_expected.palpation?.length > 0 && (
+                    <div className="bg-teal-500/5 rounded-lg p-3 border border-teal-500/20">
+                      <p className="text-xs font-semibold flex items-center gap-1 mb-2"><Hand className="h-3 w-3 text-teal-500" /> Palpação</p>
+                      <ul className="space-y-1">
+                        {finalEval.physical_exam_expected.palpation.map((item: string, i: number) => (
+                          <li key={i} className="text-xs text-muted-foreground">• {item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {finalEval.physical_exam_expected.auscultation?.length > 0 && (
+                    <div className="bg-teal-500/5 rounded-lg p-3 border border-teal-500/20">
+                      <p className="text-xs font-semibold flex items-center gap-1 mb-2"><Ear className="h-3 w-3 text-teal-500" /> Ausculta</p>
+                      <ul className="space-y-1">
+                        {finalEval.physical_exam_expected.auscultation.map((item: string, i: number) => (
+                          <li key={i} className="text-xs text-muted-foreground">• {item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {finalEval.physical_exam_expected.maneuvers?.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold flex items-center gap-1"><Bone className="h-3 w-3 text-teal-500" /> Manobras Diagnósticas</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {finalEval.physical_exam_expected.maneuvers.map((m: any, i: number) => (
+                        <div key={i} className="bg-muted/30 rounded-lg p-3 border border-border/50 space-y-1">
+                          <p className="text-xs font-bold text-teal-600">{m.name}</p>
+                          <p className="text-[11px] text-muted-foreground"><span className="font-semibold">Técnica:</span> {m.technique}</p>
+                          <p className="text-[11px] text-muted-foreground"><span className="font-semibold">Achado +:</span> {m.positive_finding}</p>
+                          <p className="text-[11px] text-muted-foreground"><span className="font-semibold">Indica:</span> {m.indicates}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {finalEval.physical_exam_expected.vital_signs_expected && (
+                  <div className="bg-teal-500/5 rounded-lg p-3 border border-teal-500/20">
+                    <p className="text-xs font-semibold flex items-center gap-1 mb-1"><HeartPulse className="h-3 w-3 text-teal-500" /> Sinais Vitais Esperados</p>
+                    <p className="text-xs text-muted-foreground">{finalEval.physical_exam_expected.vital_signs_expected}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Ideal approach */}
           <Card>
             <CardContent className="p-5 space-y-3">

@@ -222,8 +222,29 @@ Inclua também uma análise de DIAGNÓSTICOS DIFERENCIAIS: liste 3-5 diagnóstic
   "improvements": ["..."],
   "ideal_approach": "texto descrevendo a abordagem ideal para o caso, incluindo prescrição modelo e conduta completa",
   "ideal_prescription": "prescrição modelo completa com medicamentos, doses, vias e intervalos",
+  "physical_exam_expected": {
+    "inspection": ["achado → significado clínico (ex: 'Abdome distendido → sugere obstrução ou ascite')"],
+    "palpation": ["achado → significado clínico (ex: 'Dor à palpação em FID com descompressão brusca positiva → peritonite localizada')"],
+    "auscultation": ["achado → significado clínico (ex: 'Murmúrio vesicular abolido em base D → derrame pleural')"],
+    "vital_signs_expected": "sinais vitais esperados para este diagnóstico (ex: 'Taquicardia (FC>100), hipotensão se choque')",
+    "maneuvers": [
+      {
+        "name": "Nome técnico da manobra semiológica",
+        "technique": "Descrição de como executar a manobra passo a passo",
+        "positive_finding": "O que constitui um achado positivo",
+        "indicates": "O que o achado positivo indica clinicamente"
+      }
+    ]
+  },
   "xp_earned": 10-100
 }
+
+IMPORTANTE sobre physical_exam_expected:
+- Com base no diagnóstico oculto e no quadro clínico, descreva os achados de exame físico ESPERADOS para este caso específico
+- Inclua manobras semiológicas ESPECÍFICAS com nome técnico correto, técnica de execução e interpretação
+- Mínimo 2 manobras quando aplicável
+- Os achados devem ser coerentes com o diagnóstico do caso
+- Use nomenclatura médica brasileira padrão
 
 ## IMPORTANTE
 - Seja realista como paciente (use linguagem coloquial, não termos médicos)
