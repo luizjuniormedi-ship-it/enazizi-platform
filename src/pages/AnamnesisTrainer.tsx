@@ -165,6 +165,13 @@ interface EvalCategory {
   feedback: string;
 }
 
+interface DifferentialDiagnosis {
+  diagnosis: string;
+  reasoning: string;
+  how_to_rule_out: string;
+  student_considered: boolean;
+}
+
 interface FinalEval {
   final_score: number;
   grade: string;
@@ -174,6 +181,7 @@ interface FinalEval {
   ideal_anamnesis: string;
   clinical_reasoning: string;
   correct_diagnosis: string;
+  differential_diagnosis?: DifferentialDiagnosis[];
   ideal_conduct: string;
   diagnostic_reasoning: string;
   strengths: string[];
