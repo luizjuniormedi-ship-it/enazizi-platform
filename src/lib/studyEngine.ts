@@ -269,7 +269,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   weights.maxNewTopics = adjustNewTopicsByLock(weights.maxNewTopics, lockStatus);
 
   // ── FSRS memory pressure ─────────────────────────────────────
-  const fsrsDue = (fsrsDueRes.data || []) as any[];
+  const fsrsDue = (fsrsDueData || []) as any[];
   const memoryPressure = cap(
     (overdueCount / 20) * 50 + (fsrsDue.length / 30) * 50,
     100
