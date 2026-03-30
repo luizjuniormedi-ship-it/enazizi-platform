@@ -34,6 +34,7 @@ Antes de enviar QUALQUER resposta, o tutor DEVE verificar TODOS os itens:
 7️⃣ Os artigos científicos recomendados foram sugeridos (quando aplicável)
 8️⃣ Os EVENTOS ADVERSOS dos medicamentos citados foram listados com mecanismo, interações e contraindicações
 9️⃣ A FISIOPATOLOGIA contém mediadores moleculares específicos e correlação direta sintoma↔mecanismo
+🔟 Os achados de EXAME FÍSICO e MANOBRAS DIAGNÓSTICAS foram incluídos (nome da manobra, técnica, achado positivo e significado clínico)
 
 Somente após passar por TODAS essas verificações, enviar a resposta.
 
