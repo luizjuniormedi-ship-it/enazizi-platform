@@ -1,21 +1,19 @@
 
 
-# Adicionar Seção de Exame Físico e Manobras Diagnósticas ao Tutor
+# Adicionar Exame Físico e Manobras Diagnósticas ao Prompt do Tutor
 
-## Problema
+## O que muda
 
-O prompt do Tutor ensina fisiopatologia, conduta e diagnósticos diferenciais, mas **não tem uma seção dedicada ao exame físico**. O aluno não aprende quais achados procurar, quais manobras realizar e como interpretar os sinais.
+Inserir uma nova seção obrigatória **5½** no prompt base entre "Manifestações clínicas" e "Conduta clínica".
 
-## Solução
+## Arquivo editado
 
-Adicionar uma nova seção obrigatória **"🩺 EXAME FÍSICO E MANOBRAS DIAGNÓSTICAS"** na estrutura de ensino do prompt base (`enazizi-prompt.ts`), entre "Manifestações clínicas" (item 5) e "Conduta clínica" (item 6).
+### `supabase/functions/_shared/enazizi-prompt.ts`
 
-## Conteúdo da nova seção
+1. **Nova seção após item 5️⃣ (Manifestações clínicas), antes do item 6️⃣ (Conduta)**:
 
 ```text
-🩺 EXAME FÍSICO E MANOBRAS DIAGNÓSTICAS
-
-Formato obrigatório:
+5½ 🩺 Exame Físico e Manobras Diagnósticas
 
 📋 Inspeção:
 • achado visual → significado clínico
@@ -23,34 +21,30 @@ Formato obrigatório:
 🖐️ Palpação:
 • achado palpável → significado clínico
 
-🔨 Manobras específicas:
+🔨 Manobras específicas (formato tabela):
 | Manobra | Como fazer | Achado positivo | O que indica |
-| Sinal de Blumberg | Descompressão brusca do abdome | Dor à descompressão | Irritação peritoneal |
 
 🔊 Ausculta (quando aplicável):
 • achado auscultatório → significado
 
 REGRAS:
 - Sempre citar o NOME da manobra
-- Descrever COMO realizar a manobra
-- Explicar o que é um achado POSITIVO vs NEGATIVO
+- Descrever COMO realizar
+- Explicar achado POSITIVO vs NEGATIVO
 - Correlacionar achado → diagnóstico provável
 - Incluir sensibilidade/especificidade quando conhecidas
-- Mínimo de 2 manobras por tema (quando aplicável)
+- Mínimo 2 manobras por tema (quando aplicável)
 ```
 
-## Mudanças técnicas
+2. **Renumerar** itens 6-9 para 7-10
 
-### 1 arquivo editado: `supabase/functions/_shared/enazizi-prompt.ts`
+3. **Adicionar à checklist pré-resposta** (linha ~36): item 🔟 "Os achados de exame físico e manobras diagnósticas foram incluídos"
 
-1. Inserir seção **5½** "🩺 EXAME FÍSICO E MANOBRAS DIAGNÓSTICAS" entre manifestações clínicas e conduta
-2. Renumerar itens 6-9 para 7-10
-3. Adicionar na checklist pré-resposta (item 10): "Os achados de exame físico e manobras diagnósticas foram incluídos"
-4. Na Mensagem 2 (Explicação Técnica + Aplicação Clínica), adicionar menção ao exame físico
+4. **Mensagem 2** (linha ~94): adicionar menção ao exame físico na descrição
 
 ## Impacto
 
+- 1 arquivo editado
 - Zero mudança em rotas, edge functions ou lógica
-- Apenas enriquece o prompt pedagógico
-- O Tutor passará a ensinar **como diagnosticar na prática** com nome das manobras e achados esperados
+- O Tutor passará a ensinar manobras com nome técnico, técnica de execução e interpretação dos achados
 
