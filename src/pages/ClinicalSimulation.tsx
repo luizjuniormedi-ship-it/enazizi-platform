@@ -801,6 +801,7 @@ const ClinicalSimulation = () => {
         scoreDelta: res.score_delta,
         timestamp: Date.now(),
         teachingTip: res.teaching_tip || undefined,
+        maneuversPerformed: res.maneuvers_performed || undefined,
       };
 
       setMessages((prev) => [...prev, simMsg]);
