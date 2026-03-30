@@ -13,7 +13,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, userContext, enazizi_progress, error_bank } = await req.json();
+    const { messages, userContext, enazizi_progress, error_bank, session_memory } = await req.json();
 
     let instructions = ENAZIZI_PROMPT;
 
