@@ -233,10 +233,10 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   ]);
 
   // ── Compute approval score & weights ─────────────────────────
-  const practiceAttempts = practiceRes.data || [];
-  const exams = examRes.data || [];
-  const anamnesisResults = anamnesisRes.data || [];
-  const clinicalSims = clinicalSimRes.data || [];
+  const practiceAttempts = practiceData || [];
+  const exams = examData || [];
+  const anamnesisResults = anamnesisData || [];
+  const clinicalSims = clinicalSimData || [];
 
   const approvalScore = await computeApprovalScore(userId, practiceAttempts, exams, anamnesisResults, clinicalSims);
   const weights = adjustPlanByApprovalScore(approvalScore);
