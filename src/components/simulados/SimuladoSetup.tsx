@@ -61,6 +61,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
 
   return (
     <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
+      <StudyContextBanner />
       {checkedSession && pendingSession && (
         <ResumeSessionBanner
           updatedAt={pendingSession.updated_at}
