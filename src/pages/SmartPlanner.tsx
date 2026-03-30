@@ -183,7 +183,7 @@ const SmartPlanner = () => {
     }
 
     toast({ title: "✅ Revisão concluída!", description: `Acerto: ${taxa}%` });
-    setActiveRevisao(null);
+    // Inline execution removed — revision completed via callback
     const tema = temas.find(t => t.id === revisao.tema_id);
     if (tema) {
       updateStudyPerformanceContext(user.id, [{ id: tema.id, tema: tema.tema, especialidade: tema.especialidade }]).catch(() => {});
