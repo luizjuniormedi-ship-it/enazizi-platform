@@ -201,49 +201,80 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             </div>
           </div>
 
-          {/* Difficulty */}
-          <div>
-            <label className="text-sm font-semibold mb-3 block">Nível de dificuldade</label>
-            <div className="flex gap-2 flex-wrap">
-              {DIFFICULTY_OPTIONS.map(d => (
-                <Button key={d.value} variant={difficulty === d.value ? "default" : "outline"} size="sm" onClick={() => setDifficulty(d.value)}>
-                  {d.label}
-                </Button>
-              ))}
+          {/* Extreme mode info banner */}
+          {mode === "extremo" && (
+            <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-4 space-y-2">
+              <p className="text-sm font-semibold text-destructive flex items-center gap-2">
+                <Skull className="h-4 w-4" /> Modo Prova Extremo
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li>• Dificuldade fixa: <strong>Alta</strong> — raciocínio clínico avançado</li>
+                <li>• Mínimo 50 questões — simula prova real completa</li>
+                <li>• 2 minutos por questão — pressão de tempo realista</li>
+                <li>• Sem feedback durante a prova — resultado só no final</li>
+                <li>• Relatório detalhado com plano corretivo pós-prova</li>
+              </ul>
             </div>
-          </div>
+          )}
 
-          {/* Question count */}
+          {/* Difficulty — locked in extremo */}
+          {mode !== "extremo" && (
+            <div>
+              <label className="text-sm font-semibold mb-3 block">Nível de dificuldade</label>
+              <div className="flex gap-2 flex-wrap">
+                {DIFFICULTY_OPTIONS.map(d => (
+                  <Button key={d.value} variant={difficulty === d.value ? "default" : "outline"} size="sm" onClick={() => setDifficulty(d.value)}>
+                    {d.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Question count — extremo has higher presets */}
           <div>
             <label className="text-sm font-semibold mb-3 block">Quantas questões?</label>
             <div className="flex gap-2 flex-wrap">
-              {[5, 10, 15, 20, 30].map(n => (
+              {(mode === "extremo" ? [50, 80, 100] : [5, 10, 15, 20, 30]).map(n => (
                 <Button key={n} variant={questionCount === n && !customCount ? "default" : "outline"} size="sm" onClick={() => { setQuestionCount(n); setCustomCount(""); }}>
                   {n}
                 </Button>
               ))}
-              <Input type="number" placeholder="Outro..." className="w-24 h-9" min={1} max={100} value={customCount} onChange={e => setCustomCount(e.target.value)} />
+              {mode !== "extremo" && (
+                <Input type="number" placeholder="Outro..." className="w-24 h-9" min={1} max={100} value={customCount} onChange={e => setCustomCount(e.target.value)} />
+              )}
             </div>
           </div>
 
-          {/* Timer - only in prova mode */}
-          {mode === "prova" && (
+          {/* Timer — prova and extremo */}
+          {(mode === "prova" || mode === "extremo") && (
             <div>
               <label className="text-sm font-semibold mb-2 block">Tempo por questão</label>
-              <div className="flex gap-2 flex-wrap">
-                {[2, 3, 4, 5].map(m => (
-                  <Button key={m} variant={timePerQuestion === m ? "default" : "outline"} size="sm" onClick={() => setTimePerQuestion(m)}>
-                    {m} min
-                  </Button>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Total: {totalTime} minutos</p>
+              {mode === "extremo" ? (
+                <p className="text-xs text-muted-foreground">Fixo em <strong>2 minutos</strong> por questão — Total: {(customCount ? parseInt(customCount) || questionCount : questionCount) * 2} minutos</p>
+              ) : (
+                <>
+                  <div className="flex gap-2 flex-wrap">
+                    {[2, 3, 4, 5].map(m => (
+                      <Button key={m} variant={timePerQuestion === m ? "default" : "outline"} size="sm" onClick={() => setTimePerQuestion(m)}>
+                        {m} min
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Total: {totalTime} minutos</p>
+                </>
+              )}
             </div>
           )}
 
-          <Button size="lg" className="w-full" onClick={handleStart} disabled={selectedTopics.length === 0}>
-            <Play className="h-4 w-4 mr-2" />
-            {mode === "estudo" ? "Iniciar Modo Estudo" : "Iniciar Simulado"} ({customCount || questionCount} questões)
+          <Button
+            size="lg"
+            className={`w-full ${mode === "extremo" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : ""}`}
+            onClick={handleStart}
+            disabled={selectedTopics.length === 0}
+          >
+            {mode === "extremo" ? <Skull className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+            {mode === "estudo" ? "Iniciar Modo Estudo" : mode === "extremo" ? "Iniciar Prova Extrema" : "Iniciar Simulado"} ({customCount || questionCount} questões)
           </Button>
         </div>
       )}
