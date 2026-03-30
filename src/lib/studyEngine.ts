@@ -339,9 +339,10 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
 
   for (let i = 0; i < Math.min(errors.length, errorLimit); i++) {
     const err = errors[i];
-    // Aggressive boost: +30 for 3+ errors, +15 for critical approval score
-    const aggressiveBoost = (err.vezes_errado >= 3 ? 30 : 0) + (approvalScore < 40 ? 15 : 0);
-    const priority = cap(70 + err.vezes_errado * 5 - i * 2 + (weights.phase === "critico" ? 10 : 0) + aggressiveBoost);
+    // Smoothed aggressive boost: cap individual boosts to avoid wild oscillation
+    const errorBoost = Math.min(err.vezes_errado >= 3 ? 20 : 0, 20);
+    const scoreBoost = approvalScore < 40 ? 10 : 0;
+    const priority = cap(70 + Math.min(err.vezes_errado * 3, 15) - i * 2 + (weights.phase === "critico" ? 8 : 0) + errorBoost + scoreBoost);
     addRec({
       id: id("err", i),
       type: "error_review",

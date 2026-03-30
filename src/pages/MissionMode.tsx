@@ -215,6 +215,12 @@ export default function MissionMode() {
                 <div>
                   <h2 className="text-xl font-bold">{currentTask.topic}</h2>
                   <p className="text-sm text-muted-foreground mt-1">{currentTask.reason}</p>
+                  {adaptive?.focusReason && (
+                    <p className="text-[10px] text-muted-foreground/70 mt-1 flex items-center gap-1">
+                      <Target className="h-3 w-3 shrink-0" />
+                      {adaptive.focusReason}
+                    </p>
+                  )}
                 </div>
 
                 <Button
