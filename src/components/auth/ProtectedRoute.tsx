@@ -45,7 +45,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const check = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("is_blocked, status, display_name, phone, periodo, faculdade, onboarding_version")
+        .select("is_blocked, status, display_name, phone, periodo, faculdade, onboarding_version, user_type")
         .eq("user_id", user.id)
         .maybeSingle();
       if (data?.is_blocked) {
@@ -54,7 +54,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         setProfileStatus(data?.status || "pending");
       }
       // Check if profile is incomplete or has invalid data
-      const userType = (data as any)?.user_type || "estudante";
+      const userType = data?.user_type || "estudante";
       const incomplete = !isProfileComplete({
         phone: data?.phone,
         display_name: data?.display_name,
