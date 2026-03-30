@@ -1,115 +1,152 @@
 
 
-# Diagnóstico do Dashboard ENAZIZI — Análise de Funcionalidades
+# Melhorias Avançadas de Inteligência e Comportamento no ENAZIZI
 
-## Situação Atual
+## Visão Geral
 
-O Dashboard tem **44 componentes** e renderiza **~25 elementos visíveis** em uma única página scroll. Para uma tela mobile de 430px, isso é excessivo.
-
----
-
-## Componentes e Análise
-
-### ✅ FAZ SENTIDO — Manter
-
-| Componente | Função | Justificativa |
-|---|---|---|
-| **MissionStartButton** | CTA principal "COMEÇAR ESTUDO" | Core do sistema guiado |
-| **TodayStudyCard** | Lista tarefas do dia (Study Engine) | Direção clara do que estudar |
-| **ApprovalScoreCard** | Score de prontidão para prova | Métrica central de progresso |
-| **PendingReviewsCard** | Revisões pendentes (FSRS) | Essencial para retenção |
-| **WeakTopicsCard** | Temas fracos | Guia estudo direcionado |
-| **MotivationalGreeting** | Saudação + contexto | Humaniza, dá contexto rápido |
-| **XpWidget** | XP e nível | Gamificação essencial |
-| **DashboardWarnings** | Alertas de inatividade | Reengajamento |
-| **InstallAppBanner** | PWA install | Aquisição mobile |
-
-### ⚠️ REDUNDANTE OU CONFUSO — Candidatos a remover/fundir
-
-| Componente | Problema |
-|---|---|
-| **FocusSelector** | Redundante com TodayStudyCard + MissionStartButton. O aluno já tem tarefas guiadas — oferecer "escolha o foco" contradiz o modelo guiado. |
-| **QuickStartCard** | Sobreposição com OnboardingChecklist. Ambos aparecem para novos usuários com passos similares. |
-| **OnboardingChecklist** | Pode substituir o QuickStartCard, mas os dois juntos confundem. Manter apenas um. |
-| **SmartRecommendations** | Sobreposição com TodayStudyCard e BehavioralAlerts. Três componentes sugerem "o que estudar". |
-| **BehavioralAlerts** | Sobreposição com WeakTopicsCard. Ambos mostram temas fracos — um por acurácia, outro por evasão. |
-| **ContentLockStatusCard** | Conceito de "bloqueio de conteúdo" — se não há plano premium ativo, aparece vazio. Confuso sem contexto de monetização. |
-| **DailyPlanWidget** | Aparece duas vezes: uma no scroll principal E outra dentro do Sheet "Cronograma". Duplicação. |
-| **ApprovalTimeline** | Estimativa de "dias até estar pronto" — dado especulativo, pode gerar ansiedade sem base sólida. |
-| **DashboardSummaryCard (grid 4 cards)** | Os 4 cards drill-down repetem dados já visíveis acima (score, tarefas, streak). Clique abre Sheets com gráficos que poucos usam no mobile. |
-
-### 🔴 POPUPS EXCESSIVOS
-
-| Componente | Problema |
-|---|---|
-| **WhatsNewPopup** | Popup ao entrar |
-| **SystemGuidePopup** | Popup ao entrar |
-| **FeedbackSurveyPopup** | Popup ao entrar |
-| **OnboardingTour** | Popup ao entrar |
-| **DashboardSmartPopups** | Popup ao entrar |
-| **EndOfDaySummary** | Popup condicional |
-| **ExamSetupReminder** | Popup/banner |
-| **ExamSetupConfirmation** | Popup/banner |
-| **AdminMessagesBanner** | Banner |
-| **ActiveVideoRoomBanner** | Banner |
-
-**São 10 popups/banners** que potencialmente competem pela atenção do aluno. Um novo usuário pode ver 3-4 popups ao abrir o dashboard pela primeira vez.
+Adicionar 7 camadas de inteligência ao sistema existente sem alterar contratos de edge functions, rotas ou lógica de negócio. As melhorias se dividem em: memória de sessão, controle de profundidade, detecção de travamento/padrão de erro, transparência de decisões e modo foco extremo.
 
 ---
 
-## Proposta de Simplificação
-
-### Estrutura recomendada (de cima para baixo):
+## Arquitetura das Mudanças
 
 ```text
-┌─────────────────────────────┐
-│ Saudação + XP               │  MotivationalGreeting + XpWidget
-├─────────────────────────────┤
-│ ⚡ COMEÇAR ESTUDO           │  MissionStartButton (CTA)
-├─────────────────────────────┤
-│ 📋 Tarefas de Hoje          │  TodayStudyCard
-├─────────────────────────────┤
-│ 🎯 Score de Aprovação       │  ApprovalScoreCard
-├─────────────────────────────┤
-│ 📝 Revisões  |  ⚠ Fracos   │  PendingReviewsCard + WeakTopicsCard
-├─────────────────────────────┤
-│ 🩺 Treino Prático           │  PracticalTrainingCard
-├─────────────────────────────┤
-│ 📊 Métricas (drill-down)    │  4 summary cards com Sheets
-├─────────────────────────────┤
-│ 🆓 Acesso Livre             │  FreeStudyCard
-└─────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│  useSessionMemory (NOVO hook)               │
+│  - último tema, última resposta, erros      │
+│  - compartilhado via React Context          │
+│  - reset após 30min inatividade             │
+├─────────────────────────────────────────────┤
+│  Prompt Layer (enazizi-prompt.ts)           │
+│  + SESSION_MEMORY block                     │
+│  + RESPONSE_DEPTH directive                 │
+│  + STALL_DETECTION rules                    │
+│  + ERROR_PATTERN classification             │
+│  + TRANSPARENCY rules                       │
+│  + RESPONSE_STRUCTURE standard              │
+├─────────────────────────────────────────────┤
+│  chatgpt-agent / study-session              │
+│  + inject sessionMemory + responseDepth     │
+│  + inject consecutiveErrors count           │
+├─────────────────────────────────────────────┤
+│  FocusHardMode (NOVO componente)            │
+│  - ativado por prova próxima / baixa perf   │
+│  - sem sidebar, sem navegação lateral       │
+└─────────────────────────────────────────────┘
 ```
-
-### Remover/Fundir:
-1. **FocusSelector** → remover (redundante com missão guiada)
-2. **QuickStartCard** → remover (OnboardingChecklist já cobre)
-3. **SmartRecommendations** → fundir lógica no TodayStudyCard
-4. **BehavioralAlerts** → fundir no WeakTopicsCard
-5. **ApprovalTimeline** → mover para dentro do Sheet "Desempenho"
-6. **DailyPlanWidget duplicado** → remover do scroll principal, manter só no Sheet
-7. **ContentLockStatusCard** → remover se não há monetização ativa
-8. **DashboardWarnings** → limitar a 1 alerta por vez (o mais urgente)
-
-### Popups — Unificar:
-- Criar um **sistema de fila** que mostra no máximo 1 popup por sessão
-- Prioridade: Onboarding > ExamSetup > WhatsNew > Feedback
-- Os demais ficam como notificações no sino (NotificationBell)
 
 ---
 
-## Impacto Esperado
-- Dashboard passa de **~25 componentes visíveis** para **~10**
-- Menos scroll no mobile (430px)
-- Fluxo de decisão mais claro: "abro o app → vejo missão → clico → estudo"
-- Zero redundância de informação
+## Implementação
 
-## Arquivos Afetados
-- `src/pages/Dashboard.tsx` (reorganização e remoções)
-- `src/components/dashboard/FocusSelector.tsx` (remover)
-- `src/components/dashboard/QuickStartCard.tsx` (remover)
-- `src/components/dashboard/SmartRecommendations.tsx` (fundir ou remover)
-- `src/components/dashboard/BehavioralAlerts.tsx` (fundir no WeakTopicsCard)
-- `src/components/dashboard/ApprovalTimeline.tsx` (mover para Sheet)
-- `src/components/dashboard/DashboardWarnings.tsx` (limitar a 1)
+### 1. Session Memory Context (~novo arquivo)
+
+**Arquivo**: `src/contexts/SessionMemoryContext.tsx`
+
+- React Context + Provider com estado:
+  - `lastTopic`, `lastQuestion`, `lastIncorrectAnswer`, `recentDifficulty`, `consecutiveErrors` (por tema), `currentContext`
+- Timer de inatividade (30min) que reseta a memória
+- Funções: `recordAnswer(topic, correct, question)`, `recordTopicChange(topic)`, `getMemoryPayload()` que retorna objeto serializado para enviar às edge functions
+- Provider envolve `DashboardLayout`
+
+### 2. Controle de Profundidade (Response Depth)
+
+**Arquivo**: `src/contexts/SessionMemoryContext.tsx` (dentro do mesmo contexto)
+
+- Função `computeResponseDepth(taskType, consecutiveErrors, isReview)`:
+  - `review` ou `error_review` → `"curto"`
+  - erro recente no tema → `"medio"`
+  - conteúdo novo → `"aprofundado"`
+- Retornado como parte de `getMemoryPayload()`
+
+### 3. Atualização do Prompt Base
+
+**Arquivo**: `supabase/functions/_shared/enazizi-prompt.ts`
+
+Adicionar ~120 linhas ao final (antes do LEMBRETE FINAL):
+
+- **MEMÓRIA DE SESSÃO**: Instruções para a IA usar os dados de sessão injetados (último tema, último erro, contexto recente). Exemplos de frases: "Você acabou de errar...", "Vamos reforçar o que vimos agora"
+- **CONTROLE DE PROFUNDIDADE**: Diretiva `response_depth` com 3 modos e regras de tamanho (curto: max 300 palavras, médio: max 500, aprofundado: max 700)
+- **DETECÇÃO DE TRAVAMENTO**: Se `consecutive_errors >= 3` no mesmo tema, simplificar linguagem, usar analogias, reduzir complexidade. Mensagem obrigatória: "Vamos simplificar isso para fixar melhor."
+- **CLASSIFICAÇÃO DE ERRO**: 4 categorias (diagnóstico, conduta, fisiopatologia, interpretação). Quando detectar padrão recorrente, mudar abordagem e focar na raiz
+- **TRANSPARÊNCIA**: Sempre iniciar bloco com motivo da escolha do tema (1 linha). Ex: "Estamos reforçando isso porque você errou recentemente"
+- **ESTRUTURA PADRÃO DE RESPOSTA**: Todos os blocos seguem: Título claro → Explicação objetiva → Aplicação clínica → Reforço do ponto-chave
+
+### 4. Injeção de Contexto nas Edge Functions
+
+**Arquivo**: `supabase/functions/chatgpt-agent/index.ts`
+
+- Aceitar novo campo `session_memory` no body (opcional)
+- Injetar bloco `--- MEMÓRIA DE SESSÃO ---` no prompt com: último tema, último erro, erros consecutivos, profundidade recomendada
+- Sem alterar contrato existente (campo opcional, backward-compatible)
+
+**Arquivo**: `supabase/functions/study-session/index.ts`
+
+- Mesma lógica: aceitar `session_memory` e injetar no prompt montado por `getPhasePrompt`
+
+**Arquivo**: `supabase/functions/mentor-chat/index.ts`
+
+- Aceitar `session_memory` e injetar no prompt
+
+### 5. Integração no Tutor IA (ChatGPT.tsx)
+
+**Arquivo**: `src/pages/ChatGPT.tsx`
+
+- Importar `useSessionMemory` do novo contexto
+- Após cada resposta da IA (`onComplete`): chamar `recordAnswer(currentTopic, !hasError, questionText)`
+- No `sendMessage`: incluir `session_memory: getMemoryPayload()` no body enviado
+- Na detecção de erro existente (linhas 253-279): incrementar `consecutiveErrors`
+
+### 6. Modo Foco Extremo (Focus Hard Mode)
+
+**Arquivo**: `src/components/study/FocusHardMode.tsx` (novo)
+
+- Componente fullscreen sem sidebar, sem bottom tab, sem navegação
+- Apenas: tarefa atual, timer, botão "Concluir"
+- Ativado automaticamente quando:
+  - `examDate` <= 15 dias (do profile)
+  - `approvalScore` < 40
+  - `state.status === "active"` na missão com tarefa crítica
+
+**Arquivo**: `src/pages/MissionMode.tsx`
+
+- Importar `FocusHardMode`
+- Quando condições acima são verdadeiras, renderizar `FocusHardMode` em vez do layout padrão
+- Usar dados do `useStudyEngine().adaptive` para verificar `approvalScore` e `lockStatus`
+
+### 7. Prioridade Dinâmica Agressiva
+
+**Arquivo**: `src/lib/studyEngine.ts`
+
+- No cálculo de prioridade, adicionar boost de +30 quando:
+  - `consecutiveErrors >= 3` para um tema (via `error_bank.vezes_errado`)
+  - `approvalScore < 40`
+  - Revisão atrasada > 3 dias
+- Adicionar regra: se tema tem `vezes_errado >= 5`, não permitir progressão (bloquear novos temas) até acurácia >= 50% nesse tema
+
+---
+
+## Detalhes Técnicos
+
+- **Nenhuma tabela nova** necessária - tudo usa `error_bank`, `enazizi_progress` e `study_sessions` existentes
+- **Nenhuma rota nova** - apenas componentes e contexto
+- **Backward-compatible** - `session_memory` é campo opcional nas edge functions
+- **Sem alteração de contratos** - apenas campos opcionais adicionados ao body
+
+---
+
+## Arquivos Alterados/Criados
+
+| Arquivo | Ação |
+|---------|------|
+| `src/contexts/SessionMemoryContext.tsx` | Criar |
+| `src/components/study/FocusHardMode.tsx` | Criar |
+| `supabase/functions/_shared/enazizi-prompt.ts` | Editar (adicionar ~120 linhas) |
+| `supabase/functions/chatgpt-agent/index.ts` | Editar (aceitar session_memory) |
+| `supabase/functions/study-session/index.ts` | Editar (aceitar session_memory) |
+| `supabase/functions/mentor-chat/index.ts` | Editar (aceitar session_memory) |
+| `src/pages/ChatGPT.tsx` | Editar (integrar SessionMemory) |
+| `src/pages/MissionMode.tsx` | Editar (FocusHardMode condicional) |
+| `src/lib/studyEngine.ts` | Editar (prioridade agressiva) |
+| `src/components/layout/DashboardLayout.tsx` | Editar (adicionar SessionMemoryProvider) |
 
