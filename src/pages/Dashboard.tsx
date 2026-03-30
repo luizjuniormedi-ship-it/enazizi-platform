@@ -222,7 +222,7 @@ const Dashboard = () => {
       {/* ══════════════════════════════════════════
           BLOCO 4 — TREINO PRÁTICO
          ══════════════════════════════════════════ */}
-      <PracticalTrainingCard />
+      <SafeCard name="PracticalTraining"><PracticalTrainingCard /></SafeCard>
 
       {/* ══════════════════════════════════════════
           BLOCO 5 — MÉTRICAS DRILL-DOWN
