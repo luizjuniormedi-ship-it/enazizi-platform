@@ -228,6 +228,7 @@ const TypingDots = () => (
 
 const AnamnesisTrainer = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { addXp } = useGamification();
   const isMobile = useIsMobile();
