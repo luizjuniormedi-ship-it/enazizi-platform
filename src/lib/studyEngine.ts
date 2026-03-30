@@ -330,7 +330,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   }
 
   // ── 2. Error bank ────────────────────────────────────────────
-  const errors = (errorBankRes.data || []) as any[];
+  const errors = (errorBankData || []) as any[];
   const errorLimit = weights.phase === "critico" ? 5 : 3;
 
   // Aggressive priority: check if any topic has vezes_errado >= 5 with no mastery
