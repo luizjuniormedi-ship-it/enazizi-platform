@@ -71,6 +71,19 @@ NÃO repita estados anteriores. NÃO pule para estados futuros. Avance apenas UM
       instructions += `\n--- FIM DO BANCO DE ERROS ---`;
     }
 
+    if (session_memory) {
+      instructions += `\n\n--- MEMÓRIA DE SESSÃO ---
+Último tema: ${session_memory.ultimo_tema || "nenhum"}
+Última pergunta: ${session_memory.ultima_pergunta || "nenhuma"}
+Último erro: ${session_memory.ultimo_erro || "nenhum"}
+Erros consecutivos no tema atual: ${session_memory.erros_consecutivos || 0}
+Profundidade recomendada: ${session_memory.profundidade_resposta || "aprofundado"}
+Total erros na sessão: ${session_memory.total_erros_sessao || 0}
+Total acertos na sessão: ${session_memory.total_acertos_sessao || 0}
+${session_memory.erros_consecutivos >= 3 ? "\n⚠️ ALERTA DE TRAVAMENTO: O aluno errou 3+ vezes consecutivas neste tema. SIMPLIFIQUE a explicação." : ""}
+--- FIM DA MEMÓRIA DE SESSÃO ---`;
+    }
+
     const allMessages = [{ role: "system", content: instructions }, ...messages];
     const body = JSON.stringify({ model: "gpt-4o", messages: allMessages, stream: true, max_tokens: 16384 });
 
