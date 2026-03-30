@@ -399,7 +399,10 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="bi">
-            <AdminBIPanel callAdmin={callAdmin} />
+            <div className="space-y-4">
+              <AdminHealthHistory />
+              <AdminBIPanel callAdmin={callAdmin} />
+            </div>
           </TabsContent>
 
           <TabsContent value="uploads">
