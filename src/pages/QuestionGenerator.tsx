@@ -31,7 +31,8 @@ interface SessionStats {
 
 const QuestionGenerator = () => {
   const { user } = useAuth();
-  const [specialty, setSpecialty] = useState<string>("");
+  const studyCtx = useStudyContext();
+  const [specialty, setSpecialty] = useState<string>(studyCtx?.specialty || "");
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState("intermediario");
   const [quantity, setQuantity] = useState(10);
