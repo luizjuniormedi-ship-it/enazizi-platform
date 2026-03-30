@@ -147,90 +147,103 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
  try {
   const recs: StudyRecommendation[] = [];
 
+  // Individual queries with safe fallback — one failure never breaks the engine
+  const safe = async <T>(fn: () => PromiseLike<{ data: T | null; error: any }>, label: string): Promise<T | null> => {
+    try {
+      const { data, error } = await fn();
+      if (error) console.warn(`[StudyEngine] ${label}:`, error.message);
+      return data;
+    } catch (e) {
+      console.warn(`[StudyEngine] ${label} failed silently:`, e);
+      return null;
+    }
+  };
+
   const [
-    revisoesRes,
-    errorBankRes,
-    desempenhoRes,
-    temasRes,
-    practiceRes,
-    examRes,
-    anamnesisRes,
-    clinicalSimRes,
-    fsrsDueRes,
+    revisoesData,
+    errorBankData,
+    desempenhoData,
+    temasData,
+    practiceData,
+    examData,
+    anamnesisData,
+    clinicalSimData,
+    fsrsDueData,
   ] = await Promise.all([
-    supabase
+    safe(() => supabase
       .from("revisoes")
       .select("id, tema_id, data_revisao, status, prioridade, risco_esquecimento, temas_estudados(tema, especialidade)")
       .eq("user_id", userId)
       .eq("status", "pendente")
       .order("prioridade", { ascending: false })
-      .limit(20),
-    supabase
+      .limit(20), "revisoes"),
+    safe(() => supabase
       .from("error_bank")
       .select("id, tema, subtema, vezes_errado, dominado, categoria_erro")
       .eq("user_id", userId)
       .eq("dominado", false)
       .order("vezes_errado", { ascending: false })
-      .limit(20),
-    supabase
+      .limit(20), "error_bank"),
+    safe(() => supabase
       .from("desempenho_questoes")
       .select("tema_id, taxa_acerto, questoes_feitas, temas_estudados(tema, especialidade)")
       .eq("user_id", userId)
       .order("taxa_acerto", { ascending: true })
-      .limit(20),
-    supabase
+      .limit(20), "desempenho"),
+    safe(() => supabase
       .from("temas_estudados")
       .select("id, tema, especialidade, data_estudo, status, dificuldade")
       .eq("user_id", userId)
       .order("data_estudo", { ascending: false })
-      .limit(50),
-    supabase
+      .limit(50), "temas"),
+    safe(() => supabase
       .from("practice_attempts")
       .select("correct, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(200),
-    supabase
+      .limit(200), "practice"),
+    safe(() => supabase
       .from("exam_sessions")
       .select("id, score, total_questions, finished_at")
       .eq("user_id", userId)
       .eq("status", "finished")
       .order("finished_at", { ascending: false })
-      .limit(10),
-    supabase
+      .limit(10), "exams"),
+    safe(() => supabase
       .from("anamnesis_results")
       .select("id, specialty, final_score, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(10),
-    supabase
-      .from("simulation_history")
+      .limit(10), "anamnesis"),
+    // Use anamnesis_sessions as clinical simulation proxy (simulation_history doesn't exist)
+    safe(() => supabase
+      .from("anamnesis_sessions")
       .select("id, specialty, final_score, created_at")
       .eq("user_id", userId)
+      .eq("status", "finished")
       .order("created_at", { ascending: false })
-      .limit(10),
-    // FSRS due cards — all types
-    supabase
+      .limit(10), "clinical_sim"),
+    safe(() => supabase
       .from("fsrs_cards")
       .select("id, card_type, card_ref_id, stability, difficulty, state, due, lapses")
       .eq("user_id", userId)
       .lte("due", new Date().toISOString())
       .order("due", { ascending: true })
-      .limit(30),
+      .limit(30), "fsrs"),
   ]);
 
   // ── Compute approval score & weights ─────────────────────────
-  const practiceAttempts = practiceRes.data || [];
-  const exams = examRes.data || [];
-  const anamnesisResults = anamnesisRes.data || [];
-  const clinicalSims = clinicalSimRes.data || [];
+  const practiceAttempts = (practiceData || []) as any[];
+  const exams = (examData || []) as any[];
+  const anamnesisResults = (anamnesisData || []) as any[];
+  const clinicalSims = (clinicalSimData || []) as any[];
 
   const approvalScore = await computeApprovalScore(userId, practiceAttempts, exams, anamnesisResults, clinicalSims);
   const weights = adjustPlanByApprovalScore(approvalScore);
 
   // ── Content Lock — compute inline for engine use ─────────────
   const today = new Date().toISOString().split("T")[0];
-  const pendingReviews = (revisoesRes.data || []) as any[];
+  const pendingReviews = (revisoesData || []) as any[];
   const overdueCount = pendingReviews.filter((r: any) => r.data_revisao <= today).length;
   const recentTotal = practiceAttempts.length;
   const recentErrors = practiceAttempts.filter((a: any) => !a.correct).length;
@@ -256,7 +269,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   weights.maxNewTopics = adjustNewTopicsByLock(weights.maxNewTopics, lockStatus);
 
   // ── FSRS memory pressure ─────────────────────────────────────
-  const fsrsDue = (fsrsDueRes.data || []) as any[];
+  const fsrsDue = (fsrsDueData || []) as any[];
   const memoryPressure = cap(
     (overdueCount / 20) * 50 + (fsrsDue.length / 30) * 50,
     100
@@ -317,7 +330,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   }
 
   // ── 2. Error bank ────────────────────────────────────────────
-  const errors = (errorBankRes.data || []) as any[];
+  const errors = (errorBankData || []) as any[];
   const errorLimit = weights.phase === "critico" ? 5 : 3;
 
   // Aggressive priority: check if any topic has vezes_errado >= 5 with no mastery
@@ -326,9 +339,10 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
 
   for (let i = 0; i < Math.min(errors.length, errorLimit); i++) {
     const err = errors[i];
-    // Aggressive boost: +30 for 3+ errors, +15 for critical approval score
-    const aggressiveBoost = (err.vezes_errado >= 3 ? 30 : 0) + (approvalScore < 40 ? 15 : 0);
-    const priority = cap(70 + err.vezes_errado * 5 - i * 2 + (weights.phase === "critico" ? 10 : 0) + aggressiveBoost);
+    // Smoothed aggressive boost: cap individual boosts to avoid wild oscillation
+    const errorBoost = Math.min(err.vezes_errado >= 3 ? 20 : 0, 20);
+    const scoreBoost = approvalScore < 40 ? 10 : 0;
+    const priority = cap(70 + Math.min(err.vezes_errado * 3, 15) - i * 2 + (weights.phase === "critico" ? 8 : 0) + errorBoost + scoreBoost);
     addRec({
       id: id("err", i),
       type: "error_review",
@@ -348,7 +362,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   }
 
   // ── 3. Low-accuracy topics ───────────────────────────────────
-  const weakTopics = (desempenhoRes.data || []).filter((d: any) => d.taxa_acerto < 60 && d.questoes_feitas >= 3) as any[];
+  const weakTopics = (desempenhoData || []).filter((d: any) => d.taxa_acerto < 60 && d.questoes_feitas >= 3) as any[];
   for (let i = 0; i < Math.min(weakTopics.length, 3); i++) {
     const w = weakTopics[i];
     const tema = w.temas_estudados?.tema || "Tema";
@@ -442,7 +456,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   // ── 6. New topics (blocked if critical errors exist) ──────────
   // Aggressive: if any topic has vezes_errado >= 5 and accuracy < 50%, block new topics
   if (!hasCriticalBlock) {
-    const temas = (temasRes.data || []) as any[];
+    const temas = (temasData || []) as any[];
     const studiedSpecialties = new Set(temas.map((t: any) => t.especialidade));
     const CORE_SPECIALTIES = [
       "Clínica Médica", "Cirurgia", "Pediatria", "Ginecologia e Obstetrícia",
@@ -450,7 +464,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     ];
     const unexplored = CORE_SPECIALTIES.filter((s) => !studiedSpecialties.has(s));
 
-    const isNewUser = temas.length === 0 && practiceAttempts.length === 0;
+    const isNewUser = temas.length === 0 && (practiceAttempts as any[]).length === 0;
     const maxNew = isNewUser ? Math.max(weights.maxNewTopics, 3) : weights.maxNewTopics;
     for (let i = 0; i < Math.min(unexplored.length, maxNew); i++) {
       addRec({
