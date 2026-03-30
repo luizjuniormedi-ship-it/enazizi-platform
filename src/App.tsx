@@ -54,7 +54,7 @@ const AnamnesisTrainer = lazy(() => import("./pages/AnamnesisTrainer"));
 const Install = lazy(() => import("./pages/Install"));
 const StudyGuides = lazy(() => import("./pages/StudyGuides"));
 const MedicalChronicles = lazy(() => import("./pages/MedicalChronicles"));
-const FeynmanTrainer = lazy(() => import("./pages/FeynmanTrainer"));
+
 const AIMentor = lazy(() => import("./pages/AIMentor"));
 const SmartPlanner = lazy(() => import("./pages/SmartPlanner"));
 const AdminMonitoring = lazy(() => import("./pages/AdminMonitoring"));
