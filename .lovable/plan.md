@@ -1,54 +1,41 @@
 
 
-# Enriquecer Respostas de Exame Físico Durante a Simulação do Plantão
+# Integrar Feynman ao Tutor + Remover Áudio/Avatar
 
-## Situação Atual
+## Viabilidade: Confirmada
 
-Quando o aluno pede exame físico durante o Plantão, o sistema descreve achados como narrador clínico, mas **sem estrutura semiológica formal** -- não nomeia manobras específicas, não descreve a técnica de execução nem a interpretação do achado.
+A arquitetura modular do Tutor (hooks separados, fases numeradas, prompt sequencial) torna todas as mudanças cirúrgicas e seguras.
 
-Os achados estruturados com manobras só aparecem **no final** (campo `physical_exam_expected`).
+## Mudanças
 
-## Proposta
+### 1. Adicionar Feynman como Etapa 15
+**`src/hooks/tutor/useChatProgress.ts`**
+- Adicionar `"feynman"` ao `getPhaseMap` (step 15) com prompt pedindo explicação leiga + avaliação 4 critérios
+- Adicionar entrada step 14 → Feynman no `getNextPhaseInfo`
 
-Modificar o prompt do sistema para que, **durante a simulação** (action="interact", response_type="physical_exam"), a IA:
+**`src/components/tutor/TutorStepTracker.tsx`**
+- Mudar total de 14 para 15
 
-1. Nomeie as **manobras semiológicas** realizadas (ex: "Sinal de Blumberg", "Manobra de Giordano")
-2. Descreva a **técnica** brevemente (ex: "descompressão brusca do abdome")
-3. Informe o **achado** (positivo ou negativo) com significado clínico
-4. Sugira **próximas manobras** relevantes que o aluno deveria pedir
+**`supabase/functions/_shared/enazizi-prompt.ts`**
+- Adicionar STATE 15 — Método Feynman ao fluxo pedagógico
 
-## Mudança
+### 2. Remover Áudio e Avatar do Tutor
+**`src/pages/ChatGPT.tsx`**
+- Remover imports/uso de `useTutorAudio`, `useSpeechToText`, `CinematicAvatar`
+- Remover state `showAvatar3D`
+- Simplificar props passadas ao Header e InputBar
 
-### `supabase/functions/clinical-simulation/index.ts`
+**`src/components/tutor/TutorHeader.tsx`**
+- Remover props e itens de menu de avatar/áudio
 
-Na seção "Se o aluno pede EXAME FÍSICO" (linhas 88-92), adicionar instrução:
+**`src/components/tutor/TutorInputBar.tsx`**
+- Remover botões de microfone e stop speaking
 
-```text
-* Ao descrever os achados, SEMPRE inclua:
-  - Nome técnico da manobra semiológica realizada
-  - Breve descrição da técnica de execução
-  - Achado encontrado (positivo ou negativo) e seu significado clínico
-  - Sugestão de manobras complementares que o aluno poderia solicitar
-  Exemplo: "Ao realizar a Manobra de Blumberg (descompressão brusca do abdome), 
-  observa-se dor intensa à descompressão em FID → sugere irritação peritoneal. 
-  Considere também avaliar o Sinal de Rovsing e o Sinal do Psoas."
-```
+### 3. Remover Feynman Standalone
+**`src/pages/AgentsHub.tsx`** — Remover card Feynman
+**`src/App.tsx`** — Remover rota, adicionar redirect `/dashboard/feynman` → `/dashboard/chatgpt`
+**`src/components/layout/DashboardSidebar.tsx`** — Remover item de menu
+**`src/hooks/useModuleAccess.ts`** — Remover entrada `feynman`
 
-Adicionar ao JSON de resposta (quando `response_type: "physical_exam"`) um campo opcional:
-
-```text
-"maneuvers_performed": [
-  { "name": "Nome", "technique": "Técnica", "finding": "Achado", "interpretation": "Significado" }
-]
-```
-
-### `src/pages/ClinicalSimulation.tsx`
-
-Na renderização das mensagens do chat, quando `response_type === "physical_exam"` e existir `maneuvers_performed`, exibir cards visuais com as manobras (ícone de estetoscópio, nome em destaque, técnica e achado).
-
-## Impacto
-
-- 2 arquivos editados
-- Zero mudança em rotas ou lógica de negócio
-- O aluno aprende manobras semiológicas **em tempo real** enquanto conduz o caso
+## Arquivos: ~10 editados | Impacto: Zero breaking changes
 
