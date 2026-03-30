@@ -1036,7 +1036,9 @@ const AnamnesisTrainer = () => {
             <BookOpen className="h-4 w-4 text-primary" />
             📚 Aprofundar no Tutor IA
           </Button>
-        )
+        )}
+
+        {/* Missed / Strengths / Improvements */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {evalData.categories_summary?.missed?.length > 0 && (
             <Card className="glass-card border-red-500/20">
