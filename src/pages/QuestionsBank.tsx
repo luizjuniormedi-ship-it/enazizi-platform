@@ -330,12 +330,15 @@ const QuestionsBank = () => {
                   <Button
                     variant="outline"
                     className="gap-2"
-                    onClick={() => navigate("/dashboard/chatgpt", {
-                      state: {
-                        initialMessage: `Errei uma questão sobre "${practiceQuestion.topic || "Medicina"}". O enunciado era: "${practiceQuestion.statement.slice(0, 200)}". A resposta correta era "${practiceQuestion.options[practiceQuestion.correct_index]}". Me explique este tema seguindo o protocolo ENAZIZI.`,
-                        fromErrorBank: true,
-                      },
-                    })}
+                    onClick={() => {
+                      const params = new URLSearchParams();
+                      params.set("sc_source", "error-bank");
+                      params.set("sc_topic", practiceQuestion.topic || "Medicina");
+                      params.set("sc_objective", "correction");
+                      params.set("sc_taskType", "error_review");
+                      params.set("sc_reason", `Errou questão: "${practiceQuestion.options[practiceQuestion.correct_index]}"`);
+                      navigate(`/dashboard/chatgpt?${params.toString()}`);
+                    }}
                   >
                     <GraduationCap className="h-4 w-4" />
                     Estudar com Tutor IA

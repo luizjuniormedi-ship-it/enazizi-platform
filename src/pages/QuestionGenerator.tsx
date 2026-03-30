@@ -161,6 +161,7 @@ const QuestionGenerator = () => {
     return (
       <div className="flex flex-col animate-fade-in h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)]">
         <div className="mb-4">
+          <StudyContextBanner />
           <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
             <HelpCircle className="h-6 w-6 text-primary" />
             Gerador de Questões
