@@ -64,6 +64,7 @@ const ChatGPT = () => {
   const { performance, savePerformance, sessionQuestions, setSessionQuestions, sessionCorrect, setSessionCorrect, handleFinishSession } = perf;
   const audio = useTutorAudio();
   const { autoSpeak, isSpeaking, speakText, stopSpeaking, toggleAutoSpeak } = audio;
+  const sessionMemory = useSessionMemory();
 
   const handleTranscript = useCallback((transcript: string) => {
     setInput(prev => prev ? `${prev} ${transcript}` : transcript);
