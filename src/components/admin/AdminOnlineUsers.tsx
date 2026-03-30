@@ -20,7 +20,7 @@ const AdminOnlineUsers = ({ stats, onUserClick }: AdminOnlineUsersProps) => (
           const pageName = ou.current_page === "/dashboard" ? "Dashboard" : ou.current_page?.replace("/dashboard/", "") || "—";
           const seenAgo = Math.round((Date.now() - new Date(ou.last_seen_at).getTime()) / 60000);
           return (
-            <div key={ou.user_id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+            <div key={ou.user_id} onClick={() => onUserClick?.(ou.user_id)} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 cursor-pointer hover:bg-secondary/80 transition-colors">
               <div className="relative">
                 <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
                   {(ou.display_name || "?")[0].toUpperCase()}
