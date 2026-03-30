@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import { SessionMemoryProvider } from "@/contexts/SessionMemoryContext";
 import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
 import { useLandscapeTablet } from "@/hooks/useLandscapeTablet";
 import DashboardSidebar from "./DashboardSidebar";
