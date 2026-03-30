@@ -1,41 +1,47 @@
 
 
-# Integrar Feynman ao Tutor + Remover Áudio/Avatar
+# Adicionar Diagnóstico Diferencial + Link para Tutor na Correção da Anamnese e Plantão
 
-## Viabilidade: Confirmada
+## Resumo
 
-A arquitetura modular do Tutor (hooks separados, fases numeradas, prompt sequencial) torna todas as mudanças cirúrgicas e seguras.
+Duas mudanças principais:
+1. **Anamnese**: Adicionar seção de diagnósticos diferenciais na correção final (o Plantão já tem, a Anamnese não)
+2. **Ambos**: Adicionar botão "Estudar no Tutor IA" nos erros/pontos fracos, que abre o Tutor com contexto do erro
 
 ## Mudanças
 
-### 1. Adicionar Feynman como Etapa 15
-**`src/hooks/tutor/useChatProgress.ts`**
-- Adicionar `"feynman"` ao `getPhaseMap` (step 15) com prompt pedindo explicação leiga + avaliação 4 critérios
-- Adicionar entrada step 14 → Feynman no `getNextPhaseInfo`
+### 1. `supabase/functions/anamnesis-trainer/index.ts`
+No JSON de finalização (action="finish"), adicionar campo `differential_diagnosis`:
+```json
+"differential_diagnosis": [
+  { "diagnosis": "...", "reasoning": "por que considerar", "how_to_rule_out": "como descartar", "student_considered": true/false }
+]
+```
+Mesma estrutura já usada no Plantão.
 
-**`src/components/tutor/TutorStepTracker.tsx`**
-- Mudar total de 14 para 15
+### 2. `src/pages/AnamnesisTrainer.tsx`
+- Adicionar `useNavigate` do react-router-dom
+- Adicionar interface `DifferentialDiagnosis` ao `FinalEval`
+- Na tela de resultado, renderizar seção de **Diagnósticos Diferenciais** (cards com ícone, reasoning, how_to_rule_out — mesmo visual do Plantão)
+- Adicionar botão **"📚 Aprofundar no Tutor IA"** após o diagnóstico correto e nos pontos a melhorar, que navega para `/dashboard/chatgpt` com `state.initialMessage` contendo o contexto do erro/tema
 
-**`supabase/functions/_shared/enazizi-prompt.ts`**
-- Adicionar STATE 15 — Método Feynman ao fluxo pedagógico
+### 3. `src/pages/ClinicalSimulation.tsx`
+- Adicionar `useNavigate` do react-router-dom
+- Adicionar botão **"📚 Aprofundar no Tutor IA"** na seção de diagnósticos diferenciais e nos pontos a melhorar, com mesmo padrão de navegação
 
-### 2. Remover Áudio e Avatar do Tutor
-**`src/pages/ChatGPT.tsx`**
-- Remover imports/uso de `useTutorAudio`, `useSpeechToText`, `CinematicAvatar`
-- Remover state `showAvatar3D`
-- Simplificar props passadas ao Header e InputBar
+### Navegação para o Tutor
+O botão enviará o aluno para `/dashboard/chatgpt` com `state`:
+```ts
+navigate("/dashboard/chatgpt", {
+  state: {
+    initialMessage: `🔬 MODO REVISÃO CLÍNICA\n\nO aluno errou/teve dificuldade no seguinte caso:\n- Diagnóstico correto: ${correctDiagnosis}\n- Diferenciais não considerados: ${missed}\n- Pontos fracos: ${improvements}\n\nExplique detalhadamente...`,
+  }
+});
+```
 
-**`src/components/tutor/TutorHeader.tsx`**
-- Remover props e itens de menu de avatar/áudio
-
-**`src/components/tutor/TutorInputBar.tsx`**
-- Remover botões de microfone e stop speaking
-
-### 3. Remover Feynman Standalone
-**`src/pages/AgentsHub.tsx`** — Remover card Feynman
-**`src/App.tsx`** — Remover rota, adicionar redirect `/dashboard/feynman` → `/dashboard/chatgpt`
-**`src/components/layout/DashboardSidebar.tsx`** — Remover item de menu
-**`src/hooks/useModuleAccess.ts`** — Remover entrada `feynman`
-
-## Arquivos: ~10 editados | Impacto: Zero breaking changes
+## Impacto
+- 3 arquivos editados
+- 1 edge function atualizada
+- Zero mudança em rotas ou lógica de negócio
+- Reutiliza o visual de diferenciais já existente no Plantão
 
