@@ -560,7 +560,7 @@ const Simulados = () => {
   return (
     <SimuladoExam
       questions={questions}
-      timeSeconds={restoredState?.timeLeft ?? (mode === "prova" ? questions.length * 3 * 60 : 0)}
+      timeSeconds={restoredState?.timeLeft ?? ((mode === "prova" || mode === "extremo") ? questions.length * 3 * 60 : 0)}
       onFinish={handleFinish}
       onAutoSaveState={() => ({ current: 0, selectedAnswers: {}, timeLeft: 0 })}
       initialState={restoredState ? {
