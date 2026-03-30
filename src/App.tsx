@@ -59,6 +59,7 @@ const SmartPlanner = lazy(() => import("./pages/SmartPlanner"));
 const AdminMonitoring = lazy(() => import("./pages/AdminMonitoring"));
 const MissionMode = lazy(() => import("./pages/MissionMode"));
 const StudySession = lazy(() => import("./pages/StudySession"));
+const Rankings = lazy(() => import("./pages/Rankings"));
 const MedicalImageQuiz = lazy(() => import("./pages/MedicalImageQuiz"));
 
 
@@ -139,6 +140,7 @@ const App = () => (
                 <Route path="perfil" element={<Profile />} />
                 <Route path="sessao-estudo" element={<StudySession />} />
                 <Route path="image-quiz" element={<MedicalImageQuiz />} />
+                <Route path="rankings" element={<Rankings />} />
               </Route>
               <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />

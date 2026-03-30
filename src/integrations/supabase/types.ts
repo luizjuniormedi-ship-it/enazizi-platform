@@ -1646,6 +1646,69 @@ export type Database = {
           },
         ]
       }
+      ranking_snapshots: {
+        Row: {
+          consistency_rank: number | null
+          consistency_rank_delta: number | null
+          consistency_score: number
+          created_at: string
+          details_json: Json | null
+          evolution_rank: number | null
+          evolution_rank_delta: number | null
+          evolution_score: number
+          id: string
+          percentile: number | null
+          performance_rank: number | null
+          performance_rank_delta: number | null
+          performance_score: number
+          practical_rank: number | null
+          practical_rank_delta: number | null
+          practical_score: number
+          snapshot_date: string
+          user_id: string
+        }
+        Insert: {
+          consistency_rank?: number | null
+          consistency_rank_delta?: number | null
+          consistency_score?: number
+          created_at?: string
+          details_json?: Json | null
+          evolution_rank?: number | null
+          evolution_rank_delta?: number | null
+          evolution_score?: number
+          id?: string
+          percentile?: number | null
+          performance_rank?: number | null
+          performance_rank_delta?: number | null
+          performance_score?: number
+          practical_rank?: number | null
+          practical_rank_delta?: number | null
+          practical_score?: number
+          snapshot_date?: string
+          user_id: string
+        }
+        Update: {
+          consistency_rank?: number | null
+          consistency_rank_delta?: number | null
+          consistency_score?: number
+          created_at?: string
+          details_json?: Json | null
+          evolution_rank?: number | null
+          evolution_rank_delta?: number | null
+          evolution_score?: number
+          id?: string
+          percentile?: number | null
+          performance_rank?: number | null
+          performance_rank_delta?: number | null
+          performance_score?: number
+          practical_rank?: number | null
+          practical_rank_delta?: number | null
+          practical_score?: number
+          snapshot_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       real_exam_questions: {
         Row: {
           answer_source: string

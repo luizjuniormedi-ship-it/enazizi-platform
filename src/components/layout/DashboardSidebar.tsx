@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, CalendarDays, FlipVertical,
   FileText, Upload, BarChart3, LogOut, Shield, User,
-  HelpCircle, BookOpen, Heart, Database, Zap, TrendingUp, Stethoscope, Award, Sparkles, AlertTriangle, Map, GraduationCap, PenLine, Activity, Trophy,
+  HelpCircle, BookOpen, Heart, Database, Zap, TrendingUp, Stethoscope, Award, Sparkles, AlertTriangle, Map, GraduationCap, PenLine, Activity, Trophy, Crown,
   ChevronDown, MessageCircle, Scroll, Lightbulb
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -58,6 +58,7 @@ const navGroups: NavGroup[] = [
       { to: "/dashboard/banco-erros", icon: AlertTriangle, label: "Banco de Erros" },
       { to: "/dashboard/mapa-dominio", icon: Map, label: "Mapa de Evolução" },
       { to: "/dashboard/analytics", icon: BarChart3, label: "Analytics" },
+      { to: "/dashboard/rankings", icon: Crown, label: "Rankings" },
       { to: "/dashboard/conquistas", icon: Trophy, label: "Conquistas" },
     ],
   },
