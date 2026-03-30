@@ -388,6 +388,9 @@ Cada resposta deve usar a seguinte estrutura:
 🔬 EXPLICAÇÃO TÉCNICA
 [conteúdo seguindo formato visual obrigatório]
 
+🩺 EXAME FÍSICO E MANOBRAS DIAGNÓSTICAS
+[inspeção, palpação, manobras específicas com tabela, ausculta — seguindo formato obrigatório]
+
 🏥 APLICAÇÃO CLÍNICA
 [conteúdo seguindo formato visual obrigatório]
 
