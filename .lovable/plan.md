@@ -1,38 +1,50 @@
 
 
-# Revisão e Limpeza do Banco de Questões
+# Adicionar Filtro de Banca/Origem no Gerador de Questões e Simulados
 
-## Diagnóstico
+## Problema
 
-| Métrica | Quantidade |
+Os módulos Gerador de Questões e Simulados não possuem filtro para selecionar a **banca da prova** (ENARE, REVALIDA, USP-SP, UNIFESP, etc.) nem a **origem** da questão. O prompt gerado não menciona o estilo de banca, resultando em questões genéricas.
+
+## Mudanças
+
+### 1. `src/pages/QuestionGenerator.tsx` — Adicionar seletor de Banca
+
+- Novo state `examBoard` (ex: "ENARE", "REVALIDA", "USP-SP", "UNIFESP", "SUS-SP", "todas")
+- Adicionar `Select` com as bancas disponíveis na tela de setup, entre Dificuldade e Quantidade
+- Incluir banca no `buildPrompt()`: "no estilo da prova {banca}, com formato e pegadinhas típicas dessa banca"
+- Incluir banca no subtitle do `AgentChat`
+
+### 2. `src/components/simulados/SimuladoSetup.tsx` — Adicionar seletor de Banca
+
+- Novo state `examBoard`
+- Adicionar `Select` com bancas na tela de configuração
+- Propagar `examBoard` no `onStart()` (atualizar interface `onStart`)
+
+### 3. `src/pages/Simulados.tsx` — Usar banca no prompt
+
+- Receber `examBoard` da config
+- Injetar no `buildPrompt()`: estilo e formato específico da banca selecionada
+- Ao buscar questões reais do banco (`questions_bank`), filtrar por `source` quando banca específica
+
+### Bancas disponíveis
+
+| Valor | Label |
 |---|---|
-| Total de questões | 9.695 |
-| Enunciado < 150 chars **E** sem padrão de idade/tempo | **2.483** (a excluir) |
-| Questões que ficam | **7.212** |
-
-Exemplos de questões sem contexto: `"Teste"` (5 chars), `"A CONDUTA É:"` (12 chars) — claramente fragmentos de parsing mal feito, sem caso clínico.
-
-## Critério de Exclusão
-
-Excluir questões que atendam **ambas** as condições:
-1. `length(statement) < 150` caracteres
-2. Não contém padrão de idade/tempo (`\d+\s*(anos|meses|dias|horas|semanas)`)
-
-Isso preserva questões curtas mas com contexto clínico (ex: "Paciente de 45 anos...") e remove lixo de parsing.
-
-## Execução
-
-### 1. Script de limpeza via `psql`
-
-- Executar `DELETE FROM questions_bank WHERE length(statement) < 150 AND statement !~ '\d+\s*(anos?|meses|dias|horas|semanas)'`
-- Registrar contagem de deletados
-
-### 2. Relatório final
-
-- Total antes / depois
-- Breakdown por source das questões removidas
+| `all` | Todas as bancas |
+| `ENARE` | ENARE |
+| `REVALIDA` | REVALIDA |
+| `USP-SP` | USP-SP |
+| `UNIFESP` | UNIFESP |
+| `SUS-SP` | SUS-SP |
+| `UNICAMP` | UNICAMP |
+| `SANTA_CASA` | Santa Casa SP |
 
 ### Arquivos Impactados
 
-Nenhum arquivo de código precisa ser alterado — é uma operação de dados apenas.
+| Arquivo | Mudança |
+|---|---|
+| `src/pages/QuestionGenerator.tsx` | State `examBoard`, Select UI, atualizar `buildPrompt()` |
+| `src/components/simulados/SimuladoSetup.tsx` | State `examBoard`, Select UI, propagar no `onStart` |
+| `src/pages/Simulados.tsx` | Receber `examBoard`, injetar no prompt de geração |
 
