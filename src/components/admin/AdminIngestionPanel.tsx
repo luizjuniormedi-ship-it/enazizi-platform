@@ -34,11 +34,22 @@ const AdminIngestionPanel = () => {
   const [navResults, setNavResults] = useState<any[]>([]);
   const [navLoading, setNavLoading] = useState(false);
   const [logs, setLogs] = useState<any[]>([]);
+  const [discoveredSources, setDiscoveredSources] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalSources: 5, totalExtracted: 0, totalIndexed: 5, duplicatesRemoved: 0 });
 
   useEffect(() => {
     loadLogs();
+    loadSources();
   }, []);
+
+  const loadSources = async () => {
+    const { data } = await supabase.from("external_exam_sources" as any)
+      .select("*").order("created_at", { ascending: false }).limit(50);
+    if (data) {
+      setDiscoveredSources(data);
+      setStats(prev => ({ ...prev, totalSources: 5 + (data as any[]).length, totalIndexed: 5 + (data as any[]).filter((s: any) => s.processing_status !== "pending").length }));
+    }
+  };
 
   const loadLogs = async () => {
     const { data } = await supabase.from("ingestion_log" as any)
