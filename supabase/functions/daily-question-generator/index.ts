@@ -134,7 +134,8 @@ INSTRUÇÕES CRÍTICAS:
 6. Explicação detalhada com raciocínio clínico passo a passo
 7. Dificuldade MÍNIMA: 3/5 (padrão REVALIDA). Distribua: 50% nível 3, 50% nível 4-5
 8. PROIBIDO: questões puramente conceituais ("O que é X?", "Defina Y", "Qual a função de Z?")
-9. PROIBIDO: enunciados sem dados de paciente real
+9. PROIBIDO: questões que referenciem imagens, figuras, fotos, radiografias ou gráficos externos
+10. PROIBIDO: enunciados sem dados de paciente real
 
 ⛔ CONTEÚDO PROIBIDO: NUNCA gere sobre declarações financeiras, conflitos de interesse, relações com indústria farmacêutica.
 
