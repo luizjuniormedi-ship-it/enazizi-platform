@@ -970,6 +970,9 @@ serve(async (req) => {
         topic: specialty,
         difficulty: q.difficulty,
         source: "web-scrape",
+        source_type: "indexed_external",
+        permission_type: "indexed_external",
+        source_url: q.source_url || "",
         is_global: true,
         review_status: "approved",
       }));
