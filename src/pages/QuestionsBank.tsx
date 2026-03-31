@@ -28,6 +28,7 @@ interface Question {
   topic: string | null;
   source: string | null;
   created_at: string;
+  image_url: string | null;
 }
 
 interface TopicStat {
