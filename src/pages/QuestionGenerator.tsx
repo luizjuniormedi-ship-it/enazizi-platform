@@ -81,7 +81,8 @@ const QuestionGenerator = () => {
 
   const buildPrompt = () => {
     const specPart = effectiveSpecialty || "qualquer área médica (variando especialidades)";
-    return `Gere ${quantity} questões ORIGINAIS de ${specPart} nível ${difficulty}. Formato ENARE com casos clínicos variados, alternativas plausíveis e explicação detalhada. Varie subtemas, perfis de pacientes e cenários.`;
+    const topicPart = specificTopic.trim() ? ` focadas no tema: "${specificTopic.trim()}"` : "";
+    return `Gere ${quantity} questões ORIGINAIS de ${specPart}${topicPart} nível ${difficulty}. Formato ENARE com casos clínicos variados, alternativas plausíveis e explicação detalhada. Varie subtemas, perfis de pacientes e cenários.`;
   };
 
   const quickActions = showSetup ? [] : [
