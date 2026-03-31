@@ -1,0 +1,1 @@
+ALTER TABLE public.questions_bank ALTER COLUMN review_status SET DEFAULT 'pending';
