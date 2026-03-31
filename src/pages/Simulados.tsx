@@ -347,6 +347,7 @@ const Simulados = () => {
                 Math.min(config.count - allQuestions.length + 2, BATCH_SIZE),
                 config.difficulty,
                 accessToken,
+                config.specificTopic,
               );
               allQuestions.push(...retry);
             } catch {
