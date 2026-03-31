@@ -263,9 +263,15 @@ const AdminUploadsPanel = () => {
                       </div>
                     </div>
                     {f.status === "processed" && (
-                      <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePopulateQuestions(f)}>
-                        <Database className="h-3 w-3" /> Gerar Questões
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handleExtractExam(f)} disabled={extracting === f.id}>
+                          {extracting === f.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <BookOpen className="h-3 w-3" />}
+                          Extrair Prova
+                        </Button>
+                        <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePopulateQuestions(f)}>
+                          <Database className="h-3 w-3" /> Gerar Questões
+                        </Button>
+                      </div>
                     )}
                     {!isProcessing && (
                       <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDelete(f)}>
