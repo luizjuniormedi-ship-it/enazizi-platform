@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getDocument } from "https://esm.sh/pdfjs-serverless";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,15 +14,6 @@ function normalizeText(s: string): string {
   return s.toLowerCase().replace(/[^a-záàâãéèêíìóòôõúùûç0-9]/g, "").slice(0, 200);
 }
 
-function hashStatement(s: string): string {
-  const norm = normalizeText(s);
-  let h = 0;
-  for (let i = 0; i < norm.length; i++) {
-    h = ((h << 5) - h + norm.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h).toString(36);
-}
-
 function isValidQuestion(q: { statement?: string; options?: string[]; correct_index?: number }): boolean {
   if (!q.statement || !Array.isArray(q.options) || typeof q.correct_index !== "number") return false;
   if (q.options.length < 4 || q.options.length > 5) return false;
@@ -29,6 +21,130 @@ function isValidQuestion(q: { statement?: string; options?: string[]; correct_in
   if (IMAGE_REF_PATTERN.test(q.statement)) return false;
   if (ENGLISH_PATTERN.test(q.statement)) return false;
   return true;
+}
+
+async function extractPdfTextFromBytes(data: Uint8Array): Promise<string> {
+  const document = await getDocument({ data, useSystemFonts: true }).promise;
+  const pages: string[] = [];
+
+  for (let i = 1; i <= document.numPages; i++) {
+    const page = await document.getPage(i);
+    const textContent = await page.getTextContent();
+    const text = textContent.items
+      .map((item: unknown) => (typeof item === "object" && item !== null && "str" in item ? String((item as { str: string }).str) : ""))
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (text) pages.push(text);
+  }
+
+  return pages.join("\n\n");
+}
+
+async function extractPdfTextFromUrl(url: string): Promise<string> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  try {
+    const resp = await fetch(url, {
+      signal: controller.signal,
+      headers: { "User-Agent": "Mozilla/5.0" },
+    });
+
+    if (!resp.ok) {
+      throw new Error(`Falha ao baixar PDF (${resp.status})`);
+    }
+
+    const data = new Uint8Array(await resp.arrayBuffer());
+    return await extractPdfTextFromBytes(data);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function extractPdfTextFromBlob(fileData: Blob): Promise<string> {
+  const data = new Uint8Array(await fileData.arrayBuffer());
+  return await extractPdfTextFromBytes(data);
+}
+
+function normalizePdfExamText(text: string): string {
+  return text
+    .replace(/Medway\s*-\s*ENARE\s*-\s*\d{4}\s*P[aá]ginas?\s*\d+\/\d+/gi, " ")
+    .replace(/ENARE-\d{4}-Objetiva\s*\|\s*R1/gi, " ")
+    .replace(/P[aá]ginas?\s*\d+\/\d+/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseQuestionsFromPdfExamText(text: string, fallbackTopic: string): Array<{
+  statement: string;
+  options: string[];
+  correct_index: number;
+  topic: string;
+  explanation: string;
+}> {
+  const cleaned = normalizePdfExamText(text);
+  const blocks = cleaned
+    .split(/(?=QUEST[ÃA]O\s+\d+\.)/i)
+    .map((block) => block.trim())
+    .filter(Boolean);
+
+  const questions: Array<{
+    statement: string;
+    options: string[];
+    correct_index: number;
+    topic: string;
+    explanation: string;
+  }> = [];
+
+  for (const rawBlock of blocks) {
+    let block = rawBlock.replace(/^QUEST[ÃA]O\s+\d+\.\s*/i, "").trim();
+    if (block.length < 120) continue;
+
+    const markerRegex = /(?:^|\s)([A-E])[\.)]\s/g;
+    const markers = Array.from(block.matchAll(markerRegex)).map((match) => ({
+      letter: match[1],
+      rawIndex: match.index ?? 0,
+      start: (match.index ?? 0) + match[0].length,
+    }));
+
+    if (markers.length < 4) continue;
+
+    const statement = block.slice(0, markers[0].rawIndex).trim();
+    if (statement.length < 100) continue;
+    if (IMAGE_REF_PATTERN.test(statement) || ENGLISH_PATTERN.test(statement)) continue;
+
+    const options: string[] = [];
+    for (let i = 0; i < markers.length && i < 5; i++) {
+      const start = markers[i].start;
+      const end = i + 1 < markers.length ? markers[i + 1].rawIndex : block.length;
+      const option = block
+        .slice(start, end)
+        .trim()
+        .replace(/^[\-–—:;\s]+/, "")
+        .replace(/[;\s]+$/, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (option) options.push(option);
+    }
+
+    if (options.length < 4 || options.length > 5) continue;
+
+    const gabaritoMatch = block.match(/(?:gabarito|resposta|alternativa)\s*[:=\-]?\s*([A-E])/i);
+    const correctIndex = gabaritoMatch ? gabaritoMatch[1].toUpperCase().charCodeAt(0) - 65 : 0;
+
+    questions.push({
+      statement,
+      options,
+      correct_index: Math.max(0, Math.min(correctIndex, options.length - 1)),
+      topic: fallbackTopic,
+      explanation: "",
+    });
+  }
+
+  return questions;
 }
 
 Deno.serve(async (req) => {
@@ -41,7 +157,6 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Auth check
     const authHeader = req.headers.get("Authorization");
     let userId: string | null = null;
     if (authHeader) {
@@ -51,13 +166,18 @@ Deno.serve(async (req) => {
         if (user) {
           userId = user.id;
           const { data: roleData } = await supabase
-            .from("user_roles").select("role")
-            .eq("user_id", user.id).eq("role", "admin").maybeSingle();
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", user.id)
+            .eq("role", "admin")
+            .maybeSingle();
           if (!roleData) {
             return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: corsHeaders });
           }
         }
-      } catch { /* allow service calls */ }
+      } catch {
+        /* allow service calls */
+      }
     }
 
     const body = await req.json();
@@ -67,7 +187,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "mode is required" }), { status: 400, headers: corsHeaders });
     }
 
-    // MODE: web_navigate — just scan page for exam links
     if (mode === "web_navigate") {
       if (!url) {
         return new Response(JSON.stringify({ error: "url required for web_navigate" }), { status: 400, headers: corsHeaders });
@@ -85,7 +204,9 @@ Deno.serve(async (req) => {
           });
           const fcData = await fcResp.json();
           pageText = fcData?.data?.markdown || "";
-        } catch { /* fallback below */ }
+        } catch {
+          /* fallback below */
+        }
       }
 
       if (!pageText) {
@@ -97,7 +218,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Extract PDF links and exam references
       const pdfLinks: { name: string; url: string; year?: number }[] = [];
       const pdfRegex = /https?:\/\/[^\s"'<>]+\.pdf/gi;
       const matches = pageText.match(pdfRegex) || [];
@@ -106,7 +226,6 @@ Deno.serve(async (req) => {
         pdfLinks.push({ name: m.split("/").pop() || "prova.pdf", url: m, year: yearMatch ? parseInt(yearMatch[1]) : undefined });
       }
 
-      // Log the navigation
       await supabase.from("ingestion_log").insert({
         source_name: `Web: ${url}`,
         source_url: url,
@@ -120,7 +239,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ pdf_links: pdfLinks, page_length: pageText.length }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // MODE: index_only — just save reference
     if (mode === "index_only") {
       const { data: log } = await supabase.from("ingestion_log").insert({
         source_name: body.source_name || `Indexed: ${url || "unknown"}`,
@@ -137,114 +255,117 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: true, log }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // MODE: pdf_url or upload — extract questions
     let fullText = "";
     let sourceName = "";
-    let sourceUrl = url || "";
+    const sourceUrl = url || "";
+    let questions: any[] = [];
 
     if (mode === "pdf_url" && url) {
       sourceName = `PDF: ${url.split("/").pop()}`;
-
-      // Use AI to extract text from PDF (with timeout)
-      const lovableKey = Deno.env.get("LOVABLE_API_KEY");
-      if (lovableKey) {
-        try {
-          const aiController = new AbortController();
-          const aiTimeout = setTimeout(() => aiController.abort(), 45000);
-          const aiResp = await fetch("https://ai.lovable.dev/api/v1/chat/completions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${lovableKey}` },
-            body: JSON.stringify({
-              model: "google/gemini-2.5-flash",
-              messages: [{
-                role: "user",
-                content: `Extraia TODAS as questões deste PDF de prova de residência médica.
-URL do PDF: ${url}
-
-Para cada questão, retorne em JSON:
-{ "questions": [{ "statement": "...", "options": ["A) ...", "B) ...", ...], "correct_index": 0, "topic": "...", "explanation": "..." }] }
-
-Regras:
-- Mantenha o português original EXATAMENTE como no PDF
-- Mínimo 4 alternativas (A-E preferencialmente)
-- NÃO invente questões
-- Se houver gabarito, use-o para correct_index
-- topic deve ser a especialidade médica`
-              }],
-              temperature: 0.1,
-            }),
-            signal: aiController.signal,
-          });
-          clearTimeout(aiTimeout);
-          const aiData = await aiResp.json();
-          fullText = aiData.choices?.[0]?.message?.content || "";
-        } catch (e) {
-          console.error("AI extraction failed:", e);
-        }
-      }
-
-      // Try direct PDF fetch as fallback (with 30s timeout, 200KB limit)
-      if (!fullText) {
-        try {
-          const pdfController = new AbortController();
-          const pdfTimeout = setTimeout(() => pdfController.abort(), 30000);
-          const pdfResp = await fetch(url, { signal: pdfController.signal });
-          clearTimeout(pdfTimeout);
-          const rawText = await pdfResp.text();
-          fullText = rawText.slice(0, 200_000);
-        } catch { /* ignore */ }
+      try {
+        fullText = await extractPdfTextFromUrl(url);
+        questions = parseQuestionsFromPdfExamText(fullText, banca || "Geral");
+      } catch (e) {
+        console.error("PDF extraction failed:", e);
       }
     } else if (mode === "upload" && upload_id) {
       const { data: upload } = await supabase.from("uploads")
-        .select("storage_path, extracted_text, filename").eq("id", upload_id).single();
+        .select("storage_path, extracted_text, filename, file_type")
+        .eq("id", upload_id)
+        .single();
       if (!upload) {
         return new Response(JSON.stringify({ error: "Upload not found" }), { status: 404, headers: corsHeaders });
       }
       sourceName = `Upload: ${upload.filename}`;
       if (upload.storage_path) {
         const { data: fileData } = await supabase.storage.from("user-uploads").download(upload.storage_path);
-        if (fileData) fullText = await fileData.text();
+        if (fileData) {
+          const looksLikePdf = String(upload.file_type || upload.filename || "").toLowerCase().includes("pdf");
+          fullText = looksLikePdf ? await extractPdfTextFromBlob(fileData) : await fileData.text();
+        }
       }
       if (!fullText && upload.extracted_text) fullText = upload.extracted_text;
+      questions = parseQuestionsFromPdfExamText(fullText, banca || "Geral");
     }
 
     if (!fullText) {
       return new Response(JSON.stringify({ error: "No content extracted" }), { status: 400, headers: corsHeaders });
     }
 
-    // Parse questions from AI JSON response or raw text
-    let questions: any[] = [];
-
-    // Try to parse JSON from AI response
-    const jsonMatch = fullText.match(/\{[\s\S]*"questions"[\s\S]*\}/);
-    if (jsonMatch) {
-      try {
-        const parsed = JSON.parse(jsonMatch[0]);
-        questions = parsed.questions || [];
-      } catch { /* fallback to text parsing */ }
-    }
-
-    // Fallback: regex-based text parsing
     if (questions.length === 0) {
-      const qBlocks = fullText.split(/(?=\d+[\.\)]\s|Questão\s+\d+)/i);
-      for (const block of qBlocks) {
-        if (block.trim().length < 100) continue;
-        const optMatch = block.match(/[A-E][\.\)]\s*.+/g);
-        if (!optMatch || optMatch.length < 4) continue;
-        const stmtEnd = block.indexOf(optMatch[0]);
-        const statement = block.slice(0, stmtEnd).replace(/^\d+[\.\)]\s*/, "").trim();
-        if (statement.length < 100) continue;
-        const options = optMatch.map((o: string) => o.replace(/^[A-E][\.\)]\s*/, "").trim());
-        questions.push({ statement, options, correct_index: -1, topic: banca || "Geral" });
+      const jsonMatch = fullText.match(/\{[\s\S]*"questions"[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          questions = parsed.questions || [];
+        } catch {
+          /* fallback to text parsing */
+        }
       }
     }
 
-    // Validate and deduplicate
-    let inserted = 0, updated = 0, skipped = 0, errors = 0;
+    if (questions.length === 0) {
+      const qBlocks = fullText.split(/(?=(?:\d+[\.\)]\s|QUEST[ÃA]O\s+\d+))/i);
+      for (const block of qBlocks) {
+        if (block.trim().length < 100) continue;
+        const optMatches = Array.from(block.matchAll(/(?:^|\s)([A-E])[\.)]\s/g)).map((match) => ({
+          rawIndex: match.index ?? 0,
+          start: (match.index ?? 0) + match[0].length,
+        }));
+        if (optMatches.length < 4) continue;
+        const statement = block
+          .slice(0, optMatches[0].rawIndex)
+          .replace(/^\s*(?:\d+[\.\)]\s*|QUEST[ÃA]O\s+\d+\.?\s*)/i, "")
+          .trim();
+        if (statement.length < 100) continue;
+        const options: string[] = [];
+        for (let i = 0; i < optMatches.length && i < 5; i++) {
+          const end = i + 1 < optMatches.length ? optMatches[i + 1].rawIndex : block.length;
+          const option = block.slice(optMatches[i].start, end).trim().replace(/^[\-–—:;\s]+/, "").replace(/[;\s]+$/, "").trim();
+          if (option) options.push(option);
+        }
+        if (options.length >= 4 && options.length <= 5) {
+          questions.push({ statement, options, correct_index: 0, topic: banca || "Geral", explanation: "" });
+        }
+      }
+    }
 
-    // Get existing hashes for dedup
+    if (questions.length === 0) {
+      await supabase.from("ingestion_log").insert({
+        source_name: sourceName || (url ? `PDF: ${url}` : "unknown"),
+        source_url: sourceUrl,
+        source_type,
+        permission_type,
+        banca,
+        year,
+        questions_found: 0,
+        questions_inserted: 0,
+        questions_updated: 0,
+        duplicates_skipped: 0,
+        errors: 0,
+        status: "failed",
+        created_by: userId,
+      });
+
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Nenhuma questão estruturada foi reconhecida no PDF.",
+        questions_found: 0,
+        questions_inserted: 0,
+        questions_updated: 0,
+        duplicates_skipped: 0,
+        errors: 0,
+      }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
+    let errors = 0;
+
     const { data: existing } = await supabase.from("questions_bank")
-      .select("id, statement").limit(1000);
+      .select("id, statement")
+      .limit(1000);
     const existingMap = new Map<string, { id: string; statement: string }>();
     for (const e of (existing || [])) {
       existingMap.set(normalizeText(e.statement).slice(0, 80), e);
@@ -253,13 +374,15 @@ Regras:
     const adminUserId = userId || "00000000-0000-0000-0000-000000000000";
 
     for (const q of questions) {
-      if (!isValidQuestion(q)) { errors++; continue; }
+      if (!isValidQuestion(q)) {
+        errors++;
+        continue;
+      }
 
       const normKey = normalizeText(q.statement).slice(0, 80);
       const match = existingMap.get(normKey);
 
       if (match) {
-        // Duplicate — skip or update if we have new info
         if (q.correct_index >= 0 && q.explanation) {
           await supabase.from("questions_bank").update({
             explanation: q.explanation,
@@ -272,7 +395,6 @@ Regras:
           skipped++;
         }
       } else {
-        // Pad options to 5 if needed
         const opts = [...q.options];
         while (opts.length < 5) opts.push(`Alternativa ${String.fromCharCode(65 + opts.length)}`);
         if (opts.length > 5) opts.splice(5);
@@ -293,12 +415,18 @@ Regras:
           review_status: "pending",
         });
 
-        if (insErr) { errors++; console.error("Insert error:", insErr); }
-        else { inserted++; existingMap.set(normKey, { id: "new", statement: q.statement }); }
+        if (insErr) {
+          errors++;
+          console.error("Insert error:", insErr);
+        } else {
+          inserted++;
+          existingMap.set(normKey, { id: "new", statement: q.statement });
+        }
       }
     }
 
-    // Log the ingestion
+    const noUsableQuestions = inserted === 0 && updated === 0 && skipped === 0;
+
     await supabase.from("ingestion_log").insert({
       source_name: sourceName,
       source_url: sourceUrl,
@@ -307,25 +435,33 @@ Regras:
       banca,
       year,
       questions_found: questions.length,
-      questions_inserted: inserted,
-      questions_updated: updated,
-      duplicates_skipped: skipped,
+      questions_inserted: inserted ?? 0,
+      questions_updated: updated ?? 0,
+      duplicates_skipped: skipped ?? 0,
       errors,
-      status: "completed",
+      status: noUsableQuestions ? "failed" : "completed",
       created_by: userId,
     });
 
-    return new Response(JSON.stringify({
-      success: true,
+    const payload = {
+      success: !noUsableQuestions,
       questions_found: questions.length,
-      questions_inserted: inserted,
-      questions_updated: updated,
-      duplicates_skipped: skipped,
+      questions_inserted: inserted ?? 0,
+      questions_updated: updated ?? 0,
+      duplicates_skipped: skipped ?? 0,
       errors,
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    };
 
+    if (noUsableQuestions) {
+      return new Response(JSON.stringify({
+        ...payload,
+        error: errors > 0 ? "Nenhuma questão válida foi extraída deste PDF." : "Nenhuma questão nova foi identificada.",
+      }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    return new Response(JSON.stringify(payload), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("Ingest error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

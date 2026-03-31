@@ -75,9 +75,51 @@ const AdminIngestionPanel = () => {
         body: JSON.stringify(payload),
       }
     );
-    const data = resp.headers.get("content-type")?.includes("application/json") ? await resp.json() : {};
-    if (!resp.ok) throw new Error(data?.error || `Falha na ingestão (${resp.status})`);
-    return data;
+
+    const raw = await resp.text();
+    let data: any = {};
+    try {
+      data = raw ? JSON.parse(raw) : {};
+    } catch {
+      data = {};
+    }
+
+    const normalized = {
+      ...data,
+      questions_found: data?.questions_found ?? 0,
+      questions_inserted: data?.questions_inserted ?? 0,
+      questions_updated: data?.questions_updated ?? 0,
+      duplicates_skipped: data?.duplicates_skipped ?? 0,
+      errors: data?.errors ?? 0,
+    };
+
+    if (!resp.ok) throw new Error(normalized?.error || `Falha na ingestão (${resp.status})`);
+    if (normalized.questions_inserted === 0 && normalized.questions_updated === 0 && normalized.duplicates_skipped === 0) {
+      throw new Error(normalized?.error || "Nenhuma questão válida foi extraída deste PDF.");
+    }
+
+    return normalized;
+  };
+
+  const getIngestToast = (data: any, name: string) => {
+    if ((data?.questions_inserted ?? 0) > 0) {
+      return {
+        title: `${data.questions_inserted} questões extraídas!`,
+        description: `${name} processado.`,
+      };
+    }
+
+    if ((data?.questions_updated ?? 0) > 0) {
+      return {
+        title: `${data.questions_updated} questões atualizadas!`,
+        description: `${name} processado.`,
+      };
+    }
+
+    return {
+      title: `${data?.duplicates_skipped ?? 0} questões já existentes`,
+      description: `${name} já estava no banco.`,
+    };
   };
 
   const handleExtractPdf = async (source: IndexedSource) => {
@@ -92,8 +134,12 @@ const AdminIngestionPanel = () => {
         source_type: "indexed_external",
         permission_type: "indexed_external",
       });
-      setSources(prev => prev.map(s => s.name === source.name ? { ...s, status: "extracted" as const, questionsCount: data?.questions_inserted ?? 0 } : s));
-      toast({ title: `${data?.questions_inserted ?? 0} questões extraídas!`, description: `${source.name} processado.` });
+
+      const count = (data?.questions_inserted ?? 0) + (data?.questions_updated ?? 0) || (data?.duplicates_skipped ?? 0);
+      const toastInfo = getIngestToast(data, source.name);
+
+      setSources(prev => prev.map(s => s.name === source.name ? { ...s, status: "extracted" as const, questionsCount: count } : s));
+      toast(toastInfo);
       loadLogs();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
@@ -106,7 +152,6 @@ const AdminIngestionPanel = () => {
     if (!navUrl || !session) return;
     setNavLoading(true);
     try {
-      // Use search-real-questions hub_page mode
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-real-questions`,
         {
@@ -138,7 +183,8 @@ const AdminIngestionPanel = () => {
         source_type: "indexed_external",
         permission_type: "indexed_external",
       });
-      toast({ title: `${data?.questions_inserted ?? 0} questões extraídas de ${link.name}` });
+      const toastInfo = getIngestToast(data, link.name);
+      toast(toastInfo);
       loadLogs();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
