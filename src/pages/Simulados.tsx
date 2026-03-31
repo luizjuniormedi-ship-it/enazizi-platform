@@ -32,8 +32,12 @@ function buildPrompt(topics: string[], count: number, difficulty: string, specif
   const topicsStr = topics.join(", ");
   const perTopic = Math.ceil(count / topics.length);
   const difficultyInstruction = difficulty === "misto"
-    ? "Distribua: 50% intermediárias (padrão REVALIDA) e 50% difíceis (padrão ENAMED/ENARE)."
-    : `Nível de dificuldade: ${difficulty}.`;
+    ? "Distribua: 30% intermediárias (padrão REVALIDA) e 70% difíceis (padrão ENARE/USP-SP). Questões intermediárias devem exigir raciocínio clínico sólido. Questões difíceis devem ter diagnósticos diferenciais complexos e armadilhas de prova."
+    : difficulty === "facil"
+    ? "Nível: intermediário-baixo. Casos clínicos com apresentação clássica, mas ainda exigindo raciocínio clínico. Padrão REVALIDA."
+    : difficulty === "intermediario"
+    ? "Nível: intermediário-alto (padrão REVALIDA/ENARE). Casos com apresentação típica mas que exigem integração de conhecimentos e diagnóstico diferencial."
+    : "Nível: ALTO (padrão ENARE/USP-SP — as provas mais difíceis do Brasil). Casos com apresentações atípicas, sobreposição de diagnósticos, valores laboratoriais limítrofes, armadilhas clássicas de provas de residência. 40% diagnóstico diferencial complexo, 30% conduta com contraindicações sutis, 20% interpretação de exames, 10% complicações/prognóstico.";
   const topicFocus = specificTopic ? `\nFOCO TEMÁTICO: Todas as questões devem abordar especificamente "${specificTopic}". Varie os cenários clínicos mas mantenha o foco neste tema.` : "";
 
   return `Gere exatamente ${count} questões de múltipla escolha para simulado de residência médica.
