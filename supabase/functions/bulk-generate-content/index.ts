@@ -60,7 +60,7 @@ TEMAS: ${selectedTopics.join(", ")}
 REGRAS PARA QUESTÕES:
 - Nível de prova de residência médica (ENARE, USP, UNICAMP, FMUSP)
 - Casos clínicos realistas com dados de anamnese, exame físico e exames complementares
-- 4 alternativas (A, B, C, D) sendo apenas 1 correta
+- EXATAMENTE 5 alternativas (A, B, C, D, E) sendo apenas 1 correta
 - Explicação detalhada com raciocínio clínico
 - Varie a dificuldade: 40% fácil, 40% médio, 20% difícil
 - Distribua entre os temas fornecidos
