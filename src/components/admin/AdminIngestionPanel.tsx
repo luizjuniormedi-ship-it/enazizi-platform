@@ -105,11 +105,21 @@ const AdminIngestionPanel = () => {
     if (!navUrl || !session) return;
     setNavLoading(true);
     try {
-      const data = await callIngest({ mode: "web_navigate", url: navUrl });
+      // Use search-real-questions hub_page mode
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-real-questions`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ mode: "hub_page", url: navUrl, user_id: session.user?.id }),
+        }
+      );
+      const data = await resp.json();
       if (data?.error) throw new Error(data.error);
       setNavResults(data.pdf_links || []);
-      toast({ title: `${(data.pdf_links || []).length} PDFs encontrados` });
+      toast({ title: `${data.sources_found || 0} fontes descobertas, ${(data.pdf_links || []).length} PDFs` });
       loadLogs();
+      loadSources();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
     } finally {
