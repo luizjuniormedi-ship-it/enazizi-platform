@@ -321,13 +321,15 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
 
     if (!parsed?.questions) return 0;
 
+    const IMAGE_REF_PATTERN2 = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo|observe o gráfico|observe a figura|observe a foto|imagem a seguir|figura a seguir)\b/i;
     const questions = parsed.questions.filter((q: any) =>
-      q.statement && Array.isArray(q.options) && q.options.length >= 2 &&
+      q.statement && Array.isArray(q.options) && q.options.length >= 4 && q.options.length <= 5 &&
       typeof q.correct_index === "number" &&
       String(q.statement).trim().length >= 150 &&
       (q.difficulty || 3) >= 3 &&
       !INVALID_CONTENT_REGEX.test(q.statement) &&
-      !INVALID_CONTENT_REGEX.test(q.explanation || "")
+      !INVALID_CONTENT_REGEX.test(q.explanation || "") &&
+      !IMAGE_REF_PATTERN2.test(q.statement)
     );
 
     if (questions.length === 0) return 0;
