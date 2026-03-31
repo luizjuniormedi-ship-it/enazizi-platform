@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { ALL_SPECIALTIES } from "@/constants/specialties";
 import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
+import { SPECIALTY_SUBTOPICS } from "@/constants/subtopics";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
 
