@@ -1,37 +1,44 @@
 
 
-# Adicionar Campo de Tema Específico no Gerador de Questões e Simulados
+# Fix: Questões sem Contexto e em Inglês
 
-## O Que Existe Hoje
+## Causa Raiz
 
-Ambos os módulos permitem selecionar **especialidade** (ex: Cardiologia, Pediatria), mas não permitem especificar um **tema/subtema** dentro da especialidade (ex: "Insuficiência Cardíaca Descompensada", "Cetoacidose Diabética").
+1. **Questões em inglês**: O filtro `ENGLISH_PATTERN` existe em `_shared/question-filters.ts` mas **não é usado** na edge function `question-generator`. A IA às vezes gera em inglês e nada filtra.
+
+2. **Questões sem contexto**: O filtro de qualidade no frontend (`mapQuestions` em Simulados.tsx) verifica `statement.length >= 200` e exige padrão de idade — mas o **QuestionGenerator.tsx** usa streaming e não aplica nenhum filtro de qualidade no conteúdo recebido.
+
+3. **Prompt insuficiente no JSON mode**: O `jsonSystemPrompt` da edge function não tem enforcement forte o suficiente contra inglês.
 
 ## Mudanças
 
-### 1. `src/pages/QuestionGenerator.tsx` — Campo de tema específico
+### 1. Edge Function `question-generator/index.ts` — Filtrar no servidor
 
-- Adicionar um `Input` de texto livre abaixo do seletor de especialidade, com placeholder "Ex: IAM com supra de ST, Cetoacidose diabética..."
-- Quando preenchido, o prompt enviado à IA incluirá o tema: `"Gere X questões de {especialidade} focadas em {tema}..."`
-- O campo é opcional — se vazio, funciona como hoje (temas variados)
-- Atualizar `buildPrompt()` para incorporar o tema
-- Atualizar subtitle e welcomeMessage para mostrar o tema quando definido
+- Importar `isValidQuestion`, `ENGLISH_PATTERN` de `_shared/question-filters.ts`
+- No modo JSON (tool calling), após parsear as questões, aplicar `isValidQuestion()` + verificar `statement.length >= 200` antes de retornar
+- Adicionar filtro extra: rejeitar questões onde >30% das palavras são em inglês
+- Reforçar no prompt: "VIOLAÇÃO GRAVE: qualquer questão em inglês será descartada automaticamente"
 
-### 2. `src/components/simulados/SimuladoSetup.tsx` — Campo de tema específico
+### 2. `_shared/question-filters.ts` — Expandir filtros
 
-- Adicionar um `Input` de texto livre abaixo da seleção de especialidades: "Tema específico (opcional)"
-- Placeholder: "Ex: Doença de Chagas, Pré-eclâmpsia..."
-- Passar o `specificTopic` na config do `onStart`
-- Atualizar a interface `onStart` para incluir `specificTopic?: string`
+- Adicionar `hasMinimumContext()`: verifica se statement tem >= 200 chars e contém padrão de idade/tempo (`\d+\s*(anos?|meses|dias|horas)`)
+- Expandir `ENGLISH_PATTERN` com mais termos comuns: `diagnosis`, `management`, `regarding`, `concerning`, `history of`
 
-### 3. `src/pages/Simulados.tsx` — Propagar tema ao prompt
+### 3. `src/pages/QuestionGenerator.tsx` — Filtro pós-streaming
 
-- Receber `specificTopic` da config e incluir no prompt de geração de questões do simulado
+- Na função `handleSaveQuestions`, após `parseQuestionsFromText`, aplicar filtro: rejeitar questões com `statement.length < 150` ou que casem com `ENGLISH_PATTERN`
+- Mostrar toast avisando quantas questões foram descartadas por baixa qualidade
+
+### 4. `src/pages/Simulados.tsx` — Reforçar filtro existente
+
+- Adicionar verificação de inglês no `mapQuestions`: `!/\b(the patient|which of the following|presents with)\b/i.test(q.statement)`
 
 ### Arquivos Impactados
 
 | Arquivo | Mudança |
 |---|---|
-| `src/pages/QuestionGenerator.tsx` | Novo state `specificTopic`, input de texto, atualizar `buildPrompt()` |
-| `src/components/simulados/SimuladoSetup.tsx` | Novo state `specificTopic`, input de texto, incluir no `onStart` |
-| `src/pages/Simulados.tsx` | Receber e usar `specificTopic` no prompt de geração |
+| `supabase/functions/_shared/question-filters.ts` | Expandir ENGLISH_PATTERN, adicionar `hasMinimumContext()` |
+| `supabase/functions/question-generator/index.ts` | Importar e aplicar filtros no response JSON |
+| `src/pages/QuestionGenerator.tsx` | Filtro de qualidade no `handleSaveQuestions` |
+| `src/pages/Simulados.tsx` | Adicionar filtro anti-inglês no `mapQuestions` |
 
