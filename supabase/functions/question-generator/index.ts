@@ -295,6 +295,25 @@ Regras:
       });
     } else {
       const json = await response.json();
+
+      // Server-side quality filter for JSON mode
+      if (isJsonMode) {
+        const toolCall = json.choices?.[0]?.message?.tool_calls?.[0];
+        if (toolCall?.function?.arguments) {
+          try {
+            const parsed = JSON.parse(toolCall.function.arguments);
+            if (Array.isArray(parsed.questions)) {
+              const before = parsed.questions.length;
+              parsed.questions = parsed.questions.filter((q: any) =>
+                isValidQuestion(q) && hasMinimumContext(q.statement || "")
+              );
+              console.log(`[question-generator] Filtered: ${before} -> ${parsed.questions.length} questions`);
+              toolCall.function.arguments = JSON.stringify(parsed);
+            }
+          } catch { /* keep original */ }
+        }
+      }
+
       return new Response(JSON.stringify(json), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
