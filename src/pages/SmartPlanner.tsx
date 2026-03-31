@@ -283,8 +283,55 @@ const SmartPlanner = () => {
               {revisoesAtrasadas.length} atrasadas
             </Badge>
           )}
+          <Button variant="secondary" size="sm" onClick={() => setShowReprocess(true)}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Recalcular Cronograma
+          </Button>
         </div>
       </div>
+
+      {/* Reprocess Panel */}
+      {showReprocess && (
+        <Card className="border-2 border-primary/30">
+          <CardContent className="p-4 space-y-4">
+            <h2 className="text-base font-semibold flex items-center gap-2">
+              <RefreshCw className="h-5 w-5 text-primary" />
+              Recalcular Cronograma com Nova Data
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              O cronograma será regenerado mantendo os {temas.length} temas existentes, redistribuindo revisões para a nova data da prova.
+            </p>
+            <div className="flex items-end gap-4 flex-wrap">
+              <div className="space-y-2">
+                <Label>Nova data da prova</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-[220px] justify-start text-left font-normal", !newExamDate && "text-muted-foreground")}>
+                      <CalendarDays className="mr-2 h-4 w-4" />
+                      {newExamDate ? format(newExamDate, "dd/MM/yyyy") : "Selecionar nova data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={newExamDate}
+                      onSelect={setNewExamDate}
+                      disabled={(date) => date < new Date()}
+                      className={cn("p-3 pointer-events-auto")}
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Button onClick={reprocessCronograma} disabled={reprocessing || !newExamDate}>
+                {reprocessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                {reprocessing ? "Reprocessando..." : "Recalcular"}
+              </Button>
+              <Button variant="ghost" onClick={() => setShowReprocess(false)}>Cancelar</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tabs — 4 seções claras */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
