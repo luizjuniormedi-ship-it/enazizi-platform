@@ -16,10 +16,13 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Verify admin if auth header present
+    // Verify admin when called from frontend (skip for service calls)
     const authHeader = req.headers.get("Authorization");
-    if (authHeader && !authHeader.includes(Deno.env.get("SUPABASE_ANON_KEY") || "___")) {
-      const token = authHeader.replace("Bearer ", "");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    const token = authHeader?.replace("Bearer ", "") || "";
+    
+    // If token is not the anon key, validate as user
+    if (token && token !== anonKey) {
       const { data: { user } } = await supabase.auth.getUser(token);
       if (!user) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
