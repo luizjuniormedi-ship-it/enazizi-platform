@@ -8,8 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   Target, BookOpen, CalendarDays, History,
-  Loader2, Brain, AlertTriangle, GraduationCap, Clock, TrendingUp, BarChart3
+  Loader2, Brain, AlertTriangle, GraduationCap, Clock, TrendingUp, BarChart3, RefreshCw
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 // Reuse existing cronograma components
 import CronogramaNovoTema from "@/components/cronograma/CronogramaNovoTema";
