@@ -3,10 +3,7 @@ import { createPortal } from "react-dom";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useNavigate } from "react-router-dom";
-import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Save, Upload, GraduationCap, Maximize2, Minimize2, Search, Paperclip, MoreVertical, Copy, ArrowRight, Mic, MicOff, Volume2, VolumeX, User2 } from "lucide-react";
-import { useLipSync } from "@/hooks/useLipSync";
-
-const TutorAvatar3D = lazy(() => import("@/components/agents/TutorAvatar3D"));
+import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Save, Upload, GraduationCap, Maximize2, Minimize2, Search, Paperclip, MoreVertical, Copy, ArrowRight, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
