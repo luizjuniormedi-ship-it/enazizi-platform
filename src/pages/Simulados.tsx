@@ -70,6 +70,7 @@ async function generateBatch(
   count: number,
   difficulty: string,
   accessToken: string | undefined,
+  specificTopic?: string,
 ): Promise<SimQuestion[]> {
   const res = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`,
@@ -85,7 +86,7 @@ async function generateBatch(
         outputFormat: "json",
         difficulty,
         timeoutMs: 55000,
-        messages: [{ role: "user", content: buildPrompt(topics, count, difficulty) }],
+        messages: [{ role: "user", content: buildPrompt(topics, count, difficulty, specificTopic) }],
       }),
     },
   );
