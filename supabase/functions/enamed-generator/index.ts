@@ -113,7 +113,7 @@ CADA QUESTÃO DEVE OBRIGATORIAMENTE:
    - Laudos de imagem descritivos quando pertinente
 
 2. **ALTERNATIVAS DE ALTO NÍVEL**:
-   - Todas devem ser clinicamente PLAUSÍVEIS (nenhuma absurda)
+   - EXATAMENTE 5 alternativas (A-E), apenas 1 correta — TODAS clinicamente plausíveis
    - Distratores baseados em diagnósticos diferenciais LEGÍTIMOS
    - Uma alternativa "quase correta" que testa nuance clínica
    - Extensão similar entre alternativas
@@ -130,7 +130,8 @@ CADA QUESTÃO DEVE OBRIGATORIAMENTE:
    - Priorizar doenças tropicais/negligenciadas quando pertinente
     - 50% intermediário (padrão REVALIDA), 50% difícil/expert (padrão ENAMED/ENARE)
     - DIFICULDADE MÍNIMA: 3/5 — PROIBIDO nível fácil (1-2)
-    - PROIBIDO: questões de definição pura ("O que é X?") ou enunciados < 200 caracteres sem caso clínico
+     - PROIBIDO: questões que referenciem imagens, figuras, fotos, radiografias ou gráficos externos
+     - PROIBIDO: questões de definição pura ("O que é X?") ou enunciados < 200 caracteres sem caso clínico
 
 5. **ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA)**:
    - NUNCA repita nome, idade, sexo ou perfil de paciente entre questões
@@ -173,7 +174,7 @@ Cada caso deve conter:
 FORMATO JSON PURO (sem markdown):
 {
   "questions": [
-    {"statement":"Caso clínico completo...","options":["A) ...","B) ...","C) ...","D) ..."],"correct_index":0,"explanation":"Raciocínio clínico...","topic":"${specialty}","difficulty":3}
+    {"statement":"Caso clínico completo...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"Raciocínio clínico...","topic":"${specialty}","difficulty":3}
   ],
   "flashcards": [
     {"question":"Pergunta?","answer":"Resposta completa.","topic":"${specialty}"}
@@ -200,10 +201,12 @@ FORMATO JSON PURO (sem markdown):
 
     // Insert questions
     const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
+    const IMAGE_REF_PATTERN = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo|observe o gráfico|observe a figura|observe a foto|imagem a seguir|figura a seguir)\b/i;
     const questions = (parsed.questions || []).filter((q: any) =>
-      q.statement && Array.isArray(q.options) && q.options.length >= 2 && typeof q.correct_index === "number" &&
+      q.statement && Array.isArray(q.options) && q.options.length >= 4 && q.options.length <= 5 &&
+      typeof q.correct_index === "number" &&
       String(q.statement).trim().length >= 200 && (q.difficulty || 3) >= 3 &&
-      !ENGLISH_PATTERN.test(q.statement)
+      !ENGLISH_PATTERN.test(q.statement) && !IMAGE_REF_PATTERN.test(q.statement)
     );
     let qCount = 0;
     if (questions.length > 0) {

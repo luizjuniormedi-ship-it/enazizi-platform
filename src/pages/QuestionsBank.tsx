@@ -138,7 +138,7 @@ const QuestionsBank = () => {
         options: parseOptions(q.options),
         correct_index: q.correct_index ?? 0,
       }));
-      const filtered = mapped.filter(q => isMedicalQuestion(q));
+      const filtered = mapped.filter(q => isMedicalQuestion(q) && q.options.length >= 4 && q.options.length <= 5);
       // Sort: real exam sources first, then by date
       const prioritized = filtered.sort((a, b) => {
         const srcA = a.source === "web-scrape" || a.source === "real-exam-ai" ? 0 : a.source === "ai-exam-style" ? 1 : 2;

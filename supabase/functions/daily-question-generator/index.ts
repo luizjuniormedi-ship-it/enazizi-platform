@@ -134,7 +134,8 @@ INSTRUÇÕES CRÍTICAS:
 6. Explicação detalhada com raciocínio clínico passo a passo
 7. Dificuldade MÍNIMA: 3/5 (padrão REVALIDA). Distribua: 50% nível 3, 50% nível 4-5
 8. PROIBIDO: questões puramente conceituais ("O que é X?", "Defina Y", "Qual a função de Z?")
-9. PROIBIDO: enunciados sem dados de paciente real
+9. PROIBIDO: questões que referenciem imagens, figuras, fotos, radiografias ou gráficos externos
+10. PROIBIDO: enunciados sem dados de paciente real
 
 ⛔ CONTEÚDO PROIBIDO: NUNCA gere sobre declarações financeiras, conflitos de interesse, relações com indústria farmacêutica.
 
@@ -145,7 +146,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
   "questions": [
     {
       "statement": "Caso clínico completo com ≥250 caracteres...",
-      "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
+      "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
       "correct_index": 0,
       "explanation": "Raciocínio clínico passo a passo...",
       "topic": "${specialty}",
@@ -188,8 +189,9 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
     if (!parsed?.questions) return 0;
 
     const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
+    const IMAGE_REF_PATTERN = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo|observe o gráfico|observe a figura|observe a foto|imagem a seguir|figura a seguir)\b/i;
     const questions = parsed.questions.filter((q: any) =>
-      q.statement && Array.isArray(q.options) && q.options.length >= 2 &&
+      q.statement && Array.isArray(q.options) && q.options.length >= 4 && q.options.length <= 5 &&
       typeof q.correct_index === "number" &&
       String(q.statement).trim().length >= 250 &&
       (q.difficulty || 3) >= 3 &&
@@ -197,7 +199,8 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
       !INVALID_CONTENT_REGEX.test(q.statement) &&
       !INVALID_CONTENT_REGEX.test(q.explanation || "") &&
       !isDuplicate(q.statement, existingStatements) &&
-      !ENGLISH_PATTERN.test(q.statement)
+      !ENGLISH_PATTERN.test(q.statement) &&
+      !IMAGE_REF_PATTERN.test(q.statement)
     );
 
     if (questions.length === 0) return 0;
@@ -263,8 +266,8 @@ CALIBRAÇÃO OBRIGATÓRIA REVALIDA/ENAMED:
 REGRAS:
 - Nível de prova de residência médica real (REVALIDA INEP, ENAMED, ENARE, USP, UNICAMP)
 - Casos clínicos realistas com anamnese completa (nome, idade, sexo, profissão), exame físico com achados positivos e negativos, sinais vitais completos (PA, FC, FR, Temp, SpO2), exames complementares com valores numéricos e unidades
-- 4 alternativas (A, B, C, D), apenas 1 correta — todas clinicamente PLAUSÍVEIS
-- Explicação detalhada com raciocínio clínico passo a passo e referência a guidelines 2024-2026
+- EXATAMENTE 5 alternativas (A, B, C, D, E), apenas 1 correta — todas clinicamente PLAUSÍVEIS
+- PROIBIDO: questões que referenciem imagens, figuras, fotos ou gráficos externos
 - Distribuição de dificuldade: 50% intermediário (padrão REVALIDA), 50% difícil (padrão ENAMED/ENARE com pegadinhas e apresentações atípicas)
 - NUNCA repita perfil de paciente (nome, idade, sexo, cenário)
 - Distribua subtópicos: diagnóstico, tratamento, fisiopatologia, epidemiologia, complicações
@@ -278,8 +281,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
   "questions": [
     {
       "statement": "Caso clínico completo com ≥150 caracteres...",
-      "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
-      "correct_index": 0,
+      "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
       "explanation": "Raciocínio clínico passo a passo...",
       "topic": "${specialty}",
       "difficulty": 3
@@ -319,13 +321,15 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
 
     if (!parsed?.questions) return 0;
 
+    const IMAGE_REF_PATTERN2 = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo|observe o gráfico|observe a figura|observe a foto|imagem a seguir|figura a seguir)\b/i;
     const questions = parsed.questions.filter((q: any) =>
-      q.statement && Array.isArray(q.options) && q.options.length >= 2 &&
+      q.statement && Array.isArray(q.options) && q.options.length >= 4 && q.options.length <= 5 &&
       typeof q.correct_index === "number" &&
       String(q.statement).trim().length >= 150 &&
       (q.difficulty || 3) >= 3 &&
       !INVALID_CONTENT_REGEX.test(q.statement) &&
-      !INVALID_CONTENT_REGEX.test(q.explanation || "")
+      !INVALID_CONTENT_REGEX.test(q.explanation || "") &&
+      !IMAGE_REF_PATTERN2.test(q.statement)
     );
 
     if (questions.length === 0) return 0;

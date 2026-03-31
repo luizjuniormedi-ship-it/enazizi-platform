@@ -216,9 +216,9 @@ Responda APENAS com JSON: {"flashcards": [{"question": "...", "answer": "...", "
             {
               role: "system",
               content: `Extraia questões de múltipla escolha do texto fornecido. Se o texto já contiver questões formatadas, converta-as para o formato JSON. Se for conteúdo teórico, gere questões baseadas no conteúdo.
-IMPORTANTE: Gere o MÁXIMO de questões possível (10-20 por chunk).
+IMPORTANTE: Gere o MÁXIMO de questões possível (10-20 por chunk). EXATAMENTE 5 alternativas (A-E) por questão. NUNCA gere questões que referenciem imagens, figuras, fotos ou gráficos externos.
 Formato JSON PURO (sem markdown): 
-{"questions": [{"statement": "enunciado completo com caso clínico", "options": ["A", "B", "C", "D", "E"], "correct_index": 0, "explanation": "explicação detalhada", "topic": "especialidade médica"}]}
+{"questions": [{"statement": "enunciado completo com caso clínico", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "explanation": "explicação detalhada", "topic": "especialidade médica"}]}
 Se não encontrar questões válidas, retorne {"questions": []}`
             },
             { role: "user", content: `Tema principal: ${detectedTopic}\n\nTexto:\n${chunk}` }
@@ -234,7 +234,7 @@ Se não encontrar questões válidas, retorne {"questions": []}`
           if (jsonMatch) {
             const parsed = JSON.parse(jsonMatch[0]);
             for (const q of (parsed.questions || [])) {
-              if (q.statement && Array.isArray(q.options) && q.options.length >= 4 && typeof q.correct_index === "number" && !NON_MEDICAL_CONTENT_REGEX.test(q.statement)) {
+              if (q.statement && Array.isArray(q.options) && q.options.length >= 4 && q.options.length <= 5 && typeof q.correct_index === "number" && !NON_MEDICAL_CONTENT_REGEX.test(q.statement) && !/\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo)\b/i.test(q.statement)) {
                 results.push({ statement: String(q.statement).trim(), options: q.options.map(String), correct_index: q.correct_index, explanation: String(q.explanation || "").trim(), topic: String(q.topic || detectedTopic).trim() });
               }
             }
