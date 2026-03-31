@@ -16,6 +16,7 @@ import AdminPlanDistribution from "@/components/admin/AdminPlanDistribution";
 import AdminDailyGenerationAlert from "@/components/admin/AdminDailyGenerationAlert";
 import AdminWebScrapingPanel from "@/components/admin/AdminWebScrapingPanel";
 import AdminIngestionPanel from "@/components/admin/AdminIngestionPanel";
+import AdminQuestionReviewPanel from "@/components/admin/AdminQuestionReviewPanel";
 import AdminAuditLog from "@/components/admin/AdminAuditLog";
 import AdminDialogs from "@/components/admin/AdminDialogs";
 import AdminUserRow from "@/components/admin/AdminUserRow";
