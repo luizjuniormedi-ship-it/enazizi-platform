@@ -294,6 +294,7 @@ const Admin = () => {
       <AdminDailyGenerationAlert />
       <AdminWebScrapingPanel />
       <AdminIngestionPanel />
+      <AdminQuestionReviewPanel />
 
       {/* Users with tabs */}
       <div className="glass-card p-6">
