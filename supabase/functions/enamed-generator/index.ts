@@ -130,7 +130,8 @@ CADA QUESTÃO DEVE OBRIGATORIAMENTE:
    - Priorizar doenças tropicais/negligenciadas quando pertinente
     - 50% intermediário (padrão REVALIDA), 50% difícil/expert (padrão ENAMED/ENARE)
     - DIFICULDADE MÍNIMA: 3/5 — PROIBIDO nível fácil (1-2)
-    - PROIBIDO: questões de definição pura ("O que é X?") ou enunciados < 200 caracteres sem caso clínico
+     - PROIBIDO: questões que referenciem imagens, figuras, fotos, radiografias ou gráficos externos
+     - PROIBIDO: questões de definição pura ("O que é X?") ou enunciados < 200 caracteres sem caso clínico
 
 5. **ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA)**:
    - NUNCA repita nome, idade, sexo ou perfil de paciente entre questões
