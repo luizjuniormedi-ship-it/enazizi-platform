@@ -582,7 +582,47 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
         </div>
       )}
 
-      {/* Tips */}
+      {/* Reprocess Panel */}
+      {showReprocess && (
+        <div className="glass-card p-6 space-y-4 border-2 border-primary/30">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <RefreshCw className="h-5 w-5 text-primary" />
+            Reprocessar Plano com Nova Data
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            O plano será regenerado mantendo os conteúdos/matérias existentes, redistribuindo os blocos para a nova data da prova.
+          </p>
+          <div className="flex items-end gap-4">
+            <div className="space-y-2">
+              <Label>Nova data da prova</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-[220px] justify-start text-left font-normal", !newExamDate && "text-muted-foreground")}>
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    {newExamDate ? format(newExamDate, "dd/MM/yyyy") : "Selecionar nova data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={newExamDate}
+                    onSelect={setNewExamDate}
+                    disabled={(date) => date < new Date()}
+                    className={cn("p-3 pointer-events-auto")}
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <Button onClick={reprocessPlan} disabled={reprocessing || !newExamDate}>
+              {reprocessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+              {reprocessing ? "Reprocessando..." : "Reprocessar"}
+            </Button>
+            <Button variant="ghost" onClick={() => setShowReprocess(false)}>Cancelar</Button>
+          </div>
+        </div>
+      )}
+
       {tips && (
         <div className="glass-card p-4 border-l-4 border-l-accent">
           <p className="text-sm text-muted-foreground">💡 {tips}</p>
