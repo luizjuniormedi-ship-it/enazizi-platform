@@ -179,6 +179,27 @@ const AdminUploadsPanel = () => {
     }
   };
 
+  const handleProcessDocx = async (upload: UploadRecord) => {
+    setExtracting(upload.id);
+    try {
+      toast({ title: "Processando DOCX com imagens...", description: "Isso pode levar alguns minutos." });
+      const res = await supabase.functions.invoke("process-docx-questions", {
+        body: { uploadId: upload.id, userId: user?.id },
+      });
+      if (res.error) throw res.error;
+      const d = res.data as any;
+      toast({
+        title: `✅ ${d.total_inserted} questões extraídas!`,
+        description: `${d.total_images || 0} com imagens. ${d.pages_processed} páginas processadas.`,
+      });
+      fetchUploads();
+    } catch (err: any) {
+      toast({ title: "Erro no processamento DOCX", description: err.message, variant: "destructive" });
+    } finally {
+      setExtracting(null);
+    }
+  };
+
   const statusIcon = (status: string | null) => {
     switch (status) {
       case "processed": return <CheckCircle className="h-4 w-4 text-success" />;
