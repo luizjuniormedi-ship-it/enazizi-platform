@@ -55,7 +55,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
 
   const handleStart = () => {
     const count = customCount ? parseInt(customCount) : questionCount;
-    onStart({ topics: selectedTopics, count, difficulty, timePerQuestion, mode });
+    onStart({ topics: selectedTopics, count, difficulty, timePerQuestion, mode, specificTopic: specificTopic.trim() || undefined });
   };
 
   const totalTime = (customCount ? parseInt(customCount) || questionCount : questionCount) * timePerQuestion;
