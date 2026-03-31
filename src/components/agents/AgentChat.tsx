@@ -1,12 +1,9 @@
-import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useNavigate } from "react-router-dom";
-import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Save, Upload, GraduationCap, Maximize2, Minimize2, Search, Paperclip, MoreVertical, Copy, ArrowRight, Mic, MicOff, Volume2, VolumeX, User2 } from "lucide-react";
-import { useLipSync } from "@/hooks/useLipSync";
-
-const TutorAvatar3D = lazy(() => import("@/components/agents/TutorAvatar3D"));
+import { Send, Bot, User, Loader2, Plus, History, Trash2, FileText, ChevronDown, Check, Save, Upload, GraduationCap, Maximize2, Minimize2, Search, Paperclip, MoreVertical, Copy, ArrowRight, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
@@ -90,7 +87,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const [sendCooldown, setSendCooldown] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speakingMsgIdx, setSpeakingMsgIdx] = useState<number | null>(null);
-  const [showAvatar3D, setShowAvatar3D] = useState(true);
+  
   const [autoSpeak, setAutoSpeak] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -99,7 +96,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const previousContentRef = useRef<string>("");
   const previousContentLoadedRef = useRef(false);
   const recognitionRef = useRef<any>(null);
-  const lipSync = useLipSync();
+  
   const { toast } = useToast();
 
   // Session persistence for "continue where you left off"
@@ -716,29 +713,18 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     if (speakingMsgIdx === msgIdx) {
       window.speechSynthesis.cancel();
       setSpeakingMsgIdx(null);
-      lipSync.stopSpeaking();
       return;
     }
     window.speechSynthesis.cancel();
-    lipSync.stopSpeaking();
-    // Strip markdown for cleaner speech
     const clean = text.replace(/[#*_`~>\[\]()!|]/g, "").replace(/\n{2,}/g, ". ").replace(/\n/g, " ");
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.lang = "pt-BR";
     utterance.rate = 1;
-    // Try to pick a pt-BR voice
     const voices = window.speechSynthesis.getVoices();
     const ptVoice = voices.find(v => v.lang.startsWith("pt-BR")) || voices.find(v => v.lang.startsWith("pt"));
     if (ptVoice) utterance.voice = ptVoice;
-    utterance.onstart = () => lipSync.startSpeaking();
-    utterance.onboundary = (event) => {
-      if (event.name === "word") {
-        const word = clean.slice(event.charIndex, event.charIndex + (event.charLength || 5));
-        lipSync.feedWord(word);
-      }
-    };
-    utterance.onend = () => { setSpeakingMsgIdx(null); lipSync.stopSpeaking(); };
-    utterance.onerror = () => { setSpeakingMsgIdx(null); lipSync.stopSpeaking(); };
+    utterance.onend = () => { setSpeakingMsgIdx(null); };
+    utterance.onerror = () => { setSpeakingMsgIdx(null); };
     setSpeakingMsgIdx(msgIdx);
     window.speechSynthesis.speak(utterance);
   };
@@ -798,9 +784,6 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
               <DropdownMenuItem onClick={() => setShowHistory(!showHistory)}>
                 <History className="h-4 w-4 mr-2" /> Histórico
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowAvatar3D(!showAvatar3D)}>
-                <User2 className="h-4 w-4 mr-2" /> {showAvatar3D ? "Ocultar Avatar 3D" : "Mostrar Avatar 3D"}
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setAutoSpeak(!autoSpeak)}>
                 <Volume2 className="h-4 w-4 mr-2" /> {autoSpeak ? "Desativar auto-fala" : "Ativar auto-fala"}
               </DropdownMenuItem>
@@ -814,16 +797,6 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
         </div>
       </div>
 
-      {/* 3D Avatar */}
-      {showAvatar3D && (
-        <Suspense fallback={null}>
-          <TutorAvatar3D
-            isSpeaking={speakingMsgIdx !== null}
-            lipSync={lipSync}
-            className="h-32 sm:h-40 mb-2"
-          />
-        </Suspense>
-      )}
 
       {/* Hidden file input */}
       <input type="file" ref={fileInputRef} accept=".pdf,.txt,.docx" className="hidden" onChange={handleFileUpload} />

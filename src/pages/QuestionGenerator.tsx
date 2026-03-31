@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { ALL_SPECIALTIES } from "@/constants/specialties";
 import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
+import { SPECIALTY_SUBTOPICS } from "@/constants/subtopics";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
 
@@ -194,7 +195,34 @@ const QuestionGenerator = () => {
                </Select>
             </div>
 
-            {/* Specific topic */}
+            {/* Subtopics chips */}
+            {effectiveSpecialty && SPECIALTY_SUBTOPICS[effectiveSpecialty] && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Subtemas</label>
+                <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+                  {SPECIALTY_SUBTOPICS[effectiveSpecialty].map(sub => (
+                    <button
+                      key={sub}
+                      onClick={() => setSpecificTopic(prev => {
+                        const current = prev.split(",").map(s => s.trim()).filter(Boolean);
+                        return current.includes(sub)
+                          ? current.filter(s => s !== sub).join(", ")
+                          : [...current, sub].join(", ");
+                      })}
+                      className={`px-2 py-1 rounded-full text-[10px] font-medium transition-all border ${
+                        specificTopic.split(",").map(s => s.trim()).includes(sub)
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/30"
+                      }`}
+                    >
+                      {sub}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Specific topic free text */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Tema específico (opcional)</label>
               <Input
