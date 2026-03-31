@@ -200,8 +200,19 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                 Limpar
               </Button>
             </div>
-          </div>
+            </div>
 
+            {/* Specific topic */}
+            <div>
+              <label className="text-sm font-semibold mb-2 block">Tema específico (opcional)</label>
+              <Input
+                placeholder="Ex: Doença de Chagas, Pré-eclâmpsia, IAM com supra..."
+                value={specificTopic}
+                onChange={(e) => setSpecificTopic(e.target.value)}
+                className="text-sm"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Deixe vazio para temas variados dentro das especialidades selecionadas</p>
+            </div>
           {/* Extreme mode info banner */}
           {mode === "extremo" && (
             <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-4 space-y-2">

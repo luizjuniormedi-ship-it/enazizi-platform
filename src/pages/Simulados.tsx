@@ -217,7 +217,7 @@ const Simulados = () => {
     }
   };
 
-  const handleStart = async (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode }) => {
+  const handleStart = async (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string }) => {
     if (config.topics.length === 0) {
       toast({ title: "Selecione pelo menos um assunto", variant: "destructive" });
       return;
