@@ -45,6 +45,9 @@ const SmartPlanner = () => {
   const [config, setConfig] = useState<CronogramaConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("objetivo");
+  const [showReprocess, setShowReprocess] = useState(false);
+  const [newExamDate, setNewExamDate] = useState<Date>();
+  const [reprocessing, setReprocessing] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!user) return;
