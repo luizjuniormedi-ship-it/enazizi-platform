@@ -28,18 +28,19 @@ type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 
 const BATCH_SIZE = 10;
 
-function buildPrompt(topics: string[], count: number, difficulty: string): string {
+function buildPrompt(topics: string[], count: number, difficulty: string, specificTopic?: string): string {
   const topicsStr = topics.join(", ");
   const perTopic = Math.ceil(count / topics.length);
   const difficultyInstruction = difficulty === "misto"
     ? "Distribua: 50% intermediárias (padrão REVALIDA) e 50% difíceis (padrão ENAMED/ENARE)."
     : `Nível de dificuldade: ${difficulty}.`;
+  const topicFocus = specificTopic ? `\nFOCO TEMÁTICO: Todas as questões devem abordar especificamente "${specificTopic}". Varie os cenários clínicos mas mantenha o foco neste tema.` : "";
 
   return `Gere exatamente ${count} questões de múltipla escolha para simulado de residência médica.
 
 IDIOMA OBRIGATÓRIO: TUDO deve ser escrito em PORTUGUÊS BRASILEIRO. Enunciados, alternativas, explicações — TUDO em pt-BR. NUNCA use inglês.
 
-TEMAS: ${topicsStr}
+TEMAS: ${topicsStr}${topicFocus}
 DISTRIBUIÇÃO: aproximadamente ${perTopic} questões por tema. Distribua igualmente.
 ${difficultyInstruction}
 
