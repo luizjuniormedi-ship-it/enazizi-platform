@@ -1738,12 +1738,14 @@ export type Database = {
           correct_index: number | null
           created_at: string
           difficulty: number | null
+          exam_bank_id: string | null
           explanation: string | null
           id: string
           is_global: boolean | null
           options: Json | null
           organization_id: string | null
           original_question_id: string | null
+          question_order: number | null
           review_status: string | null
           source: string | null
           statement: string
@@ -1754,12 +1756,14 @@ export type Database = {
           correct_index?: number | null
           created_at?: string
           difficulty?: number | null
+          exam_bank_id?: string | null
           explanation?: string | null
           id?: string
           is_global?: boolean | null
           options?: Json | null
           organization_id?: string | null
           original_question_id?: string | null
+          question_order?: number | null
           review_status?: string | null
           source?: string | null
           statement: string
@@ -1770,12 +1774,14 @@ export type Database = {
           correct_index?: number | null
           created_at?: string
           difficulty?: number | null
+          exam_bank_id?: string | null
           explanation?: string | null
           id?: string
           is_global?: boolean | null
           options?: Json | null
           organization_id?: string | null
           original_question_id?: string | null
+          question_order?: number | null
           review_status?: string | null
           source?: string | null
           statement?: string
@@ -1783,6 +1789,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "questions_bank_exam_bank_id_fkey"
+            columns: ["exam_bank_id"]
+            isOneToOne: false
+            referencedRelation: "exam_banks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "questions_bank_organization_id_fkey"
             columns: ["organization_id"]

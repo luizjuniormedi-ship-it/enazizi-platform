@@ -63,5 +63,8 @@ verify_jwt = false
 [functions.search-real-questions]
 verify_jwt = false
 
+[functions.extract-exam-questions]
+verify_jwt = false
+
 [functions.feynman-trainer]
 verify_jwt = false

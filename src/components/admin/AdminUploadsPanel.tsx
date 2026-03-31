@@ -1,4 +1,4 @@
-import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle, Database } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle, Database, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -158,6 +158,27 @@ const AdminUploadsPanel = () => {
     }
   };
 
+  const [extracting, setExtracting] = useState<string | null>(null);
+
+  const handleExtractExam = async (upload: UploadRecord) => {
+    setExtracting(upload.id);
+    try {
+      const res = await supabase.functions.invoke("extract-exam-questions", {
+        body: { upload_id: upload.id },
+      });
+      if (res.error) throw res.error;
+      const d = res.data as any;
+      toast({
+        title: `✅ ${d.total_inserted} questões extraídas!`,
+        description: `${d.years_found?.length || 0} anos encontrados. ${d.exam_banks_created?.length || 0} bancas criadas. ${d.total_linked} questões vinculadas.`,
+      });
+    } catch (err: any) {
+      toast({ title: "Erro na extração", description: err.message, variant: "destructive" });
+    } finally {
+      setExtracting(null);
+    }
+  };
+
   const statusIcon = (status: string | null) => {
     switch (status) {
       case "processed": return <CheckCircle className="h-4 w-4 text-success" />;
@@ -242,9 +263,15 @@ const AdminUploadsPanel = () => {
                       </div>
                     </div>
                     {f.status === "processed" && (
-                      <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePopulateQuestions(f)}>
-                        <Database className="h-3 w-3" /> Gerar Questões
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handleExtractExam(f)} disabled={extracting === f.id}>
+                          {extracting === f.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <BookOpen className="h-3 w-3" />}
+                          Extrair Prova
+                        </Button>
+                        <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePopulateQuestions(f)}>
+                          <Database className="h-3 w-3" /> Gerar Questões
+                        </Button>
+                      </div>
                     )}
                     {!isProcessing && (
                       <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDelete(f)}>
