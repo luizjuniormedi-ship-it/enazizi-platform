@@ -1,0 +1,42 @@
+export const SPECIALTY_SUBTOPICS: Record<string, string[]> = {
+  // Ciclo Básico
+  "Anatomia": ["Neuroanatomia", "Anatomia do Tórax", "Anatomia do Abdome", "Anatomia Musculoesquelética", "Anatomia Vascular"],
+  "Bioquímica": ["Metabolismo de Carboidratos", "Metabolismo de Lipídios", "Metabolismo de Proteínas", "Bioenergética", "Vitaminas e Cofatores"],
+  "Embriologia": ["Embriologia Cardíaca", "Embriologia do SNC", "Malformações Congênitas", "Embriologia do TGI"],
+  "Farmacologia": ["Farmacocinética", "Farmacodinâmica", "Antibióticos", "Anti-hipertensivos", "Analgésicos e Anti-inflamatórios", "Psicofármacos", "Quimioterápicos"],
+  "Fisiologia": ["Fisiologia Cardiovascular", "Fisiologia Respiratória", "Fisiologia Renal", "Fisiologia Endócrina", "Neurofisiologia", "Fisiologia Gastrointestinal"],
+  "Genética Médica": ["Herança Mendeliana", "Cromossomopatias", "Erros Inatos do Metabolismo", "Aconselhamento Genético"],
+  "Histologia": ["Tecido Epitelial", "Tecido Conjuntivo", "Tecido Nervoso", "Tecido Muscular"],
+  "Imunologia": ["Imunidade Inata", "Imunidade Adaptativa", "Autoimunidade", "Imunodeficiências", "Hipersensibilidade", "Transplantes"],
+  "Microbiologia": ["Bacteriologia", "Virologia", "Micologia", "Resistência Bacteriana"],
+  "Parasitologia": ["Protozoários", "Helmintos", "Doença de Chagas", "Malária", "Leishmaniose", "Esquistossomose"],
+  "Patologia": ["Inflamação", "Neoplasias", "Distúrbios Hemodinâmicos", "Patologia Ambiental", "Imunopatologia"],
+  "Semiologia": ["Propedêutica Cardiovascular", "Propedêutica Respiratória", "Propedêutica Abdominal", "Exame Neurológico", "Anamnese"],
+
+  // Ciclo Clínico
+  "Angiologia": ["Doença Arterial Periférica", "Trombose Venosa Profunda", "Aneurisma de Aorta", "Varizes", "Insuficiência Venosa"],
+  "Cardiologia": ["IAM com Supra de ST", "IAM sem Supra", "Insuficiência Cardíaca", "Arritmias", "Valvopatias", "Hipertensão Arterial", "Endocardite", "Pericardite", "Cardiopatias Congênitas", "Miocardiopatias"],
+  "Dermatologia": ["Dermatoses Infecciosas", "Dermatoses Autoimunes", "Câncer de Pele", "Hanseníase", "Psoríase", "Dermatite Atópica"],
+  "Endocrinologia": ["Diabetes Mellitus", "Cetoacidose Diabética", "Tireoidopatias", "Síndrome de Cushing", "Insuficiência Adrenal", "Distúrbios da Paratireoide", "Obesidade"],
+  "Gastroenterologia": ["Doença do Refluxo", "Úlcera Péptica", "Doença Inflamatória Intestinal", "Hepatites Virais", "Cirrose Hepática", "Pancreatite", "Doença Celíaca", "Hemorragia Digestiva"],
+  "Hematologia": ["Anemias", "Leucemias", "Linfomas", "Coagulopatias", "Trombocitopenias", "Hemoglobinopatias", "Distúrbios da Hemostasia"],
+  "Infectologia": ["HIV/AIDS", "Tuberculose", "Meningites", "Sepse", "Infecções Oportunistas", "Dengue", "Leptospirose", "Hepatites", "COVID-19", "Endocardite Infecciosa"],
+  "Nefrologia": ["Insuficiência Renal Aguda", "Doença Renal Crônica", "Glomerulopatias", "Distúrbios Hidroeletrolíticos", "Distúrbios Ácido-Base", "Síndrome Nefrótica", "Síndrome Nefrítica"],
+  "Neurologia": ["AVC Isquêmico", "AVC Hemorrágico", "Epilepsia", "Cefaléias", "Esclerose Múltipla", "Parkinson", "Neuropatias Periféricas", "Meningites", "Demências"],
+  "Oftalmologia": ["Glaucoma", "Catarata", "Retinopatia Diabética", "Descolamento de Retina", "Conjuntivites", "Trauma Ocular"],
+  "Oncologia": ["Câncer de Mama", "Câncer de Pulmão", "Câncer Colorretal", "Câncer Gástrico", "Estadiamento TNM", "Síndromes Paraneoplásicas", "Neutropenia Febril"],
+  "Ortopedia": ["Fraturas", "Luxações", "Osteomielite", "Artrose", "Lombalgia", "Trauma Musculoesquelético", "Lesões Ligamentares"],
+  "Otorrinolaringologia": ["Otite Média", "Sinusite", "Faringite", "Tonsilite", "Vertigem", "Perda Auditiva"],
+  "Pneumologia": ["Asma", "DPOC", "Pneumonia", "Tuberculose Pulmonar", "Tromboembolismo Pulmonar", "Derrame Pleural", "Câncer de Pulmão", "SDRA", "Fibrose Pulmonar"],
+  "Psiquiatria": ["Depressão", "Transtorno Bipolar", "Esquizofrenia", "Transtornos de Ansiedade", "TOC", "TEPT", "Dependência Química", "Emergências Psiquiátricas"],
+  "Reumatologia": ["Artrite Reumatoide", "Lúpus Eritematoso Sistêmico", "Espondiloartrites", "Gota", "Vasculites", "Esclerodermia", "Fibromialgia"],
+  "Urologia": ["Litíase Renal", "Hiperplasia Prostática", "Câncer de Próstata", "Infecção Urinária", "Trauma Urológico", "Incontinência Urinária"],
+
+  // Internato
+  "Cirurgia": ["Abdome Agudo", "Apendicite", "Colecistite", "Hérnias", "Trauma Abdominal", "Trauma Torácico", "Pré e Pós-operatório", "Queimaduras", "Politrauma"],
+  "Ginecologia e Obstetrícia": ["Pré-eclâmpsia", "Eclâmpsia", "Pré-natal", "Trabalho de Parto", "Hemorragias da Gestação", "Infecções na Gestação", "Câncer de Colo", "Endometriose", "SOP", "Climatério", "Placenta Prévia", "DPP"],
+  "Medicina de Emergência": ["PCR e RCP", "Choque", "Intoxicações", "Anafilaxia", "Trauma", "Emergências Hipertensivas", "Cetoacidose Diabética", "Status Epiléptico"],
+  "Medicina Preventiva": ["Epidemiologia", "Vigilância em Saúde", "SUS", "Atenção Primária", "Vacinação", "Saúde do Trabalhador", "Bioestatística", "Estudos Epidemiológicos"],
+  "Pediatria": ["Neonatologia", "Aleitamento Materno", "Crescimento e Desenvolvimento", "Infecções na Infância", "Asma Infantil", "Bronquiolite", "Doenças Exantemáticas", "Desnutrição", "Imunização"],
+  "Terapia Intensiva": ["Ventilação Mecânica", "Sepse e Choque Séptico", "Distúrbios Hidroeletrolíticos", "Sedação e Analgesia", "Monitorização Hemodinâmica", "SDRA", "Nutrição Enteral e Parenteral"],
+};
