@@ -75,7 +75,9 @@ const AdminIngestionPanel = () => {
         body: JSON.stringify(payload),
       }
     );
-    return resp.json();
+    const data = resp.headers.get("content-type")?.includes("application/json") ? await resp.json() : {};
+    if (!resp.ok) throw new Error(data?.error || `Falha na ingestão (${resp.status})`);
+    return data;
   };
 
   const handleExtractPdf = async (source: IndexedSource) => {
@@ -90,9 +92,8 @@ const AdminIngestionPanel = () => {
         source_type: "indexed_external",
         permission_type: "indexed_external",
       });
-      if (data?.error) throw new Error(data.error);
-      setSources(prev => prev.map(s => s.name === source.name ? { ...s, status: "extracted" as const, questionsCount: data.questions_inserted } : s));
-      toast({ title: `${data.questions_inserted} questões extraídas!`, description: `${source.name} processado.` });
+      setSources(prev => prev.map(s => s.name === source.name ? { ...s, status: "extracted" as const, questionsCount: data?.questions_inserted ?? 0 } : s));
+      toast({ title: `${data?.questions_inserted ?? 0} questões extraídas!`, description: `${source.name} processado.` });
       loadLogs();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
@@ -137,8 +138,7 @@ const AdminIngestionPanel = () => {
         source_type: "indexed_external",
         permission_type: "indexed_external",
       });
-      if (data?.error) throw new Error(data.error);
-      toast({ title: `${data.questions_inserted} questões extraídas de ${link.name}` });
+      toast({ title: `${data?.questions_inserted ?? 0} questões extraídas de ${link.name}` });
       loadLogs();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
@@ -255,10 +255,10 @@ const AdminIngestionPanel = () => {
                   </Badge>
                 </div>
                 <div className="flex gap-3 mt-0.5 text-[10px] text-muted-foreground">
-                  <span>+{log.questions_inserted} inseridas</span>
-                  <span>↑{log.questions_updated} atualizadas</span>
-                  <span>={log.duplicates_skipped} duplicatas</span>
-                  {log.errors > 0 && <span className="text-red-500">✗{log.errors} erros</span>}
+                  <span>+{log.questions_inserted ?? 0} inseridas</span>
+                  <span>↑{log.questions_updated ?? 0} atualizadas</span>
+                  <span>={log.duplicates_skipped ?? 0} duplicatas</span>
+                  {(log.errors ?? 0) > 0 && <span className="text-red-500">✗{log.errors} erros</span>}
                 </div>
               </div>
             ))}

@@ -87,8 +87,8 @@ const AdminWebScrapingPanel = () => {
       if (data) {
         setResult(data);
         toast({
-          title: `${data.questions_inserted} questões encontradas!`,
-          description: `${data.pages_scraped} páginas analisadas de fontes oficiais.`,
+          title: `${data.questions_inserted ?? 0} questões encontradas!`,
+          description: `${data.pages_scraped ?? 0} páginas analisadas de fontes oficiais.`,
         });
       }
     } catch (e) {

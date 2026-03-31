@@ -145,10 +145,12 @@ Deno.serve(async (req) => {
     if (mode === "pdf_url" && url) {
       sourceName = `PDF: ${url.split("/").pop()}`;
 
-      // Use AI to extract text from PDF
+      // Use AI to extract text from PDF (with timeout)
       const lovableKey = Deno.env.get("LOVABLE_API_KEY");
       if (lovableKey) {
         try {
+          const aiController = new AbortController();
+          const aiTimeout = setTimeout(() => aiController.abort(), 45000);
           const aiResp = await fetch("https://ai.lovable.dev/api/v1/chat/completions", {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${lovableKey}` },
@@ -171,7 +173,9 @@ Regras:
               }],
               temperature: 0.1,
             }),
+            signal: aiController.signal,
           });
+          clearTimeout(aiTimeout);
           const aiData = await aiResp.json();
           fullText = aiData.choices?.[0]?.message?.content || "";
         } catch (e) {
@@ -179,11 +183,15 @@ Regras:
         }
       }
 
-      // Try direct PDF fetch as fallback
+      // Try direct PDF fetch as fallback (with 30s timeout, 200KB limit)
       if (!fullText) {
         try {
-          const pdfResp = await fetch(url);
-          fullText = await pdfResp.text();
+          const pdfController = new AbortController();
+          const pdfTimeout = setTimeout(() => pdfController.abort(), 30000);
+          const pdfResp = await fetch(url, { signal: pdfController.signal });
+          clearTimeout(pdfTimeout);
+          const rawText = await pdfResp.text();
+          fullText = rawText.slice(0, 200_000);
         } catch { /* ignore */ }
       }
     } else if (mode === "upload" && upload_id) {
