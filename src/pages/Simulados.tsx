@@ -49,14 +49,15 @@ DISTRIBUIÇÃO: aproximadamente ${perTopic} questões por tema. Distribua igualm
 ${difficultyInstruction}
 
 REGRAS OBRIGATÓRIAS:
-1. Cada questão DEVE OBRIGATORIAMENTE começar com um CASO CLÍNICO COMPLETO contendo: idade, sexo, queixa principal com tempo de evolução, história clínica relevante, exame físico pertinente e/ou resultados de exames complementares. NÃO gere questões teóricas puras sem contexto clínico.
-2. Mínimo 200 caracteres no enunciado — questões curtas demais serão rejeitadas
-3. Exatamente 5 alternativas (A-E) por questão, todas plausíveis e em português
-4. A explicação deve ser didática, explicar por que cada alternativa está certa ou errada, e citar referência bibliográfica (ex: Harrison, Nelson, Sabiston, Zugaib, etc.)
-5. O campo "correct_index" deve ser o índice (0-4) da alternativa correta
-6. 100% das questões devem envolver raciocínio clínico aplicado (diagnóstico, conduta, tratamento ou interpretação de exames)
-7. PROIBIDO: questões do tipo "qual das alternativas está correta sobre X" sem caso clínico. PROIBIDO: questões de uma linha. PROIBIDO: enunciados vagos sem dados clínicos.
-8. Varie: sexo, idade, cenário (UBS, PS, enfermaria, UTI), apresentação clínica e perfil do paciente
+1. Cada questão DEVE OBRIGATORIAMENTE ser um CASO CLÍNICO COMPLEXO contendo: nome fictício, idade, sexo, profissão quando relevante, queixa principal com tempo de evolução, antecedentes pessoais com medicações em uso, exame físico com sinais vitais COMPLETOS (PA, FC, FR, Temp, SpO2), exames complementares com VALORES NUMÉRICOS e unidades. NÃO gere questões teóricas puras.
+2. Mínimo 250 caracteres no enunciado — questões curtas ou sem contexto clínico completo serão rejeitadas
+3. Exatamente 5 alternativas (A-E) por questão, todas PLAUSÍVEIS, clinicamente possíveis e com extensão similar
+4. Distratores devem explorar erros REAIS de raciocínio clínico que candidatos cometem em provas de residência (confusão entre diagnósticos similares, contraindicações esquecidas, condutas obsoletas)
+5. A explicação deve analisar CADA alternativa individualmente (por que certa ou errada), citar referência bibliográfica específica (Harrison cap. X, Sabiston, Nelson, Braunwald, etc.)
+6. O campo "correct_index" deve ser o índice (0-4) da alternativa correta
+7. 100% das questões devem envolver raciocínio clínico avançado — diagnóstico diferencial, conduta baseada em guidelines, interpretação de exames com valores limítrofes
+8. PROIBIDO: questões do tipo "qual das alternativas está correta sobre X" sem caso clínico. PROIBIDO: questões de uma linha. PROIBIDO: enunciados vagos. PROIBIDO: questões com resposta óbvia.
+9. Varie: sexo, idade (neonato a idoso), cenário (UBS, PS, enfermaria, UTI, ambulatório, centro cirúrgico), apresentação clínica (típica e atípica) e comorbidades
 
 FORMATO: Retorne APENAS um array JSON puro, sem markdown, sem \`\`\`, neste formato:
 [
