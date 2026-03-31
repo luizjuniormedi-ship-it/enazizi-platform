@@ -8,8 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   Target, BookOpen, CalendarDays, History,
-  Loader2, Brain, AlertTriangle, GraduationCap, Clock, TrendingUp, BarChart3
+  Loader2, Brain, AlertTriangle, GraduationCap, Clock, TrendingUp, BarChart3, RefreshCw
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 // Reuse existing cronograma components
 import CronogramaNovoTema from "@/components/cronograma/CronogramaNovoTema";
@@ -38,6 +45,9 @@ const SmartPlanner = () => {
   const [config, setConfig] = useState<CronogramaConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("objetivo");
+  const [showReprocess, setShowReprocess] = useState(false);
+  const [newExamDate, setNewExamDate] = useState<Date>();
+  const [reprocessing, setReprocessing] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -204,6 +214,40 @@ const SmartPlanner = () => {
     navigate("/dashboard/plano-dia");
   };
 
+  const reprocessCronograma = async () => {
+    if (!user || !newExamDate) {
+      toast({ title: "Selecione a nova data da prova", variant: "destructive" });
+      return;
+    }
+    setReprocessing(true);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const existingSubjects = temas.map(t => t.tema);
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-study-plan`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.session?.access_token}`,
+        },
+        body: JSON.stringify({
+          examDate: format(newExamDate, "yyyy-MM-dd"),
+          hoursPerDay: 4,
+          daysPerWeek: 5,
+          existingSubjects,
+        }),
+      });
+      const result = await resp.json();
+      if (!resp.ok) throw new Error(result.error || "Erro ao reprocessar");
+      setShowReprocess(false);
+      toast({ title: "✅ Cronograma recalculado!", description: "Revisões redistribuídas com a nova data." });
+      loadData();
+    } catch (err: any) {
+      toast({ title: "Erro ao reprocessar", description: err.message, variant: "destructive" });
+    } finally {
+      setReprocessing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -239,8 +283,55 @@ const SmartPlanner = () => {
               {revisoesAtrasadas.length} atrasadas
             </Badge>
           )}
+          <Button variant="secondary" size="sm" onClick={() => setShowReprocess(true)}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Recalcular Cronograma
+          </Button>
         </div>
       </div>
+
+      {/* Reprocess Panel */}
+      {showReprocess && (
+        <Card className="border-2 border-primary/30">
+          <CardContent className="p-4 space-y-4">
+            <h2 className="text-base font-semibold flex items-center gap-2">
+              <RefreshCw className="h-5 w-5 text-primary" />
+              Recalcular Cronograma com Nova Data
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              O cronograma será regenerado mantendo os {temas.length} temas existentes, redistribuindo revisões para a nova data da prova.
+            </p>
+            <div className="flex items-end gap-4 flex-wrap">
+              <div className="space-y-2">
+                <Label>Nova data da prova</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-[220px] justify-start text-left font-normal", !newExamDate && "text-muted-foreground")}>
+                      <CalendarDays className="mr-2 h-4 w-4" />
+                      {newExamDate ? format(newExamDate, "dd/MM/yyyy") : "Selecionar nova data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={newExamDate}
+                      onSelect={setNewExamDate}
+                      disabled={(date) => date < new Date()}
+                      className={cn("p-3 pointer-events-auto")}
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Button onClick={reprocessCronograma} disabled={reprocessing || !newExamDate}>
+                {reprocessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                {reprocessing ? "Reprocessando..." : "Recalcular"}
+              </Button>
+              <Button variant="ghost" onClick={() => setShowReprocess(false)}>Cancelar</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tabs — 4 seções claras */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
