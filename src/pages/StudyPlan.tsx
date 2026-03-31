@@ -65,6 +65,50 @@ const StudyPlan = () => {
   const [dragOver, setDragOver] = useState<{ day: number; task: number } | null>(null);
   const [completedKeys, setCompletedKeys] = useState<Set<string>>(new Set());
   const [completedTaskIds, setCompletedTaskIds] = useState<Record<string, string>>({});
+  const [showReprocess, setShowReprocess] = useState(false);
+  const [newExamDate, setNewExamDate] = useState<Date>();
+  const [reprocessing, setReprocessing] = useState(false);
+
+  const reprocessPlan = async () => {
+    if (!user || !newExamDate) {
+      toast({ title: "Selecione a nova data da prova", variant: "destructive" });
+      return;
+    }
+    setReprocessing(true);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-study-plan`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.session?.access_token}`,
+        },
+        body: JSON.stringify({
+          examDate: format(newExamDate, "yyyy-MM-dd"),
+          hoursPerDay: Number(hoursPerDay),
+          daysPerWeek: Number(daysPerWeek),
+          editalText: editalText || null,
+          currentPlanId: planId,
+          existingSubjects: subjects,
+        }),
+      });
+      const result = await resp.json();
+      if (!resp.ok) throw new Error(result.error);
+
+      const plan = result.plan.plan_json as PlanJson;
+      setPlanId(result.plan.id);
+      setSchedule(plan.weeklySchedule || []);
+      setSubjects(plan.subjects || []);
+      setTips(plan.tips || "");
+      setExamDate(newExamDate);
+      setShowReprocess(false);
+      toast({ title: "Plano reprocessado!", description: "Cronograma atualizado com a nova data." });
+    } catch (err: any) {
+      toast({ title: "Erro ao reprocessar", description: err.message, variant: "destructive" });
+    } finally {
+      setReprocessing(false);
+    }
+  };
 
   // Load existing plan
   useEffect(() => {
