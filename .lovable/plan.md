@@ -1,61 +1,61 @@
 
 
-# Padronizar Questões: 5 Alternativas + Filtrar Referências a Imagem
+# Processar DOCX com Imagens para o Banco de Questões
 
-## Diagnóstico do Banco Atual
+## Análise do Documento
 
-| Nº Alternativas | Questões | % |
-|---|---|---|
-| 4 | 5.903 | 63% |
-| 5 | 3.052 | 33% |
-| 2-3 | 101 | 1% |
-| 6+ | 198 | 2% |
-| Sem opções | 67 | 1% |
-| **Com referência a imagem** | **384** | **4%** |
-| **Total** | **9.321** | |
+O DOCX contém ~30+ questões de Cardiologia (concursos/residência) com muitas imagens embutidas (ECGs, radiografias, espirometrias). O parser extraiu ~150+ imagens das páginas. As questões têm estrutura variada -- algumas com alternativas claras (A-E), outras com texto corrido.
 
-## Mudanças
+## Desafio Principal
 
-### 1. Migração SQL — Limpeza em massa
+As imagens são parte integral das questões (ECGs para interpretar, radiografias para diagnosticar). Para incluí-las no banco, precisamos:
 
-Script SQL que:
-- **Deleta** questões com referência a imagem/figura/texto que não temos (`statement ILIKE '%na imagem%' OR '%observe a figura%' OR '%imagem abaixo%' OR '%texto abaixo%' OR '%radiografia abaixo%' OR '%fotografia%'` etc.) — ~384 questões
-- **Deleta** questões com 0-1 opções (inválidas) — ~67 questões
-- **Deleta** questões com 6+ opções (malformadas) — ~198 questões
-- Questões com 2-3 opções: deletar (Certo/Errado sem contexto CESPE não se aplica ao formato desejado)
+1. **Armazenar as imagens** no storage (bucket `user-uploads` ou novo bucket `question-images`)
+2. **Vincular cada imagem à questão** usando a coluna `image_url` recém-criada
+3. **Exibir as imagens** no frontend do Banco de Questões
 
-### 2. Edge Functions — Filtro na entrada (6 arquivos)
+## Plano
 
-Em todos os pipelines de geração/extração, adicionar:
-- **Filtro de imagem**: rejeitar questões cujo `statement` contenha padrões como `imagem abaixo`, `figura`, `observe a foto`, `radiografia abaixo`, `texto abaixo`
-- **Filtro de 5 opções**: exigir `options.length === 5` (rejeitar < 5 ou > 5)
-- **Prompt atualizado**: instruir a IA a sempre gerar exatamente 5 alternativas (A-E)
+### 1. Criar Edge Function `process-docx-questions`
 
-Arquivos afetados:
-- `populate-questions/index.ts`
-- `extract-exam-questions/index.ts`
-- `bulk-generate-content/index.ts`
-- `enamed-generator/index.ts`
-- `daily-question-generator/index.ts`
-- `process-upload/index.ts`
+Nova edge function que:
+- Recebe o DOCX via upload ou referência ao storage
+- Usa IA (Gemini 2.5 Pro -- melhor para imagem+texto) para analisar cada página como screenshot
+- A IA recebe o screenshot da página e extrai as questões estruturadas com indicação de quais imagens pertencem a qual questão
+- Faz upload das imagens relevantes para o bucket `question-images` (público)
+- Insere as questões no `questions_bank` com `image_url` preenchido
 
-O filtro será um regex compartilhado:
+### 2. Migração SQL
+
+- Criar bucket `question-images` (público, para servir imagens nas questões)
+
+### 3. Atualizar Frontend (`QuestionsBank.tsx`)
+
+- Renderizar `image_url` quando presente na questão (tag `<img>` abaixo do enunciado)
+- Manter filtro de 4-5 alternativas
+
+### 4. Fluxo de Processamento
+
 ```text
-IMAGE_REF_PATTERN = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo|observe o gráfico)\b/i
+DOCX Upload → parse_document (páginas como screenshots)
+    → Gemini 2.5 Pro analisa cada screenshot
+    → Extrai: enunciado, alternativas, gabarito, identifica imagens
+    → Upload imagens → Storage (question-images bucket)
+    → Insert questões com image_url → questions_bank
 ```
 
-### 3. Frontend — Validação no `QuestionsBank.tsx`
+### 5. Admin: Botão "Processar DOCX com Imagens"
 
-- Na query de listagem, filtrar questões com exatamente 5 opções no frontend (defesa extra)
-- Garantir que a renderização sempre use letras A-E
+No `AdminUploadsPanel.tsx`, adicionar botão para disparar a nova edge function em uploads DOCX.
 
-### 4. Coluna `image_url` (futuro)
+## Arquivos Impactados
 
-Adicionar coluna `image_url text` na tabela `questions_bank` para quando tivermos suporte a imagens vinculadas. Por enquanto, questões com referência a imagem são rejeitadas.
+- `supabase/functions/process-docx-questions/index.ts` -- nova edge function
+- 1 migração SQL (bucket `question-images`)
+- `src/pages/QuestionsBank.tsx` -- exibir imagens
+- `src/components/admin/AdminUploadsPanel.tsx` -- botão de processamento
 
-## Impacto
+## Observação Técnica
 
-- ~649 questões removidas (baixa qualidade / sem imagem)
-- 6 edge functions padronizadas
-- Banco limpo com ~8.672 questões, todas com 5 alternativas
+O Gemini 2.5 Pro é ideal aqui porque consegue analisar screenshots das páginas do DOCX e extrair tanto texto quanto contexto visual (qual imagem pertence a qual questão), algo impossível com extração puramente textual.
 
