@@ -101,8 +101,8 @@ const AdminUploadsPanel = () => {
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-    if (file.size > 20 * 1024 * 1024) {
-      toast({ title: "Arquivo muito grande", description: "Máximo de 20MB.", variant: "destructive" });
+    if (file.size > 50 * 1024 * 1024) {
+      toast({ title: "Arquivo muito grande", description: "Máximo de 50MB.", variant: "destructive" });
       return;
     }
     setUploading(true);
@@ -256,7 +256,7 @@ const AdminUploadsPanel = () => {
           <>
             <Upload className="h-10 w-10 text-primary/50 mx-auto mb-3" />
             <p className="font-medium">Clique para enviar arquivo global</p>
-            <p className="text-sm text-muted-foreground">PDF, TXT, DOCX — máx 20MB • Será disponibilizado para todos os alunos</p>
+            <p className="text-sm text-muted-foreground">PDF, TXT, DOCX — máx 50MB • Será disponibilizado para todos os alunos</p>
           </>
         )}
       </div>
