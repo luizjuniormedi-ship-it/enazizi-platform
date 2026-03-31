@@ -28,9 +28,10 @@ type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 
 const BATCH_SIZE = 10;
 
-function buildPrompt(topics: string[], count: number, difficulty: string, specificTopic?: string): string {
+function buildPrompt(topics: string[], count: number, difficulty: string, specificTopic?: string, examBoard?: string): string {
   const topicsStr = topics.join(", ");
   const perTopic = Math.ceil(count / topics.length);
+  const boardInstruction = examBoard ? `\nESTILO DE BANCA: Gere as questões no estilo da prova ${examBoard}, com formato, pegadinhas e abordagens típicas dessa banca.` : "";
   const difficultyInstruction = difficulty === "misto"
     ? "Distribua: 30% intermediárias (padrão REVALIDA) e 70% difíceis (padrão ENARE/USP-SP). Questões intermediárias devem exigir raciocínio clínico sólido. Questões difíceis devem ter diagnósticos diferenciais complexos e armadilhas de prova."
     : difficulty === "facil"
