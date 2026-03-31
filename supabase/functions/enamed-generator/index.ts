@@ -174,7 +174,7 @@ Cada caso deve conter:
 FORMATO JSON PURO (sem markdown):
 {
   "questions": [
-    {"statement":"Caso clínico completo...","options":["A) ...","B) ...","C) ...","D) ..."],"correct_index":0,"explanation":"Raciocínio clínico...","topic":"${specialty}","difficulty":3}
+    {"statement":"Caso clínico completo...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"Raciocínio clínico...","topic":"${specialty}","difficulty":3}
   ],
   "flashcards": [
     {"question":"Pergunta?","answer":"Resposta completa.","topic":"${specialty}"}
