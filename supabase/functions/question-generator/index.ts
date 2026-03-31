@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
+import { isValidQuestion, hasMinimumContext } from "../_shared/question-filters.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
