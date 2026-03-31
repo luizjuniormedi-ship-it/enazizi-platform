@@ -203,7 +203,39 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             </div>
             </div>
 
-            {/* Specific topic */}
+            {/* Subtopics based on selected specialties */}
+            {(() => {
+              const availableSubtopics = selectedTopics.flatMap(t => (SPECIALTY_SUBTOPICS[t] || []).map(sub => ({ specialty: t, sub })));
+              if (availableSubtopics.length === 0) return null;
+              return (
+                <div>
+                  <label className="text-sm font-semibold mb-2 block">Subtemas (opcional)</label>
+                  <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                    {availableSubtopics.map(({ specialty, sub }) => (
+                      <button
+                        key={`${specialty}-${sub}`}
+                        onClick={() => setSpecificTopic(prev => {
+                          const current = prev.split(",").map(s => s.trim()).filter(Boolean);
+                          return current.includes(sub)
+                            ? current.filter(s => s !== sub).join(", ")
+                            : [...current, sub].join(", ");
+                        })}
+                        className={`px-2 py-1 rounded-full text-[10px] font-medium transition-all border ${
+                          specificTopic.split(",").map(s => s.trim()).includes(sub)
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/30"
+                        }`}
+                      >
+                        {sub}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Clique para selecionar subtemas ou digite abaixo</p>
+                </div>
+              );
+            })()}
+
+            {/* Specific topic free text */}
             <div>
               <label className="text-sm font-semibold mb-2 block">Tema específico (opcional)</label>
               <Input
