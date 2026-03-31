@@ -78,6 +78,7 @@ async function generateBatch(
   difficulty: string,
   accessToken: string | undefined,
   specificTopic?: string,
+  examBoard?: string,
 ): Promise<SimQuestion[]> {
   const res = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`,
