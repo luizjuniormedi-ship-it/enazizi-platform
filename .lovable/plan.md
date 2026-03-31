@@ -1,39 +1,37 @@
 
 
-# Fix: "undefined questões extraídas" no Pipeline
+# Adicionar Campo de Tema Específico no Gerador de Questões e Simulados
 
-## Causa Raiz
+## O Que Existe Hoje
 
-Dois problemas simultâneos:
+Ambos os módulos permitem selecionar **especialidade** (ex: Cardiologia, Pediatria), mas não permitem especificar um **tema/subtema** dentro da especialidade (ex: "Insuficiência Cardíaca Descompensada", "Cetoacidose Diabética").
 
-1. **`WORKER_LIMIT`**: A edge function `ingest-questions` está estourando os recursos de compute (provavelmente ao baixar/processar PDFs grandes). Quando crasha, retorna status 546 sem JSON válido, e o frontend lê `data.questions_inserted` como `undefined`.
+## Mudanças
 
-2. **Falta de tratamento de erro no frontend**: O `callIngest` faz `resp.json()` sem verificar `resp.ok`, e o toast interpola `undefined` direto na string.
+### 1. `src/pages/QuestionGenerator.tsx` — Campo de tema específico
 
-## Correções
+- Adicionar um `Input` de texto livre abaixo do seletor de especialidade, com placeholder "Ex: IAM com supra de ST, Cetoacidose diabética..."
+- Quando preenchido, o prompt enviado à IA incluirá o tema: `"Gere X questões de {especialidade} focadas em {tema}..."`
+- O campo é opcional — se vazio, funciona como hoje (temas variados)
+- Atualizar `buildPrompt()` para incorporar o tema
+- Atualizar subtitle e welcomeMessage para mostrar o tema quando definido
 
-### 1. Frontend — `AdminIngestionPanel.tsx`
+### 2. `src/components/simulados/SimuladoSetup.tsx` — Campo de tema específico
 
-- No `callIngest`, verificar `resp.ok` antes de parsear JSON. Se status >= 400, lançar erro com mensagem descritiva.
-- Nos toasts e setState, usar `data.questions_inserted ?? 0` em vez de `data.questions_inserted` direto.
-- Nos logs da aba Log, usar `log.questions_inserted ?? 0`, `log.questions_updated ?? 0`, `log.duplicates_skipped ?? 0`.
+- Adicionar um `Input` de texto livre abaixo da seleção de especialidades: "Tema específico (opcional)"
+- Placeholder: "Ex: Doença de Chagas, Pré-eclâmpsia..."
+- Passar o `specificTopic` na config do `onStart`
+- Atualizar a interface `onStart` para incluir `specificTopic?: string`
 
-### 2. Frontend — `AdminWebScrapingPanel.tsx`
+### 3. `src/pages/Simulados.tsx` — Propagar tema ao prompt
 
-- Mesma proteção: `data?.questions_inserted ?? 0` nos toasts e result display.
-
-### 3. Edge Function `ingest-questions` — Reduzir consumo de recursos
-
-- Adicionar timeout mais curto para fetch de PDFs (30s em vez de ilimitado)
-- Limitar o tamanho do texto extraído do PDF (primeiros 200KB)
-- Adicionar `try/catch` robusto no fetch do PDF para retornar resultado parcial em vez de crashar
-- No response final, garantir `questions_inserted: inserted ?? 0`
+- Receber `specificTopic` da config e incluir no prompt de geração de questões do simulado
 
 ### Arquivos Impactados
 
 | Arquivo | Mudança |
 |---|---|
-| `src/components/admin/AdminIngestionPanel.tsx` | Null-safe access em `questions_inserted`, error handling no `callIngest` |
-| `src/components/admin/AdminWebScrapingPanel.tsx` | Null-safe access em `questions_inserted` |
-| `supabase/functions/ingest-questions/index.ts` | Timeout no fetch, limite de tamanho, fallback gracioso |
+| `src/pages/QuestionGenerator.tsx` | Novo state `specificTopic`, input de texto, atualizar `buildPrompt()` |
+| `src/components/simulados/SimuladoSetup.tsx` | Novo state `specificTopic`, input de texto, incluir no `onStart` |
+| `src/pages/Simulados.tsx` | Receber e usar `specificTopic` no prompt de geração |
 
