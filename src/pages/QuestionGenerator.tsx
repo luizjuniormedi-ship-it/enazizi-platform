@@ -262,6 +262,21 @@ const QuestionGenerator = () => {
               <p className="text-[10px] text-muted-foreground">Deixe vazio para temas variados dentro da especialidade</p>
             </div>
 
+            {/* Exam Board */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Banca / Estilo de Prova</label>
+              <Select value={examBoard} onValueChange={setExamBoard}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas as bancas" />
+                </SelectTrigger>
+                <SelectContent>
+                  {EXAM_BOARDS.map(b => (
+                    <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Difficulty */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Dificuldade</label>
