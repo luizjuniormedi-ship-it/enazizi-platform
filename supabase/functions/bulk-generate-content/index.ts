@@ -95,7 +95,7 @@ FORMATO JSON OBRIGATÓRIO:
   "questions": [
     {
       "statement": "Caso clínico completo...",
-      "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
+      "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
       "correct_index": 0,
       "explanation": "Explicação detalhada...",
       "topic": "${specialty}",
