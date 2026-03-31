@@ -96,7 +96,7 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
   const previousContentRef = useRef<string>("");
   const previousContentLoadedRef = useRef(false);
   const recognitionRef = useRef<any>(null);
-  const lipSync = useLipSync();
+  
   const { toast } = useToast();
 
   // Session persistence for "continue where you left off"
