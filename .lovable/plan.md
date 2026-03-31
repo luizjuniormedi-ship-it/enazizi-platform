@@ -1,44 +1,38 @@
 
 
-# Fix: Questões sem Contexto e em Inglês
+# Revisão e Limpeza do Banco de Questões
 
-## Causa Raiz
+## Diagnóstico
 
-1. **Questões em inglês**: O filtro `ENGLISH_PATTERN` existe em `_shared/question-filters.ts` mas **não é usado** na edge function `question-generator`. A IA às vezes gera em inglês e nada filtra.
+| Métrica | Quantidade |
+|---|---|
+| Total de questões | 9.695 |
+| Enunciado < 150 chars **E** sem padrão de idade/tempo | **2.483** (a excluir) |
+| Questões que ficam | **7.212** |
 
-2. **Questões sem contexto**: O filtro de qualidade no frontend (`mapQuestions` em Simulados.tsx) verifica `statement.length >= 200` e exige padrão de idade — mas o **QuestionGenerator.tsx** usa streaming e não aplica nenhum filtro de qualidade no conteúdo recebido.
+Exemplos de questões sem contexto: `"Teste"` (5 chars), `"A CONDUTA É:"` (12 chars) — claramente fragmentos de parsing mal feito, sem caso clínico.
 
-3. **Prompt insuficiente no JSON mode**: O `jsonSystemPrompt` da edge function não tem enforcement forte o suficiente contra inglês.
+## Critério de Exclusão
 
-## Mudanças
+Excluir questões que atendam **ambas** as condições:
+1. `length(statement) < 150` caracteres
+2. Não contém padrão de idade/tempo (`\d+\s*(anos|meses|dias|horas|semanas)`)
 
-### 1. Edge Function `question-generator/index.ts` — Filtrar no servidor
+Isso preserva questões curtas mas com contexto clínico (ex: "Paciente de 45 anos...") e remove lixo de parsing.
 
-- Importar `isValidQuestion`, `ENGLISH_PATTERN` de `_shared/question-filters.ts`
-- No modo JSON (tool calling), após parsear as questões, aplicar `isValidQuestion()` + verificar `statement.length >= 200` antes de retornar
-- Adicionar filtro extra: rejeitar questões onde >30% das palavras são em inglês
-- Reforçar no prompt: "VIOLAÇÃO GRAVE: qualquer questão em inglês será descartada automaticamente"
+## Execução
 
-### 2. `_shared/question-filters.ts` — Expandir filtros
+### 1. Script de limpeza via `psql`
 
-- Adicionar `hasMinimumContext()`: verifica se statement tem >= 200 chars e contém padrão de idade/tempo (`\d+\s*(anos?|meses|dias|horas)`)
-- Expandir `ENGLISH_PATTERN` com mais termos comuns: `diagnosis`, `management`, `regarding`, `concerning`, `history of`
+- Executar `DELETE FROM questions_bank WHERE length(statement) < 150 AND statement !~ '\d+\s*(anos?|meses|dias|horas|semanas)'`
+- Registrar contagem de deletados
 
-### 3. `src/pages/QuestionGenerator.tsx` — Filtro pós-streaming
+### 2. Relatório final
 
-- Na função `handleSaveQuestions`, após `parseQuestionsFromText`, aplicar filtro: rejeitar questões com `statement.length < 150` ou que casem com `ENGLISH_PATTERN`
-- Mostrar toast avisando quantas questões foram descartadas por baixa qualidade
-
-### 4. `src/pages/Simulados.tsx` — Reforçar filtro existente
-
-- Adicionar verificação de inglês no `mapQuestions`: `!/\b(the patient|which of the following|presents with)\b/i.test(q.statement)`
+- Total antes / depois
+- Breakdown por source das questões removidas
 
 ### Arquivos Impactados
 
-| Arquivo | Mudança |
-|---|---|
-| `supabase/functions/_shared/question-filters.ts` | Expandir ENGLISH_PATTERN, adicionar `hasMinimumContext()` |
-| `supabase/functions/question-generator/index.ts` | Importar e aplicar filtros no response JSON |
-| `src/pages/QuestionGenerator.tsx` | Filtro de qualidade no `handleSaveQuestions` |
-| `src/pages/Simulados.tsx` | Adicionar filtro anti-inglês no `mapQuestions` |
+Nenhum arquivo de código precisa ser alterado — é uma operação de dados apenas.
 
