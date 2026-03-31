@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.feynman-trainer]
 verify_jwt = false
+
+[functions.process-docx-questions]
+verify_jwt = false
