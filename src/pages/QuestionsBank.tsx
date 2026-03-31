@@ -131,6 +131,7 @@ const QuestionsBank = () => {
       .from("questions_bank")
       .select("*", { count: "exact" })
       .or(`user_id.eq.${user.id},is_global.eq.true`)
+      .eq("review_status", "approved")
       .range(from, to);
 
     if (data) {

@@ -29,6 +29,7 @@ export function useAutoReplenish(activeTopic: string | null) {
         .from("questions_bank")
         .select("id", { count: "exact", head: true })
         .or(`user_id.eq.${user.id},is_global.eq.true`)
+        .eq("review_status", "approved")
         .eq("topic", topic);
 
       // Count answered questions for this topic

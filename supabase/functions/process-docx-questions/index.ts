@@ -158,6 +158,7 @@ Retorne SOMENTE JSON válido no formato:
           topic: q.topic || "Cardiologia",
           source: q.source || "docx-import",
           is_global: true,
+          review_status: "pending",
           image_url: q.has_image && q.image_description ? `[IMG] ${q.image_description}` : null,
         }));
 

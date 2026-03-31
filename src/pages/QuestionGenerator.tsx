@@ -120,6 +120,7 @@ const QuestionGenerator = () => {
       explanation: q.explanation,
       topic: q.topic || null,
       source: "gerador-ia",
+      review_status: "pending",
     }));
 
     const { error } = await supabase.from("questions_bank").insert(rows);

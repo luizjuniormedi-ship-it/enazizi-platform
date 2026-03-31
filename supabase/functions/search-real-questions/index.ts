@@ -974,7 +974,7 @@ serve(async (req) => {
         permission_type: "indexed_external",
         source_url: q.source_url || "",
         is_global: true,
-        review_status: "approved",
+        review_status: "pending",
       }));
 
       const { error: bankErr } = await supabaseAdmin.from("questions_bank").insert(bankRows);
