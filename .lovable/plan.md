@@ -1,47 +1,61 @@
 
 
-# Reprocessar REVALIDA + Preparar Módulo Prova na Íntegra
+# Padronizar Questões: 5 Alternativas + Filtrar Referências a Imagem
 
-## Situação Atual
+## Diagnóstico do Banco Atual
 
-- **835 questões REVALIDA** já existem no `questions_bank`, mas fragmentadas em ~28 fontes diferentes
-- O upload "PROVAS REVALIDA 2011 A 2024.2 COMENTADAS.txt" gerou apenas 28 questões de um arquivo com provas de 14 anos -- o pipeline `process-upload` não foi projetado para extrair questões literais, ele gera questões novas com IA
-- Provas com volume viável: REVALIDA 2020 (~182q), 2022 (~43q), 2024 (~45q), 2025/2026 (~46q cada)
-- A tabela `exam_banks` existe mas não tem vínculo formal com `questions_bank`
+| Nº Alternativas | Questões | % |
+|---|---|---|
+| 4 | 5.903 | 63% |
+| 5 | 3.052 | 33% |
+| 2-3 | 101 | 1% |
+| 6+ | 198 | 2% |
+| Sem opções | 67 | 1% |
+| **Com referência a imagem** | **384** | **4%** |
+| **Total** | **9.321** | |
 
-## Plano em 2 Etapas
+## Mudanças
 
-### Etapa 1: Reprocessar o TXT do REVALIDA com extração fiel
+### 1. Migração SQL — Limpeza em massa
 
-Criar uma edge function `extract-exam-questions` que:
-1. Lê o arquivo TXT do storage (`PROVAS REVALIDA 2011 A 2024.2 COMENTADAS.txt`)
-2. Usa o parser `parseQuestionsFromText` existente para extrair questões literais (sem IA inventar)
-3. Agrupa por ano usando regex no texto (ex: "REVALIDA 2011", "REVALIDA 2012", etc.)
-4. Insere no `questions_bank` com `source = "REVALIDA INEP {ano}"` e `is_global = true`
-5. Cria entradas no `exam_banks` para cada ano encontrado
+Script SQL que:
+- **Deleta** questões com referência a imagem/figura/texto que não temos (`statement ILIKE '%na imagem%' OR '%observe a figura%' OR '%imagem abaixo%' OR '%texto abaixo%' OR '%radiografia abaixo%' OR '%fotografia%'` etc.) — ~384 questões
+- **Deleta** questões com 0-1 opções (inválidas) — ~67 questões
+- **Deleta** questões com 6+ opções (malformadas) — ~198 questões
+- Questões com 2-3 opções: deletar (Certo/Errado sem contexto CESPE não se aplica ao formato desejado)
 
-### Etapa 2: Vincular questões existentes aos exam_banks
+### 2. Edge Functions — Filtro na entrada (6 arquivos)
 
-**Migração SQL:**
-- Adicionar coluna `exam_bank_id uuid REFERENCES exam_banks(id)` na tabela `questions_bank`
-- Adicionar coluna `question_order integer` na `questions_bank`
+Em todos os pipelines de geração/extração, adicionar:
+- **Filtro de imagem**: rejeitar questões cujo `statement` contenha padrões como `imagem abaixo`, `figura`, `observe a foto`, `radiografia abaixo`, `texto abaixo`
+- **Filtro de 5 opções**: exigir `options.length === 5` (rejeitar < 5 ou > 5)
+- **Prompt atualizado**: instruir a IA a sempre gerar exatamente 5 alternativas (A-E)
 
-**Edge function ou script:**
-- Associar as 835 questões existentes aos `exam_banks` correspondentes usando match no campo `source`
-- Consolidar duplicatas entre fontes (ex: REVALIDA 2020 tem 3 fontes com ~281 questões, provavelmente muitas duplicadas)
+Arquivos afetados:
+- `populate-questions/index.ts`
+- `extract-exam-questions/index.ts`
+- `bulk-generate-content/index.ts`
+- `enamed-generator/index.ts`
+- `daily-question-generator/index.ts`
+- `process-upload/index.ts`
 
-### Etapa 3: Módulo Prova na Íntegra (conforme plano anterior já aprovado)
+O filtro será um regex compartilhado:
+```text
+IMAGE_REF_PATTERN = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo|observe o gráfico)\b/i
+```
 
-Só faz sentido implementar após ter pelo menos 3-4 provas completas (60+ questões cada) vinculadas.
+### 3. Frontend — Validação no `QuestionsBank.tsx`
 
-## Detalhes Técnicos
+- Na query de listagem, filtrar questões com exatamente 5 opções no frontend (defesa extra)
+- Garantir que a renderização sempre use letras A-E
 
-### Arquivos impactados
-- `supabase/functions/extract-exam-questions/index.ts` -- nova edge function
-- 1 migração SQL (colunas `exam_bank_id` e `question_order`)
-- `src/lib/parseQuestions.ts` -- reutilizado (já existe)
-- Painel Admin: botão para disparar reprocessamento
+### 4. Coluna `image_url` (futuro)
 
-### Dependência
-O arquivo TXT já está no storage em `92736dea.../1774221285261_PROVAS_REVALIDA__2011_A_2024.2_COMENTADAS.txt`. Precisa ser lido e parseado completamente (sem limite de páginas/tokens).
+Adicionar coluna `image_url text` na tabela `questions_bank` para quando tivermos suporte a imagens vinculadas. Por enquanto, questões com referência a imagem são rejeitadas.
+
+## Impacto
+
+- ~649 questões removidas (baixa qualidade / sem imagem)
+- 6 edge functions padronizadas
+- Banco limpo com ~8.672 questões, todas com 5 alternativas
 
