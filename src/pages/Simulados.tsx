@@ -297,7 +297,7 @@ const Simulados = () => {
 
         if (requestCount <= BATCH_SIZE) {
           setLoadingPercent(40);
-          const batch = await generateBatch(config.topics, requestCount, config.difficulty, accessToken);
+          const batch = await generateBatch(config.topics, requestCount, config.difficulty, accessToken, config.specificTopic);
           allQuestions.push(...batch);
           setLoadingPercent(70);
 
