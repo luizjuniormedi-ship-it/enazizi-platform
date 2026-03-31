@@ -7,6 +7,7 @@ import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { useCallback, useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { ALL_SPECIALTIES } from "@/constants/specialties";
@@ -33,6 +34,7 @@ const QuestionGenerator = () => {
   const { user } = useAuth();
   const studyCtx = useStudyContext();
   const [specialty, setSpecialty] = useState<string>(studyCtx?.specialty || "");
+  const [specificTopic, setSpecificTopic] = useState("");
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState("intermediario");
   const [quantity, setQuantity] = useState(10);
@@ -80,7 +82,8 @@ const QuestionGenerator = () => {
 
   const buildPrompt = () => {
     const specPart = effectiveSpecialty || "qualquer área médica (variando especialidades)";
-    return `Gere ${quantity} questões ORIGINAIS de ${specPart} nível ${difficulty}. Formato ENARE com casos clínicos variados, alternativas plausíveis e explicação detalhada. Varie subtemas, perfis de pacientes e cenários.`;
+    const topicPart = specificTopic.trim() ? ` focadas no tema: "${specificTopic.trim()}"` : "";
+    return `Gere ${quantity} questões ORIGINAIS de ${specPart}${topicPart} nível ${difficulty}. Formato ENARE com casos clínicos variados, alternativas plausíveis e explicação detalhada. Varie subtemas, perfis de pacientes e cenários.`;
   };
 
   const quickActions = showSetup ? [] : [
@@ -188,7 +191,19 @@ const QuestionGenerator = () => {
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
                 </SelectContent>
-              </Select>
+               </Select>
+            </div>
+
+            {/* Specific topic */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Tema específico (opcional)</label>
+              <Input
+                placeholder="Ex: IAM com supra de ST, Cetoacidose diabética..."
+                value={specificTopic}
+                onChange={(e) => setSpecificTopic(e.target.value)}
+                className="text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground">Deixe vazio para temas variados dentro da especialidade</p>
             </div>
 
             {/* Difficulty */}
@@ -311,9 +326,9 @@ const QuestionGenerator = () => {
 
       <AgentChat
         title="Gerador de Questões"
-        subtitle={`${effectiveSpecialty ? effectiveSpecialty + " • " : ""}${DIFFICULTY_OPTIONS.find(d => d.value === difficulty)?.label || "Intermediário"} • ${quantity} questões${marathonMode ? " • 🔥 Maratona" : ""}`}
+        subtitle={`${effectiveSpecialty ? effectiveSpecialty + " • " : ""}${specificTopic ? specificTopic + " • " : ""}${DIFFICULTY_OPTIONS.find(d => d.value === difficulty)?.label || "Intermediário"} • ${quantity} questões${marathonMode ? " • 🔥 Maratona" : ""}`}
         icon={<HelpCircle className="h-6 w-6 text-primary" />}
-        welcomeMessage={`Gerando ${quantity} questões${effectiveSpecialty ? ` de ${effectiveSpecialty}` : " mistas"} (${DIFFICULTY_OPTIONS.find(d => d.value === difficulty)?.label})... Aguarde! 🧠`}
+        welcomeMessage={`Gerando ${quantity} questões${effectiveSpecialty ? ` de ${effectiveSpecialty}` : " mistas"}${specificTopic ? ` (${specificTopic})` : ""} (${DIFFICULTY_OPTIONS.find(d => d.value === difficulty)?.label})... Aguarde! 🧠`}
         welcomeMessageWithUploads="📚 Detectei {count} material(is) do seu acervo: {materiais}. Vou usar como base para gerar questões! 👇"
         placeholder="Ex: Gere mais 5 de Cardiologia sobre IAM..."
         functionName="question-generator"

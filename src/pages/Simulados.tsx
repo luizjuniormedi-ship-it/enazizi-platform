@@ -28,18 +28,19 @@ type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 
 const BATCH_SIZE = 10;
 
-function buildPrompt(topics: string[], count: number, difficulty: string): string {
+function buildPrompt(topics: string[], count: number, difficulty: string, specificTopic?: string): string {
   const topicsStr = topics.join(", ");
   const perTopic = Math.ceil(count / topics.length);
   const difficultyInstruction = difficulty === "misto"
     ? "Distribua: 50% intermediárias (padrão REVALIDA) e 50% difíceis (padrão ENAMED/ENARE)."
     : `Nível de dificuldade: ${difficulty}.`;
+  const topicFocus = specificTopic ? `\nFOCO TEMÁTICO: Todas as questões devem abordar especificamente "${specificTopic}". Varie os cenários clínicos mas mantenha o foco neste tema.` : "";
 
   return `Gere exatamente ${count} questões de múltipla escolha para simulado de residência médica.
 
 IDIOMA OBRIGATÓRIO: TUDO deve ser escrito em PORTUGUÊS BRASILEIRO. Enunciados, alternativas, explicações — TUDO em pt-BR. NUNCA use inglês.
 
-TEMAS: ${topicsStr}
+TEMAS: ${topicsStr}${topicFocus}
 DISTRIBUIÇÃO: aproximadamente ${perTopic} questões por tema. Distribua igualmente.
 ${difficultyInstruction}
 
@@ -69,6 +70,7 @@ async function generateBatch(
   count: number,
   difficulty: string,
   accessToken: string | undefined,
+  specificTopic?: string,
 ): Promise<SimQuestion[]> {
   const res = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`,
@@ -84,7 +86,7 @@ async function generateBatch(
         outputFormat: "json",
         difficulty,
         timeoutMs: 55000,
-        messages: [{ role: "user", content: buildPrompt(topics, count, difficulty) }],
+        messages: [{ role: "user", content: buildPrompt(topics, count, difficulty, specificTopic) }],
       }),
     },
   );
@@ -215,7 +217,7 @@ const Simulados = () => {
     }
   };
 
-  const handleStart = async (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode }) => {
+  const handleStart = async (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string }) => {
     if (config.topics.length === 0) {
       toast({ title: "Selecione pelo menos um assunto", variant: "destructive" });
       return;
@@ -295,7 +297,7 @@ const Simulados = () => {
 
         if (requestCount <= BATCH_SIZE) {
           setLoadingPercent(40);
-          const batch = await generateBatch(config.topics, requestCount, config.difficulty, accessToken);
+          const batch = await generateBatch(config.topics, requestCount, config.difficulty, accessToken, config.specificTopic);
           allQuestions.push(...batch);
           setLoadingPercent(70);
 
@@ -307,6 +309,7 @@ const Simulados = () => {
               Math.min(config.count - allQuestions.length + 2, BATCH_SIZE),
               config.difficulty,
               accessToken,
+              config.specificTopic,
             );
             allQuestions.push(...extra);
           }
@@ -320,7 +323,7 @@ const Simulados = () => {
           let completedBatches = 0;
           const results = await Promise.allSettled(
             batchSizes.map(async (size) => {
-              const result = await generateBatch(config.topics, size, config.difficulty, accessToken);
+              const result = await generateBatch(config.topics, size, config.difficulty, accessToken, config.specificTopic);
               completedBatches++;
               const pct = 25 + Math.round((completedBatches / batchCount) * 55);
               setLoadingPercent(pct);
@@ -344,6 +347,7 @@ const Simulados = () => {
                 Math.min(config.count - allQuestions.length + 2, BATCH_SIZE),
                 config.difficulty,
                 accessToken,
+                config.specificTopic,
               );
               allQuestions.push(...retry);
             } catch {

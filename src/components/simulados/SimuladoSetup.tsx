@@ -22,7 +22,7 @@ const DIFFICULTY_OPTIONS = [
 export type SimuladoMode = "prova" | "estudo" | "extremo";
 
 interface SimuladoSetupProps {
-  onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode }) => void;
+  onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string }) => void;
   onResumeSession: () => void;
   onDiscardSession: () => void;
   onRetryErrors: (sessionId: string) => void;
@@ -44,6 +44,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
   const [customCount, setCustomCount] = useState("");
   const [difficulty, setDifficulty] = useState("intermediario");
   const [timePerQuestion, setTimePerQuestion] = useState(3);
+  const [specificTopic, setSpecificTopic] = useState("");
   const [mode, setMode] = useState<SimuladoMode>("estudo");
 
   const toggleTopic = (topic: string) => {
@@ -54,7 +55,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
 
   const handleStart = () => {
     const count = customCount ? parseInt(customCount) : questionCount;
-    onStart({ topics: selectedTopics, count, difficulty, timePerQuestion, mode });
+    onStart({ topics: selectedTopics, count, difficulty, timePerQuestion, mode, specificTopic: specificTopic.trim() || undefined });
   };
 
   const totalTime = (customCount ? parseInt(customCount) || questionCount : questionCount) * timePerQuestion;
@@ -199,8 +200,19 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                 Limpar
               </Button>
             </div>
-          </div>
+            </div>
 
+            {/* Specific topic */}
+            <div>
+              <label className="text-sm font-semibold mb-2 block">Tema específico (opcional)</label>
+              <Input
+                placeholder="Ex: Doença de Chagas, Pré-eclâmpsia, IAM com supra..."
+                value={specificTopic}
+                onChange={(e) => setSpecificTopic(e.target.value)}
+                className="text-sm"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Deixe vazio para temas variados dentro das especialidades selecionadas</p>
+            </div>
           {/* Extreme mode info banner */}
           {mode === "extremo" && (
             <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-4 space-y-2">
