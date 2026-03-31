@@ -49,6 +49,7 @@ const QuestionGenerator = () => {
   const [specificTopic, setSpecificTopic] = useState("");
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState("intermediario");
+  const [examBoard, setExamBoard] = useState("all");
   const [quantity, setQuantity] = useState(10);
   const [marathonMode, setMarathonMode] = useState(false);
   const [sessionStats, setSessionStats] = useState<SessionStats>({ total: 0, correct: 0, bySpecialty: {} });
