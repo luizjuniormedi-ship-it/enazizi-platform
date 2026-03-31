@@ -76,7 +76,7 @@ async function fetchDashboardData(userId: string) {
     supabase.from("discursive_attempts").select("id", { count: "exact", head: true }).eq("user_id", userId).not("finished_at", "is", null),
     supabase.from("user_gamification").select("current_streak, xp, level").eq("user_id", userId).maybeSingle(),
     supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("is_global", true),
-    supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("is_global", true),
+    supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("is_global", true).eq("review_status", "approved"),
     supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("simulation_sessions").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "finished"),
     supabase.from("anamnesis_results").select("id", { count: "exact", head: true }).eq("user_id", userId),
