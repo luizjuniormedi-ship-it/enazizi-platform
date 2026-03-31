@@ -1741,6 +1741,7 @@ export type Database = {
           exam_bank_id: string | null
           explanation: string | null
           id: string
+          image_url: string | null
           is_global: boolean | null
           options: Json | null
           organization_id: string | null
@@ -1759,6 +1760,7 @@ export type Database = {
           exam_bank_id?: string | null
           explanation?: string | null
           id?: string
+          image_url?: string | null
           is_global?: boolean | null
           options?: Json | null
           organization_id?: string | null
@@ -1777,6 +1779,7 @@ export type Database = {
           exam_bank_id?: string | null
           explanation?: string | null
           id?: string
+          image_url?: string | null
           is_global?: boolean | null
           options?: Json | null
           organization_id?: string | null
