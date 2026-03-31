@@ -20,6 +20,17 @@ const DIFFICULTY_OPTIONS = [
   { value: "misto", label: "Misto" },
 ];
 
+const EXAM_BOARDS = [
+  { value: "all", label: "Todas as bancas" },
+  { value: "ENARE", label: "ENARE" },
+  { value: "REVALIDA", label: "REVALIDA" },
+  { value: "USP-SP", label: "USP-SP" },
+  { value: "UNIFESP", label: "UNIFESP" },
+  { value: "SUS-SP", label: "SUS-SP" },
+  { value: "UNICAMP", label: "UNICAMP" },
+  { value: "SANTA_CASA", label: "Santa Casa SP" },
+];
+
 export type SimuladoMode = "prova" | "estudo" | "extremo";
 
 interface SimuladoSetupProps {
