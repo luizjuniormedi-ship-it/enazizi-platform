@@ -45,22 +45,23 @@ DISTRIBUIÇÃO: aproximadamente ${perTopic} questões por tema. Distribua igualm
 ${difficultyInstruction}
 
 REGRAS OBRIGATÓRIAS:
-1. Cada questão DEVE ser um caso clínico completo com: idade, sexo, queixa principal, história clínica relevante, exame físico e/ou exames complementares
-2. Mínimo 150 caracteres no enunciado
-3. Exatamente 5 alternativas (A-E) por questão
-4. A explicação deve citar a referência bibliográfica (ex: Harrison, Nelson, Sabiston, etc.)
+1. Cada questão DEVE OBRIGATORIAMENTE começar com um CASO CLÍNICO COMPLETO contendo: idade, sexo, queixa principal com tempo de evolução, história clínica relevante, exame físico pertinente e/ou resultados de exames complementares. NÃO gere questões teóricas puras sem contexto clínico.
+2. Mínimo 200 caracteres no enunciado — questões curtas demais serão rejeitadas
+3. Exatamente 5 alternativas (A-E) por questão, todas plausíveis e em português
+4. A explicação deve ser didática, explicar por que cada alternativa está certa ou errada, e citar referência bibliográfica (ex: Harrison, Nelson, Sabiston, Zugaib, etc.)
 5. O campo "correct_index" deve ser o índice (0-4) da alternativa correta
-6. 70% das questões devem envolver raciocínio clínico (diagnóstico, conduta ou tratamento), 30% podem ser teóricas
-7. TODOS os textos DEVEM estar em português brasileiro. PROIBIDO qualquer texto em inglês.
+6. 100% das questões devem envolver raciocínio clínico aplicado (diagnóstico, conduta, tratamento ou interpretação de exames)
+7. PROIBIDO: questões do tipo "qual das alternativas está correta sobre X" sem caso clínico. PROIBIDO: questões de uma linha. PROIBIDO: enunciados vagos sem dados clínicos.
+8. Varie: sexo, idade, cenário (UBS, PS, enfermaria, UTI), apresentação clínica e perfil do paciente
 
 FORMATO: Retorne APENAS um array JSON puro, sem markdown, sem \`\`\`, neste formato:
 [
   {
-    "statement": "Caso clínico completo em português...",
+    "statement": "Paciente do sexo [M/F], [idade] anos, procura [local] com queixa de [sintomas] há [tempo]. [História clínica detalhada]. Ao exame físico: [achados]. Exames complementares: [resultados]. Qual a [conduta/diagnóstico/próximo passo]?",
     "options": ["alternativa A em português", "alternativa B em português", "alternativa C em português", "alternativa D em português", "alternativa E em português"],
     "correct_index": 0,
     "topic": "tema da questão em português",
-    "explanation": "Explicação detalhada em português com referência bibliográfica..."
+    "explanation": "Explicação detalhada em português com referência bibliográfica, explicando cada alternativa..."
   }
 ]`;
 }
@@ -142,8 +143,9 @@ function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
     .filter(
       (q) =>
         q.options.length >= 4 &&
-        q.statement.length > 10 &&
-        !NON_MEDICAL_CONTENT_REGEX.test(q.statement),
+        q.statement.length >= 150 &&
+        !NON_MEDICAL_CONTENT_REGEX.test(q.statement) &&
+        /\d+\s*(anos?|meses|dias|horas)/.test(q.statement), // must have clinical context with age
     );
 }
 
