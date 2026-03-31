@@ -148,7 +148,7 @@ function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
     .filter(
       (q) =>
         q.options.length >= 4 &&
-        q.statement.length >= 150 &&
+        q.statement.length >= 200 &&
         !NON_MEDICAL_CONTENT_REGEX.test(q.statement) &&
         /\d+\s*(anos?|meses|dias|horas)/.test(q.statement), // must have clinical context with age
     );
