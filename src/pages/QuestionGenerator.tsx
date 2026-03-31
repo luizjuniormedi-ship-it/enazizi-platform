@@ -190,7 +190,19 @@ const QuestionGenerator = () => {
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
                 </SelectContent>
-              </Select>
+               </Select>
+            </div>
+
+            {/* Specific topic */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Tema específico (opcional)</label>
+              <Input
+                placeholder="Ex: IAM com supra de ST, Cetoacidose diabética..."
+                value={specificTopic}
+                onChange={(e) => setSpecificTopic(e.target.value)}
+                className="text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground">Deixe vazio para temas variados dentro da especialidade</p>
             </div>
 
             {/* Difficulty */}
