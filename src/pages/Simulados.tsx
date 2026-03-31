@@ -45,7 +45,7 @@ function buildPrompt(topics: string[], count: number, difficulty: string, specif
 
 IDIOMA OBRIGATÓRIO: TUDO deve ser escrito em PORTUGUÊS BRASILEIRO. Enunciados, alternativas, explicações — TUDO em pt-BR. NUNCA use inglês.
 
-TEMAS: ${topicsStr}${topicFocus}
+TEMAS: ${topicsStr}${topicFocus}${boardInstruction}
 DISTRIBUIÇÃO: aproximadamente ${perTopic} questões por tema. Distribua igualmente.
 ${difficultyInstruction}
 
