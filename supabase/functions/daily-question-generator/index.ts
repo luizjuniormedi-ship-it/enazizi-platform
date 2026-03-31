@@ -281,8 +281,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
   "questions": [
     {
       "statement": "Caso clínico completo com ≥150 caracteres...",
-      "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
-      "correct_index": 0,
+      "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
       "explanation": "Raciocínio clínico passo a passo...",
       "topic": "${specialty}",
       "difficulty": 3
