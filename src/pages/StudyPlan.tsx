@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check, FileDown, Bell, BellOff, GripVertical, CheckCircle2, Circle } from "lucide-react";
+import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check, FileDown, Bell, BellOff, GripVertical, CheckCircle2, Circle, RefreshCw } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +65,50 @@ const StudyPlan = () => {
   const [dragOver, setDragOver] = useState<{ day: number; task: number } | null>(null);
   const [completedKeys, setCompletedKeys] = useState<Set<string>>(new Set());
   const [completedTaskIds, setCompletedTaskIds] = useState<Record<string, string>>({});
+  const [showReprocess, setShowReprocess] = useState(false);
+  const [newExamDate, setNewExamDate] = useState<Date>();
+  const [reprocessing, setReprocessing] = useState(false);
+
+  const reprocessPlan = async () => {
+    if (!user || !newExamDate) {
+      toast({ title: "Selecione a nova data da prova", variant: "destructive" });
+      return;
+    }
+    setReprocessing(true);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-study-plan`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.session?.access_token}`,
+        },
+        body: JSON.stringify({
+          examDate: format(newExamDate, "yyyy-MM-dd"),
+          hoursPerDay: Number(hoursPerDay),
+          daysPerWeek: Number(daysPerWeek),
+          editalText: editalText || null,
+          currentPlanId: planId,
+          existingSubjects: subjects,
+        }),
+      });
+      const result = await resp.json();
+      if (!resp.ok) throw new Error(result.error);
+
+      const plan = result.plan.plan_json as PlanJson;
+      setPlanId(result.plan.id);
+      setSchedule(plan.weeklySchedule || []);
+      setSubjects(plan.subjects || []);
+      setTips(plan.tips || "");
+      setExamDate(newExamDate);
+      setShowReprocess(false);
+      toast({ title: "Plano reprocessado!", description: "Cronograma atualizado com a nova data." });
+    } catch (err: any) {
+      toast({ title: "Erro ao reprocessar", description: err.message, variant: "destructive" });
+    } finally {
+      setReprocessing(false);
+    }
+  };
 
   // Load existing plan
   useEffect(() => {
@@ -397,7 +441,7 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
               : "Configure seu plano de estudos personalizado."}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {schedule.length > 0 && (
             <>
               <Button variant={reminders.enabled ? "default" : "outline"} size="sm" onClick={reminders.toggle}>
@@ -407,6 +451,10 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
               <Button variant="outline" size="sm" onClick={handleExportPDF}>
                 <FileDown className="h-4 w-4 mr-2" />
                 Exportar PDF
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setShowReprocess(true)}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Reprocessar Plano
               </Button>
             </>
           )}
@@ -534,7 +582,47 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
         </div>
       )}
 
-      {/* Tips */}
+      {/* Reprocess Panel */}
+      {showReprocess && (
+        <div className="glass-card p-6 space-y-4 border-2 border-primary/30">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <RefreshCw className="h-5 w-5 text-primary" />
+            Reprocessar Plano com Nova Data
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            O plano será regenerado mantendo os conteúdos/matérias existentes, redistribuindo os blocos para a nova data da prova.
+          </p>
+          <div className="flex items-end gap-4">
+            <div className="space-y-2">
+              <Label>Nova data da prova</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-[220px] justify-start text-left font-normal", !newExamDate && "text-muted-foreground")}>
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    {newExamDate ? format(newExamDate, "dd/MM/yyyy") : "Selecionar nova data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={newExamDate}
+                    onSelect={setNewExamDate}
+                    disabled={(date) => date < new Date()}
+                    className={cn("p-3 pointer-events-auto")}
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <Button onClick={reprocessPlan} disabled={reprocessing || !newExamDate}>
+              {reprocessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+              {reprocessing ? "Reprocessando..." : "Reprocessar"}
+            </Button>
+            <Button variant="ghost" onClick={() => setShowReprocess(false)}>Cancelar</Button>
+          </div>
+        </div>
+      )}
+
       {tips && (
         <div className="glass-card p-4 border-l-4 border-l-accent">
           <p className="text-sm text-muted-foreground">💡 {tips}</p>
