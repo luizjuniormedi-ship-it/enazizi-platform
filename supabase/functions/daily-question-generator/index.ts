@@ -266,8 +266,8 @@ CALIBRAÇÃO OBRIGATÓRIA REVALIDA/ENAMED:
 REGRAS:
 - Nível de prova de residência médica real (REVALIDA INEP, ENAMED, ENARE, USP, UNICAMP)
 - Casos clínicos realistas com anamnese completa (nome, idade, sexo, profissão), exame físico com achados positivos e negativos, sinais vitais completos (PA, FC, FR, Temp, SpO2), exames complementares com valores numéricos e unidades
-- 4 alternativas (A, B, C, D), apenas 1 correta — todas clinicamente PLAUSÍVEIS
-- Explicação detalhada com raciocínio clínico passo a passo e referência a guidelines 2024-2026
+- EXATAMENTE 5 alternativas (A, B, C, D, E), apenas 1 correta — todas clinicamente PLAUSÍVEIS
+- PROIBIDO: questões que referenciem imagens, figuras, fotos ou gráficos externos
 - Distribuição de dificuldade: 50% intermediário (padrão REVALIDA), 50% difícil (padrão ENAMED/ENARE com pegadinhas e apresentações atípicas)
 - NUNCA repita perfil de paciente (nome, idade, sexo, cenário)
 - Distribua subtópicos: diagnóstico, tratamento, fisiopatologia, epidemiologia, complicações
