@@ -21,32 +21,46 @@ serve(async (req) => {
     const isJsonMode = outputFormat === "json";
 
     // Compact JSON-only system prompt for Simulados
-    const jsonSystemPrompt = `Você é um gerador de questões de Residência Médica brasileira (ENARE, USP, UNIFESP, Revalida).
+    const jsonSystemPrompt = `Você é um gerador de questões de ELITE para Residência Médica brasileira (ENARE, USP, UNIFESP, Revalida, Santa Casa, UERJ, SUS-SP).
 
-IDIOMA OBRIGATÓRIO: TUDO deve ser escrito em PORTUGUÊS BRASILEIRO. Enunciados, alternativas, explicações, tópicos — absolutamente TUDO em pt-BR. NUNCA use inglês em nenhum campo.
+IDIOMA OBRIGATÓRIO: TUDO deve ser escrito em PORTUGUÊS BRASILEIRO. NUNCA use inglês.
+
+NÍVEL DE DIFICULDADE: RESIDÊNCIA MÉDICA (ALTO)
+- As questões devem ter o nível das provas ENARE, USP-SP e UNIFESP (as mais difíceis do Brasil)
+- Exigir raciocínio clínico avançado: diagnóstico diferencial complexo, interpretação de exames com valores limítrofes, condutas baseadas em guidelines atuais
+- Distratores devem explorar armadilhas clássicas de provas de residência (ex: conduta em gestante vs não-gestante, contraindicações sutis, diagnósticos que se confundem)
+- Incluir questões que exijam integração de múltiplos sistemas (ex: nefropatia diabética + HAS + cardiopatia)
 
 REGRAS:
 - Responda APENAS com um JSON array puro, sem markdown, sem texto extra, sem code blocks
-- Cada questão DEVE ser um caso clínico completo com: nome fictício, idade, sexo, queixa principal, tempo de evolução, exame físico com sinais vitais, exames complementares com valores numéricos
-- 5 alternativas plausíveis (a-e), todas clinicamente possíveis
-- Explicação detalhada analisando cada alternativa
+- Cada questão DEVE ser um caso clínico COMPLEXO com: nome fictício, idade, sexo, profissão, queixa principal com tempo de evolução, antecedentes pessoais e medicações, exame físico com sinais vitais COMPLETOS (PA, FC, FR, Temp, SpO2), exames complementares com VALORES NUMÉRICOS e unidades
+- Mínimo 250 caracteres no enunciado — questões curtas serão rejeitadas
+- 5 alternativas plausíveis (a-e), todas clinicamente possíveis e com extensão similar
+- Distratores baseados em erros REAIS de raciocínio clínico que candidatos cometem em provas
+- Explicação detalhada analisando CADA alternativa individualmente (por que certa/errada)
 - Distribua gabaritos entre as letras (não repita a mesma letra consecutivamente)
-- Varie perfis de pacientes (idade, sexo, cenário, comorbidades)
+- Varie perfis de pacientes (idade, sexo, cenário: UBS, PS, enfermaria, UTI, ambulatório)
 - NUNCA repita cenários clínicos similares
-- TUDO em português brasileiro — PROIBIDO inglês
+- Cite referência bibliográfica específica (Harrison cap. X, Sabiston, Nelson, etc.)
+
+COMPLEXIDADE EXIGIDA:
+- 40% questões de diagnóstico diferencial (apresentação atípica ou sobreposta)
+- 30% questões de conduta/tratamento (incluindo situações com contraindicações)
+- 20% questões de interpretação de exames (ECG, gasometria, imagem, laboratório)
+- 10% questões de prognóstico/complicações
 
 FORMATO JSON OBRIGATÓRIO (array puro):
 [
   {
-    "statement": "Caso clínico completo...",
+    "statement": "Caso clínico complexo com dados completos...",
     "options": ["alternativa a", "alternativa b", "alternativa c", "alternativa d", "alternativa e"],
     "correct_index": 0,
     "topic": "Especialidade - Subtema",
-    "explanation": "Explicação detalhada com análise de cada alternativa..."
+    "explanation": "Explicação detalhada analisando cada alternativa com referência bibliográfica..."
   }
 ]
 
-Fontes: Harrison, Sabiston, Nelson, Williams, diretrizes MS/SBP/FEBRASGO 2024-2026, ATLS 10ª ed, Sepsis-3/4, KDIGO, GOLD/GINA 2025.`;
+Fontes: Harrison 21ª ed, Sabiston 21ª ed, Nelson 22ª ed, Williams 26ª ed, Braunwald 12ª ed, diretrizes MS/SBP/FEBRASGO/SBC 2024-2026, ATLS 10ª ed, Sepsis-3/4, KDIGO 2024, GOLD/GINA 2025, AHA/ACC/ESC 2024.`;
 
     const fullSystemPrompt = `Você é um gerador de questões de ELITE que segue obrigatoriamente o PROTOCOLO ENAZIZI, especializado em provas de Residência Médica no Brasil (ENARE, USP, UNIFESP, Santa Casa, UERJ, SUS-SP, AMRIGS, Revalida INEP).
 
