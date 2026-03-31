@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
 import { FileText, Play, History, BookOpen, Timer, Skull } from "lucide-react";
@@ -10,6 +10,7 @@ import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import SimuladoHistory from "./SimuladoHistory";
 
 import { ALL_SPECIALTIES as ALL_TOPICS, SPECIALTY_CYCLES } from "@/constants/specialties";
+import { SPECIALTY_SUBTOPICS } from "@/constants/subtopics";
 import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 
 const DIFFICULTY_OPTIONS = [
