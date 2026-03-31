@@ -665,6 +665,111 @@ async function pickSpecialtyWithFewest(supabaseAdmin: any): Promise<string> {
   return bottom[Math.floor(Math.random() * bottom.length)].specialty;
 }
 
+// ─── SOURCE TYPE DETECTION ──────────────────────────────────────────────────
+
+function detectSourceType(url: string, pageContent?: string): "hub_page" | "pdf_direct" | "html_question_page" | "indexed_only" {
+  const lower = url.toLowerCase();
+  if (lower.endsWith(".pdf")) return "pdf_direct";
+  if (pageContent) {
+    const pdfCount = (pageContent.match(/\.pdf/gi) || []).length;
+    const examKeywords = /prova|gabarito|edição|ano/gi;
+    const examMatches = (pageContent.match(examKeywords) || []).length;
+    if (pdfCount >= 3 && examMatches >= 2) return "hub_page";
+    if ((pageContent.match(/[A-E]\)\s/g) || []).length >= 8) return "html_question_page";
+  }
+  return "indexed_only";
+}
+
+// ─── HUB PAGE PROCESSOR ────────────────────────────────────────────────────
+
+async function processHubPage(
+  url: string,
+  supabaseAdmin: any,
+  userId: string | null,
+): Promise<{ sources_found: number; pdf_links: any[] }> {
+  const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
+  let pageText = "";
+
+  if (FIRECRAWL_API_KEY) {
+    try {
+      const resp = await fetch("https://api.firecrawl.dev/v1/scrape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${FIRECRAWL_API_KEY}` },
+        body: JSON.stringify({ url, formats: ["markdown"] }),
+      });
+      const data = await resp.json();
+      pageText = data?.data?.markdown || "";
+    } catch { /* fallback */ }
+  }
+
+  if (!pageText) {
+    try {
+      const resp = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+      pageText = await resp.text();
+    } catch { return { sources_found: 0, pdf_links: [] }; }
+  }
+
+  // Extract PDF links
+  const pdfLinks: { name: string; url: string; year?: number; specialty?: string }[] = [];
+  const pdfRegex = /https?:\/\/[^\s"'<>)]+\.pdf/gi;
+  const matches = pageText.match(pdfRegex) || [];
+  const seenUrls = new Set<string>();
+
+  for (const m of matches) {
+    if (seenUrls.has(m)) continue;
+    seenUrls.add(m);
+    const yearMatch = m.match(/(20\d{2})/);
+    const name = decodeURIComponent(m.split("/").pop() || "prova.pdf").replace(/[_-]/g, " ");
+    pdfLinks.push({ name, url: m, year: yearMatch ? parseInt(yearMatch[1]) : undefined });
+  }
+
+  // Also extract section titles with years for context
+  const yearSections = pageText.match(/(?:20\d{2})\s*(?:\/\s*20\d{2})?.*?(?:prova|gabarito|objetiva|r1|r\+)/gi) || [];
+
+  // Index each discovered source
+  let sourcesFound = 0;
+  for (const link of pdfLinks) {
+    try {
+      await supabaseAdmin.from("external_exam_sources").upsert({
+        title: link.name,
+        source_url: link.url,
+        year: link.year,
+        source_type: "pdf_direct",
+        permission_type: "indexed_external",
+        processing_status: "pending",
+        created_by: userId,
+      }, { onConflict: "source_url" });
+      sourcesFound++;
+    } catch { /* skip duplicates */ }
+  }
+
+  // Log the hub page itself
+  try {
+    await supabaseAdmin.from("external_exam_sources").upsert({
+      title: `Hub: ${new URL(url).hostname}`,
+      source_url: url,
+      source_type: "hub_page",
+      permission_type: "indexed_external",
+      processing_status: "completed",
+      extracted_questions_count: 0,
+      created_by: userId,
+    }, { onConflict: "source_url" });
+  } catch { /* ignore */ }
+
+  // Log to ingestion_log
+  await supabaseAdmin.from("ingestion_log").insert({
+    source_name: `Hub: ${url}`,
+    source_url: url,
+    source_type: "hub_page",
+    permission_type: "indexed_external",
+    questions_found: pdfLinks.length,
+    status: "navigated",
+    created_by: userId,
+  });
+
+  return { sources_found: sourcesFound, pdf_links: pdfLinks };
+}
+
 // ─── MAIN PIPELINE ──────────────────────────────────────────────────────────
 
 serve(async (req) => {
@@ -683,6 +788,53 @@ serve(async (req) => {
     const autoMode = body.auto === true;
     const banca = body.banca || null;
 
+    // ─── NEW: Hub page mode ─────────────────────────────────────────
+    if (body.mode === "hub_page" && body.url) {
+      const userId = body.user_id || null;
+      const result = await processHubPage(body.url, supabaseAdmin, userId);
+      return new Response(JSON.stringify({
+        success: true,
+        mode: "hub_page",
+        ...result,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ─── NEW: Index only mode ───────────────────────────────────────
+    if (body.mode === "index_only" && body.url) {
+      await supabaseAdmin.from("external_exam_sources").upsert({
+        title: body.title || `Indexed: ${body.url}`,
+        source_url: body.url,
+        specialty: body.specialty,
+        year: body.year,
+        source_type: "indexed_only",
+        permission_type: body.permission_type || "indexed_external",
+        processing_status: "indexed",
+        created_by: body.user_id || null,
+      }, { onConflict: "source_url" });
+
+      await supabaseAdmin.from("ingestion_log").insert({
+        source_name: body.title || body.url,
+        source_url: body.url,
+        source_type: "indexed_only",
+        permission_type: body.permission_type || "indexed_external",
+        status: "indexed",
+        created_by: body.user_id || null,
+      });
+
+      return new Response(JSON.stringify({ success: true, mode: "index_only" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ─── NEW: Auto-detect URL source type ───────────────────────────
+    if (body.mode === "auto_detect" && body.url) {
+      const sourceType = detectSourceType(body.url);
+      return new Response(JSON.stringify({ source_type: sourceType, url: body.url }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ─── Original pipeline (specialty search mode) ──────────────────
     const specialty = autoMode
       ? await pickSpecialtyWithFewest(supabaseAdmin)
       : (body.specialty || "Cardiologia");
@@ -818,6 +970,9 @@ serve(async (req) => {
         topic: specialty,
         difficulty: q.difficulty,
         source: "web-scrape",
+        source_type: "indexed_external",
+        permission_type: "indexed_external",
+        source_url: q.source_url || "",
         is_global: true,
         review_status: "approved",
       }));

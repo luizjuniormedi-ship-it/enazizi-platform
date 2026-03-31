@@ -1109,6 +1109,54 @@ export type Database = {
           },
         ]
       }
+      external_exam_sources: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          error_message: string | null
+          exam_info: string | null
+          extracted_questions_count: number
+          id: string
+          permission_type: string
+          processing_status: string
+          source_type: string
+          source_url: string
+          specialty: string | null
+          title: string
+          year: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          exam_info?: string | null
+          extracted_questions_count?: number
+          id?: string
+          permission_type?: string
+          processing_status?: string
+          source_type?: string
+          source_url: string
+          specialty?: string | null
+          title: string
+          year?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          exam_info?: string | null
+          extracted_questions_count?: number
+          id?: string
+          permission_type?: string
+          processing_status?: string
+          source_type?: string
+          source_url?: string
+          specialty?: string | null
+          title?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
       flashcards: {
         Row: {
           answer: string

@@ -34,11 +34,22 @@ const AdminIngestionPanel = () => {
   const [navResults, setNavResults] = useState<any[]>([]);
   const [navLoading, setNavLoading] = useState(false);
   const [logs, setLogs] = useState<any[]>([]);
+  const [discoveredSources, setDiscoveredSources] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalSources: 5, totalExtracted: 0, totalIndexed: 5, duplicatesRemoved: 0 });
 
   useEffect(() => {
     loadLogs();
+    loadSources();
   }, []);
+
+  const loadSources = async () => {
+    const { data } = await supabase.from("external_exam_sources" as any)
+      .select("*").order("created_at", { ascending: false }).limit(50);
+    if (data) {
+      setDiscoveredSources(data);
+      setStats(prev => ({ ...prev, totalSources: 5 + (data as any[]).length, totalIndexed: 5 + (data as any[]).filter((s: any) => s.processing_status !== "pending").length }));
+    }
+  };
 
   const loadLogs = async () => {
     const { data } = await supabase.from("ingestion_log" as any)
@@ -94,11 +105,21 @@ const AdminIngestionPanel = () => {
     if (!navUrl || !session) return;
     setNavLoading(true);
     try {
-      const data = await callIngest({ mode: "web_navigate", url: navUrl });
+      // Use search-real-questions hub_page mode
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-real-questions`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ mode: "hub_page", url: navUrl, user_id: session.user?.id }),
+        }
+      );
+      const data = await resp.json();
       if (data?.error) throw new Error(data.error);
       setNavResults(data.pdf_links || []);
-      toast({ title: `${(data.pdf_links || []).length} PDFs encontrados` });
+      toast({ title: `${data.sources_found || 0} fontes descobertas, ${(data.pdf_links || []).length} PDFs` });
       loadLogs();
+      loadSources();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
     } finally {
@@ -152,6 +173,7 @@ const AdminIngestionPanel = () => {
       <Tabs defaultValue="sources">
         <TabsList className="mb-3 flex-wrap h-auto">
           <TabsTrigger value="sources" className="text-xs"><Globe className="h-3 w-3 mr-1" />Fontes</TabsTrigger>
+          <TabsTrigger value="discovered" className="text-xs"><Link2 className="h-3 w-3 mr-1" />Descobertas</TabsTrigger>
           <TabsTrigger value="navigate" className="text-xs"><Search className="h-3 w-3 mr-1" />Navegação</TabsTrigger>
           <TabsTrigger value="log" className="text-xs"><FileText className="h-3 w-3 mr-1" />Log</TabsTrigger>
         </TabsList>
@@ -237,6 +259,39 @@ const AdminIngestionPanel = () => {
                   <span>↑{log.questions_updated} atualizadas</span>
                   <span>={log.duplicates_skipped} duplicatas</span>
                   {log.errors > 0 && <span className="text-red-500">✗{log.errors} erros</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="discovered">
+          <div className="space-y-1.5 max-h-60 overflow-y-auto">
+            {discoveredSources.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4">Nenhuma fonte descoberta. Use a aba Navegação para buscar.</p>
+            ) : discoveredSources.map((src: any) => (
+              <div key={src.id} className="flex items-center justify-between p-2 rounded-lg bg-background/50 border border-border/50">
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs font-medium truncate block">{src.title}</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Badge variant="outline" className="text-[10px] h-4">{src.source_type}</Badge>
+                    <Badge variant={src.processing_status === "completed" ? "default" : "secondary"} className="text-[10px] h-4">{src.processing_status}</Badge>
+                    {src.year && <span className="text-[10px] text-muted-foreground">{src.year}</span>}
+                    {src.extracted_questions_count > 0 && <span className="text-[10px] text-muted-foreground">{src.extracted_questions_count}q</span>}
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  {src.source_url && (
+                    <a href={src.source_url} target="_blank" rel="noopener noreferrer">
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0"><ExternalLink className="h-3 w-3" /></Button>
+                    </a>
+                  )}
+                  {src.processing_status === "pending" && src.source_type === "pdf_direct" && (
+                    <Button size="sm" className="h-6 text-[10px] px-2" disabled={processing !== null}
+                      onClick={() => handleExtractNavPdf({ url: src.source_url, name: src.title, year: src.year })}>
+                      {processing === src.source_url ? <Loader2 className="h-3 w-3 animate-spin" /> : "Extrair"}
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
