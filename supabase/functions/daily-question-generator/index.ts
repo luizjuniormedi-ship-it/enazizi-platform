@@ -345,6 +345,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
       difficulty: q.difficulty || 3,
       source: "daily-auto",
       is_global: true,
+      review_status: "pending",
     }));
 
     const { error } = await supabaseAdmin.from("questions_bank").insert(rows);

@@ -162,6 +162,7 @@ FORMATO JSON OBRIGATÓRIO:
         difficulty: q.difficulty || 3,
         source: "bulk-ai-generated",
         is_global: true,
+        review_status: "pending",
       }));
 
       const { error } = await supabaseAdmin.from("questions_bank").insert(rows);

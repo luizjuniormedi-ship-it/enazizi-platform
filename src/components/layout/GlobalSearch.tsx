@@ -52,7 +52,7 @@ const GlobalSearch = () => {
 
     const term = `%${q}%`;
     const [questionsRes, flashcardsRes, errorsRes, summariesRes] = await Promise.all([
-      supabase.from("questions_bank").select("id, statement, topic").or(`user_id.eq.${user.id},is_global.eq.true`).ilike("statement", term).limit(5),
+      supabase.from("questions_bank").select("id, statement, topic").or(`user_id.eq.${user.id},is_global.eq.true`).eq("review_status", "approved").ilike("statement", term).limit(5),
       supabase.from("flashcards").select("id, question, topic").or(`user_id.eq.${user.id},is_global.eq.true`).ilike("question", term).limit(5),
       supabase.from("error_bank").select("id, tema, conteudo").eq("user_id", user.id).or(`tema.ilike.${term},conteudo.ilike.${term}`).limit(5),
       supabase.from("summaries").select("id, topic, content").eq("user_id", user.id).or(`topic.ilike.${term},content.ilike.${term}`).limit(5),

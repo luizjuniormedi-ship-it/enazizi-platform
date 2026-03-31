@@ -252,7 +252,7 @@ Se não encontrar questões válidas, retorne {"questions": []}`
       if ((allQuestions as any[]).length > 0) {
         const rows = (allQuestions as any[]).map((q: any) => ({
           user_id: userId, statement: q.statement, options: q.options, correct_index: q.correct_index,
-          explanation: q.explanation, topic: q.topic, source: `upload:${upload.filename}`, is_global: true,
+          explanation: q.explanation, topic: q.topic, source: `upload:${upload.filename}`, is_global: true, review_status: "pending",
         }));
         for (let i = 0; i < rows.length; i += 50) {
           const batch = rows.slice(i, i + 50);

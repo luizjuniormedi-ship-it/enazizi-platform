@@ -125,7 +125,7 @@ Se não encontrar questões, retorne {"questions": []}`
       const rows = questions.map((q: any) => ({
         user_id: userId, statement: String(q.statement).trim(), options: q.options.map(String),
         correct_index: q.correct_index, explanation: String(q.explanation || "").trim(),
-        topic: String(q.topic || topic).trim(), source, is_global: true,
+        topic: String(q.topic || topic).trim(), source, is_global: true, review_status: "pending",
       }));
       const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
       if (!error) return rows.length;
