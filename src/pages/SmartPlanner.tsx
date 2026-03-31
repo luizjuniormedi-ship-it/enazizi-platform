@@ -214,6 +214,40 @@ const SmartPlanner = () => {
     navigate("/dashboard/plano-dia");
   };
 
+  const reprocessCronograma = async () => {
+    if (!user || !newExamDate) {
+      toast({ title: "Selecione a nova data da prova", variant: "destructive" });
+      return;
+    }
+    setReprocessing(true);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const existingSubjects = temas.map(t => t.tema);
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-study-plan`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.session?.access_token}`,
+        },
+        body: JSON.stringify({
+          examDate: format(newExamDate, "yyyy-MM-dd"),
+          hoursPerDay: 4,
+          daysPerWeek: 5,
+          existingSubjects,
+        }),
+      });
+      const result = await resp.json();
+      if (!resp.ok) throw new Error(result.error || "Erro ao reprocessar");
+      setShowReprocess(false);
+      toast({ title: "✅ Cronograma recalculado!", description: "Revisões redistribuídas com a nova data." });
+      loadData();
+    } catch (err: any) {
+      toast({ title: "Erro ao reprocessar", description: err.message, variant: "destructive" });
+    } finally {
+      setReprocessing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
