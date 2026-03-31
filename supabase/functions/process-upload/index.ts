@@ -216,9 +216,9 @@ Responda APENAS com JSON: {"flashcards": [{"question": "...", "answer": "...", "
             {
               role: "system",
               content: `Extraia questões de múltipla escolha do texto fornecido. Se o texto já contiver questões formatadas, converta-as para o formato JSON. Se for conteúdo teórico, gere questões baseadas no conteúdo.
-IMPORTANTE: Gere o MÁXIMO de questões possível (10-20 por chunk).
+IMPORTANTE: Gere o MÁXIMO de questões possível (10-20 por chunk). EXATAMENTE 5 alternativas (A-E) por questão. NUNCA gere questões que referenciem imagens, figuras, fotos ou gráficos externos.
 Formato JSON PURO (sem markdown): 
-{"questions": [{"statement": "enunciado completo com caso clínico", "options": ["A", "B", "C", "D", "E"], "correct_index": 0, "explanation": "explicação detalhada", "topic": "especialidade médica"}]}
+{"questions": [{"statement": "enunciado completo com caso clínico", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "explanation": "explicação detalhada", "topic": "especialidade médica"}]}
 Se não encontrar questões válidas, retorne {"questions": []}`
             },
             { role: "user", content: `Tema principal: ${detectedTopic}\n\nTexto:\n${chunk}` }
