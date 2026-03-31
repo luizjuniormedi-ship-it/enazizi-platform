@@ -713,29 +713,18 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
     if (speakingMsgIdx === msgIdx) {
       window.speechSynthesis.cancel();
       setSpeakingMsgIdx(null);
-      lipSync.stopSpeaking();
       return;
     }
     window.speechSynthesis.cancel();
-    lipSync.stopSpeaking();
-    // Strip markdown for cleaner speech
     const clean = text.replace(/[#*_`~>\[\]()!|]/g, "").replace(/\n{2,}/g, ". ").replace(/\n/g, " ");
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.lang = "pt-BR";
     utterance.rate = 1;
-    // Try to pick a pt-BR voice
     const voices = window.speechSynthesis.getVoices();
     const ptVoice = voices.find(v => v.lang.startsWith("pt-BR")) || voices.find(v => v.lang.startsWith("pt"));
     if (ptVoice) utterance.voice = ptVoice;
-    utterance.onstart = () => lipSync.startSpeaking();
-    utterance.onboundary = (event) => {
-      if (event.name === "word") {
-        const word = clean.slice(event.charIndex, event.charIndex + (event.charLength || 5));
-        lipSync.feedWord(word);
-      }
-    };
-    utterance.onend = () => { setSpeakingMsgIdx(null); lipSync.stopSpeaking(); };
-    utterance.onerror = () => { setSpeakingMsgIdx(null); lipSync.stopSpeaking(); };
+    utterance.onend = () => { setSpeakingMsgIdx(null); };
+    utterance.onerror = () => { setSpeakingMsgIdx(null); };
     setSpeakingMsgIdx(msgIdx);
     window.speechSynthesis.speak(utterance);
   };
