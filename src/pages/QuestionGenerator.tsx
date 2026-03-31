@@ -33,6 +33,7 @@ const QuestionGenerator = () => {
   const { user } = useAuth();
   const studyCtx = useStudyContext();
   const [specialty, setSpecialty] = useState<string>(studyCtx?.specialty || "");
+  const [specificTopic, setSpecificTopic] = useState("");
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState("intermediario");
   const [quantity, setQuantity] = useState(10);
