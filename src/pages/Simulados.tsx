@@ -94,7 +94,7 @@ async function generateBatch(
         outputFormat: "json",
         difficulty,
         timeoutMs: 55000,
-        messages: [{ role: "user", content: buildPrompt(topics, count, difficulty, specificTopic) }],
+        messages: [{ role: "user", content: buildPrompt(topics, count, difficulty, specificTopic, examBoard) }],
       }),
     },
   );
