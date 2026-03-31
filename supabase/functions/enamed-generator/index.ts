@@ -113,7 +113,7 @@ CADA QUESTÃO DEVE OBRIGATORIAMENTE:
    - Laudos de imagem descritivos quando pertinente
 
 2. **ALTERNATIVAS DE ALTO NÍVEL**:
-   - Todas devem ser clinicamente PLAUSÍVEIS (nenhuma absurda)
+   - EXATAMENTE 5 alternativas (A-E), apenas 1 correta — TODAS clinicamente plausíveis
    - Distratores baseados em diagnósticos diferenciais LEGÍTIMOS
    - Uma alternativa "quase correta" que testa nuance clínica
    - Extensão similar entre alternativas
