@@ -44,6 +44,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
   const [customCount, setCustomCount] = useState("");
   const [difficulty, setDifficulty] = useState("intermediario");
   const [timePerQuestion, setTimePerQuestion] = useState(3);
+  const [specificTopic, setSpecificTopic] = useState("");
   const [mode, setMode] = useState<SimuladoMode>("estudo");
 
   const toggleTopic = (topic: string) => {
