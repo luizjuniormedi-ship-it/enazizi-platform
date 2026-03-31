@@ -1,61 +1,41 @@
 
 
-# Processar DOCX com Imagens para o Banco de Questões
+# Processar DOCX Aqui + Deduplicar com Banco Existente
 
-## Análise do Documento
+## O Que Fazer
 
-O DOCX contém ~30+ questões de Cardiologia (concursos/residência) com muitas imagens embutidas (ECGs, radiografias, espirometrias). O parser extraiu ~150+ imagens das páginas. As questões têm estrutura variada -- algumas com alternativas claras (A-E), outras com texto corrido.
+Usar um script local que:
+1. Envia cada **page screenshot** do DOCX para o Gemini 2.5 Pro (multimodal) para extrair questões estruturadas + identificar quais imagens pertencem a cada questão
+2. Faz **upload das imagens** extraídas do DOCX para o bucket `question-images`
+3. Para cada questão extraída, **busca duplicata** no `questions_bank` comparando os primeiros 80 caracteres do `statement` (fuzzy match com `ilike`)
+4. Se encontrar duplicata: **UPDATE** para adicionar `image_url` à questão existente
+5. Se não encontrar: **INSERT** nova questão com `image_url` preenchido
 
-## Desafio Principal
-
-As imagens são parte integral das questões (ECGs para interpretar, radiografias para diagnosticar). Para incluí-las no banco, precisamos:
-
-1. **Armazenar as imagens** no storage (bucket `user-uploads` ou novo bucket `question-images`)
-2. **Vincular cada imagem à questão** usando a coluna `image_url` recém-criada
-3. **Exibir as imagens** no frontend do Banco de Questões
-
-## Plano
-
-### 1. Criar Edge Function `process-docx-questions`
-
-Nova edge function que:
-- Recebe o DOCX via upload ou referência ao storage
-- Usa IA (Gemini 2.5 Pro -- melhor para imagem+texto) para analisar cada página como screenshot
-- A IA recebe o screenshot da página e extrai as questões estruturadas com indicação de quais imagens pertencem a qual questão
-- Faz upload das imagens relevantes para o bucket `question-images` (público)
-- Insere as questões no `questions_bank` com `image_url` preenchido
-
-### 2. Migração SQL
-
-- Criar bucket `question-images` (público, para servir imagens nas questões)
-
-### 3. Atualizar Frontend (`QuestionsBank.tsx`)
-
-- Renderizar `image_url` quando presente na questão (tag `<img>` abaixo do enunciado)
-- Manter filtro de 4-5 alternativas
-
-### 4. Fluxo de Processamento
+## Fluxo Técnico
 
 ```text
-DOCX Upload → parse_document (páginas como screenshots)
-    → Gemini 2.5 Pro analisa cada screenshot
-    → Extrai: enunciado, alternativas, gabarito, identifica imagens
-    → Upload imagens → Storage (question-images bucket)
-    → Insert questões com image_url → questions_bank
+Para cada página (1-10+):
+  1. Ler page screenshot (page_N.jpg) já parseado
+  2. Enviar para Gemini Vision → extrair questões + mapear imagens
+  3. Para cada questão com imagem:
+     a. Upload imagem para bucket question-images
+     b. Gerar URL pública
+     c. Buscar statement similar no DB (primeiros 80 chars)
+     d. Se match → UPDATE image_url
+     e. Se novo → INSERT completo
 ```
 
-### 5. Admin: Botão "Processar DOCX com Imagens"
+## Script
 
-No `AdminUploadsPanel.tsx`, adicionar botão para disparar a nova edge function em uploads DOCX.
+Um único script Python que:
+- Usa a API do Lovable AI Gateway (Gemini 2.5 Pro) para analisar os screenshots
+- Usa psql para buscar duplicatas e inserir/atualizar
+- Usa curl para upload ao storage bucket
+- Processa todas as páginas do DOCX parseado
 
-## Arquivos Impactados
+## Resultado Esperado
 
-- `supabase/functions/process-docx-questions/index.ts` -- nova edge function
-- 1 migração SQL (bucket `question-images`)
-- `src/pages/QuestionsBank.tsx` -- exibir imagens
-- `src/components/admin/AdminUploadsPanel.tsx` -- botão de processamento
-
-## Observação Técnica
-
-O Gemini 2.5 Pro é ideal aqui porque consegue analisar screenshots das páginas do DOCX e extrair tanto texto quanto contexto visual (qual imagem pertence a qual questão), algo impossível com extração puramente textual.
+- Questões existentes no banco ganham `image_url` (ECGs, radiografias, espirometrias)
+- Questões novas são inseridas com imagem vinculada
+- Zero duplicatas criadas
 
