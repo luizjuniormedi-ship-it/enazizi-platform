@@ -92,9 +92,8 @@ const AdminIngestionPanel = () => {
         source_type: "indexed_external",
         permission_type: "indexed_external",
       });
-      if (data?.error) throw new Error(data.error);
-      setSources(prev => prev.map(s => s.name === source.name ? { ...s, status: "extracted" as const, questionsCount: data.questions_inserted } : s));
-      toast({ title: `${data.questions_inserted} questões extraídas!`, description: `${source.name} processado.` });
+      setSources(prev => prev.map(s => s.name === source.name ? { ...s, status: "extracted" as const, questionsCount: data?.questions_inserted ?? 0 } : s));
+      toast({ title: `${data?.questions_inserted ?? 0} questões extraídas!`, description: `${source.name} processado.` });
       loadLogs();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
