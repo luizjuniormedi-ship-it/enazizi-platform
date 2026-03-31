@@ -138,8 +138,7 @@ const AdminIngestionPanel = () => {
         source_type: "indexed_external",
         permission_type: "indexed_external",
       });
-      if (data?.error) throw new Error(data.error);
-      toast({ title: `${data.questions_inserted} questões extraídas de ${link.name}` });
+      toast({ title: `${data?.questions_inserted ?? 0} questões extraídas de ${link.name}` });
       loadLogs();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
