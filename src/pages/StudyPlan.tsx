@@ -397,7 +397,7 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
               : "Configure seu plano de estudos personalizado."}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {schedule.length > 0 && (
             <>
               <Button variant={reminders.enabled ? "default" : "outline"} size="sm" onClick={reminders.toggle}>
@@ -407,6 +407,10 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
               <Button variant="outline" size="sm" onClick={handleExportPDF}>
                 <FileDown className="h-4 w-4 mr-2" />
                 Exportar PDF
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setShowReprocess(true)}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Reprocessar Plano
               </Button>
             </>
           )}
