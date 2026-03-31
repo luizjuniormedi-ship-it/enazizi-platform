@@ -4,7 +4,7 @@ import StudyContextBanner from "@/components/study/StudyContextBanner";
 import { FileText, Play, History, BookOpen, Timer, Skull } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import SimuladoHistory from "./SimuladoHistory";
