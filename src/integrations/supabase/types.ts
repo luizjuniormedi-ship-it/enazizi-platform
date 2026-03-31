@@ -1245,6 +1245,60 @@ export type Database = {
           },
         ]
       }
+      ingestion_log: {
+        Row: {
+          banca: string | null
+          created_at: string
+          created_by: string | null
+          duplicates_skipped: number
+          errors: number
+          id: string
+          permission_type: string
+          questions_found: number
+          questions_inserted: number
+          questions_updated: number
+          source_name: string
+          source_type: string
+          source_url: string | null
+          status: string
+          year: number | null
+        }
+        Insert: {
+          banca?: string | null
+          created_at?: string
+          created_by?: string | null
+          duplicates_skipped?: number
+          errors?: number
+          id?: string
+          permission_type?: string
+          questions_found?: number
+          questions_inserted?: number
+          questions_updated?: number
+          source_name: string
+          source_type?: string
+          source_url?: string | null
+          status?: string
+          year?: number | null
+        }
+        Update: {
+          banca?: string | null
+          created_at?: string
+          created_by?: string | null
+          duplicates_skipped?: number
+          errors?: number
+          id?: string
+          permission_type?: string
+          questions_found?: number
+          questions_inserted?: number
+          questions_updated?: number
+          source_name?: string
+          source_type?: string
+          source_url?: string | null
+          status?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
       institution_members: {
         Row: {
           id: string
@@ -1746,9 +1800,12 @@ export type Database = {
           options: Json | null
           organization_id: string | null
           original_question_id: string | null
+          permission_type: string | null
           question_order: number | null
           review_status: string | null
           source: string | null
+          source_type: string | null
+          source_url: string | null
           statement: string
           topic: string | null
           user_id: string
@@ -1765,9 +1822,12 @@ export type Database = {
           options?: Json | null
           organization_id?: string | null
           original_question_id?: string | null
+          permission_type?: string | null
           question_order?: number | null
           review_status?: string | null
           source?: string | null
+          source_type?: string | null
+          source_url?: string | null
           statement: string
           topic?: string | null
           user_id: string
@@ -1784,9 +1844,12 @@ export type Database = {
           options?: Json | null
           organization_id?: string | null
           original_question_id?: string | null
+          permission_type?: string | null
           question_order?: number | null
           review_status?: string | null
           source?: string | null
+          source_type?: string | null
+          source_url?: string | null
           statement?: string
           topic?: string | null
           user_id?: string
