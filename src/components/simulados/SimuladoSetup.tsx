@@ -4,7 +4,7 @@ import StudyContextBanner from "@/components/study/StudyContextBanner";
 import { FileText, Play, History, BookOpen, Timer, Skull } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import SimuladoHistory from "./SimuladoHistory";
@@ -20,10 +20,21 @@ const DIFFICULTY_OPTIONS = [
   { value: "misto", label: "Misto" },
 ];
 
+const EXAM_BOARDS = [
+  { value: "all", label: "Todas as bancas" },
+  { value: "ENARE", label: "ENARE" },
+  { value: "REVALIDA", label: "REVALIDA" },
+  { value: "USP-SP", label: "USP-SP" },
+  { value: "UNIFESP", label: "UNIFESP" },
+  { value: "SUS-SP", label: "SUS-SP" },
+  { value: "UNICAMP", label: "UNICAMP" },
+  { value: "SANTA_CASA", label: "Santa Casa SP" },
+];
+
 export type SimuladoMode = "prova" | "estudo" | "extremo";
 
 interface SimuladoSetupProps {
-  onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string }) => void;
+  onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string }) => void;
   onResumeSession: () => void;
   onDiscardSession: () => void;
   onRetryErrors: (sessionId: string) => void;
@@ -46,6 +57,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
   const [difficulty, setDifficulty] = useState("intermediario");
   const [timePerQuestion, setTimePerQuestion] = useState(3);
   const [specificTopic, setSpecificTopic] = useState("");
+  const [examBoard, setExamBoard] = useState("all");
   const [mode, setMode] = useState<SimuladoMode>("estudo");
 
   const toggleTopic = (topic: string) => {
@@ -56,7 +68,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
 
   const handleStart = () => {
     const count = customCount ? parseInt(customCount) : questionCount;
-    onStart({ topics: selectedTopics, count, difficulty, timePerQuestion, mode, specificTopic: specificTopic.trim() || undefined });
+    onStart({ topics: selectedTopics, count, difficulty, timePerQuestion, mode, specificTopic: specificTopic.trim() || undefined, examBoard: examBoard !== "all" ? examBoard : undefined });
   };
 
   const totalTime = (customCount ? parseInt(customCount) || questionCount : questionCount) * timePerQuestion;
@@ -246,6 +258,22 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
               />
               <p className="text-xs text-muted-foreground mt-1">Deixe vazio para temas variados dentro das especialidades selecionadas</p>
             </div>
+          {/* Exam Board */}
+          <div>
+            <label className="text-sm font-semibold mb-2 block">Banca / Estilo de Prova</label>
+            <Select value={examBoard} onValueChange={setExamBoard}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todas as bancas" />
+              </SelectTrigger>
+              <SelectContent>
+                {EXAM_BOARDS.map(b => (
+                  <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">Questões geradas seguirão o estilo e formato da banca selecionada</p>
+          </div>
+
           {/* Extreme mode info banner */}
           {mode === "extremo" && (
             <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-4 space-y-2">

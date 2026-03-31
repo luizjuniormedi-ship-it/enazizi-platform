@@ -23,6 +23,17 @@ const DIFFICULTY_OPTIONS = [
   { value: "misto", label: "Misto", emoji: "🔀", desc: "50% médio + 50% difícil" },
 ];
 
+const EXAM_BOARDS = [
+  { value: "all", label: "Todas as bancas" },
+  { value: "ENARE", label: "ENARE" },
+  { value: "REVALIDA", label: "REVALIDA" },
+  { value: "USP-SP", label: "USP-SP" },
+  { value: "UNIFESP", label: "UNIFESP" },
+  { value: "SUS-SP", label: "SUS-SP" },
+  { value: "UNICAMP", label: "UNICAMP" },
+  { value: "SANTA_CASA", label: "Santa Casa SP" },
+];
+
 const QUANTITY_OPTIONS = [5, 10, 15, 20];
 
 interface SessionStats {
@@ -38,6 +49,7 @@ const QuestionGenerator = () => {
   const [specificTopic, setSpecificTopic] = useState("");
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState("intermediario");
+  const [examBoard, setExamBoard] = useState("all");
   const [quantity, setQuantity] = useState(10);
   const [marathonMode, setMarathonMode] = useState(false);
   const [sessionStats, setSessionStats] = useState<SessionStats>({ total: 0, correct: 0, bySpecialty: {} });
@@ -85,7 +97,8 @@ const QuestionGenerator = () => {
     const specPart = effectiveSpecialty || "qualquer área médica (variando especialidades)";
     const topicPart = specificTopic.trim() ? ` focadas no tema: "${specificTopic.trim()}"` : "";
     const diffLabel = difficulty === "dificil" ? "ALTO (padrão ENARE/USP-SP)" : difficulty === "intermediario" ? "intermediário-alto (padrão REVALIDA)" : difficulty === "misto" ? "misto (30% intermediário + 70% difícil)" : "intermediário";
-    return `Gere ${quantity} questões ORIGINAIS de ${specPart}${topicPart} nível ${diffLabel}. OBRIGATÓRIO: cada questão deve ser um caso clínico COMPLEXO com nome fictício, idade, sexo, queixa com tempo de evolução, antecedentes, exame físico com sinais vitais completos (PA, FC, FR, Temp, SpO2), exames complementares com valores numéricos. Distratores devem explorar armadilhas reais de provas de residência. Explicação deve analisar cada alternativa e citar referência bibliográfica. Varie cenários clínicos e perfis de pacientes.`;
+    const boardPart = examBoard !== "all" ? ` no estilo da prova ${examBoard}, com formato, pegadinhas e abordagens típicas dessa banca` : "";
+    return `Gere ${quantity} questões ORIGINAIS de ${specPart}${topicPart} nível ${diffLabel}${boardPart}. OBRIGATÓRIO: cada questão deve ser um caso clínico COMPLEXO com nome fictício, idade, sexo, queixa com tempo de evolução, antecedentes, exame físico com sinais vitais completos (PA, FC, FR, Temp, SpO2), exames complementares com valores numéricos. Distratores devem explorar armadilhas reais de provas de residência. Explicação deve analisar cada alternativa e citar referência bibliográfica. Varie cenários clínicos e perfis de pacientes.`;
   };
 
   const quickActions = showSetup ? [] : [
@@ -249,6 +262,21 @@ const QuestionGenerator = () => {
               <p className="text-[10px] text-muted-foreground">Deixe vazio para temas variados dentro da especialidade</p>
             </div>
 
+            {/* Exam Board */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Banca / Estilo de Prova</label>
+              <Select value={examBoard} onValueChange={setExamBoard}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas as bancas" />
+                </SelectTrigger>
+                <SelectContent>
+                  {EXAM_BOARDS.map(b => (
+                    <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Difficulty */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Dificuldade</label>
@@ -369,7 +397,7 @@ const QuestionGenerator = () => {
 
       <AgentChat
         title="Gerador de Questões"
-        subtitle={`${effectiveSpecialty ? effectiveSpecialty + " • " : ""}${specificTopic ? specificTopic + " • " : ""}${DIFFICULTY_OPTIONS.find(d => d.value === difficulty)?.label || "Intermediário"} • ${quantity} questões${marathonMode ? " • 🔥 Maratona" : ""}`}
+        subtitle={`${effectiveSpecialty ? effectiveSpecialty + " • " : ""}${specificTopic ? specificTopic + " • " : ""}${examBoard !== "all" ? EXAM_BOARDS.find(b => b.value === examBoard)?.label + " • " : ""}${DIFFICULTY_OPTIONS.find(d => d.value === difficulty)?.label || "Intermediário"} • ${quantity} questões${marathonMode ? " • 🔥 Maratona" : ""}`}
         icon={<HelpCircle className="h-6 w-6 text-primary" />}
         welcomeMessage={`Gerando ${quantity} questões${effectiveSpecialty ? ` de ${effectiveSpecialty}` : " mistas"}${specificTopic ? ` (${specificTopic})` : ""} (${DIFFICULTY_OPTIONS.find(d => d.value === difficulty)?.label})... Aguarde! 🧠`}
         welcomeMessageWithUploads="📚 Detectei {count} material(is) do seu acervo: {materiais}. Vou usar como base para gerar questões! 👇"

@@ -28,9 +28,10 @@ type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 
 const BATCH_SIZE = 10;
 
-function buildPrompt(topics: string[], count: number, difficulty: string, specificTopic?: string): string {
+function buildPrompt(topics: string[], count: number, difficulty: string, specificTopic?: string, examBoard?: string): string {
   const topicsStr = topics.join(", ");
   const perTopic = Math.ceil(count / topics.length);
+  const boardInstruction = examBoard ? `\nESTILO DE BANCA: Gere as questões no estilo da prova ${examBoard}, com formato, pegadinhas e abordagens típicas dessa banca.` : "";
   const difficultyInstruction = difficulty === "misto"
     ? "Distribua: 30% intermediárias (padrão REVALIDA) e 70% difíceis (padrão ENARE/USP-SP). Questões intermediárias devem exigir raciocínio clínico sólido. Questões difíceis devem ter diagnósticos diferenciais complexos e armadilhas de prova."
     : difficulty === "facil"
@@ -44,7 +45,7 @@ function buildPrompt(topics: string[], count: number, difficulty: string, specif
 
 IDIOMA OBRIGATÓRIO: TUDO deve ser escrito em PORTUGUÊS BRASILEIRO. Enunciados, alternativas, explicações — TUDO em pt-BR. NUNCA use inglês.
 
-TEMAS: ${topicsStr}${topicFocus}
+TEMAS: ${topicsStr}${topicFocus}${boardInstruction}
 DISTRIBUIÇÃO: aproximadamente ${perTopic} questões por tema. Distribua igualmente.
 ${difficultyInstruction}
 
@@ -77,6 +78,7 @@ async function generateBatch(
   difficulty: string,
   accessToken: string | undefined,
   specificTopic?: string,
+  examBoard?: string,
 ): Promise<SimQuestion[]> {
   const res = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`,
@@ -92,7 +94,7 @@ async function generateBatch(
         outputFormat: "json",
         difficulty,
         timeoutMs: 55000,
-        messages: [{ role: "user", content: buildPrompt(topics, count, difficulty, specificTopic) }],
+        messages: [{ role: "user", content: buildPrompt(topics, count, difficulty, specificTopic, examBoard) }],
       }),
     },
   );
@@ -225,7 +227,7 @@ const Simulados = () => {
     }
   };
 
-  const handleStart = async (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string }) => {
+  const handleStart = async (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string }) => {
     if (config.topics.length === 0) {
       toast({ title: "Selecione pelo menos um assunto", variant: "destructive" });
       return;
@@ -305,7 +307,7 @@ const Simulados = () => {
 
         if (requestCount <= BATCH_SIZE) {
           setLoadingPercent(40);
-          const batch = await generateBatch(config.topics, requestCount, config.difficulty, accessToken, config.specificTopic);
+          const batch = await generateBatch(config.topics, requestCount, config.difficulty, accessToken, config.specificTopic, config.examBoard);
           allQuestions.push(...batch);
           setLoadingPercent(70);
 
@@ -318,6 +320,7 @@ const Simulados = () => {
               config.difficulty,
               accessToken,
               config.specificTopic,
+              config.examBoard,
             );
             allQuestions.push(...extra);
           }
@@ -331,7 +334,7 @@ const Simulados = () => {
           let completedBatches = 0;
           const results = await Promise.allSettled(
             batchSizes.map(async (size) => {
-              const result = await generateBatch(config.topics, size, config.difficulty, accessToken, config.specificTopic);
+              const result = await generateBatch(config.topics, size, config.difficulty, accessToken, config.specificTopic, config.examBoard);
               completedBatches++;
               const pct = 25 + Math.round((completedBatches / batchCount) * 55);
               setLoadingPercent(pct);
@@ -356,6 +359,7 @@ const Simulados = () => {
                 config.difficulty,
                 accessToken,
                 config.specificTopic,
+                config.examBoard,
               );
               allQuestions.push(...retry);
             } catch {
