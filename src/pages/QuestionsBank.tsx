@@ -537,6 +537,19 @@ const QuestionsBank = () => {
                     </span>
                   </div>
                   <p className="text-sm font-medium line-clamp-2"><MedicalTermHighlighter text={q.statement} /></p>
+                  {q.image_url && !q.image_url.startsWith("[IMG]") && (
+                    <img
+                      src={q.image_url}
+                      alt="Imagem da questão"
+                      className="mt-2 max-h-48 rounded-lg border border-border object-contain"
+                      loading="lazy"
+                    />
+                  )}
+                  {q.image_url && q.image_url.startsWith("[IMG]") && (
+                    <p className="mt-1 text-xs text-muted-foreground italic">
+                      📷 {q.image_url.replace("[IMG] ", "")}
+                    </p>
+                  )}
                   <div className="flex gap-2 mt-2 flex-wrap">
                     {q.options.map((opt, i) => (
                       <span
