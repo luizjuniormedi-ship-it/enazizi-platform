@@ -256,7 +256,7 @@ const AdminUploadsPanel = () => {
           <>
             <Upload className="h-10 w-10 text-primary/50 mx-auto mb-3" />
             <p className="font-medium">Clique para enviar arquivo global</p>
-            <p className="text-sm text-muted-foreground">PDF, TXT, DOCX — máx 20MB • Será disponibilizado para todos os alunos</p>
+            <p className="text-sm text-muted-foreground">PDF, TXT, DOCX — máx 50MB • Será disponibilizado para todos os alunos</p>
           </>
         )}
       </div>
