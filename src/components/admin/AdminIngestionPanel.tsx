@@ -255,10 +255,10 @@ const AdminIngestionPanel = () => {
                   </Badge>
                 </div>
                 <div className="flex gap-3 mt-0.5 text-[10px] text-muted-foreground">
-                  <span>+{log.questions_inserted} inseridas</span>
-                  <span>↑{log.questions_updated} atualizadas</span>
-                  <span>={log.duplicates_skipped} duplicatas</span>
-                  {log.errors > 0 && <span className="text-red-500">✗{log.errors} erros</span>}
+                  <span>+{log.questions_inserted ?? 0} inseridas</span>
+                  <span>↑{log.questions_updated ?? 0} atualizadas</span>
+                  <span>={log.duplicates_skipped ?? 0} duplicatas</span>
+                  {(log.errors ?? 0) > 0 && <span className="text-red-500">✗{log.errors} erros</span>}
                 </div>
               </div>
             ))}
