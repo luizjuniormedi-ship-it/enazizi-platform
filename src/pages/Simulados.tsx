@@ -320,6 +320,7 @@ const Simulados = () => {
               config.difficulty,
               accessToken,
               config.specificTopic,
+              config.examBoard,
             );
             allQuestions.push(...extra);
           }
