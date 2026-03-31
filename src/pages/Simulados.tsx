@@ -323,7 +323,7 @@ const Simulados = () => {
           let completedBatches = 0;
           const results = await Promise.allSettled(
             batchSizes.map(async (size) => {
-              const result = await generateBatch(config.topics, size, config.difficulty, accessToken);
+              const result = await generateBatch(config.topics, size, config.difficulty, accessToken, config.specificTopic);
               completedBatches++;
               const pct = 25 + Math.round((completedBatches / batchCount) * 55);
               setLoadingPercent(pct);
