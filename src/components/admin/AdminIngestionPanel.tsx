@@ -75,7 +75,9 @@ const AdminIngestionPanel = () => {
         body: JSON.stringify(payload),
       }
     );
-    return resp.json();
+    const data = resp.headers.get("content-type")?.includes("application/json") ? await resp.json() : {};
+    if (!resp.ok) throw new Error(data?.error || `Falha na ingestão (${resp.status})`);
+    return data;
   };
 
   const handleExtractPdf = async (source: IndexedSource) => {
