@@ -92,15 +92,27 @@ const QuestionGenerator = () => {
     { label: "🔄 Gerar mais", prompt: buildPrompt(), icon: "🔄" },
   ];
 
+  const ENGLISH_FILTER = /\b(the patient|which of the following|presents with|most likely|treatment of choice|year-old male|year-old female|diagnosis|management|regarding|concerning|history of|what is the|correct answer)\b/i;
+
   const handleSaveQuestions = useCallback(async (content: string): Promise<number> => {
     if (!user) throw new Error("Usuário não autenticado");
     const parsed = parseQuestionsFromText(content);
     if (parsed.length === 0) throw new Error("Nenhuma questão encontrada para salvar.");
 
-    // Track marathon total
-    marathonTotalRef.current += parsed.length;
+    // Filter out low-quality or English questions
+    const valid = parsed.filter(q =>
+      q.statement.length >= 150 &&
+      !ENGLISH_FILTER.test(q.statement) &&
+      q.options.length >= 4
+    );
+    const discarded = parsed.length - valid.length;
 
-    const rows = parsed.map((q) => ({
+    if (valid.length === 0) throw new Error("Todas as questões foram descartadas por baixa qualidade ou idioma incorreto.");
+
+    // Track marathon total
+    marathonTotalRef.current += valid.length;
+
+    const rows = valid.map((q) => ({
       user_id: user.id,
       statement: q.statement,
       options: q.options,
@@ -112,7 +124,8 @@ const QuestionGenerator = () => {
 
     const { error } = await supabase.from("questions_bank").insert(rows);
     if (error) throw new Error("Erro ao salvar: " + error.message);
-    return parsed.length;
+    if (discarded > 0) console.warn(`[QG] ${discarded} questões descartadas por qualidade/idioma`);
+    return valid.length;
   }, [user]);
 
   const loadPreviousQuestions = useCallback(async (): Promise<string> => {
