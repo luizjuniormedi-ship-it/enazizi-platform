@@ -150,7 +150,8 @@ function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
         q.options.length >= 4 &&
         q.statement.length >= 200 &&
         !NON_MEDICAL_CONTENT_REGEX.test(q.statement) &&
-        /\d+\s*(anos?|meses|dias|horas)/.test(q.statement), // must have clinical context with age
+        !/\b(the patient|which of the following|presents with|most likely|treatment of choice|year-old male|year-old female|diagnosis|management|regarding|concerning|history of|what is the|correct answer)\b/i.test(q.statement) &&
+        /\d+\s*(anos?|meses|dias|horas|semanas)/.test(q.statement),
     );
 }
 
