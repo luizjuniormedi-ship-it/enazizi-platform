@@ -258,6 +258,22 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
               />
               <p className="text-xs text-muted-foreground mt-1">Deixe vazio para temas variados dentro das especialidades selecionadas</p>
             </div>
+          {/* Exam Board */}
+          <div>
+            <label className="text-sm font-semibold mb-2 block">Banca / Estilo de Prova</label>
+            <Select value={examBoard} onValueChange={setExamBoard}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todas as bancas" />
+              </SelectTrigger>
+              <SelectContent>
+                {EXAM_BOARDS.map(b => (
+                  <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">Questões geradas seguirão o estilo e formato da banca selecionada</p>
+          </div>
+
           {/* Extreme mode info banner */}
           {mode === "extremo" && (
             <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-4 space-y-2">
