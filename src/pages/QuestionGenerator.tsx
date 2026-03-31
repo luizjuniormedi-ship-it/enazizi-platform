@@ -23,6 +23,17 @@ const DIFFICULTY_OPTIONS = [
   { value: "misto", label: "Misto", emoji: "🔀", desc: "50% médio + 50% difícil" },
 ];
 
+const EXAM_BOARDS = [
+  { value: "all", label: "Todas as bancas" },
+  { value: "ENARE", label: "ENARE" },
+  { value: "REVALIDA", label: "REVALIDA" },
+  { value: "USP-SP", label: "USP-SP" },
+  { value: "UNIFESP", label: "UNIFESP" },
+  { value: "SUS-SP", label: "SUS-SP" },
+  { value: "UNICAMP", label: "UNICAMP" },
+  { value: "SANTA_CASA", label: "Santa Casa SP" },
+];
+
 const QUANTITY_OPTIONS = [5, 10, 15, 20];
 
 interface SessionStats {
