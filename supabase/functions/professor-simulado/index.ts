@@ -916,7 +916,7 @@ REGRAS:
               if (!topicPerf[topic]) topicPerf[topic] = { correct: 0, total: 0 };
               topicPerf[topic].total++;
               const studentAnswer = answers[idx];
-              if (studentAnswer != null && studentAnswer === q.correct_index) {
+              if (studentAnswer?.is_correct) {
                 topicPerf[topic].correct++;
               }
             });
@@ -1204,7 +1204,7 @@ REGRAS:
               if (!topicStudentCross[topic][pName]) topicStudentCross[topic][pName] = { correct: 0, total: 0 };
               topicStudentCross[topic][pName].total++;
               const studentAnswer = answers[idx];
-              if (studentAnswer != null && studentAnswer === q.correct_index) {
+              if (studentAnswer?.is_correct) {
                 topicStudentCross[topic][pName].correct++;
               }
             });
@@ -1277,21 +1277,6 @@ REGRAS:
           topic_student_cross: topicStudentCrossArr,
           proficiency_vs_platform: proficiencyVsPlatform,
           activity_heatmap: activityHeatmap,
-        });
-        return ok({
-          proficiency: {
-            kpis: { total_activities: totalActivities, completion_rate: completionRate, avg_score: avgScore, pending: pendingResults.length },
-            topic_breakdown: topicBreakdown,
-            deficient_topics: deficientTopics,
-            mastered_topics: masteredTopics,
-            specialty_perf: specialtyPerf,
-            activity_table: activityTable.slice(0, 200),
-          },
-          platform: platformData,
-          students: biProfiles.map((p: any) => ({ user_id: p.user_id, display_name: p.display_name || p.email })),
-          at_risk_students: atRiskStudents,
-          weekly_evolution: weeklyEvolution,
-          student_percentile: studentPercentile,
         });
       }
 
