@@ -5,7 +5,7 @@ import { logErrorToBank } from "@/lib/errorBankLogger";
 import {
   GraduationCap, Clock, FileText, CheckCircle, ArrowRight, ArrowLeft,
   Loader2, Trophy, AlertTriangle, Play, RotateCcw, BrainCircuit, Sparkles, Activity,
-  MessageCircle, HelpCircle, BookOpen, Video
+  MessageCircle, HelpCircle, BookOpen, Video, Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
