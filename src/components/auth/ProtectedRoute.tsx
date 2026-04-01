@@ -88,6 +88,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (!user) return;
     const trimmedName = formName.trim();
     const isStudent = formUserType === "estudante";
+    const isProfessor = formUserType === "professor";
 
     const nameCheck = isValidName(trimmedName);
     if (!nameCheck.valid) {
@@ -106,6 +107,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
+    if (isProfessor && !formFaculdade) {
+      toast({ title: "Selecione sua universidade", variant: "destructive" });
+      return;
+    }
+
     const cleanPhone = formPhone.replace(/\D/g, "");
     setSaving(true);
     try {
@@ -117,6 +123,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       if (isStudent) {
         updateData.periodo = parseInt(formPeriodo);
         updateData.faculdade = formFaculdade;
+      }
+      if (isProfessor) {
+        updateData.faculdade = formFaculdade;
+        // Insert professor role
+        await supabase.from("user_roles").upsert(
+          { user_id: user.id, role: "professor" as any },
+          { onConflict: "user_id,role" }
+        );
       }
       const { error } = await supabase
         .from("profiles")
