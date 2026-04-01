@@ -149,18 +149,51 @@ Retorne SOMENTE JSON válido no formato:
 
         if (validQuestions.length === 0) continue;
 
-        const rows = validQuestions.map((q: any) => ({
-          user_id: userId,
-          statement: q.statement.trim(),
-          options: q.options.map((o: string) => o.trim()),
-          correct_index: typeof q.correct_index === "number" ? q.correct_index : null,
-          explanation: q.explanation || null,
-          topic: q.topic || "Cardiologia",
-          source: q.source || "docx-import",
-          is_global: true,
-          review_status: "pending",
-          image_url: q.has_image && q.image_description ? `[IMG] ${q.image_description}` : null,
-        }));
+        // For questions with images, upload the page screenshot to Storage
+        const rows = [];
+        for (const q of validQuestions) {
+          let imageUrl: string | null = null;
+
+          if (q.has_image && screenshot) {
+            try {
+              // Upload the page screenshot as the image context
+              const imgFileName = `page-screenshots/${uploadId || 'unknown'}/${Date.now()}-p${i + 1}-${Math.random().toString(36).slice(2, 8)}.png`;
+              
+              // Convert base64 data URL to binary
+              const base64Data = screenshot.replace(/^data:image\/\w+;base64,/, "");
+              const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+              
+              const { error: imgUploadErr } = await supabase.storage
+                .from("question-images")
+                .upload(imgFileName, binaryData, {
+                  contentType: "image/png",
+                  upsert: true,
+                });
+
+              if (!imgUploadErr) {
+                const { data: urlData } = supabase.storage
+                  .from("question-images")
+                  .getPublicUrl(imgFileName);
+                imageUrl = urlData.publicUrl;
+              }
+            } catch (imgErr: any) {
+              console.error(`Failed to upload image for page ${i + 1}:`, imgErr.message);
+            }
+          }
+
+          rows.push({
+            user_id: userId,
+            statement: q.statement.trim(),
+            options: q.options.map((o: string) => o.trim()),
+            correct_index: typeof q.correct_index === "number" ? q.correct_index : null,
+            explanation: q.explanation || null,
+            topic: q.topic || "Cardiologia",
+            source: q.source || "docx-import",
+            is_global: true,
+            review_status: "pending",
+            image_url: imageUrl,
+          });
+        }
 
         const { error: insertError } = await supabase.from("questions_bank").insert(rows);
         if (insertError) {

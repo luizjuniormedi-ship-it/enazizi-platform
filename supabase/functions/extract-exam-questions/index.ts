@@ -192,11 +192,9 @@ Deno.serve(async (req) => {
       });
 
       // Insert new questions in batches
-      const IMAGE_REF_PATTERN = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo|observe o gráfico|observe a figura|observe a foto|imagem a seguir|figura a seguir)\b/i;
       const newQuestions = result.questions.filter(
         (q) => !existingStatements.has(normalizeForDedup(q.statement)) &&
-          q.options.length >= 4 && q.options.length <= 5 &&
-          !IMAGE_REF_PATTERN.test(q.statement)
+          q.options.length >= 4 && q.options.length <= 5
       );
 
       const BATCH_SIZE = 50;

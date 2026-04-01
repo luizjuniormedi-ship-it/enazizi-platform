@@ -1,4 +1,4 @@
-import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle, Database, BookOpen } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle, Database, BookOpen, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -159,6 +159,28 @@ const AdminUploadsPanel = () => {
   };
 
   const [extracting, setExtracting] = useState<string | null>(null);
+  const [extractingVisual, setExtractingVisual] = useState<string | null>(null);
+
+  const handleExtractVisual = async (upload: UploadRecord) => {
+    setExtractingVisual(upload.id);
+    try {
+      toast({ title: "Extraindo prova com imagens...", description: "O PDF será analisado visualmente pela IA. Pode levar alguns minutos." });
+      const res = await supabase.functions.invoke("extract-exam-visual", {
+        body: { upload_id: upload.id },
+      });
+      if (res.error) throw res.error;
+      const d = res.data as any;
+      toast({
+        title: `✅ ${d.total_inserted} questões extraídas!`,
+        description: `${d.total_images || 0} com imagens reais. ${d.pages_with_images || 0} páginas com conteúdo visual.`,
+      });
+      fetchUploads();
+    } catch (err: any) {
+      toast({ title: "Erro na extração visual", description: err.message, variant: "destructive" });
+    } finally {
+      setExtractingVisual(null);
+    }
+  };
 
   const handleExtractExam = async (upload: UploadRecord) => {
     setExtracting(upload.id);
@@ -292,6 +314,12 @@ const AdminUploadsPanel = () => {
                         <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePopulateQuestions(f)}>
                           <Database className="h-3 w-3" /> Gerar Questões
                         </Button>
+                        {(f.file_type === "pdf" || f.filename?.endsWith(".pdf")) && (
+                          <Button variant="outline" size="sm" className="gap-1.5 text-xs border-primary/30 text-primary" onClick={() => handleExtractVisual(f)} disabled={extractingVisual === f.id || extracting === f.id}>
+                            {extractingVisual === f.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImageIcon className="h-3 w-3" />}
+                            Extrair c/ Imagens
+                          </Button>
+                        )}
                         {(f.file_type === "docx" || f.filename?.endsWith(".docx")) && (
                           <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handleProcessDocx(f)} disabled={extracting === f.id}>
                             {extracting === f.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <BookOpen className="h-3 w-3" />}

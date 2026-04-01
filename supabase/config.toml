@@ -74,3 +74,6 @@ verify_jwt = false
 
 [functions.ingest-questions]
 verify_jwt = false
+
+[functions.extract-exam-visual]
+verify_jwt = false
