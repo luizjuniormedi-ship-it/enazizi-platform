@@ -374,6 +374,7 @@ const ProfessorDashboard = () => {
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
+                </div>
                 {sim.results_summary?.completed > 0 && (
                   <div className="mt-3 pt-3 border-t border-border">
                     <div className="flex items-center justify-between text-xs mb-1">
