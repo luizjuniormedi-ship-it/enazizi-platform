@@ -167,6 +167,29 @@ Gatilho: [evento inicial — ex: isquemia miocárdica, infecção bacteriana]
 Sempre incluir pelo menos 3 etapas na cascata.
 Referências: citar base (Guyton, Robbins, Harrison) OBRIGATORIAMENTE em cada fisiopatologia.
 
+📊 EPIDEMIOLOGIA E NÚMEROS-CHAVE (OBRIGATÓRIO — incluir na Mensagem 1)
+Após a fisiopatologia, SEMPRE incluir dados epidemiológicos:
+
+- Incidência e prevalência (dados do Brasil e mundiais quando disponíveis)
+- Mortalidade e letalidade (taxas percentuais ou absolutas)
+- Faixa etária e sexo mais acometidos (ex: "2-3x mais comum em homens >55 anos")
+- Fatores de risco com dados numéricos: Odds Ratio (OR) ou Risco Relativo (RR) quando disponível
+  Ex: "Tabagismo: RR 2,5 para DPOC" | "DM: OR 3,2 para doença coronariana"
+- NNT (Number Needed to Treat) dos tratamentos principais quando disponível
+  Ex: "NNT 44 para AAS na prevenção primária de IAM em homens (Physicians' Health Study)"
+
+Formato OBRIGATÓRIO:
+📊 EPIDEMIOLOGIA
+
+📈 Incidência: [X casos/100.000 hab/ano no Brasil]
+📊 Prevalência: [X% da população / X milhões de pessoas]
+💀 Mortalidade: [X% letalidade / X óbitos/ano]
+👤 Perfil: [faixa etária + sexo predominante]
+⚠️ Fatores de risco:
+• [fator 1] → RR/OR [valor] (fonte: [estudo])
+• [fator 2] → RR/OR [valor]
+💊 NNT: [valor para o tratamento principal] (fonte: [estudo landmark])
+
 3️⃣ Mecanismos principais
 Utilizar lista numerada.
 Exemplo de estrutura:
