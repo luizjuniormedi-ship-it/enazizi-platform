@@ -364,7 +364,10 @@ const QuestionsBank = () => {
             Banco de Questões
           </h1>
           <p className="text-muted-foreground">
-            Mostrando {questions.length} de {totalCount} questão(ões)
+            {filtered.length} questões disponíveis
+            {totalCount > filtered.length && (
+              <span className="text-xs ml-1">({totalCount} no banco total)</span>
+            )}
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
