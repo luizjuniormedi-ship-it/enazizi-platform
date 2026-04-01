@@ -1204,7 +1204,7 @@ REGRAS:
               if (!topicStudentCross[topic][pName]) topicStudentCross[topic][pName] = { correct: 0, total: 0 };
               topicStudentCross[topic][pName].total++;
               const studentAnswer = answers[idx];
-              if (studentAnswer != null && studentAnswer === q.correct_index) {
+              if (studentAnswer?.is_correct) {
                 topicStudentCross[topic][pName].correct++;
               }
             });
