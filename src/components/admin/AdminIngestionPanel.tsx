@@ -194,40 +194,57 @@ const AdminIngestionPanel = () => {
   const handleEqualize = async () => {
     if (!session) return;
     setEqualizing(true);
+    setEqPaused(false);
     const deficitSpecialties = distribution.filter(d => d.deficit > 0);
     const total = deficitSpecialties.length;
     const log: { specialty: string; added: number }[] = [];
     const totalQRemaining = deficitSpecialties.reduce((s, d) => s + d.deficit, 0);
-    setEqProgress({ current: 0, total, percent: 0, currentSpecialty: deficitSpecialties[0]?.name || "", log, questionsRemaining: totalQRemaining });
+    const startTime = Date.now();
+    setEqStartTime(startTime);
+    setEqProgress({ current: 0, total, percent: 0, currentSpecialty: deficitSpecialties[0]?.name || "", log, questionsRemaining: totalQRemaining, eta: "calculando..." });
 
     try {
       for (let i = 0; i < total; i++) {
+        // Check pause
+        if (eqPaused) {
+          toast({ title: "Equalização pausada", description: `${log.reduce((s, l) => s + l.added, 0)} questões adicionadas até agora.` });
+          break;
+        }
+
         const spec = deficitSpecialties[i];
-        setEqProgress(prev => prev ? { ...prev, current: i + 1, percent: Math.round(((i) / total) * 100), currentSpecialty: spec.name } : prev);
+        const elapsed = (Date.now() - startTime) / 1000;
+        const avgPerSpec = i > 0 ? elapsed / i : 30;
+        const remaining = (total - i) * avgPerSpec;
+        const etaMin = Math.ceil(remaining / 60);
+        const etaStr = etaMin > 1 ? `~${etaMin} min` : "< 1 min";
+
+        setEqProgress(prev => prev ? { ...prev, current: i + 1, percent: Math.round(((i) / total) * 100), currentSpecialty: spec.name, eta: etaStr } : prev);
 
         try {
           const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-            body: JSON.stringify({ equalize: true, specialty: spec.name, maxSpecialties: 1, batchSize: 10 }),
+            body: JSON.stringify({ equalize: true, specialty: spec.name, maxSpecialties: 1, batchSize: 25, importLimit: 50 }),
           });
           const data = await resp.json();
           const added = (data?.total_imported || 0) + (data?.total_generated || 0);
           log.push({ specialty: spec.name, added });
-          const remaining = totalQRemaining - log.reduce((s, l) => s + l.added, 0);
-          setEqProgress(prev => prev ? { ...prev, percent: Math.round(((i + 1) / total) * 100), log: [...log], questionsRemaining: Math.max(0, remaining) } : prev);
+          const qRemaining = totalQRemaining - log.reduce((s, l) => s + l.added, 0);
+          setEqProgress(prev => prev ? { ...prev, percent: Math.round(((i + 1) / total) * 100), log: [...log], questionsRemaining: Math.max(0, qRemaining) } : prev);
         } catch {
           log.push({ specialty: spec.name, added: 0 });
         }
       }
 
       const totalAdded = log.reduce((s, l) => s + l.added, 0);
-      toast({ title: "Equalização concluída", description: `${totalAdded} questões adicionadas em ${total} especialidades.` });
+      toast({ title: "Equalização concluída", description: `${totalAdded} questões adicionadas em ${log.length} especialidades.` });
       loadDistribution();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
     } finally {
       setEqualizing(false);
+      setEqPaused(false);
+      setEqStartTime(null);
       setEqProgress(null);
     }
   };
