@@ -357,6 +357,10 @@ FORMATO JSON OBRIGATÓRIO:
           is_global: true,
           review_status: "pending",
         }))
+        .map((r: any) => ({
+          ...r,
+          topic: normalizeTopicToParent(r.topic, specialty),
+        }))
         .filter((r: any) => {
           const hash = normalizeStatementKey(r.statement);
           if (existingHashes.has(hash)) return false;
