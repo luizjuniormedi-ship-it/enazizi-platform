@@ -246,8 +246,9 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 
       case "get_students": {
         const { faculdade, periodo } = params;
+        const effectiveFaculdade = faculdade || professorFaculdade;
         let query = sb.from("profiles").select("user_id, display_name, email, faculdade, periodo, status").eq("status", "active");
-        if (faculdade) query = query.eq("faculdade", faculdade);
+        if (effectiveFaculdade) query = query.eq("faculdade", effectiveFaculdade);
         if (periodo) query = query.eq("periodo", periodo);
 
         const { data: students } = await query.order("display_name");
