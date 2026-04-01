@@ -1,50 +1,34 @@
 
 
-# Detalhamento de Resultados por Aluno + Banco de Erros na Proficiência
+# Banco de Erros de Proficiência — Aba dedicada
 
-## Situação Atual
+## Problema
 
-- **Professor**: O dialog de resultados mostra apenas nome do aluno + score %. Não tem drill-down por questão.
-- **Aluno**: Já possui gabarito comentado após o simulado (com explicações e botão "Estudar com Tutor IA"). Porém, na listagem de simulados concluídos em Proficiência, não há forma de revisitar o gabarito nem um resumo de erros para revisão rápida.
+O banco de erros atual só aparece dentro da view de resultado de um simulado específico. Não existe uma aba consolidada na Proficiência que mostre todos os erros acumulados das atividades do professor (simulados, casos clínicos, temas de estudo), com gabarito comentado e link direto ao Tutor IA.
 
-## Mudanças
+## Mudança
 
-### 1. Professor — Drill-down por aluno no dialog de resultados
+### `src/pages/StudentSimulados.tsx`
 
-**`src/pages/ProfessorDashboard.tsx`** (dialog de resultados, linhas 763-787)
+1. **Nova aba "🎯 Banco de Erros"** no TabsList (5ª aba)
+   - Query ao `error_bank` filtrando `tipo_questao IN ('simulado', 'diagnostico')` do usuário
+   - Também buscar `teacher_simulado_results` com `answers_json` + `teacher_simulados.questions_json` para reconstruir gabarito completo de cada erro
+   - Agrupar por `tema`, ordenar por `vezes_errado DESC`
 
-- Adicionar estado `expandedStudent` para controlar qual aluno está expandido
-- Ao clicar no card do aluno (nome), expandir para mostrar:
-  - Lista de questões com indicador ✓/✗
-  - Para cada erro: enunciado resumido, resposta do aluno, resposta correta, explicação
-  - Porcentagem por tópico
-- Os dados já estão disponíveis: `answers_json` no resultado contém `{ question_index, selected, correct_index, is_correct, topic }` e `questions_json` no simulado contém os enunciados
+2. **Conteúdo de cada card de tema**:
+   - Nome do tema, subtema, badge de gravidade (vermelho ≥3, âmbar ≥2)
+   - Expandir para ver cada questão errada com: enunciado, resposta do aluno, resposta correta, explicação comentada
+   - Botão "Revisar com Tutor IA" — navega para `/dashboard/chatgpt` com contexto automático
+   - Botão "Marcar como Dominado" — atualiza `dominado = true` no `error_bank`
 
-### 2. Aluno — Botão "Ver Gabarito" nos simulados concluídos em Proficiência
+3. **Dados de gabarito**: Para exibir o gabarito comentado, cruzar os registros do `error_bank` (que têm `conteudo` com enunciado resumido) com os `answers_json`/`questions_json` dos simulados concluídos, permitindo mostrar explicação e alternativas
 
-**`src/pages/StudentSimulados.tsx`** (listagem de concluídos, ~linha 413-441)
-
-- Adicionar botão "Ver Gabarito" nos simulados concluídos
-- Ao clicar, remontar o `resultData` a partir de `answers_json` e exibir a view de resultado (que já tem gabarito comentado completo)
-
-### 3. Aluno — Seção "Erros deste Simulado" com redirecionamento automático ao Tutor
-
-**`src/pages/StudentSimulados.tsx`** (result view, ~linha 966)
-
-- Após a revisão das questões, adicionar seção "Banco de Erros do Simulado" com cards dos temas errados agrupados
-- Cada card mostra: tema, quantidade de erros, botão "Revisar com Tutor IA" que envia o contexto automaticamente
-- Os erros já são logados no `error_bank` via `logErrorToBank` durante o submit
-
-### 4. Edge Function — Retornar `questions_json` junto com resultados
-
-**`supabase/functions/professor-simulado/index.ts`** (action `get_simulado_results`)
-
-- Buscar `questions_json` do simulado e incluir no retorno para que o professor tenha acesso aos enunciados ao expandir o aluno
+4. **Empty state**: Mensagem motivacional "Nenhum erro registrado — continue praticando!"
 
 ## Detalhes técnicos
 
-- `answers_json` já contém `question_index`, `selected`, `correct_index`, `is_correct`, `topic` — dados suficientes para o drill-down
-- `questions_json` contém `statement`, `options`, `correct_index`, `topic`, `explanation`
-- O gabarito comentado do aluno já funciona na view de resultado — basta permitir reacesso
-- Nenhuma migração de banco necessária
+- `error_bank` já tem RLS para CRUD do próprio usuário e campos `tema`, `subtema`, `conteudo`, `vezes_errado`, `dominado`, `motivo_erro`
+- O `logErrorToBank` já é chamado no submit do simulado com `tipo_questao: 'simulado'`
+- Nenhuma migração necessária
+- O botão "Marcar como Dominado" faz `supabase.from('error_bank').update({ dominado: true, dominado_em: new Date().toISOString() }).eq('id', errorId)`
 
