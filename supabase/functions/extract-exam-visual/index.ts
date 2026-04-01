@@ -27,14 +27,19 @@ serve(async (req) => {
       .eq("id", upload_id)
       .single();
 
-    if (uploadErr || !upload) throw new Error("Upload not found");
+    if (uploadErr || !upload) throw new Error(`Upload not found: ${uploadErr?.message}`);
+
+    console.log(`Downloading from bucket 'user-uploads', path: '${upload.storage_path}'`);
 
     // Download the PDF file
     const { data: fileData, error: dlErr } = await supabase.storage
       .from("user-uploads")
       .download(upload.storage_path);
 
-    if (dlErr || !fileData) throw new Error("Failed to download file from storage");
+    if (dlErr || !fileData) {
+      console.error("Download error:", JSON.stringify(dlErr));
+      throw new Error(`Failed to download file: ${dlErr?.message || 'no data returned'}`);
+    }
 
     // Convert PDF to base64 for Gemini (chunk-safe for large files)
     const arrayBuffer = await fileData.arrayBuffer();
