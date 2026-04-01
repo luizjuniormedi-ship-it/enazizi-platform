@@ -73,6 +73,20 @@ function getTarget(specialty: string): number {
   return BASIC_SCIENCES.includes(specialty) ? TARGET_BASIC : TARGET_CLINICAL;
 }
 
+/** Ensures AI-generated topic names stay normalized to the parent specialty */
+function normalizeTopicToParent(generatedTopic: string, parentSpecialty: string): string {
+  const normalized = String(generatedTopic || "").trim();
+  // If the generated topic is a known parent specialty, use it
+  if (SPECIALTIES.includes(normalized)) return normalized;
+  // If it starts with the parent specialty name, collapse to parent
+  if (normalized.toLowerCase().startsWith(parentSpecialty.toLowerCase())) return parentSpecialty;
+  // If it's a subtopic of the parent, keep parent
+  const subtopics = TOPICS_BY_SPECIALTY[parentSpecialty];
+  if (subtopics && subtopics.some(s => normalized.toLowerCase().includes(s.toLowerCase()))) return parentSpecialty;
+  // Default: use the parent specialty
+  return parentSpecialty;
+}
+
 function normalizeStatementKey(statement: string): string {
   return String(statement || "").toLowerCase().trim().slice(0, 80);
 }
@@ -345,18 +359,23 @@ FORMATO JSON OBRIGATÓRIO:
       );
 
       const rows = questions
-        .map((q: any) => ({
-          user_id: userId,
-          statement: String(q.statement).trim(),
-          options: q.options.map(String),
-          correct_index: q.correct_index,
-          explanation: String(q.explanation || "").trim(),
-          topic: String(q.topic || specialty).trim(),
-          difficulty: q.difficulty || 3,
-          source: "bulk-ai-generated",
-          is_global: true,
-          review_status: "pending",
-        }))
+        .map((q: any) => {
+          const rawTopic = String(q.topic || specialty).trim();
+          const normalizedTopic = normalizeTopicToParent(rawTopic, specialty);
+          return {
+            user_id: userId,
+            statement: String(q.statement).trim(),
+            options: q.options.map(String),
+            correct_index: q.correct_index,
+            explanation: String(q.explanation || "").trim(),
+            topic: normalizedTopic,
+            subtopic: rawTopic !== normalizedTopic ? rawTopic : null,
+            difficulty: q.difficulty || 3,
+            source: "bulk-ai-generated",
+            is_global: true,
+            review_status: "pending",
+          };
+        })
         .filter((r: any) => {
           const hash = normalizeStatementKey(r.statement);
           if (existingHashes.has(hash)) return false;
