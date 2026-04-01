@@ -193,7 +193,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   // Force onboarding BEFORE showing pending/approval screen
   if (profileIncomplete) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="min-h-[100dvh] overflow-y-auto flex items-start sm:items-center justify-center bg-background p-4 py-8">
         <div className="w-full max-w-md space-y-6 animate-fade-in">
           <div className="text-center space-y-2">
             <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
