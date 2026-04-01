@@ -766,8 +766,17 @@ const ProfessorDashboard = () => {
                             <div key={globalIdx} className="bg-secondary/50 rounded-lg p-3 text-xs flex items-start justify-between gap-2">
                               <div className="min-w-0 flex-1">
                                 <p className="font-medium mb-1">Q{globalIdx + 1}: {q.statement?.slice(0, 120)}...</p>
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1.5 flex-wrap">
                                   <Badge variant="outline" className="text-[9px]">{q.topic || block}</Badge>
+                                  {q.difficulty_level && (
+                                    <Badge className={`text-[9px] ${
+                                      q.difficulty_level === "facil" ? "bg-emerald-500/20 text-emerald-700 border-emerald-300" :
+                                      q.difficulty_level === "dificil" ? "bg-red-500/20 text-red-700 border-red-300" :
+                                      "bg-yellow-500/20 text-yellow-700 border-yellow-300"
+                                    }`} variant="outline">
+                                      {q.difficulty_level === "facil" ? "🟢 Fácil" : q.difficulty_level === "dificil" ? "🔴 Difícil" : "🟡 Intermediário"}
+                                    </Badge>
+                                  )}
                                   <span className="text-muted-foreground">Gabarito: {String.fromCharCode(65 + q.correct_index)}</span>
                                 </div>
                               </div>
