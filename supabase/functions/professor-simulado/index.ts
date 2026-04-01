@@ -916,7 +916,7 @@ REGRAS:
               if (!topicPerf[topic]) topicPerf[topic] = { correct: 0, total: 0 };
               topicPerf[topic].total++;
               const studentAnswer = answers[idx];
-              if (studentAnswer != null && studentAnswer === q.correct_index) {
+              if (studentAnswer?.is_correct) {
                 topicPerf[topic].correct++;
               }
             });
