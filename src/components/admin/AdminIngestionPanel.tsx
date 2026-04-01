@@ -65,7 +65,7 @@ const AdminIngestionPanel = () => {
   const [stats, setStats] = useState({ totalSources: 5, totalExtracted: 0, totalIndexed: 5, duplicatesRemoved: 0 });
   const [distribution, setDistribution] = useState<SpecialtyDist[]>([]);
   const [equalizing, setEqualizing] = useState(false);
-  const [eqPaused, setEqPaused] = useState(false);
+  const pauseRef = useRef(false);
   const [eqStartTime, setEqStartTime] = useState<number | null>(null);
   const [eqProgress, setEqProgress] = useState<{
     current: number; total: number; percent: number;
