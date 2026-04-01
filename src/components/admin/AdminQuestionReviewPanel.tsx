@@ -131,6 +131,7 @@ const AdminQuestionReviewPanel = () => {
                   <p className="text-xs font-medium line-clamp-2">{q.statement.slice(0, 200)}...</p>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                     <Badge variant="secondary" className="text-[10px] h-4">{q.topic || "—"}</Badge>
+                    {(q as any).subtopic && <Badge variant="outline" className="text-[10px] h-4 border-primary/30 text-primary">{(q as any).subtopic}</Badge>}
                     <Badge variant="outline" className="text-[10px] h-4">{q.source || "—"}</Badge>
                     <span className="text-[10px] text-muted-foreground">{q.options.length} alt</span>
                   </div>

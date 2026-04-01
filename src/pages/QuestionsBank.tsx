@@ -502,7 +502,7 @@ const QuestionsBank = () => {
           />
         </div>
         {topics.length > 0 && (
-          <Select value={topicFilter} onValueChange={setTopicFilter}>
+          <Select value={topicFilter} onValueChange={(v) => { setTopicFilter(v); setSubtopicFilter("all"); }}>
             <SelectTrigger className="w-[180px] bg-secondary">
               <SelectValue placeholder="Tópico" />
             </SelectTrigger>
@@ -510,6 +510,19 @@ const QuestionsBank = () => {
               <SelectItem value="all">Todos os tópicos</SelectItem>
               {topics.map((t) => (
                 <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {subtopics.length > 0 && (
+          <Select value={subtopicFilter} onValueChange={setSubtopicFilter}>
+            <SelectTrigger className="w-[180px] bg-secondary">
+              <SelectValue placeholder="Subtema" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os subtemas</SelectItem>
+              {subtopics.map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
               ))}
             </SelectContent>
           </Select>
