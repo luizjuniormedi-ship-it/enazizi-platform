@@ -288,12 +288,16 @@ const AdminIngestionPanel = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                   {deficitCount} especialidades abaixo do alvo • Déficit total: <span className="font-bold text-red-500">{totalDeficit}</span> questões
                 </p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">
                   Alvo: {TARGET_CLINICAL} (clínicas) / {TARGET_BASIC} (básicas). Prioriza questões reais antes de gerar por IA.
                 </p>
+                <Badge className="mt-1 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-[10px] gap-1">
+                  <CheckCircle2 className="h-2.5 w-2.5" />
+                  Equalização automática ativa — executa diariamente às 3h
+                </Badge>
               </div>
               <div className="flex gap-1">
                 {equalizing && (
