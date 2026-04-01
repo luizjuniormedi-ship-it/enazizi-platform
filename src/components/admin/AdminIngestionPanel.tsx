@@ -62,7 +62,7 @@ const AdminIngestionPanel = () => {
   const [navLoading, setNavLoading] = useState(false);
   const [logs, setLogs] = useState<any[]>([]);
   const [discoveredSources, setDiscoveredSources] = useState<any[]>([]);
-  const [stats, setStats] = useState({ totalSources: 5, totalExtracted: 0, totalIndexed: 5, duplicatesRemoved: 0 });
+  const [stats, setStats] = useState({ totalQuestions: 0, uniqueQuestions: 0, duplicates: 0, specialtiesCount: 0 });
   const [distribution, setDistribution] = useState<SpecialtyDist[]>([]);
   const [loadingDistribution, setLoadingDistribution] = useState(false);
   const [equalizing, setEqualizing] = useState(false);
