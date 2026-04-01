@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { usePendingProficiency } from "@/hooks/usePendingProficiency";
 
 interface SimuladoResult {
   id: string;
@@ -48,6 +49,7 @@ type Phase = "list" | "quiz" | "result";
 const StudentSimulados = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { markVisited } = usePendingProficiency();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -126,8 +128,9 @@ const StudentSimulados = () => {
   }, [user, toast]);
 
   useEffect(() => {
+    markVisited();
     loadAssigned();
-  }, [loadAssigned]);
+  }, [loadAssigned, markVisited]);
 
   // Load clinical cases
   const loadClinicalCases = useCallback(async () => {
