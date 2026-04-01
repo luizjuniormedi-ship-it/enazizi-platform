@@ -92,6 +92,7 @@ export function isProfileComplete(data: {
   if (!nameCheck.valid || !phoneCheck.valid) return false;
   if (isStudent && (!data.periodo || !data.faculdade)) return false;
   if (isProfessor && !data.faculdade) return false;
+  if (data.faculdade && !FACULDADES.includes(data.faculdade)) return false;
 
   return true;
 }
