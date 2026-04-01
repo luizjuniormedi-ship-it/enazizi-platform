@@ -178,22 +178,46 @@ FORMATO JSON OBRIGATÓRIO:
 
     let qCount = 0;
     if (questions.length > 0) {
-      const rows = questions.map((q: any) => ({
-        user_id: userId,
-        statement: String(q.statement).trim(),
-        options: q.options.map(String),
-        correct_index: q.correct_index,
-        explanation: String(q.explanation || "").trim(),
-        topic: String(q.topic || specialty).trim(),
-        difficulty: q.difficulty || 3,
-        source: "bulk-ai-generated",
-        is_global: true,
-        review_status: "pending",
-      }));
+      // Dedup: fetch existing hashes for this specialty
+      const { data: existing } = await supabaseAdmin
+        .from("questions_bank")
+        .select("statement")
+        .eq("is_global", true)
+        .eq("topic", specialty);
+      
+      const existingHashes = new Set(
+        (existing || []).map((e: any) => {
+          const s = String(e.statement).toLowerCase().trim().slice(0, 80);
+          return s;
+        })
+      );
 
-      const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
-      if (!error) qCount = rows.length;
-      else console.error("Q insert error:", error);
+      const rows = questions
+        .map((q: any) => ({
+          user_id: userId,
+          statement: String(q.statement).trim(),
+          options: q.options.map(String),
+          correct_index: q.correct_index,
+          explanation: String(q.explanation || "").trim(),
+          topic: String(q.topic || specialty).trim(),
+          difficulty: q.difficulty || 3,
+          source: "bulk-ai-generated",
+          is_global: true,
+          review_status: "pending",
+        }))
+        .filter((r: any) => {
+          const hash = r.statement.toLowerCase().trim().slice(0, 80);
+          if (existingHashes.has(hash)) return false;
+          existingHashes.add(hash); // prevent intra-batch dupes
+          return true;
+        });
+
+      if (rows.length > 0) {
+        const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
+        if (!error) qCount = rows.length;
+        else console.error("Q insert error:", error);
+      }
+      console.log(`[${specialty}] ${questions.length} generated, ${questions.length - rows.length} deduped, ${qCount} inserted`);
     }
 
     const flashcards = (parsed.flashcards || []).filter((f: any) => f.question && f.answer && !INVALID_CONTENT_REGEX.test(f.question) && !INVALID_CONTENT_REGEX.test(f.answer));
