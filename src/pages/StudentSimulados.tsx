@@ -65,6 +65,11 @@ const StudentSimulados = () => {
   const [studyAssignments, setStudyAssignments] = useState<any[]>([]);
   const [assignmentsLoading, setAssignmentsLoading] = useState(true);
 
+  // Video rooms
+  const [videoRooms, setVideoRooms] = useState<any[]>([]);
+  const [videoLoading, setVideoLoading] = useState(true);
+  const [assignmentsLoading, setAssignmentsLoading] = useState(true);
+
   // Quiz state
   const [current, setCurrent] = useState<AssignedSimulado | null>(null);
   const [questionIndex, setQuestionIndex] = useState(0);
