@@ -795,6 +795,123 @@ const StudentSimulados = () => {
               </div>
             )}
           </TabsContent>
+
+          {/* Error Bank Tab */}
+          <TabsContent value="erros" className="space-y-4 mt-4">
+            {errorBankLoading ? (
+              <div className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div>
+            ) : errorBankItems.length === 0 ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <Target className="h-12 w-12 text-emerald-500/30 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Nenhum erro registrado! 🎉</h3>
+                  <p className="text-sm text-muted-foreground">Continue praticando — quando errar questões nos simulados do professor, elas aparecerão aqui para revisão.</p>
+                </CardContent>
+              </Card>
+            ) : (() => {
+              // Group errors by tema
+              const grouped: Record<string, { items: typeof errorBankItems; totalErrors: number }> = {};
+              errorBankItems.forEach((err) => {
+                const key = err.tema || "Geral";
+                if (!grouped[key]) grouped[key] = { items: [], totalErrors: 0 };
+                grouped[key].items.push(err);
+                grouped[key].totalErrors += err.vezes_errado || 1;
+              });
+              const sortedTopics = Object.entries(grouped).sort((a, b) => b[1].totalErrors - a[1].totalErrors);
+
+              return (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      {errorBankItems.length} erro{errorBankItems.length > 1 ? "s" : ""} em {sortedTopics.length} tema{sortedTopics.length > 1 ? "s" : ""} — revise com o Tutor IA para dominar.
+                    </p>
+                  </div>
+
+                  {sortedTopics.map(([topic, data]) => {
+                    const isExpanded = expandedErrorTopic === topic;
+                    const severity = data.totalErrors >= 3 ? "destructive" : data.totalErrors >= 2 ? "secondary" : "outline";
+
+                    return (
+                      <Card key={topic} className={`border ${data.totalErrors >= 3 ? "border-destructive/40" : data.totalErrors >= 2 ? "border-amber-500/40" : "border-border"}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <button
+                              className="flex items-center gap-2 text-left flex-1"
+                              onClick={() => setExpandedErrorTopic(isExpanded ? null : topic)}
+                            >
+                              <XCircle className={`h-4 w-4 shrink-0 ${data.totalErrors >= 3 ? "text-destructive" : "text-amber-500"}`} />
+                              <div>
+                                <span className="font-semibold text-sm">{topic}</span>
+                                {data.items[0]?.subtema && (
+                                  <span className="text-xs text-muted-foreground ml-2">• {data.items[0].subtema}</span>
+                                )}
+                              </div>
+                              <Badge variant={severity as any} className="text-[10px] ml-2">
+                                {data.totalErrors} erro{data.totalErrors > 1 ? "s" : ""}
+                              </Badge>
+                            </button>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1.5 text-xs"
+                                onClick={() => {
+                                  const errDetails = data.items.map((e, i) =>
+                                    `❌ ${e.conteudo?.slice(0, 150) || "Questão sem enunciado"}${e.motivo_erro ? `\n   ${e.motivo_erro}` : ""}`
+                                  ).join("\n\n");
+                                  const msg = `Preciso revisar "${topic}" — errei ${data.totalErrors} vez(es) em simulados do professor.\n\n${errDetails}\n\nMe explique cada conceito detalhadamente e me ajude a não errar novamente.`;
+                                  navigate("/dashboard/chatgpt", { state: { fromSimulado: true, initialMessage: msg } });
+                                }}
+                              >
+                                <Sparkles className="h-3 w-3" />
+                                Revisar com Tutor IA
+                              </Button>
+                            </div>
+                          </div>
+
+                          {isExpanded && (
+                            <div className="mt-3 space-y-2 border-t pt-3">
+                              {data.items.map((err) => (
+                                <div key={err.id} className="p-3 rounded-lg bg-secondary/50 text-sm space-y-1">
+                                  {err.conteudo && (
+                                    <p className="text-xs">{err.conteudo}</p>
+                                  )}
+                                  {err.motivo_erro && (
+                                    <p className="text-xs text-destructive">{err.motivo_erro}</p>
+                                  )}
+                                  <div className="flex items-center justify-between mt-2">
+                                    <span className="text-[10px] text-muted-foreground">
+                                      Errou {err.vezes_errado}x • {new Date(err.updated_at).toLocaleDateString("pt-BR")}
+                                    </span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 text-[10px] gap-1 text-emerald-600"
+                                      onClick={async () => {
+                                        await supabase
+                                          .from("error_bank")
+                                          .update({ dominado: true, dominado_em: new Date().toISOString() })
+                                          .eq("id", err.id);
+                                        setErrorBankItems((prev) => prev.filter((e) => e.id !== err.id));
+                                        toast({ title: "Marcado como dominado! ✓" });
+                                      }}
+                                    >
+                                      <CheckCheck className="h-3 w-3" />
+                                      Dominado
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </TabsContent>
         </Tabs>
       </div>
     );
