@@ -117,7 +117,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           title: title || "Simulado",
           description,
           topics: topics || [],
-          faculdade_filter: faculdade_filter || null,
+          faculdade_filter: faculdade_filter || professorFaculdade || null,
           periodo_filter: periodo_filter || null,
           total_questions: total_questions || questions_json?.length || 10,
           time_limit_minutes: time_limit_minutes || 60,
