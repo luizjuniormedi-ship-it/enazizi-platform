@@ -81,21 +81,36 @@ const AdminIngestionPanel = () => {
   }, []);
 
   const loadDistribution = async () => {
-    const { data } = await supabase.from("questions_bank" as any)
-      .select("topic")
-      .eq("is_global", true);
-    if (!data) return;
-    const counts: Record<string, number> = {};
-    (data as any[]).forEach((r: any) => { const t = r.topic || "Outros"; counts[t] = (counts[t] || 0) + 1; });
-    
-    const dist: SpecialtyDist[] = UNIQUE_SPECIALTIES.map(name => {
-      const count = counts[name] || 0;
-      const target = getTarget(name);
-      const deficit = Math.max(0, target - count);
-      const pct = Math.min(100, Math.round((count / target) * 100));
-      return { name, count, target, deficit, pct };
-    }).sort((a, b) => a.pct - b.pct);
-    setDistribution(dist);
+    setLoadingDistribution(true);
+    try {
+      const PAGE = 1000;
+      let from = 0;
+      const allTopics: string[] = [];
+      while (true) {
+        const { data, error } = await supabase.from("questions_bank" as any)
+          .select("topic")
+          .eq("is_global", true)
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        if (!data || (data as any[]).length === 0) break;
+        allTopics.push(...(data as any[]).map((r: any) => r.topic || "Outros"));
+        if ((data as any[]).length < PAGE) break;
+        from += PAGE;
+      }
+      const counts: Record<string, number> = {};
+      allTopics.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
+
+      const dist: SpecialtyDist[] = UNIQUE_SPECIALTIES.map(name => {
+        const count = counts[name] || 0;
+        const target = getTarget(name);
+        const deficit = Math.max(0, target - count);
+        const pct = Math.min(100, Math.round((count / target) * 100));
+        return { name, count, target, deficit, pct };
+      }).sort((a, b) => a.pct - b.pct);
+      setDistribution(dist);
+    } finally {
+      setLoadingDistribution(false);
+    }
   };
 
   const loadSources = async () => {
