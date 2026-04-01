@@ -65,6 +65,11 @@ const AdminIngestionPanel = () => {
   const [stats, setStats] = useState({ totalSources: 5, totalExtracted: 0, totalIndexed: 5, duplicatesRemoved: 0 });
   const [distribution, setDistribution] = useState<SpecialtyDist[]>([]);
   const [equalizing, setEqualizing] = useState(false);
+  const [eqProgress, setEqProgress] = useState<{
+    current: number; total: number; percent: number;
+    currentSpecialty: string; log: { specialty: string; added: number }[];
+    questionsRemaining: number;
+  } | null>(null);
 
   useEffect(() => {
     loadLogs();
@@ -187,22 +192,42 @@ const AdminIngestionPanel = () => {
   const handleEqualize = async () => {
     if (!session) return;
     setEqualizing(true);
+    const deficitSpecialties = distribution.filter(d => d.deficit > 0);
+    const total = deficitSpecialties.length;
+    const log: { specialty: string; added: number }[] = [];
+    const totalQRemaining = deficitSpecialties.reduce((s, d) => s + d.deficit, 0);
+    setEqProgress({ current: 0, total, percent: 0, currentSpecialty: deficitSpecialties[0]?.name || "", log, questionsRemaining: totalQRemaining });
+
     try {
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ equalize: true }),
-      });
-      const data = await resp.json();
-      if (data?.error) throw new Error(data.error);
-      toast({
-        title: "Equalização concluída",
-        description: `${data.total_imported || 0} importadas + ${data.total_generated || 0} geradas. ${data.batches_remaining || 0} especialidades restantes.`,
-      });
+      for (let i = 0; i < total; i++) {
+        const spec = deficitSpecialties[i];
+        setEqProgress(prev => prev ? { ...prev, current: i + 1, percent: Math.round(((i) / total) * 100), currentSpecialty: spec.name } : prev);
+
+        try {
+          const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ equalize: true, specialty: spec.name, maxSpecialties: 1, batchSize: 10 }),
+          });
+          const data = await resp.json();
+          const added = (data?.total_imported || 0) + (data?.total_generated || 0);
+          log.push({ specialty: spec.name, added });
+          const remaining = totalQRemaining - log.reduce((s, l) => s + l.added, 0);
+          setEqProgress(prev => prev ? { ...prev, percent: Math.round(((i + 1) / total) * 100), log: [...log], questionsRemaining: Math.max(0, remaining) } : prev);
+        } catch {
+          log.push({ specialty: spec.name, added: 0 });
+        }
+      }
+
+      const totalAdded = log.reduce((s, l) => s + l.added, 0);
+      toast({ title: "Equalização concluída", description: `${totalAdded} questões adicionadas em ${total} especialidades.` });
       loadDistribution();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
-    } finally { setEqualizing(false); }
+    } finally {
+      setEqualizing(false);
+      setEqProgress(null);
+    }
   };
 
   const totalDeficit = distribution.reduce((s, d) => s + d.deficit, 0);
@@ -256,6 +281,31 @@ const AdminIngestionPanel = () => {
                 {equalizing ? <><Loader2 className="h-3 w-3 animate-spin mr-1" />Equalizando...</> : <><BarChart3 className="h-3 w-3 mr-1" />Equalizar Banco</>}
               </Button>
             </div>
+
+            {eqProgress && (
+              <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium">
+                    {eqProgress.current}/{eqProgress.total} — {eqProgress.currentSpecialty}
+                  </span>
+                  <Badge variant="outline" className="text-[10px]">{eqProgress.percent}%</Badge>
+                </div>
+                <Progress value={eqProgress.percent} className="h-2" />
+                <p className="text-[10px] text-muted-foreground">
+                  ~{eqProgress.questionsRemaining} questões restantes
+                </p>
+                {eqProgress.log.length > 0 && (
+                  <div className="max-h-[120px] overflow-y-auto space-y-0.5">
+                    {eqProgress.log.map((l, i) => (
+                      <div key={i} className="text-[10px] flex justify-between">
+                        <span>{l.specialty}</span>
+                        <span className="font-medium text-emerald-600">+{l.added}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="space-y-1 max-h-[400px] overflow-y-auto">
               {distribution.map(d => {

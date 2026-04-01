@@ -1293,6 +1293,54 @@ export type Database = {
           },
         ]
       }
+      generation_jobs: {
+        Row: {
+          created_at: string
+          id: string
+          job_type: string
+          last_error: string | null
+          processed_batches: number
+          processed_specialties: Json
+          progress_pct: number
+          remaining_specialties: Json
+          result_json: Json
+          started_by: string | null
+          status: string
+          total_batches: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_type?: string
+          last_error?: string | null
+          processed_batches?: number
+          processed_specialties?: Json
+          progress_pct?: number
+          remaining_specialties?: Json
+          result_json?: Json
+          started_by?: string | null
+          status?: string
+          total_batches?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_type?: string
+          last_error?: string | null
+          processed_batches?: number
+          processed_specialties?: Json
+          progress_pct?: number
+          remaining_specialties?: Json
+          result_json?: Json
+          started_by?: string | null
+          status?: string
+          total_batches?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ingestion_log: {
         Row: {
           banca: string | null
