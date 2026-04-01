@@ -282,6 +282,31 @@ const AdminIngestionPanel = () => {
               </Button>
             </div>
 
+            {eqProgress && (
+              <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium">
+                    {eqProgress.current}/{eqProgress.total} — {eqProgress.currentSpecialty}
+                  </span>
+                  <Badge variant="outline" className="text-[10px]">{eqProgress.percent}%</Badge>
+                </div>
+                <Progress value={eqProgress.percent} className="h-2" />
+                <p className="text-[10px] text-muted-foreground">
+                  ~{eqProgress.questionsRemaining} questões restantes
+                </p>
+                {eqProgress.log.length > 0 && (
+                  <div className="max-h-[120px] overflow-y-auto space-y-0.5">
+                    {eqProgress.log.map((l, i) => (
+                      <div key={i} className="text-[10px] flex justify-between">
+                        <span>{l.specialty}</span>
+                        <span className="font-medium text-emerald-600">+{l.added}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="space-y-1 max-h-[400px] overflow-y-auto">
               {distribution.map(d => {
                 const color = d.pct >= 80 ? "text-emerald-500" : d.pct >= 40 ? "text-amber-500" : "text-red-500";
