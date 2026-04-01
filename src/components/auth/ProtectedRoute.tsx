@@ -142,6 +142,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       }
       if (isProfessor) {
         updateData.faculdade = formFaculdade;
+        updateData.status = "active"; // Auto-activate professors
         // Insert professor role
         await supabase.from("user_roles").upsert(
           { user_id: user.id, role: "professor" as any },
