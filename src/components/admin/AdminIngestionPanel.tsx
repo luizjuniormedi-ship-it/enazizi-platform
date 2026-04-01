@@ -305,6 +305,7 @@ const AdminIngestionPanel = () => {
                   {equalizing ? <><Loader2 className="h-3 w-3 animate-spin mr-1" />Equalizando...</> : <><BarChart3 className="h-3 w-3 mr-1" />Equalizar Banco</>}
                 </Button>
               </div>
+            </div>
 
             {eqProgress && (
               <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
@@ -312,7 +313,10 @@ const AdminIngestionPanel = () => {
                   <span className="text-xs font-medium">
                     {eqProgress.current}/{eqProgress.total} — {eqProgress.currentSpecialty}
                   </span>
-                  <Badge variant="outline" className="text-[10px]">{eqProgress.percent}%</Badge>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground">ETA: {eqProgress.eta}</span>
+                    <Badge variant="outline" className="text-[10px]">{eqProgress.percent}%</Badge>
+                  </div>
                 </div>
                 <Progress value={eqProgress.percent} className="h-2" />
                 <p className="text-[10px] text-muted-foreground">
