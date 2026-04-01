@@ -987,6 +987,60 @@ const StudentSimulados = () => {
           </CardContent>
         </Card>
 
+        {/* Error bank by topic */}
+        {(() => {
+          const errorsByTopic: Record<string, { count: number; questions: { statement: string; selected: string; correct: string }[] }> = {};
+          details.forEach((d, idx) => {
+            if (d.is_correct) return;
+            const t = d.topic || "Geral";
+            const q = questions[d.question_index ?? idx];
+            if (!errorsByTopic[t]) errorsByTopic[t] = { count: 0, questions: [] };
+            errorsByTopic[t].count++;
+            errorsByTopic[t].questions.push({
+              statement: q?.statement?.slice(0, 150) || "",
+              selected: q?.options?.[d.selected] || "Não respondida",
+              correct: q?.options?.[d.correct_index ?? q?.correct_index] || "",
+            });
+          });
+          const topics = Object.entries(errorsByTopic);
+          if (topics.length === 0) return null;
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                  Banco de Erros do Simulado
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-xs text-muted-foreground">Revise cada tema com o Tutor IA para consolidar o aprendizado.</p>
+                {topics.map(([topic, data]) => (
+                  <div key={topic} className="p-3 rounded-lg border border-destructive/20 bg-destructive/5">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <span className="text-sm font-semibold">{topic}</span>
+                        <Badge variant="destructive" className="ml-2 text-[10px]">{data.count} erro{data.count > 1 ? "s" : ""}</Badge>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-xs"
+                        onClick={() => {
+                          const msg = `Preciso revisar "${topic}" — errei ${data.count} questão(ões) no simulado "${current.simulado.title}".\n\n${data.questions.map((q, i) => `❌ Q${i+1}: ${q.statement}...\nMarquei: "${q.selected}" — Correta: "${q.correct}"`).join("\n\n")}\n\nMe explique cada erro detalhadamente.`;
+                          navigate("/dashboard/chatgpt", { state: { fromSimulado: true, initialMessage: msg } });
+                        }}
+                      >
+                        <Sparkles className="h-3 w-3" />
+                        Revisar com Tutor IA
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          );
+        })()}
+
         <div className="flex flex-col items-center gap-3">
           {details.some(d => !d.is_correct) && (
             <Button
