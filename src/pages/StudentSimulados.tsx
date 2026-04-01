@@ -665,6 +665,78 @@ const StudentSimulados = () => {
               </>
             )}
           </TabsContent>
+
+          <TabsContent value="sala" className="space-y-4 mt-4">
+            {videoLoading ? (
+              <div className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div>
+            ) : videoRooms.length === 0 ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <Video className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Nenhuma sala de aula</h3>
+                  <p className="text-sm text-muted-foreground">Quando seu professor iniciar uma aula ao vivo, ela aparecerá aqui.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {videoRooms.filter((r: any) => r.status === "active").length > 0 && (
+                  <div className="space-y-3">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                      <Video className="h-5 w-5 text-primary" />
+                      Ao Vivo
+                    </h2>
+                    {videoRooms.filter((r: any) => r.status === "active").map((room: any) => (
+                      <Card key={room.id} className="border-primary/30 hover:border-primary/60 transition-colors">
+                        <CardContent className="p-4 flex items-center justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <Video className="h-4 w-4 text-primary" />
+                              <h3 className="font-semibold">{room.title || "Sala de Aula"}</h3>
+                              <Badge className="bg-primary text-primary-foreground text-[10px] animate-pulse">AO VIVO</Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Código: {room.room_code} • Iniciado {new Date(room.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                            </p>
+                          </div>
+                          <Button
+                            onClick={() => {
+                              const meetUrl = `https://meet.jit.si/${room.room_code}`;
+                              window.open(meetUrl, "_blank");
+                            }}
+                            className="gap-2 shrink-0"
+                          >
+                            <Play className="h-4 w-4" /> Entrar
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {videoRooms.filter((r: any) => r.status === "ended").length > 0 && (
+                  <div className="space-y-3">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-muted-foreground" />
+                      Encerradas
+                    </h2>
+                    {videoRooms.filter((r: any) => r.status === "ended").map((room: any) => (
+                      <Card key={room.id}>
+                        <CardContent className="p-4 flex items-center justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-muted-foreground">{room.title || "Sala de Aula"}</h3>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {new Date(room.created_at).toLocaleDateString("pt-BR")} • {room.ended_at ? new Date(room.ended_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : ""}
+                            </p>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">Encerrada</Badge>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
     );
