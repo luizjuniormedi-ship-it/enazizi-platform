@@ -363,9 +363,9 @@ serve(async (req) => {
       const requestedSpecialties = typeof body.specialty === "string" && body.specialty.trim()
         ? [String(body.specialty).trim()]
         : SPECIALTIES;
-      const requestedBatchSize = Math.max(1, Math.min(Number(body.batchSize) || 5, 10));
+      const requestedBatchSize = Math.max(1, Math.min(Number(body.batchSize) || 25, 30));
       const requestedMaxSpecialties = Math.max(1, Math.min(Number(body.maxSpecialties) || 5, 5));
-      const requestedImportLimit = Math.max(1, Math.min(Number(body.importLimit) || 25, 50));
+      const requestedImportLimit = Math.max(1, Math.min(Number(body.importLimit) || 50, 100));
 
       const deficits = await buildDeficits(supabaseAdmin, requestedSpecialties);
       const toProcess = deficits.slice(0, body.specialty ? 1 : requestedMaxSpecialties);

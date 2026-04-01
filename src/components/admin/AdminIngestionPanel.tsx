@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Database, Globe, FileText, CheckCircle2, Loader2, ExternalLink, Search, Link2, BarChart3, Scale } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Database, Globe, FileText, CheckCircle2, Loader2, ExternalLink, Search, Link2, BarChart3, Scale, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -65,10 +65,12 @@ const AdminIngestionPanel = () => {
   const [stats, setStats] = useState({ totalSources: 5, totalExtracted: 0, totalIndexed: 5, duplicatesRemoved: 0 });
   const [distribution, setDistribution] = useState<SpecialtyDist[]>([]);
   const [equalizing, setEqualizing] = useState(false);
+  const pauseRef = useRef(false);
+  const [eqStartTime, setEqStartTime] = useState<number | null>(null);
   const [eqProgress, setEqProgress] = useState<{
     current: number; total: number; percent: number;
     currentSpecialty: string; log: { specialty: string; added: number }[];
-    questionsRemaining: number;
+    questionsRemaining: number; eta: string;
   } | null>(null);
 
   useEffect(() => {
@@ -192,40 +194,56 @@ const AdminIngestionPanel = () => {
   const handleEqualize = async () => {
     if (!session) return;
     setEqualizing(true);
+    pauseRef.current = false;
     const deficitSpecialties = distribution.filter(d => d.deficit > 0);
     const total = deficitSpecialties.length;
     const log: { specialty: string; added: number }[] = [];
     const totalQRemaining = deficitSpecialties.reduce((s, d) => s + d.deficit, 0);
-    setEqProgress({ current: 0, total, percent: 0, currentSpecialty: deficitSpecialties[0]?.name || "", log, questionsRemaining: totalQRemaining });
+    const startTime = Date.now();
+    setEqStartTime(startTime);
+    setEqProgress({ current: 0, total, percent: 0, currentSpecialty: deficitSpecialties[0]?.name || "", log, questionsRemaining: totalQRemaining, eta: "calculando..." });
 
     try {
       for (let i = 0; i < total; i++) {
+        if (pauseRef.current) {
+          toast({ title: "Equalização pausada", description: `${log.reduce((s, l) => s + l.added, 0)} questões adicionadas até agora.` });
+          break;
+        }
+
         const spec = deficitSpecialties[i];
-        setEqProgress(prev => prev ? { ...prev, current: i + 1, percent: Math.round(((i) / total) * 100), currentSpecialty: spec.name } : prev);
+        const elapsed = (Date.now() - startTime) / 1000;
+        const avgPerSpec = i > 0 ? elapsed / i : 30;
+        const remaining = (total - i) * avgPerSpec;
+        const etaMin = Math.ceil(remaining / 60);
+        const etaStr = etaMin > 1 ? `~${etaMin} min` : "< 1 min";
+
+        setEqProgress(prev => prev ? { ...prev, current: i + 1, percent: Math.round(((i) / total) * 100), currentSpecialty: spec.name, eta: etaStr } : prev);
 
         try {
           const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-            body: JSON.stringify({ equalize: true, specialty: spec.name, maxSpecialties: 1, batchSize: 10 }),
+            body: JSON.stringify({ equalize: true, specialty: spec.name, maxSpecialties: 1, batchSize: 25, importLimit: 50 }),
           });
           const data = await resp.json();
           const added = (data?.total_imported || 0) + (data?.total_generated || 0);
           log.push({ specialty: spec.name, added });
-          const remaining = totalQRemaining - log.reduce((s, l) => s + l.added, 0);
-          setEqProgress(prev => prev ? { ...prev, percent: Math.round(((i + 1) / total) * 100), log: [...log], questionsRemaining: Math.max(0, remaining) } : prev);
+          const qRemaining = totalQRemaining - log.reduce((s, l) => s + l.added, 0);
+          setEqProgress(prev => prev ? { ...prev, percent: Math.round(((i + 1) / total) * 100), log: [...log], questionsRemaining: Math.max(0, qRemaining) } : prev);
         } catch {
           log.push({ specialty: spec.name, added: 0 });
         }
       }
 
       const totalAdded = log.reduce((s, l) => s + l.added, 0);
-      toast({ title: "Equalização concluída", description: `${totalAdded} questões adicionadas em ${total} especialidades.` });
+      toast({ title: "Equalização concluída", description: `${totalAdded} questões adicionadas em ${log.length} especialidades.` });
       loadDistribution();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
     } finally {
       setEqualizing(false);
+      pauseRef.current = false;
+      setEqStartTime(null);
       setEqProgress(null);
     }
   };
@@ -277,9 +295,16 @@ const AdminIngestionPanel = () => {
                   Alvo: {TARGET_CLINICAL} (clínicas) / {TARGET_BASIC} (básicas). Prioriza questões reais antes de gerar por IA.
                 </p>
               </div>
-              <Button size="sm" className="h-8 text-xs" disabled={equalizing || totalDeficit === 0} onClick={handleEqualize}>
-                {equalizing ? <><Loader2 className="h-3 w-3 animate-spin mr-1" />Equalizando...</> : <><BarChart3 className="h-3 w-3 mr-1" />Equalizar Banco</>}
-              </Button>
+              <div className="flex gap-1">
+                {equalizing && (
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => { pauseRef.current = true; }}>
+                    <Pause className="h-3 w-3 mr-1" />Pausar
+                  </Button>
+                )}
+                <Button size="sm" className="h-8 text-xs" disabled={equalizing || totalDeficit === 0} onClick={handleEqualize}>
+                  {equalizing ? <><Loader2 className="h-3 w-3 animate-spin mr-1" />Equalizando...</> : <><BarChart3 className="h-3 w-3 mr-1" />Equalizar Banco</>}
+                </Button>
+              </div>
             </div>
 
             {eqProgress && (
@@ -288,7 +313,10 @@ const AdminIngestionPanel = () => {
                   <span className="text-xs font-medium">
                     {eqProgress.current}/{eqProgress.total} — {eqProgress.currentSpecialty}
                   </span>
-                  <Badge variant="outline" className="text-[10px]">{eqProgress.percent}%</Badge>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground">ETA: {eqProgress.eta}</span>
+                    <Badge variant="outline" className="text-[10px]">{eqProgress.percent}%</Badge>
+                  </div>
                 </div>
                 <Progress value={eqProgress.percent} className="h-2" />
                 <p className="text-[10px] text-muted-foreground">
