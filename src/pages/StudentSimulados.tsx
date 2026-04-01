@@ -49,6 +49,7 @@ type Phase = "list" | "quiz" | "result";
 const StudentSimulados = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { markVisited } = usePendingProficiency();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
