@@ -106,7 +106,9 @@ const StudentSimulados = () => {
       const { data: simulados, error: sErr } = await supabase
         .from("teacher_simulados")
         .select("*")
-        .in("id", simIds);
+        .in("id", simIds)
+        .in("status", ["published"]);
+
 
       if (sErr) throw sErr;
 

@@ -80,3 +80,6 @@ verify_jwt = false
 
 [functions.bulk-generate-content]
 verify_jwt = false
+
+[functions.auto-assign-simulados]
+verify_jwt = false

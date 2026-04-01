@@ -2824,6 +2824,7 @@ export type Database = {
       }
       teacher_simulados: {
         Row: {
+          auto_assign: boolean | null
           created_at: string
           description: string | null
           faculdade_filter: string | null
@@ -2831,6 +2832,7 @@ export type Database = {
           periodo_filter: number | null
           professor_id: string
           questions_json: Json
+          scheduled_at: string | null
           status: string
           time_limit_minutes: number
           title: string
@@ -2839,6 +2841,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_assign?: boolean | null
           created_at?: string
           description?: string | null
           faculdade_filter?: string | null
@@ -2846,6 +2849,7 @@ export type Database = {
           periodo_filter?: number | null
           professor_id: string
           questions_json?: Json
+          scheduled_at?: string | null
           status?: string
           time_limit_minutes?: number
           title?: string
@@ -2854,6 +2858,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_assign?: boolean | null
           created_at?: string
           description?: string | null
           faculdade_filter?: string | null
@@ -2861,6 +2866,7 @@ export type Database = {
           periodo_filter?: number | null
           professor_id?: string
           questions_json?: Json
+          scheduled_at?: string | null
           status?: string
           time_limit_minutes?: number
           title?: string

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { GraduationCap, Plus, Users, FileText, BarChart3, Loader2, Clock, CheckCircle, Send, Sparkles, Database, ChevronDown, ChevronUp, Eye, Trash2, PenLine, CheckSquare, Square, Video, Gauge } from "lucide-react";
+import { GraduationCap, Plus, Users, FileText, BarChart3, Loader2, Clock, CheckCircle, Send, Sparkles, Database, ChevronDown, ChevronUp, Eye, Trash2, PenLine, CheckSquare, Square, Video, Gauge, CalendarClock, ToggleLeft, Timer } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,6 +51,8 @@ const ProfessorDashboard = () => {
   const [questionMode, setQuestionMode] = useState<"ai" | "manual">("ai");
   const [difficulty, setDifficulty] = useState("intermediario");
   const [difficultyMix, setDifficultyMix] = useState({ facil: 20, intermediario: 50, dificil: 30 });
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [autoAssign, setAutoAssign] = useState(true);
 
   // Manual question form
   const [manualStatement, setManualStatement] = useState("");
@@ -182,6 +185,8 @@ const ProfessorDashboard = () => {
         time_limit_minutes: parseInt(timeLimit),
         questions_json: questions,
         student_ids: selectedStudentIds.length > 0 ? selectedStudentIds : null,
+        scheduled_at: scheduledAt || null,
+        auto_assign: autoAssign,
       });
       toast({ title: "Simulado criado!", description: `Atribuído a ${res.students_assigned} aluno(s).` });
       setShowCreate(false);
@@ -231,6 +236,8 @@ const ProfessorDashboard = () => {
     setQuestionMode("ai");
     setDifficulty("intermediario");
     setDifficultyMix({ facil: 20, intermediario: 50, dificil: 30 });
+    setScheduledAt("");
+    setAutoAssign(true);
     setManualStatement("");
     setManualOptions(["", "", "", "", ""]);
     setManualCorrect("0");
@@ -362,10 +369,27 @@ const ProfessorDashboard = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold truncate">{sim.title}</h3>
-                      <Badge variant={sim.status === "published" ? "default" : "secondary"} className="text-[10px]">
-                        {sim.status === "published" ? "Publicado" : "Rascunho"}
+                      <Badge variant={sim.status === "published" ? "default" : sim.status === "scheduled" ? "outline" : "secondary"} className={`text-[10px] ${sim.status === "scheduled" ? "border-amber-400 text-amber-600" : ""}`}>
+                        {sim.status === "published" ? "Publicado" : sim.status === "scheduled" ? "⏰ Agendado" : "Rascunho"}
                       </Badge>
+                      {sim.auto_assign && <Badge variant="outline" className="text-[9px] border-blue-300 text-blue-600">Auto-atribuir</Badge>}
                     </div>
+                    {sim.scheduled_at && sim.status === "scheduled" && (() => {
+                      const target = new Date(sim.scheduled_at);
+                      const now = new Date();
+                      const diff = target.getTime() - now.getTime();
+                      if (diff <= 0) return <p className="text-[10px] text-emerald-600 font-medium">Publicação iminente...</p>;
+                      const hours = Math.floor(diff / 3600000);
+                      const mins = Math.floor((diff % 3600000) / 60000);
+                      const days = Math.floor(hours / 24);
+                      return (
+                        <p className="text-[10px] text-amber-600 flex items-center gap-1">
+                          <Timer className="h-3 w-3" />
+                          {days > 0 ? `${days}d ${hours % 24}h` : hours > 0 ? `${hours}h ${mins}min` : `${mins}min`} para publicação
+                          — {target.toLocaleDateString("pt-BR")} às {target.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      );
+                    })()}
                     {sim.description && <p className="text-sm text-muted-foreground line-clamp-1 mb-2">{sim.description}</p>}
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       {(sim.topics || []).slice(0, 3).map((t: string) => (
@@ -796,6 +820,36 @@ const ProfessorDashboard = () => {
             })()}
           </div>
 
+          {/* Scheduling */}
+          <div className="space-y-3 border border-border rounded-lg p-3 bg-muted/20">
+            <div className="flex items-center gap-2">
+              <CalendarClock className="h-4 w-4 text-primary" />
+              <Label className="text-sm font-semibold">Agendamento</Label>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Data e hora de publicação (deixe vazio para publicar agora)</Label>
+              <Input
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(e) => setScheduledAt(e.target.value)}
+                className="h-9"
+              />
+              {scheduledAt && (
+                <p className="text-[11px] text-amber-600 flex items-center gap-1">
+                  <Timer className="h-3 w-3" />
+                  O simulado ficará disponível em {new Date(scheduledAt).toLocaleDateString("pt-BR")} às {new Date(scheduledAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-xs font-medium">Auto-atribuir novos alunos</Label>
+                <p className="text-[10px] text-muted-foreground">Alunos que se cadastrarem depois serão incluídos automaticamente</p>
+              </div>
+              <Switch checked={autoAssign} onCheckedChange={setAutoAssign} />
+            </div>
+          </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }}>Cancelar</Button>
             <Button
@@ -804,7 +858,7 @@ const ProfessorDashboard = () => {
               className="gap-2"
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              {creating ? "Criando..." : "Criar e Atribuir"}
+              {creating ? "Criando..." : scheduledAt ? "Agendar e Atribuir" : "Criar e Atribuir"}
             </Button>
           </DialogFooter>
         </DialogContent>
