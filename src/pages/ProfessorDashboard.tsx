@@ -808,6 +808,10 @@ const ProfessorDashboard = () => {
         <TabsContent value="analytics" className="mt-4">
           <ClassAnalytics />
         </TabsContent>
+
+        <TabsContent value="bi" className="mt-4">
+          <ProfessorBIPanel callAPI={callAPI} />
+        </TabsContent>
       </Tabs>
     </div>
   );
