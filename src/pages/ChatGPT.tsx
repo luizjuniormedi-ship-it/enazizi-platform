@@ -462,6 +462,9 @@ const ChatGPT = () => {
           <TutorInputBar
             input={input} setInput={setInput} isLoading={isLoading}
             onSend={() => sendMessage(input)}
+            isListening={isListening}
+            hasSpeechRecognition={hasSpeechRecognition}
+            onToggleListening={toggleListening}
           />
         </>
       )}
