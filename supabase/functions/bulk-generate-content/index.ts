@@ -9,16 +9,26 @@ const corsHeaders = {
 
 const INVALID_CONTENT_REGEX = /(declara[cç][aã]o financeira|declara[cç][oõ]es de interesse|pagamento de qualquer esp[eé]cie|empresa farmac[eê]utica|ind[uú]stria farmac[eê]utica|honor[aá]rio|palestrante remunerado|conflito de interesse|relat[oó]rio de interesse)/i;
 
+const BASIC_SCIENCES = [
+  "Anatomia", "Bioquímica", "Embriologia", "Farmacologia", "Fisiologia",
+  "Genética Médica", "Histologia", "Imunologia", "Microbiologia",
+  "Parasitologia", "Patologia", "Semiologia",
+];
+
+const TARGET_CLINICAL = 250;
+const TARGET_BASIC = 150;
+
 const SPECIALTIES = [
   "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia",
   "Gastroenterologia", "Pediatria", "Ginecologia e Obstetrícia",
-  "Cirurgia Geral", "Medicina Preventiva", "Nefrologia",
+  "Cirurgia", "Medicina Preventiva", "Nefrologia",
   "Infectologia", "Hematologia", "Reumatologia", "Dermatologia",
   "Ortopedia", "Urologia", "Psiquiatria", "Oftalmologia",
-  "Otorrinolaringologia", "Emergência", "Semiologia", "Anatomia", "Farmacologia",
+  "Otorrinolaringologia", "Medicina de Emergência", "Semiologia", "Anatomia", "Farmacologia",
   "Oncologia", "Fisiologia", "Bioquímica", "Angiologia",
   "Histologia", "Embriologia", "Microbiologia", "Imunologia",
   "Parasitologia", "Genética Médica", "Patologia",
+  "Terapia Intensiva",
 ];
 
 const TOPICS_BY_SPECIALTY: Record<string, string[]> = {
@@ -29,7 +39,7 @@ const TOPICS_BY_SPECIALTY: Record<string, string[]> = {
   "Gastroenterologia": ["Doença do Refluxo", "Úlcera Péptica", "Doença de Crohn", "Retocolite Ulcerativa", "Cirrose Hepática", "Hepatites Virais", "Pancreatite Aguda", "Pancreatite Crônica", "Colelitíase", "Colecistite", "Hemorragia Digestiva", "Doença Celíaca", "Síndrome do Intestino Irritável", "Câncer Colorretal"],
   "Pediatria": ["Bronquiolite", "Desidratação", "IVAS", "Otite Média", "Imunização", "Crescimento e Desenvolvimento", "Alergia Alimentar", "Febre Reumática", "Meningite Neonatal", "Icterícia Neonatal", "Distúrbios do Crescimento", "Asma Infantil", "Pneumonia Infantil", "Convulsão Febril"],
   "Ginecologia e Obstetrícia": ["Pré-eclâmpsia", "Eclâmpsia", "Diabetes Gestacional", "Placenta Prévia", "DPP", "Gravidez Ectópica", "Endometriose", "SOP", "Mioma Uterino", "Câncer de Colo do Útero", "Câncer de Mama", "Infecções Vaginais", "Parto Normal vs Cesárea", "Hemorragia Pós-Parto"],
-  "Cirurgia Geral": ["Apendicite", "Colecistite Aguda", "Obstrução Intestinal", "Hérnia Inguinal", "Abdome Agudo", "Trauma Abdominal", "Pancreatite Cirúrgica", "Diverticulite", "Câncer Gástrico", "Politraumatismo", "Queimaduras", "Choque Hipovolêmico", "Feridas Cirúrgicas", "Complicações Pós-Operatórias"],
+  "Cirurgia": ["Apendicite", "Colecistite Aguda", "Obstrução Intestinal", "Hérnia Inguinal", "Abdome Agudo", "Trauma Abdominal", "Pancreatite Cirúrgica", "Diverticulite", "Câncer Gástrico", "Politraumatismo", "Queimaduras", "Choque Hipovolêmico", "Feridas Cirúrgicas", "Complicações Pós-Operatórias"],
   "Medicina Preventiva": ["Epidemiologia", "Vigilância em Saúde", "SUS", "Atenção Primária", "Rastreamento", "Saúde da Família", "Indicadores de Saúde", "Bioestatística", "Estudos Epidemiológicos", "Vacinação do Adulto", "Promoção da Saúde", "Saneamento Básico", "Doenças de Notificação Compulsória"],
   "Nefrologia": ["Insuficiência Renal Aguda", "Doença Renal Crônica", "Glomerulonefrites", "Síndrome Nefrótica", "Síndrome Nefrítica", "Distúrbios Hidroeletrolíticos", "Acidose e Alcalose", "Litíase Renal", "Infecção Urinária", "Transplante Renal", "Diálise", "Nefropatia Diabética"],
   "Infectologia": ["HIV/AIDS", "Dengue", "Malária", "Leishmaniose", "Tuberculose", "Hanseníase", "Hepatites Virais", "COVID-19", "Sepse", "Infecções Hospitalares", "Antibioticoterapia", "Febre Amarela", "Parasitoses Intestinais"],
@@ -39,7 +49,7 @@ const TOPICS_BY_SPECIALTY: Record<string, string[]> = {
   "Ortopedia": ["Fraturas", "Luxações", "Osteomielite", "Artrose", "Lombalgia", "Hérnia de Disco", "Síndrome do Túnel do Carpo", "Lesões de Menisco", "Tendinites", "Osteoporose Ortopédica"],
   "Urologia": ["Hiperplasia Prostática", "Câncer de Próstata", "Litíase Urinária", "Infecção Urinária", "Câncer de Bexiga", "Torção Testicular", "Varicocele", "Fimose", "Incontinência Urinária"],
   "Psiquiatria": ["Depressão", "Transtorno Bipolar", "Esquizofrenia", "Transtorno de Ansiedade", "TOC", "TEPT", "Transtornos Alimentares", "Dependência Química", "Demência", "Psicofarmacologia"],
-  "Emergência": ["PCR e RCP", "Choque", "Intoxicações", "Anafilaxia", "Politrauma", "ATLS", "Queimaduras", "Afogamento", "Cetoacidose Diabética", "Crise Hipertensiva"],
+  "Medicina de Emergência": ["PCR e RCP", "Choque", "Intoxicações", "Anafilaxia", "Politrauma", "ATLS", "Queimaduras", "Afogamento", "Cetoacidose Diabética", "Crise Hipertensiva"],
   "Oftalmologia": ["Glaucoma", "Catarata", "Descolamento de Retina", "Retinopatia Diabética", "Conjuntivite", "Uveíte", "Trauma Ocular"],
   "Otorrinolaringologia": ["Otite", "Sinusite", "Amigdalite", "Perda Auditiva", "Vertigem", "Epistaxe", "Câncer de Laringe"],
   "Semiologia": ["Anamnese", "Exame Físico Geral", "Semiologia Cardiovascular", "Semiologia Pulmonar", "Semiologia Abdominal", "Semiologia Neurológica", "Sinais Vitais", "Propedêutica Armada", "Semiologia Osteoarticular", "Semiologia Vascular", "Semiologia do Pescoço", "Sinais Semiológicos Clássicos"],
@@ -47,12 +57,27 @@ const TOPICS_BY_SPECIALTY: Record<string, string[]> = {
   "Farmacologia": ["Farmacocinética (ADME)", "Farmacodinâmica e Receptores", "Antibioticoterapia e Mecanismos de Resistência", "Anti-hipertensivos e Vasodilatadores", "Antiarrítmicos", "Anticoagulantes e Antiplaquetários", "AINEs e Corticoides", "Analgésicos e Opioides", "Psicofarmacologia", "Quimioterápicos e Imunossupressores", "Farmacologia do SNA", "Interações Medicamentosas", "Anti-diabéticos Orais e Insulinoterapia", "Broncodilatadores e Anti-asmáticos"],
   "Oncologia": ["Câncer de Mama", "Câncer de Pulmão", "Câncer Colorretal", "Câncer de Próstata", "Câncer Gástrico", "Câncer de Colo Uterino", "Câncer de Pâncreas", "Melanoma", "Câncer de Tireoide", "Estadiamento TNM", "Síndromes Paraneoplásicas", "Marcadores Tumorais", "Quimioterapia e Toxicidade", "Imunoterapia e Terapia-Alvo", "Radioterapia", "Cuidados Paliativos", "Emergências Oncológicas", "Rastreamento Oncológico", "Tumores do SNC", "Câncer de Bexiga e Rim"],
   "Angiologia": ["Doença Arterial Periférica", "Aneurisma de Aorta", "Trombose Venosa Profunda", "Insuficiência Venosa Crônica", "Varizes", "Isquemia Crítica de Membro", "Pé Diabético Vascular", "Linfedema", "Claudicação Intermitente", "Endarterectomia de Carótida", "Dissecção de Aorta", "Síndrome Compartimental"],
+  "Fisiologia": ["Fisiologia Cardiovascular", "Fisiologia Respiratória", "Fisiologia Renal", "Fisiologia Endócrina", "Fisiologia do Sistema Nervoso", "Fisiologia Gastrointestinal", "Fisiologia Muscular", "Equilíbrio Ácido-Base", "Fisiologia da Hemostasia", "Fisiologia da Reprodução"],
+  "Bioquímica": ["Metabolismo de Carboidratos", "Metabolismo de Lipídios", "Metabolismo de Proteínas", "Bioquímica do Ciclo de Krebs", "Fosforilação Oxidativa", "Vitaminas e Coenzimas", "Bioquímica Hormonal", "Erros Inatos do Metabolismo", "Bioquímica do Fígado", "Bioquímica Renal"],
+  "Histologia": ["Tecido Epitelial", "Tecido Conjuntivo", "Tecido Muscular", "Tecido Nervoso", "Histologia do Sistema Cardiovascular", "Histologia do Sistema Respiratório", "Histologia do TGI", "Histologia Renal", "Histologia do Sistema Endócrino", "Histologia da Pele"],
+  "Embriologia": ["Embriologia do Coração", "Embriologia do Sistema Nervoso", "Embriologia do TGI", "Embriologia do Sistema Urogenital", "Embriologia do Sistema Respiratório", "Anomalias Congênitas", "Embriologia da Face e Pescoço", "Placenta e Membranas", "Teratogênese"],
+  "Microbiologia": ["Bacteriologia Geral", "Virologia", "Micologia Médica", "Parasitologia Médica", "Mecanismos de Resistência Bacteriana", "Microbiota Humana", "Diagnóstico Microbiológico", "Esterilização e Desinfecção", "Infecções Hospitalares", "Bactérias Gram-positivas e Gram-negativas"],
+  "Imunologia": ["Imunidade Inata", "Imunidade Adaptativa", "Hipersensibilidades", "Autoimunidade", "Imunodeficiências", "Imunologia dos Transplantes", "Vacinologia", "Citocinas e Quimiocinas", "Sistema Complemento", "Imunologia Tumoral"],
+  "Parasitologia": ["Malária", "Doença de Chagas", "Leishmaniose Visceral", "Leishmaniose Tegumentar", "Esquistossomose", "Ascaridíase", "Ancilostomíase", "Teníase e Cisticercose", "Toxoplasmose", "Giardíase e Amebíase"],
+  "Genética Médica": ["Herança Mendeliana", "Herança Ligada ao X", "Doenças Cromossômicas", "Síndrome de Down", "Genética do Câncer", "Aconselhamento Genético", "Erros Inatos do Metabolismo", "Farmacogenômica", "Epigenética", "Diagnóstico Pré-natal"],
+  "Patologia": ["Inflamação Aguda e Crônica", "Neoplasias", "Distúrbios Hemodinâmicos", "Lesão e Morte Celular", "Adaptações Celulares", "Reparo Tecidual", "Patologia Vascular", "Imunopatologia", "Patologia do Sistema Nervoso", "Patologia Hepática"],
+  "Terapia Intensiva": ["Ventilação Mecânica", "Sepse e Choque Séptico", "Monitorização Hemodinâmica", "Distúrbios Hidroeletrolíticos em UTI", "Sedação e Analgesia", "Nutrição em Terapia Intensiva", "SDRA", "Insuficiência Renal Aguda em UTI", "Neurointensivismo", "Cuidados Pós-PCR"],
 };
 
-async function generateBatch(specialty: string, topics: string[], userId: string, supabaseAdmin: any): Promise<{ questions: number; flashcards: number }> {
+function getTarget(specialty: string): number {
+  return BASIC_SCIENCES.includes(specialty) ? TARGET_BASIC : TARGET_CLINICAL;
+}
+
+async function generateBatch(specialty: string, topics: string[], userId: string, supabaseAdmin: any, questionCount = 25): Promise<{ questions: number; flashcards: number }> {
   const selectedTopics = topics.sort(() => Math.random() - 0.5).slice(0, 5);
+  const fcCount = Math.max(5, Math.round(questionCount * 0.6));
   
-  const prompt = `Gere EXATAMENTE 25 questões de múltipla escolha e 15 flashcards para Residência Médica.
+  const prompt = `Gere EXATAMENTE ${questionCount} questões de múltipla escolha e ${fcCount} flashcards para Residência Médica.
 
 ESPECIALIDADE: ${specialty}
 TEMAS: ${selectedTopics.join(", ")}
@@ -141,7 +166,6 @@ FORMATO JSON OBRIGATÓRIO:
 
     if (!parsed) return { questions: 0, flashcards: 0 };
 
-    // Insert questions
     const IMAGE_REF_PATTERN = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo|observe o gráfico|observe a figura|observe a foto|imagem a seguir|figura a seguir)\b/i;
     const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
     const questions = (parsed.questions || []).filter((q: any) =>
@@ -170,7 +194,6 @@ FORMATO JSON OBRIGATÓRIO:
       else console.error("Q insert error:", error);
     }
 
-    // Insert flashcards
     const flashcards = (parsed.flashcards || []).filter((f: any) => f.question && f.answer && !INVALID_CONTENT_REGEX.test(f.question) && !INVALID_CONTENT_REGEX.test(f.answer));
     let fCount = 0;
     if (flashcards.length > 0) {
@@ -192,6 +215,59 @@ FORMATO JSON OBRIGATÓRIO:
     console.error(`Error generating for ${specialty}:`, e);
     return { questions: 0, flashcards: 0 };
   }
+}
+
+async function importRealExamQuestions(specialty: string, supabaseAdmin: any, userId: string, limit: number): Promise<number> {
+  // Find real_exam_questions for this topic not yet in questions_bank
+  const { data: realQs } = await supabaseAdmin
+    .from("real_exam_questions")
+    .select("*")
+    .eq("topic", specialty)
+    .eq("is_active", true)
+    .limit(limit);
+
+  if (!realQs || realQs.length === 0) return 0;
+
+  // Get existing statement hashes to avoid duplicates
+  const { data: existing } = await supabaseAdmin
+    .from("questions_bank")
+    .select("statement")
+    .eq("topic", specialty)
+    .eq("is_global", true)
+    .limit(1000);
+
+  const existingSet = new Set((existing || []).map((e: any) => 
+    String(e.statement || "").trim().substring(0, 80).toLowerCase()
+  ));
+
+  const toInsert = realQs.filter((q: any) => {
+    const key = String(q.statement || "").trim().substring(0, 80).toLowerCase();
+    return !existingSet.has(key);
+  }).slice(0, limit);
+
+  if (toInsert.length === 0) return 0;
+
+  const rows = toInsert.map((q: any) => ({
+    user_id: userId,
+    statement: q.statement,
+    options: q.options,
+    correct_index: q.correct_index,
+    explanation: q.explanation || "",
+    topic: specialty,
+    subtopic: q.subtopic || null,
+    difficulty: q.difficulty || 4,
+    source: "real_exam_import",
+    source_url: q.source_url,
+    is_global: true,
+    review_status: "pending",
+  }));
+
+  const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
+  if (error) {
+    console.error("Real exam import error:", error);
+    return 0;
+  }
+  return rows.length;
 }
 
 serve(async (req) => {
@@ -227,10 +303,100 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const batchCount = body.batches || 3; // how many specialties per call
+
+    // ===== EQUALIZE MODE =====
+    if (body.equalize) {
+      // Get counts per topic
+      const { data: topicCounts } = await supabaseAdmin
+        .from("questions_bank")
+        .select("topic")
+        .eq("is_global", true);
+
+      const countByTopic: Record<string, number> = {};
+      (topicCounts || []).forEach((r: any) => {
+        const t = r.topic || "Geral";
+        countByTopic[t] = (countByTopic[t] || 0) + 1;
+      });
+
+      // Calculate deficits
+      const deficits: { specialty: string; current: number; target: number; deficit: number }[] = [];
+      for (const spec of SPECIALTIES) {
+        const current = countByTopic[spec] || 0;
+        const target = getTarget(spec);
+        const deficit = target - current;
+        if (deficit > 0) {
+          deficits.push({ specialty: spec, current, target, deficit });
+        }
+      }
+
+      // Sort by largest deficit first
+      deficits.sort((a, b) => b.deficit - a.deficit);
+      const toProcess = deficits.slice(0, 5);
+
+      if (toProcess.length === 0) {
+        return new Response(JSON.stringify({
+          message: "Todas as especialidades já atingiram o alvo!",
+          deficits: [],
+          total_deficit: 0,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      let totalQ = 0, totalF = 0, totalImported = 0;
+      const results: any[] = [];
+
+      for (const item of toProcess) {
+        // 1. Try importing real exam questions first
+        const importLimit = Math.min(item.deficit, 50);
+        const imported = await importRealExamQuestions(item.specialty, supabaseAdmin, userId, importLimit);
+        totalImported += imported;
+        
+        const remainingDeficit = item.deficit - imported;
+        
+        // 2. Generate via AI only if still deficit
+        let genQ = 0, genF = 0;
+        if (remainingDeficit > 0) {
+          const topics = TOPICS_BY_SPECIALTY[item.specialty] || [item.specialty];
+          const batchSize = Math.min(25, remainingDeficit);
+          const result = await generateBatch(item.specialty, topics, userId, supabaseAdmin, batchSize);
+          genQ = result.questions;
+          genF = result.flashcards;
+          totalQ += genQ;
+          totalF += genF;
+        }
+
+        results.push({
+          specialty: item.specialty,
+          previous: item.current,
+          target: item.target,
+          deficit: item.deficit,
+          imported,
+          generated: genQ,
+          flashcards: genF,
+        });
+
+        console.log(`Equalize ${item.specialty}: imported=${imported}, generated=${genQ}, deficit_was=${item.deficit}`);
+      }
+
+      // Recalculate remaining deficits
+      const remainingDeficits = deficits
+        .filter(d => !toProcess.find(p => p.specialty === d.specialty))
+        .map(d => ({ specialty: d.specialty, deficit: d.deficit }));
+
+      return new Response(JSON.stringify({
+        message: `Equalização: ${totalImported} importadas, ${totalQ} geradas por IA, ${totalF} flashcards`,
+        results,
+        remaining_deficits: remainingDeficits,
+        total_imported: totalImported,
+        total_generated: totalQ,
+        total_flashcards: totalF,
+        batches_remaining: remainingDeficits.length,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ===== NORMAL MODE =====
+    const batchCount = body.batches || 3;
     const targetQuestions = body.target || 5000;
 
-    // Check current count
     const { count: currentCount } = await supabaseAdmin
       .from("questions_bank").select("*", { count: "exact", head: true }).eq("is_global", true);
     
@@ -243,7 +409,6 @@ serve(async (req) => {
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Pick specialties that need more questions
     const { data: topicCounts } = await supabaseAdmin
       .from("questions_bank")
       .select("topic")
@@ -255,8 +420,7 @@ serve(async (req) => {
       countByTopic[t] = (countByTopic[t] || 0) + 1;
     });
 
-    // Sort specialties by least questions first
-    const sorted = SPECIALTIES.sort((a, b) => (countByTopic[a] || 0) - (countByTopic[b] || 0));
+    const sorted = [...SPECIALTIES].sort((a, b) => (countByTopic[a] || 0) - (countByTopic[b] || 0));
     const selected = sorted.slice(0, batchCount);
 
     let totalQ = 0, totalF = 0;
