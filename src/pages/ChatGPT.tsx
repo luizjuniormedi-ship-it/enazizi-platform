@@ -380,17 +380,17 @@ const ChatGPT = () => {
         onShowOnboarding={() => setShowOnboarding(true)}
       />
 
-      <StudyContextBanner />
+      {!isFullscreen && <StudyContextBanner />}
 
-      {sessionChecked && pendingSession && !studyStarted && (
+      {!isFullscreen && sessionChecked && pendingSession && !studyStarted && (
         <ResumeSessionBanner updatedAt={pendingSession.updated_at} onResume={handleRestoreSession} onDiscard={abandonSession} />
       )}
 
-      {showOnboarding && !studyStarted && (
+      {!isFullscreen && showOnboarding && !studyStarted && (
         <TutorOnboardingCard onDismiss={() => { setShowOnboarding(false); localStorage.setItem("tutor-onboarding-dismissed", "true"); }} />
       )}
 
-      <TutorMetricsBar performance={performance} metricsCollapsed={metricsCollapsed} setMetricsCollapsed={setMetricsCollapsed} />
+      {!isFullscreen && <TutorMetricsBar performance={performance} metricsCollapsed={metricsCollapsed} setMetricsCollapsed={setMetricsCollapsed} />}
 
       {!studyStarted && (
         <TutorStartScreen
