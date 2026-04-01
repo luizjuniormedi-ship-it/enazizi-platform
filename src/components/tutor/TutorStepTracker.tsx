@@ -15,6 +15,7 @@ interface TutorStepTrackerProps {
   setNewTopic: (v: string) => void;
   onChangeTopic: () => void;
   onPhaseAction: (key: string) => void;
+  onGoBackStep: () => void;
   nextPhase: { key: string; label: string; icon: string; desc: string } | null;
 }
 
