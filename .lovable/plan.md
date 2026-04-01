@@ -1,44 +1,50 @@
 
-# Melhorias no Painel Professor — BI e Funcionalidades
 
-## Melhorias Identificadas
+# Detalhamento de Resultados por Aluno + Banco de Erros na Proficiência
 
-### 1. BI: Adicionar "Alunos em Risco" com alertas visuais
-- Cruzar score médio < 50% + inatividade > 7 dias para gerar lista de alunos em risco
-- Card destacado em vermelho com nome do aluno, motivo do risco e nível de criticidade
-- Dados já disponíveis no retorno do `professor_bi` (engagement + scores)
+## Situação Atual
 
-### 2. BI: Exportar relatório em PDF
-- Botão "Exportar PDF" no BI que gera relatório com KPIs, gráficos de tópicos e lista de alunos
-- Usar a lib `exportPdf` já existente no projeto (`src/lib/exportPdf.ts`)
-- Dois tipos: relatório da turma (geral) e dossiê individual do aluno
+- **Professor**: O dialog de resultados mostra apenas nome do aluno + score %. Não tem drill-down por questão.
+- **Aluno**: Já possui gabarito comentado após o simulado (com explicações e botão "Estudar com Tutor IA"). Porém, na listagem de simulados concluídos em Proficiência, não há forma de revisitar o gabarito nem um resumo de erros para revisão rápida.
 
-### 3. BI: Evolução temporal (linha do tempo)
-- Adicionar gráfico de linha mostrando evolução da acurácia média da turma nas últimas 8 semanas
-- Novo campo no `professor_bi` que agrega `practice_attempts` por semana
-- Usa `LineChart` do recharts (já instalado)
+## Mudanças
 
-### 4. BI: Comparativo do aluno vs turma
-- Quando filtrar por aluno específico, mostrar card com percentil do aluno em relação à turma
-- Ex: "Matheus está no percentil 75 da turma em Cardiologia"
+### 1. Professor — Drill-down por aluno no dialog de resultados
 
-### 5. Geral: Indicador visual de atividades não respondidas por aluno
-- Na tabela de atividades, destacar em amarelo/vermelho atividades pendentes há mais de 3 dias
-- Adicionar coluna "Dias Pendente" com badge de urgência
+**`src/pages/ProfessorDashboard.tsx`** (dialog de resultados, linhas 763-787)
 
-## Mudanças Técnicas
+- Adicionar estado `expandedStudent` para controlar qual aluno está expandido
+- Ao clicar no card do aluno (nome), expandir para mostrar:
+  - Lista de questões com indicador ✓/✗
+  - Para cada erro: enunciado resumido, resposta do aluno, resposta correta, explicação
+  - Porcentagem por tópico
+- Os dados já estão disponíveis: `answers_json` no resultado contém `{ question_index, selected, correct_index, is_correct, topic }` e `questions_json` no simulado contém os enunciados
 
-### `supabase/functions/professor-simulado/index.ts`
-- Na action `professor_bi`: adicionar campo `at_risk_students` (score < 50% ou inativo > 7d)
-- Adicionar campo `weekly_evolution` (acurácia por semana, últimas 8 semanas)
-- Adicionar campo `student_percentiles` quando `student_id` fornecido
+### 2. Aluno — Botão "Ver Gabarito" nos simulados concluídos em Proficiência
 
-### `src/components/professor/ProfessorBIPanel.tsx`
-- Nova seção "Alunos em Risco" com cards de alerta (ícone AlertTriangle, fundo vermelho/âmbar)
-- Gráfico de evolução semanal (LineChart)
-- Card de percentil quando aluno individual selecionado
-- Botão "Exportar PDF" com geração client-side
-- Coluna "Dias Pendente" na tabela de atividades com badge colorida
+**`src/pages/StudentSimulados.tsx`** (listagem de concluídos, ~linha 413-441)
 
-### `src/lib/exportPdf.ts`
-- Adicionar função `exportProfessorBIReport` que monta HTML com KPIs + tabelas e converte para PDF
+- Adicionar botão "Ver Gabarito" nos simulados concluídos
+- Ao clicar, remontar o `resultData` a partir de `answers_json` e exibir a view de resultado (que já tem gabarito comentado completo)
+
+### 3. Aluno — Seção "Erros deste Simulado" com redirecionamento automático ao Tutor
+
+**`src/pages/StudentSimulados.tsx`** (result view, ~linha 966)
+
+- Após a revisão das questões, adicionar seção "Banco de Erros do Simulado" com cards dos temas errados agrupados
+- Cada card mostra: tema, quantidade de erros, botão "Revisar com Tutor IA" que envia o contexto automaticamente
+- Os erros já são logados no `error_bank` via `logErrorToBank` durante o submit
+
+### 4. Edge Function — Retornar `questions_json` junto com resultados
+
+**`supabase/functions/professor-simulado/index.ts`** (action `get_simulado_results`)
+
+- Buscar `questions_json` do simulado e incluir no retorno para que o professor tenha acesso aos enunciados ao expandir o aluno
+
+## Detalhes técnicos
+
+- `answers_json` já contém `question_index`, `selected`, `correct_index`, `is_correct`, `topic` — dados suficientes para o drill-down
+- `questions_json` contém `statement`, `options`, `correct_index`, `topic`, `explanation`
+- O gabarito comentado do aluno já funciona na view de resultado — basta permitir reacesso
+- Nenhuma migração de banco necessária
+
