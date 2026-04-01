@@ -1,27 +1,22 @@
 
 
-# Validar Faculdade contra Lista Oficial
+# Atualizar Login para Funcionar Bem em Todos os Dispositivos
 
-## Contexto
+## Problemas Identificados
 
-Há 1 usuário com `faculdade = 'Outra'` (Gabriel Nunes Carretero). Como removemos "Outra" da lista, precisamos que `isProfileComplete` valide se a faculdade está na lista oficial — assim esse usuário (e qualquer outro com valor inválido) será travado na tela de completar cadastro.
+1. **Login.tsx**: Usa `min-h-screen` sem `overflow-y-auto` — no mobile pequeno, o formulário + hero panel podem ficar cortados sem scroll
+2. **Login.tsx**: Não usa `100dvh` (dynamic viewport height) — em mobile com barra de navegação do browser, o conteúdo fica escondido atrás da barra
+3. **Login.tsx**: No mobile, o hero panel ocupa muito espaço vertical empurrando o formulário para fora da tela
 
-## Mudança
+## Mudanças
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/lib/profileValidation.ts` | Importar `FACULDADES` e adicionar verificação: se `faculdade` não está na lista, retornar `false` em `isProfileComplete` |
+| `src/pages/Login.tsx` | Trocar `min-h-screen` por `min-h-[100dvh]`, adicionar `overflow-y-auto`. No mobile, comprimir o hero panel (esconder features list, reduzir padding). Garantir que o formulário fique sempre acessível com scroll |
 
-## Detalhe
+## Detalhes Técnicos
 
-Na função `isProfileComplete`, após checar `if (isStudent && (!data.periodo || !data.faculdade))`, adicionar:
-
-```ts
-import { FACULDADES } from "@/constants/faculdades";
-
-// Dentro de isProfileComplete:
-if (data.faculdade && !FACULDADES.includes(data.faculdade)) return false;
-```
-
-Isso faz com que qualquer usuário com "Outra" ou valor fora da lista seja forçado a selecionar uma universidade válida na tela de recadastramento.
+- Container principal: `min-h-[100dvh] overflow-y-auto` em vez de `min-h-screen`
+- Hero panel: esconder a lista de features no mobile (`hidden sm:grid`) para reduzir altura
+- Manter tudo funcional em desktop, tablet e mobile (inclusive PWA e Capacitor)
 
