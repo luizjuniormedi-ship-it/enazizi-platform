@@ -133,10 +133,23 @@ serve(async (req) => {
 
     const aiResult = await response.json();
     const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) throw new Error("No tool call in AI response");
-
-    const parsed = JSON.parse(toolCall.function.arguments);
-    const questions = parsed.questions || [];
+    let questions: any[] = [];
+    
+    if (toolCall) {
+      const parsed = JSON.parse(toolCall.function.arguments);
+      questions = parsed.questions || [];
+    } else {
+      // Fallback: try to parse from content text
+      const content = aiResult.choices?.[0]?.message?.content || "";
+      console.log("No tool call, trying content parse. Content length:", content.length);
+      const jsonMatch = content.match(/\{[\s\S]*"questions"[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        questions = parsed.questions || [];
+      } else {
+        console.error("Could not parse questions from response");
+      }
+    }
 
     await supabase.from("uploads").update({
       extracted_json: { step: "uploading_pages", progress: 50, questions_found: questions.length },
