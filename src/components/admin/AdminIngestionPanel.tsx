@@ -326,6 +326,9 @@ const AdminIngestionPanel = () => {
                 </Badge>
               </div>
               <div className="flex gap-1">
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" disabled={loadingDistribution} onClick={() => loadDistribution()} title="Atualizar contagens">
+                  <RefreshCw className={`h-3.5 w-3.5 ${loadingDistribution ? "animate-spin" : ""}`} />
+                </Button>
                 {equalizing && (
                   <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => { pauseRef.current = true; }}>
                     <Pause className="h-3 w-3 mr-1" />Pausar
