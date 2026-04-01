@@ -61,7 +61,8 @@ const ProfessorDashboard = () => {
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
 
   // Results dialog
-  const [resultsDialog, setResultsDialog] = useState<{ open: boolean; simulado: any; results: any[]; loading: boolean }>({ open: false, simulado: null, results: [], loading: false });
+  const [resultsDialog, setResultsDialog] = useState<{ open: boolean; simulado: any; results: any[]; loading: boolean; questions_json: any[] }>({ open: false, simulado: null, results: [], loading: false, questions_json: [] });
+  const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
 
   // Students preview
   const [previewStudents, setPreviewStudents] = useState<any[]>([]);
