@@ -74,6 +74,17 @@ const TutorStepTracker = ({
           </TooltipProvider>
           <span className="text-muted-foreground">•</span>
           <span className="text-muted-foreground">{enaziziStep}/15 ({progressPercent}%)</span>
+          {enaziziStep > 3 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[10px] sm:text-xs gap-1 text-muted-foreground hover:text-primary"
+                onClick={onGoBackStep}
+                disabled={isLoading}
+              >
+                <ArrowLeft className="h-3 w-3" /> Voltar
+              </Button>
+          )}
           {nextPhase && (
             <>
               <Button
