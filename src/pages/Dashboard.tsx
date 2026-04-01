@@ -3,7 +3,7 @@ import SafeCard from "@/components/layout/SafeCard";
 import { Loader2, Target, Calendar, Flame, ClipboardList } from "lucide-react";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
-import DashboardWarnings from "@/components/dashboard/DashboardWarnings";
+
 import MotivationalGreeting from "@/components/dashboard/MotivationalGreeting";
 import PerformanceReport from "@/components/dashboard/PerformanceReport";
 import DailyPlanWidget from "@/components/dashboard/DailyPlanWidget";
