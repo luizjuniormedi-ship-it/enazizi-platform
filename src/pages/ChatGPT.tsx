@@ -27,6 +27,7 @@ import TutorStartScreen from "@/components/tutor/TutorStartScreen";
 import TutorStepTracker from "@/components/tutor/TutorStepTracker";
 import TutorMessageList from "@/components/tutor/TutorMessageList";
 import TutorInputBar from "@/components/tutor/TutorInputBar";
+import { useSpeechToText } from "@/hooks/tutor/useSpeechToText";
 
 const ChatGPT = () => {
   const { user } = useAuth();
@@ -45,6 +46,11 @@ const ChatGPT = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [changingTopic, setChangingTopic] = useState(false);
   const [newTopic, setNewTopic] = useState("");
+
+  // Speech to text
+  const { isListening, hasSpeechRecognition, toggleListening } = useSpeechToText(
+    (text) => setInput((prev) => prev ? prev + " " + text : text)
+  );
 
   // Hooks
   const { streamResponse } = useStreamingResponse();
@@ -461,6 +467,9 @@ const ChatGPT = () => {
           <TutorInputBar
             input={input} setInput={setInput} isLoading={isLoading}
             onSend={() => sendMessage(input)}
+            isListening={isListening}
+            hasSpeechRecognition={hasSpeechRecognition}
+            onToggleListening={toggleListening}
           />
         </>
       )}
