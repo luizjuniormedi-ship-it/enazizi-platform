@@ -366,10 +366,14 @@ const ProfessorDashboard = () => {
                       {sim.periodo_filter && <Badge variant="secondary" className="text-[10px]">{sim.periodo_filter}º período</Badge>}
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => viewResults(sim)} className="gap-1.5 shrink-0">
-                    <Eye className="h-3.5 w-3.5" /> Resultados
-                  </Button>
-                </div>
+                  <div className="flex gap-1.5 shrink-0">
+                    <Button variant="outline" size="sm" onClick={() => viewResults(sim)} className="gap-1.5">
+                      <Eye className="h-3.5 w-3.5" /> Resultados
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => deleteSimulado(sim.id, sim.title)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 {sim.results_summary?.completed > 0 && (
                   <div className="mt-3 pt-3 border-t border-border">
                     <div className="flex items-center justify-between text-xs mb-1">
