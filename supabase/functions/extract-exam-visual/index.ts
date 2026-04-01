@@ -75,28 +75,14 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
+        max_tokens: 16000,
         messages: [
-          {
-            role: "system",
-            content: `Você é um extrator de questões médicas de provas de residência/concurso.
-Analise o PDF e extraia TODAS as questões visíveis.
-
-REGRAS CRÍTICAS:
-- Cada questão deve ter entre 4 e 5 alternativas (A-E)
-- Identifique o gabarito se estiver indicado
-- PARA QUESTÕES COM IMAGENS MÉDICAS: defina has_image=true e page_number com a página onde a imagem aparece
-- Identifique o tópico médico e a fonte/banca quando possível
-- NÃO extraia questões incompletas
-- Extraia TODAS as questões do documento, sem limite
-
-Retorne JSON com o formato especificado na tool call.`
-          },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: `Extraia TODAS as questões deste PDF de prova médica. Para cada questão que contenha uma imagem médica (ECG, radiografia, tomografia, foto clínica, gráfico, etc.), marque has_image=true e indique o número da página (page_number) onde a imagem está.`
+                text: `Extraia as questões médicas deste PDF. Para cada questão: statement, options (array), correct_index (0-based), topic, source, has_image (true se tem ECG/raio-x/foto), page_number (página da imagem). Seja conciso nas explicações.`
               },
               {
                 type: "image_url",
@@ -119,15 +105,13 @@ Retorne JSON com o formato especificado na tool call.`
                     items: {
                       type: "object",
                       properties: {
-                        statement: { type: "string", description: "Enunciado completo da questão" },
+                        statement: { type: "string" },
                         options: { type: "array", items: { type: "string" } },
-                        correct_index: { type: "number", description: "Índice da alternativa correta (0-based)" },
-                        explanation: { type: "string" },
-                        topic: { type: "string", description: "Especialidade médica" },
-                        source: { type: "string", description: "Banca/ano da prova" },
-                        has_image: { type: "boolean", description: "Se a questão contém imagem médica" },
-                        page_number: { type: "number", description: "Página onde a imagem aparece (1-based)" },
-                        image_description: { type: "string", description: "Descrição da imagem médica" }
+                        correct_index: { type: "number" },
+                        topic: { type: "string" },
+                        source: { type: "string" },
+                        has_image: { type: "boolean" },
+                        page_number: { type: "number" },
                       },
                       required: ["statement", "options"]
                     }
