@@ -453,7 +453,7 @@ const ChatGPT = () => {
             sessionQuestions={sessionQuestions} sessionCorrect={sessionCorrect}
             isLoading={isLoading} changingTopic={changingTopic} setChangingTopic={setChangingTopic}
             newTopic={newTopic} setNewTopic={setNewTopic} onChangeTopic={handleChangeTopic}
-            onPhaseAction={handlePhaseAction} nextPhase={nextPhase}
+            onPhaseAction={handlePhaseAction} onGoBackStep={handleGoBackStep} nextPhase={nextPhase}
           />
 
           <TutorMessageList ref={scrollRef} messages={messages} isLoading={isLoading} onCopy={copyToClipboard} />
