@@ -68,7 +68,6 @@ const StudentSimulados = () => {
   // Video rooms
   const [videoRooms, setVideoRooms] = useState<any[]>([]);
   const [videoLoading, setVideoLoading] = useState(true);
-  const [assignmentsLoading, setAssignmentsLoading] = useState(true);
 
   // Quiz state
   const [current, setCurrent] = useState<AssignedSimulado | null>(null);
