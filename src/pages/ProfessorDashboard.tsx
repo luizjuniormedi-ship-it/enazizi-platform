@@ -182,7 +182,18 @@ const ProfessorDashboard = () => {
     }
   };
 
-  const viewResults = async (simulado: any) => {
+  const deleteSimulado = async (simuladoId: string, simuladoTitle: string) => {
+    if (!confirm(`Tem certeza que deseja apagar o simulado "${simuladoTitle}"? Esta ação não pode ser desfeita.`)) return;
+    try {
+      await callAPI({ action: "delete_simulado", simulado_id: simuladoId });
+      toast({ title: "Simulado apagado", description: `"${simuladoTitle}" foi removido com sucesso.` });
+      loadSimulados();
+    } catch (e) {
+      toast({ title: "Erro ao apagar", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    }
+  };
+
+
     setResultsDialog({ open: true, simulado, results: [], loading: true });
     try {
       const res = await callAPI({ action: "get_simulado_results", simulado_id: simulado.id });
