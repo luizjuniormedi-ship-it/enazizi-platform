@@ -87,6 +87,12 @@ const ChatGPT = () => {
   // Load conversations
   useEffect(() => { loadConversations(); }, [loadConversations]);
 
+  // Toggle body overflow for fullscreen
+  useEffect(() => {
+    document.body.style.overflow = isFullscreen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [isFullscreen]);
+
   // Auto-scroll
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
