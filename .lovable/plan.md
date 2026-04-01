@@ -1,18 +1,20 @@
 
 
-# Remover Alerta de Saúde do Sistema do Dashboard
+# Revisar Lista de Universidades e Remover "Outra"
 
-## Problema
+## Mudança
 
-O componente `AdminSystemAlerts` exibe um popup de saúde do sistema que fica preso na mesma mensagem repetidamente, mesmo após ser dispensado. Além disso, há um erro de runtime (`DashboardWarnings is not defined`) que precisa ser corrigido — provavelmente cache stale, mas vamos garantir que o arquivo está limpo.
+Atualizar `src/constants/faculdades.ts`:
+- Remover a opção `"Outra"` (linha 131) e o comentário `// Última opção` (linha 130)
+- A lista atual de universidades (federais, estaduais, privadas/comunitárias) está completa e bem organizada — será mantida como está
 
-## Mudanças
+## Arquivo alterado
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/pages/Dashboard.tsx` | Remover import e uso de `AdminSystemAlerts` (linhas 23 e 116-119) |
+| `src/constants/faculdades.ts` | Remover `"Outra"` e comentário associado |
 
 ## Resultado
 
-O popup de saúde do sistema não aparecerá mais no dashboard. As informações de saúde continuam acessíveis no painel admin (`/admin`) para quem precisar.
+O combobox de faculdade mostrará apenas universidades reais, sem a opção genérica "Outra".
 
