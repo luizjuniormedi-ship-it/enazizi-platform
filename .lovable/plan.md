@@ -1,64 +1,72 @@
 
+# Redirecionar para https://enazizi.com + Corrigir Build
 
-# Atualização Completa do Sistema ENAZIZI
+## Contexto
 
-## 1. Bug Crítico: "Token inválido" no Painel Professor
+O domínio publicado atual é `enazizi-com-br.lovable.app`. O usuário quer que ao acessar a plataforma, o aluno seja direcionado para `https://enazizi.com`.
 
-**Causa raiz confirmada**: Os auth logs mostram `"Session not found"` / `"session id doesn't exist"` retornado com status 403. Isso acontece porque:
-- O `useAuth.tsx` faz `window.location.reload()` imediatamente após login (SIGNED_IN)
-- Durante o reload, o token antigo pode ser usado antes da nova sessão estar pronta
-- O `professor-simulado` usa `sb.auth.getUser(token)` com service role client, que internamente chama `/user` e recebe 403
+Há também um erro de build que precisa ser corrigido antes de qualquer atualização.
 
-**Correção (2 partes)**:
+## Mudanças
 
-### 1a. Edge function `professor-simulado/index.ts` — Usar `getClaims()` em vez de `getUser()`
-Substituir a autenticação por `getClaims(token)` que valida o JWT localmente sem depender do endpoint `/user`:
+### 1. Corrigir erro de build
+
+O build falhou provavelmente por um problema residual. Preciso verificar e corrigir qualquer erro de compilação TypeScript no frontend (os edge functions com `getClaims` não afetam o build do frontend).
+
+### 2. Configurar domínio customizado `enazizi.com`
+
+Para que `enazizi.com` funcione, você precisa:
+
+1. **No seu registrador de domínio** (onde comprou `enazizi.com`), configurar:
+   - **Registro A** — Nome: `@` → Valor: `185.158.133.1`
+   - **Registro A** — Nome: `www` → Valor: `185.158.133.1`
+   - **Registro TXT** — Nome: `_lovable` → Valor: será fornecido pelo Lovable ao conectar
+
+2. **No Lovable**: Ir em **Project Settings → Domains → Connect Domain** e adicionar `enazizi.com` e `www.enazizi.com`
+
+3. Aguardar propagação DNS (até 72h) e SSL automático
+
+### 3. Redirect no código — Forçar domínio canônico
+
+Adicionar redirect no `src/main.tsx` para que qualquer acesso via `enazizi-com-br.lovable.app` ou outro domínio seja redirecionado para `https://enazizi.com`:
 
 ```typescript
-const token = authHeader.replace("Bearer ", "");
-const { data, error: authError } = await sb.auth.getClaims(token);
-if (authError || !data?.claims) {
-  return new Response(JSON.stringify({ error: "Token inválido" }), { status: 401, ... });
+// Redirect to canonical domain in production
+const canonical = "enazizi.com";
+if (
+  window.location.hostname !== canonical &&
+  window.location.hostname !== `www.${canonical}` &&
+  !window.location.hostname.includes("localhost") &&
+  !window.location.hostname.includes("id-preview--") &&
+  !window.location.hostname.includes("lovableproject.com")
+) {
+  window.location.replace(`https://${canonical}${window.location.pathname}${window.location.search}`);
 }
-const userId = data.claims.sub;
 ```
 
-Depois usar `userId` para buscar roles e perfil.
+### 4. Atualizar Capacitor config
 
-### 1b. `useAuth.tsx` — Remover reload agressivo após login
-O `clearAndReload()` causa o problema de timing. Remover o `window.location.reload()` automático no SIGNED_IN — o React Query e state management já atualizam a UI sem precisar de reload.
+Em `capacitor.config.ts`, mudar a URL do servidor de `lovableproject.com` para `https://enazizi.com`:
 
-## 2. Gerador Bulk — JSON parse ainda falhando
+```typescript
+server: {
+  url: "https://enazizi.com?forceHideBadge=true",
+  cleartext: true,
+},
+```
 
-Os logs mostram que Parasitologia gerou 60.450 chars com ````json` wrapping que quebra o parse. O `bulk-generate-content` já tem strip de markdown, mas o conteúdo pode ter markdown interno. Reforçar a limpeza do JSON antes do parse.
+### 5. Atualizar meta tags e OG
 
-## 3. Publicação Frontend
+Em `index.html`, atualizar `og:url` e canonical se necessário.
 
-Após as correções, o frontend será automaticamente atualizado no preview. Para publicar no domínio `.lovable.app`, basta clicar **Publish → Update**.
-
-## 4. Mobile (Capacitor)
-
-O `capacitor.config.ts` já está configurado com hot-reload. O app mobile carrega do servidor Lovable automaticamente — qualquer mudança no código se reflete no app. Para gerar builds nativos:
-1. Exportar para GitHub
-2. `git pull && npm install && npm run build && npx cap sync`
-3. `npx cap run ios` ou `npx cap run android`
-
-## 5. Dependências
-
-As dependências estão atualizadas (React 18.3, Vite 5.4, Supabase JS 2.95). Sem atualizações críticas.
-
-## Arquivos Alterados
+## Arquivos alterados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `supabase/functions/professor-simulado/index.ts` | `getClaims()` em vez de `getUser()` |
-| `src/hooks/useAuth.tsx` | Remover reload forçado no login |
-| `supabase/functions/bulk-generate-content/index.ts` | Melhorar limpeza de JSON |
+| `src/main.tsx` | Redirect canônico para enazizi.com |
+| `capacitor.config.ts` | URL do servidor → enazizi.com |
+| `index.html` | Meta tags com domínio correto |
 
-## Resultado
+## Pré-requisito do usuário
 
-- Painel professor carrega sem erro 401
-- Login não causa reload desnecessário
-- Geração bulk mais robusta contra falhas de parse
-- Sistema pronto para publicação web e mobile
-
+Configurar os registros DNS no registrador do domínio `enazizi.com` apontando para `185.158.133.1` e conectar o domínio em **Project Settings → Domains**.
