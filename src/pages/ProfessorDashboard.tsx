@@ -236,6 +236,8 @@ const ProfessorDashboard = () => {
     setQuestionMode("ai");
     setDifficulty("intermediario");
     setDifficultyMix({ facil: 20, intermediario: 50, dificil: 30 });
+    setScheduledAt("");
+    setAutoAssign(true);
     setManualStatement("");
     setManualOptions(["", "", "", "", ""]);
     setManualCorrect("0");
