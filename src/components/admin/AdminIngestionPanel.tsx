@@ -130,7 +130,6 @@ const AdminIngestionPanel = () => {
       .select("*").order("created_at", { ascending: false }).limit(50);
     if (data) {
       setDiscoveredSources(data);
-      setStats(prev => ({ ...prev, totalSources: 5 + (data as any[]).length, totalIndexed: 5 + (data as any[]).filter((s: any) => s.processing_status !== "pending").length }));
     }
   };
 
