@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { BookOpen, Plus, Users, Loader2, CheckCircle, AlertTriangle, Upload, Eye } from "lucide-react";
+import { BookOpen, Plus, Users, Loader2, CheckCircle, AlertTriangle, Upload, Eye, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
