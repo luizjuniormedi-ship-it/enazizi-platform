@@ -87,6 +87,12 @@ const ChatGPT = () => {
   // Load conversations
   useEffect(() => { loadConversations(); }, [loadConversations]);
 
+  // Toggle body overflow for fullscreen
+  useEffect(() => {
+    document.body.style.overflow = isFullscreen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [isFullscreen]);
+
   // Auto-scroll
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -371,7 +377,7 @@ const ChatGPT = () => {
   const nextPhase = getNextPhaseInfo(enaziziStep);
 
   const content = (
-    <div className={`flex flex-col animate-fade-in min-w-0 w-full ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-full"}`}>
+    <div className={`flex flex-col animate-fade-in min-w-0 w-full ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-3 sm:p-6 overflow-hidden" : "h-full"}`}>
       <TutorHeader
         isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen}
         studyStarted={studyStarted} taxaAcerto={performance.taxa_acerto}
@@ -380,17 +386,17 @@ const ChatGPT = () => {
         onShowOnboarding={() => setShowOnboarding(true)}
       />
 
-      <StudyContextBanner />
+      {!isFullscreen && <StudyContextBanner />}
 
-      {sessionChecked && pendingSession && !studyStarted && (
+      {!isFullscreen && sessionChecked && pendingSession && !studyStarted && (
         <ResumeSessionBanner updatedAt={pendingSession.updated_at} onResume={handleRestoreSession} onDiscard={abandonSession} />
       )}
 
-      {showOnboarding && !studyStarted && (
+      {!isFullscreen && showOnboarding && !studyStarted && (
         <TutorOnboardingCard onDismiss={() => { setShowOnboarding(false); localStorage.setItem("tutor-onboarding-dismissed", "true"); }} />
       )}
 
-      <TutorMetricsBar performance={performance} metricsCollapsed={metricsCollapsed} setMetricsCollapsed={setMetricsCollapsed} />
+      {!isFullscreen && <TutorMetricsBar performance={performance} metricsCollapsed={metricsCollapsed} setMetricsCollapsed={setMetricsCollapsed} />}
 
       {!studyStarted && (
         <TutorStartScreen
