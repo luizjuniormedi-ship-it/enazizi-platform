@@ -162,7 +162,15 @@ function extractArrayForKey(input: string, key: string): string | null {
 }
 
 function parseGeneratedPayload(rawContent: string): { questions: any[]; flashcards: any[] } | null {
-  const raw = sanitizeAiContent(rawContent).replace(/```json\s*|```/gi, "").trim();
+  // Aggressive cleanup: strip markdown fences, leading prose, trailing text after JSON
+  let raw = sanitizeAiContent(rawContent)
+    .replace(/^[\s\S]*?```(?:json)?\s*/i, "")   // strip everything before ```json
+    .replace(/```[\s\S]*$/, "")                   // strip everything after closing ```
+    .trim();
+  if (raw === sanitizeAiContent(rawContent).trim()) {
+    // No markdown fences found — just do basic cleanup
+    raw = sanitizeAiContent(rawContent).replace(/```json\s*|```/gi, "").trim();
+  }
   if (!raw) return null;
 
   const candidates: string[] = [];

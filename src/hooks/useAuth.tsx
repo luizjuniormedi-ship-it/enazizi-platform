@@ -33,13 +33,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       setLoading(false);
 
-      // Force PWA cache clear + reload on login (once per session)
+      // Track login count for feedback survey (no reload - React state handles UI update)
       if (event === "SIGNED_IN") {
-        const already = sessionStorage.getItem("pwa-updated");
-        if (already) return;
-        sessionStorage.setItem("pwa-updated", "1");
-
-        // Increment login count for feedback survey
         const uid = session?.user?.id;
         if (uid) {
           const key = `enazizi_login_count_${uid}`;
@@ -51,33 +46,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           localStorage.setItem(key, String(nextCount));
         }
 
-        const clearAndReload = async () => {
-          try {
-            if ("caches" in window) {
-              const names = await caches.keys();
-              await Promise.all(names.map((n) => caches.delete(n)));
+        // Update PWA service worker in background (no reload)
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.getRegistration().then((reg) => {
+            if (reg) {
+              reg.update().catch(() => {});
+              if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
             }
-            if ("serviceWorker" in navigator) {
-              const reg = await navigator.serviceWorker.getRegistration();
-              if (reg) {
-                await reg.update().catch(() => {});
-                if (reg.waiting) {
-                  reg.waiting.postMessage({ type: "SKIP_WAITING" });
-                }
-              }
-            }
-          } catch {
-            // ignore
-          }
-          window.location.reload();
-        };
-        clearAndReload();
+          }).catch(() => {});
+        }
       }
 
-      // Clear flag on logout so next login triggers update
-      if (event === "SIGNED_OUT") {
-        sessionStorage.removeItem("pwa-updated");
-      }
+      // No-op on SIGNED_OUT — state is cleared by React
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
