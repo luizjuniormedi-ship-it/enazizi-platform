@@ -5,7 +5,7 @@ import { logErrorToBank } from "@/lib/errorBankLogger";
 import {
   GraduationCap, Clock, FileText, CheckCircle, ArrowRight, ArrowLeft,
   Loader2, Trophy, AlertTriangle, Play, RotateCcw, BrainCircuit, Sparkles, Activity,
-  MessageCircle, HelpCircle, BookOpen, Video
+  MessageCircle, HelpCircle, BookOpen, Video, Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -424,16 +424,40 @@ const StudentSimulados = () => {
                           {item.result.finished_at ? new Date(item.result.finished_at).toLocaleDateString("pt-BR") : ""}
                         </p>
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className={`text-2xl font-bold ${
-                          (item.result.score || 0) >= 70 ? "text-emerald-500" :
-                          (item.result.score || 0) >= 50 ? "text-amber-500" : "text-destructive"
-                        }`}>
-                          {Math.round(item.result.score || 0)}%
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {((item.result.answers_json || []) as any[]).filter((a: any) => a.is_correct).length}/{item.simulado.total_questions} acertos
-                        </p>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="text-right">
+                          <p className={`text-2xl font-bold ${
+                            (item.result.score || 0) >= 70 ? "text-emerald-500" :
+                            (item.result.score || 0) >= 50 ? "text-amber-500" : "text-destructive"
+                          }`}>
+                            {Math.round(item.result.score || 0)}%
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {((item.result.answers_json || []) as any[]).filter((a: any) => a.is_correct).length}/{item.simulado.total_questions} acertos
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => {
+                            const answersArr = (item.result.answers_json || []) as any[];
+                            const correctCount = answersArr.filter((a: any) => a.is_correct).length;
+                            const total = item.simulado.total_questions;
+                            const score = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+                            setResultData({
+                              score,
+                              total,
+                              correct: correctCount,
+                              details: answersArr,
+                            });
+                            setCurrent(item);
+                            setPhase("result");
+                          }}
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          Ver Gabarito
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -962,6 +986,60 @@ const StudentSimulados = () => {
             })}
           </CardContent>
         </Card>
+
+        {/* Error bank by topic */}
+        {(() => {
+          const errorsByTopic: Record<string, { count: number; questions: { statement: string; selected: string; correct: string }[] }> = {};
+          details.forEach((d, idx) => {
+            if (d.is_correct) return;
+            const t = d.topic || "Geral";
+            const q = questions[d.question_index ?? idx];
+            if (!errorsByTopic[t]) errorsByTopic[t] = { count: 0, questions: [] };
+            errorsByTopic[t].count++;
+            errorsByTopic[t].questions.push({
+              statement: q?.statement?.slice(0, 150) || "",
+              selected: q?.options?.[d.selected] || "Não respondida",
+              correct: q?.options?.[d.correct_index ?? q?.correct_index] || "",
+            });
+          });
+          const topics = Object.entries(errorsByTopic);
+          if (topics.length === 0) return null;
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                  Banco de Erros do Simulado
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-xs text-muted-foreground">Revise cada tema com o Tutor IA para consolidar o aprendizado.</p>
+                {topics.map(([topic, data]) => (
+                  <div key={topic} className="p-3 rounded-lg border border-destructive/20 bg-destructive/5">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <span className="text-sm font-semibold">{topic}</span>
+                        <Badge variant="destructive" className="ml-2 text-[10px]">{data.count} erro{data.count > 1 ? "s" : ""}</Badge>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-xs"
+                        onClick={() => {
+                          const msg = `Preciso revisar "${topic}" — errei ${data.count} questão(ões) no simulado "${current.simulado.title}".\n\n${data.questions.map((q, i) => `❌ Q${i+1}: ${q.statement}...\nMarquei: "${q.selected}" — Correta: "${q.correct}"`).join("\n\n")}\n\nMe explique cada erro detalhadamente.`;
+                          navigate("/dashboard/chatgpt", { state: { fromSimulado: true, initialMessage: msg } });
+                        }}
+                      >
+                        <Sparkles className="h-3 w-3" />
+                        Revisar com Tutor IA
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         <div className="flex flex-col items-center gap-3">
           {details.some(d => !d.is_correct) && (

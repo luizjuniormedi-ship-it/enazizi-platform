@@ -61,7 +61,8 @@ const ProfessorDashboard = () => {
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
 
   // Results dialog
-  const [resultsDialog, setResultsDialog] = useState<{ open: boolean; simulado: any; results: any[]; loading: boolean }>({ open: false, simulado: null, results: [], loading: false });
+  const [resultsDialog, setResultsDialog] = useState<{ open: boolean; simulado: any; results: any[]; loading: boolean; questions_json: any[] }>({ open: false, simulado: null, results: [], loading: false, questions_json: [] });
+  const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
 
   // Students preview
   const [previewStudents, setPreviewStudents] = useState<any[]>([]);
@@ -196,10 +197,11 @@ const ProfessorDashboard = () => {
   };
 
   const viewResults = async (simulado: any) => {
-    setResultsDialog({ open: true, simulado, results: [], loading: true });
+    setResultsDialog({ open: true, simulado, results: [], loading: true, questions_json: [] });
+    setExpandedStudent(null);
     try {
       const res = await callAPI({ action: "get_simulado_results", simulado_id: simulado.id });
-      setResultsDialog((prev) => ({ ...prev, results: res.results || [], loading: false }));
+      setResultsDialog((prev) => ({ ...prev, results: res.results || [], questions_json: res.questions_json || [], loading: false }));
     } catch {
       setResultsDialog((prev) => ({ ...prev, loading: false }));
     }
@@ -719,7 +721,7 @@ const ProfessorDashboard = () => {
       </Dialog>
 
       {/* Results Dialog */}
-      <Dialog open={resultsDialog.open} onOpenChange={(open) => !open && setResultsDialog({ open: false, simulado: null, results: [], loading: false })}>
+      <Dialog open={resultsDialog.open} onOpenChange={(open) => !open && setResultsDialog({ open: false, simulado: null, results: [], loading: false, questions_json: [] })}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -760,30 +762,100 @@ const ProfessorDashboard = () => {
                 </Card>
               </div>
 
-              {resultsDialog.results.map((r) => (
-                <Card key={r.id}>
-                  <CardContent className="p-3 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">{r.student_name}</p>
-                      <p className="text-xs text-muted-foreground">{r.student_email}{r.faculdade ? ` • ${r.faculdade}` : ""}{r.periodo ? ` • ${r.periodo}º` : ""}</p>
-                    </div>
-                    <div className="text-right">
-                      {r.status === "completed" ? (
-                        <>
-                          <p className={`text-lg font-bold ${(r.score || 0) >= 70 ? "text-emerald-500" : (r.score || 0) >= 50 ? "text-amber-500" : "text-destructive"}`}>
-                            {Math.round(r.score || 0)}%
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">{r.finished_at ? new Date(r.finished_at).toLocaleDateString("pt-BR") : ""}</p>
-                        </>
-                      ) : (
-                        <Badge variant="secondary" className="text-xs">
-                          {r.status === "in_progress" ? "Em andamento" : "Pendente"}
-                        </Badge>
+              {resultsDialog.results.map((r) => {
+                const isExpanded = expandedStudent === r.id;
+                const studentAnswers = (r.answers_json || []) as any[];
+                const questionsData = resultsDialog.questions_json || [];
+                return (
+                  <Card key={r.id}>
+                    <CardContent className="p-3">
+                      <div
+                        className="flex items-center justify-between cursor-pointer"
+                        onClick={() => setExpandedStudent(isExpanded ? null : r.id)}
+                      >
+                        <div className="flex items-center gap-2">
+                          {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                          <div>
+                            <p className="text-sm font-medium">{r.student_name}</p>
+                            <p className="text-xs text-muted-foreground">{r.student_email}{r.faculdade ? ` • ${r.faculdade}` : ""}{r.periodo ? ` • ${r.periodo}º` : ""}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          {r.status === "completed" ? (
+                            <>
+                              <p className={`text-lg font-bold ${(r.score || 0) >= 70 ? "text-emerald-500" : (r.score || 0) >= 50 ? "text-amber-500" : "text-destructive"}`}>
+                                {Math.round(r.score || 0)}%
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">{r.finished_at ? new Date(r.finished_at).toLocaleDateString("pt-BR") : ""}</p>
+                            </>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              {r.status === "in_progress" ? "Em andamento" : "Pendente"}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {isExpanded && r.status === "completed" && studentAnswers.length > 0 && (
+                        <div className="mt-3 pt-3 border-t space-y-3">
+                          {/* Topic summary */}
+                          {(() => {
+                            const topicMap: Record<string, { total: number; correct: number }> = {};
+                            studentAnswers.forEach((a: any) => {
+                              const t = a.topic || "Geral";
+                              if (!topicMap[t]) topicMap[t] = { total: 0, correct: 0 };
+                              topicMap[t].total++;
+                              if (a.is_correct) topicMap[t].correct++;
+                            });
+                            return (
+                              <div className="space-y-1.5">
+                                <p className="text-xs font-semibold text-muted-foreground">Por Tema:</p>
+                                {Object.entries(topicMap).map(([topic, data]) => {
+                                  const pct = Math.round((data.correct / data.total) * 100);
+                                  return (
+                                    <div key={topic} className="flex items-center gap-2 text-xs">
+                                      <span className="w-28 truncate font-medium">{topic}</span>
+                                      <Progress value={pct} className="h-1.5 flex-1" />
+                                      <span className={`w-16 text-right font-bold ${pct >= 70 ? "text-emerald-500" : pct >= 50 ? "text-amber-500" : "text-destructive"}`}>
+                                        {data.correct}/{data.total} ({pct}%)
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
+
+                          {/* Question-by-question */}
+                          <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                            <p className="text-xs font-semibold text-muted-foreground">Questões:</p>
+                            {studentAnswers.map((a: any, idx: number) => {
+                              const q = questionsData[a.question_index ?? idx];
+                              return (
+                                <div key={idx} className={`p-2 rounded text-xs border ${a.is_correct ? "border-emerald-500/20 bg-emerald-500/5" : "border-destructive/20 bg-destructive/5"}`}>
+                                  <div className="flex items-start gap-1.5">
+                                    <Badge variant={a.is_correct ? "default" : "destructive"} className="text-[9px] shrink-0 mt-0.5">
+                                      {a.is_correct ? "✓" : "✗"} Q{(a.question_index ?? idx) + 1}
+                                    </Badge>
+                                    <p className="line-clamp-2">{q?.statement || `Questão ${idx + 1}`}</p>
+                                  </div>
+                                  {!a.is_correct && q && (
+                                    <div className="ml-6 mt-1 space-y-0.5 text-[11px]">
+                                      <p className="text-destructive">Resposta: {q.options?.[a.selected] || "Não respondida"}</p>
+                                      <p className="text-emerald-600">Correta: {q.options?.[a.correct_index ?? q.correct_index]}</p>
+                                      {q.explanation && <p className="text-muted-foreground italic mt-1">{q.explanation}</p>}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </DialogContent>
