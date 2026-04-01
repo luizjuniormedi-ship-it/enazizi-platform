@@ -5,14 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, LineChart, Line, CartesianGrid } from "recharts";
-import { Loader2, TrendingDown, TrendingUp, Sparkles, AlertTriangle, CheckCircle, Users, FileText, Target, Brain, Download, ShieldAlert } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, LineChart, Line, CartesianGrid, ScatterChart, Scatter, ZAxis } from "recharts";
+import { Loader2, TrendingDown, TrendingUp, Sparkles, AlertTriangle, CheckCircle, Users, FileText, Target, Brain, Download, ShieldAlert, Info, BarChart3, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { exportProfessorBIReport } from "@/lib/exportPdf";
 
 interface Props {
   callAPI: (body: Record<string, unknown>) => Promise<any>;
 }
+
+const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 const ProfessorBIPanel = ({ callAPI }: Props) => {
   const { toast } = useToast();
@@ -25,10 +27,7 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
   const loadBI = async (sid?: string) => {
     setLoading(true);
     try {
-      const res = await callAPI({
-        action: "professor_bi",
-        student_id: sid && sid !== "all" ? sid : undefined,
-      });
+      const res = await callAPI({ action: "professor_bi", student_id: sid && sid !== "all" ? sid : undefined });
       setData(res);
     } catch (e) {
       toast({ title: "Erro ao carregar BI", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
@@ -74,7 +73,6 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
     const selectedStudent = studentFilter !== "all"
       ? data.students?.find((s: any) => s.user_id === studentFilter)?.display_name
       : null;
-
     exportProfessorBIReport({
       kpis: {
         "Atividades Criadas": prof.kpis?.total_activities ?? 0,
@@ -95,14 +93,10 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
       studentEngagement: plat?.student_engagement,
       studentPercentile: data.student_percentile,
     }, selectedStudent ? `BI_Aluno_${selectedStudent}` : "BI_Turma_Professor");
-
     toast({ title: "PDF exportado com sucesso!" });
   };
 
-  if (loading) {
-    return <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
-  }
-
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!data) return <p className="text-center text-muted-foreground py-8">Sem dados disponíveis.</p>;
 
   const prof = data.proficiency || {};
@@ -111,6 +105,11 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
   const atRisk = data.at_risk_students || [];
   const weeklyEvo = data.weekly_evolution || [];
   const percentile = data.student_percentile;
+  const studentMatrix = data.student_matrix || [];
+  const studentRanking = data.student_ranking || [];
+  const topicStudentCross = data.topic_student_cross || [];
+  const profVsPlat = data.proficiency_vs_platform || [];
+  const activityHeatmap = data.activity_heatmap || [];
 
   return (
     <div className="space-y-6">
@@ -132,7 +131,7 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
         </Button>
       </div>
 
-      {/* At-Risk Students Alert */}
+      {/* At-Risk Students */}
       {atRisk.length > 0 && (
         <Card className="border-destructive/50 bg-destructive/5">
           <CardHeader className="pb-2">
@@ -161,7 +160,7 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
         </Card>
       )}
 
-      {/* Student Percentile Card */}
+      {/* Percentile */}
       {percentile && (
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="p-4 flex items-center gap-4">
@@ -171,8 +170,7 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
             <div>
               <p className="text-sm font-semibold">{percentile.display_name}</p>
               <p className="text-xs text-muted-foreground">
-                Percentil {percentile.percentile} da turma • Acurácia {percentile.accuracy}% •
-                Posição {percentile.rank}/{percentile.total_students}
+                Percentil {percentile.percentile} da turma • Acurácia {percentile.accuracy}% • Posição {percentile.rank}/{percentile.total_students}
               </p>
             </div>
           </CardContent>
@@ -181,38 +179,161 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
 
       <Tabs defaultValue="proficiency">
         <TabsList>
-          <TabsTrigger value="proficiency">🎯 BI Proficiência</TabsTrigger>
-          <TabsTrigger value="platform">📊 BI Plataforma Geral</TabsTrigger>
+          <TabsTrigger value="proficiency">🎯 Atividades do Professor</TabsTrigger>
+          <TabsTrigger value="platform">📊 Jornada Global</TabsTrigger>
           <TabsTrigger value="suggestions">💡 Sugestões Pedagógicas</TabsTrigger>
         </TabsList>
 
-        {/* ===== PROFICIENCY BI ===== */}
+        {/* ===== PROFICIENCY TAB ===== */}
         <TabsContent value="proficiency" className="space-y-6 mt-4">
-          {/* KPIs */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <KPICard icon={<FileText className="h-5 w-5 text-primary" />} label="Atividades Criadas" value={prof.kpis?.total_activities ?? 0} />
-            <KPICard icon={<Target className="h-5 w-5 text-emerald-500" />} label="Taxa de Conclusão" value={`${prof.kpis?.completion_rate ?? 0}%`} />
-            <KPICard icon={<TrendingUp className="h-5 w-5 text-blue-500" />} label="Média Geral" value={`${prof.kpis?.avg_score ?? 0}%`} />
-            <KPICard icon={<AlertTriangle className="h-5 w-5 text-amber-500" />} label="Pendentes" value={prof.kpis?.pending ?? 0} />
+          {/* Banner */}
+          <div className="flex items-start gap-3 p-4 rounded-lg border border-primary/30 bg-primary/5">
+            <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-primary">Desempenho em Atividades do Professor</p>
+              <p className="text-xs text-muted-foreground">
+                Resultados exclusivos das atividades que você criou e atribuiu aos alunos: simulados, casos clínicos e temas de estudo.
+              </p>
+            </div>
           </div>
 
-          {/* Weekly Evolution Chart */}
+          {/* KPIs */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <KPICard icon={<FileText className="h-5 w-5 text-primary" />} label="Atividades Criadas" value={prof.kpis?.total_activities ?? 0} borderColor="border-primary/20" />
+            <KPICard icon={<Target className="h-5 w-5 text-emerald-500" />} label="Taxa de Conclusão" value={`${prof.kpis?.completion_rate ?? 0}%`} borderColor="border-primary/20" />
+            <KPICard icon={<TrendingUp className="h-5 w-5 text-blue-500" />} label="Média Geral" value={`${prof.kpis?.avg_score ?? 0}%`} borderColor="border-primary/20" />
+            <KPICard icon={<AlertTriangle className="h-5 w-5 text-amber-500" />} label="Pendentes" value={prof.kpis?.pending ?? 0} borderColor="border-primary/20" />
+          </div>
+
+          {/* Student Ranking */}
+          {studentRanking.length > 0 && (
+            <Card className="border-primary/20">
+              <CardHeader><CardTitle className="text-base flex items-center gap-2"><GraduationCap className="h-4 w-4 text-primary" /> Ranking de Alunos (Proficiência)</CardTitle></CardHeader>
+              <CardContent>
+                <div className="max-h-[300px] overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>#</TableHead>
+                        <TableHead>Aluno</TableHead>
+                        <TableHead>Média</TableHead>
+                        <TableHead>Conclusão</TableHead>
+                        <TableHead>Feitas</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {studentRanking.map((s: any, i: number) => (
+                        <TableRow key={s.user_id}>
+                          <TableCell className="text-sm font-bold">{i + 1}º</TableCell>
+                          <TableCell className="text-sm">{s.display_name}</TableCell>
+                          <TableCell>
+                            <Badge variant={s.avg_score >= 70 ? "default" : s.avg_score >= 50 ? "secondary" : "destructive"} className="text-xs">
+                              {s.avg_score}%
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">{s.completion_rate}%</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{s.total_done}/{s.total_assigned}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Student × Activity Matrix */}
+          {studentMatrix.length > 0 && studentMatrix[0]?.activities?.length > 0 && (
+            <Card className="border-primary/20">
+              <CardHeader><CardTitle className="text-base flex items-center gap-2"><BarChart3 className="h-4 w-4 text-primary" /> Matriz Aluno × Atividade</CardTitle></CardHeader>
+              <CardContent>
+                <div className="overflow-auto max-h-[400px]">
+                  <table className="text-xs w-full border-collapse">
+                    <thead>
+                      <tr>
+                        <th className="sticky left-0 bg-background p-2 text-left border-b min-w-[120px]">Aluno</th>
+                        {studentMatrix[0].activities.map((a: any, i: number) => (
+                          <th key={i} className="p-1 border-b text-center min-w-[60px]" title={`${a.type}: ${a.title}`}>
+                            <div className="truncate max-w-[60px]">{a.title?.slice(0, 8)}</div>
+                            <div className="text-[9px] text-muted-foreground">{a.type}</div>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {studentMatrix.map((s: any) => (
+                        <tr key={s.student_id}>
+                          <td className="sticky left-0 bg-background p-2 border-b font-medium">{s.display_name}</td>
+                          {s.activities.map((a: any, i: number) => {
+                            let bg = "bg-muted";
+                            let text = "—";
+                            if (a.status === "completed") {
+                              if (a.score != null) {
+                                text = `${a.score}%`;
+                                bg = a.score >= 70 ? "bg-emerald-500/20 text-emerald-700" : a.score >= 50 ? "bg-amber-500/20 text-amber-700" : "bg-destructive/20 text-destructive";
+                              } else {
+                                text = "✓";
+                                bg = "bg-emerald-500/20 text-emerald-700";
+                              }
+                            } else if (a.status === "pending") {
+                              text = "⏳";
+                              bg = "bg-amber-500/10 text-amber-600";
+                            } else if (a.status === "studying") {
+                              text = "📖";
+                              bg = "bg-blue-500/10 text-blue-600";
+                            }
+                            return <td key={i} className={`p-1 border-b text-center rounded ${bg}`}>{text}</td>;
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex gap-3 mt-3 text-[10px] text-muted-foreground">
+                  <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-emerald-500/20" /> ≥70%</span>
+                  <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-500/20" /> 50-69%</span>
+                  <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-destructive/20" /> &lt;50%</span>
+                  <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-500/10" /> Pendente</span>
+                  <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-muted" /> Não atribuído</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Topic × Student Cross */}
+          {topicStudentCross.length > 0 && (
+            <Card className="border-primary/20">
+              <CardHeader><CardTitle className="text-base">Cruzamento Tema × Aluno</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-4 max-h-[400px] overflow-auto">
+                  {topicStudentCross.slice(0, 10).map((t: any) => (
+                    <div key={t.topic}>
+                      <p className="text-sm font-semibold mb-1">{t.topic}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {t.students.map((s: any) => (
+                          <Badge key={s.name} variant={s.accuracy >= 70 ? "default" : s.accuracy >= 50 ? "secondary" : "destructive"} className="text-[10px]">
+                            {s.name}: {s.accuracy}% ({s.correct}/{s.total})
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Weekly Evolution */}
           {weeklyEvo.length > 1 && (
-            <Card>
+            <Card className="border-primary/20">
               <CardHeader><CardTitle className="text-base">Evolução Semanal da Acurácia</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={220}>
                   <LineChart data={weeklyEvo}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="week" tick={{ fontSize: 10 }} tickFormatter={(v) => {
-                      const d = new Date(v);
-                      return `${d.getDate()}/${d.getMonth() + 1}`;
-                    }} />
+                    <XAxis dataKey="week" tick={{ fontSize: 10 }} tickFormatter={(v) => { const d = new Date(v); return `${d.getDate()}/${d.getMonth() + 1}`; }} />
                     <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} tickFormatter={(v) => `${v}%`} />
-                    <Tooltip formatter={(v: number) => `${v}%`} labelFormatter={(v) => {
-                      const d = new Date(v);
-                      return `Semana de ${d.toLocaleDateString("pt-BR")}`;
-                    }} />
+                    <Tooltip formatter={(v: number) => `${v}%`} />
                     <Line type="monotone" dataKey="accuracy" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -220,10 +341,10 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
             </Card>
           )}
 
-          {/* Topic Performance Chart */}
+          {/* Topic Performance */}
           {prof.topic_breakdown?.length > 0 && (
-            <Card>
-              <CardHeader><CardTitle className="text-base">Desempenho por Tópico (Simulados)</CardTitle></CardHeader>
+            <Card className="border-primary/20">
+              <CardHeader><CardTitle className="text-base">Desempenho por Tópico (Atividades do Professor)</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={Math.max(200, prof.topic_breakdown.length * 32)}>
                   <BarChart data={prof.topic_breakdown.slice(0, 15)} layout="vertical" margin={{ left: 120 }}>
@@ -280,9 +401,9 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
             </Card>
           </div>
 
-          {/* Activity Table with pending days */}
+          {/* Activity Table */}
           {prof.activity_table?.length > 0 && (
-            <Card>
+            <Card className="border-primary/20">
               <CardHeader><CardTitle className="text-base">Resultados por Atividade</CardTitle></CardHeader>
               <CardContent>
                 <div className="max-h-[400px] overflow-auto">
@@ -318,28 +439,130 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
           )}
         </TabsContent>
 
-        {/* ===== PLATFORM BI ===== */}
+        {/* ===== PLATFORM / JORNADA GLOBAL ===== */}
         <TabsContent value="platform" className="space-y-6 mt-4">
+          {/* Banner */}
+          <div className="flex items-start gap-3 p-4 rounded-lg border border-violet-500/30 bg-violet-500/5">
+            <Info className="h-5 w-5 text-violet-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-violet-600">Jornada Global na Plataforma</p>
+              <p className="text-xs text-muted-foreground">
+                Desempenho dos alunos em todas as funcionalidades: banco de questões, flashcards, simulados gerais, streaks e engajamento geral.
+              </p>
+            </div>
+          </div>
+
           {plat?.kpis ? (
             <>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <KPICard icon={<Brain className="h-5 w-5 text-primary" />} label="Questões Respondidas" value={plat.kpis.total_questions} />
-                <KPICard icon={<CheckCircle className="h-5 w-5 text-emerald-500" />} label="Acurácia Média" value={`${plat.kpis.avg_accuracy}%`} />
-                <KPICard icon={<TrendingUp className="h-5 w-5 text-amber-500" />} label="Streak Médio" value={`${plat.kpis.avg_streak} dias`} />
-                <KPICard icon={<Users className="h-5 w-5 text-destructive" />} label="Inativos (>7d)" value={plat.kpis.inactive_count} />
+                <KPICard icon={<Brain className="h-5 w-5 text-violet-500" />} label="Questões Respondidas" value={plat.kpis.total_questions} borderColor="border-violet-500/20" />
+                <KPICard icon={<CheckCircle className="h-5 w-5 text-emerald-500" />} label="Acurácia Média" value={`${plat.kpis.avg_accuracy}%`} borderColor="border-violet-500/20" />
+                <KPICard icon={<TrendingUp className="h-5 w-5 text-amber-500" />} label="Streak Médio" value={`${plat.kpis.avg_streak} dias`} borderColor="border-violet-500/20" />
+                <KPICard icon={<Users className="h-5 w-5 text-destructive" />} label="Inativos (>7d)" value={plat.kpis.inactive_count} borderColor="border-violet-500/20" />
               </div>
+
+              {/* Proficiency vs Platform Correlation */}
+              {profVsPlat.length > 0 && profVsPlat.some((s: any) => s.gap != null) && (
+                <Card className="border-violet-500/20">
+                  <CardHeader><CardTitle className="text-base">Correlação: Proficiência × Plataforma</CardTitle></CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-muted-foreground mb-3">Compara o desempenho nas atividades do professor vs. acurácia geral na plataforma. Gap positivo = melhor nas atividades do professor.</p>
+                    <div className="max-h-[300px] overflow-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Aluno</TableHead>
+                            <TableHead>Prof. (%)</TableHead>
+                            <TableHead>Plataforma (%)</TableHead>
+                            <TableHead>Gap</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {profVsPlat.filter((s: any) => s.gap != null).map((s: any, i: number) => (
+                            <TableRow key={i}>
+                              <TableCell className="text-sm">{s.name}</TableCell>
+                              <TableCell className="text-sm font-medium">{s.prof_accuracy ?? "—"}%</TableCell>
+                              <TableCell className="text-sm font-medium">{s.platform_accuracy ?? "—"}%</TableCell>
+                              <TableCell>
+                                <Badge variant={s.gap > 10 ? "default" : s.gap < -10 ? "destructive" : "secondary"} className="text-xs">
+                                  {s.gap > 0 ? "+" : ""}{s.gap}%
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Activity Heatmap */}
+              {activityHeatmap.length > 0 && (
+                <Card className="border-violet-500/20">
+                  <CardHeader><CardTitle className="text-base">Heatmap de Atividade (Últimas 2 Semanas)</CardTitle></CardHeader>
+                  <CardContent>
+                    <div className="overflow-auto">
+                      <table className="text-[10px] border-collapse">
+                        <thead>
+                          <tr>
+                            <th className="p-1" />
+                            {Array.from({ length: 24 }, (_, h) => (
+                              <th key={h} className="p-1 text-muted-foreground">{h}h</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {DAY_LABELS.map((label, dayIdx) => {
+                            const maxCount = Math.max(...activityHeatmap.map((h: any) => h.count), 1);
+                            return (
+                              <tr key={dayIdx}>
+                                <td className="p-1 text-muted-foreground font-medium pr-2">{label}</td>
+                                {Array.from({ length: 24 }, (_, h) => {
+                                  const cell = activityHeatmap.find((c: any) => c.day === dayIdx && c.hour === h);
+                                  const count = cell?.count || 0;
+                                  const intensity = count / maxCount;
+                                  return (
+                                    <td key={h} className="p-0.5" title={`${label} ${h}h: ${count} atividades`}>
+                                      <div
+                                        className="w-4 h-4 rounded-sm"
+                                        style={{
+                                          backgroundColor: count === 0
+                                            ? "hsl(var(--muted))"
+                                            : `hsl(270, 70%, ${Math.max(30, 80 - intensity * 50)}%)`,
+                                        }}
+                                      />
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2 text-[10px] text-muted-foreground">
+                      <span>Menos</span>
+                      {[0, 0.25, 0.5, 0.75, 1].map((v, i) => (
+                        <div key={i} className="w-4 h-4 rounded-sm" style={{ backgroundColor: v === 0 ? "hsl(var(--muted))" : `hsl(270, 70%, ${80 - v * 50}%)` }} />
+                      ))}
+                      <span>Mais</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Top Errors */}
               {plat.top_errors?.length > 0 && (
-                <Card>
-                  <CardHeader><CardTitle className="text-base">Top 10 Temas com Mais Erros</CardTitle></CardHeader>
+                <Card className="border-violet-500/20">
+                  <CardHeader><CardTitle className="text-base">Temas com Mais Erros (Uso Geral da Plataforma)</CardTitle></CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={Math.max(200, plat.top_errors.length * 32)}>
                       <BarChart data={plat.top_errors} layout="vertical" margin={{ left: 120 }}>
                         <XAxis type="number" />
                         <YAxis type="category" dataKey="tema" width={110} tick={{ fontSize: 11 }} />
                         <Tooltip />
-                        <Bar dataKey="count" fill="hsl(var(--destructive))" radius={[0, 4, 4, 0]} name="Erros" />
+                        <Bar dataKey="count" fill="hsl(270, 70%, 55%)" radius={[0, 4, 4, 0]} name="Erros" />
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>
@@ -348,18 +571,17 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
 
               {/* Specialty Radar */}
               {plat.specialty_accuracy?.length >= 3 && (
-                <Card>
-                  <CardHeader><CardTitle className="text-base">Acurácia por Especialidade</CardTitle></CardHeader>
+                <Card className="border-violet-500/20">
+                  <CardHeader><CardTitle className="text-base">Acurácia por Especialidade (Plataforma)</CardTitle></CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={320}>
                       <RadarChart data={plat.specialty_accuracy.map((s: any) => ({
-                        ...s,
-                        label: s.specialty.length > 12 ? s.specialty.slice(0, 11) + "…" : s.specialty,
+                        ...s, label: s.specialty.length > 12 ? s.specialty.slice(0, 11) + "…" : s.specialty,
                       }))}>
                         <PolarGrid className="stroke-border" />
                         <PolarAngleAxis dataKey="label" tick={{ fontSize: 10 }} />
                         <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
-                        <Radar name="Acurácia" dataKey="accuracy" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.2} strokeWidth={2} />
+                        <Radar name="Acurácia" dataKey="accuracy" stroke="hsl(270, 70%, 55%)" fill="hsl(270, 70%, 55%)" fillOpacity={0.2} strokeWidth={2} />
                       </RadarChart>
                     </ResponsiveContainer>
                   </CardContent>
@@ -368,8 +590,8 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
 
               {/* Student Engagement */}
               {plat.student_engagement?.length > 0 && (
-                <Card>
-                  <CardHeader><CardTitle className="text-base">Engajamento dos Alunos</CardTitle></CardHeader>
+                <Card className="border-violet-500/20">
+                  <CardHeader><CardTitle className="text-base">Engajamento dos Alunos (Plataforma)</CardTitle></CardHeader>
                   <CardContent>
                     <div className="max-h-[400px] overflow-auto">
                       <Table>
@@ -421,9 +643,7 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-sm">{s.title}</CardTitle>
                       <div className="flex gap-1">
-                        <Badge variant={s.priority === "alta" ? "destructive" : "secondary"} className="text-[10px]">
-                          {s.priority}
-                        </Badge>
+                        <Badge variant={s.priority === "alta" ? "destructive" : "secondary"} className="text-[10px]">{s.priority}</Badge>
                         <Badge variant="outline" className="text-[10px]">{s.target}</Badge>
                       </div>
                     </div>
@@ -441,8 +661,8 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
   );
 };
 
-const KPICard = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) => (
-  <Card>
+const KPICard = ({ icon, label, value, borderColor }: { icon: React.ReactNode; label: string; value: React.ReactNode; borderColor?: string }) => (
+  <Card className={borderColor}>
     <CardContent className="p-4 flex items-center gap-3">
       <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center shrink-0">{icon}</div>
       <div>

@@ -1156,16 +1156,128 @@ REGRAS:
           }
         }
 
-        // ---- Add created_at to activity table for pending days calculation ----
-        const activityTableEnhanced = activityTable.map((item: any) => {
-          let created_at = null;
-          if (item.type === "Simulado") {
-            const sim = (sims || []).find((s: any) => s.title === item.title);
-            // We don't have created_at on sims query, use result created_at
+        // ---- STUDENT MATRIX (student × activity heatmap) ----
+        const studentMatrix = biProfiles.map((p: any) => {
+          const activities: any[] = [];
+          for (const sim of (sims || [])) {
+            const r = simResultsRaw.find((r: any) => r.simulado_id === sim.id && r.student_id === p.user_id);
+            activities.push({ id: sim.id, type: "Simulado", title: sim.title, score: r?.score != null ? Math.round(r.score) : null, status: r?.status || "not_assigned" });
           }
-          return { ...item, created_at };
+          for (const c of (biCases || [])) {
+            const r = caseResultsRaw.find((r: any) => r.case_id === c.id && r.student_id === p.user_id);
+            activities.push({ id: c.id, type: "Caso", title: c.title, score: r?.final_score != null ? Math.round(r.final_score) : null, status: r?.status || "not_assigned" });
+          }
+          for (const a of (biAssigns || [])) {
+            const r = assignResultsRaw.find((r: any) => r.assignment_id === a.id && r.student_id === p.user_id);
+            activities.push({ id: a.id, type: "Tema", title: a.title, score: null, status: r?.status || "not_assigned" });
+          }
+          return { student_id: p.user_id, display_name: p.display_name || p.email || "—", activities };
         });
 
+        // ---- STUDENT RANKING (by proficiency performance) ----
+        const studentRanking = biProfiles.map((p: any) => {
+          const sScored = simResultsRaw.filter((r: any) => r.student_id === p.user_id && r.status === "completed" && r.score != null);
+          const cScored = caseResultsRaw.filter((r: any) => r.student_id === p.user_id && r.status === "completed" && r.final_score != null);
+          const allScores = [...sScored.map((r: any) => r.score), ...cScored.map((r: any) => r.final_score)];
+          const avgSc = allScores.length > 0 ? Math.round(allScores.reduce((a: number, b: number) => a + b, 0) / allScores.length) : 0;
+          const totalAssigned = simResultsRaw.filter((r: any) => r.student_id === p.user_id).length
+            + caseResultsRaw.filter((r: any) => r.student_id === p.user_id).length
+            + assignResultsRaw.filter((r: any) => r.student_id === p.user_id).length;
+          const totalDone = simResultsRaw.filter((r: any) => r.student_id === p.user_id && r.status === "completed").length
+            + caseResultsRaw.filter((r: any) => r.student_id === p.user_id && r.status === "completed").length
+            + assignResultsRaw.filter((r: any) => r.student_id === p.user_id && r.status === "completed").length;
+          const completionR = totalAssigned > 0 ? Math.round((totalDone / totalAssigned) * 100) : 0;
+          return { user_id: p.user_id, display_name: p.display_name || p.email || "—", avg_score: avgSc, completion_rate: completionR, total_done: totalDone, total_assigned: totalAssigned };
+        }).sort((a, b) => b.avg_score - a.avg_score);
+
+        // ---- TOPIC × STUDENT CROSS ----
+        const topicStudentCross: Record<string, Record<string, { correct: number; total: number }>> = {};
+        for (const sim of (sims || [])) {
+          const questions = sim.questions_json || [];
+          const resultsForSim = simResultsRaw.filter((r: any) => r.simulado_id === sim.id && r.status === "completed");
+          for (const result of resultsForSim) {
+            const answers = result.answers_json || [];
+            const pName = biProfiles.find((p: any) => p.user_id === result.student_id)?.display_name || "—";
+            questions.forEach((q: any, idx: number) => {
+              const topic = q.topic || q.block || "Geral";
+              if (!topicStudentCross[topic]) topicStudentCross[topic] = {};
+              if (!topicStudentCross[topic][pName]) topicStudentCross[topic][pName] = { correct: 0, total: 0 };
+              topicStudentCross[topic][pName].total++;
+              const studentAnswer = answers[idx];
+              if (studentAnswer != null && studentAnswer === q.correct_index) {
+                topicStudentCross[topic][pName].correct++;
+              }
+            });
+          }
+        }
+        const topicStudentCrossArr = Object.entries(topicStudentCross).map(([topic, students]) => ({
+          topic,
+          students: Object.entries(students).map(([name, v]) => ({
+            name, correct: v.correct, total: v.total, accuracy: v.total > 0 ? Math.round((v.correct / v.total) * 100) : 0,
+          })),
+        })).sort((a, b) => a.topic.localeCompare(b.topic));
+
+        // ---- PROFICIENCY VS PLATFORM CORRELATION ----
+        const proficiencyVsPlatform = biProfiles.map((p: any) => {
+          const sScored = simResultsRaw.filter((r: any) => r.student_id === p.user_id && r.status === "completed" && r.score != null);
+          const cScored = caseResultsRaw.filter((r: any) => r.student_id === p.user_id && r.status === "completed" && r.final_score != null);
+          const allScores = [...sScored.map((r: any) => r.score), ...cScored.map((r: any) => r.final_score)];
+          const profAcc = allScores.length > 0 ? Math.round(allScores.reduce((a: number, b: number) => a + b, 0) / allScores.length) : null;
+          const platEng = platformData?.student_engagement?.find((s: any) => s.user_id === p.user_id);
+          const platAcc = platEng?.accuracy ?? null;
+          return {
+            student_id: p.user_id,
+            name: p.display_name || p.email || "—",
+            prof_accuracy: profAcc,
+            platform_accuracy: platAcc,
+            gap: profAcc != null && platAcc != null ? profAcc - platAcc : null,
+          };
+        }).filter((s: any) => s.prof_accuracy != null || s.platform_accuracy != null);
+
+        // ---- ACTIVITY HEATMAP (practice_attempts by day of week × hour) ----
+        let activityHeatmap: any[] = [];
+        if (platformData) {
+          const twoWeeksAgo = new Date();
+          twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+          let heatQuery = sb.from("practice_attempts").select("created_at").gte("created_at", twoWeeksAgo.toISOString());
+          if (student_id) {
+            heatQuery = heatQuery.eq("user_id", student_id);
+          } else if (allStudentIds.length <= 100) {
+            heatQuery = heatQuery.in("user_id", allStudentIds);
+          }
+          const { data: heatAttempts } = await heatQuery.limit(5000);
+          const heatMap: Record<string, number> = {};
+          for (const a of (heatAttempts || [])) {
+            const d = new Date(a.created_at);
+            const key = `${d.getDay()}-${d.getHours()}`;
+            heatMap[key] = (heatMap[key] || 0) + 1;
+          }
+          activityHeatmap = Object.entries(heatMap).map(([key, count]) => {
+            const [day, hour] = key.split("-").map(Number);
+            return { day, hour, count };
+          });
+        }
+
+        return ok({
+          proficiency: {
+            kpis: { total_activities: totalActivities, completion_rate: completionRate, avg_score: avgScore, pending: pendingResults.length },
+            topic_breakdown: topicBreakdown,
+            deficient_topics: deficientTopics,
+            mastered_topics: masteredTopics,
+            specialty_perf: specialtyPerf,
+            activity_table: activityTable.slice(0, 200),
+          },
+          platform: platformData,
+          students: biProfiles.map((p: any) => ({ user_id: p.user_id, display_name: p.display_name || p.email })),
+          at_risk_students: atRiskStudents,
+          weekly_evolution: weeklyEvolution,
+          student_percentile: studentPercentile,
+          student_matrix: studentMatrix,
+          student_ranking: studentRanking,
+          topic_student_cross: topicStudentCrossArr,
+          proficiency_vs_platform: proficiencyVsPlatform,
+          activity_heatmap: activityHeatmap,
+        });
         return ok({
           proficiency: {
             kpis: { total_activities: totalActivities, completion_rate: completionRate, avg_score: avgScore, pending: pendingResults.length },
