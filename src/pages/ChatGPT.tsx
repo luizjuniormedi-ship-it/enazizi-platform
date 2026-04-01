@@ -371,7 +371,7 @@ const ChatGPT = () => {
   const nextPhase = getNextPhaseInfo(enaziziStep);
 
   const content = (
-    <div className={`flex flex-col animate-fade-in min-w-0 w-full ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-full"}`}>
+    <div className={`flex flex-col animate-fade-in min-w-0 w-full ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-3 sm:p-6 overflow-hidden" : "h-full"}`}>
       <TutorHeader
         isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen}
         studyStarted={studyStarted} taxaAcerto={performance.taxa_acerto}
