@@ -322,7 +322,7 @@ FORMATO JSON OBRIGATÓRIO:
           maxRetries: 1,
           messages: [
             { role: "system", content: "Responda APENAS com JSON válido. Sem markdown, sem texto extra." },
-            { role: "user", content: `Gere ${questionCount} questões de múltipla escolha sobre ${specialty} para residência médica em PORTUGUÊS BRASILEIRO.\n\nFormato:\n{"questions":[{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","topic":"${specialty}","difficulty":3}],"flashcards":[]}` },
+            { role: "user", content: `Gere ${questionCount} questões de múltipla escolha sobre ${specialty} para residência médica em PORTUGUÊS BRASILEIRO. Priorize dificuldade 4-5 (difícil).\n\nFormato:\n{"questions":[{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","topic":"${specialty}","difficulty":4}],"flashcards":[]}` },
           ],
         });
         if (retryResponse.ok) {
