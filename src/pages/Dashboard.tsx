@@ -20,7 +20,7 @@ import FreeStudyCard from "@/components/dashboard/FreeStudyCard";
 import PracticalTrainingCard from "@/components/dashboard/PracticalTrainingCard";
 import DiagnosticSummaryCard from "@/components/dashboard/DiagnosticSummaryCard";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
-import AdminSystemAlerts from "@/components/admin/AdminSystemAlerts";
+
 import MissionStartButton from "@/components/dashboard/MissionStartButton";
 import AdaptiveModeCard from "@/components/dashboard/AdaptiveModeCard";
 import ExamSetupReminder from "@/components/dashboard/ExamSetupReminder";
