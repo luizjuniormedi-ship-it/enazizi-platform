@@ -1855,6 +1855,7 @@ export type Database = {
           source_type: string | null
           source_url: string | null
           statement: string
+          subtopic: string | null
           topic: string | null
           user_id: string
         }
@@ -1877,6 +1878,7 @@ export type Database = {
           source_type?: string | null
           source_url?: string | null
           statement: string
+          subtopic?: string | null
           topic?: string | null
           user_id: string
         }
@@ -1899,6 +1901,7 @@ export type Database = {
           source_type?: string | null
           source_url?: string | null
           statement?: string
+          subtopic?: string | null
           topic?: string | null
           user_id?: string
         }

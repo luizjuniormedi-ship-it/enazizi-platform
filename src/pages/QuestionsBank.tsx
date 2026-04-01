@@ -28,6 +28,7 @@ interface Question {
   correct_index: number;
   explanation: string | null;
   topic: string | null;
+  subtopic: string | null;
   source: string | null;
   created_at: string;
   image_url: string | null;
@@ -61,6 +62,7 @@ const QuestionsBank = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [topicFilter, setTopicFilter] = useState(studyCtx?.topic || "all");
+  const [subtopicFilter, setSubtopicFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(0);
@@ -189,14 +191,25 @@ const QuestionsBank = () => {
     return Array.from(set).sort();
   }, [questions]);
 
+  const subtopics = useMemo(() => {
+    if (topicFilter === "all") return [];
+    const set = new Set(
+      questions
+        .filter(q => q.topic === topicFilter && q.subtopic)
+        .map(q => q.subtopic as string)
+    );
+    return Array.from(set).sort();
+  }, [questions, topicFilter]);
+
   const filtered = useMemo(() => {
     return questions.filter((q) => {
       if (topicFilter !== "all" && q.topic !== topicFilter) return false;
+      if (subtopicFilter !== "all" && q.subtopic !== subtopicFilter) return false;
       if (sourceFilter !== "all" && q.source !== sourceFilter) return false;
       if (searchTerm && !q.statement.toLowerCase().includes(searchTerm.toLowerCase())) return false;
       return true;
     });
-  }, [questions, topicFilter, sourceFilter, searchTerm]);
+  }, [questions, topicFilter, subtopicFilter, sourceFilter, searchTerm]);
 
   const handleDelete = async (id: string) => {
     await supabase.from("questions_bank").delete().eq("id", id);
@@ -489,7 +502,7 @@ const QuestionsBank = () => {
           />
         </div>
         {topics.length > 0 && (
-          <Select value={topicFilter} onValueChange={setTopicFilter}>
+          <Select value={topicFilter} onValueChange={(v) => { setTopicFilter(v); setSubtopicFilter("all"); }}>
             <SelectTrigger className="w-[180px] bg-secondary">
               <SelectValue placeholder="Tópico" />
             </SelectTrigger>
@@ -497,6 +510,19 @@ const QuestionsBank = () => {
               <SelectItem value="all">Todos os tópicos</SelectItem>
               {topics.map((t) => (
                 <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {subtopics.length > 0 && (
+          <Select value={subtopicFilter} onValueChange={setSubtopicFilter}>
+            <SelectTrigger className="w-[180px] bg-secondary">
+              <SelectValue placeholder="Subtema" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os subtemas</SelectItem>
+              {subtopics.map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
               ))}
             </SelectContent>
           </Select>
