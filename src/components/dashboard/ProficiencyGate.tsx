@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { usePendingProficiency } from "@/hooks/usePendingProficiency";
 import { GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,13 @@ const ProficiencyGate = () => {
   const navigate = useNavigate();
 
   const onProficiencyPage = location.pathname === "/dashboard/proficiencia";
+
+  // Force-navigate when blocked and not on proficiency page
+  useEffect(() => {
+    if (isBlocked && !onProficiencyPage) {
+      navigate("/dashboard/proficiencia", { replace: true });
+    }
+  }, [isBlocked, onProficiencyPage, navigate]);
 
   if (!isBlocked || onProficiencyPage) return null;
 
