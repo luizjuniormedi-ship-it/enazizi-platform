@@ -1,11 +1,12 @@
-import { useState, useCallback, useRef } from "react";
-import { Globe, Search, Loader2, CheckCircle2, AlertTriangle, PlayCircle, XCircle } from "lucide-react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { Globe, Search, Loader2, CheckCircle2, AlertTriangle, PlayCircle, XCircle, Bot, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const SPECIALTIES = [
   "Angiologia", "Cardiologia", "Cirurgia Geral", "Dermatologia",
@@ -33,6 +34,13 @@ interface BulkResult {
   error?: string;
 }
 
+interface BankMetrics {
+  total: number;
+  real: number;
+  ai: number;
+  realPct: string;
+}
+
 const AdminWebScrapingPanel = () => {
   const { session } = useAuth();
   const { toast } = useToast();
@@ -41,6 +49,7 @@ const AdminWebScrapingPanel = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScrapeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [bankMetrics, setBankMetrics] = useState<BankMetrics>({ total: 0, real: 0, ai: 0, realPct: "0" });
 
   // Bulk search state
   const [bulkRunning, setBulkRunning] = useState(false);
@@ -48,6 +57,21 @@ const AdminWebScrapingPanel = () => {
   const [bulkCurrent, setBulkCurrent] = useState("");
   const [bulkResults, setBulkResults] = useState<BulkResult[]>([]);
   const cancelRef = useRef(false);
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      const [totalRes, realRes] = await Promise.all([
+        supabase.from("questions_bank").select("*", { count: "exact", head: true }).eq("is_global", true),
+        supabase.from("questions_bank").select("*", { count: "exact", head: true }).eq("is_global", true)
+          .or("exam_bank_id.not.is.null,source_type.eq.indexed_external,source_url.not.is.null"),
+      ]);
+      const total = totalRes.count || 0;
+      const real = realRes.count || 0;
+      const ai = total - real;
+      setBankMetrics({ total, real, ai, realPct: total > 0 ? ((real / total) * 100).toFixed(1) : "0" });
+    };
+    fetchMetrics();
+  }, [result, bulkResults]);
 
   const searchSingle = useCallback(async (spec: string, bancaVal: string | null): Promise<ScrapeResult | null> => {
     if (!session) return null;
@@ -126,7 +150,6 @@ const AdminWebScrapingPanel = () => {
       }
       setBulkResults([...results]);
 
-      // Rate-limit delay between calls
       if (i < SPECIALTIES.length - 1 && !cancelRef.current) {
         await new Promise(r => setTimeout(r, 4000));
       }
@@ -156,6 +179,24 @@ const AdminWebScrapingPanel = () => {
           <Globe className="h-5 w-5 text-blue-500" />
         </div>
         <h2 className="text-sm sm:text-base font-semibold">Buscar Questões Reais (Web Scraping)</h2>
+      </div>
+
+      {/* Bank metrics header */}
+      <div className="flex flex-wrap items-center gap-2 mb-3 p-2.5 rounded-lg bg-muted/50 border border-border/50">
+        <BarChart3 className="h-4 w-4 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground font-medium">Banco global:</span>
+        <span className="text-sm font-bold">{bankMetrics.total.toLocaleString()}</span>
+        <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-[10px] gap-1">
+          <Globe className="h-2.5 w-2.5" />
+          {bankMetrics.real.toLocaleString()} reais
+        </Badge>
+        <Badge className="bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30 text-[10px] gap-1">
+          <Bot className="h-2.5 w-2.5" />
+          {bankMetrics.ai.toLocaleString()} IA
+        </Badge>
+        <Badge variant="outline" className="text-[10px]">
+          {bankMetrics.realPct}% real
+        </Badge>
       </div>
 
       <p className="text-xs text-muted-foreground mb-3">
