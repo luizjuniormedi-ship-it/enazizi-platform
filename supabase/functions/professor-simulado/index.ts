@@ -621,11 +621,12 @@ REGRAS:
       }
 
       case "list_clinical_cases": {
-        const { data: cases } = await sb
-          .from("teacher_clinical_cases")
-          .select("*")
-          .eq("professor_id", user.id)
-          .order("created_at", { ascending: false });
+        const isAdminCases = roleData.some((r: any) => r.role === "admin");
+        let casesQuery = sb.from("teacher_clinical_cases").select("*");
+        if (!isAdminCases) {
+          casesQuery = casesQuery.eq("professor_id", user.id);
+        }
+        const { data: cases } = await casesQuery.order("created_at", { ascending: false });
 
         const caseIds = (cases || []).map((c: any) => c.id);
         let resultsByCaseId: Record<string, { total: number; completed: number; avgScore: number }> = {};
