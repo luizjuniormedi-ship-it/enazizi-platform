@@ -1,14 +1,18 @@
 
 
-# Remover DashboardWarnings do Dashboard
+# Remover Alerta de Saúde do Sistema do Dashboard
 
-## Mudança
+## Problema
 
-Remover o componente `DashboardWarnings` da página Dashboard, eliminando o alerta "Você ainda não estudou hoje" que não leva a lugar nenhum.
+O componente `AdminSystemAlerts` exibe um popup de saúde do sistema que fica preso na mesma mensagem repetidamente, mesmo após ser dispensado. Além disso, há um erro de runtime (`DashboardWarnings is not defined`) que precisa ser corrigido — provavelmente cache stale, mas vamos garantir que o arquivo está limpo.
 
-## Arquivos alterados
+## Mudanças
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/pages/Dashboard.tsx` | Remover import e uso de `DashboardWarnings` |
+| `src/pages/Dashboard.tsx` | Remover import e uso de `AdminSystemAlerts` (linhas 23 e 116-119) |
+
+## Resultado
+
+O popup de saúde do sistema não aparecerá mais no dashboard. As informações de saúde continuam acessíveis no painel admin (`/admin`) para quem precisar.
 
