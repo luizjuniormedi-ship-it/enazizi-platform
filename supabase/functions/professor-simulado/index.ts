@@ -141,11 +141,19 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
       }
 
       case "list_simulados": {
-        const { data: simulados } = await sb
+        // Check if user is admin
+        const isAdmin = roleData.some((r: any) => r.role === "admin");
+        
+        let simuladosQuery = sb
           .from("teacher_simulados")
-          .select("*")
-          .eq("professor_id", user.id)
-          .order("created_at", { ascending: false });
+          .select("*");
+        
+        // Admins see all, professors see only their own
+        if (!isAdmin) {
+          simuladosQuery = simuladosQuery.eq("professor_id", user.id);
+        }
+        
+        const { data: simulados } = await simuladosQuery.order("created_at", { ascending: false });
 
         // Get result counts
         const simIds = (simulados || []).map((s: any) => s.id);
@@ -176,6 +184,30 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
         }
 
         return ok({ simulados: (simulados || []).map((s: any) => ({ ...s, results_summary: resultsBySimulado[s.id] || { total: 0, completed: 0, avgScore: 0 } })) });
+      }
+
+      case "delete_simulado": {
+        const { simulado_id } = params;
+        if (!simulado_id) throw new Error("simulado_id obrigatório");
+
+        const isAdminDel = roleData.some((r: any) => r.role === "admin");
+
+        // Verify ownership (unless admin)
+        if (!isAdminDel) {
+          const { data: sim } = await sb.from("teacher_simulados").select("professor_id").eq("id", simulado_id).single();
+          if (!sim || sim.professor_id !== user.id) {
+            throw new Error("Você só pode apagar simulados criados por você.");
+          }
+        }
+
+        // Delete results first (cascade)
+        await sb.from("teacher_simulado_results").delete().eq("simulado_id", simulado_id);
+        
+        // Delete the simulado
+        const { error: delError } = await sb.from("teacher_simulados").delete().eq("id", simulado_id);
+        if (delError) throw new Error(delError.message);
+
+        return ok({ success: true });
       }
 
       case "get_simulado_results": {

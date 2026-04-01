@@ -182,7 +182,18 @@ const ProfessorDashboard = () => {
     }
   };
 
-  const viewResults = async (simulado: any) => {
+  const deleteSimulado = async (simuladoId: string, simuladoTitle: string) => {
+    if (!confirm(`Tem certeza que deseja apagar o simulado "${simuladoTitle}"? Esta ação não pode ser desfeita.`)) return;
+    try {
+      await callAPI({ action: "delete_simulado", simulado_id: simuladoId });
+      toast({ title: "Simulado apagado", description: `"${simuladoTitle}" foi removido com sucesso.` });
+      loadSimulados();
+    } catch (e) {
+      toast({ title: "Erro ao apagar", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    }
+  };
+
+
     setResultsDialog({ open: true, simulado, results: [], loading: true });
     try {
       const res = await callAPI({ action: "get_simulado_results", simulado_id: simulado.id });
@@ -355,9 +366,14 @@ const ProfessorDashboard = () => {
                       {sim.periodo_filter && <Badge variant="secondary" className="text-[10px]">{sim.periodo_filter}º período</Badge>}
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => viewResults(sim)} className="gap-1.5 shrink-0">
-                    <Eye className="h-3.5 w-3.5" /> Resultados
-                  </Button>
+                  <div className="flex gap-1.5 shrink-0">
+                    <Button variant="outline" size="sm" onClick={() => viewResults(sim)} className="gap-1.5">
+                      <Eye className="h-3.5 w-3.5" /> Resultados
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => deleteSimulado(sim.id, sim.title)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
                 {sim.results_summary?.completed > 0 && (
                   <div className="mt-3 pt-3 border-t border-border">
