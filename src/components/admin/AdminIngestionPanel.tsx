@@ -266,6 +266,7 @@ const AdminIngestionPanel = () => {
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
     } finally {
+      await loadDistribution();
       setEqualizing(false);
       pauseRef.current = false;
       setEqStartTime(null);
