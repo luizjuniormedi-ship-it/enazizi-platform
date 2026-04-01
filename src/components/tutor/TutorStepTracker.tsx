@@ -22,7 +22,7 @@ interface TutorStepTrackerProps {
 const TutorStepTracker = ({
   currentTopic, enaziziStep, sessionQuestions, sessionCorrect,
   isLoading, changingTopic, setChangingTopic, newTopic, setNewTopic,
-  onChangeTopic, onPhaseAction, nextPhase,
+  onChangeTopic, onPhaseAction, onGoBackStep, nextPhase,
 }: TutorStepTrackerProps) => {
   const progressPercent = Math.round((enaziziStep / 15) * 100);
 
