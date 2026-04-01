@@ -65,6 +65,11 @@ const AdminIngestionPanel = () => {
   const [stats, setStats] = useState({ totalSources: 5, totalExtracted: 0, totalIndexed: 5, duplicatesRemoved: 0 });
   const [distribution, setDistribution] = useState<SpecialtyDist[]>([]);
   const [equalizing, setEqualizing] = useState(false);
+  const [eqProgress, setEqProgress] = useState<{
+    current: number; total: number; percent: number;
+    currentSpecialty: string; log: { specialty: string; added: number }[];
+    questionsRemaining: number;
+  } | null>(null);
 
   useEffect(() => {
     loadLogs();
