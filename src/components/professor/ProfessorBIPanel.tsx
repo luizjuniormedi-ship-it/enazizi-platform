@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
-import { Loader2, TrendingDown, TrendingUp, Sparkles, AlertTriangle, CheckCircle, Users, FileText, Target, Brain } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, LineChart, Line, CartesianGrid } from "recharts";
+import { Loader2, TrendingDown, TrendingUp, Sparkles, AlertTriangle, CheckCircle, Users, FileText, Target, Brain, Download, ShieldAlert } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { exportProfessorBIReport } from "@/lib/exportPdf";
 
 interface Props {
   callAPI: (body: Record<string, unknown>) => Promise<any>;
@@ -55,6 +56,7 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
           kpis: data.proficiency?.kpis,
           platform_kpis: data.platform?.kpis,
           top_errors: data.platform?.top_errors?.slice(0, 5),
+          at_risk_students: data.at_risk_students?.slice(0, 5),
         },
       });
       setSuggestions(res.suggestions || []);
@@ -63,6 +65,38 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
     } finally {
       setLoadingSuggestions(false);
     }
+  };
+
+  const handleExportPDF = () => {
+    if (!data) return;
+    const prof = data.proficiency || {};
+    const plat = data.platform || {};
+    const selectedStudent = studentFilter !== "all"
+      ? data.students?.find((s: any) => s.user_id === studentFilter)?.display_name
+      : null;
+
+    exportProfessorBIReport({
+      kpis: {
+        "Atividades Criadas": prof.kpis?.total_activities ?? 0,
+        "Taxa de Conclusão": `${prof.kpis?.completion_rate ?? 0}%`,
+        "Média Geral": `${prof.kpis?.avg_score ?? 0}%`,
+        "Pendentes": prof.kpis?.pending ?? 0,
+        ...(plat?.kpis ? {
+          "Questões Respondidas": plat.kpis.total_questions,
+          "Acurácia Média": `${plat.kpis.avg_accuracy}%`,
+          "Streak Médio": `${plat.kpis.avg_streak} dias`,
+          "Inativos (>7d)": plat.kpis.inactive_count,
+        } : {}),
+      },
+      topicBreakdown: prof.topic_breakdown,
+      deficientTopics: prof.deficient_topics,
+      masteredTopics: prof.mastered_topics,
+      atRiskStudents: data.at_risk_students,
+      studentEngagement: plat?.student_engagement,
+      studentPercentile: data.student_percentile,
+    }, selectedStudent ? `BI_Aluno_${selectedStudent}` : "BI_Turma_Professor");
+
+    toast({ title: "PDF exportado com sucesso!" });
   };
 
   if (loading) {
@@ -74,11 +108,14 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
   const prof = data.proficiency || {};
   const plat = data.platform || {};
   const students = data.students || [];
+  const atRisk = data.at_risk_students || [];
+  const weeklyEvo = data.weekly_evolution || [];
+  const percentile = data.student_percentile;
 
   return (
     <div className="space-y-6">
-      {/* Filter */}
-      <div className="flex items-center gap-3">
+      {/* Filter + Export */}
+      <div className="flex items-center gap-3 flex-wrap">
         <Select value={studentFilter} onValueChange={handleStudentChange}>
           <SelectTrigger className="w-64">
             <SelectValue placeholder="Todos os alunos" />
@@ -90,7 +127,57 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
             ))}
           </SelectContent>
         </Select>
+        <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-2">
+          <Download className="h-4 w-4" /> Exportar PDF
+        </Button>
       </div>
+
+      {/* At-Risk Students Alert */}
+      {atRisk.length > 0 && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-destructive" /> Alunos em Risco ({atRisk.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-3">
+              {atRisk.map((s: any, i: number) => (
+                <div key={i} className={`flex items-start gap-3 p-3 rounded-lg border ${s.criticality === "critico" ? "border-destructive/40 bg-destructive/10" : "border-amber-500/40 bg-amber-500/10"}`}>
+                  <AlertTriangle className={`h-5 w-5 mt-0.5 shrink-0 ${s.criticality === "critico" ? "text-destructive" : "text-amber-500"}`} />
+                  <div>
+                    <p className="text-sm font-semibold">{s.display_name}</p>
+                    <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                      {s.reasons.map((r: string, j: number) => <li key={j}>• {r}</li>)}
+                    </ul>
+                    <Badge variant={s.criticality === "critico" ? "destructive" : "secondary"} className="text-[10px] mt-1">
+                      {s.criticality === "critico" ? "Crítico" : "Atenção"}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Student Percentile Card */}
+      {percentile && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+              <span className="text-xl font-bold text-primary">P{percentile.percentile}</span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold">{percentile.display_name}</p>
+              <p className="text-xs text-muted-foreground">
+                Percentil {percentile.percentile} da turma • Acurácia {percentile.accuracy}% •
+                Posição {percentile.rank}/{percentile.total_students}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="proficiency">
         <TabsList>
@@ -108,6 +195,30 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
             <KPICard icon={<TrendingUp className="h-5 w-5 text-blue-500" />} label="Média Geral" value={`${prof.kpis?.avg_score ?? 0}%`} />
             <KPICard icon={<AlertTriangle className="h-5 w-5 text-amber-500" />} label="Pendentes" value={prof.kpis?.pending ?? 0} />
           </div>
+
+          {/* Weekly Evolution Chart */}
+          {weeklyEvo.length > 1 && (
+            <Card>
+              <CardHeader><CardTitle className="text-base">Evolução Semanal da Acurácia</CardTitle></CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={weeklyEvo}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="week" tick={{ fontSize: 10 }} tickFormatter={(v) => {
+                      const d = new Date(v);
+                      return `${d.getDate()}/${d.getMonth() + 1}`;
+                    }} />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} tickFormatter={(v) => `${v}%`} />
+                    <Tooltip formatter={(v: number) => `${v}%`} labelFormatter={(v) => {
+                      const d = new Date(v);
+                      return `Semana de ${d.toLocaleDateString("pt-BR")}`;
+                    }} />
+                    <Line type="monotone" dataKey="accuracy" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Topic Performance Chart */}
           {prof.topic_breakdown?.length > 0 && (
@@ -169,7 +280,7 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
             </Card>
           </div>
 
-          {/* Activity Table */}
+          {/* Activity Table with pending days */}
           {prof.activity_table?.length > 0 && (
             <Card>
               <CardHeader><CardTitle className="text-base">Resultados por Atividade</CardTitle></CardHeader>
@@ -187,13 +298,13 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
                     </TableHeader>
                     <TableBody>
                       {prof.activity_table.slice(0, 50).map((r: any, i: number) => (
-                        <TableRow key={i}>
+                        <TableRow key={i} className={r.status === "pending" ? "bg-amber-500/5" : ""}>
                           <TableCell><Badge variant="outline" className="text-[10px]">{r.type}</Badge></TableCell>
                           <TableCell className="text-sm">{r.title}</TableCell>
                           <TableCell className="text-sm">{r.student_name}</TableCell>
                           <TableCell className="text-sm font-medium">{r.score != null ? `${r.score}%` : "—"}</TableCell>
                           <TableCell>
-                            <Badge variant={r.status === "completed" ? "default" : "secondary"} className="text-[10px]">
+                            <Badge variant={r.status === "completed" ? "default" : "secondary"} className={`text-[10px] ${r.status === "pending" ? "bg-amber-500/20 text-amber-700 border-amber-500/30" : ""}`}>
                               {r.status === "completed" ? "Concluído" : r.status === "pending" ? "Pendente" : r.status}
                             </Badge>
                           </TableCell>
