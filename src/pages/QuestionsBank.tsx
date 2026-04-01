@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Json } from "@/integrations/supabase/types";
@@ -48,6 +50,8 @@ const PAGE_SIZE = 1000;
 
 const QuestionsBank = () => {
   const { user } = useAuth();
+  const { isAdmin } = useAdminCheck();
+  const { isProfessor } = useProfessorCheck();
   const { toast } = useToast();
   const { addXp } = useGamification();
   const navigate = useNavigate();
@@ -578,14 +582,16 @@ const QuestionsBank = () => {
                   >
                     {expandedId === q.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                    onClick={() => handleDelete(q.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {(isAdmin || isProfessor) && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      onClick={() => handleDelete(q.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
               {expandedId === q.id && q.explanation && (
