@@ -194,7 +194,7 @@ const AdminIngestionPanel = () => {
   const handleEqualize = async () => {
     if (!session) return;
     setEqualizing(true);
-    setEqPaused(false);
+    pauseRef.current = false;
     const deficitSpecialties = distribution.filter(d => d.deficit > 0);
     const total = deficitSpecialties.length;
     const log: { specialty: string; added: number }[] = [];
@@ -205,8 +205,7 @@ const AdminIngestionPanel = () => {
 
     try {
       for (let i = 0; i < total; i++) {
-        // Check pause
-        if (eqPaused) {
+        if (pauseRef.current) {
           toast({ title: "Equalização pausada", description: `${log.reduce((s, l) => s + l.added, 0)} questões adicionadas até agora.` });
           break;
         }
@@ -243,7 +242,7 @@ const AdminIngestionPanel = () => {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
     } finally {
       setEqualizing(false);
-      setEqPaused(false);
+      pauseRef.current = false;
       setEqStartTime(null);
       setEqProgress(null);
     }
