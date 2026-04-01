@@ -1,45 +1,45 @@
 
 
-# BI Professor — Clareza Visual + Cruzamentos Acadêmicos Avançados
+# Números Reais no Painel Admin — Questões Reais vs Geradas por IA
 
 ## Problema
 
-As abas "BI Proficiência" e "BI Plataforma Geral" não têm descrição clara, e os dados são apresentados de forma básica, sem cruzamentos analíticos que permitam tomada de decisão pedagógica informada.
+Os painéis "Buscar Questões Reais" e "Questões Geradas Hoje" não mostram a distinção entre questões reais (de provas oficiais) e questões geradas por IA. O admin não sabe quantas são de cada tipo.
+
+**Dados atuais no banco**: 6.747 questões globais — 1.443 reais (21%) e 5.304 geradas por IA (79%).
 
 ## Mudanças
 
-### 1. `src/components/professor/ProfessorBIPanel.tsx` — Clareza e Cruzamentos
+### 1. `src/components/admin/AdminDailyGenerationAlert.tsx`
 
-**Banners explicativos** no topo de cada aba:
-- **Proficiência**: "Resultados das atividades que você criou e atribuiu (simulados, casos clínicos, temas de estudo)"
-- **Plataforma Geral**: "Jornada completa do aluno na plataforma: banco de questões, flashcards, simulados gerais, streaks"
+Renomear para **"Questões no Banco Hoje"** e adicionar contagem separada:
 
-**Renomear abas**:
-- `🎯 BI Proficiência` → `🎯 Atividades do Professor`  
-- `📊 BI Plataforma Geral` → `📊 Jornada Global`
+- Buscar questões criadas hoje com campo extra para classificar: `exam_bank_id IS NOT NULL OR source_type = 'indexed_external' OR source_url IS NOT NULL` = real
+- Exibir:
+  - **Total hoje**: N questões
+  - **Reais (provas oficiais)**: N — badge verde
+  - **Geradas por IA**: N — badge azul
+- Adicionar resumo geral do banco abaixo: "Total no banco: X questões (Y reais / Z IA)"
 
-**Novos cruzamentos na aba Proficiência**:
-- **Matriz Desempenho × Conclusão por Aluno**: Heatmap/tabela mostrando cada aluno vs cada atividade (cores: verde=bom, amarelo=médio, vermelho=ruim, cinza=pendente) — visão completa de quem fez o quê e como foi
-- **Ranking de Alunos por Desempenho em Proficiência**: Tabela ordenável com média de acerto, taxa de conclusão e tendência (↑↓→)
-- **Cruzamento Tema × Aluno**: Quais alunos erraram mais em quais temas específicos (tabela pivotada)
+### 2. `src/components/admin/AdminWebScrapingPanel.tsx`
 
-**Novos cruzamentos na aba Jornada Global**:
-- **Correlação Proficiência × Plataforma**: Card comparativo mostrando se alunos com bom desempenho nas atividades do professor também têm boa acurácia geral (e vice-versa) — identifica discrepâncias
-- **Distribuição de Tempo de Estudo por Especialidade**: Onde os alunos mais investem tempo vs onde mais erram
-- **Heatmap de Atividade Semanal**: Dias da semana × hora que mais estudam (dados de practice_attempts)
+Adicionar métricas do banco de questões reais:
 
-**Cores diferenciadas**: Cards de proficiência com borda azul/primary, cards de plataforma com borda roxa/violet
+- Query ao total de questões com `source_type = 'indexed_external' OR exam_bank_id IS NOT NULL OR source_url IS NOT NULL`
+- Exibir no topo do painel:
+  - **Total de questões reais no banco**: N
+  - **Total de questões IA no banco**: N
+  - **% real**: badge com percentual
+- Após scraping, mostrar também `scraping_runs` recentes com `questions_accepted` vs `questions_rejected`
 
-### 2. `supabase/functions/professor-simulado/index.ts` — Dados adicionais
+### 3. Edge function — sem mudanças
 
-Enriquecer o retorno do `professor_bi`:
-- **`student_matrix`**: Array com `{ student_id, display_name, activities: [{ id, type, title, score, status }] }` para montar a matriz
-- **`student_ranking`**: Array ordenado por média de acerto com campos de tendência
-- **`topic_student_cross`**: Array com `{ topic, students: [{ name, correct, total, accuracy }] }` para cruzamento tema×aluno  
-- **`proficiency_vs_platform`**: Array com `{ student_id, name, prof_accuracy, platform_accuracy, gap }` mostrando discrepância
-- **`activity_heatmap`**: Contagem de practice_attempts agrupada por dia da semana × hora
+Os dados já existem no banco. Toda a lógica é client-side com queries ao `questions_bank`.
 
-### 3. Resultado
+## Detalhes técnicos
 
-BI com nível acadêmico de tomada de decisão: o professor identifica em um olhar quais alunos precisam de intervenção, quais temas abordar, e se o desempenho nas atividades atribuídas reflete a jornada geral do aluno na plataforma. Todos os cruzamentos são visuais e intuitivos com gráficos, heatmaps e tabelas pivotadas.
+- Classificação de "real": `exam_bank_id IS NOT NULL OR source_type = 'indexed_external' OR source_url IS NOT NULL`
+- Classificação de "IA": tudo que não se encaixa acima
+- Queries filtram `is_global = true` para contar apenas questões do banco global
+- Nenhuma migração necessária
 
