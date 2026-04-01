@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -292,9 +293,43 @@ const ProfessorPlantao = () => {
                       )}
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => viewResults(c)} className="gap-1.5 shrink-0">
-                    <Eye className="h-3.5 w-3.5" /> Resultados
-                  </Button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button variant="outline" size="sm" onClick={() => viewResults(c)} className="gap-1.5">
+                      <Eye className="h-3.5 w-3.5" /> Resultados
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Apagar caso clínico?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Isso removerá o caso "{c.title}" e todos os resultados dos alunos. Esta ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={async () => {
+                              try {
+                                await callAPI({ action: "delete_clinical_case", case_id: c.id });
+                                toast({ title: "Caso apagado" });
+                                loadCases();
+                              } catch (e) {
+                                toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+                              }
+                            }}
+                          >
+                            Apagar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
                 {c.results_summary?.total > 0 && (
                   <div className="mt-3 pt-3 border-t border-border">

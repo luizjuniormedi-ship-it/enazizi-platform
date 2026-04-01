@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { BookOpen, Plus, Users, Loader2, CheckCircle, AlertTriangle, Upload, Eye } from "lucide-react";
+import { BookOpen, Plus, Users, Loader2, CheckCircle, AlertTriangle, Upload, Eye, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
@@ -216,9 +217,43 @@ const TeacherStudyAssignments = () => {
                       <span className="flex items-center gap-1"><AlertTriangle className="h-3 w-3" />{a.results_summary?.studying || 0} estudando</span>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => viewResults(a)} className="gap-1.5 shrink-0">
-                    <Eye className="h-3.5 w-3.5" /> Status
-                  </Button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button variant="outline" size="sm" onClick={() => viewResults(a)} className="gap-1.5">
+                      <Eye className="h-3.5 w-3.5" /> Status
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Apagar tema de estudo?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Isso removerá o tema "{a.title}" e todos os resultados dos alunos. Esta ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={async () => {
+                              try {
+                                await callAPI({ action: "delete_study_assignment", assignment_id: a.id });
+                                toast({ title: "Tema apagado" });
+                                loadAssignments();
+                              } catch (e) {
+                                toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+                              }
+                            }}
+                          >
+                            Apagar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
                 {(a.results_summary?.total || 0) > 0 && (
                   <div className="mt-3 pt-3 border-t border-border">

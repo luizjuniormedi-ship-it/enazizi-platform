@@ -621,11 +621,12 @@ REGRAS:
       }
 
       case "list_clinical_cases": {
-        const { data: cases } = await sb
-          .from("teacher_clinical_cases")
-          .select("*")
-          .eq("professor_id", user.id)
-          .order("created_at", { ascending: false });
+        const isAdminCases = roleData.some((r: any) => r.role === "admin");
+        let casesQuery = sb.from("teacher_clinical_cases").select("*");
+        if (!isAdminCases) {
+          casesQuery = casesQuery.eq("professor_id", user.id);
+        }
+        const { data: cases } = await casesQuery.order("created_at", { ascending: false });
 
         const caseIds = (cases || []).map((c: any) => c.id);
         let resultsByCaseId: Record<string, { total: number; completed: number; avgScore: number }> = {};
@@ -732,11 +733,12 @@ REGRAS:
       }
 
       case "list_study_assignments": {
-        const { data: assignments } = await sb
-          .from("teacher_study_assignments")
-          .select("*")
-          .eq("professor_id", user.id)
-          .order("created_at", { ascending: false });
+        const isAdminAssign = roleData.some((r: any) => r.role === "admin");
+        let assignQuery = sb.from("teacher_study_assignments").select("*");
+        if (!isAdminAssign) {
+          assignQuery = assignQuery.eq("professor_id", user.id);
+        }
+        const { data: assignments } = await assignQuery.order("created_at", { ascending: false });
 
         const assignmentIds = (assignments || []).map((a: any) => a.id);
         let resultsByAssignment: Record<string, { total: number; completed: number; studying: number }> = {};
@@ -783,6 +785,32 @@ REGRAS:
         });
 
         return ok({ results: enriched });
+      }
+
+      case "delete_clinical_case": {
+        const { case_id } = params;
+        if (!case_id) throw new Error("case_id obrigatório");
+        const isAdminDel = roleData.some((r: any) => r.role === "admin");
+        if (!isAdminDel) {
+          const { data: caseCheck } = await sb.from("teacher_clinical_cases").select("id").eq("id", case_id).eq("professor_id", user.id).single();
+          if (!caseCheck) throw new Error("Caso não encontrado ou sem permissão");
+        }
+        await sb.from("teacher_clinical_case_results").delete().eq("case_id", case_id);
+        await sb.from("teacher_clinical_cases").delete().eq("id", case_id);
+        return ok({ success: true });
+      }
+
+      case "delete_study_assignment": {
+        const { assignment_id } = params;
+        if (!assignment_id) throw new Error("assignment_id obrigatório");
+        const isAdminDelA = roleData.some((r: any) => r.role === "admin");
+        if (!isAdminDelA) {
+          const { data: assignCheck } = await sb.from("teacher_study_assignments").select("id").eq("id", assignment_id).eq("professor_id", user.id).single();
+          if (!assignCheck) throw new Error("Tema não encontrado ou sem permissão");
+        }
+        await sb.from("teacher_study_assignment_results").delete().eq("assignment_id", assignment_id);
+        await sb.from("teacher_study_assignments").delete().eq("id", assignment_id);
+        return ok({ success: true });
       }
 
       default:
