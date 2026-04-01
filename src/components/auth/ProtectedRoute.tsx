@@ -88,6 +88,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (!user) return;
     const trimmedName = formName.trim();
     const isStudent = formUserType === "estudante";
+    const isProfessor = formUserType === "professor";
 
     const nameCheck = isValidName(trimmedName);
     if (!nameCheck.valid) {
@@ -106,6 +107,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
+    if (isProfessor && !formFaculdade) {
+      toast({ title: "Selecione sua universidade", variant: "destructive" });
+      return;
+    }
+
     const cleanPhone = formPhone.replace(/\D/g, "");
     setSaving(true);
     try {
@@ -117,6 +123,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       if (isStudent) {
         updateData.periodo = parseInt(formPeriodo);
         updateData.faculdade = formFaculdade;
+      }
+      if (isProfessor) {
+        updateData.faculdade = formFaculdade;
+        // Insert professor role
+        await supabase.from("user_roles").upsert(
+          { user_id: user.id, role: "professor" as any },
+          { onConflict: "user_id,role" }
+        );
       }
       const { error } = await supabase
         .from("profiles")
@@ -190,7 +204,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
             <div className="space-y-2">
               <Label>Eu sou</Label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setFormUserType("estudante")}
@@ -198,6 +212,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
                 >
                   <GraduationCap className="h-4 w-4" />
                   Estudante
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormUserType("professor")}
+                  className={`flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors ${formUserType === "professor" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground hover:bg-accent"}`}
+                >
+                  <Building className="h-4 w-4" />
+                  Professor
                 </button>
                 <button
                   type="button"
@@ -254,6 +276,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
                   </Label>
                   <FaculdadeCombobox value={formFaculdade} onChange={setFormFaculdade} />
                 </div>
+              </div>
+            )}
+
+            {formUserType === "professor" && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Building className="h-3.5 w-3.5 text-muted-foreground" />
+                  Universidade
+                </Label>
+                <FaculdadeCombobox value={formFaculdade} onChange={setFormFaculdade} />
               </div>
             )}
 

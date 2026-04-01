@@ -35,6 +35,13 @@ serve(async (req) => {
     const { action, ...params } = await req.json();
     const ok = (data: unknown) => new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+    // Get professor's faculdade for scoping
+    const isAdmin = roleData.some((r: any) => r.role === "admin");
+    let professorFaculdade: string | null = null;
+    if (!isAdmin) {
+      const { data: profProfile } = await sb.from("profiles").select("faculdade").eq("user_id", user.id).single();
+      professorFaculdade = profProfile?.faculdade || null;
+    }
     switch (action) {
       case "generate_questions": {
         const { topics, count = 10 } = params;
@@ -110,7 +117,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           title: title || "Simulado",
           description,
           topics: topics || [],
-          faculdade_filter: faculdade_filter || null,
+          faculdade_filter: faculdade_filter || professorFaculdade || null,
           periodo_filter: periodo_filter || null,
           total_questions: total_questions || questions_json?.length || 10,
           time_limit_minutes: time_limit_minutes || 60,
@@ -239,8 +246,9 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 
       case "get_students": {
         const { faculdade, periodo } = params;
+        const effectiveFaculdade = faculdade || professorFaculdade;
         let query = sb.from("profiles").select("user_id, display_name, email, faculdade, periodo, status").eq("status", "active");
-        if (faculdade) query = query.eq("faculdade", faculdade);
+        if (effectiveFaculdade) query = query.eq("faculdade", effectiveFaculdade);
         if (periodo) query = query.eq("periodo", periodo);
 
         const { data: students } = await query.order("display_name");
@@ -249,10 +257,11 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 
       case "class_analytics": {
         const { faculdade, periodo } = params;
+        const effectiveFaculdade = faculdade || professorFaculdade;
 
         // Get students matching filters
         let sQuery = sb.from("profiles").select("user_id, display_name, email, faculdade, periodo").eq("status", "active");
-        if (faculdade) sQuery = sQuery.eq("faculdade", faculdade);
+        if (effectiveFaculdade) sQuery = sQuery.eq("faculdade", effectiveFaculdade);
         if (periodo) sQuery = sQuery.eq("periodo", periodo);
         const { data: students } = await sQuery.order("display_name");
         if (!students || students.length === 0) return ok({ students: [], weakTopics: [], topPerformers: [], engagement: { avg_streak: 0, avg_xp: 0, inactive_count: 0, activity_completion_rate: 0 } });

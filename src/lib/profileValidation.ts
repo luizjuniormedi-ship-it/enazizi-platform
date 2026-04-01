@@ -82,12 +82,14 @@ export function isProfileComplete(data: {
 }): boolean {
   const userType = data.user_type || "estudante";
   const isStudent = userType === "estudante";
+  const isProfessor = userType === "professor";
 
   const nameCheck = isValidName(data.display_name || "");
   const phoneCheck = isValidPhone(data.phone || "");
 
   if (!nameCheck.valid || !phoneCheck.valid) return false;
   if (isStudent && (!data.periodo || !data.faculdade)) return false;
+  if (isProfessor && !data.faculdade) return false;
 
   return true;
 }
