@@ -1,56 +1,93 @@
 
 
-# Implementar Sugestões: Admin/Delete, Gate para Staff, Sala de Aula na Proficiência
+# BI do Professor — Proficiência + Plataforma Geral
 
-## Problemas Identificados
+## Objetivo
 
-1. **`list_clinical_cases` e `list_study_assignments`** não verificam admin — admins só veem os próprios
-2. **Falta delete** para casos clínicos e temas de estudo (professor e admin)
-3. **ProficiencyGate bloqueia professores/admins** — deveria ignorar staff
-4. **Aba "Sala de Aula" ausente na Proficiência** — aluno não vê salas de aula ativas do professor
-5. **Casos de plantão na Proficiência** — os dados carregam mas o join `teacher_clinical_cases(*)` pode falhar silenciosamente se RLS bloquear
+Criar duas visões de BI no painel do professor:
+1. **BI de Proficiência** — análise cruzada de desempenho nas atividades criadas pelo professor (simulados, casos clínicos, temas de estudo): assuntos deficitários, assuntos dominados, sugestão de abordagem pedagógica
+2. **BI Geral da Turma** — análise da utilização geral da plataforma pelo aluno (questões respondidas, streaks, revisões, banco de erros, tempo de estudo)
+
+## Arquitetura
+
+```text
+┌─────────────────────────────────────────────┐
+│  ProfessorDashboard.tsx                     │
+│  Nova aba: "BI" (entre Analytics e Alunos)  │
+│  └─ ProfessorBIPanel.tsx                    │
+│     ├─ Seção 1: BI Proficiência             │
+│     │   - KPIs (total atividades, taxa      │
+│     │     conclusão, média geral, pendentes)│
+│     │   - Desempenho por tema/assunto       │
+│     │   - Assuntos deficitários (radar)     │
+│     │   - Assuntos dominados                │
+│     │   - Sugestão pedagógica por IA        │
+│     │   - Filtro por aluno específico       │
+│     └─ Seção 2: BI Geral Plataforma        │
+│         - Engajamento (streak, XP, dias     │
+│           ativos, questões respondidas)     │
+│         - Erros mais frequentes             │
+│         - Especialidades por acurácia       │
+│         - Heatmap de atividade              │
+└─────────────────────────────────────────────┘
+```
 
 ## Mudanças
 
-### 1. Edge Function `professor-simulado/index.ts`
+### 1. Nova action na Edge Function: `professor_bi`
 
-**`list_clinical_cases` (linha 623-660)**: Adicionar check `isAdmin` como já existe em `list_simulados`. Se admin, não filtrar por `professor_id`.
+Arquivo: `supabase/functions/professor-simulado/index.ts`
 
-**`list_study_assignments` (linha 734-763)**: Mesmo padrão — admin vê todos.
+Recebe `{ action: "professor_bi", faculdade?, periodo?, student_id? }`
 
-**Nova action `delete_clinical_case`**: Verificar ownership ou admin, deletar results (`teacher_clinical_case_results`) e depois o caso (`teacher_clinical_cases`).
+**Dados de Proficiência** (atividades do professor):
+- Busca todos os simulados, casos clínicos e temas do professor (ou admin vê todos)
+- Cruza `teacher_simulado_results` com `questions_json` dos simulados para extrair desempenho **por tópico** (cada questão tem campo `topic`)
+- Cruza `teacher_clinical_case_results` por especialidade e diagnóstico
+- Cruza `teacher_study_assignment_results` por status de conclusão
+- Calcula: taxa de conclusão, média de score, tópicos com pior desempenho, tópicos com melhor desempenho
+- Se `student_id` fornecido, filtra apenas para aquele aluno
 
-**Nova action `delete_study_assignment`**: Verificar ownership ou admin, deletar results (`teacher_study_assignment_results`) e depois o assignment (`teacher_study_assignments`).
+**Dados Gerais da Plataforma**:
+- Busca `user_topic_profiles` para acurácia por especialidade
+- Busca `error_bank` para temas com mais erros
+- Busca `user_gamification` para engajamento (XP, streak, dias ativos)
+- Busca `practice_attempts` das últimas 4 semanas para volume de estudo
+- Agrega tudo por turma ou por aluno individual
 
-### 2. `src/components/professor/ProfessorPlantao.tsx`
+**Sugestão Pedagógica** (via IA):
+- Nova action `professor_bi_suggestion` que recebe o resumo dos dados e gera sugestões usando Gemini Flash
+- Formato: 3-5 recomendações pedagógicas baseadas nos gaps identificados
 
-- Adicionar botão de lixeira (Trash2) em cada caso clínico com confirmação via `AlertDialog`
-- Chamar `delete_clinical_case` via API
+### 2. Novo componente: `src/components/professor/ProfessorBIPanel.tsx`
 
-### 3. `src/components/professor/TeacherStudyAssignments.tsx`
+- Recebe `callAPI` como prop (mesmo padrão dos outros componentes)
+- Filtros: Faculdade, Período, Aluno específico (dropdown)
+- **Seção "Proficiência"**:
+  - 4 KPI cards: Total Atividades Criadas, Taxa de Conclusão, Média Geral, Pendentes
+  - Gráfico de barras horizontal: Desempenho por Tópico (simulados)
+  - Cards de "Assuntos Deficitários" (score < 50%) em vermelho
+  - Cards de "Assuntos Dominados" (score > 80%) em verde
+  - Tabela: resultado por atividade (simulado/caso/tema) com nome do aluno e score
+- **Seção "Plataforma Geral"**:
+  - 4 KPI cards: Questões Respondidas, Acurácia Média, Streak Médio, Inativos
+  - Gráfico de barras: Top 10 temas com mais erros
+  - Gráfico radar: Acurácia por especialidade
+  - Lista de alunos ordenada por engajamento
+- **Seção "Sugestão Pedagógica"**:
+  - Botão "Gerar Sugestões" que chama a IA
+  - Exibe cards com recomendações de abordagem
 
-- Adicionar botão de lixeira (Trash2) em cada tema com confirmação
-- Chamar `delete_study_assignment` via API
+### 3. `src/pages/ProfessorDashboard.tsx`
 
-### 4. `src/hooks/usePendingProficiency.ts`
-
-- Consultar `user_roles` para verificar se é professor ou admin
-- Se for staff, retornar `isBlocked: false` sempre
-
-### 5. `src/pages/StudentSimulados.tsx` — Nova aba "Sala de Aula"
-
-- Adicionar tab `video` com ícone de Vídeo: `📹 Sala de Aula`
-- Consultar `video_rooms` onde `status = 'active'` (já filtrado pela RLS ou por faculdade)
-- Mostrar salas ativas com link do Meet para o aluno acessar
-- Salas encerradas mostrar como histórico
-
-### Re-deploy
-
-- Deploy da edge function `professor-simulado` após as mudanças
+- Adicionar nova aba "BI" com ícone `BarChart3` no `TabsList`
+- Renderizar `<ProfessorBIPanel />` no `TabsContent`
 
 ## Detalhes Técnicos
 
-- A tabela `video_rooms` já existe e é acessível por alunos (RLS permite leitura para membros da instituição)
-- Os deletes cascateiam: primeiro results, depois o registro principal
-- O check de roles no hook usa a mesma query `user_roles` já cacheada pelo `useUserRoles`
+- Usa `recharts` (já instalado) para gráficos: BarChart, RadarChart, PieChart
+- A análise por tópico dos simulados extrai o campo `topic` de cada questão dentro de `questions_json` e cruza com `answers_json` dos results para saber acerto/erro por tema
+- Filtro por aluno específico usa dropdown com busca (lista de alunos da faculdade/período)
+- Sugestão pedagógica usa Gemini Flash via `aiFetch` — rápido e sem custo de API key
+- O BI é read-only, não modifica dados
 
