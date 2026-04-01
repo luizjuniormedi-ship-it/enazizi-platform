@@ -3,7 +3,7 @@ import SafeCard from "@/components/layout/SafeCard";
 import { Loader2, Target, Calendar, Flame, ClipboardList } from "lucide-react";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
-import DashboardWarnings from "@/components/dashboard/DashboardWarnings";
+
 import MotivationalGreeting from "@/components/dashboard/MotivationalGreeting";
 import PerformanceReport from "@/components/dashboard/PerformanceReport";
 import DailyPlanWidget from "@/components/dashboard/DailyPlanWidget";
@@ -155,17 +155,6 @@ const Dashboard = () => {
       {/* Configuração obrigatória — action-driven, bloqueia progresso */}
       <ExamSetupReminder />
 
-      {/* Warning — only most urgent (component already limits to 1) */}
-      <DashboardWarnings
-        todayCompleted={stats.todayCompleted}
-        todayTotal={stats.todayTotal}
-        completedTasks={stats.completedTasks}
-        totalTasks={stats.totalTasks}
-        streak={stats.streak}
-        daysUntilExam={stats.daysUntilExam}
-        questionsToday={stats.questionsToday}
-        hasStudyPlan={stats.hasStudyPlan}
-      />
 
       {/* ══════════════════════════════════════════
           BLOCO 0 — MISSÃO DO DIA (CTA principal)
