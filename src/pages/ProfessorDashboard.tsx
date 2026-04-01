@@ -721,7 +721,7 @@ const ProfessorDashboard = () => {
       </Dialog>
 
       {/* Results Dialog */}
-      <Dialog open={resultsDialog.open} onOpenChange={(open) => !open && setResultsDialog({ open: false, simulado: null, results: [], loading: false })}>
+      <Dialog open={resultsDialog.open} onOpenChange={(open) => !open && setResultsDialog({ open: false, simulado: null, results: [], loading: false, questions_json: [] })}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
