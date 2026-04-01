@@ -588,6 +588,76 @@ const ProfessorDashboard = () => {
                 </div>
               </div>
 
+              {/* Difficulty selector */}
+              {questionMode === "ai" && (
+                <div className="space-y-3 border border-border rounded-lg p-3 bg-muted/20">
+                  <div className="flex items-center gap-2">
+                    <Gauge className="h-4 w-4 text-primary" />
+                    <Label className="text-sm font-semibold">Nível de Dificuldade</Label>
+                  </div>
+                  <Select value={difficulty} onValueChange={setDifficulty}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="facil">🟢 Fácil</SelectItem>
+                      <SelectItem value="intermediario">🟡 Intermediário</SelectItem>
+                      <SelectItem value="dificil">🔴 Difícil</SelectItem>
+                      <SelectItem value="misto">🎯 Misto (personalizado)</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {difficulty === "misto" && (
+                    <div className="space-y-3">
+                      {([
+                        { key: "facil" as const, label: "Fácil", emoji: "🟢", color: "text-emerald-500" },
+                        { key: "intermediario" as const, label: "Intermediário", emoji: "🟡", color: "text-yellow-500" },
+                        { key: "dificil" as const, label: "Difícil", emoji: "🔴", color: "text-red-500" },
+                      ]).map(({ key, label, emoji, color }) => (
+                        <div key={key} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span>{emoji} {label}</span>
+                            <span className={`font-bold ${color}`}>{difficultyMix[key]}%</span>
+                          </div>
+                          <Slider
+                            value={[difficultyMix[key]]}
+                            min={0}
+                            max={100}
+                            step={5}
+                            onValueChange={([val]) => {
+                              const others = (["facil", "intermediario", "dificil"] as const).filter((k) => k !== key);
+                              const remaining = 100 - val;
+                              const otherTotal = difficultyMix[others[0]] + difficultyMix[others[1]];
+                              let v0: number, v1: number;
+                              if (otherTotal === 0) {
+                                v0 = Math.round(remaining / 2);
+                                v1 = remaining - v0;
+                              } else {
+                                v0 = Math.round((difficultyMix[others[0]] / otherTotal) * remaining);
+                                v1 = remaining - v0;
+                              }
+                              setDifficultyMix({ ...difficultyMix, [key]: val, [others[0]]: v0, [others[1]]: v1 });
+                            }}
+                          />
+                        </div>
+                      ))}
+
+                      {/* Preview */}
+                      <div className="bg-secondary/50 rounded-md p-2 text-xs text-center">
+                        <span className="font-medium">{questionCount} questões →</span>{" "}
+                        <span className="text-emerald-500">{Math.round(parseInt(questionCount) * difficultyMix.facil / 100)} fáceis</span>,{" "}
+                        <span className="text-yellow-500">{Math.round(parseInt(questionCount) * difficultyMix.intermediario / 100)} intermediárias</span>,{" "}
+                        <span className="text-red-500">{parseInt(questionCount) - Math.round(parseInt(questionCount) * difficultyMix.facil / 100) - Math.round(parseInt(questionCount) * difficultyMix.intermediario / 100)} difíceis</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {difficulty !== "misto" && (
+                    <p className="text-xs text-muted-foreground">
+                      Todas as {questionCount} questões serão de nível {difficulty === "facil" ? "fácil" : difficulty === "intermediario" ? "intermediário" : "difícil"}.
+                    </p>
+                  )}
+                </div>
+              )}
+
               {questionMode === "ai" && (
                 <Button onClick={generateQuestionsAI} disabled={generating || selectedTopics.length === 0} className="gap-2 w-full">
                   {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
