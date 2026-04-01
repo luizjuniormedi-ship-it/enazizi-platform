@@ -170,6 +170,7 @@ const ProfessorDashboard = () => {
         total_questions: questions.length,
         time_limit_minutes: parseInt(timeLimit),
         questions_json: questions,
+        student_ids: selectedStudentIds.length > 0 ? selectedStudentIds : null,
       });
       toast({ title: "Simulado criado!", description: `Atribuído a ${res.students_assigned} aluno(s).` });
       setShowCreate(false);
