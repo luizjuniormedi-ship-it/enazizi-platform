@@ -733,11 +733,12 @@ REGRAS:
       }
 
       case "list_study_assignments": {
-        const { data: assignments } = await sb
-          .from("teacher_study_assignments")
-          .select("*")
-          .eq("professor_id", user.id)
-          .order("created_at", { ascending: false });
+        const isAdminAssign = roleData.some((r: any) => r.role === "admin");
+        let assignQuery = sb.from("teacher_study_assignments").select("*");
+        if (!isAdminAssign) {
+          assignQuery = assignQuery.eq("professor_id", user.id);
+        }
+        const { data: assignments } = await assignQuery.order("created_at", { ascending: false });
 
         const assignmentIds = (assignments || []).map((a: any) => a.id);
         let resultsByAssignment: Record<string, { total: number; completed: number; studying: number }> = {};
