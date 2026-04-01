@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Database, Globe, FileText, CheckCircle2, AlertTriangle, Loader2, ExternalLink, Upload, Search, Link2 } from "lucide-react";
+import { Database, Globe, FileText, CheckCircle2, Loader2, ExternalLink, Search, Link2, BarChart3, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +26,32 @@ const ENARE_SOURCES: IndexedSource[] = [
   { name: "ENARE 2021 - Objetiva", banca: "ENARE", year: 2021, pdfUrl: "https://site-medway.s3.sa-east-1.amazonaws.com/wp-content/uploads/sites/5/2025/05/23105852/ENARE-2021-Objetiva.pdf", status: "indexed" },
 ];
 
+const BASIC_SCIENCES = [
+  "Anatomia", "Bioquímica", "Embriologia", "Farmacologia", "Fisiologia",
+  "Genética Médica", "Histologia", "Imunologia", "Microbiologia",
+  "Parasitologia", "Patologia", "Semiologia",
+];
+
+const ALL_SPECIALTIES = [
+  "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia",
+  "Gastroenterologia", "Pediatria", "Ginecologia e Obstetrícia",
+  "Cirurgia", "Medicina Preventiva", "Nefrologia",
+  "Infectologia", "Hematologia", "Reumatologia", "Dermatologia",
+  "Ortopedia", "Urologia", "Psiquiatria", "Oftalmologia",
+  "Otorrinolaringologia", "Medicina de Emergência", "Oncologia",
+  "Angiologia", "Terapia Intensiva",
+  ...BASIC_SCIENCES,
+];
+// dedupe
+const UNIQUE_SPECIALTIES = [...new Set(ALL_SPECIALTIES)];
+
+const TARGET_CLINICAL = 250;
+const TARGET_BASIC = 150;
+
+function getTarget(s: string) { return BASIC_SCIENCES.includes(s) ? TARGET_BASIC : TARGET_CLINICAL; }
+
+interface SpecialtyDist { name: string; count: number; target: number; deficit: number; pct: number; }
+
 const AdminIngestionPanel = () => {
   const { session } = useAuth();
   const { toast } = useToast();
@@ -36,11 +63,32 @@ const AdminIngestionPanel = () => {
   const [logs, setLogs] = useState<any[]>([]);
   const [discoveredSources, setDiscoveredSources] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalSources: 5, totalExtracted: 0, totalIndexed: 5, duplicatesRemoved: 0 });
+  const [distribution, setDistribution] = useState<SpecialtyDist[]>([]);
+  const [equalizing, setEqualizing] = useState(false);
 
   useEffect(() => {
     loadLogs();
     loadSources();
+    loadDistribution();
   }, []);
+
+  const loadDistribution = async () => {
+    const { data } = await supabase.from("questions_bank" as any)
+      .select("topic")
+      .eq("is_global", true);
+    if (!data) return;
+    const counts: Record<string, number> = {};
+    (data as any[]).forEach((r: any) => { const t = r.topic || "Outros"; counts[t] = (counts[t] || 0) + 1; });
+    
+    const dist: SpecialtyDist[] = UNIQUE_SPECIALTIES.map(name => {
+      const count = counts[name] || 0;
+      const target = getTarget(name);
+      const deficit = Math.max(0, target - count);
+      const pct = Math.min(100, Math.round((count / target) * 100));
+      return { name, count, target, deficit, pct };
+    }).sort((a, b) => a.pct - b.pct);
+    setDistribution(dist);
+  };
 
   const loadSources = async () => {
     const { data } = await supabase.from("external_exam_sources" as any)
@@ -75,123 +123,90 @@ const AdminIngestionPanel = () => {
         body: JSON.stringify(payload),
       }
     );
-
     const raw = await resp.text();
     let data: any = {};
-    try {
-      data = raw ? JSON.parse(raw) : {};
-    } catch {
-      data = {};
-    }
-
-    const normalized = {
-      ...data,
-      questions_found: data?.questions_found ?? 0,
-      questions_inserted: data?.questions_inserted ?? 0,
-      questions_updated: data?.questions_updated ?? 0,
-      duplicates_skipped: data?.duplicates_skipped ?? 0,
-      errors: data?.errors ?? 0,
-    };
-
+    try { data = raw ? JSON.parse(raw) : {}; } catch { data = {}; }
+    const normalized = { ...data, questions_found: data?.questions_found ?? 0, questions_inserted: data?.questions_inserted ?? 0, questions_updated: data?.questions_updated ?? 0, duplicates_skipped: data?.duplicates_skipped ?? 0, errors: data?.errors ?? 0 };
     if (!resp.ok) throw new Error(normalized?.error || `Falha na ingestão (${resp.status})`);
     if (normalized.questions_inserted === 0 && normalized.questions_updated === 0 && normalized.duplicates_skipped === 0) {
       throw new Error(normalized?.error || "Nenhuma questão válida foi extraída deste PDF.");
     }
-
     return normalized;
   };
 
   const getIngestToast = (data: any, name: string) => {
-    if ((data?.questions_inserted ?? 0) > 0) {
-      return {
-        title: `${data.questions_inserted} questões extraídas!`,
-        description: `${name} processado.`,
-      };
-    }
-
-    if ((data?.questions_updated ?? 0) > 0) {
-      return {
-        title: `${data.questions_updated} questões atualizadas!`,
-        description: `${name} processado.`,
-      };
-    }
-
-    return {
-      title: `${data?.duplicates_skipped ?? 0} questões já existentes`,
-      description: `${name} já estava no banco.`,
-    };
+    if ((data?.questions_inserted ?? 0) > 0) return { title: `${data.questions_inserted} questões extraídas!`, description: `${name} processado.` };
+    if ((data?.questions_updated ?? 0) > 0) return { title: `${data.questions_updated} questões atualizadas!`, description: `${name} processado.` };
+    return { title: `${data?.duplicates_skipped ?? 0} questões já existentes`, description: `${name} já estava no banco.` };
   };
 
   const handleExtractPdf = async (source: IndexedSource) => {
     if (!session || !source.pdfUrl) return;
     setProcessing(source.name);
     try {
-      const data = await callIngest({
-        mode: "pdf_url",
-        url: source.pdfUrl,
-        banca: source.banca,
-        year: source.year,
-        source_type: "indexed_external",
-        permission_type: "indexed_external",
-      });
-
+      const data = await callIngest({ mode: "pdf_url", url: source.pdfUrl, banca: source.banca, year: source.year, source_type: "indexed_external", permission_type: "indexed_external" });
       const count = (data?.questions_inserted ?? 0) + (data?.questions_updated ?? 0) || (data?.duplicates_skipped ?? 0);
-      const toastInfo = getIngestToast(data, source.name);
-
       setSources(prev => prev.map(s => s.name === source.name ? { ...s, status: "extracted" as const, questionsCount: count } : s));
-      toast(toastInfo);
+      toast(getIngestToast(data, source.name));
       loadLogs();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
-    } finally {
-      setProcessing(null);
-    }
+    } finally { setProcessing(null); }
   };
 
   const handleNavigate = async () => {
     if (!navUrl || !session) return;
     setNavLoading(true);
     try {
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-real-questions`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-          body: JSON.stringify({ mode: "hub_page", url: navUrl, user_id: session.user?.id }),
-        }
-      );
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-real-questions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ mode: "hub_page", url: navUrl, user_id: session.user?.id }),
+      });
       const data = await resp.json();
       if (data?.error) throw new Error(data.error);
       setNavResults(data.pdf_links || []);
       toast({ title: `${data.sources_found || 0} fontes descobertas, ${(data.pdf_links || []).length} PDFs` });
-      loadLogs();
-      loadSources();
+      loadLogs(); loadSources();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
-    } finally {
-      setNavLoading(false);
-    }
+    } finally { setNavLoading(false); }
   };
 
   const handleExtractNavPdf = async (link: any) => {
     setProcessing(link.url);
     try {
-      const data = await callIngest({
-        mode: "pdf_url",
-        url: link.url,
-        year: link.year,
-        source_type: "indexed_external",
-        permission_type: "indexed_external",
-      });
-      const toastInfo = getIngestToast(data, link.name);
-      toast(toastInfo);
+      const data = await callIngest({ mode: "pdf_url", url: link.url, year: link.year, source_type: "indexed_external", permission_type: "indexed_external" });
+      toast(getIngestToast(data, link.name));
       loadLogs();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
-    } finally {
-      setProcessing(null);
-    }
+    } finally { setProcessing(null); }
   };
+
+  const handleEqualize = async () => {
+    if (!session) return;
+    setEqualizing(true);
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ equalize: true }),
+      });
+      const data = await resp.json();
+      if (data?.error) throw new Error(data.error);
+      toast({
+        title: "Equalização concluída",
+        description: `${data.total_imported || 0} importadas + ${data.total_generated || 0} geradas. ${data.batches_remaining || 0} especialidades restantes.`,
+      });
+      loadDistribution();
+    } catch (e) {
+      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    } finally { setEqualizing(false); }
+  };
+
+  const totalDeficit = distribution.reduce((s, d) => s + d.deficit, 0);
+  const deficitCount = distribution.filter(d => d.deficit > 0).length;
 
   return (
     <div className="glass-card p-4 sm:p-5 border border-emerald-500/20 bg-gradient-to-r from-emerald-500/5 to-transparent">
@@ -216,13 +231,53 @@ const AdminIngestionPanel = () => {
         ))}
       </div>
 
-      <Tabs defaultValue="sources">
+      <Tabs defaultValue="balance">
         <TabsList className="mb-3 flex-wrap h-auto">
+          <TabsTrigger value="balance" className="text-xs"><Scale className="h-3 w-3 mr-1" />Equilíbrio</TabsTrigger>
           <TabsTrigger value="sources" className="text-xs"><Globe className="h-3 w-3 mr-1" />Fontes</TabsTrigger>
           <TabsTrigger value="discovered" className="text-xs"><Link2 className="h-3 w-3 mr-1" />Descobertas</TabsTrigger>
           <TabsTrigger value="navigate" className="text-xs"><Search className="h-3 w-3 mr-1" />Navegação</TabsTrigger>
           <TabsTrigger value="log" className="text-xs"><FileText className="h-3 w-3 mr-1" />Log</TabsTrigger>
         </TabsList>
+
+        {/* EQUILÍBRIO TAB */}
+        <TabsContent value="balance">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  {deficitCount} especialidades abaixo do alvo • Déficit total: <span className="font-bold text-red-500">{totalDeficit}</span> questões
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  Alvo: {TARGET_CLINICAL} (clínicas) / {TARGET_BASIC} (básicas). Prioriza questões reais antes de gerar por IA.
+                </p>
+              </div>
+              <Button size="sm" className="h-8 text-xs" disabled={equalizing || totalDeficit === 0} onClick={handleEqualize}>
+                {equalizing ? <><Loader2 className="h-3 w-3 animate-spin mr-1" />Equalizando...</> : <><BarChart3 className="h-3 w-3 mr-1" />Equalizar Banco</>}
+              </Button>
+            </div>
+
+            <div className="space-y-1 max-h-[400px] overflow-y-auto">
+              {distribution.map(d => {
+                const color = d.pct >= 80 ? "text-emerald-500" : d.pct >= 40 ? "text-amber-500" : "text-red-500";
+                const barColor = d.pct >= 80 ? "bg-emerald-500" : d.pct >= 40 ? "bg-amber-500" : "bg-red-500";
+                return (
+                  <div key={d.name} className="flex items-center gap-2 p-1.5 rounded bg-background/50">
+                    <span className="text-[11px] font-medium w-[140px] truncate">{d.name}</span>
+                    <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                      <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(100, d.pct)}%` }} />
+                    </div>
+                    <span className={`text-[10px] font-bold w-[35px] text-right ${color}`}>{d.count}</span>
+                    <span className="text-[10px] text-muted-foreground w-[15px]">/{d.target}</span>
+                    {d.deficit > 0 && (
+                      <Badge variant="outline" className="text-[9px] h-4 px-1 text-red-500 border-red-500/30">-{d.deficit}</Badge>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </TabsContent>
 
         <TabsContent value="sources">
           <div className="space-y-2">
