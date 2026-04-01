@@ -73,9 +73,41 @@ function getTarget(specialty: string): number {
   return BASIC_SCIENCES.includes(specialty) ? TARGET_BASIC : TARGET_CLINICAL;
 }
 
+function normalizeStatementKey(statement: string): string {
+  return String(statement || "").toLowerCase().trim().slice(0, 80);
+}
+
+async function getExactGlobalCount(supabaseAdmin: any, specialty: string): Promise<number> {
+  const { count } = await supabaseAdmin
+    .from("questions_bank")
+    .select("id", { count: "exact", head: true })
+    .eq("is_global", true)
+    .eq("topic", specialty);
+
+  return count || 0;
+}
+
+async function buildDeficits(supabaseAdmin: any, specialties: string[]) {
+  const counts = await Promise.all(
+    specialties.map(async (specialty) => ({
+      specialty,
+      current: await getExactGlobalCount(supabaseAdmin, specialty),
+      target: getTarget(specialty),
+    }))
+  );
+
+  return counts
+    .map((item) => ({
+      ...item,
+      deficit: Math.max(0, item.target - item.current),
+    }))
+    .filter((item) => item.deficit > 0)
+    .sort((a, b) => b.deficit - a.deficit);
+}
+
 async function generateBatch(specialty: string, topics: string[], userId: string, supabaseAdmin: any, questionCount = 10): Promise<{ questions: number; flashcards: number }> {
   const selectedTopics = topics.sort(() => Math.random() - 0.5).slice(0, 5);
-  const fcCount = Math.max(5, Math.round(questionCount * 0.6));
+  const fcCount = Math.max(1, Math.min(5, Math.round(questionCount * 0.6)));
   
   const prompt = `Gere EXATAMENTE ${questionCount} questões de múltipla escolha e ${fcCount} flashcards para Residência Médica.
 
@@ -186,10 +218,7 @@ FORMATO JSON OBRIGATÓRIO:
         .eq("topic", specialty);
       
       const existingHashes = new Set(
-        (existing || []).map((e: any) => {
-          const s = String(e.statement).toLowerCase().trim().slice(0, 80);
-          return s;
-        })
+        (existing || []).map((e: any) => normalizeStatementKey(e.statement))
       );
 
       const rows = questions
@@ -206,9 +235,9 @@ FORMATO JSON OBRIGATÓRIO:
           review_status: "pending",
         }))
         .filter((r: any) => {
-          const hash = r.statement.toLowerCase().trim().slice(0, 80);
+          const hash = normalizeStatementKey(r.statement);
           if (existingHashes.has(hash)) return false;
-          existingHashes.add(hash); // prevent intra-batch dupes
+          existingHashes.add(hash);
           return true;
         });
 
@@ -244,7 +273,6 @@ FORMATO JSON OBRIGATÓRIO:
 }
 
 async function importRealExamQuestions(specialty: string, supabaseAdmin: any, userId: string, limit: number): Promise<number> {
-  // Find real_exam_questions for this topic not yet in questions_bank
   const { data: realQs } = await supabaseAdmin
     .from("real_exam_questions")
     .select("*")
@@ -254,22 +282,22 @@ async function importRealExamQuestions(specialty: string, supabaseAdmin: any, us
 
   if (!realQs || realQs.length === 0) return 0;
 
-  // Get existing statement hashes to avoid duplicates
   const { data: existing } = await supabaseAdmin
     .from("questions_bank")
     .select("statement")
     .eq("topic", specialty)
-    .eq("is_global", true)
-    .limit(1000);
+    .eq("is_global", true);
 
-  const existingSet = new Set((existing || []).map((e: any) => 
-    String(e.statement || "").trim().substring(0, 80).toLowerCase()
-  ));
+  const existingSet = new Set((existing || []).map((e: any) => normalizeStatementKey(e.statement)));
+  const toInsert: any[] = [];
 
-  const toInsert = realQs.filter((q: any) => {
-    const key = String(q.statement || "").trim().substring(0, 80).toLowerCase();
-    return !existingSet.has(key);
-  }).slice(0, limit);
+  for (const question of realQs) {
+    const key = normalizeStatementKey(question.statement);
+    if (!key || existingSet.has(key)) continue;
+    existingSet.add(key);
+    toInsert.push(question);
+    if (toInsert.length >= limit) break;
+  }
 
   if (toInsert.length === 0) return 0;
 
@@ -332,81 +360,105 @@ serve(async (req) => {
 
     // ===== EQUALIZE MODE =====
     if (body.equalize) {
-      // Get counts per topic
-      const { data: topicCounts } = await supabaseAdmin
-        .from("questions_bank")
-        .select("topic")
-        .eq("is_global", true);
+      const requestedSpecialties = typeof body.specialty === "string" && body.specialty.trim()
+        ? [String(body.specialty).trim()]
+        : SPECIALTIES;
+      const requestedBatchSize = Math.max(1, Math.min(Number(body.batchSize) || 5, 10));
+      const requestedMaxSpecialties = Math.max(1, Math.min(Number(body.maxSpecialties) || 5, 5));
+      const requestedImportLimit = Math.max(1, Math.min(Number(body.importLimit) || 25, 50));
 
-      const countByTopic: Record<string, number> = {};
-      (topicCounts || []).forEach((r: any) => {
-        const t = r.topic || "Geral";
-        countByTopic[t] = (countByTopic[t] || 0) + 1;
-      });
-
-      // Calculate deficits
-      const deficits: { specialty: string; current: number; target: number; deficit: number }[] = [];
-      for (const spec of SPECIALTIES) {
-        const current = countByTopic[spec] || 0;
-        const target = getTarget(spec);
-        const deficit = target - current;
-        if (deficit > 0) {
-          deficits.push({ specialty: spec, current, target, deficit });
-        }
-      }
-
-      // Sort by largest deficit first
-      deficits.sort((a, b) => b.deficit - a.deficit);
-      const toProcess = deficits.slice(0, 5);
+      const deficits = await buildDeficits(supabaseAdmin, requestedSpecialties);
+      const toProcess = deficits.slice(0, body.specialty ? 1 : requestedMaxSpecialties);
 
       if (toProcess.length === 0) {
         return new Response(JSON.stringify({
           message: "Todas as especialidades já atingiram o alvo!",
-          deficits: [],
-          total_deficit: 0,
+          results: [],
+          remaining_deficits: [],
+          total_imported: 0,
+          total_generated: 0,
+          total_flashcards: 0,
+          total_specialties_in_run: 0,
+          specialties_remaining: 0,
+          questions_remaining: 0,
         }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      let totalQ = 0, totalF = 0, totalImported = 0;
+      let totalQ = 0;
+      let totalF = 0;
+      let totalImported = 0;
       const results: any[] = [];
 
-      for (const item of toProcess) {
-        // 1. Try importing real exam questions first
-        const importLimit = Math.min(item.deficit, 50);
-        const imported = await importRealExamQuestions(item.specialty, supabaseAdmin, userId, importLimit);
-        totalImported += imported;
-        
-        const remainingDeficit = item.deficit - imported;
-        
-        // 2. Generate via AI only if still deficit
-        let genQ = 0, genF = 0;
-        if (remainingDeficit > 0) {
-          const topics = TOPICS_BY_SPECIALTY[item.specialty] || [item.specialty];
-          const batchSize = Math.min(25, remainingDeficit);
-          const result = await generateBatch(item.specialty, topics, userId, supabaseAdmin, batchSize);
-          genQ = result.questions;
-          genF = result.flashcards;
-          totalQ += genQ;
-          totalF += genF;
+      for (const [index, item] of toProcess.entries()) {
+        try {
+          const imported = await importRealExamQuestions(
+            item.specialty,
+            supabaseAdmin,
+            userId,
+            Math.min(item.deficit, requestedImportLimit)
+          );
+          totalImported += imported;
+
+          const remainingDeficit = Math.max(0, item.deficit - imported);
+          let genQ = 0;
+          let genF = 0;
+
+          if (remainingDeficit > 0) {
+            const topics = TOPICS_BY_SPECIALTY[item.specialty] || [item.specialty];
+            const batchSize = Math.min(requestedBatchSize, remainingDeficit);
+            const result = await generateBatch(item.specialty, topics, userId, supabaseAdmin, batchSize);
+            genQ = result.questions;
+            genF = result.flashcards;
+            totalQ += genQ;
+            totalF += genF;
+          }
+
+          const remainingAfter = Math.max(0, item.deficit - imported - genQ);
+          results.push({
+            specialty: item.specialty,
+            previous: item.current,
+            target: item.target,
+            deficit: item.deficit,
+            imported,
+            generated: genQ,
+            flashcards: genF,
+            remaining_after: remainingAfter,
+            processed_index: index + 1,
+            total_to_process: toProcess.length,
+            completed: remainingAfter === 0,
+          });
+
+          console.log(`[equalize] ${index + 1}/${toProcess.length} ${item.specialty}: imported=${imported}, generated=${genQ}, remaining=${remainingAfter}`);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Erro inesperado";
+          results.push({
+            specialty: item.specialty,
+            previous: item.current,
+            target: item.target,
+            deficit: item.deficit,
+            imported: 0,
+            generated: 0,
+            flashcards: 0,
+            remaining_after: item.deficit,
+            processed_index: index + 1,
+            total_to_process: toProcess.length,
+            completed: false,
+            error: message,
+          });
+          console.error(`[equalize] ${item.specialty} failed:`, error);
         }
-
-        results.push({
-          specialty: item.specialty,
-          previous: item.current,
-          target: item.target,
-          deficit: item.deficit,
-          imported,
-          generated: genQ,
-          flashcards: genF,
-        });
-
-        console.log(`Equalize ${item.specialty}: imported=${imported}, generated=${genQ}, deficit_was=${item.deficit}`);
       }
 
-      // Recalculate remaining deficits
-      const remainingDeficits = deficits
-        .filter(d => !toProcess.find(p => p.specialty === d.specialty))
-        .map(d => ({ specialty: d.specialty, deficit: d.deficit }));
+      const processedNames = new Set(results.map((result) => result.specialty));
+      const remainingDeficits = [
+        ...results
+          .filter((result) => result.remaining_after > 0)
+          .map((result) => ({ specialty: result.specialty, deficit: result.remaining_after })),
+        ...deficits
+          .filter((item) => !processedNames.has(item.specialty))
+          .map((item) => ({ specialty: item.specialty, deficit: item.deficit })),
+      ];
+      const questionsRemaining = remainingDeficits.reduce((sum, item) => sum + item.deficit, 0);
 
       return new Response(JSON.stringify({
         message: `Equalização: ${totalImported} importadas, ${totalQ} geradas por IA, ${totalF} flashcards`,
@@ -415,7 +467,9 @@ serve(async (req) => {
         total_imported: totalImported,
         total_generated: totalQ,
         total_flashcards: totalF,
-        batches_remaining: remainingDeficits.length,
+        total_specialties_in_run: toProcess.length,
+        specialties_remaining: remainingDeficits.length,
+        questions_remaining: questionsRemaining,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
