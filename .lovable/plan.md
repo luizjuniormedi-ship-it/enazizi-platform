@@ -1,26 +1,23 @@
 
 
-# Ativar Microfone no Tutor
+# Corrigir Build do Painel Professor
 
-## Situação Atual
+## Problema
 
-O hook `useSpeechToText` já existe e funciona com a Web Speech API (pt-BR). O `TutorInputBar` atualmente só tem campo de texto + botão enviar, sem botão de microfone.
+Linhas 196-204 em `ProfessorDashboard.tsx` contêm código órfão — o corpo de uma função `viewResults` perdeu sua declaração `const viewResults = async (simulado: any) => {`. Isso causa erro de build porque há `await` fora de função async.
 
-## Mudanças
+## Correção
 
-### 1. `src/components/tutor/TutorInputBar.tsx`
+### `src/pages/ProfessorDashboard.tsx` (linha 195-196)
 
-- Adicionar props `isListening`, `hasSpeechRecognition`, `onToggleListening`
-- Adicionar botão de microfone (`Mic` / `MicOff` do lucide-react) entre o Input e o botão Send
-- Quando `isListening`, o botão pulsa com animação (ring vermelho) para indicar gravação ativa
-- Só exibir o botão se `hasSpeechRecognition` for true
+Adicionar a declaração da função que foi perdida:
 
-### 2. `src/pages/ChatGPT.tsx`
+```typescript
+  // Linha 195 (após o fechamento de deleteSimulado)
 
-- Importar e usar `useSpeechToText`, passando callback que preenche o input com o texto transcrito
-- Passar as props do speech-to-text para o `TutorInputBar`
+  const viewResults = async (simulado: any) => {   // ← ADICIONAR ESTA LINHA
+    setResultsDialog({ open: true, simulado, results: [], loading: true });
+```
 
-### Resultado
-
-Botão de microfone ao lado do campo de texto. Ao clicar, escuta o usuário em português e preenche automaticamente o campo de input com a transcrição.
+Uma única linha resolve o build e restaura o painel professor.
 
