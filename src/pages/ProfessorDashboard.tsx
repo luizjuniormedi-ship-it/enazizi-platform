@@ -369,10 +369,27 @@ const ProfessorDashboard = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold truncate">{sim.title}</h3>
-                      <Badge variant={sim.status === "published" ? "default" : "secondary"} className="text-[10px]">
-                        {sim.status === "published" ? "Publicado" : "Rascunho"}
+                      <Badge variant={sim.status === "published" ? "default" : sim.status === "scheduled" ? "outline" : "secondary"} className={`text-[10px] ${sim.status === "scheduled" ? "border-amber-400 text-amber-600" : ""}`}>
+                        {sim.status === "published" ? "Publicado" : sim.status === "scheduled" ? "⏰ Agendado" : "Rascunho"}
                       </Badge>
+                      {sim.auto_assign && <Badge variant="outline" className="text-[9px] border-blue-300 text-blue-600">Auto-atribuir</Badge>}
                     </div>
+                    {sim.scheduled_at && sim.status === "scheduled" && (() => {
+                      const target = new Date(sim.scheduled_at);
+                      const now = new Date();
+                      const diff = target.getTime() - now.getTime();
+                      if (diff <= 0) return <p className="text-[10px] text-emerald-600 font-medium">Publicação iminente...</p>;
+                      const hours = Math.floor(diff / 3600000);
+                      const mins = Math.floor((diff % 3600000) / 60000);
+                      const days = Math.floor(hours / 24);
+                      return (
+                        <p className="text-[10px] text-amber-600 flex items-center gap-1">
+                          <Timer className="h-3 w-3" />
+                          {days > 0 ? `${days}d ${hours % 24}h` : hours > 0 ? `${hours}h ${mins}min` : `${mins}min`} para publicação
+                          — {target.toLocaleDateString("pt-BR")} às {target.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      );
+                    })()}
                     {sim.description && <p className="text-sm text-muted-foreground line-clamp-1 mb-2">{sim.description}</p>}
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       {(sim.topics || []).slice(0, 3).map((t: string) => (
