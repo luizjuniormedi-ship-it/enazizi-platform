@@ -266,7 +266,7 @@ const Simulados = () => {
       const topicFilters = config.topics.map((t) => `topic.ilike.%${t}%`).join(",");
       const { data: bankData } = await supabase
         .from("questions_bank")
-        .select("id, statement, options, correct_index, topic, explanation, source")
+        .select("id, statement, options, correct_index, topic, explanation, source, image_url")
         .or(topicFilters)
         .eq("review_status", "approved")
         .limit(500);
