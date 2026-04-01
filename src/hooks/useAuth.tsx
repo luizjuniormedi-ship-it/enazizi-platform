@@ -57,10 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      // Clear flag on logout so next login triggers update
-      if (event === "SIGNED_OUT") {
-        sessionStorage.removeItem("pwa-updated");
-      }
+      // No-op on SIGNED_OUT — state is cleared by React
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
