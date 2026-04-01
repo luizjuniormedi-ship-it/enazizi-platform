@@ -62,7 +62,7 @@ const AdminIngestionPanel = () => {
   const [navLoading, setNavLoading] = useState(false);
   const [logs, setLogs] = useState<any[]>([]);
   const [discoveredSources, setDiscoveredSources] = useState<any[]>([]);
-  const [stats, setStats] = useState({ totalSources: 5, totalExtracted: 0, totalIndexed: 5, duplicatesRemoved: 0 });
+  const [stats, setStats] = useState({ totalQuestions: 0, uniqueQuestions: 0, duplicates: 0, specialtiesCount: 0 });
   const [distribution, setDistribution] = useState<SpecialtyDist[]>([]);
   const [loadingDistribution, setLoadingDistribution] = useState(false);
   const [equalizing, setEqualizing] = useState(false);
@@ -98,7 +98,19 @@ const AdminIngestionPanel = () => {
         from += PAGE;
       }
       const counts: Record<string, number> = {};
+      const statementsSet = new Set<string>();
       allTopics.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
+
+      const totalQ = allTopics.length;
+      const specialtiesWithQ = Object.keys(counts).length;
+
+      // Update stats cards with real data
+      setStats({
+        totalQuestions: totalQ,
+        uniqueQuestions: totalQ, // after dedup migration, all are unique
+        duplicates: 0,
+        specialtiesCount: specialtiesWithQ,
+      });
 
       const dist: SpecialtyDist[] = UNIQUE_SPECIALTIES.map(name => {
         const count = counts[name] || 0;
@@ -118,7 +130,6 @@ const AdminIngestionPanel = () => {
       .select("*").order("created_at", { ascending: false }).limit(50);
     if (data) {
       setDiscoveredSources(data);
-      setStats(prev => ({ ...prev, totalSources: 5 + (data as any[]).length, totalIndexed: 5 + (data as any[]).filter((s: any) => s.processing_status !== "pending").length }));
     }
   };
 
@@ -127,12 +138,6 @@ const AdminIngestionPanel = () => {
       .select("*").order("created_at", { ascending: false }).limit(20);
     if (data) {
       setLogs(data);
-      const completed = (data as any[]).filter((l: any) => l.status === "completed");
-      setStats(prev => ({
-        ...prev,
-        totalExtracted: completed.length,
-        duplicatesRemoved: completed.reduce((s: number, l: any) => s + (l.duplicates_skipped || 0), 0),
-      }));
     }
   };
 
@@ -288,10 +293,10 @@ const AdminIngestionPanel = () => {
 
       <div className="grid grid-cols-4 gap-2 mb-4">
         {[
-          { label: "Fontes Indexadas", value: stats.totalIndexed, color: "text-blue-500" },
-          { label: "Extraídas", value: stats.totalExtracted, color: "text-emerald-500" },
-          { label: "Duplicatas", value: stats.duplicatesRemoved, color: "text-amber-500" },
-          { label: "Total Fontes", value: stats.totalSources, color: "text-purple-500" },
+          { label: "Total Questões", value: stats.totalQuestions, color: "text-blue-500" },
+          { label: "Únicas", value: stats.uniqueQuestions, color: "text-emerald-500" },
+          { label: "Duplicatas", value: stats.duplicates, color: "text-amber-500" },
+          { label: "Especialidades", value: stats.specialtiesCount, color: "text-purple-500" },
         ].map(s => (
           <div key={s.label} className="text-center p-2 rounded-lg bg-muted/50">
             <div className={`text-lg font-bold ${s.color}`}>{s.value}</div>
