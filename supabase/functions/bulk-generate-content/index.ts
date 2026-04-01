@@ -382,11 +382,6 @@ FORMATO JSON OBRIGATÓRIO:
           existingHashes.add(hash);
           return true;
         });
-          const hash = normalizeStatementKey(r.statement);
-          if (existingHashes.has(hash)) return false;
-          existingHashes.add(hash);
-          return true;
-        });
 
       if (rows.length > 0) {
         const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
