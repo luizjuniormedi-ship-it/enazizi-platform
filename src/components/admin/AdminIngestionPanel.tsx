@@ -192,22 +192,42 @@ const AdminIngestionPanel = () => {
   const handleEqualize = async () => {
     if (!session) return;
     setEqualizing(true);
+    const deficitSpecialties = distribution.filter(d => d.deficit > 0);
+    const total = deficitSpecialties.length;
+    const log: { specialty: string; added: number }[] = [];
+    const totalQRemaining = deficitSpecialties.reduce((s, d) => s + d.deficit, 0);
+    setEqProgress({ current: 0, total, percent: 0, currentSpecialty: deficitSpecialties[0]?.name || "", log, questionsRemaining: totalQRemaining });
+
     try {
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ equalize: true }),
-      });
-      const data = await resp.json();
-      if (data?.error) throw new Error(data.error);
-      toast({
-        title: "Equalização concluída",
-        description: `${data.total_imported || 0} importadas + ${data.total_generated || 0} geradas. ${data.batches_remaining || 0} especialidades restantes.`,
-      });
+      for (let i = 0; i < total; i++) {
+        const spec = deficitSpecialties[i];
+        setEqProgress(prev => prev ? { ...prev, current: i + 1, percent: Math.round(((i) / total) * 100), currentSpecialty: spec.name } : prev);
+
+        try {
+          const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ equalize: true, specialty: spec.name, maxSpecialties: 1, batchSize: 10 }),
+          });
+          const data = await resp.json();
+          const added = (data?.total_imported || 0) + (data?.total_generated || 0);
+          log.push({ specialty: spec.name, added });
+          const remaining = totalQRemaining - log.reduce((s, l) => s + l.added, 0);
+          setEqProgress(prev => prev ? { ...prev, percent: Math.round(((i + 1) / total) * 100), log: [...log], questionsRemaining: Math.max(0, remaining) } : prev);
+        } catch {
+          log.push({ specialty: spec.name, added: 0 });
+        }
+      }
+
+      const totalAdded = log.reduce((s, l) => s + l.added, 0);
+      toast({ title: "Equalização concluída", description: `${totalAdded} questões adicionadas em ${total} especialidades.` });
       loadDistribution();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
-    } finally { setEqualizing(false); }
+    } finally {
+      setEqualizing(false);
+      setEqProgress(null);
+    }
   };
 
   const totalDeficit = distribution.reduce((s, d) => s + d.deficit, 0);
