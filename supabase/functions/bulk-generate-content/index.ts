@@ -242,7 +242,7 @@ REGRAS PARA QUESTÕES:
 - Casos clínicos realistas com dados de anamnese, exame físico e exames complementares
 - EXATAMENTE 5 alternativas (A, B, C, D, E) sendo apenas 1 correta
 - Explicação detalhada com raciocínio clínico
-- Varie a dificuldade: 40% fácil, 40% médio, 20% difícil
+- Varie a dificuldade: 20% fácil (difficulty:2), 40% médio (difficulty:3), 40% difícil (difficulty:4-5). Priorize questões difíceis para provas de residência
 - Distribua entre os temas fornecidos
 
 ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
