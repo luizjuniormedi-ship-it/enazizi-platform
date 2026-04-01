@@ -251,6 +251,8 @@ const AdminIngestionPanel = () => {
           log.push({ specialty: spec.name, added });
           const qRemaining = totalQRemaining - log.reduce((s, l) => s + l.added, 0);
           setEqProgress(prev => prev ? { ...prev, percent: Math.round(((i + 1) / total) * 100), log: [...log], questionsRemaining: Math.max(0, qRemaining) } : prev);
+          // Refresh distribution after each batch
+          await loadDistribution();
         } catch (error) {
           log.push({ specialty: spec.name, added: 0 });
           setEqProgress(prev => prev ? { ...prev, log: [...log] } : prev);
