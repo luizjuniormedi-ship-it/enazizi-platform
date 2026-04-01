@@ -73,6 +73,20 @@ function getTarget(specialty: string): number {
   return BASIC_SCIENCES.includes(specialty) ? TARGET_BASIC : TARGET_CLINICAL;
 }
 
+/** Ensures AI-generated topic names stay normalized to the parent specialty */
+function normalizeTopicToParent(generatedTopic: string, parentSpecialty: string): string {
+  const normalized = String(generatedTopic || "").trim();
+  // If the generated topic is a known parent specialty, use it
+  if (SPECIALTIES.includes(normalized)) return normalized;
+  // If it starts with the parent specialty name, collapse to parent
+  if (normalized.toLowerCase().startsWith(parentSpecialty.toLowerCase())) return parentSpecialty;
+  // If it's a subtopic of the parent, keep parent
+  const subtopics = TOPICS_BY_SPECIALTY[parentSpecialty];
+  if (subtopics && subtopics.some(s => normalized.toLowerCase().includes(s.toLowerCase()))) return parentSpecialty;
+  // Default: use the parent specialty
+  return parentSpecialty;
+}
+
 function normalizeStatementKey(statement: string): string {
   return String(statement || "").toLowerCase().trim().slice(0, 80);
 }
