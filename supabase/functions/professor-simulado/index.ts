@@ -135,7 +135,11 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
       }
 
       case "create_simulado": {
-        const { title, description, topics, faculdade_filter, periodo_filter, total_questions, time_limit_minutes, questions_json, student_ids } = params;
+        const { title, description, topics, faculdade_filter, periodo_filter, total_questions, time_limit_minutes, questions_json, student_ids, scheduled_at, auto_assign } = params;
+
+        // Determine status based on scheduling
+        const isScheduled = scheduled_at && new Date(scheduled_at) > new Date();
+        const simStatus = isScheduled ? "scheduled" : "published";
 
         const { data: simulado, error } = await sb.from("teacher_simulados").insert({
           professor_id: user.id,
@@ -147,7 +151,9 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           total_questions: total_questions || questions_json?.length || 10,
           time_limit_minutes: time_limit_minutes || 60,
           questions_json: questions_json || [],
-          status: "published",
+          status: simStatus,
+          scheduled_at: scheduled_at || null,
+          auto_assign: auto_assign !== false,
         }).select("id").single();
 
         if (error) throw new Error(error.message);
@@ -174,7 +180,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           await sb.from("teacher_simulado_results").insert(results);
         }
 
-        return ok({ success: true, simulado_id: simulado.id, students_assigned: studentList.length });
+        return ok({ success: true, simulado_id: simulado.id, students_assigned: studentList.length, status: simStatus });
       }
 
       case "list_simulados": {
