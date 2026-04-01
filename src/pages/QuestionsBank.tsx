@@ -62,6 +62,7 @@ const QuestionsBank = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [topicFilter, setTopicFilter] = useState(studyCtx?.topic || "all");
+  const [subtopicFilter, setSubtopicFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(0);
