@@ -820,6 +820,36 @@ const ProfessorDashboard = () => {
             })()}
           </div>
 
+          {/* Scheduling */}
+          <div className="space-y-3 border border-border rounded-lg p-3 bg-muted/20">
+            <div className="flex items-center gap-2">
+              <CalendarClock className="h-4 w-4 text-primary" />
+              <Label className="text-sm font-semibold">Agendamento</Label>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Data e hora de publicação (deixe vazio para publicar agora)</Label>
+              <Input
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(e) => setScheduledAt(e.target.value)}
+                className="h-9"
+              />
+              {scheduledAt && (
+                <p className="text-[11px] text-amber-600 flex items-center gap-1">
+                  <Timer className="h-3 w-3" />
+                  O simulado ficará disponível em {new Date(scheduledAt).toLocaleDateString("pt-BR")} às {new Date(scheduledAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-xs font-medium">Auto-atribuir novos alunos</Label>
+                <p className="text-[10px] text-muted-foreground">Alunos que se cadastrarem depois serão incluídos automaticamente</p>
+              </div>
+              <Switch checked={autoAssign} onCheckedChange={setAutoAssign} />
+            </div>
+          </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }}>Cancelar</Button>
             <Button
@@ -828,7 +858,7 @@ const ProfessorDashboard = () => {
               className="gap-2"
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              {creating ? "Criando..." : "Criar e Atribuir"}
+              {creating ? "Criando..." : scheduledAt ? "Agendar e Atribuir" : "Criar e Atribuir"}
             </Button>
           </DialogFooter>
         </DialogContent>
