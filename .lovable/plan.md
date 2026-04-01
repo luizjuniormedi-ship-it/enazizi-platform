@@ -1,49 +1,43 @@
 
-# Fix: Duplicatas nos Cards do Pipeline + Atualização em Tempo Real
 
-## Problemas Identificados
+# Cadastro Obrigatório Completo + Tela de Conclusão
 
-1. **229 questões duplicadas** no banco (7.619 total, ~7.390 únicas)
-2. **454 questões com topic "ENARE"** + ~150 questões com subtópicos fragmentados (ex: "Bactérias Gram-negativas", "Infecção Urinária", "Hipertireoidismo") que não são contabilizadas nos cards de especialidade
-3. **Cards do pipeline não atualizam** durante/após equalização — `stats` só é carregado em `loadLogs`/`loadSources` no mount, nunca após gerar questões
-4. **Card "Duplicatas" mostra valor errado** — vem de `ingestion_log.duplicates_skipped` (logs de importação), não reflete duplicatas reais no banco
+## Situação Atual
 
-## Correções
+- **Register.tsx**: Estudantes só preenchem nome, email e senha. Telefone, faculdade e período ficam para depois.
+- **ProtectedRoute.tsx**: Já tem tela "Complete seu cadastro" que bloqueia acesso até preencher tudo — funciona corretamente.
+- **Dados**: Dos 143 estudantes, apenas ~41 têm perfil completo. ~102 estão com dados incompletos.
 
-### 1. Migração — Limpar 229 duplicatas reais + normalizar 600+ questões fragmentadas
+## O que já funciona
 
-```sql
--- Remover duplicatas (manter a mais antiga com explicação)
--- Normalizar "ENARE" → especialidade correta via subtopic
--- Consolidar subtópicos fragmentados para seus tópicos pai
-```
+O `ProtectedRoute` já impede acesso se o perfil estiver incompleto. A tela de completar cadastro já existe e valida nome, telefone, período e faculdade.
 
-### 2. `AdminIngestionPanel.tsx` — Cards com dados reais do banco
+## Mudanças
 
-Substituir os 4 cards estáticos por dados dinâmicos:
-- **Total Questões**: contagem real do `questions_bank` (vem do `loadDistribution`)
-- **Únicas**: questões com statement único
-- **Duplicatas**: diferença entre total e únicas (calculado real)
-- **Especialidades**: número de especialidades com questões
+### 1. `src/pages/Register.tsx` — Exigir todos os campos no cadastro
 
-Atualizar os cards dentro de `loadDistribution()` já que ele faz o fetch paginado completo.
+Adicionar campos obrigatórios para estudantes diretamente na tela de registro:
+- **WhatsApp** (com máscara e validação de DDD)
+- **Faculdade** (combobox já existente)
+- **Período** (select 1º ao 12º)
 
-### 3. Refresh automático após cada batch de equalização
+Validar com `isValidPhone` e `isValidName` antes de submeter. Passar telefone, período e faculdade nos metadados do signup.
 
-Já chama `loadDistribution()` após cada batch. Precisa também chamar `loadLogs()` e `loadSources()` para atualizar os cards de log. Ou melhor: calcular stats dos cards diretamente dentro de `loadDistribution` para ter tudo sincronizado.
+### 2. `src/hooks/useAuth.tsx` — Incluir campos extras no signup
 
-### 4. `bulk-generate-content` — Deduplicação antes de inserir
+Expandir a função `signUp` para aceitar `phone` e `periodo` nos metadados do usuário, para que o trigger `handle_new_user` possa salvá-los.
 
-Verificar se a edge function já faz dedup por hash. Se não, adicionar check dos primeiros 80 chars antes de insert para evitar novas duplicatas.
+### 3. Migração — Atualizar trigger `handle_new_user`
 
-## Arquivos alterados
+Modificar o trigger para extrair `phone` e `periodo` dos metadados e salvar no perfil automaticamente na criação.
 
-- `src/components/admin/AdminIngestionPanel.tsx` — Cards com dados reais + refresh automático
-- Migração SQL — Limpar duplicatas + normalizar tópicos fragmentados
+### 4. `ProtectedRoute.tsx` — Manter como está
+
+A tela "Complete seu cadastro" já funciona como fallback para os ~102 usuários antigos com dados incompletos. Nenhuma mudança necessária.
 
 ## Resultado
 
-- Cards mostram dados reais e atualizados do banco
-- Atualizam automaticamente durante e após equalização
-- ~229 duplicatas removidas
-- ~600 questões com tópicos fragmentados normalizadas para especialidades corretas
+- Novos usuários preenchem TUDO no registro (nome, email, senha, whatsapp, faculdade, período)
+- Usuários antigos sem dados completos continuam bloqueados pela tela existente até completarem
+- Nenhum usuário acessa a plataforma sem perfil completo
+
