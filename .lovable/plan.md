@@ -1,43 +1,36 @@
 
 
-# Cadastro Obrigatório Completo + Tela de Conclusão
+# Rebalancear Dificuldade das Questões Geradas
 
-## Situação Atual
+## Problema
 
-- **Register.tsx**: Estudantes só preenchem nome, email e senha. Telefone, faculdade e período ficam para depois.
-- **ProtectedRoute.tsx**: Já tem tela "Complete seu cadastro" que bloqueia acesso até preencher tudo — funciona corretamente.
-- **Dados**: Dos 143 estudantes, apenas ~41 têm perfil completo. ~102 estão com dados incompletos.
+O prompt do gerador automático (`bulk-generate-content/index.ts`, linha 245) instrui a IA: **"40% fácil, 40% médio, 20% difícil"** — gerando pouquíssimas questões difíceis. Além disso, o fallback de dificuldade (linha 373) é `q.difficulty || 3` (médio), então questões sem dificuldade explícita ficam no nível médio.
 
-## O que já funciona
+## Correção
 
-O `ProtectedRoute` já impede acesso se o perfil estiver incompleto. A tela de completar cadastro já existe e valida nome, telefone, período e faculdade.
+### 1. `supabase/functions/bulk-generate-content/index.ts` — Alterar distribuição no prompt
 
-## Mudanças
+Substituir a linha 245:
+- **De**: `"Varie a dificuldade: 40% fácil, 40% médio, 20% difícil"`
+- **Para**: `"Varie a dificuldade: 20% fácil (difficulty:2), 40% médio (difficulty:3), 40% difícil (difficulty:4-5)"`
 
-### 1. `src/pages/Register.tsx` — Exigir todos os campos no cadastro
+Isso equaliza a geração para produzir mais questões difíceis, compatível com provas de residência.
 
-Adicionar campos obrigatórios para estudantes diretamente na tela de registro:
-- **WhatsApp** (com máscara e validação de DDD)
-- **Faculdade** (combobox já existente)
-- **Período** (select 1º ao 12º)
+### 2. Reforçar no prompt de retry (linha 325)
 
-Validar com `isValidPhone` e `isValidName` antes de submeter. Passar telefone, período e faculdade nos metadados do signup.
+Adicionar `"difficulty":4` no template do retry para que questões do fallback venham difíceis (compensando o déficit atual).
 
-### 2. `src/hooks/useAuth.tsx` — Incluir campos extras no signup
+### 3. Validar campo difficulty no filtro de inserção
 
-Expandir a função `signUp` para aceitar `phone` e `periodo` nos metadados do usuário, para que o trigger `handle_new_user` possa salvá-los.
+Na linha 373, ajustar o fallback: se a IA não fornecer `difficulty`, sortear entre 3-4 em vez de sempre defaultar para 3.
 
-### 3. Migração — Atualizar trigger `handle_new_user`
+## Arquivo alterado
 
-Modificar o trigger para extrair `phone` e `periodo` dos metadados e salvar no perfil automaticamente na criação.
-
-### 4. `ProtectedRoute.tsx` — Manter como está
-
-A tela "Complete seu cadastro" já funciona como fallback para os ~102 usuários antigos com dados incompletos. Nenhuma mudança necessária.
+- `supabase/functions/bulk-generate-content/index.ts`
 
 ## Resultado
 
-- Novos usuários preenchem TUDO no registro (nome, email, senha, whatsapp, faculdade, período)
-- Usuários antigos sem dados completos continuam bloqueados pela tela existente até completarem
-- Nenhum usuário acessa a plataforma sem perfil completo
+- Distribuição futura: ~20% fácil, ~40% médio, ~40% difícil
+- Questões sem difficulty declarada recebem nível 3-4 (aleatório)
+- Recuperação gradual do déficit de difíceis conforme novas gerações rodam
 
