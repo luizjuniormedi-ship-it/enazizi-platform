@@ -460,6 +460,18 @@ serve(async (req) => {
       ];
       const questionsRemaining = remainingDeficits.reduce((sum, item) => sum + item.deficit, 0);
 
+      // Log to daily_generation_log for admin panel tracking
+      try {
+        await supabaseAdmin.from("daily_generation_log").insert({
+          run_date: new Date().toISOString().split("T")[0],
+          questions_generated: totalImported + totalQ,
+          specialties_processed: results.map((r: any) => r.specialty),
+          status: results.some((r: any) => r.error) ? "partial" : "success",
+        });
+      } catch (logErr) {
+        console.error("[equalize] Failed to write generation log:", logErr);
+      }
+
       return new Response(JSON.stringify({
         message: `Equalização: ${totalImported} importadas, ${totalQ} geradas por IA, ${totalF} flashcards`,
         results,
