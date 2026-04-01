@@ -813,6 +813,302 @@ REGRAS:
         return ok({ success: true });
       }
 
+      case "professor_bi": {
+        const { faculdade, periodo, student_id } = params;
+        const isAdminBI = roleData.some((r: any) => r.role === "admin");
+
+        // ---- PROFICIENCY DATA (teacher-created activities) ----
+        // Simulados
+        let simQuery = sb.from("teacher_simulados").select("id, title, topics, questions_json");
+        if (!isAdminBI) simQuery = simQuery.eq("professor_id", user.id);
+        const { data: sims } = await simQuery;
+
+        const simIds = (sims || []).map((s: any) => s.id);
+        let simResultsRaw: any[] = [];
+        if (simIds.length > 0) {
+          let rq = sb.from("teacher_simulado_results").select("simulado_id, student_id, score, status, answers_json").in("simulado_id", simIds);
+          if (student_id) rq = rq.eq("student_id", student_id);
+          const { data } = await rq;
+          simResultsRaw = data || [];
+        }
+
+        // Clinical cases
+        let caseQuery = sb.from("teacher_clinical_cases").select("id, title, specialty");
+        if (!isAdminBI) caseQuery = caseQuery.eq("professor_id", user.id);
+        const { data: biCases } = await caseQuery;
+
+        const biCaseIds = (biCases || []).map((c: any) => c.id);
+        let caseResultsRaw: any[] = [];
+        if (biCaseIds.length > 0) {
+          let crq = sb.from("teacher_clinical_case_results").select("case_id, student_id, status, final_score").in("case_id", biCaseIds);
+          if (student_id) crq = crq.eq("student_id", student_id);
+          const { data } = await crq;
+          caseResultsRaw = data || [];
+        }
+
+        // Study assignments
+        let assignBIQuery = sb.from("teacher_study_assignments").select("id, title, specialty");
+        if (!isAdminBI) assignBIQuery = assignBIQuery.eq("professor_id", user.id);
+        const { data: biAssigns } = await assignBIQuery;
+
+        const biAssignIds = (biAssigns || []).map((a: any) => a.id);
+        let assignResultsRaw: any[] = [];
+        if (biAssignIds.length > 0) {
+          let arq = sb.from("teacher_study_assignment_results").select("assignment_id, student_id, status").in("assignment_id", biAssignIds);
+          if (student_id) arq = arq.eq("student_id", student_id);
+          const { data } = await arq;
+          assignResultsRaw = data || [];
+        }
+
+        // Collect all student IDs involved
+        const allStudentIds = [...new Set([
+          ...simResultsRaw.map((r: any) => r.student_id),
+          ...caseResultsRaw.map((r: any) => r.student_id),
+          ...assignResultsRaw.map((r: any) => r.student_id),
+        ])];
+
+        // Get student profiles
+        let biProfiles: any[] = [];
+        if (allStudentIds.length > 0) {
+          const { data } = await sb.from("profiles").select("user_id, display_name, email, faculdade, periodo").in("user_id", allStudentIds);
+          biProfiles = data || [];
+        }
+
+        // KPIs
+        const totalActivities = (sims || []).length + (biCases || []).length + (biAssigns || []).length;
+        const allResults = [...simResultsRaw, ...caseResultsRaw, ...assignResultsRaw];
+        const completedResults = allResults.filter((r: any) => r.status === "completed");
+        const pendingResults = allResults.filter((r: any) => r.status === "pending");
+        const completionRate = allResults.length > 0 ? Math.round((completedResults.length / allResults.length) * 100) : 0;
+
+        // Average score from simulados + cases
+        const scoredResults = [...simResultsRaw.filter((r: any) => r.status === "completed" && r.score != null),
+                               ...caseResultsRaw.filter((r: any) => r.status === "completed" && r.final_score != null)];
+        const avgScore = scoredResults.length > 0
+          ? Math.round(scoredResults.reduce((s: number, r: any) => s + (r.score || r.final_score || 0), 0) / scoredResults.length)
+          : 0;
+
+        // Topic performance from simulados (cross questions_json with answers_json)
+        const topicPerf: Record<string, { correct: number; total: number }> = {};
+        for (const sim of (sims || [])) {
+          const questions = sim.questions_json || [];
+          const resultsForSim = simResultsRaw.filter((r: any) => r.simulado_id === sim.id && r.status === "completed");
+          for (const result of resultsForSim) {
+            const answers = result.answers_json || [];
+            questions.forEach((q: any, idx: number) => {
+              const topic = q.topic || q.block || "Geral";
+              if (!topicPerf[topic]) topicPerf[topic] = { correct: 0, total: 0 };
+              topicPerf[topic].total++;
+              const studentAnswer = answers[idx];
+              if (studentAnswer != null && studentAnswer === q.correct_index) {
+                topicPerf[topic].correct++;
+              }
+            });
+          }
+        }
+
+        const topicBreakdown = Object.entries(topicPerf)
+          .map(([topic, v]) => ({ topic, correct: v.correct, total: v.total, accuracy: v.total > 0 ? Math.round((v.correct / v.total) * 100) : 0 }))
+          .sort((a, b) => a.accuracy - b.accuracy);
+
+        const deficientTopics = topicBreakdown.filter(t => t.accuracy < 50 && t.total >= 2);
+        const masteredTopics = topicBreakdown.filter(t => t.accuracy >= 80 && t.total >= 2);
+
+        // Specialty performance from clinical cases
+        const specialtyPerf: Record<string, { total: number; completed: number; avgScore: number }> = {};
+        for (const c of (biCases || [])) {
+          const sp = c.specialty || "Geral";
+          if (!specialtyPerf[sp]) specialtyPerf[sp] = { total: 0, completed: 0, avgScore: 0 };
+          const cRes = caseResultsRaw.filter((r: any) => r.case_id === c.id);
+          for (const r of cRes) {
+            specialtyPerf[sp].total++;
+            if (r.status === "completed") {
+              specialtyPerf[sp].completed++;
+              specialtyPerf[sp].avgScore += (r.final_score || 0);
+            }
+          }
+        }
+        for (const key of Object.keys(specialtyPerf)) {
+          if (specialtyPerf[key].completed > 0) specialtyPerf[key].avgScore = Math.round(specialtyPerf[key].avgScore / specialtyPerf[key].completed);
+        }
+
+        // Activity detail table
+        const activityTable: any[] = [];
+        for (const r of simResultsRaw) {
+          const sim = (sims || []).find((s: any) => s.id === r.simulado_id);
+          const p = biProfiles.find((p: any) => p.user_id === r.student_id);
+          activityTable.push({
+            type: "Simulado", title: sim?.title || "Simulado",
+            student_name: p?.display_name || p?.email || "—",
+            student_id: r.student_id,
+            score: r.score != null ? Math.round(r.score) : null,
+            status: r.status,
+          });
+        }
+        for (const r of caseResultsRaw) {
+          const c = (biCases || []).find((c: any) => c.id === r.case_id);
+          const p = biProfiles.find((p: any) => p.user_id === r.student_id);
+          activityTable.push({
+            type: "Caso Clínico", title: c?.title || "Caso",
+            student_name: p?.display_name || p?.email || "—",
+            student_id: r.student_id,
+            score: r.final_score != null ? Math.round(r.final_score) : null,
+            status: r.status,
+          });
+        }
+        for (const r of assignResultsRaw) {
+          const a = (biAssigns || []).find((a: any) => a.id === r.assignment_id);
+          const p = biProfiles.find((p: any) => p.user_id === r.student_id);
+          activityTable.push({
+            type: "Tema de Estudo", title: a?.title || "Tema",
+            student_name: p?.display_name || p?.email || "—",
+            student_id: r.student_id,
+            score: null,
+            status: r.status,
+          });
+        }
+
+        // ---- GENERAL PLATFORM DATA ----
+        let platformData: any = null;
+        if (allStudentIds.length > 0) {
+          // Gamification
+          const { data: gamData } = await sb.from("user_gamification")
+            .select("user_id, xp, current_streak, last_activity_date")
+            .in("user_id", student_id ? [student_id] : allStudentIds);
+
+          // Topic profiles for accuracy by specialty
+          const { data: topicProfiles } = await sb.from("user_topic_profiles")
+            .select("user_id, specialty, accuracy, total_questions")
+            .in("user_id", student_id ? [student_id] : allStudentIds);
+
+          // Error bank top themes
+          const { data: errorData } = await sb.from("error_bank")
+            .select("tema, vezes_errado")
+            .in("user_id", student_id ? [student_id] : allStudentIds);
+
+          // Practice attempts (4 weeks)
+          const fourWeeksAgo = new Date();
+          fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+          let attemptQuery = sb.from("practice_attempts")
+            .select("user_id, correct, created_at")
+            .gte("created_at", fourWeeksAgo.toISOString());
+          if (student_id) {
+            attemptQuery = attemptQuery.eq("user_id", student_id);
+          } else if (allStudentIds.length <= 100) {
+            attemptQuery = attemptQuery.in("user_id", allStudentIds);
+          }
+          const { data: attempts } = await attemptQuery.limit(5000);
+
+          // Aggregate gamification
+          const gams = gamData || [];
+          const avgXp = gams.length > 0 ? Math.round(gams.reduce((s: number, g: any) => s + (g.xp || 0), 0) / gams.length) : 0;
+          const avgStreak = gams.length > 0 ? Math.round(gams.reduce((s: number, g: any) => s + (g.current_streak || 0), 0) / gams.length) : 0;
+          const now2 = new Date();
+          const inactiveCount = gams.filter((g: any) => {
+            if (!g.last_activity_date) return true;
+            return (now2.getTime() - new Date(g.last_activity_date).getTime()) / 86400000 > 7;
+          }).length;
+
+          // Questions answered
+          const totalQuestions = (attempts || []).length;
+          const correctQuestions = (attempts || []).filter((a: any) => a.correct).length;
+          const avgAccuracy = totalQuestions > 0 ? Math.round((correctQuestions / totalQuestions) * 100) : 0;
+
+          // Error themes top 10
+          const errorMap: Record<string, number> = {};
+          (errorData || []).forEach((e: any) => { errorMap[e.tema] = (errorMap[e.tema] || 0) + e.vezes_errado; });
+          const topErrors = Object.entries(errorMap).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([tema, count]) => ({ tema, count }));
+
+          // Specialty accuracy (radar)
+          const specMap: Record<string, { total: number; acc: number }> = {};
+          (topicProfiles || []).forEach((tp: any) => {
+            if (!specMap[tp.specialty]) specMap[tp.specialty] = { total: 0, acc: 0 };
+            specMap[tp.specialty].total += tp.total_questions;
+            specMap[tp.specialty].acc += tp.accuracy * tp.total_questions;
+          });
+          const specialtyAccuracy = Object.entries(specMap)
+            .filter(([, v]) => v.total > 0)
+            .map(([specialty, v]) => ({ specialty, accuracy: Math.round(v.acc / v.total), total_questions: v.total }))
+            .sort((a, b) => b.total_questions - a.total_questions)
+            .slice(0, 12);
+
+          // Student engagement list
+          const studentEngagement = biProfiles.map((p: any) => {
+            const g = gams.find((g: any) => g.user_id === p.user_id);
+            const pAttempts = (attempts || []).filter((a: any) => a.user_id === p.user_id);
+            return {
+              user_id: p.user_id,
+              display_name: p.display_name || p.email || "—",
+              xp: g?.xp || 0,
+              streak: g?.current_streak || 0,
+              questions_answered: pAttempts.length,
+              accuracy: pAttempts.length > 0 ? Math.round((pAttempts.filter((a: any) => a.correct).length / pAttempts.length) * 100) : 0,
+            };
+          }).sort((a, b) => b.xp - a.xp);
+
+          platformData = {
+            kpis: { total_questions: totalQuestions, avg_accuracy: avgAccuracy, avg_streak: avgStreak, avg_xp: avgXp, inactive_count: inactiveCount },
+            top_errors: topErrors,
+            specialty_accuracy: specialtyAccuracy,
+            student_engagement: studentEngagement,
+          };
+        }
+
+        return ok({
+          proficiency: {
+            kpis: { total_activities: totalActivities, completion_rate: completionRate, avg_score: avgScore, pending: pendingResults.length },
+            topic_breakdown: topicBreakdown,
+            deficient_topics: deficientTopics,
+            mastered_topics: masteredTopics,
+            specialty_perf: specialtyPerf,
+            activity_table: activityTable.slice(0, 200),
+          },
+          platform: platformData,
+          students: biProfiles.map((p: any) => ({ user_id: p.user_id, display_name: p.display_name || p.email })),
+        });
+      }
+
+      case "professor_bi_suggestion": {
+        const { summary } = params;
+        if (!summary) throw new Error("Resumo dos dados é obrigatório");
+
+        const prompt = `Você é um consultor pedagógico especializado em educação médica. Com base nos dados de desempenho da turma abaixo, gere de 3 a 5 recomendações pedagógicas específicas e acionáveis.
+
+DADOS DA TURMA:
+${JSON.stringify(summary, null, 2)}
+
+Retorne APENAS um array JSON:
+[
+  {
+    "title": "Título curto da recomendação",
+    "description": "Descrição detalhada da ação pedagógica sugerida",
+    "priority": "alta" | "media" | "baixa",
+    "target": "turma" | "individual"
+  }
+]
+
+REGRAS:
+- Foque nos assuntos deficitários identificados
+- Sugira metodologias ativas (PBL, TBL, simulação, estudo dirigido)
+- Considere o engajamento e frequência dos alunos
+- Seja específico: mencione os temas e especialidades pelos nomes
+- Tudo em português brasileiro`;
+
+        const response = await aiFetch({
+          messages: [{ role: "user", content: prompt }],
+          model: "google/gemini-2.5-flash",
+        });
+
+        if (!response.ok) throw new Error("Erro ao gerar sugestões");
+
+        const aiData = await response.json();
+        const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
+        const jsonMatch = content.match(/\[[\s\S]*\]/);
+        const suggestions = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+
+        return ok({ suggestions });
+      }
+
       default:
         return new Response(JSON.stringify({ error: `Ação desconhecida: ${action}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
