@@ -31,10 +31,10 @@ const FaculdadeCombobox = ({ value, onChange }: FaculdadeComboboxProps) => {
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0" align="start">
+      <PopoverContent className="w-[min(300px,90vw)] p-0" align="start">
         <Command>
           <CommandInput placeholder="Buscar faculdade..." />
-          <CommandList>
+          <CommandList className="max-h-[40vh] overflow-y-auto">
             <CommandEmpty>Nenhuma encontrada.</CommandEmpty>
             <CommandGroup>
               {FACULDADES.map((f) => (
