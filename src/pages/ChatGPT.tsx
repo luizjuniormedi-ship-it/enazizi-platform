@@ -27,6 +27,7 @@ import TutorStartScreen from "@/components/tutor/TutorStartScreen";
 import TutorStepTracker from "@/components/tutor/TutorStepTracker";
 import TutorMessageList from "@/components/tutor/TutorMessageList";
 import TutorInputBar from "@/components/tutor/TutorInputBar";
+import { useSpeechToText } from "@/hooks/tutor/useSpeechToText";
 
 const ChatGPT = () => {
   const { user } = useAuth();
