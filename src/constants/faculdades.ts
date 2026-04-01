@@ -127,6 +127,4 @@ export const FACULDADES = [
   "Universidade de Vassouras",
   "UPF – Universidade de Passo Fundo",
 
-  // Última opção
-  "Outra",
 ];
