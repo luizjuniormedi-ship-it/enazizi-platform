@@ -73,7 +73,7 @@ function getTarget(specialty: string): number {
   return BASIC_SCIENCES.includes(specialty) ? TARGET_BASIC : TARGET_CLINICAL;
 }
 
-async function generateBatch(specialty: string, topics: string[], userId: string, supabaseAdmin: any, questionCount = 25): Promise<{ questions: number; flashcards: number }> {
+async function generateBatch(specialty: string, topics: string[], userId: string, supabaseAdmin: any, questionCount = 10): Promise<{ questions: number; flashcards: number }> {
   const selectedTopics = topics.sort(() => Math.random() - 0.5).slice(0, 5);
   const fcCount = Math.max(5, Math.round(questionCount * 0.6));
   
