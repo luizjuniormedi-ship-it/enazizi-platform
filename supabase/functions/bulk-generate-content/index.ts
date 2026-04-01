@@ -242,7 +242,7 @@ REGRAS PARA QUESTÕES:
 - Casos clínicos realistas com dados de anamnese, exame físico e exames complementares
 - EXATAMENTE 5 alternativas (A, B, C, D, E) sendo apenas 1 correta
 - Explicação detalhada com raciocínio clínico
-- Varie a dificuldade: 40% fácil, 40% médio, 20% difícil
+- Varie a dificuldade: 20% fácil (difficulty:2), 40% médio (difficulty:3), 40% difícil (difficulty:4-5). Priorize questões difíceis para provas de residência
 - Distribua entre os temas fornecidos
 
 ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
@@ -322,7 +322,7 @@ FORMATO JSON OBRIGATÓRIO:
           maxRetries: 1,
           messages: [
             { role: "system", content: "Responda APENAS com JSON válido. Sem markdown, sem texto extra." },
-            { role: "user", content: `Gere ${questionCount} questões de múltipla escolha sobre ${specialty} para residência médica em PORTUGUÊS BRASILEIRO.\n\nFormato:\n{"questions":[{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","topic":"${specialty}","difficulty":3}],"flashcards":[]}` },
+            { role: "user", content: `Gere ${questionCount} questões de múltipla escolha sobre ${specialty} para residência médica em PORTUGUÊS BRASILEIRO. Priorize dificuldade 4-5 (difícil).\n\nFormato:\n{"questions":[{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","topic":"${specialty}","difficulty":4}],"flashcards":[]}` },
           ],
         });
         if (retryResponse.ok) {
@@ -370,7 +370,7 @@ FORMATO JSON OBRIGATÓRIO:
             explanation: String(q.explanation || "").trim(),
             topic: normalizedTopic,
             subtopic: rawTopic !== normalizedTopic ? rawTopic : null,
-            difficulty: q.difficulty || 3,
+            difficulty: q.difficulty || (Math.random() < 0.5 ? 4 : 3),
             source: "bulk-ai-generated",
             is_global: true,
             review_status: "pending",
