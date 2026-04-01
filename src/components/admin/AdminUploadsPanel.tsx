@@ -1,4 +1,4 @@
-import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle, Database, BookOpen } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle, Database, BookOpen, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useState, useRef, useEffect, useCallback } from "react";
