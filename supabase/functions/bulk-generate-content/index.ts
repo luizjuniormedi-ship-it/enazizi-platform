@@ -189,16 +189,64 @@ FORMATO JSON OBRIGATÓRIO:
     const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
     
     let parsed: any = null;
-    try {
-      parsed = JSON.parse(cleaned);
-    } catch {
-      const jsonMatch = cleaned.match(/\{[\s\S]*"questions"[\s\S]*"flashcards"[\s\S]*\}/);
-      if (jsonMatch) {
-        try { parsed = JSON.parse(jsonMatch[0]); } catch { console.error("JSON parse failed for", specialty); return { questions: 0, flashcards: 0 }; }
+    // Strategy 1: direct parse
+    try { parsed = JSON.parse(cleaned); } catch {}
+    // Strategy 2: find outermost JSON object with questions
+    if (!parsed) {
+      const jsonMatch = cleaned.match(/\{[\s\S]*"questions"\s*:\s*\[[\s\S]*\]\s*[\s\S]*\}/);
+      if (jsonMatch) { try { parsed = JSON.parse(jsonMatch[0]); } catch {} }
+    }
+    // Strategy 3: fix common JSON issues (trailing commas, unescaped newlines)
+    if (!parsed) {
+      try {
+        const fixed = cleaned
+          .replace(/,\s*([}\]])/g, '$1')           // trailing commas
+          .replace(/\n/g, '\\n')                    // unescaped newlines in strings
+          .replace(/\\n\s*\\n/g, '\\n')             // double newlines
+          .replace(/\t/g, '\\t');                    // tabs
+        parsed = JSON.parse(fixed);
+      } catch {}
+    }
+    // Strategy 4: extract questions array directly
+    if (!parsed) {
+      const arrMatch = cleaned.match(/"questions"\s*:\s*(\[[\s\S]*?\])\s*[,}]/);
+      if (arrMatch) {
+        try {
+          const questions = JSON.parse(arrMatch[1].replace(/,\s*([}\]])/g, '$1'));
+          parsed = { questions, flashcards: [] };
+        } catch {}
       }
     }
 
-    if (!parsed) return { questions: 0, flashcards: 0 };
+    if (!parsed) {
+      console.error(`JSON parse failed for ${specialty}, content length: ${cleaned.length}, first 200 chars: ${cleaned.slice(0, 200)}`);
+      // Retry once with a simpler prompt
+      try {
+        console.log(`[${specialty}] Retrying with simplified prompt...`);
+        const retryResponse = await aiFetch({
+          model: "google/gemini-2.5-flash",
+          timeoutMs: 90000,
+          maxRetries: 1,
+          messages: [
+            { role: "system", content: "Responda APENAS com JSON válido. Sem markdown, sem texto extra." },
+            { role: "user", content: `Gere ${count} questões de múltipla escolha sobre ${specialty} para residência médica em PORTUGUÊS BRASILEIRO.\n\nFormato:\n{"questions":[{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","topic":"${specialty}","difficulty":3}],"flashcards":[]}` },
+          ],
+        });
+        if (retryResponse.ok) {
+          const retryData = await retryResponse.json();
+          const retryRaw = sanitizeAiContent(retryData.choices?.[0]?.message?.content || "");
+          const retryCleaned = retryRaw.replace(/```json\n?/g, "").replace(/```/g, "").replace(/,\s*([}\]])/g, '$1').trim();
+          try { parsed = JSON.parse(retryCleaned); } catch {
+            const rm = retryCleaned.match(/\{[\s\S]*"questions"\s*:\s*\[[\s\S]*\]/);
+            if (rm) { try { parsed = JSON.parse(rm[0] + '}'); } catch {} }
+          }
+        }
+      } catch (retryErr) {
+        console.error(`[${specialty}] Retry also failed:`, retryErr);
+      }
+    }
+
+    if (!parsed) { console.error(`[${specialty}] All parse strategies failed`); return { questions: 0, flashcards: 0 }; }
 
     const IMAGE_REF_PATTERN = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo|observe o gráfico|observe a figura|observe a foto|imagem a seguir|figura a seguir)\b/i;
     const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
