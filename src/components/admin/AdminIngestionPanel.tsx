@@ -300,10 +300,10 @@ const AdminIngestionPanel = () => {
 
       <div className="grid grid-cols-4 gap-2 mb-4">
         {[
-          { label: "Fontes Indexadas", value: stats.totalIndexed, color: "text-blue-500" },
-          { label: "Extraídas", value: stats.totalExtracted, color: "text-emerald-500" },
-          { label: "Duplicatas", value: stats.duplicatesRemoved, color: "text-amber-500" },
-          { label: "Total Fontes", value: stats.totalSources, color: "text-purple-500" },
+          { label: "Total Questões", value: stats.totalQuestions, color: "text-blue-500" },
+          { label: "Únicas", value: stats.uniqueQuestions, color: "text-emerald-500" },
+          { label: "Duplicatas", value: stats.duplicates, color: "text-amber-500" },
+          { label: "Especialidades", value: stats.specialtiesCount, color: "text-purple-500" },
         ].map(s => (
           <div key={s.label} className="text-center p-2 rounded-lg bg-muted/50">
             <div className={`text-lg font-bold ${s.color}`}>{s.value}</div>
