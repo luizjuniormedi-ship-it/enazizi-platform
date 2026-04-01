@@ -1063,6 +1063,102 @@ REGRAS:
           };
         }
 
+        // ---- AT-RISK STUDENTS ----
+        const atRiskStudents: any[] = [];
+        const now3 = new Date();
+        for (const p of biProfiles) {
+          const reasons: string[] = [];
+          // Check avg score
+          const studentSimResults = simResultsRaw.filter((r: any) => r.student_id === p.user_id && r.status === "completed" && r.score != null);
+          const studentCaseResults = caseResultsRaw.filter((r: any) => r.student_id === p.user_id && r.status === "completed" && r.final_score != null);
+          const allScored = [...studentSimResults.map((r: any) => r.score), ...studentCaseResults.map((r: any) => r.final_score)];
+          const avgStudentScore = allScored.length > 0 ? Math.round(allScored.reduce((a: number, b: number) => a + b, 0) / allScored.length) : null;
+          if (avgStudentScore !== null && avgStudentScore < 50) reasons.push(`Média ${avgStudentScore}% (abaixo de 50%)`);
+
+          // Check inactivity via gamification
+          const gam = platformData?.student_engagement?.find((s: any) => s.user_id === p.user_id);
+          // Also check pending > 3 days
+          const studentPending = allResults.filter((r: any) => r.student_id === p.user_id && r.status === "pending");
+          if (studentPending.length >= 3) reasons.push(`${studentPending.length} atividades pendentes`);
+
+          if (gam && gam.streak === 0 && gam.questions_answered === 0) reasons.push("Sem atividade na plataforma");
+
+          if (reasons.length > 0) {
+            atRiskStudents.push({
+              user_id: p.user_id,
+              display_name: p.display_name || p.email || "—",
+              reasons,
+              criticality: reasons.length >= 2 ? "critico" : "atencao",
+              avg_score: avgStudentScore,
+            });
+          }
+        }
+
+        // ---- WEEKLY EVOLUTION (last 8 weeks) ----
+        const weeklyEvolution: any[] = [];
+        if (platformData) {
+          const eightWeeksAgo = new Date();
+          eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56);
+          let evoQuery = sb.from("practice_attempts")
+            .select("correct, created_at")
+            .gte("created_at", eightWeeksAgo.toISOString());
+          if (student_id) {
+            evoQuery = evoQuery.eq("user_id", student_id);
+          } else if (allStudentIds.length <= 100) {
+            evoQuery = evoQuery.in("user_id", allStudentIds);
+          }
+          const { data: evoAttempts } = await evoQuery.limit(10000);
+
+          const weekMap: Record<string, { correct: number; total: number }> = {};
+          for (const a of (evoAttempts || [])) {
+            const d = new Date(a.created_at);
+            const weekStart = new Date(d);
+            weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+            const key = weekStart.toISOString().slice(0, 10);
+            if (!weekMap[key]) weekMap[key] = { correct: 0, total: 0 };
+            weekMap[key].total++;
+            if (a.correct) weekMap[key].correct++;
+          }
+
+          Object.entries(weekMap)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .forEach(([week, v]) => {
+              weeklyEvolution.push({
+                week,
+                accuracy: v.total > 0 ? Math.round((v.correct / v.total) * 100) : 0,
+                total: v.total,
+              });
+            });
+        }
+
+        // ---- STUDENT PERCENTILE (when student_id is provided) ----
+        let studentPercentile: any = null;
+        if (student_id && platformData?.student_engagement?.length > 1) {
+          const engList = platformData.student_engagement;
+          const studentEng = engList.find((s: any) => s.user_id === student_id);
+          if (studentEng) {
+            const sortedByAcc = [...engList].sort((a: any, b: any) => a.accuracy - b.accuracy);
+            const rank = sortedByAcc.findIndex((s: any) => s.user_id === student_id) + 1;
+            studentPercentile = {
+              display_name: studentEng.display_name,
+              accuracy: studentEng.accuracy,
+              percentile: Math.round((rank / sortedByAcc.length) * 100),
+              rank,
+              total_students: sortedByAcc.length,
+            };
+          }
+        }
+
+        // ---- Add created_at to activity table for pending days calculation ----
+        const activityTableEnhanced = activityTable.map((item: any) => {
+          let created_at = null;
+          if (item.type === "Simulado") {
+            const sim = (sims || []).find((s: any) => s.title === item.title);
+            // We don't have created_at on sims query, use result created_at
+          }
+          return { ...item, created_at };
+        });
+
         return ok({
           proficiency: {
             kpis: { total_activities: totalActivities, completion_rate: completionRate, avg_score: avgScore, pending: pendingResults.length },
@@ -1074,6 +1170,9 @@ REGRAS:
           },
           platform: platformData,
           students: biProfiles.map((p: any) => ({ user_id: p.user_id, display_name: p.display_name || p.email })),
+          at_risk_students: atRiskStudents,
+          weekly_evolution: weeklyEvolution,
+          student_percentile: studentPercentile,
         });
       }
 
