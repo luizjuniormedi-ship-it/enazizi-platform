@@ -22,6 +22,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { cn } from "@/lib/utils";
 import ActiveVideoRoomPopup from "@/components/dashboard/ActiveVideoRoomPopup";
+import ProficiencyGate from "@/components/dashboard/ProficiencyGate";
 
 interface MobileNavGroup {
   title: string;
