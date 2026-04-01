@@ -144,7 +144,12 @@ const QuestionsBank = () => {
         options: parseOptions(q.options),
         correct_index: q.correct_index ?? 0,
       }));
-      const filtered = mapped.filter(q => isMedicalQuestion(q) && q.options.length >= 4 && q.options.length <= 5);
+      const IMAGE_REF = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|ECG abaixo|tomografia abaixo|observe o gráfico|observe a figura|observe a foto|imagem a seguir|figura a seguir|vide imagem|conforme a imagem|conforme a figura)\b/i;
+      const filtered = mapped.filter(q => {
+        if (!isMedicalQuestion(q) || q.options.length < 4 || q.options.length > 5) return false;
+        if (IMAGE_REF.test(q.statement) && !q.image_url) return false;
+        return true;
+      });
       // Sort: real exam sources first, then by date
       const prioritized = filtered.sort((a, b) => {
         const srcA = a.source === "web-scrape" || a.source === "real-exam-ai" ? 0 : a.source === "ai-exam-style" ? 1 : 2;
