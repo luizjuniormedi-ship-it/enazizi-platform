@@ -28,6 +28,7 @@ interface Question {
   correct_index: number;
   explanation: string | null;
   topic: string | null;
+  subtopic: string | null;
   source: string | null;
   created_at: string;
   image_url: string | null;
