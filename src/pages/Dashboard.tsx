@@ -155,17 +155,6 @@ const Dashboard = () => {
       {/* Configuração obrigatória — action-driven, bloqueia progresso */}
       <ExamSetupReminder />
 
-      {/* Warning — only most urgent (component already limits to 1) */}
-      <DashboardWarnings
-        todayCompleted={stats.todayCompleted}
-        todayTotal={stats.todayTotal}
-        completedTasks={stats.completedTasks}
-        totalTasks={stats.totalTasks}
-        streak={stats.streak}
-        daysUntilExam={stats.daysUntilExam}
-        questionsToday={stats.questionsToday}
-        hasStudyPlan={stats.hasStudyPlan}
-      />
 
       {/* ══════════════════════════════════════════
           BLOCO 0 — MISSÃO DO DIA (CTA principal)
