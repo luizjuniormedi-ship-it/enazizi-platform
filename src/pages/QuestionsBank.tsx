@@ -50,6 +50,8 @@ const PAGE_SIZE = 1000;
 
 const QuestionsBank = () => {
   const { user } = useAuth();
+  const { isAdmin } = useAdminCheck();
+  const { isProfessor } = useProfessorCheck();
   const { toast } = useToast();
   const { addXp } = useGamification();
   const navigate = useNavigate();
