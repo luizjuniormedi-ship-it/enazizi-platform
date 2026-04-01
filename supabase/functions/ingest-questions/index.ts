@@ -363,12 +363,28 @@ Deno.serve(async (req) => {
     let skipped = 0;
     let errors = 0;
 
-    const { data: existing } = await supabase.from("questions_bank")
-      .select("id, statement")
-      .limit(1000);
+    // Build dedup keys from incoming questions
+    const incomingKeys = questions
+      .filter((q: any) => q.statement)
+      .map((q: any) => normalizeText(q.statement).slice(0, 80));
+
+    // Query existing questions matching any of the incoming keys (no limit)
     const existingMap = new Map<string, { id: string; statement: string }>();
-    for (const e of (existing || [])) {
-      existingMap.set(normalizeText(e.statement).slice(0, 80), e);
+    const BATCH = 200;
+    for (let i = 0; i < incomingKeys.length; i += BATCH) {
+      const batch = incomingKeys.slice(i, i + BATCH);
+      // Use ilike patterns on normalized first 80 chars
+      for (const key of batch) {
+        const searchPrefix = key.slice(0, 60);
+        if (searchPrefix.length < 20) continue;
+        const { data: matches } = await supabase.from("questions_bank")
+          .select("id, statement")
+          .ilike("statement", `%${searchPrefix.slice(0, 40)}%`)
+          .limit(50);
+        for (const e of (matches || [])) {
+          existingMap.set(normalizeText(e.statement).slice(0, 80), e);
+        }
+      }
     }
 
     const adminUserId = userId || "00000000-0000-0000-0000-000000000000";
