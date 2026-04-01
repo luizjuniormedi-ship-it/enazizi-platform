@@ -1,58 +1,49 @@
 
+# Fix: Duplicatas nos Cards do Pipeline + Atualização em Tempo Real
 
-# Fix: Dashboard do Equalizador Travado / Não Atualiza
+## Problemas Identificados
 
-## Causa raiz
+1. **229 questões duplicadas** no banco (7.619 total, ~7.390 únicas)
+2. **454 questões com topic "ENARE"** + ~150 questões com subtópicos fragmentados (ex: "Bactérias Gram-negativas", "Infecção Urinária", "Hipertireoidismo") que não são contabilizadas nos cards de especialidade
+3. **Cards do pipeline não atualizam** durante/após equalização — `stats` só é carregado em `loadLogs`/`loadSources` no mount, nunca após gerar questões
+4. **Card "Duplicatas" mostra valor errado** — vem de `ingestion_log.duplicates_skipped` (logs de importação), não reflete duplicatas reais no banco
 
-1. **Limite de 1000 linhas**: `loadDistribution()` faz `supabase.from("questions_bank").select("topic")` sem paginação. Com 3000+ questões, o Supabase retorna apenas 1000 linhas, gerando contagens erradas e déficits inflados.
+## Correções
 
-2. **Não atualiza durante o processo**: O `loadDistribution()` só é chamado no final (`linha 247`). Se o equalizador falha no meio, a distribuição fica estale.
+### 1. Migração — Limpar 229 duplicatas reais + normalizar 600+ questões fragmentadas
 
-3. **Não atualiza após erro**: O bloco `catch` (linha 248) não chama `loadDistribution()`.
-
-## Correção
-
-### 1. `AdminIngestionPanel.tsx` — Substituir query por contagem agregada via RPC ou loop paginado
-
-Trocar o `select("topic")` por uma query que use `select("topic", { count: "exact" })` com agrupamento, ou fazer paginação completa:
-
-```typescript
-// Opção: buscar contagens com query paginada
-const loadDistribution = async () => {
-  let allTopics: string[] = [];
-  let from = 0;
-  const PAGE = 1000;
-  while (true) {
-    const { data } = await supabase.from("questions_bank")
-      .select("topic")
-      .eq("is_global", true)
-      .range(from, from + PAGE - 1);
-    if (!data || data.length === 0) break;
-    allTopics.push(...data.map(r => r.topic || "Outros"));
-    if (data.length < PAGE) break;
-    from += PAGE;
-  }
-  // ... contar normalmente com allTopics
-};
+```sql
+-- Remover duplicatas (manter a mais antiga com explicação)
+-- Normalizar "ENARE" → especialidade correta via subtopic
+-- Consolidar subtópicos fragmentados para seus tópicos pai
 ```
 
-### 2. Atualizar distribuição após cada batch e após erro
+### 2. `AdminIngestionPanel.tsx` — Cards com dados reais do banco
 
-- Dentro do loop `for` (após cada especialidade processada), chamar `loadDistribution()` para atualizar as contagens em tempo real
-- No bloco `finally` (linha 250), sempre chamar `loadDistribution()` para garantir atualização mesmo em caso de erro
+Substituir os 4 cards estáticos por dados dinâmicos:
+- **Total Questões**: contagem real do `questions_bank` (vem do `loadDistribution`)
+- **Únicas**: questões com statement único
+- **Duplicatas**: diferença entre total e únicas (calculado real)
+- **Especialidades**: número de especialidades com questões
 
-### 3. Adicionar botão de refresh manual
+Atualizar os cards dentro de `loadDistribution()` já que ele faz o fetch paginado completo.
 
-Adicionar um botão de atualizar (ícone RefreshCw) ao lado do título da distribuição para o admin poder forçar reload a qualquer momento.
+### 3. Refresh automático após cada batch de equalização
+
+Já chama `loadDistribution()` após cada batch. Precisa também chamar `loadLogs()` e `loadSources()` para atualizar os cards de log. Ou melhor: calcular stats dos cards diretamente dentro de `loadDistribution` para ter tudo sincronizado.
+
+### 4. `bulk-generate-content` — Deduplicação antes de inserir
+
+Verificar se a edge function já faz dedup por hash. Se não, adicionar check dos primeiros 80 chars antes de insert para evitar novas duplicatas.
 
 ## Arquivos alterados
 
-- `src/components/admin/AdminIngestionPanel.tsx`
+- `src/components/admin/AdminIngestionPanel.tsx` — Cards com dados reais + refresh automático
+- Migração SQL — Limpar duplicatas + normalizar tópicos fragmentados
 
 ## Resultado
 
-- Contagens corretas mesmo com 3000+ questões no banco
-- Dashboard atualiza em tempo real durante a equalização
-- Sempre atualiza após erro ou pausa
-- Botão de refresh manual disponível
-
+- Cards mostram dados reais e atualizados do banco
+- Atualizam automaticamente durante e após equalização
+- ~229 duplicatas removidas
+- ~600 questões com tópicos fragmentados normalizadas para especialidades corretas
