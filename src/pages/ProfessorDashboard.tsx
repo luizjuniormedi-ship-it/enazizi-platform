@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { GraduationCap, Plus, Users, FileText, BarChart3, Loader2, Clock, CheckCircle, Send, Sparkles, Database, ChevronDown, ChevronUp, Eye, Trash2, PenLine, CheckSquare, Square, Video, Gauge } from "lucide-react";
+import { GraduationCap, Plus, Users, FileText, BarChart3, Loader2, Clock, CheckCircle, Send, Sparkles, Database, ChevronDown, ChevronUp, Eye, Trash2, PenLine, CheckSquare, Square, Video, Gauge, CalendarClock, ToggleLeft, Timer } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
