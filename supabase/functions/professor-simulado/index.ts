@@ -232,6 +232,13 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           .eq("simulado_id", simulado_id)
           .order("score", { ascending: false });
 
+        // Fetch questions_json from the simulado
+        const { data: simData } = await sb
+          .from("teacher_simulados")
+          .select("questions_json")
+          .eq("id", simulado_id)
+          .single();
+
         // Enrich with student names
         const studentIds = (results || []).map((r: any) => r.student_id);
         const { data: profiles } = await sb.from("profiles").select("user_id, display_name, email, faculdade, periodo").in("user_id", studentIds);
@@ -241,7 +248,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           return { ...r, student_name: p?.display_name || "Sem nome", student_email: p?.email || "", faculdade: p?.faculdade, periodo: p?.periodo };
         });
 
-        return ok({ results: enriched });
+        return ok({ results: enriched, questions_json: simData?.questions_json || [] });
       }
 
       case "get_students": {
