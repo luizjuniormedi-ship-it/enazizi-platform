@@ -343,6 +343,7 @@ const StudentSimulados = () => {
             <TabsTrigger value="simulados">📝 Simulados ({assigned.length})</TabsTrigger>
             <TabsTrigger value="plantao">🏥 Plantões ({clinicalCases.length})</TabsTrigger>
             <TabsTrigger value="temas">📖 Temas ({studyAssignments.length})</TabsTrigger>
+            <TabsTrigger value="sala">📹 Sala de Aula ({videoRooms.filter((r: any) => r.status === "active").length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="simulados" className="space-y-4 mt-4">
