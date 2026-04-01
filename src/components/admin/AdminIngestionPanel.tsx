@@ -138,12 +138,6 @@ const AdminIngestionPanel = () => {
       .select("*").order("created_at", { ascending: false }).limit(20);
     if (data) {
       setLogs(data);
-      const completed = (data as any[]).filter((l: any) => l.status === "completed");
-      setStats(prev => ({
-        ...prev,
-        totalExtracted: completed.length,
-        duplicatesRemoved: completed.reduce((s: number, l: any) => s + (l.duplicates_skipped || 0), 0),
-      }));
     }
   };
 
