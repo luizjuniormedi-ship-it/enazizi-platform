@@ -33,7 +33,7 @@ const AdminQuestionReviewPanel = () => {
   const fetchQuestions = async () => {
     setLoading(true);
     let query = supabase.from("questions_bank")
-      .select("id, statement, options, correct_index, topic, source, review_status, created_at", { count: "exact" })
+      .select("id, statement, options, correct_index, topic, subtopic, source, review_status, created_at", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
