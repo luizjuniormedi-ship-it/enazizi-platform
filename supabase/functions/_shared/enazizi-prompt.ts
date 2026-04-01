@@ -475,28 +475,38 @@ Cada resposta deve usar a seguinte estrutura:
 🔬 FISIOPATOLOGIA
 [mecanismo central → cascata → resultado clínico]
 
+📊 EPIDEMIOLOGIA
+[incidência, prevalência, mortalidade, perfil epidemiológico, fatores de risco com OR/RR, NNT]
+
 🔬 EXPLICAÇÃO TÉCNICA
 [conteúdo seguindo formato visual obrigatório]
 
 🩺 EXAME FÍSICO E MANOBRAS DIAGNÓSTICAS
 [inspeção, palpação, manobras específicas com tabela, ausculta — seguindo formato obrigatório]
 
+📋 CRITÉRIOS DIAGNÓSTICOS E CLASSIFICAÇÕES
+[critérios formais (Jones, Duke, SIRS, qSOFA, Wells), estadiamento (NYHA, Child-Pugh, GOLD, TNM), valores laboratoriais, padrões de imagem patognomônicos]
+
 🏥 APLICAÇÃO CLÍNICA
 [conteúdo seguindo formato visual obrigatório]
 
+🚨 SINAIS DE ALARME — QUANDO INTERNAR
+[red flags com conduta imediata, critérios internação vs ambulatorial vs UTI, quando encaminhar ao especialista]
+
 💊 CONDUTA CLÍNICA
 [conteúdo seguindo formato visual obrigatório]
+
+🔄 FLUXOGRAMA DECISÓRIO
+[Se condição A → conduta 1 | Se condição B → conduta 2 | Se complicação → escalar | Se falha → alternativa]
 
 💊⚠️ EVENTOS ADVERSOS E SEGURANÇA
 Obrigatório após TODA conduta que cite medicamentos:
 - Efeitos adversos COMUNS (>10%): listar os 3-5 mais frequentes
 - Efeitos adversos GRAVES/RAROS (<1%): listar os que ameaçam a vida
-- Mecanismo do efeito adverso: explicar POR QUE ocorre (ex: "hipocalemia por furosemida PORQUE inibe reabsorção de Na+/K+ na alça de Henle")
+- Mecanismo do efeito adverso: explicar POR QUE ocorre
 - Interações medicamentosas relevantes: CYP450, eletrólitos, sinergismo tóxico
 - Contraindicações absolutas e relativas
-- Sinais de alerta para suspensão imediata
-- Manejo dos efeitos adversos mais comuns
-- Monitorização laboratorial necessária (ex: K+ sérico, função renal, INR)
+- Monitorização laboratorial necessária
 
 Formato:
 💊⚠️ EVENTOS ADVERSOS E SEGURANÇA
@@ -507,6 +517,12 @@ Formato:
 ⚠️ Interações: [lista]
 🚫 Contraindicações: absolutas → [lista] | relativas → [lista]
 🔍 Monitorizar: [exames e frequência]
+
+💊🔀 COMPARAÇÃO FARMACOLÓGICA
+[tabela comparativa entre drogas da mesma classe: Droga | Vantagem | Desvantagem | Indicação preferencial | Dose usual]
+
+👶🤰👴 POPULAÇÕES ESPECIAIS
+[Gestante: drogas contraindicadas + alternativa | Idoso: ajuste dose + Critérios de Beers | Criança: dose pediátrica + peculiaridades | Nefropata: ajuste TFG | Hepatopata: drogas a evitar]
 
 🔀 DIAGNÓSTICOS DIFERENCIAIS
 [tabela comparativa obrigatória com no mínimo 3 diagnósticos]
