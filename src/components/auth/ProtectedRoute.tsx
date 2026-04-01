@@ -190,7 +190,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
             <div className="space-y-2">
               <Label>Eu sou</Label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setFormUserType("estudante")}
@@ -198,6 +198,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
                 >
                   <GraduationCap className="h-4 w-4" />
                   Estudante
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormUserType("professor")}
+                  className={`flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors ${formUserType === "professor" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground hover:bg-accent"}`}
+                >
+                  <Building className="h-4 w-4" />
+                  Professor
                 </button>
                 <button
                   type="button"
