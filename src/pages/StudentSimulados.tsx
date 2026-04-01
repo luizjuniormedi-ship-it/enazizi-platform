@@ -69,6 +69,11 @@ const StudentSimulados = () => {
   const [videoRooms, setVideoRooms] = useState<any[]>([]);
   const [videoLoading, setVideoLoading] = useState(true);
 
+  // Error bank
+  const [errorBankItems, setErrorBankItems] = useState<any[]>([]);
+  const [errorBankLoading, setErrorBankLoading] = useState(true);
+  const [expandedErrorTopic, setExpandedErrorTopic] = useState<string | null>(null);
+
   // Quiz state
   const [current, setCurrent] = useState<AssignedSimulado | null>(null);
   const [questionIndex, setQuestionIndex] = useState(0);
