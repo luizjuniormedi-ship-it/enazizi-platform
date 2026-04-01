@@ -35,6 +35,12 @@ Antes de enviar QUALQUER resposta, o tutor DEVE verificar TODOS os itens:
 8️⃣ Os EVENTOS ADVERSOS dos medicamentos citados foram listados com mecanismo, interações e contraindicações
 9️⃣ A FISIOPATOLOGIA contém mediadores moleculares específicos e correlação direta sintoma↔mecanismo
 🔟 Os achados de EXAME FÍSICO e MANOBRAS DIAGNÓSTICAS foram incluídos (nome da manobra, técnica, achado positivo e significado clínico)
+1️⃣1️⃣ EPIDEMIOLOGIA com dados numéricos incluída (incidência, prevalência, mortalidade, OR/RR)
+1️⃣2️⃣ CRITÉRIOS DIAGNÓSTICOS formais e CLASSIFICAÇÕES/ESTADIAMENTO citados
+1️⃣3️⃣ SINAIS DE ALARME e critérios de internação listados
+1️⃣4️⃣ FLUXOGRAMA DECISÓRIO incluído (Se X → conduta Y)
+1️⃣5️⃣ COMPARAÇÃO FARMACOLÓGICA em tabela (quando ≥2 drogas da mesma classe)
+1️⃣6️⃣ POPULAÇÕES ESPECIAIS mencionadas (gestante, idoso, criança, nefropata, hepatopata)
 
 Somente após passar por TODAS essas verificações, enviar a resposta.
 
