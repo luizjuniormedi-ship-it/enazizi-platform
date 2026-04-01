@@ -103,7 +103,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
       }
 
       case "create_simulado": {
-        const { title, description, topics, faculdade_filter, periodo_filter, total_questions, time_limit_minutes, questions_json } = params;
+        const { title, description, topics, faculdade_filter, periodo_filter, total_questions, time_limit_minutes, questions_json, student_ids } = params;
 
         const { data: simulado, error } = await sb.from("teacher_simulados").insert({
           professor_id: user.id,
@@ -120,15 +120,20 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 
         if (error) throw new Error(error.message);
 
-        // Find matching students and create pending results
-        let studentQuery = sb.from("profiles").select("user_id").eq("status", "active");
-        if (faculdade_filter) studentQuery = studentQuery.eq("faculdade", faculdade_filter);
-        if (periodo_filter) studentQuery = studentQuery.eq("periodo", periodo_filter);
+        // Use explicit student_ids if provided, otherwise fall back to filter query
+        let studentList: { user_id: string }[] = [];
+        if (student_ids && Array.isArray(student_ids) && student_ids.length > 0) {
+          studentList = student_ids.map((id: string) => ({ user_id: id }));
+        } else {
+          let studentQuery = sb.from("profiles").select("user_id").eq("status", "active");
+          if (faculdade_filter) studentQuery = studentQuery.eq("faculdade", faculdade_filter);
+          if (periodo_filter) studentQuery = studentQuery.eq("periodo", periodo_filter);
+          const { data: students } = await studentQuery;
+          studentList = students || [];
+        }
 
-        const { data: students } = await studentQuery;
-
-        if (students && students.length > 0) {
-          const results = students.map((s: any) => ({
+        if (studentList.length > 0) {
+          const results = studentList.map((s: any) => ({
             simulado_id: simulado.id,
             student_id: s.user_id,
             total_questions: questions_json?.length || total_questions,
@@ -137,7 +142,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           await sb.from("teacher_simulado_results").insert(results);
         }
 
-        return ok({ success: true, simulado_id: simulado.id, students_assigned: students?.length || 0 });
+        return ok({ success: true, simulado_id: simulado.id, students_assigned: studentList.length });
       }
 
       case "list_simulados": {
