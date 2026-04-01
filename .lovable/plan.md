@@ -1,50 +1,64 @@
 
-# Atualização Completa do Sistema
 
-## Bug Crítico: "Token inválido" no Painel do Professor
+# Atualização Completa do Sistema ENAZIZI
 
-O erro 401 "Token inválido" ocorre porque o `professor-simulado` edge function usa `sb.auth.getUser(token)` com um client criado com `serviceRoleKey`. Em algumas versões do Supabase JS, o `getUser` com service role key pode ignorar o token passado como argumento e usar o próprio service role token interno.
+## 1. Bug Crítico: "Token inválido" no Painel Professor
 
-### Correção: `supabase/functions/professor-simulado/index.ts`
+**Causa raiz confirmada**: Os auth logs mostram `"Session not found"` / `"session id doesn't exist"` retornado com status 403. Isso acontece porque:
+- O `useAuth.tsx` faz `window.location.reload()` imediatamente após login (SIGNED_IN)
+- Durante o reload, o token antigo pode ser usado antes da nova sessão estar pronta
+- O `professor-simulado` usa `sb.auth.getUser(token)` com service role client, que internamente chama `/user` e recebe 403
 
-Criar um **segundo client** com a `anon key` + header do usuário para autenticar, em vez de usar o service role client para `getUser`:
+**Correção (2 partes)**:
+
+### 1a. Edge function `professor-simulado/index.ts` — Usar `getClaims()` em vez de `getUser()`
+Substituir a autenticação por `getClaims(token)` que valida o JWT localmente sem depender do endpoint `/user`:
 
 ```typescript
-const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-const userClient = createClient(supabaseUrl, anonKey, {
-  global: { headers: { Authorization: authHeader } },
-});
-const { data: { user }, error: authError } = await userClient.auth.getUser();
+const token = authHeader.replace("Bearer ", "");
+const { data, error: authError } = await sb.auth.getClaims(token);
+if (authError || !data?.claims) {
+  return new Response(JSON.stringify({ error: "Token inválido" }), { status: 401, ... });
+}
+const userId = data.claims.sub;
 ```
 
-Manter o `sb` (service role) apenas para operações de dados. Aplicar o mesmo padrão nos outros arquivos que chamam esta edge function (não necessário — é o mesmo endpoint).
+Depois usar `userId` para buscar roles e perfil.
 
-## Publicação Frontend (Web)
+### 1b. `useAuth.tsx` — Remover reload agressivo após login
+O `clearAndReload()` causa o problema de timing. Remover o `window.location.reload()` automático no SIGNED_IN — o React Query e state management já atualizam a UI sem precisar de reload.
 
-Após a correção do bug, publicar o site clicando em **Publish → Update**. Nenhuma mudança de código necessária — apenas garantir que o build compila sem erros.
+## 2. Gerador Bulk — JSON parse ainda falhando
 
-## Preparação Mobile (Capacitor)
+Os logs mostram que Parasitologia gerou 60.450 chars com ````json` wrapping que quebra o parse. O `bulk-generate-content` já tem strip de markdown, mas o conteúdo pode ter markdown interno. Reforçar a limpeza do JSON antes do parse.
 
-O `capacitor.config.ts` já está configurado com hot-reload apontando para o preview. Para gerar builds nativos, o fluxo é:
+## 3. Publicação Frontend
 
-1. Exportar para GitHub (Settings → GitHub)
-2. `git pull` no computador local
-3. `npm install && npm run build`
-4. `npx cap sync`
-5. `npx cap run ios` ou `npx cap run android`
+Após as correções, o frontend será automaticamente atualizado no preview. Para publicar no domínio `.lovable.app`, basta clicar **Publish → Update**.
 
-Nenhuma mudança de código necessária — o Capacitor já carrega o app diretamente do servidor Lovable.
+## 4. Mobile (Capacitor)
 
-## Dependências
+O `capacitor.config.ts` já está configurado com hot-reload. O app mobile carrega do servidor Lovable automaticamente — qualquer mudança no código se reflete no app. Para gerar builds nativos:
+1. Exportar para GitHub
+2. `git pull && npm install && npm run build && npx cap sync`
+3. `npx cap run ios` ou `npx cap run android`
 
-As dependências já estão em versões recentes (React 18.3, Vite 5.4, Supabase JS 2.95). Não há atualizações críticas pendentes.
+## 5. Dependências
 
-## Resumo de Arquivos Alterados
+As dependências estão atualizadas (React 18.3, Vite 5.4, Supabase JS 2.95). Sem atualizações críticas.
 
-- `supabase/functions/professor-simulado/index.ts` — Corrigir autenticação usando anon key client para getUser
+## Arquivos Alterados
+
+| Arquivo | Mudança |
+|---------|---------|
+| `supabase/functions/professor-simulado/index.ts` | `getClaims()` em vez de `getUser()` |
+| `src/hooks/useAuth.tsx` | Remover reload forçado no login |
+| `supabase/functions/bulk-generate-content/index.ts` | Melhorar limpeza de JSON |
 
 ## Resultado
 
-- Painel professor funciona sem erro 401
-- Frontend publicado com últimas mudanças
-- Mobile pronto para build via Capacitor
+- Painel professor carrega sem erro 401
+- Login não causa reload desnecessário
+- Geração bulk mais robusta contra falhas de parse
+- Sistema pronto para publicação web e mobile
+
