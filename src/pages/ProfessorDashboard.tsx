@@ -193,7 +193,7 @@ const ProfessorDashboard = () => {
     }
   };
 
-
+  const viewResults = async (simulado: any) => {
     setResultsDialog({ open: true, simulado, results: [], loading: true });
     try {
       const res = await callAPI({ action: "get_simulado_results", simulado_id: simulado.id });
