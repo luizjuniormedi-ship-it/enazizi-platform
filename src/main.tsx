@@ -3,6 +3,18 @@ import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
 import "./index.css";
 
+// Redirect to canonical domain in production
+const canonical = "enazizi.com";
+if (
+  window.location.hostname !== canonical &&
+  window.location.hostname !== `www.${canonical}` &&
+  !window.location.hostname.includes("localhost") &&
+  !window.location.hostname.includes("id-preview--") &&
+  !window.location.hostname.includes("lovableproject.com")
+) {
+  window.location.replace(`https://${canonical}${window.location.pathname}${window.location.search}`);
+}
+
 // Guard: disable SW in iframe/preview contexts
 const isInIframe = (() => {
   try {

@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: "ENAZIZI",
   webDir: "dist",
   server: {
-    url: "https://87c4855c-3260-4ae3-bbeb-9a3f29d0ed53.lovableproject.com?forceHideBadge=true",
+    url: "https://enazizi.com?forceHideBadge=true",
     cleartext: true,
   },
   ios: {
