@@ -48,6 +48,8 @@ const ProfessorDashboard = () => {
   const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([]);
   const [useAI, setUseAI] = useState(true);
   const [questionMode, setQuestionMode] = useState<"ai" | "manual">("ai");
+  const [difficulty, setDifficulty] = useState("intermediario");
+  const [difficultyMix, setDifficultyMix] = useState({ facil: 20, intermediario: 50, dificil: 30 });
 
   // Manual question form
   const [manualStatement, setManualStatement] = useState("");
