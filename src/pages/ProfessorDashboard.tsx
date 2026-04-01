@@ -147,7 +147,13 @@ const ProfessorDashboard = () => {
         const subs = subtopics[t]?.trim();
         return subs ? `${t} (${subs})` : t;
       });
-      const res = await callAPI({ action: "generate_questions", topics: topicsWithSubs, count: parseInt(questionCount) });
+      const res = await callAPI({
+        action: "generate_questions",
+        topics: topicsWithSubs,
+        count: parseInt(questionCount),
+        difficulty,
+        difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
+      });
       setGeneratedQuestions(res.questions || []);
       toast({ title: "Questões geradas!", description: `${res.questions?.length || 0} questões criadas pela IA.` });
     } catch (e) {
