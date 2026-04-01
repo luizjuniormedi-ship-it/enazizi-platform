@@ -1,55 +1,54 @@
 
 
-# Acelerar Equalização + Corrigir Fragmentação de Tópicos
+# Equalização Automática de Questões via Cron Job
 
-## Problemas
+## Objetivo
 
-1. **Velocidade**: Gera 5-11 questões por chamada. Com ~3.000 questões faltantes, o processo é impraticável
-2. **Fragmentação**: Subtópicos como "Neurointensivismo" (7), "Sepse e Choque Séptico" (6), "Ventilação Mecânica" (5) existem como tópicos separados em vez de estarem sob "Terapia Intensiva"
-3. **UI**: O progresso não mostra estimativa de tempo nem total geral de questões faltantes
+Criar um job agendado (pg_cron) que executa a equalização automaticamente toda noite. Quando há discrepância entre especialidades, o sistema gera questões sem intervenção manual.
 
 ## Mudanças
 
-### 1. Edge function `bulk-generate-content` — Aumentar batch e consolidar subtópicos
+### 1. Permitir chamada com service_role key (já funciona)
 
-- Aumentar `batchSize` de 10 para **25** questões por chamada (o timeout já é 120s)
-- Antes de calcular déficits, **agregar subtópicos fragmentados** no cálculo:
-  - "Neurointensivismo", "Sepse e Choque Séptico", "Ventilação Mecânica", "Sedação e Analgesia", "Insuficiência Renal Aguda em UTI" → contar como parte de "Terapia Intensiva"
-  - Subtópicos de Oftalmologia, Otorrinolaringologia, Angiologia → contar sob o tópico pai
-- As novas questões geradas usam o **tópico pai normalizado** + campo `subtopic`
+O `bulk-generate-content` já aceita `service_role_key` como token (linhas 345-348). O cron job usará isso.
 
-### 2. Migração SQL — Consolidar subtópicos órfãos
+### 2. Criar cron job via SQL insert
+
+Agendar `pg_cron` para chamar `bulk-generate-content` com `{ "equalize": true, "batchSize": 15, "maxSpecialties": 3 }` diariamente às 3h da manhã. Processar 3 especialidades por execução para evitar timeout.
 
 ```sql
-UPDATE questions_bank SET subtopic = topic, topic = 'Terapia Intensiva' 
-WHERE topic IN ('Neurointensivismo','Sepse e Choque Séptico','Ventilação Mecânica','Sedação e Analgesia','Insuficiência Renal Aguda em UTI');
-
-UPDATE questions_bank SET subtopic = topic, topic = 'Oftalmologia'
-WHERE topic IN ('Retinopatia Diabética','Glaucoma','Catarata','Descolamento de Retina','Uveíte');
-
-UPDATE questions_bank SET subtopic = topic, topic = 'Otorrinolaringologia'
-WHERE topic IN ('Perda Auditiva','Câncer de Laringe','Vertigem','Amigdalite','Epistaxe');
-
-UPDATE questions_bank SET subtopic = topic, topic = 'Angiologia'
-WHERE topic IN ('Claudicação Intermitente','Isquemia Crítica de Membro','Pé Diabético Vascular','Insuficiência Venosa Crônica','Síndrome Compartimental');
-
-UPDATE questions_bank SET subtopic = topic, topic = 'Bioquímica'
-WHERE topic IN ('Bioquímica do Ciclo de Krebs','Metabolismo de Proteínas','Bioquímica Renal','Metabolismo de Lipídios','Erros Inatos do Metabolismo');
+select cron.schedule(
+  'auto-equalize-questions',
+  '0 3 * * *',
+  $$
+  select net.http_post(
+    url:='https://qszsyskumcmuknumwxtk.supabase.co/functions/v1/bulk-generate-content',
+    headers:='{"Content-Type":"application/json","Authorization":"Bearer SERVICE_ROLE_KEY"}'::jsonb,
+    body:='{"equalize":true,"batchSize":15,"maxSpecialties":3}'::jsonb
+  ) as request_id;
+  $$
+);
 ```
 
-### 3. `AdminIngestionPanel.tsx` — UI de progresso melhorada
+### 3. Habilitar extensões `pg_cron` e `pg_net`
 
-- Mostrar **total geral**: "Faltam X questões em Y especialidades"
-- Barra de progresso global com estimativa de tempo (baseada em ~20s por batch)
-- Log em tempo real com contagem acumulada
-- Botão "Pausar" para interromper o loop
+Necessárias para o agendamento funcionar.
 
-### 4. Redeploy da edge function
+### 4. Log de execução
+
+A function já registra resultados no console. Adicionalmente, inserir um registro na tabela `daily_generation_log` ao final de cada execução automática para rastreabilidade no painel admin.
+
+### 5. Atualizar `bulk-generate-content` — log automático
+
+Adicionar no final do bloco equalize: inserir na `daily_generation_log` com `status`, `questions_generated`, `specialties_processed`.
+
+### 6. Painel Admin — indicador de "Equalização Automática"
+
+Adicionar badge no `AdminIngestionPanel` mostrando que a equalização roda automaticamente às 3h, com link para ver o último log.
 
 ## Resultado
 
-- Subtópicos consolidados: ~35 questões redistribuídas para tópicos pai
-- Geração 2.5x mais rápida (25 por batch vs 10)
-- Déficits reais recalculados corretamente após consolidação
-- UI mostra progresso claro com ETA
+- Toda noite às 3h, o sistema verifica discrepâncias e gera até ~45 questões (3 especialidades × 15 questões)
+- Em ~2 semanas todas as especialidades atingem o alvo sem intervenção manual
+- Logs visíveis no painel admin
 
