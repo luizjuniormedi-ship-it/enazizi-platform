@@ -184,6 +184,29 @@ const StudentSimulados = () => {
     loadStudyAssignments();
   }, [loadStudyAssignments]);
 
+  // Load video rooms
+  const loadVideoRooms = useCallback(async () => {
+    if (!user) return;
+    setVideoLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("video_rooms")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      setVideoRooms(data || []);
+    } catch (e) {
+      console.error("Error loading video rooms:", e);
+    } finally {
+      setVideoLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadVideoRooms();
+  }, [loadVideoRooms]);
+
   // Timer
   useEffect(() => {
     if (phase !== "quiz" || timeLeft <= 0) return;
