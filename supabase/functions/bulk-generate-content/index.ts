@@ -359,23 +359,29 @@ FORMATO JSON OBRIGATÓRIO:
       );
 
       const rows = questions
-        .map((q: any) => ({
-          user_id: userId,
-          statement: String(q.statement).trim(),
-          options: q.options.map(String),
-          correct_index: q.correct_index,
-          explanation: String(q.explanation || "").trim(),
-          topic: String(q.topic || specialty).trim(),
-          difficulty: q.difficulty || 3,
-          source: "bulk-ai-generated",
-          is_global: true,
-          review_status: "pending",
-        }))
-        .map((r: any) => ({
-          ...r,
-          topic: normalizeTopicToParent(r.topic, specialty),
-        }))
+        .map((q: any) => {
+          const rawTopic = String(q.topic || specialty).trim();
+          const normalizedTopic = normalizeTopicToParent(rawTopic, specialty);
+          return {
+            user_id: userId,
+            statement: String(q.statement).trim(),
+            options: q.options.map(String),
+            correct_index: q.correct_index,
+            explanation: String(q.explanation || "").trim(),
+            topic: normalizedTopic,
+            subtopic: rawTopic !== normalizedTopic ? rawTopic : null,
+            difficulty: q.difficulty || 3,
+            source: "bulk-ai-generated",
+            is_global: true,
+            review_status: "pending",
+          };
+        })
         .filter((r: any) => {
+          const hash = normalizeStatementKey(r.statement);
+          if (existingHashes.has(hash)) return false;
+          existingHashes.add(hash);
+          return true;
+        });
           const hash = normalizeStatementKey(r.statement);
           if (existingHashes.has(hash)) return false;
           existingHashes.add(hash);
