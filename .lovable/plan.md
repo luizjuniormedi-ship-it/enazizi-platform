@@ -1,36 +1,50 @@
 
+# Atualização Completa do Sistema
 
-# Rebalancear Dificuldade das Questões Geradas
+## Bug Crítico: "Token inválido" no Painel do Professor
 
-## Problema
+O erro 401 "Token inválido" ocorre porque o `professor-simulado` edge function usa `sb.auth.getUser(token)` com um client criado com `serviceRoleKey`. Em algumas versões do Supabase JS, o `getUser` com service role key pode ignorar o token passado como argumento e usar o próprio service role token interno.
 
-O prompt do gerador automático (`bulk-generate-content/index.ts`, linha 245) instrui a IA: **"40% fácil, 40% médio, 20% difícil"** — gerando pouquíssimas questões difíceis. Além disso, o fallback de dificuldade (linha 373) é `q.difficulty || 3` (médio), então questões sem dificuldade explícita ficam no nível médio.
+### Correção: `supabase/functions/professor-simulado/index.ts`
 
-## Correção
+Criar um **segundo client** com a `anon key` + header do usuário para autenticar, em vez de usar o service role client para `getUser`:
 
-### 1. `supabase/functions/bulk-generate-content/index.ts` — Alterar distribuição no prompt
+```typescript
+const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+const userClient = createClient(supabaseUrl, anonKey, {
+  global: { headers: { Authorization: authHeader } },
+});
+const { data: { user }, error: authError } = await userClient.auth.getUser();
+```
 
-Substituir a linha 245:
-- **De**: `"Varie a dificuldade: 40% fácil, 40% médio, 20% difícil"`
-- **Para**: `"Varie a dificuldade: 20% fácil (difficulty:2), 40% médio (difficulty:3), 40% difícil (difficulty:4-5)"`
+Manter o `sb` (service role) apenas para operações de dados. Aplicar o mesmo padrão nos outros arquivos que chamam esta edge function (não necessário — é o mesmo endpoint).
 
-Isso equaliza a geração para produzir mais questões difíceis, compatível com provas de residência.
+## Publicação Frontend (Web)
 
-### 2. Reforçar no prompt de retry (linha 325)
+Após a correção do bug, publicar o site clicando em **Publish → Update**. Nenhuma mudança de código necessária — apenas garantir que o build compila sem erros.
 
-Adicionar `"difficulty":4` no template do retry para que questões do fallback venham difíceis (compensando o déficit atual).
+## Preparação Mobile (Capacitor)
 
-### 3. Validar campo difficulty no filtro de inserção
+O `capacitor.config.ts` já está configurado com hot-reload apontando para o preview. Para gerar builds nativos, o fluxo é:
 
-Na linha 373, ajustar o fallback: se a IA não fornecer `difficulty`, sortear entre 3-4 em vez de sempre defaultar para 3.
+1. Exportar para GitHub (Settings → GitHub)
+2. `git pull` no computador local
+3. `npm install && npm run build`
+4. `npx cap sync`
+5. `npx cap run ios` ou `npx cap run android`
 
-## Arquivo alterado
+Nenhuma mudança de código necessária — o Capacitor já carrega o app diretamente do servidor Lovable.
 
-- `supabase/functions/bulk-generate-content/index.ts`
+## Dependências
+
+As dependências já estão em versões recentes (React 18.3, Vite 5.4, Supabase JS 2.95). Não há atualizações críticas pendentes.
+
+## Resumo de Arquivos Alterados
+
+- `supabase/functions/professor-simulado/index.ts` — Corrigir autenticação usando anon key client para getUser
 
 ## Resultado
 
-- Distribuição futura: ~20% fácil, ~40% médio, ~40% difícil
-- Questões sem difficulty declarada recebem nível 3-4 (aleatório)
-- Recuperação gradual do déficit de difíceis conforme novas gerações rodam
-
+- Painel professor funciona sem erro 401
+- Frontend publicado com últimas mudanças
+- Mobile pronto para build via Capacitor
