@@ -279,6 +279,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
               </div>
             )}
 
+            {formUserType === "professor" && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Building className="h-3.5 w-3.5 text-muted-foreground" />
+                  Universidade
+                </Label>
+                <FaculdadeCombobox value={formFaculdade} onChange={setFormFaculdade} />
+              </div>
+            )}
+
             <Button onClick={handleOnboardingSave} disabled={saving} className="w-full mt-2">
               {saving ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Salvando...</>
