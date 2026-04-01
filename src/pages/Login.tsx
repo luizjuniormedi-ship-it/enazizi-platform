@@ -99,7 +99,7 @@ const Login = () => {
         </div>
 
         {/* Features list */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:gap-3">
+        <div className="hidden sm:grid sm:grid-cols-2 gap-2 lg:gap-3">
           {features.map((f) => (
             <div key={f.label} className="flex items-center gap-2 text-sm">
               <f.icon className="h-4 w-4 text-primary shrink-0" />
