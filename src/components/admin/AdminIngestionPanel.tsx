@@ -295,10 +295,16 @@ const AdminIngestionPanel = () => {
                   Alvo: {TARGET_CLINICAL} (clínicas) / {TARGET_BASIC} (básicas). Prioriza questões reais antes de gerar por IA.
                 </p>
               </div>
-              <Button size="sm" className="h-8 text-xs" disabled={equalizing || totalDeficit === 0} onClick={handleEqualize}>
-                {equalizing ? <><Loader2 className="h-3 w-3 animate-spin mr-1" />Equalizando...</> : <><BarChart3 className="h-3 w-3 mr-1" />Equalizar Banco</>}
-              </Button>
-            </div>
+              <div className="flex gap-1">
+                {equalizing && (
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => { pauseRef.current = true; }}>
+                    <Pause className="h-3 w-3 mr-1" />Pausar
+                  </Button>
+                )}
+                <Button size="sm" className="h-8 text-xs" disabled={equalizing || totalDeficit === 0} onClick={handleEqualize}>
+                  {equalizing ? <><Loader2 className="h-3 w-3 animate-spin mr-1" />Equalizando...</> : <><BarChart3 className="h-3 w-3 mr-1" />Equalizar Banco</>}
+                </Button>
+              </div>
 
             {eqProgress && (
               <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
