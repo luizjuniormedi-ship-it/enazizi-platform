@@ -159,6 +159,28 @@ const AdminUploadsPanel = () => {
   };
 
   const [extracting, setExtracting] = useState<string | null>(null);
+  const [extractingVisual, setExtractingVisual] = useState<string | null>(null);
+
+  const handleExtractVisual = async (upload: UploadRecord) => {
+    setExtractingVisual(upload.id);
+    try {
+      toast({ title: "Extraindo prova com imagens...", description: "O PDF será analisado visualmente pela IA. Pode levar alguns minutos." });
+      const res = await supabase.functions.invoke("extract-exam-visual", {
+        body: { upload_id: upload.id },
+      });
+      if (res.error) throw res.error;
+      const d = res.data as any;
+      toast({
+        title: `✅ ${d.total_inserted} questões extraídas!`,
+        description: `${d.total_images || 0} com imagens reais. ${d.pages_with_images || 0} páginas com conteúdo visual.`,
+      });
+      fetchUploads();
+    } catch (err: any) {
+      toast({ title: "Erro na extração visual", description: err.message, variant: "destructive" });
+    } finally {
+      setExtractingVisual(null);
+    }
+  };
 
   const handleExtractExam = async (upload: UploadRecord) => {
     setExtracting(upload.id);
