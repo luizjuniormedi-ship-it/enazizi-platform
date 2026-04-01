@@ -353,7 +353,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
       }
 
       case "student_detail": {
-        const { student_id } = params;
+        const { student_id, class_avg_score } = params;
         if (!student_id) throw new Error("student_id obrigatório");
 
         // Profile
@@ -381,7 +381,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 
         // Gamification
         const { data: gam } = await sb.from("user_gamification")
-          .select("xp, level, current_streak")
+          .select("xp, level, current_streak, last_activity_date")
           .eq("user_id", student_id).maybeSingle();
 
         // Simulado results
@@ -399,10 +399,67 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           for (const s of (sims || [])) simTitles[s.id] = s.title;
         }
 
+        // Clinical case results
+        const { data: caseResults } = await sb.from("teacher_clinical_case_results")
+          .select("case_id, status, final_score, finished_at")
+          .eq("student_id", student_id)
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        let caseTitles: Record<string, string> = {};
+        const caseIds = (caseResults || []).map((r: any) => r.case_id);
+        if (caseIds.length > 0) {
+          const { data: cases } = await sb.from("teacher_clinical_cases").select("id, title").in("id", caseIds);
+          for (const c of (cases || [])) caseTitles[c.id] = c.title;
+        }
+
+        // Study assignment results
+        const { data: assignResults } = await sb.from("teacher_study_assignment_results")
+          .select("assignment_id, status, completed_at")
+          .eq("student_id", student_id)
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        let assignTitles: Record<string, string> = {};
+        const assignIds = (assignResults || []).map((r: any) => r.assignment_id);
+        if (assignIds.length > 0) {
+          const { data: assigns } = await sb.from("teacher_study_assignments").select("id, title").in("id", assignIds);
+          for (const a of (assigns || [])) assignTitles[a.id] = a.title;
+        }
+
+        // Weekly evolution: last 8 weeks of practice_attempts
+        const eightWeeksAgo = new Date();
+        eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56);
+        const { data: attempts } = await sb.from("practice_attempts")
+          .select("correct, created_at")
+          .eq("user_id", student_id)
+          .gte("created_at", eightWeeksAgo.toISOString())
+          .order("created_at");
+
+        // Group by week
+        const weeklyMap: Record<string, { correct: number; total: number }> = {};
+        (attempts || []).forEach((a: any) => {
+          const d = new Date(a.created_at);
+          const weekStart = new Date(d);
+          weekStart.setDate(d.getDate() - d.getDay());
+          const key = weekStart.toISOString().slice(0, 10);
+          if (!weeklyMap[key]) weeklyMap[key] = { correct: 0, total: 0 };
+          weeklyMap[key].total++;
+          if (a.correct) weeklyMap[key].correct++;
+        });
+        const weeklyEvolution = Object.entries(weeklyMap)
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([week, v]) => ({ week, accuracy: v.total > 0 ? Math.round((v.correct / v.total) * 100) : 0, total: v.total }));
+
         // Quotas
         const { data: quotas } = await sb.from("user_quotas")
           .select("questions_used, questions_limit")
           .eq("user_id", student_id).maybeSingle();
+
+        // Calculate avg domain score for comparison
+        const avgDomainScore = (domains || []).length > 0
+          ? Math.round((domains || []).reduce((s: number, d: any) => s + d.domain_score, 0) / (domains || []).length)
+          : 0;
 
         return ok({
           profile,
@@ -416,6 +473,20 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
             status: r.status,
             finished_at: r.finished_at,
           })),
+          clinical_case_results: (caseResults || []).map((r: any) => ({
+            title: caseTitles[r.case_id] || "Caso Clínico",
+            score: r.final_score != null ? Math.round(r.final_score) : null,
+            status: r.status,
+            finished_at: r.finished_at,
+          })),
+          study_assignments: (assignResults || []).map((r: any) => ({
+            title: assignTitles[r.assignment_id] || "Tema de Estudo",
+            status: r.status,
+            completed_at: r.completed_at,
+          })),
+          weekly_evolution: weeklyEvolution,
+          avg_domain_score: avgDomainScore,
+          class_avg_score: class_avg_score || null,
           quotas: quotas || null,
         });
       }
