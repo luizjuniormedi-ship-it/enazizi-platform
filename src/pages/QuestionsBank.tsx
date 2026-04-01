@@ -191,14 +191,25 @@ const QuestionsBank = () => {
     return Array.from(set).sort();
   }, [questions]);
 
+  const subtopics = useMemo(() => {
+    if (topicFilter === "all") return [];
+    const set = new Set(
+      questions
+        .filter(q => q.topic === topicFilter && q.subtopic)
+        .map(q => q.subtopic as string)
+    );
+    return Array.from(set).sort();
+  }, [questions, topicFilter]);
+
   const filtered = useMemo(() => {
     return questions.filter((q) => {
       if (topicFilter !== "all" && q.topic !== topicFilter) return false;
+      if (subtopicFilter !== "all" && q.subtopic !== subtopicFilter) return false;
       if (sourceFilter !== "all" && q.source !== sourceFilter) return false;
       if (searchTerm && !q.statement.toLowerCase().includes(searchTerm.toLowerCase())) return false;
       return true;
     });
-  }, [questions, topicFilter, sourceFilter, searchTerm]);
+  }, [questions, topicFilter, subtopicFilter, sourceFilter, searchTerm]);
 
   const handleDelete = async (id: string) => {
     await supabase.from("questions_bank").delete().eq("id", id);
