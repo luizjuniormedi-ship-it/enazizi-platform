@@ -314,6 +314,12 @@ const AdminUploadsPanel = () => {
                         <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePopulateQuestions(f)}>
                           <Database className="h-3 w-3" /> Gerar Questões
                         </Button>
+                        {(f.file_type === "pdf" || f.filename?.endsWith(".pdf")) && (
+                          <Button variant="outline" size="sm" className="gap-1.5 text-xs border-primary/30 text-primary" onClick={() => handleExtractVisual(f)} disabled={extractingVisual === f.id || extracting === f.id}>
+                            {extractingVisual === f.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImageIcon className="h-3 w-3" />}
+                            Extrair c/ Imagens
+                          </Button>
+                        )}
                         {(f.file_type === "docx" || f.filename?.endsWith(".docx")) && (
                           <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handleProcessDocx(f)} disabled={extracting === f.id}>
                             {extracting === f.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <BookOpen className="h-3 w-3" />}
