@@ -1,40 +1,37 @@
 
-# Professor: Acesso Direto sem Aprovação Admin
 
-## Problema
+# Atualizar Página de Login com Funcionalidades e Números Reais
 
-Atualmente, após cadastro, o professor fica preso na tela "Aguardando Aprovação" (status `pending`) igual ao aluno. O professor deveria poder acessar a plataforma imediatamente após completar o cadastro com sua universidade, sem precisar de aprovação do administrador.
+## Dados Reais do Banco
+- **147 alunos** cadastrados
+- **6.747 questões** no banco (1.443 reais de provas + 5.304 IA)
+- **5.704 flashcards** criados
+- **8 agentes IA** especializados
 
-## Mudanças
+## Mudanças em `src/pages/Login.tsx`
 
-### 1. `src/components/auth/ProtectedRoute.tsx`
+### Layout: Split-screen (desktop) / Stacked (mobile)
+- **Lado esquerdo**: Painel de destaque com logo, números reais e features
+  - Stats: "147+ alunos", "6.700+ questões", "5.700+ flashcards", "8 agentes IA"
+  - Lista de funcionalidades com ícones: Tutor IA, Simulados, Flashcards FSRS, Painel Professor, Banco de Erros, Cronograma Inteligente
+  - Background com gradiente da marca
+- **Lado direito**: Formulário de login (mantém lógica atual intacta)
 
-Na verificação de `profileStatus === "pending"` (linha 311), adicionar exceção para professores:
-- Buscar `user_type` do profile (já é carregado na query)
-- Se `user_type === "professor"` e profile completo (faculdade preenchida), pular a tela de aprovação e deixar acessar normalmente
-- Auto-atualizar o status para `active` via update no profile quando professor completa cadastro
+### Funcionalidades destacadas (ícones + texto curto)
+- Tutor IA personalizado
+- Simulados com gabarito comentado
+- Flashcards com repetição espaçada (FSRS)
+- Painel do Professor com BI
+- Banco de erros inteligente
+- Cronograma adaptativo
 
-### 2. `src/components/auth/ProtectedRoute.tsx` — `handleOnboardingSave`
+### Menção ao cadastro de professor
+- Abaixo do link "Criar conta grátis", adicionar: "É professor? Cadastre-se e acesse o painel exclusivo"
 
-Quando o professor salva o cadastro:
-- Além dos dados atuais, também setar `status: 'active'` no update do profile
-- Isso garante que o professor não fique travado em "pending" após completar
+### Responsivo
+- Mobile: stats + features ficam acima do formulário em versão compacta
+- Desktop: split 50/50
 
-### 3. Sem mudanças no `Register.tsx`
+### Sem mudanças na lógica
+- `handleLogin`, `handleForgotPassword`, error messages — tudo mantido
 
-O formulário de registro já tem a opção professor com seleção de universidade e já passa `user_type` e `faculdade` no signup. O trigger `handle_new_user` já insere a role `professor` automaticamente.
-
-## Fluxo Resultante
-
-1. Professor se cadastra → seleciona universidade no registro
-2. Confirma email → faz login
-3. Se perfil já está completo (nome, phone, faculdade): acesso direto, status auto-ativado
-4. Se perfil incompleto: mostra tela de completar cadastro → ao salvar, status vira `active` → acesso direto
-5. Nunca mostra "Aguardando Aprovação" para professor
-
-## Detalhes Técnicos
-
-- O `isProfileComplete` já valida faculdade para professor
-- A role `professor` já é inserida pelo trigger `handle_new_user`
-- O `ProfessorRoute` já verifica `user_roles` — acesso ao painel professor funciona automaticamente
-- Nenhuma migração necessária
