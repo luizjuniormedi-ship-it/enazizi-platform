@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { BarChart3, Users, AlertTriangle, Trophy, Loader2, Download } from "lucide-react";
+import { BarChart3, Users, AlertTriangle, Trophy, Loader2, Download, Activity, Flame, UserX, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,6 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
-
 import { FACULDADES } from "@/constants/faculdades";
 
 interface StudentStat {
@@ -21,12 +20,28 @@ interface StudentStat {
   accuracy: number;
   total_errors: number;
   specialties_studied: number;
+  xp: number;
+  level: number;
+  streak: number;
+  days_inactive: number;
+  activities_total: number;
+  activities_completed: number;
+  simulados_completed: number;
+  simulados_avg_score: number;
+}
+
+interface AtRiskStudent extends StudentStat {
+  risk_reason: string;
+  risk_level: "critical" | "warning";
 }
 
 interface ClassData {
   students: StudentStat[];
   weakTopics: { topic: string; error_count: number }[];
   topPerformers: StudentStat[];
+  atRiskStudents: AtRiskStudent[];
+  engagement: { avg_streak: number; avg_xp: number; inactive_count: number; activity_completion_rate: number };
+  specialtyBreakdown: { specialty: string; avg_score: number; student_count: number }[];
 }
 
 const ClassAnalytics = () => {
@@ -66,65 +81,133 @@ const ClassAnalytics = () => {
     if (!data) return;
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const M = 15;
+    const W = doc.internal.pageSize.getWidth() - M * 2;
     let y = 20;
 
+    const checkPage = (needed = 15) => { if (y > 280 - needed) { doc.addPage(); y = 20; } };
+
+    // Header
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.text("Relatório da Turma", M, y); y += 7;
+    doc.text("Relatório Completo da Turma", M, y); y += 7;
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(100);
-    doc.text(`ENAZIZI — ${new Date().toLocaleDateString("pt-BR")}${faculdade && faculdade !== "all" ? ` — ${faculdade}` : ""}${periodo && periodo !== "all" ? ` — ${periodo}º período` : ""}`, M, y);
+    const filterText = [
+      `ENAZIZI — ${new Date().toLocaleDateString("pt-BR")}`,
+      faculdade && faculdade !== "all" ? faculdade : null,
+      periodo && periodo !== "all" ? `${periodo}º período` : null,
+    ].filter(Boolean).join(" — ");
+    doc.text(filterText, M, y);
     doc.setTextColor(0); y += 10;
 
-    // Summary
+    // Executive Summary
     const avgScore = data.students.length > 0 ? Math.round(data.students.reduce((s, st) => s + st.avg_domain_score, 0) / data.students.length) : 0;
-    doc.setFontSize(12);
+    doc.setFontSize(13);
     doc.setFont("helvetica", "bold");
-    doc.text("Resumo", M, y); y += 6;
+    doc.text("Resumo Executivo", M, y); y += 7;
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`Total de alunos: ${data.students.length}`, M, y); y += 5;
-    doc.text(`Média da turma: ${avgScore}%`, M, y); y += 10;
+    const summaryItems = [
+      `Total de alunos: ${data.students.length}`,
+      `Média da turma: ${avgScore}%`,
+      `Streak médio: ${data.engagement.avg_streak} dias`,
+      `XP médio: ${data.engagement.avg_xp}`,
+      `Alunos inativos (>7d): ${data.engagement.inactive_count}`,
+      `Taxa de conclusão de atividades: ${data.engagement.activity_completion_rate}%`,
+      `Alunos em risco: ${data.atRiskStudents?.length || 0}`,
+    ];
+    summaryItems.forEach(item => { doc.text(`• ${item}`, M, y); y += 5; });
+    y += 5;
 
-    // Weak topics
+    // Score Distribution
+    checkPage(30);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Distribuição de Scores", M, y); y += 6;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    [
+      { label: "Excelente (80-100%)", min: 80, max: 100 },
+      { label: "Bom (60-79%)", min: 60, max: 79 },
+      { label: "Regular (40-59%)", min: 40, max: 59 },
+      { label: "Fraco (0-39%)", min: 0, max: 39 },
+    ].forEach(range => {
+      const count = data.students.filter(s => s.avg_domain_score >= range.min && s.avg_domain_score <= range.max).length;
+      const pct = data.students.length > 0 ? Math.round((count / data.students.length) * 100) : 0;
+      doc.text(`${range.label}: ${count} alunos (${pct}%)`, M + 2, y); y += 4.5;
+    });
+    y += 5;
+
+    // Weak Topics
     if (data.weakTopics.length > 0) {
+      checkPage(30);
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.text("Temas Fracos da Turma", M, y); y += 6;
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
-      data.weakTopics.forEach((t) => {
-        doc.text(`• ${t.topic}: ${t.error_count} erros`, M, y); y += 5;
+      data.weakTopics.forEach(t => { doc.text(`• ${t.topic}: ${t.error_count} erros`, M, y); y += 4.5; });
+      y += 5;
+    }
+
+    // At-Risk Students
+    if (data.atRiskStudents && data.atRiskStudents.length > 0) {
+      checkPage(30);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Alunos em Risco", M, y); y += 6;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      data.atRiskStudents.forEach(s => {
+        checkPage(6);
+        const level = s.risk_level === "critical" ? "[CRÍTICO]" : "[ATENÇÃO]";
+        doc.text(`${level} ${s.display_name} — ${s.risk_reason}`, M, y); y += 4.5;
       });
       y += 5;
     }
 
-    // Student table
+    // Full Student Table
+    checkPage(20);
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text("Desempenho Individual", M, y); y += 6;
-    doc.setFontSize(8);
+    doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
     doc.text("Aluno", M, y);
-    doc.text("Score", M + 70, y);
-    doc.text("Questões", M + 90, y);
-    doc.text("Acerto", M + 115, y);
-    doc.text("Erros", M + 135, y);
-    y += 5;
-    doc.setFont("helvetica", "normal");
+    doc.text("Score", M + 55, y);
+    doc.text("Quest.", M + 70, y);
+    doc.text("Acerto", M + 85, y);
+    doc.text("Streak", M + 100, y);
+    doc.text("XP", M + 115, y);
+    doc.text("Ativ.", M + 128, y);
+    doc.text("Status", M + 143, y);
+    y += 4;
     doc.setDrawColor(200);
-    doc.line(M, y - 2, M + 165, y - 2);
+    doc.line(M, y - 1, M + W, y - 1);
+    doc.setFont("helvetica", "normal");
 
-    data.students.forEach((s) => {
-      if (y > 275) { doc.addPage(); y = 20; }
-      doc.text(s.display_name.slice(0, 30), M, y);
-      doc.text(`${s.avg_domain_score}%`, M + 70, y);
-      doc.text(`${s.questions_answered}`, M + 90, y);
-      doc.text(`${s.accuracy}%`, M + 115, y);
-      doc.text(`${s.total_errors}`, M + 135, y);
-      y += 4.5;
-    });
+    data.students
+      .sort((a, b) => b.avg_domain_score - a.avg_domain_score)
+      .forEach(s => {
+        checkPage(6);
+        // Color coding
+        if (s.avg_domain_score >= 70) doc.setTextColor(34, 139, 34);
+        else if (s.avg_domain_score >= 50) doc.setTextColor(200, 150, 0);
+        else doc.setTextColor(200, 50, 50);
+
+        doc.text(s.display_name.slice(0, 25), M, y);
+        doc.text(`${s.avg_domain_score}%`, M + 55, y);
+        doc.setTextColor(0);
+        doc.text(`${s.questions_answered}`, M + 70, y);
+        doc.text(`${s.accuracy}%`, M + 85, y);
+        doc.text(`${s.streak}d`, M + 100, y);
+        doc.text(`${s.xp}`, M + 115, y);
+        doc.text(`${s.activities_completed}/${s.activities_total}`, M + 128, y);
+        const status = s.days_inactive > 7 ? "Inativo" : s.avg_domain_score < 50 ? "Risco" : "Ativo";
+        doc.text(status, M + 143, y);
+        y += 4;
+      });
 
     doc.save(`Relatorio_Turma_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
@@ -181,7 +264,7 @@ const ClassAnalytics = () => {
 
       {data && (
         <>
-          {/* Summary cards */}
+          {/* Summary + Engagement cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Card>
               <CardContent className="p-4 flex items-center gap-3">
@@ -202,6 +285,54 @@ const ClassAnalytics = () => {
                 <div>
                   <p className="text-xs text-muted-foreground">Média Turma</p>
                   <p className="text-lg font-bold">{avgClassScore}%</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                  <Flame className="h-5 w-5 text-amber-500" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Streak Médio</p>
+                  <p className="text-lg font-bold">{data.engagement.avg_streak}d</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-destructive/10 flex items-center justify-center">
+                  <UserX className="h-5 w-5 text-destructive" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Inativos (&gt;7d)</p>
+                  <p className="text-lg font-bold">{data.engagement.inactive_count}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Second row of KPIs */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Activity className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">XP Médio</p>
+                  <p className="text-lg font-bold">{data.engagement.avg_xp}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                  <CheckCircle className="h-5 w-5 text-emerald-500" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Conclusão Ativ.</p>
+                  <p className="text-lg font-bold">{data.engagement.activity_completion_rate}%</p>
                 </div>
               </CardContent>
             </Card>
@@ -228,6 +359,31 @@ const ClassAnalytics = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* At-Risk Students */}
+          {data.atRiskStudents && data.atRiskStudents.length > 0 && (
+            <Card className="border-destructive/30">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                  Alunos em Risco ({data.atRiskStudents.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {data.atRiskStudents.slice(0, 10).map((s) => (
+                  <div key={s.user_id} className="flex items-center justify-between p-2 rounded-lg bg-destructive/5">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{s.display_name}</p>
+                      <p className="text-[10px] text-muted-foreground">{s.risk_reason}</p>
+                    </div>
+                    <Badge variant={s.risk_level === "critical" ? "destructive" : "secondary"} className="text-[10px]">
+                      {s.risk_level === "critical" ? "Crítico" : "Atenção"}
+                    </Badge>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Weak topics */}
@@ -266,6 +422,7 @@ const ClassAnalytics = () => {
                     <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}º</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm truncate">{s.display_name}</p>
+                      <p className="text-[10px] text-muted-foreground">Streak: {s.streak}d • XP: {s.xp}</p>
                     </div>
                     <span className="text-sm font-bold text-primary">{s.avg_domain_score}%</span>
                   </div>
@@ -306,6 +463,29 @@ const ClassAnalytics = () => {
             </Card>
           </div>
 
+          {/* Specialty Breakdown */}
+          {data.specialtyBreakdown && data.specialtyBreakdown.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-primary" />
+                  Desempenho por Especialidade
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {data.specialtyBreakdown.map((sp) => (
+                  <div key={sp.specialty}>
+                    <div className="flex items-center justify-between text-xs mb-0.5">
+                      <span className="truncate">{sp.specialty}</span>
+                      <span className="text-muted-foreground ml-2">{sp.student_count} alunos • <span className={`font-bold ${sp.avg_score >= 70 ? "text-emerald-500" : sp.avg_score >= 50 ? "text-amber-500" : "text-destructive"}`}>{sp.avg_score}%</span></span>
+                    </div>
+                    <Progress value={sp.avg_score} className="h-1.5" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Full student list */}
           <Card>
             <CardHeader className="pb-3">
@@ -320,32 +500,41 @@ const ClassAnalytics = () => {
                       <th className="text-center py-2 px-2">Score</th>
                       <th className="text-center py-2 px-2">Questões</th>
                       <th className="text-center py-2 px-2">Acerto</th>
-                      <th className="text-center py-2 px-2">Erros</th>
-                      <th className="text-center py-2 pl-2">Espec.</th>
+                      <th className="text-center py-2 px-2">Streak</th>
+                      <th className="text-center py-2 px-2">Ativ.</th>
+                      <th className="text-center py-2 pl-2">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.students
                       .sort((a, b) => b.avg_domain_score - a.avg_domain_score)
-                      .map((s) => (
-                        <tr key={s.user_id} className="border-b border-border/50 hover:bg-muted/30">
-                          <td className="py-2 pr-4">
-                            <p className="font-medium truncate max-w-[200px]">{s.display_name}</p>
-                            <p className="text-[10px] text-muted-foreground">
-                              {s.faculdade || ""}{s.periodo ? ` • ${s.periodo}º` : ""}
-                            </p>
-                          </td>
-                          <td className="text-center py-2 px-2">
-                            <span className={`font-bold ${s.avg_domain_score >= 70 ? "text-emerald-500" : s.avg_domain_score >= 50 ? "text-amber-500" : "text-destructive"}`}>
-                              {s.avg_domain_score}%
-                            </span>
-                          </td>
-                          <td className="text-center py-2 px-2">{s.questions_answered}</td>
-                          <td className="text-center py-2 px-2">{s.accuracy}%</td>
-                          <td className="text-center py-2 px-2">{s.total_errors}</td>
-                          <td className="text-center py-2 pl-2">{s.specialties_studied}</td>
-                        </tr>
-                      ))}
+                      .map((s) => {
+                        const status = s.days_inactive > 7 ? "inactive" : s.avg_domain_score < 50 ? "risk" : "active";
+                        return (
+                          <tr key={s.user_id} className="border-b border-border/50 hover:bg-muted/30">
+                            <td className="py-2 pr-4">
+                              <p className="font-medium truncate max-w-[200px]">{s.display_name}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {s.faculdade || ""}{s.periodo ? ` • ${s.periodo}º` : ""} • Lv.{s.level}
+                              </p>
+                            </td>
+                            <td className="text-center py-2 px-2">
+                              <span className={`font-bold ${s.avg_domain_score >= 70 ? "text-emerald-500" : s.avg_domain_score >= 50 ? "text-amber-500" : "text-destructive"}`}>
+                                {s.avg_domain_score}%
+                              </span>
+                            </td>
+                            <td className="text-center py-2 px-2">{s.questions_answered}</td>
+                            <td className="text-center py-2 px-2">{s.accuracy}%</td>
+                            <td className="text-center py-2 px-2">{s.streak}d</td>
+                            <td className="text-center py-2 px-2">{s.activities_completed}/{s.activities_total}</td>
+                            <td className="text-center py-2 pl-2">
+                              <Badge variant={status === "inactive" ? "destructive" : status === "risk" ? "secondary" : "default"} className="text-[10px]">
+                                {status === "inactive" ? "Inativo" : status === "risk" ? "Risco" : "Ativo"}
+                              </Badge>
+                            </td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>

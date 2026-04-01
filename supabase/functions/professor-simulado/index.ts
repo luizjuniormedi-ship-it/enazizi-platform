@@ -218,16 +218,16 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
         if (faculdade) sQuery = sQuery.eq("faculdade", faculdade);
         if (periodo) sQuery = sQuery.eq("periodo", periodo);
         const { data: students } = await sQuery.order("display_name");
-        if (!students || students.length === 0) return ok({ students: [], weakTopics: [], topPerformers: [] });
+        if (!students || students.length === 0) return ok({ students: [], weakTopics: [], topPerformers: [], engagement: { avg_streak: 0, avg_xp: 0, inactive_count: 0, activity_completion_rate: 0 } });
 
         const studentIds = students.map((s: any) => s.user_id);
 
-        // Get domain scores for all students
+        // Get domain scores
         const { data: domains } = await sb.from("medical_domain_map")
           .select("user_id, specialty, domain_score, questions_answered, correct_answers, errors_count")
           .in("user_id", studentIds);
 
-        // Get error bank aggregates
+        // Get error bank
         const { data: errors } = await sb.from("error_bank")
           .select("user_id, tema, vezes_errado")
           .in("user_id", studentIds);
@@ -237,15 +237,52 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           .select("user_id, questoes_respondidas, taxa_acerto")
           .in("user_id", studentIds);
 
+        // Get gamification data (engagement)
+        const { data: gamData } = await sb.from("user_gamification")
+          .select("user_id, xp, level, current_streak, last_activity_date")
+          .in("user_id", studentIds);
+
+        // Get teacher simulado results
+        const { data: simResults } = await sb.from("teacher_simulado_results")
+          .select("student_id, status, score")
+          .in("student_id", studentIds);
+
+        // Get teacher clinical case results
+        const { data: caseResults } = await sb.from("teacher_clinical_case_results")
+          .select("student_id, status, final_score")
+          .in("student_id", studentIds);
+
+        // Get study assignment results
+        const { data: assignResults } = await sb.from("teacher_study_assignment_results")
+          .select("student_id, status")
+          .in("student_id", studentIds);
+
+        const now = new Date();
+
         // Build per-student stats
         const studentStats = students.map((s: any) => {
           const sDomains = (domains || []).filter((d: any) => d.user_id === s.user_id);
           const sErrors = (errors || []).filter((e: any) => e.user_id === s.user_id);
           const sPerf = (perfData || []).find((p: any) => p.user_id === s.user_id);
+          const sGam = (gamData || []).find((g: any) => g.user_id === s.user_id);
+          const sSims = (simResults || []).filter((r: any) => r.student_id === s.user_id);
+          const sCases = (caseResults || []).filter((r: any) => r.student_id === s.user_id);
+          const sAssigns = (assignResults || []).filter((r: any) => r.student_id === s.user_id);
+
           const avgScore = sDomains.length > 0
             ? Math.round(sDomains.reduce((sum: number, d: any) => sum + d.domain_score, 0) / sDomains.length)
             : 0;
           const totalErrors = sErrors.reduce((sum: number, e: any) => sum + e.vezes_errado, 0);
+
+          // Activity completion
+          const totalActivities = sSims.length + sCases.length + sAssigns.length;
+          const completedActivities = sSims.filter((r: any) => r.status === "completed").length
+            + sCases.filter((r: any) => r.status === "completed").length
+            + sAssigns.filter((r: any) => r.status === "completed").length;
+
+          // Days since last activity
+          const lastActivity = sGam?.last_activity_date ? new Date(sGam.last_activity_date) : null;
+          const daysSinceActivity = lastActivity ? Math.floor((now.getTime() - lastActivity.getTime()) / 86400000) : 999;
 
           return {
             user_id: s.user_id,
@@ -257,29 +294,66 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
             accuracy: sPerf?.taxa_acerto ? Math.round(sPerf.taxa_acerto * 100) : 0,
             total_errors: totalErrors,
             specialties_studied: sDomains.length,
+            xp: sGam?.xp || 0,
+            level: sGam?.level || 1,
+            streak: sGam?.current_streak || 0,
+            days_inactive: daysSinceActivity,
+            activities_total: totalActivities,
+            activities_completed: completedActivities,
+            simulados_completed: sSims.filter((r: any) => r.status === "completed").length,
+            simulados_avg_score: sSims.filter((r: any) => r.status === "completed").length > 0
+              ? Math.round(sSims.filter((r: any) => r.status === "completed").reduce((s: number, r: any) => s + (r.score || 0), 0) / sSims.filter((r: any) => r.status === "completed").length)
+              : 0,
           };
         });
 
-        // Weak topics across the class
+        // Weak topics
         const topicErrorMap: Record<string, number> = {};
-        (errors || []).forEach((e: any) => {
-          topicErrorMap[e.tema] = (topicErrorMap[e.tema] || 0) + e.vezes_errado;
-        });
-        const weakTopics = Object.entries(topicErrorMap)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 10)
-          .map(([topic, count]) => ({ topic, error_count: count }));
+        (errors || []).forEach((e: any) => { topicErrorMap[e.tema] = (topicErrorMap[e.tema] || 0) + e.vezes_errado; });
+        const weakTopics = Object.entries(topicErrorMap).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([topic, count]) => ({ topic, error_count: count }));
 
         // Top performers
-        const topPerformers = [...studentStats]
-          .sort((a, b) => b.avg_domain_score - a.avg_domain_score)
-          .slice(0, 5);
+        const topPerformers = [...studentStats].sort((a, b) => b.avg_domain_score - a.avg_domain_score).slice(0, 5);
 
-        return ok({ students: studentStats, weakTopics, topPerformers });
+        // At-risk students
+        const atRiskStudents = studentStats.filter(s => s.avg_domain_score < 50 || s.days_inactive > 7).map(s => ({
+          ...s,
+          risk_reason: s.days_inactive > 7 ? `Inativo há ${s.days_inactive} dias` : `Score baixo: ${s.avg_domain_score}%`,
+          risk_level: (s.days_inactive > 7 && s.avg_domain_score < 30) ? "critical" : "warning",
+        }));
+
+        // Engagement aggregates
+        const avgStreak = studentStats.length > 0 ? Math.round(studentStats.reduce((s, st) => s + st.streak, 0) / studentStats.length) : 0;
+        const avgXp = studentStats.length > 0 ? Math.round(studentStats.reduce((s, st) => s + st.xp, 0) / studentStats.length) : 0;
+        const inactiveCount = studentStats.filter(s => s.days_inactive > 7).length;
+        const totalActs = studentStats.reduce((s, st) => s + st.activities_total, 0);
+        const completedActs = studentStats.reduce((s, st) => s + st.activities_completed, 0);
+        const activityCompletionRate = totalActs > 0 ? Math.round((completedActs / totalActs) * 100) : 0;
+
+        // Specialty breakdown
+        const specialtyMap: Record<string, { total_score: number; count: number }> = {};
+        (domains || []).forEach((d: any) => {
+          if (!specialtyMap[d.specialty]) specialtyMap[d.specialty] = { total_score: 0, count: 0 };
+          specialtyMap[d.specialty].total_score += d.domain_score;
+          specialtyMap[d.specialty].count++;
+        });
+        const specialtyBreakdown = Object.entries(specialtyMap)
+          .map(([specialty, v]) => ({ specialty, avg_score: Math.round(v.total_score / v.count), student_count: v.count }))
+          .sort((a, b) => b.student_count - a.student_count)
+          .slice(0, 15);
+
+        return ok({
+          students: studentStats,
+          weakTopics,
+          topPerformers,
+          atRiskStudents,
+          engagement: { avg_streak: avgStreak, avg_xp: avgXp, inactive_count: inactiveCount, activity_completion_rate: activityCompletionRate },
+          specialtyBreakdown,
+        });
       }
 
       case "student_detail": {
-        const { student_id } = params;
+        const { student_id, class_avg_score } = params;
         if (!student_id) throw new Error("student_id obrigatório");
 
         // Profile
@@ -307,7 +381,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 
         // Gamification
         const { data: gam } = await sb.from("user_gamification")
-          .select("xp, level, current_streak")
+          .select("xp, level, current_streak, last_activity_date")
           .eq("user_id", student_id).maybeSingle();
 
         // Simulado results
@@ -325,10 +399,67 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           for (const s of (sims || [])) simTitles[s.id] = s.title;
         }
 
+        // Clinical case results
+        const { data: caseResults } = await sb.from("teacher_clinical_case_results")
+          .select("case_id, status, final_score, finished_at")
+          .eq("student_id", student_id)
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        let caseTitles: Record<string, string> = {};
+        const caseIds = (caseResults || []).map((r: any) => r.case_id);
+        if (caseIds.length > 0) {
+          const { data: cases } = await sb.from("teacher_clinical_cases").select("id, title").in("id", caseIds);
+          for (const c of (cases || [])) caseTitles[c.id] = c.title;
+        }
+
+        // Study assignment results
+        const { data: assignResults } = await sb.from("teacher_study_assignment_results")
+          .select("assignment_id, status, completed_at")
+          .eq("student_id", student_id)
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        let assignTitles: Record<string, string> = {};
+        const assignIds = (assignResults || []).map((r: any) => r.assignment_id);
+        if (assignIds.length > 0) {
+          const { data: assigns } = await sb.from("teacher_study_assignments").select("id, title").in("id", assignIds);
+          for (const a of (assigns || [])) assignTitles[a.id] = a.title;
+        }
+
+        // Weekly evolution: last 8 weeks of practice_attempts
+        const eightWeeksAgo = new Date();
+        eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56);
+        const { data: attempts } = await sb.from("practice_attempts")
+          .select("correct, created_at")
+          .eq("user_id", student_id)
+          .gte("created_at", eightWeeksAgo.toISOString())
+          .order("created_at");
+
+        // Group by week
+        const weeklyMap: Record<string, { correct: number; total: number }> = {};
+        (attempts || []).forEach((a: any) => {
+          const d = new Date(a.created_at);
+          const weekStart = new Date(d);
+          weekStart.setDate(d.getDate() - d.getDay());
+          const key = weekStart.toISOString().slice(0, 10);
+          if (!weeklyMap[key]) weeklyMap[key] = { correct: 0, total: 0 };
+          weeklyMap[key].total++;
+          if (a.correct) weeklyMap[key].correct++;
+        });
+        const weeklyEvolution = Object.entries(weeklyMap)
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([week, v]) => ({ week, accuracy: v.total > 0 ? Math.round((v.correct / v.total) * 100) : 0, total: v.total }));
+
         // Quotas
         const { data: quotas } = await sb.from("user_quotas")
           .select("questions_used, questions_limit")
           .eq("user_id", student_id).maybeSingle();
+
+        // Calculate avg domain score for comparison
+        const avgDomainScore = (domains || []).length > 0
+          ? Math.round((domains || []).reduce((s: number, d: any) => s + d.domain_score, 0) / (domains || []).length)
+          : 0;
 
         return ok({
           profile,
@@ -342,6 +473,20 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
             status: r.status,
             finished_at: r.finished_at,
           })),
+          clinical_case_results: (caseResults || []).map((r: any) => ({
+            title: caseTitles[r.case_id] || "Caso Clínico",
+            score: r.final_score != null ? Math.round(r.final_score) : null,
+            status: r.status,
+            finished_at: r.finished_at,
+          })),
+          study_assignments: (assignResults || []).map((r: any) => ({
+            title: assignTitles[r.assignment_id] || "Tema de Estudo",
+            status: r.status,
+            completed_at: r.completed_at,
+          })),
+          weekly_evolution: weeklyEvolution,
+          avg_domain_score: avgDomainScore,
+          class_avg_score: class_avg_score || null,
           quotas: quotas || null,
         });
       }
