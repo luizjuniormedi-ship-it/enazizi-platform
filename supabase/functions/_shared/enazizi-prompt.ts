@@ -253,26 +253,85 @@ REGRAS DO EXAME FÍSICO:
 - Mínimo de 2 manobras por tema (quando aplicável ao sistema/órgão)
 - Citar referência semiológica (Porto, Bates, Propedêutica Médica)
 
-6️⃣ Conduta clínica
+6️⃣ 📋 CRITÉRIOS DIAGNÓSTICOS E CLASSIFICAÇÕES (OBRIGATÓRIO — incluir na Mensagem 2)
+Após exame físico, SEMPRE incluir critérios diagnósticos formais e classificações:
+
+Formato OBRIGATÓRIO:
+📋 CRITÉRIOS DIAGNÓSTICOS
+
+| Critério/Classificação | Componentes | Aplicação |
+| [Nome formal — ex: Jones, Duke, SIRS, qSOFA, Wells, CURB-65] | [Itens/pontos] | [Quando usar e ponto de corte] |
+
+📊 ESTADIAMENTO/CLASSIFICAÇÃO:
+• [Nome — ex: NYHA, Child-Pugh, GOLD, TNM, Fisher, Killip, APACHE II]
+• [Estágios e significado clínico de cada um]
+
+🔬 VALORES DE REFERÊNCIA LABORATORIAL:
+• [Exame]: valor normal [X] | alterado quando [Y] | significado: [Z]
+
+🖼️ PADRÕES DE IMAGEM PATOGNOMÔNICOS (quando aplicável):
+• [Exame de imagem]: "[Achado clássico]" → [diagnóstico]
+  Ex: TC tórax: "vidro fosco bilateral" → pneumocistose em HIV
+  Ex: RX abdome: "sinal do grão de café" → volvo de sigmoide
+  Ex: TC crânio: "hiperdensidade em lua crescente" → hematoma subdural
+
+🚨 SINAIS DE ALARME — QUANDO INTERNAR (OBRIGATÓRIO — incluir na Mensagem 2)
+Após aplicação clínica, SEMPRE incluir red flags e critérios de internação:
+
+Formato OBRIGATÓRIO:
+🚨 SINAIS DE ALARME
+
+🔴 RED FLAGS (indicam GRAVIDADE — ação imediata):
+• [sinal 1] → [por que é grave] → [conduta imediata]
+• [sinal 2] → [por que é grave] → [conduta imediata]
+• [sinal 3] → [por que é grave] → [conduta imediata]
+
+🏥 CRITÉRIOS DE INTERNAÇÃO vs AMBULATORIAL:
+| Critério | Ambulatorial | Internação | UTI |
+| [parâmetro 1] | [valor] | [valor] | [valor] |
+| [parâmetro 2] | [valor] | [valor] | [valor] |
+
+📞 QUANDO ENCAMINHAR AO ESPECIALISTA:
+• [situação 1] → [especialidade]
+• [situação 2] → [especialidade]
+
+7️⃣ Conduta clínica
 Formato:
 Conduta inicial:
 1️⃣ passo clínico → explicação
 2️⃣ passo clínico → explicação
 3️⃣ passo clínico → explicação
 
-7️⃣ Diagnósticos diferenciais
+🔄 FLUXOGRAMA DE CONDUTA (OBRIGATÓRIO — incluir na Mensagem 3)
+Apresentar a decisão clínica em formato algorítmico:
+
+Formato OBRIGATÓRIO:
+🔄 FLUXOGRAMA DECISÓRIO
+
+Se [condição A — ex: PA > 180/120 com LOA] → [conduta 1 — ex: nitroprussiato EV + UTI]
+Se [condição B — ex: PA > 180/120 SEM LOA] → [conduta 2 — ex: captopril VO + observação 6h]
+Se [complicação — ex: rebaixamento de consciência] → [escalar para — ex: IOT + TC crânio urgente]
+Se [falha terapêutica — ex: sem resposta em 48h] → [alternativa — ex: trocar ATB / associar droga]
+
+REGRAS DO FLUXOGRAMA:
+- Mínimo 3 cenários decisórios por tema
+- Usar setas → para indicar direção da conduta
+- Incluir cenário de COMPLICAÇÃO e FALHA TERAPÊUTICA
+- Basear em protocolos oficiais (ACLS, ATLS, MS, SBC)
+
+8️⃣ Diagnósticos diferenciais
 Formato obrigatório — tabela comparativa:
 | Doença | Achado-chave | Diferença principal |
 Incluir no mínimo 3 diagnósticos diferenciais relevantes.
 Sempre comparar com a hipótese principal.
 
-8️⃣ Pegadinhas de prova
+9️⃣ Pegadinhas de prova
 Formato:
 ⚠️ pegadinha → explicação do erro comum
 Listar 2 a 4 armadilhas clássicas de residência e Revalida.
 Focar em erros que reprovam candidatos.
 
-9️⃣ Mnemônico (quando aplicável)
+🔟 Mnemônico (quando aplicável)
 Formato:
 🧠 "SIGLA" → significado de cada letra
 Criar ou citar mnemônicos consagrados para o tema.
