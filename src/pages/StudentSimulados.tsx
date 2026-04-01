@@ -128,8 +128,9 @@ const StudentSimulados = () => {
   }, [user, toast]);
 
   useEffect(() => {
+    markVisited();
     loadAssigned();
-  }, [loadAssigned]);
+  }, [loadAssigned, markVisited]);
 
   // Load clinical cases
   const loadClinicalCases = useCallback(async () => {
