@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Database, Globe, FileText, CheckCircle2, Loader2, ExternalLink, Search, Link2, BarChart3, Scale, Pause } from "lucide-react";
+import { Database, Globe, FileText, CheckCircle2, Loader2, ExternalLink, Search, Link2, BarChart3, Scale, Pause, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -64,6 +64,7 @@ const AdminIngestionPanel = () => {
   const [discoveredSources, setDiscoveredSources] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalSources: 5, totalExtracted: 0, totalIndexed: 5, duplicatesRemoved: 0 });
   const [distribution, setDistribution] = useState<SpecialtyDist[]>([]);
+  const [loadingDistribution, setLoadingDistribution] = useState(false);
   const [equalizing, setEqualizing] = useState(false);
   const pauseRef = useRef(false);
   const [eqStartTime, setEqStartTime] = useState<number | null>(null);
@@ -80,21 +81,36 @@ const AdminIngestionPanel = () => {
   }, []);
 
   const loadDistribution = async () => {
-    const { data } = await supabase.from("questions_bank" as any)
-      .select("topic")
-      .eq("is_global", true);
-    if (!data) return;
-    const counts: Record<string, number> = {};
-    (data as any[]).forEach((r: any) => { const t = r.topic || "Outros"; counts[t] = (counts[t] || 0) + 1; });
-    
-    const dist: SpecialtyDist[] = UNIQUE_SPECIALTIES.map(name => {
-      const count = counts[name] || 0;
-      const target = getTarget(name);
-      const deficit = Math.max(0, target - count);
-      const pct = Math.min(100, Math.round((count / target) * 100));
-      return { name, count, target, deficit, pct };
-    }).sort((a, b) => a.pct - b.pct);
-    setDistribution(dist);
+    setLoadingDistribution(true);
+    try {
+      const PAGE = 1000;
+      let from = 0;
+      const allTopics: string[] = [];
+      while (true) {
+        const { data, error } = await supabase.from("questions_bank" as any)
+          .select("topic")
+          .eq("is_global", true)
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        if (!data || (data as any[]).length === 0) break;
+        allTopics.push(...(data as any[]).map((r: any) => r.topic || "Outros"));
+        if ((data as any[]).length < PAGE) break;
+        from += PAGE;
+      }
+      const counts: Record<string, number> = {};
+      allTopics.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
+
+      const dist: SpecialtyDist[] = UNIQUE_SPECIALTIES.map(name => {
+        const count = counts[name] || 0;
+        const target = getTarget(name);
+        const deficit = Math.max(0, target - count);
+        const pct = Math.min(100, Math.round((count / target) * 100));
+        return { name, count, target, deficit, pct };
+      }).sort((a, b) => a.pct - b.pct);
+      setDistribution(dist);
+    } finally {
+      setLoadingDistribution(false);
+    }
   };
 
   const loadSources = async () => {
@@ -235,6 +251,8 @@ const AdminIngestionPanel = () => {
           log.push({ specialty: spec.name, added });
           const qRemaining = totalQRemaining - log.reduce((s, l) => s + l.added, 0);
           setEqProgress(prev => prev ? { ...prev, percent: Math.round(((i + 1) / total) * 100), log: [...log], questionsRemaining: Math.max(0, qRemaining) } : prev);
+          // Refresh distribution after each batch
+          await loadDistribution();
         } catch (error) {
           log.push({ specialty: spec.name, added: 0 });
           setEqProgress(prev => prev ? { ...prev, log: [...log] } : prev);
@@ -248,6 +266,7 @@ const AdminIngestionPanel = () => {
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
     } finally {
+      await loadDistribution();
       setEqualizing(false);
       pauseRef.current = false;
       setEqStartTime(null);
@@ -307,6 +326,9 @@ const AdminIngestionPanel = () => {
                 </Badge>
               </div>
               <div className="flex gap-1">
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" disabled={loadingDistribution} onClick={() => loadDistribution()} title="Atualizar contagens">
+                  <RefreshCw className={`h-3.5 w-3.5 ${loadingDistribution ? "animate-spin" : ""}`} />
+                </Button>
                 {equalizing && (
                   <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => { pauseRef.current = true; }}>
                     <Pause className="h-3 w-3 mr-1" />Pausar
