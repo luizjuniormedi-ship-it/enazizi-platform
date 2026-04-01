@@ -47,6 +47,11 @@ const ChatGPT = () => {
   const [changingTopic, setChangingTopic] = useState(false);
   const [newTopic, setNewTopic] = useState("");
 
+  // Speech to text
+  const { isListening, hasSpeechRecognition, toggleListening } = useSpeechToText(
+    (text) => setInput((prev) => prev ? prev + " " + text : text)
+  );
+
   // Hooks
   const { streamResponse } = useStreamingResponse();
   const chatMessages = useChatMessages(user?.id);
