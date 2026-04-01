@@ -261,6 +261,7 @@ const DashboardLayout = () => {
         </button>
       </div>
       <main className="dashboard-main flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-x-hidden overflow-y-auto relative w-full min-h-0 min-w-0 flex flex-col">
+        <ProficiencyGate />
         <ActiveVideoRoomPopup />
         <div key={location.pathname} className="animate-fade-in relative z-10 w-full max-w-full pb-16 lg:pb-0 flex-1 min-w-0 min-h-0 flex flex-col">
           <Outlet />
