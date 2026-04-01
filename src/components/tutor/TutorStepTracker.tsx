@@ -1,4 +1,4 @@
-import { RefreshCw, ArrowRight, Zap } from "lucide-react";
+import { RefreshCw, ArrowRight, ArrowLeft, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -15,13 +15,14 @@ interface TutorStepTrackerProps {
   setNewTopic: (v: string) => void;
   onChangeTopic: () => void;
   onPhaseAction: (key: string) => void;
+  onGoBackStep: () => void;
   nextPhase: { key: string; label: string; icon: string; desc: string } | null;
 }
 
 const TutorStepTracker = ({
   currentTopic, enaziziStep, sessionQuestions, sessionCorrect,
   isLoading, changingTopic, setChangingTopic, newTopic, setNewTopic,
-  onChangeTopic, onPhaseAction, nextPhase,
+  onChangeTopic, onPhaseAction, onGoBackStep, nextPhase,
 }: TutorStepTrackerProps) => {
   const progressPercent = Math.round((enaziziStep / 15) * 100);
 
@@ -73,6 +74,17 @@ const TutorStepTracker = ({
           </TooltipProvider>
           <span className="text-muted-foreground">•</span>
           <span className="text-muted-foreground">{enaziziStep}/15 ({progressPercent}%)</span>
+          {enaziziStep > 3 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[10px] sm:text-xs gap-1 text-muted-foreground hover:text-primary"
+                onClick={onGoBackStep}
+                disabled={isLoading}
+              >
+                <ArrowLeft className="h-3 w-3" /> Voltar
+              </Button>
+          )}
           {nextPhase && (
             <>
               <Button

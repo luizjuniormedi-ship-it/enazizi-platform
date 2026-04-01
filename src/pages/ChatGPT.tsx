@@ -338,6 +338,28 @@ const ChatGPT = () => {
     }
   };
 
+  const handleGoBackStep = () => {
+    if (enaziziStep <= 3) return;
+    const prevStep = enaziziStep - 1;
+    // Find the phase key for the previous step
+    const stepToPhaseKey: Record<number, string> = {
+      3: "tecnico1", 4: "leigo1", 5: "tecnico2", 6: "leigo2",
+      7: "tecnico3", 8: "leigo3", 9: "questions", 10: "discussion",
+      11: "discursive", 12: "correction", 13: "update", 14: "consolidation", 15: "feynman",
+    };
+    const phaseKey = stepToPhaseKey[prevStep];
+    const phaseMap = getPhaseMap(currentTopic);
+    const action = phaseMap[phaseKey];
+    setEnaziziStep(prevStep);
+    saveEnaziziStep(prevStep, currentTopic, performance, sessionQuestions);
+    if (action) {
+      sendMessage(`Volte para a etapa anterior. ${action.prompt}`);
+    } else {
+      // Step 3 = first technical block
+      sendMessage(`Volte para o Bloco Técnico 1 (conceito e definição) sobre ${currentTopic}. Repita a explicação técnica.`);
+    }
+  };
+
   const onFinishSession = async () => {
     await handleFinishSession(currentTopic, completeSession, async (step, tema) => {
       await saveEnaziziStep(step, tema, performance, sessionQuestions);
@@ -431,7 +453,7 @@ const ChatGPT = () => {
             sessionQuestions={sessionQuestions} sessionCorrect={sessionCorrect}
             isLoading={isLoading} changingTopic={changingTopic} setChangingTopic={setChangingTopic}
             newTopic={newTopic} setNewTopic={setNewTopic} onChangeTopic={handleChangeTopic}
-            onPhaseAction={handlePhaseAction} nextPhase={nextPhase}
+            onPhaseAction={handlePhaseAction} onGoBackStep={handleGoBackStep} nextPhase={nextPhase}
           />
 
           <TutorMessageList ref={scrollRef} messages={messages} isLoading={isLoading} onCopy={copyToClipboard} />
