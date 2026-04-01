@@ -1,93 +1,49 @@
 
 
-# BI do Professor — Proficiência + Plataforma Geral
+# Cadastro de Professor com Escopo por Universidade
 
 ## Objetivo
 
-Criar duas visões de BI no painel do professor:
-1. **BI de Proficiência** — análise cruzada de desempenho nas atividades criadas pelo professor (simulados, casos clínicos, temas de estudo): assuntos deficitários, assuntos dominados, sugestão de abordagem pedagógica
-2. **BI Geral da Turma** — análise da utilização geral da plataforma pelo aluno (questões respondidas, streaks, revisões, banco de erros, tempo de estudo)
-
-## Arquitetura
-
-```text
-┌─────────────────────────────────────────────┐
-│  ProfessorDashboard.tsx                     │
-│  Nova aba: "BI" (entre Analytics e Alunos)  │
-│  └─ ProfessorBIPanel.tsx                    │
-│     ├─ Seção 1: BI Proficiência             │
-│     │   - KPIs (total atividades, taxa      │
-│     │     conclusão, média geral, pendentes)│
-│     │   - Desempenho por tema/assunto       │
-│     │   - Assuntos deficitários (radar)     │
-│     │   - Assuntos dominados                │
-│     │   - Sugestão pedagógica por IA        │
-│     │   - Filtro por aluno específico       │
-│     └─ Seção 2: BI Geral Plataforma        │
-│         - Engajamento (streak, XP, dias     │
-│           ativos, questões respondidas)     │
-│         - Erros mais frequentes             │
-│         - Especialidades por acurácia       │
-│         - Heatmap de atividade              │
-└─────────────────────────────────────────────┘
-```
+Adicionar a opção "Professor" no formulário de cadastro. O professor informará sua universidade durante o registro, e seu acesso no painel será automaticamente restrito aos alunos dessa universidade.
 
 ## Mudanças
 
-### 1. Nova action na Edge Function: `professor_bi`
+### 1. `src/pages/Register.tsx` — Adicionar tipo de conta e faculdade
 
-Arquivo: `supabase/functions/professor-simulado/index.ts`
+- Adicionar seletor "Estudante / Professor" (botões como no onboarding do ProtectedRoute)
+- Quando "Professor" selecionado, mostrar campo obrigatório de Faculdade (usando `FaculdadeCombobox`)
+- Passar `user_type` e `faculdade` no `signUp` via `options.data` (metadata)
 
-Recebe `{ action: "professor_bi", faculdade?, periodo?, student_id? }`
+### 2. `src/hooks/useAuth.tsx` — Expandir `signUp`
 
-**Dados de Proficiência** (atividades do professor):
-- Busca todos os simulados, casos clínicos e temas do professor (ou admin vê todos)
-- Cruza `teacher_simulado_results` com `questions_json` dos simulados para extrair desempenho **por tópico** (cada questão tem campo `topic`)
-- Cruza `teacher_clinical_case_results` por especialidade e diagnóstico
-- Cruza `teacher_study_assignment_results` por status de conclusão
-- Calcula: taxa de conclusão, média de score, tópicos com pior desempenho, tópicos com melhor desempenho
-- Se `student_id` fornecido, filtra apenas para aquele aluno
+- Aceitar parâmetros opcionais `userType` e `faculdade`
+- Incluir no `raw_user_meta_data`: `user_type`, `faculdade`
 
-**Dados Gerais da Plataforma**:
-- Busca `user_topic_profiles` para acurácia por especialidade
-- Busca `error_bank` para temas com mais erros
-- Busca `user_gamification` para engajamento (XP, streak, dias ativos)
-- Busca `practice_attempts` das últimas 4 semanas para volume de estudo
-- Agrega tudo por turma ou por aluno individual
+### 3. Trigger `handle_new_user` (migração SQL)
 
-**Sugestão Pedagógica** (via IA):
-- Nova action `professor_bi_suggestion` que recebe o resumo dos dados e gera sugestões usando Gemini Flash
-- Formato: 3-5 recomendações pedagógicas baseadas nos gaps identificados
+- Atualizar a função para ler `raw_user_meta_data->>'user_type'` e `raw_user_meta_data->>'faculdade'` e salvar no profile
+- Se `user_type = 'professor'`, inserir role `professor` na tabela `user_roles` (além do `user` padrão)
 
-### 2. Novo componente: `src/components/professor/ProfessorBIPanel.tsx`
+### 4. `src/components/auth/ProtectedRoute.tsx` — Onboarding do professor
 
-- Recebe `callAPI` como prop (mesmo padrão dos outros componentes)
-- Filtros: Faculdade, Período, Aluno específico (dropdown)
-- **Seção "Proficiência"**:
-  - 4 KPI cards: Total Atividades Criadas, Taxa de Conclusão, Média Geral, Pendentes
-  - Gráfico de barras horizontal: Desempenho por Tópico (simulados)
-  - Cards de "Assuntos Deficitários" (score < 50%) em vermelho
-  - Cards de "Assuntos Dominados" (score > 80%) em verde
-  - Tabela: resultado por atividade (simulado/caso/tema) com nome do aluno e score
-- **Seção "Plataforma Geral"**:
-  - 4 KPI cards: Questões Respondidas, Acurácia Média, Streak Médio, Inativos
-  - Gráfico de barras: Top 10 temas com mais erros
-  - Gráfico radar: Acurácia por especialidade
-  - Lista de alunos ordenada por engajamento
-- **Seção "Sugestão Pedagógica"**:
-  - Botão "Gerar Sugestões" que chama a IA
-  - Exibe cards com recomendações de abordagem
+- No formulário de completar cadastro, adicionar opção "Professor" ao seletor de tipo (já tem estudante/médico)
+- Quando professor selecionado, mostrar campo de faculdade (obrigatório) mas esconder período
+- Ao salvar, se `user_type = 'professor'`, inserir role professor via edge function ou diretamente
 
-### 3. `src/pages/ProfessorDashboard.tsx`
+### 5. `supabase/functions/professor-simulado/index.ts` — Escopo por faculdade do professor
 
-- Adicionar nova aba "BI" com ícone `BarChart3` no `TabsList`
-- Renderizar `<ProfessorBIPanel />` no `TabsContent`
+- No `get_students`: buscar a `faculdade` do perfil do professor e usar como filtro obrigatório (admins continuam vendo tudo)
+- No `class_analytics`: mesmo tratamento — professor só vê alunos da sua faculdade
+- No `create_simulado`: se professor não informar faculdade no filtro, usar a dele por padrão
 
-## Detalhes Técnicos
+### 6. `src/lib/profileValidation.ts` — Validação para professor
 
-- Usa `recharts` (já instalado) para gráficos: BarChart, RadarChart, PieChart
-- A análise por tópico dos simulados extrai o campo `topic` de cada questão dentro de `questions_json` e cruza com `answers_json` dos results para saber acerto/erro por tema
-- Filtro por aluno específico usa dropdown com busca (lista de alunos da faculdade/período)
-- Sugestão pedagógica usa Gemini Flash via `aiFetch` — rápido e sem custo de API key
-- O BI é read-only, não modifica dados
+- Ajustar `isProfileComplete` para aceitar `user_type = 'professor'` — exigir faculdade mas não período
+
+## Detalhes técnicos
+
+- A role `professor` já existe no enum `app_role` e é verificada no `useProfessorCheck`
+- O trigger `handle_new_user` roda com `SECURITY DEFINER`, então pode inserir em `user_roles` sem problema de RLS
+- O `ProfessorRoute` já verifica `user_roles` para role `professor` — uma vez inserida, o professor terá acesso automático ao painel
+- A faculdade do professor fica em `profiles.faculdade`, reutilizando o campo já existente
 
