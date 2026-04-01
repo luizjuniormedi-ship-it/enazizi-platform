@@ -73,7 +73,7 @@ function getTarget(specialty: string): number {
   return BASIC_SCIENCES.includes(specialty) ? TARGET_BASIC : TARGET_CLINICAL;
 }
 
-async function generateBatch(specialty: string, topics: string[], userId: string, supabaseAdmin: any, questionCount = 25): Promise<{ questions: number; flashcards: number }> {
+async function generateBatch(specialty: string, topics: string[], userId: string, supabaseAdmin: any, questionCount = 10): Promise<{ questions: number; flashcards: number }> {
   const selectedTopics = topics.sort(() => Math.random() - 0.5).slice(0, 5);
   const fcCount = Math.max(5, Math.round(questionCount * 0.6));
   
@@ -139,6 +139,8 @@ FORMATO JSON OBRIGATÓRIO:
   try {
     const response = await aiFetch({
       model: "google/gemini-2.5-flash",
+      timeoutMs: 120000,
+      maxRetries: 2,
       messages: [
         { role: "system", content: "Você é um professor de medicina especialista em criar questões de residência médica. Responda APENAS com JSON válido, sem markdown.\n\nIDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA gere questões, alternativas, explicações ou flashcards em inglês. Inglês permitido APENAS em nomes de artigos/guidelines.\n\n⛔ CONTEÚDO PROIBIDO: NUNCA gere questões ou flashcards sobre declarações financeiras, conflitos de interesse, relações com empresas/indústrias farmacêuticas, honorários, pagamentos de palestrantes, vínculos empregatícios com laboratórios. Foque EXCLUSIVAMENTE em conteúdo clínico-científico para estudo médico." },
         { role: "user", content: prompt },
