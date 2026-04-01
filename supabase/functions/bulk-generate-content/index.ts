@@ -370,7 +370,7 @@ FORMATO JSON OBRIGATÓRIO:
             explanation: String(q.explanation || "").trim(),
             topic: normalizedTopic,
             subtopic: rawTopic !== normalizedTopic ? rawTopic : null,
-            difficulty: q.difficulty || 3,
+            difficulty: q.difficulty || (Math.random() < 0.5 ? 4 : 3),
             source: "bulk-ai-generated",
             is_global: true,
             review_status: "pending",
