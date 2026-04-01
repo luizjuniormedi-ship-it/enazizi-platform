@@ -35,6 +35,13 @@ serve(async (req) => {
     const { action, ...params } = await req.json();
     const ok = (data: unknown) => new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+    // Get professor's faculdade for scoping
+    const isAdmin = roleData.some((r: any) => r.role === "admin");
+    let professorFaculdade: string | null = null;
+    if (!isAdmin) {
+      const { data: profProfile } = await sb.from("profiles").select("faculdade").eq("user_id", user.id).single();
+      professorFaculdade = profProfile?.faculdade || null;
+    }
     switch (action) {
       case "generate_questions": {
         const { topics, count = 10 } = params;
