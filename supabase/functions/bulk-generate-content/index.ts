@@ -77,6 +77,115 @@ function normalizeStatementKey(statement: string): string {
   return String(statement || "").toLowerCase().trim().slice(0, 80);
 }
 
+function extractBalancedSegment(input: string, startChar: "{" | "[", endChar: "}" | "]", startIndex: number): string | null {
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = startIndex; i < input.length; i++) {
+    const char = input[i];
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escaped = true;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+
+    if (inString) continue;
+
+    if (char === startChar) depth++;
+    if (char === endChar) {
+      depth--;
+      if (depth === 0) return input.slice(startIndex, i + 1);
+    }
+  }
+
+  return null;
+}
+
+function repairJsonCandidate(input: string): string {
+  return input
+    .replace(/,\s*([}\]])/g, "$1")
+    .replace(/([{,]\s*)([A-Za-z_][\w-]*)(\s*:)/g, '$1"$2"$3')
+    .replace(/\r?\n/g, " ")
+    .replace(/\t/g, " ")
+    .trim();
+}
+
+function normalizeGeneratedPayload(parsed: unknown): { questions: any[]; flashcards: any[] } | null {
+  if (Array.isArray(parsed)) {
+    return { questions: parsed, flashcards: [] };
+  }
+
+  if (!parsed || typeof parsed !== "object") return null;
+
+  const record = parsed as Record<string, unknown>;
+  const questions = Array.isArray(record.questions) ? (record.questions as any[]) : [];
+  const flashcards = Array.isArray(record.flashcards) ? (record.flashcards as any[]) : [];
+
+  if (!questions.length && !flashcards.length) return null;
+
+  return { questions, flashcards };
+}
+
+function extractArrayForKey(input: string, key: string): string | null {
+  const match = new RegExp(`"?${key}"?\\s*:`, "i").exec(input);
+  if (!match) return null;
+
+  const arrayStart = input.indexOf("[", match.index + match[0].length);
+  if (arrayStart === -1) return null;
+
+  return extractBalancedSegment(input, "[", "]", arrayStart);
+}
+
+function parseGeneratedPayload(rawContent: string): { questions: any[]; flashcards: any[] } | null {
+  const raw = sanitizeAiContent(rawContent).replace(/```json\s*|```/gi, "").trim();
+  if (!raw) return null;
+
+  const candidates: string[] = [];
+  const pushCandidate = (candidate?: string | null) => {
+    if (candidate && !candidates.includes(candidate)) candidates.push(candidate);
+  };
+
+  pushCandidate(raw);
+  pushCandidate(repairJsonCandidate(raw));
+
+  const firstObjectIndex = raw.indexOf("{");
+  if (firstObjectIndex !== -1) {
+    const objectSlice = extractBalancedSegment(raw, "{", "}", firstObjectIndex);
+    pushCandidate(objectSlice);
+    pushCandidate(objectSlice ? repairJsonCandidate(objectSlice) : null);
+  }
+
+  const questionsArray = extractArrayForKey(raw, "questions") || extractArrayForKey(repairJsonCandidate(raw), "questions");
+  const flashcardsArray = extractArrayForKey(raw, "flashcards") || extractArrayForKey(repairJsonCandidate(raw), "flashcards");
+  if (questionsArray || flashcardsArray) {
+    const rebuiltPayload = `{"questions":${questionsArray ?? "[]"},"flashcards":${flashcardsArray ?? "[]"}}`;
+    pushCandidate(rebuiltPayload);
+    pushCandidate(repairJsonCandidate(rebuiltPayload));
+  }
+
+  for (const candidate of candidates) {
+    try {
+      const normalized = normalizeGeneratedPayload(JSON.parse(candidate));
+      if (normalized) return normalized;
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+}
+
 async function getExactGlobalCount(supabaseAdmin: any, specialty: string): Promise<number> {
   const { count } = await supabaseAdmin
     .from("questions_bank")
@@ -185,41 +294,11 @@ FORMATO JSON OBRIGATÓRIO:
     }
 
     const data = await response.json();
-    const rawContent = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
-    const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-    
-    let parsed: any = null;
-    // Strategy 1: direct parse
-    try { parsed = JSON.parse(cleaned); } catch {}
-    // Strategy 2: find outermost JSON object with questions
-    if (!parsed) {
-      const jsonMatch = cleaned.match(/\{[\s\S]*"questions"\s*:\s*\[[\s\S]*\]\s*[\s\S]*\}/);
-      if (jsonMatch) { try { parsed = JSON.parse(jsonMatch[0]); } catch {} }
-    }
-    // Strategy 3: fix common JSON issues (trailing commas, unescaped newlines)
-    if (!parsed) {
-      try {
-        const fixed = cleaned
-          .replace(/,\s*([}\]])/g, '$1')           // trailing commas
-          .replace(/\n/g, '\\n')                    // unescaped newlines in strings
-          .replace(/\\n\s*\\n/g, '\\n')             // double newlines
-          .replace(/\t/g, '\\t');                    // tabs
-        parsed = JSON.parse(fixed);
-      } catch {}
-    }
-    // Strategy 4: extract questions array directly
-    if (!parsed) {
-      const arrMatch = cleaned.match(/"questions"\s*:\s*(\[[\s\S]*?\])\s*[,}]/);
-      if (arrMatch) {
-        try {
-          const questions = JSON.parse(arrMatch[1].replace(/,\s*([}\]])/g, '$1'));
-          parsed = { questions, flashcards: [] };
-        } catch {}
-      }
-    }
+    const rawContent = String(data.choices?.[0]?.message?.content || "");
+    let parsed = parseGeneratedPayload(rawContent);
 
     if (!parsed) {
-      console.error(`JSON parse failed for ${specialty}, content length: ${cleaned.length}, first 200 chars: ${cleaned.slice(0, 200)}`);
+      console.error(`JSON parse failed for ${specialty}, content length: ${rawContent.length}, first 300 chars: ${sanitizeAiContent(rawContent).slice(0, 300)}`);
       // Retry once with a simpler prompt
       try {
         console.log(`[${specialty}] Retrying with simplified prompt...`);
@@ -229,17 +308,13 @@ FORMATO JSON OBRIGATÓRIO:
           maxRetries: 1,
           messages: [
             { role: "system", content: "Responda APENAS com JSON válido. Sem markdown, sem texto extra." },
-            { role: "user", content: `Gere ${count} questões de múltipla escolha sobre ${specialty} para residência médica em PORTUGUÊS BRASILEIRO.\n\nFormato:\n{"questions":[{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","topic":"${specialty}","difficulty":3}],"flashcards":[]}` },
+            { role: "user", content: `Gere ${questionCount} questões de múltipla escolha sobre ${specialty} para residência médica em PORTUGUÊS BRASILEIRO.\n\nFormato:\n{"questions":[{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","topic":"${specialty}","difficulty":3}],"flashcards":[]}` },
           ],
         });
         if (retryResponse.ok) {
           const retryData = await retryResponse.json();
-          const retryRaw = sanitizeAiContent(retryData.choices?.[0]?.message?.content || "");
-          const retryCleaned = retryRaw.replace(/```json\n?/g, "").replace(/```/g, "").replace(/,\s*([}\]])/g, '$1').trim();
-          try { parsed = JSON.parse(retryCleaned); } catch {
-            const rm = retryCleaned.match(/\{[\s\S]*"questions"\s*:\s*\[[\s\S]*\]/);
-            if (rm) { try { parsed = JSON.parse(rm[0] + '}'); } catch {} }
-          }
+          const retryRawContent = String(retryData.choices?.[0]?.message?.content || "");
+          parsed = parseGeneratedPayload(retryRawContent);
         }
       } catch (retryErr) {
         console.error(`[${specialty}] Retry also failed:`, retryErr);
@@ -381,13 +456,12 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
     const token = authHeader.replace("Bearer ", "");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     let userId: string;
     
     if (token === serviceRoleKey) {
@@ -395,13 +469,28 @@ serve(async (req) => {
         .from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
       userId = adminRole?.user_id || "92736dea-6422-48ff-8330-de9f0d1094e9";
     } else {
-      const { data: { user } } = await supabaseAdmin.auth.getUser(token);
-      if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+      const uid = claimsData?.claims?.sub as string | undefined;
+      if (claimsError || !uid) {
+        console.error("[bulk-generate-content] Auth error:", claimsError?.message);
+        return new Response(JSON.stringify({ error: "Token inválido. Faça login novamente." }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       
       const { data: roleData } = await supabaseAdmin
-        .from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
-      if (!roleData) return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: corsHeaders });
-      userId = user.id;
+        .from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle();
+      if (!roleData) {
+        return new Response(JSON.stringify({ error: "Acesso negado. Apenas administradores." }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      userId = uid;
     }
 
     const body = await req.json().catch(() => ({}));

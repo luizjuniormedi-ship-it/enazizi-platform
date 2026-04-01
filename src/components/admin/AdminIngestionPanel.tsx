@@ -225,13 +225,20 @@ const AdminIngestionPanel = () => {
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
             body: JSON.stringify({ equalize: true, specialty: spec.name, maxSpecialties: 1, batchSize: 25, importLimit: 50 }),
           });
-          const data = await resp.json();
+          const raw = await resp.text();
+          let data: any = {};
+          try { data = raw ? JSON.parse(raw) : {}; } catch { data = {}; }
+          if (!resp.ok) {
+            throw new Error(data?.error || `Falha ao equalizar ${spec.name} (${resp.status})`);
+          }
           const added = (data?.total_imported || 0) + (data?.total_generated || 0);
           log.push({ specialty: spec.name, added });
           const qRemaining = totalQRemaining - log.reduce((s, l) => s + l.added, 0);
           setEqProgress(prev => prev ? { ...prev, percent: Math.round(((i + 1) / total) * 100), log: [...log], questionsRemaining: Math.max(0, qRemaining) } : prev);
-        } catch {
+        } catch (error) {
           log.push({ specialty: spec.name, added: 0 });
+          setEqProgress(prev => prev ? { ...prev, log: [...log] } : prev);
+          throw new Error(error instanceof Error ? `${spec.name}: ${error.message}` : `Falha ao equalizar ${spec.name}`);
         }
       }
 
