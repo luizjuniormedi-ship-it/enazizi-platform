@@ -2,11 +2,19 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
+interface SignUpOptions {
+  displayName: string;
+  userType?: string;
+  faculdade?: string;
+  phone?: string;
+  periodo?: number;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, displayName: string, userType?: string, faculdade?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, options: SignUpOptions) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
@@ -81,10 +89,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, displayName: string, userType?: string, faculdade?: string) => {
-    const metadata: Record<string, string> = { display_name: displayName };
-    if (userType) metadata.user_type = userType;
-    if (faculdade) metadata.faculdade = faculdade;
+  const signUp = async (email: string, password: string, options: SignUpOptions) => {
+    const metadata: Record<string, string | number> = { display_name: options.displayName };
+    if (options.userType) metadata.user_type = options.userType;
+    if (options.faculdade) metadata.faculdade = options.faculdade;
+    if (options.phone) metadata.phone = options.phone;
+    if (options.periodo) metadata.periodo = options.periodo;
 
     const { error } = await supabase.auth.signUp({
       email,
