@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { GraduationCap, Plus, Users, FileText, BarChart3, Loader2, Clock, CheckCircle, Send, Sparkles, Database, ChevronDown, ChevronUp, Eye, Trash2, PenLine, CheckSquare, Square, Video } from "lucide-react";
+import { GraduationCap, Plus, Users, FileText, BarChart3, Loader2, Clock, CheckCircle, Send, Sparkles, Database, ChevronDown, ChevronUp, Eye, Trash2, PenLine, CheckSquare, Square, Video, Gauge } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import ClassAnalytics from "@/components/professor/ClassAnalytics";
@@ -47,6 +48,8 @@ const ProfessorDashboard = () => {
   const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([]);
   const [useAI, setUseAI] = useState(true);
   const [questionMode, setQuestionMode] = useState<"ai" | "manual">("ai");
+  const [difficulty, setDifficulty] = useState("intermediario");
+  const [difficultyMix, setDifficultyMix] = useState({ facil: 20, intermediario: 50, dificil: 30 });
 
   // Manual question form
   const [manualStatement, setManualStatement] = useState("");
@@ -144,7 +147,13 @@ const ProfessorDashboard = () => {
         const subs = subtopics[t]?.trim();
         return subs ? `${t} (${subs})` : t;
       });
-      const res = await callAPI({ action: "generate_questions", topics: topicsWithSubs, count: parseInt(questionCount) });
+      const res = await callAPI({
+        action: "generate_questions",
+        topics: topicsWithSubs,
+        count: parseInt(questionCount),
+        difficulty,
+        difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
+      });
       setGeneratedQuestions(res.questions || []);
       toast({ title: "Questões geradas!", description: `${res.questions?.length || 0} questões criadas pela IA.` });
     } catch (e) {
@@ -220,6 +229,8 @@ const ProfessorDashboard = () => {
     setSelectedBankQuestions([]);
     setSelectedStudentIds([]);
     setQuestionMode("ai");
+    setDifficulty("intermediario");
+    setDifficultyMix({ facil: 20, intermediario: 50, dificil: 30 });
     setManualStatement("");
     setManualOptions(["", "", "", "", ""]);
     setManualCorrect("0");
@@ -577,6 +588,76 @@ const ProfessorDashboard = () => {
                 </div>
               </div>
 
+              {/* Difficulty selector */}
+              {questionMode === "ai" && (
+                <div className="space-y-3 border border-border rounded-lg p-3 bg-muted/20">
+                  <div className="flex items-center gap-2">
+                    <Gauge className="h-4 w-4 text-primary" />
+                    <Label className="text-sm font-semibold">Nível de Dificuldade</Label>
+                  </div>
+                  <Select value={difficulty} onValueChange={setDifficulty}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="facil">🟢 Fácil</SelectItem>
+                      <SelectItem value="intermediario">🟡 Intermediário</SelectItem>
+                      <SelectItem value="dificil">🔴 Difícil</SelectItem>
+                      <SelectItem value="misto">🎯 Misto (personalizado)</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {difficulty === "misto" && (
+                    <div className="space-y-3">
+                      {([
+                        { key: "facil" as const, label: "Fácil", emoji: "🟢", color: "text-emerald-500" },
+                        { key: "intermediario" as const, label: "Intermediário", emoji: "🟡", color: "text-yellow-500" },
+                        { key: "dificil" as const, label: "Difícil", emoji: "🔴", color: "text-red-500" },
+                      ]).map(({ key, label, emoji, color }) => (
+                        <div key={key} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span>{emoji} {label}</span>
+                            <span className={`font-bold ${color}`}>{difficultyMix[key]}%</span>
+                          </div>
+                          <Slider
+                            value={[difficultyMix[key]]}
+                            min={0}
+                            max={100}
+                            step={5}
+                            onValueChange={([val]) => {
+                              const others = (["facil", "intermediario", "dificil"] as const).filter((k) => k !== key);
+                              const remaining = 100 - val;
+                              const otherTotal = difficultyMix[others[0]] + difficultyMix[others[1]];
+                              let v0: number, v1: number;
+                              if (otherTotal === 0) {
+                                v0 = Math.round(remaining / 2);
+                                v1 = remaining - v0;
+                              } else {
+                                v0 = Math.round((difficultyMix[others[0]] / otherTotal) * remaining);
+                                v1 = remaining - v0;
+                              }
+                              setDifficultyMix({ ...difficultyMix, [key]: val, [others[0]]: v0, [others[1]]: v1 });
+                            }}
+                          />
+                        </div>
+                      ))}
+
+                      {/* Preview */}
+                      <div className="bg-secondary/50 rounded-md p-2 text-xs text-center">
+                        <span className="font-medium">{questionCount} questões →</span>{" "}
+                        <span className="text-emerald-500">{Math.round(parseInt(questionCount) * difficultyMix.facil / 100)} fáceis</span>,{" "}
+                        <span className="text-yellow-500">{Math.round(parseInt(questionCount) * difficultyMix.intermediario / 100)} intermediárias</span>,{" "}
+                        <span className="text-red-500">{parseInt(questionCount) - Math.round(parseInt(questionCount) * difficultyMix.facil / 100) - Math.round(parseInt(questionCount) * difficultyMix.intermediario / 100)} difíceis</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {difficulty !== "misto" && (
+                    <p className="text-xs text-muted-foreground">
+                      Todas as {questionCount} questões serão de nível {difficulty === "facil" ? "fácil" : difficulty === "intermediario" ? "intermediário" : "difícil"}.
+                    </p>
+                  )}
+                </div>
+              )}
+
               {questionMode === "ai" && (
                 <Button onClick={generateQuestionsAI} disabled={generating || selectedTopics.length === 0} className="gap-2 w-full">
                   {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
@@ -685,8 +766,17 @@ const ProfessorDashboard = () => {
                             <div key={globalIdx} className="bg-secondary/50 rounded-lg p-3 text-xs flex items-start justify-between gap-2">
                               <div className="min-w-0 flex-1">
                                 <p className="font-medium mb-1">Q{globalIdx + 1}: {q.statement?.slice(0, 120)}...</p>
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1.5 flex-wrap">
                                   <Badge variant="outline" className="text-[9px]">{q.topic || block}</Badge>
+                                  {q.difficulty_level && (
+                                    <Badge className={`text-[9px] ${
+                                      q.difficulty_level === "facil" ? "bg-emerald-500/20 text-emerald-700 border-emerald-300" :
+                                      q.difficulty_level === "dificil" ? "bg-red-500/20 text-red-700 border-red-300" :
+                                      "bg-yellow-500/20 text-yellow-700 border-yellow-300"
+                                    }`} variant="outline">
+                                      {q.difficulty_level === "facil" ? "🟢 Fácil" : q.difficulty_level === "dificil" ? "🔴 Difícil" : "🟡 Intermediário"}
+                                    </Badge>
+                                  )}
                                   <span className="text-muted-foreground">Gabarito: {String.fromCharCode(65 + q.correct_index)}</span>
                                 </div>
                               </div>

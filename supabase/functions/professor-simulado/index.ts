@@ -44,14 +44,38 @@ serve(async (req) => {
     }
     switch (action) {
       case "generate_questions": {
-        const { topics, count = 10 } = params;
+        const { topics, count = 10, difficulty = "intermediario", difficultyMix } = params;
         if (!topics || !topics.length) throw new Error("Selecione pelo menos um tema");
 
         const topicList = topics.join(", ");
         const perTopic = Math.max(1, Math.floor(count / topics.length));
+
+        // Build difficulty instruction
+        let difficultyInstruction = "";
+        if (difficulty === "misto" && difficultyMix) {
+          const nFacil = Math.round(count * (difficultyMix.facil || 0) / 100);
+          const nInterm = Math.round(count * (difficultyMix.intermediario || 0) / 100);
+          const nDificil = count - nFacil - nInterm;
+          difficultyInstruction = `DISTRIBUIÇÃO DE DIFICULDADE OBRIGATÓRIA:
+- ${nFacil} questões de nível FÁCIL (conceitos básicos, diagnóstico direto, caso clínico simples)
+- ${nInterm} questões de nível INTERMEDIÁRIO (raciocínio clínico moderado, diagnósticos diferenciais)
+- ${nDificil} questões de nível DIFÍCIL (casos complexos, pegadinhas de prova, múltiplas comorbidades, conduta em emergência)
+Cada questão DEVE ter o campo "difficulty_level" com valor "facil", "intermediario" ou "dificil".`;
+        } else {
+          const levelMap: Record<string, string> = {
+            facil: "FÁCIL (conceitos básicos, diagnóstico direto, caso clínico simples)",
+            intermediario: "INTERMEDIÁRIO (raciocínio clínico moderado, diagnósticos diferenciais)",
+            dificil: "DIFÍCIL (casos complexos, pegadinhas de prova, múltiplas comorbidades)",
+          };
+          difficultyInstruction = `NÍVEL DE DIFICULDADE: Todas as ${count} questões devem ser de nível ${levelMap[difficulty] || levelMap.intermediario}.
+Cada questão DEVE ter o campo "difficulty_level" com valor "${difficulty}".`;
+        }
+
         const prompt = `Gere exatamente ${count} questões objetivas de múltipla escolha (A-E) para residência médica sobre: ${topicList}.
 
 IDIOMA OBRIGATÓRIO: TUDO deve ser escrito em PORTUGUÊS BRASILEIRO. Enunciados, alternativas, explicações, blocos — absolutamente TUDO em pt-BR. NUNCA use inglês.
+
+${difficultyInstruction}
 
 ${topics.length > 1 ? `ORGANIZAÇÃO POR BLOCOS: Distribua as questões proporcionalmente entre os temas (~${perTopic} por tema). Cada questão DEVE ter o campo "block" indicando o bloco temático ao qual pertence (ex: "Cardiologia", "Farmacologia").` : `Todas as questões pertencem ao bloco "${topics[0]}". Cada questão DEVE ter o campo "block" com o valor "${topics[0]}".`}
 
@@ -63,7 +87,8 @@ Para cada questão, retorne APENAS um array JSON válido no formato:
     "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
     "correct_index": 0,
     "explanation": "Explicação detalhada da resposta correta em português",
-    "topic": "Tema/subtema específico da questão"
+    "topic": "Tema/subtema específico da questão",
+    "difficulty_level": "facil|intermediario|dificil"
   }
 ]
 
