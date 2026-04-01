@@ -286,7 +286,8 @@ const Simulados = () => {
           (q) =>
             q.options.length >= 4 &&
             q.statement.length > 10 &&
-            !NON_MEDICAL_CONTENT_REGEX.test(q.statement),
+            !NON_MEDICAL_CONTENT_REGEX.test(q.statement) &&
+            !/\b(imagem abaixo|figura abaixo|vide imagem|observe a imagem|na imagem|na figura|ECG abaixo|tomografia abaixo|radiografia abaixo|imagem a seguir|figura a seguir|conforme a imagem|conforme a figura)\b/i.test(q.statement),
         )
         .sort((a, b) => {
           const priorityDiff = getSourcePriority(a.source) - getSourcePriority(b.source);
