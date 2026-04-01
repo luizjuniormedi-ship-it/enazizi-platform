@@ -363,28 +363,20 @@ Deno.serve(async (req) => {
     let skipped = 0;
     let errors = 0;
 
-    // Build dedup keys from incoming questions
-    const incomingKeys = questions
-      .filter((q: any) => q.statement)
-      .map((q: any) => normalizeText(q.statement).slice(0, 80));
-
-    // Query existing questions matching any of the incoming keys (no limit)
+    // Load ALL existing question keys for deduplication (paginated)
     const existingMap = new Map<string, { id: string; statement: string }>();
-    const BATCH = 200;
-    for (let i = 0; i < incomingKeys.length; i += BATCH) {
-      const batch = incomingKeys.slice(i, i + BATCH);
-      // Use ilike patterns on normalized first 80 chars
-      for (const key of batch) {
-        const searchPrefix = key.slice(0, 60);
-        if (searchPrefix.length < 20) continue;
-        const { data: matches } = await supabase.from("questions_bank")
-          .select("id, statement")
-          .ilike("statement", `%${searchPrefix.slice(0, 40)}%`)
-          .limit(50);
-        for (const e of (matches || [])) {
-          existingMap.set(normalizeText(e.statement).slice(0, 80), e);
-        }
+    let offset = 0;
+    const PAGE = 1000;
+    while (true) {
+      const { data: page } = await supabase.from("questions_bank")
+        .select("id, statement")
+        .range(offset, offset + PAGE - 1);
+      if (!page || page.length === 0) break;
+      for (const e of page) {
+        existingMap.set(normalizeText(e.statement).slice(0, 80), e);
       }
+      if (page.length < PAGE) break;
+      offset += PAGE;
     }
 
     const adminUserId = userId || "00000000-0000-0000-0000-000000000000";
