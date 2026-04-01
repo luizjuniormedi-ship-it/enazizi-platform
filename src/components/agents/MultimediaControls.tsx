@@ -230,25 +230,6 @@ export default function MultimediaControls({ text, compact }: MultimediaControls
 
         {statusIcon(audioStatus, audioError)}
 
-        <div className="w-px h-4 bg-border/40 mx-1" />
-
-        {/* Cinematic Avatar button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-[10px] sm:text-xs gap-1 text-muted-foreground hover:text-accent"
-          onClick={handleAvatarClick}
-          disabled={avatarStatus === "generating"}
-        >
-          {avatarStatus === "generating" ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <Film className="h-3 w-3" />
-          )}
-          <span>{avatarStatus === "generating" ? "Preparando tutor..." : "Assistir explicação"}</span>
-        </Button>
-
-        {statusIcon(avatarStatus, avatarError)}
 
         {/* Speed indicator when not playing */}
         {!isPlaying && speed !== 1 && (
