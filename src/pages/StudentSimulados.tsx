@@ -212,6 +212,32 @@ const StudentSimulados = () => {
     loadVideoRooms();
   }, [loadVideoRooms]);
 
+  // Load error bank
+  const loadErrorBank = useCallback(async () => {
+    if (!user) return;
+    setErrorBankLoading(true);
+    try {
+      const { data: errors, error } = await supabase
+        .from("error_bank")
+        .select("*")
+        .eq("user_id", user.id)
+        .in("tipo_questao", ["simulado", "diagnostico"])
+        .eq("dominado", false)
+        .order("vezes_errado", { ascending: false });
+
+      if (error) throw error;
+      setErrorBankItems(errors || []);
+    } catch (e) {
+      console.error("Error loading error bank:", e);
+    } finally {
+      setErrorBankLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadErrorBank();
+  }, [loadErrorBank]);
+
   // Timer
   useEffect(() => {
     if (phase !== "quiz" || timeLeft <= 0) return;
