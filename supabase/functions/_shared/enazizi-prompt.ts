@@ -1016,6 +1016,12 @@ LEMBRETE FINAL DE VERIFICAÇÃO (REFORÇO)
 ==================================================
 ANTES de enviar a resposta, confirme:
 ✅ Fisiopatologia com mediadores moleculares
+✅ Epidemiologia com dados numéricos (incidência, prevalência, mortalidade)
+✅ Critérios diagnósticos / classificação / estadiamento citados
+✅ Sinais de alarme e critérios de internação listados
+✅ Fluxograma decisório incluído (Se X → Y)
+✅ Comparação farmacológica em tabela (quando ≥2 drogas da mesma classe)
+✅ Populações especiais mencionadas (gestante, idoso, criança, nefropata, hepatopata)
 ✅ Eventos adversos com mecanismo
 ✅ Anamnese com perfil único (não repetido)
 ✅ Limite respeitado conforme profundidade_resposta (curto/medio/aprofundado)
