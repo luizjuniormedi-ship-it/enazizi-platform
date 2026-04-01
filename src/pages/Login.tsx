@@ -70,9 +70,9 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-background">
+    <div className="min-h-[100dvh] overflow-y-auto flex flex-col lg:flex-row bg-background">
       {/* Left panel - Hero */}
-      <div className="lg:w-1/2 bg-gradient-to-br from-primary/20 via-primary/10 to-background p-6 sm:p-10 lg:p-14 flex flex-col justify-center">
+      <div className="lg:w-1/2 bg-gradient-to-br from-primary/20 via-primary/10 to-background p-4 sm:p-10 lg:p-14 flex flex-col justify-center">
         <Link to="/" className="inline-flex items-center gap-2 mb-6 lg:mb-10">
           <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center glow">
             <Brain className="h-6 w-6 text-primary" />
@@ -99,7 +99,7 @@ const Login = () => {
         </div>
 
         {/* Features list */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:gap-3">
+        <div className="hidden sm:grid sm:grid-cols-2 gap-2 lg:gap-3">
           {features.map((f) => (
             <div key={f.label} className="flex items-center gap-2 text-sm">
               <f.icon className="h-4 w-4 text-primary shrink-0" />
