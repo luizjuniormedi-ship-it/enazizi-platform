@@ -51,7 +51,22 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       if (data?.is_blocked) {
         setProfileStatus("blocked");
       } else {
-        setProfileStatus(data?.status || "pending");
+        const userType = data?.user_type || "estudante";
+        const profileComplete = isProfileComplete({
+          phone: data?.phone,
+          display_name: data?.display_name,
+          periodo: data?.periodo,
+          faculdade: data?.faculdade,
+          user_type: userType,
+        });
+
+        // Auto-activate professors who have complete profiles
+        if (userType === "professor" && profileComplete && data?.status === "pending") {
+          await supabase.from("profiles").update({ status: "active" }).eq("user_id", user.id);
+          setProfileStatus("active");
+        } else {
+          setProfileStatus(data?.status || "pending");
+        }
       }
       // Check if profile is incomplete or has invalid data
       const userType = data?.user_type || "estudante";
@@ -73,7 +88,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       // Check onboarding version for v2 flow
       const obVersion = (data as any)?.onboarding_version ?? 1;
       setOnboardingVersion(obVersion);
-      if (obVersion < 2 && !incomplete && data?.status === "active") {
+      const effectiveStatus = userType === "professor" && !incomplete && data?.status === "pending" ? "active" : data?.status;
+      if (obVersion < 2 && !incomplete && effectiveStatus === "active") {
         const welcomeSeen = localStorage.getItem("enazizi_v2_welcome_seen") === "true";
         const onboardingDone = localStorage.getItem("enazizi_v2_onboarding_done") === "true";
         if (!welcomeSeen) setShowWelcome(true);
@@ -126,6 +142,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       }
       if (isProfessor) {
         updateData.faculdade = formFaculdade;
+        updateData.status = "active"; // Auto-activate professors
         // Insert professor role
         await supabase.from("user_roles").upsert(
           { user_id: user.id, role: "professor" as any },
