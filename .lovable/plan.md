@@ -1,33 +1,58 @@
 
 
-# Exclusão de Atividades no Painel do Professor + Proficiência
+# Fix: Dashboard do Equalizador Travado / Não Atualiza
 
-## Situação Atual
+## Causa raiz
 
-Analisei o código em profundidade. A exclusão **já funciona** para os 3 tipos de atividade:
+1. **Limite de 1000 linhas**: `loadDistribution()` faz `supabase.from("questions_bank").select("topic")` sem paginação. Com 3000+ questões, o Supabase retorna apenas 1000 linhas, gerando contagens erradas e déficits inflados.
 
-1. **Simulados** — Botão `Trash2` em `ProfessorDashboard.tsx` (linha 413) chama `delete_simulado` na edge function, que exclui `teacher_simulado_results` e depois `teacher_simulados`
-2. **Casos Clínicos** — Botão `Trash2` em `ProfessorPlantao.tsx` (linha 302) chama `delete_clinical_case`, que exclui `teacher_clinical_case_results` e depois `teacher_clinical_cases`
-3. **Temas de Estudo** — Botão `Trash2` em `TeacherStudyAssignments.tsx` (linha 226) chama `delete_study_assignment`, que exclui `teacher_study_assignment_results` e depois `teacher_study_assignments`
+2. **Não atualiza durante o processo**: O `loadDistribution()` só é chamado no final (`linha 247`). Se o equalizador falha no meio, a distribuição fica estale.
 
-A aba Proficiência do aluno lê diretamente de `teacher_simulado_results`, `teacher_clinical_case_results` e `teacher_study_assignment_results`. Ao excluir pelo painel do professor, os resultados são removidos em cascata, logo **desaparecem automaticamente da Proficiência**.
+3. **Não atualiza após erro**: O bloco `catch` (linha 248) não chama `loadDistribution()`.
 
-## Problema Real: Erro de Build
+## Correção
 
-O build está falhando. Preciso corrigir o erro de build que não está relacionado à funcionalidade de exclusão.
+### 1. `AdminIngestionPanel.tsx` — Substituir query por contagem agregada via RPC ou loop paginado
 
-## Plano
+Trocar o `select("topic")` por uma query que use `select("topic", { count: "exact" })` com agrupamento, ou fazer paginação completa:
 
-### 1. Corrigir o erro de build
+```typescript
+// Opção: buscar contagens com query paginada
+const loadDistribution = async () => {
+  let allTopics: string[] = [];
+  let from = 0;
+  const PAGE = 1000;
+  while (true) {
+    const { data } = await supabase.from("questions_bank")
+      .select("topic")
+      .eq("is_global", true)
+      .range(from, from + PAGE - 1);
+    if (!data || data.length === 0) break;
+    allTopics.push(...data.map(r => r.topic || "Outros"));
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  // ... contar normalmente com allTopics
+};
+```
 
-Adicionar `DialogDescription` ao segundo Dialog (Results Dialog, linha 868) em `ProfessorDashboard.tsx` — atualmente só tem `DialogTitle` sem `DialogDescription`, o que pode causar erro de acessibilidade.
+### 2. Atualizar distribuição após cada batch e após erro
 
-### 2. Verificar se há outros arquivos com problema
+- Dentro do loop `for` (após cada especialidade processada), chamar `loadDistribution()` para atualizar as contagens em tempo real
+- No bloco `finally` (linha 250), sempre chamar `loadDistribution()` para garantir atualização mesmo em caso de erro
 
-Checar se algum outro arquivo modificado recentemente tem erros de TypeScript ou JSX.
+### 3. Adicionar botão de refresh manual
+
+Adicionar um botão de atualizar (ícone RefreshCw) ao lado do título da distribuição para o admin poder forçar reload a qualquer momento.
+
+## Arquivos alterados
+
+- `src/components/admin/AdminIngestionPanel.tsx`
 
 ## Resultado
 
-- Build corrigido
-- Exclusão de atividades no painel do professor continua funcionando normalmente com cascata para proficiência
+- Contagens corretas mesmo com 3000+ questões no banco
+- Dashboard atualiza em tempo real durante a equalização
+- Sempre atualiza após erro ou pausa
+- Botão de refresh manual disponível
 
