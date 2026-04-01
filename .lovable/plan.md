@@ -1,53 +1,40 @@
 
+# Professor: Acesso Direto sem Aprovação Admin
 
-# Correção do BI do Professor + Resultados Individuais
+## Problema
 
-## Problemas Identificados
-
-### 1. Bug crítico: Cálculo de desempenho por tópico totalmente errado
-O código da edge function `professor_bi` compara `answers[idx]` (que é um **objeto** com `{is_correct, selected, correct_index, topic}`) diretamente com `q.correct_index` (um **número**). Resultado: **todos os tópicos aparecem com 0% de acerto**, porque a comparação objeto === número é sempre falsa. Isso afeta:
-- Desempenho por Tópico
-- Assuntos Deficitários (todos aparecem deficitários)
-- Assuntos Dominados (nenhum aparece)
-- Cruzamento Tema × Aluno
-
-### 2. Return duplicado no edge function
-Há dois `return ok(...)` consecutivos no `professor_bi` (linhas 1261 e 1281). O segundo é código morto e falta os novos campos (`student_matrix`, `student_ranking`, etc.).
-
-### 3. BI confuso — layout e clareza
-O painel tem muitas seções empilhadas sem hierarquia visual clara. O professor não consegue distinguir facilmente o que é importante.
-
-### 4. Resultados: drill-down deveria funcionar mas pode ter dados vazios
-O código do dialog de resultados já tem lógica de expansão por aluno com questão-a-questão, mas depende de `questions_json` estar retornando corretamente e `answers_json` estar no formato correto.
+Atualmente, após cadastro, o professor fica preso na tela "Aguardando Aprovação" (status `pending`) igual ao aluno. O professor deveria poder acessar a plataforma imediatamente após completar o cadastro com sua universidade, sem precisar de aprovação do administrador.
 
 ## Mudanças
 
-### `supabase/functions/professor-simulado/index.ts`
+### 1. `src/components/auth/ProtectedRoute.tsx`
 
-1. **Corrigir o cálculo de tópicos** — usar `answers[idx].is_correct` em vez de comparar objeto com número:
-   - Linha ~918: `if (studentAnswer?.is_correct)` em vez de `if (studentAnswer === q.correct_index)`
-   - Linha ~1207: mesma correção no topic_student_cross
-   
-2. **Remover return duplicado** (linhas 1281-1296) — código morto
+Na verificação de `profileStatus === "pending"` (linha 311), adicionar exceção para professores:
+- Buscar `user_type` do profile (já é carregado na query)
+- Se `user_type === "professor"` e profile completo (faculdade preenchida), pular a tela de aprovação e deixar acessar normalmente
+- Auto-atualizar o status para `active` via update no profile quando professor completa cadastro
 
-### `src/components/professor/ProfessorBIPanel.tsx`
+### 2. `src/components/auth/ProtectedRoute.tsx` — `handleOnboardingSave`
 
-1. **Melhorar hierarquia visual**: 
-   - Colocar KPIs mais destacados com cores mais fortes
-   - Seção "Alunos em Risco" com visual mais impactante
-   - Tornar a tabela "Resultados por Atividade" clicável para expandir erros do aluno (usando `questions_json` do simulado)
-   
-2. **Adicionar resumo executivo** no topo — um parágrafo auto-gerado com os principais insights (X alunos em risco, tema mais fraco: Y, média geral: Z%)
+Quando o professor salva o cadastro:
+- Além dos dados atuais, também setar `status: 'active'` no update do profile
+- Isso garante que o professor não fique travado em "pending" após completar
 
-3. **Melhorar tab labels e banners** — mais concisos e com ícones mais claros
+### 3. Sem mudanças no `Register.tsx`
 
-### `src/pages/ProfessorDashboard.tsx`
+O formulário de registro já tem a opção professor com seleção de universidade e já passa `user_type` e `faculdade` no signup. O trigger `handle_new_user` já insere a role `professor` automaticamente.
 
-1. **Garantir que o dialog de resultados mostra erros** — verificar que o `questions_json` está sendo passado corretamente e que o formato de `answers_json` é processado com as propriedades corretas (`is_correct`, `selected`, `correct_index`, `topic`)
+## Fluxo Resultante
 
-## Impacto
+1. Professor se cadastra → seleciona universidade no registro
+2. Confirma email → faz login
+3. Se perfil já está completo (nome, phone, faculdade): acesso direto, status auto-ativado
+4. Se perfil incompleto: mostra tela de completar cadastro → ao salvar, status vira `active` → acesso direto
+5. Nunca mostra "Aguardando Aprovação" para professor
 
-- **BI**: Dados de tópicos passam a refletir a realidade (antes tudo aparecia como 0% por bug de comparação)
-- **Resultados**: Professor consegue expandir cada aluno e ver questão a questão os erros com gabarito comentado
-- **UX**: Layout mais limpo e hierárquico no BI
+## Detalhes Técnicos
 
+- O `isProfileComplete` já valida faculdade para professor
+- A role `professor` já é inserida pelo trigger `handle_new_user`
+- O `ProfessorRoute` já verifica `user_roles` — acesso ao painel professor funciona automaticamente
+- Nenhuma migração necessária
