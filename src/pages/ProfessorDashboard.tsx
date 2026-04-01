@@ -197,10 +197,11 @@ const ProfessorDashboard = () => {
   };
 
   const viewResults = async (simulado: any) => {
-    setResultsDialog({ open: true, simulado, results: [], loading: true });
+    setResultsDialog({ open: true, simulado, results: [], loading: true, questions_json: [] });
+    setExpandedStudent(null);
     try {
       const res = await callAPI({ action: "get_simulado_results", simulado_id: simulado.id });
-      setResultsDialog((prev) => ({ ...prev, results: res.results || [], loading: false }));
+      setResultsDialog((prev) => ({ ...prev, results: res.results || [], questions_json: res.questions_json || [], loading: false }));
     } catch {
       setResultsDialog((prev) => ({ ...prev, loading: false }));
     }
