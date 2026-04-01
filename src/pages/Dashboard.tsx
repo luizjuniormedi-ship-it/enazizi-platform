@@ -113,10 +113,6 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-4 animate-fade-in pb-16 lg:pb-0">
-      {/* System alerts (admin only) */}
-      <SafeCard name="AdminAlerts" fallback={null}>
-        <AdminSystemAlerts />
-      </SafeCard>
 
       {/* Popup queue — lazy loaded, each checks internally if should show */}
       <Suspense fallback={null}>
