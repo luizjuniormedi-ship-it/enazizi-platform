@@ -18,10 +18,14 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const sb = createClient(supabaseUrl, serviceRoleKey);
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await sb.auth.getUser(token);
+    // Use anon-key client with user's token for auth validation (avoids session_not_found with service role)
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Token inválido" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
