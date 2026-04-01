@@ -229,6 +229,8 @@ const ProfessorDashboard = () => {
     setSelectedBankQuestions([]);
     setSelectedStudentIds([]);
     setQuestionMode("ai");
+    setDifficulty("intermediario");
+    setDifficultyMix({ facil: 20, intermediario: 50, dificil: 30 });
     setManualStatement("");
     setManualOptions(["", "", "", "", ""]);
     setManualCorrect("0");
