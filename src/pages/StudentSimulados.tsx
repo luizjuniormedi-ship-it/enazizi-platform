@@ -369,12 +369,15 @@ const StudentSimulados = () => {
           <p className="text-muted-foreground text-sm">Simulados e plantões atribuídos pelo seu professor.</p>
         </div>
 
-        <Tabs defaultValue={searchParams.get("tab") === "temas" ? "temas" : "simulados"}>
-          <TabsList>
+        <Tabs defaultValue={searchParams.get("tab") === "temas" ? "temas" : searchParams.get("tab") === "erros" ? "erros" : "simulados"}>
+          <TabsList className="flex-wrap h-auto gap-1">
             <TabsTrigger value="simulados">📝 Simulados ({assigned.length})</TabsTrigger>
             <TabsTrigger value="plantao">🏥 Plantões ({clinicalCases.length})</TabsTrigger>
             <TabsTrigger value="temas">📖 Temas ({studyAssignments.length})</TabsTrigger>
-            <TabsTrigger value="sala">📹 Sala de Aula ({videoRooms.filter((r: any) => r.status === "active").length})</TabsTrigger>
+            <TabsTrigger value="sala">📹 Sala ({videoRooms.filter((r: any) => r.status === "active").length})</TabsTrigger>
+            <TabsTrigger value="erros" className="gap-1">
+              🎯 Erros {errorBankItems.length > 0 && <Badge variant="destructive" className="text-[10px] h-4 px-1">{errorBankItems.length}</Badge>}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="simulados" className="space-y-4 mt-4">
