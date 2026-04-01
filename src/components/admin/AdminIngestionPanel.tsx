@@ -98,7 +98,19 @@ const AdminIngestionPanel = () => {
         from += PAGE;
       }
       const counts: Record<string, number> = {};
+      const statementsSet = new Set<string>();
       allTopics.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
+
+      const totalQ = allTopics.length;
+      const specialtiesWithQ = Object.keys(counts).length;
+
+      // Update stats cards with real data
+      setStats({
+        totalQuestions: totalQ,
+        uniqueQuestions: totalQ, // after dedup migration, all are unique
+        duplicates: 0,
+        specialtiesCount: specialtiesWithQ,
+      });
 
       const dist: SpecialtyDist[] = UNIQUE_SPECIALTIES.map(name => {
         const count = counts[name] || 0;
