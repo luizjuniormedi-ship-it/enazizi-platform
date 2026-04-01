@@ -111,6 +111,30 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
   const profVsPlat = data.proficiency_vs_platform || [];
   const activityHeatmap = data.activity_heatmap || [];
 
+  // Executive summary
+  const execSummary = (() => {
+    const parts: string[] = [];
+    const avg = prof.kpis?.avg_score ?? 0;
+    const total = prof.kpis?.total_activities ?? 0;
+    const completion = prof.kpis?.completion_rate ?? 0;
+    const defCount = prof.deficient_topics?.length ?? 0;
+    const masteredCount = prof.mastered_topics?.length ?? 0;
+    const riskCount = atRisk.length;
+
+    if (total === 0) return "Nenhuma atividade criada ainda. Crie simulados, casos clínicos ou temas de estudo para começar a ver os dados.";
+    
+    parts.push(`${total} atividades criadas com ${completion}% de conclusão e média geral de ${avg}%.`);
+    if (riskCount > 0) parts.push(`⚠️ ${riskCount} aluno(s) em risco requerem atenção.`);
+    if (defCount > 0) parts.push(`${defCount} tema(s) deficitário(s) (< 50%).`);
+    if (masteredCount > 0) parts.push(`${masteredCount} tema(s) dominado(s) (≥ 80%).`);
+    
+    const platKpis = plat?.kpis;
+    if (platKpis) {
+      parts.push(`Na plataforma geral: ${platKpis.avg_accuracy}% de acurácia média, ${platKpis.inactive_count} inativos.`);
+    }
+    return parts.join(" ");
+  })();
+
   return (
     <div className="space-y-6">
       {/* Filter + Export */}
@@ -131,13 +155,29 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
         </Button>
       </div>
 
-      {/* At-Risk Students */}
+      {/* Executive Summary */}
+      <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-transparent">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <Sparkles className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold mb-1">Resumo Executivo</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">{execSummary}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* At-Risk Students — more prominent */}
       {atRisk.length > 0 && (
-        <Card className="border-destructive/50 bg-destructive/5">
+        <Card className="border-destructive/50 bg-destructive/5 shadow-md">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-destructive" /> Alunos em Risco ({atRisk.length})
+              <ShieldAlert className="h-5 w-5 text-destructive animate-pulse" /> 🚨 Alunos em Risco ({atRisk.length})
             </CardTitle>
+            <p className="text-xs text-muted-foreground">Score médio &lt; 50% ou inatividade &gt; 7 dias — requerem intervenção imediata</p>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-2 gap-3">
@@ -179,9 +219,15 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
 
       <Tabs defaultValue="proficiency">
         <TabsList>
-          <TabsTrigger value="proficiency">🎯 Atividades do Professor</TabsTrigger>
-          <TabsTrigger value="platform">📊 Jornada Global</TabsTrigger>
-          <TabsTrigger value="suggestions">💡 Sugestões Pedagógicas</TabsTrigger>
+          <TabsTrigger value="proficiency" className="gap-1.5">
+            <Target className="h-3.5 w-3.5" /> Proficiência (Atividades)
+          </TabsTrigger>
+          <TabsTrigger value="platform" className="gap-1.5">
+            <Brain className="h-3.5 w-3.5" /> Plataforma (Jornada Global)
+          </TabsTrigger>
+          <TabsTrigger value="suggestions" className="gap-1.5">
+            <Sparkles className="h-3.5 w-3.5" /> Sugestões IA
+          </TabsTrigger>
         </TabsList>
 
         {/* ===== PROFICIENCY TAB ===== */}
@@ -190,19 +236,19 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
           <div className="flex items-start gap-3 p-4 rounded-lg border border-primary/30 bg-primary/5">
             <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-primary">Desempenho em Atividades do Professor</p>
+              <p className="text-sm font-semibold text-primary">📋 Desempenho em Atividades do Professor</p>
               <p className="text-xs text-muted-foreground">
-                Resultados exclusivos das atividades que você criou e atribuiu aos alunos: simulados, casos clínicos e temas de estudo.
+                Dados exclusivos das atividades que <strong>você criou e atribuiu</strong>: simulados, casos clínicos e temas de estudo. Não inclui atividades gerais da plataforma.
               </p>
             </div>
           </div>
 
           {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <KPICard icon={<FileText className="h-5 w-5 text-primary" />} label="Atividades Criadas" value={prof.kpis?.total_activities ?? 0} borderColor="border-primary/20" />
-            <KPICard icon={<Target className="h-5 w-5 text-emerald-500" />} label="Taxa de Conclusão" value={`${prof.kpis?.completion_rate ?? 0}%`} borderColor="border-primary/20" />
-            <KPICard icon={<TrendingUp className="h-5 w-5 text-blue-500" />} label="Média Geral" value={`${prof.kpis?.avg_score ?? 0}%`} borderColor="border-primary/20" />
-            <KPICard icon={<AlertTriangle className="h-5 w-5 text-amber-500" />} label="Pendentes" value={prof.kpis?.pending ?? 0} borderColor="border-primary/20" />
+            <KPICard icon={<FileText className="h-5 w-5 text-primary" />} label="Atividades Criadas" value={prof.kpis?.total_activities ?? 0} borderColor="border-primary/30" bgColor="bg-primary/5" />
+            <KPICard icon={<Target className="h-5 w-5 text-emerald-500" />} label="Taxa de Conclusão" value={`${prof.kpis?.completion_rate ?? 0}%`} borderColor="border-emerald-500/30" bgColor="bg-emerald-500/5" />
+            <KPICard icon={<TrendingUp className="h-5 w-5 text-blue-500" />} label="Média Geral" value={`${prof.kpis?.avg_score ?? 0}%`} borderColor="border-blue-500/30" bgColor="bg-blue-500/5" />
+            <KPICard icon={<AlertTriangle className="h-5 w-5 text-amber-500" />} label="Pendentes" value={prof.kpis?.pending ?? 0} borderColor="border-amber-500/30" bgColor="bg-amber-500/5" />
           </div>
 
           {/* Student Ranking */}
