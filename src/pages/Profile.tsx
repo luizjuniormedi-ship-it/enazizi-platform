@@ -27,6 +27,7 @@ const Profile = () => {
   const [targetSpecialty, setTargetSpecialty] = useState("");
   const [examDate, setExamDate] = useState("");
   const [dailyStudyHours, setDailyStudyHours] = useState("4");
+  const [whatsappDailyBi, setWhatsappDailyBi] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
