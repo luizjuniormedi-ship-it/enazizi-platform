@@ -19,11 +19,11 @@ interface IndexedSource {
 }
 
 const ENARE_SOURCES: IndexedSource[] = [
-  { name: "ENARE 2025 - Objetiva R1", banca: "ENARE", year: 2025, pdfUrl: "https://site-medway.s3.sa-east-1.amazonaws.com/wp-content/uploads/sites/5/2024/12/10112840/ENARE-2025.pdf", status: "indexed" },
-  { name: "ENARE 2024 - Objetiva R1", banca: "ENARE", year: 2024, pdfUrl: "https://site-medway.s3.sa-east-1.amazonaws.com/wp-content/uploads/sites/5/2023/12/22111553/ENARE-2024-Objetiva-R1.pdf", status: "indexed" },
-  { name: "ENARE 2023 - Objetiva", banca: "ENARE", year: 2023, pdfUrl: "https://site-medway.s3.sa-east-1.amazonaws.com/wp-content/uploads/sites/5/2025/05/23105328/ENARE-2023-Objetiva.pdf", status: "indexed" },
-  { name: "ENARE 2022 - Objetiva", banca: "ENARE", year: 2022, pdfUrl: "https://site-medway.s3.sa-east-1.amazonaws.com/wp-content/uploads/sites/5/2025/05/23105750/ENARE-2022-Objetiva.pdf", status: "indexed" },
-  { name: "ENARE 2021 - Objetiva", banca: "ENARE", year: 2021, pdfUrl: "https://site-medway.s3.sa-east-1.amazonaws.com/wp-content/uploads/sites/5/2025/05/23105852/ENARE-2021-Objetiva.pdf", status: "indexed" },
+  { name: "ENARE 2025 - Objetiva R1", banca: "ENARE", year: 2025, pdfUrl: null, status: "indexed" },
+  { name: "ENARE 2024 - Objetiva R1", banca: "ENARE", year: 2024, pdfUrl: null, status: "indexed" },
+  { name: "ENARE 2023 - Objetiva", banca: "ENARE", year: 2023, pdfUrl: null, status: "indexed" },
+  { name: "ENARE 2022 - Objetiva", banca: "ENARE", year: 2022, pdfUrl: null, status: "indexed" },
+  { name: "ENARE 2021 - Objetiva", banca: "ENARE", year: 2021, pdfUrl: null, status: "indexed" },
 ];
 
 const BASIC_SCIENCES = [
@@ -429,7 +429,7 @@ const AdminIngestionPanel = () => {
           <div className="space-y-3">
             <div className="flex gap-2">
               <Input value={navUrl} onChange={e => setNavUrl(e.target.value)}
-                placeholder="https://www.medway.com.br/..." className="text-xs h-8" />
+                placeholder="https://exemplo.com/prova.pdf" className="text-xs h-8" />
               <Button size="sm" className="h-8 text-xs" disabled={navLoading || !navUrl} onClick={handleNavigate}>
                 {navLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Search className="h-3 w-3 mr-1" />Buscar</>}
               </Button>
