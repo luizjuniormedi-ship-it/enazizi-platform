@@ -116,6 +116,10 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
   // Opt-out state
   const [optOutCount, setOptOutCount] = useState(0);
 
+  // Custom message state
+  const [useCustomMessage, setUseCustomMessage] = useState(false);
+  const [customMessage, setCustomMessage] = useState("");
+
   // Fetch opt-out count
   useEffect(() => {
     const fetchOptOut = async () => {
