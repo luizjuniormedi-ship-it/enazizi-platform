@@ -16,7 +16,7 @@ export const SPECIALTY_SUBTOPICS: Record<string, string[]> = {
   // Ciclo Clínico
   "Angiologia": ["Doença Arterial Periférica", "Trombose Venosa Profunda", "Aneurisma de Aorta", "Varizes", "Insuficiência Venosa", "Linfangite e Erisipela"],
   "Cardiologia": ["IAM com Supra de ST", "IAM sem Supra", "Insuficiência Cardíaca", "Arritmias", "Valvopatias", "Hipertensão Arterial", "Endocardite", "Pericardite", "Cardiopatias Congênitas", "Miocardiopatias", "Crise Hipertensiva", "Doença Coronariana"],
-  "Dermatologia": ["Dermatoses Infecciosas", "Dermatoses Autoimunes", "Câncer de Pele", "Hanseníase", "Psoríase", "Dermatite Atópica"],
+  "Dermatologia": ["Dermatoses Infecciosas", "Dermatoses Autoimunes", "Câncer de Pele", "Hanseníase", "Psoríase", "Dermatite Atópica", "Lesões Elementares da Pele", "Piodermites", "Dermatoviroses", "Dermatozoonoses"],
   "Endocrinologia": ["Diabetes Mellitus", "Cetoacidose Diabética", "Tireoidopatias", "Síndrome de Cushing", "Insuficiência Adrenal", "Distúrbios da Paratireoide", "Obesidade"],
   "Gastroenterologia": ["Doença do Refluxo", "Úlcera Péptica", "Doença Inflamatória Intestinal", "Hepatites Virais", "Cirrose Hepática", "Pancreatite", "Doença Celíaca", "Hemorragia Digestiva"],
   "Hematologia": ["Anemias", "Leucemias", "Linfomas", "Coagulopatias", "Trombocitopenias", "Hemoglobinopatias", "Distúrbios da Hemostasia"],
