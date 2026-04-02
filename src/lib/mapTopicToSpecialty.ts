@@ -23,7 +23,7 @@ export function mapTopicToSpecialty(topic: string): string | null {
     [["preventiva", "epidemio", "saúde pública", "sus", "atenção primária", "vacina", "notificação compulsória", "bioética", "determinantes sociais", "indicadores de saúde", "níveis de prevenção"], "Medicina Preventiva"],
     [["semiologia", "anamnese", "exame físico", "ausculta", "palpação", "percussão", "propedêutica", "sinal de", "inspeção"], "Semiologia"],
     [["anatomia", "anatômic", "muscul", "nervo", "artéria", "veia", "osso", "ligamento", "fáscia", "pelve", "mediastino", "neuroanatomia"], "Anatomia"],
-    [["emergência", "urgência", "pcr", "choque", "politrauma", "reanimação"], "Medicina de Emergência"],
+    [["emergência", "urgência", "pcr", "choque", "politrauma", "reanimação", "choque hipovolêmico"], "Medicina de Emergência"],
     [["uti", "intensiva", "ventilação mecânica", "sedação", "choque séptico"], "Terapia Intensiva"],
     [["farmacolog", "farmacocinética", "farmacodinâmica", "posologia", "mecanismo de ação", "receptor", "agonista", "antagonista", "inibidor", "interação medicamentosa", "efeito adverso", "meia-vida", "dose-resposta"], "Farmacologia"],
     [["oncolog", "câncer", "tumor", "neoplasia", "metástase", "quimioterapia", "radioterapia", "imunoterapia", "estadiamento", "tnm", "carcinoma", "sarcoma", "rastreamento oncológico", "cuidados paliativos", "marcador tumoral"], "Oncologia"],
