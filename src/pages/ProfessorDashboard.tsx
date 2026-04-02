@@ -263,8 +263,12 @@ const ProfessorDashboard = () => {
                 difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
                 previousStatements: previousStatements.length > 0 ? previousStatements : undefined,
               });
-              if (res.source === "bank" || res.source === "mixed") {
-                toast({ title: "Algumas questões vieram do banco existente", description: "A IA não conseguiu gerar todas, complementamos com o banco." });
+              if (res.source === "cache") {
+                toast({ title: "📦 Questões do banco", description: "Todas as questões vieram do banco existente (sem custo de IA)." });
+              } else if (res.source === "mixed") {
+                toast({ title: "🔄 Questões mistas", description: "Parte do banco existente + parte gerada por IA." });
+              } else if (res.source === "bank") {
+                toast({ title: "📦 Questões do banco", description: "A IA não respondeu, usamos questões do banco existente." });
               }
               topicQuestions = [...topicQuestions, ...(res.questions || [])];
             } catch (batchErr) {
@@ -301,8 +305,12 @@ const ProfessorDashboard = () => {
               difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
               previousStatements: previousStatements.length > 0 ? previousStatements : undefined,
             });
-            if (res.source === "bank" || res.source === "mixed") {
-              toast({ title: "Algumas questões vieram do banco existente", description: "A IA não conseguiu gerar todas, complementamos com o banco." });
+            if (res.source === "cache") {
+              toast({ title: "📦 Questões do banco", description: "Todas as questões vieram do banco existente (sem custo de IA)." });
+            } else if (res.source === "mixed") {
+              toast({ title: "🔄 Questões mistas", description: "Parte do banco existente + parte gerada por IA." });
+            } else if (res.source === "bank") {
+              toast({ title: "📦 Questões do banco", description: "A IA não respondeu, usamos questões do banco existente." });
             }
             const batchQ = res.questions || [];
             allQuestions = [...allQuestions, ...batchQ];

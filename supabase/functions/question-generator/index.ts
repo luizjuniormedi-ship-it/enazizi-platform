@@ -261,6 +261,76 @@ Regras:
       systemPrompt += `\n\n=== QUESTÕES JÁ GERADAS (NÃO REPITA) ===\nAs seguintes questões já foram geradas em lotes anteriores. NÃO repita cenários clínicos similares, NÃO repita o mesmo perfil de paciente, NÃO repita o mesmo diagnóstico principal:\n${summaries}\n=== FIM DA LISTA ===`;
     }
 
+    // --- CACHE for JSON mode: try to serve from DB before calling AI ---
+    if (isJsonMode) {
+      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+      const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+      // Extract specialty from last user message
+      const userMsg = messages?.[messages.length - 1]?.content || "";
+      const HIGH_YIELD_KEYS = Object.keys(HIGH_YIELD);
+      const matchedTopics = HIGH_YIELD_KEYS.filter(k => userMsg.toLowerCase().includes(k.toLowerCase()));
+
+      if (matchedTopics.length > 0) {
+        const topicFilters = matchedTopics.map(t => `topic.ilike.%${t}%`).join(",");
+        const [{ data: cachedBank }, { data: cachedReal }] = await Promise.all([
+          sb.from("questions_bank")
+            .select("statement, options, correct_index, explanation, topic")
+            .or(topicFilters)
+            .eq("is_global", true)
+            .eq("review_status", "approved")
+            .limit(30),
+          sb.from("real_exam_questions")
+            .select("statement, options, correct_index, explanation, topic")
+            .or(topicFilters)
+            .eq("is_active", true)
+            .limit(30),
+        ]);
+
+        let allCached = [...(cachedBank || []), ...(cachedReal || [])];
+
+        // Dedup against avoidStatements
+        if (Array.isArray(avoidStatements) && avoidStatements.length > 0) {
+          const prevKeys = new Set(avoidStatements.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
+          allCached = allCached.filter((q: any) => {
+            const key = String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ");
+            return !prevKeys.has(key);
+          });
+        }
+
+        // If we have enough cached questions (>= 5), serve them directly
+        if (allCached.length >= 5) {
+          allCached.sort(() => Math.random() - 0.5);
+          const cachedQuestions = allCached.slice(0, 10).map((q: any) => ({
+            statement: q.statement,
+            options: Array.isArray(q.options) ? q.options : [],
+            correct_index: q.correct_index ?? 0,
+            topic: q.topic || matchedTopics[0],
+            explanation: q.explanation || "",
+          }));
+
+          console.log(`[question-generator] Served ${cachedQuestions.length} questions from cache (0 AI calls)`);
+
+          const cachedResponse = {
+            choices: [{
+              message: {
+                tool_calls: [{
+                  function: {
+                    name: "generate_questions",
+                    arguments: JSON.stringify({ questions: cachedQuestions }),
+                  },
+                }],
+              },
+            }],
+            source: "cache",
+          };
+          return new Response(JSON.stringify(cachedResponse), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    }
+
     // Build AI fetch options
     const aiFetchOptions: any = {
       messages: [{ role: "system", content: systemPrompt }, ...messages],
@@ -318,13 +388,13 @@ Regras:
       const t = await response.text();
       console.error("AI response error:", response.status, t.slice(0, 300));
       
-      const userMsg = response.status === 402
+      const userMsg2 = response.status === 402
         ? "Créditos de IA esgotados. Tente novamente mais tarde."
         : response.status === 429
         ? "Muitas requisições. Aguarde um momento e tente novamente."
         : "Erro no serviço de IA. Tente novamente em alguns minutos.";
       
-      return new Response(JSON.stringify({ error: userMsg }), {
+      return new Response(JSON.stringify({ error: userMsg2 }), {
         status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

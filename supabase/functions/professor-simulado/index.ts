@@ -175,93 +175,147 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 - Retorne APENAS o JSON, sem texto adicional${Array.isArray(previousStatements) && previousStatements.length > 0 ? `\n\n=== QUESTÕES JÁ GERADAS (NÃO REPITA) ===\nNÃO repita cenários similares aos seguintes:\n${previousStatements.slice(0, 100).map((s: string, i: number) => `${i + 1}. ${String(s).slice(0, 120)}`).join("\n")}\n=== FIM ===` : ""}`;
 
         let questions: any[] = [];
-        let source: "ai" | "bank" | "mixed" = "ai";
+        let source: "ai" | "bank" | "mixed" | "cache" = "ai";
 
-        // Try AI generation with 1 retry
-        let aiSuccess = false;
-        for (let attempt = 0; attempt < 2 && !aiSuccess; attempt++) {
-          try {
-            const response = await aiFetch({
-              messages: [{ role: "user", content: prompt }],
-              model: "google/gemini-2.5-flash",
-              maxTokens: 16384,
-              timeoutMs: 120000,
-            });
+        // --- CACHE: buscar questões existentes no banco antes de chamar IA ---
+        const topicFilters = topics.map((t: string) => `topic.ilike.%${t}%`).join(",");
+        
+        const [{ data: cachedBank }, { data: cachedReal }] = await Promise.all([
+          sb.from("questions_bank")
+            .select("statement, options, correct_index, explanation, topic")
+            .or(topicFilters)
+            .eq("is_global", true)
+            .eq("review_status", "approved")
+            .limit(batchCount * 2),
+          sb.from("real_exam_questions")
+            .select("statement, options, correct_index, explanation, topic")
+            .or(topicFilters)
+            .eq("is_active", true)
+            .limit(batchCount * 2),
+        ]);
 
-            if (!response.ok) {
-              const t = await response.text();
-              console.error(`AI error attempt ${attempt + 1}:`, t);
-              continue;
-            }
+        let allCached = [...(cachedBank || []), ...(cachedReal || [])];
 
-            const aiData = await response.json();
-            const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
-
-            const jsonMatch = content.match(/\[[\s\S]*\]/);
-            if (!jsonMatch) {
-              console.warn(`AI attempt ${attempt + 1}: no JSON array found`);
-              continue;
-            }
-
-            // Resilient JSON parse: fix trailing commas and truncated responses
-            let rawJson = jsonMatch[0];
-            rawJson = rawJson.replace(/,\s*([\]}])/g, "$1");
-            try {
-              questions = JSON.parse(rawJson);
-            } catch {
-              // Try to recover truncated JSON: find last complete object
-              const lastBrace = rawJson.lastIndexOf("}");
-              if (lastBrace > 0) {
-                const truncated = rawJson.slice(0, lastBrace + 1) + "]";
-                try {
-                  questions = JSON.parse(truncated);
-                  console.warn(`Recovered ${questions.length} questions from truncated JSON`);
-                } catch {
-                  console.warn(`AI attempt ${attempt + 1}: JSON recovery failed`);
-                  continue;
-                }
-              } else {
-                continue;
-              }
-            }
-
-            aiSuccess = questions.length > 0;
-          } catch (err) {
-            console.error(`AI attempt ${attempt + 1} exception:`, err);
-          }
+        // Dedup against previousStatements
+        if (Array.isArray(previousStatements) && previousStatements.length > 0) {
+          const prevKeys = new Set(previousStatements.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
+          allCached = allCached.filter((q: any) => {
+            const key = String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ");
+            return !prevKeys.has(key);
+          });
         }
 
-        // Fallback to questions_bank if AI failed or returned nothing
-        if (!aiSuccess || questions.length === 0) {
-          console.warn("AI generation failed, falling back to questions_bank");
-          const { data: bankRows } = await sb
-            .from("questions_bank")
-            .select("statement, options, correct_index, explanation, topic")
-            .in("topic", topics)
-            .eq("is_global", true)
-            .order("created_at", { ascending: false })
-            .limit(batchCount);
+        // Shuffle and take up to batchCount
+        allCached.sort(() => Math.random() - 0.5);
+        const fromCache = allCached.slice(0, batchCount).map((q: any) => ({
+          statement: q.statement,
+          options: Array.isArray(q.options) ? q.options : [],
+          correct_index: q.correct_index ?? 0,
+          explanation: q.explanation || "",
+          topic: q.topic || topics[0],
+          block: q.topic || topics[0],
+          difficulty_level: difficulty || "intermediario",
+        }));
 
-          if (bankRows && bankRows.length > 0) {
-            const bankQuestions = bankRows.map((r: any, idx: number) => ({
-              statement: r.statement,
-              options: Array.isArray(r.options) ? r.options : [],
-              correct_index: r.correct_index ?? 0,
-              explanation: r.explanation || "",
-              topic: r.topic || topics[0] || "",
-              block: r.topic || topics[0] || "",
-              difficulty_level: "intermediario",
-            }));
-            if (questions.length > 0) {
-              questions = [...questions, ...bankQuestions];
-              source = "mixed";
-            } else {
-              questions = bankQuestions;
+        const remaining = batchCount - fromCache.length;
+        console.log(`[Cache] Found ${fromCache.length} cached, need ${remaining} from AI`);
+
+        if (remaining === 0) {
+          // 100% from cache — no AI call needed
+          questions = fromCache;
+          source = "cache";
+        } else {
+          // Need AI for remaining questions
+          const aiPrompt = remaining < batchCount
+            ? prompt.replace(`Gere exatamente ${batchCount}`, `Gere exatamente ${remaining}`).replace(`das ${batchCount} questões`, `das ${remaining} questões`)
+            : prompt;
+
+          let aiQuestions: any[] = [];
+          let aiSuccess = false;
+          for (let attempt = 0; attempt < 2 && !aiSuccess; attempt++) {
+            try {
+              const response = await aiFetch({
+                messages: [{ role: "user", content: aiPrompt }],
+                model: "google/gemini-2.5-flash",
+                maxTokens: 16384,
+                timeoutMs: 120000,
+              });
+
+              if (!response.ok) {
+                const t = await response.text();
+                console.error(`AI error attempt ${attempt + 1}:`, t);
+                continue;
+              }
+
+              const aiData = await response.json();
+              const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
+
+              const jsonMatch = content.match(/\[[\s\S]*\]/);
+              if (!jsonMatch) {
+                console.warn(`AI attempt ${attempt + 1}: no JSON array found`);
+                continue;
+              }
+
+              let rawJson = jsonMatch[0];
+              rawJson = rawJson.replace(/,\s*([\]}])/g, "$1");
+              try {
+                aiQuestions = JSON.parse(rawJson);
+              } catch {
+                const lastBrace = rawJson.lastIndexOf("}");
+                if (lastBrace > 0) {
+                  const truncated = rawJson.slice(0, lastBrace + 1) + "]";
+                  try {
+                    aiQuestions = JSON.parse(truncated);
+                    console.warn(`Recovered ${aiQuestions.length} questions from truncated JSON`);
+                  } catch {
+                    console.warn(`AI attempt ${attempt + 1}: JSON recovery failed`);
+                    continue;
+                  }
+                } else {
+                  continue;
+                }
+              }
+
+              aiSuccess = aiQuestions.length > 0;
+            } catch (err) {
+              console.error(`AI attempt ${attempt + 1} exception:`, err);
+            }
+          }
+
+          if (fromCache.length > 0 && aiSuccess) {
+            questions = [...fromCache, ...aiQuestions];
+            source = "mixed";
+          } else if (fromCache.length > 0) {
+            // AI failed but we have cache
+            questions = fromCache;
+            source = "cache";
+          } else if (aiSuccess) {
+            questions = aiQuestions;
+            source = "ai";
+          } else {
+            // Both failed — last resort fallback
+            console.warn("AI + cache both insufficient, using fallback bank query");
+            const { data: bankRows } = await sb
+              .from("questions_bank")
+              .select("statement, options, correct_index, explanation, topic")
+              .in("topic", topics)
+              .eq("is_global", true)
+              .order("created_at", { ascending: false })
+              .limit(batchCount);
+            if (bankRows && bankRows.length > 0) {
+              questions = bankRows.map((r: any) => ({
+                statement: r.statement,
+                options: Array.isArray(r.options) ? r.options : [],
+                correct_index: r.correct_index ?? 0,
+                explanation: r.explanation || "",
+                topic: r.topic || topics[0] || "",
+                block: r.topic || topics[0] || "",
+                difficulty_level: "intermediario",
+              }));
               source = "bank";
             }
           }
         }
-        
         // Post-parse dedup against previousStatements
         if (Array.isArray(previousStatements) && previousStatements.length > 0) {
           const prevKeys = new Set(previousStatements.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
