@@ -676,6 +676,16 @@ REGRAS:
             status: "pending",
           }));
           await sb.from("teacher_clinical_case_results").insert(results);
+
+          // Notify each student
+          const notifications = studentIds.map((sid: string) => ({
+            sender_id: user.id,
+            recipient_id: sid,
+            title: `🏥 Novo Caso Clínico: ${title || "Plantão"}`,
+            content: `Você foi incluído em um caso clínico: "${title || "Plantão"}" — Especialidade: ${specialty}. Acesse a aba Proficiência para realizar.`,
+            priority: "important",
+          }));
+          await sb.from("admin_messages").insert(notifications);
         }
 
         return ok({ success: true, case_id: clinicalCase.id, students_assigned: studentIds.length });
