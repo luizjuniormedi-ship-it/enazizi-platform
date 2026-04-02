@@ -1,42 +1,52 @@
 
 
-# Fix: WhatsApp Queue 401 + Blank Screen
+# Fix: Messages Not Appearing in Desktop Execution
 
-## Problem
-1. The password was changed, which invalidated the current session (session ID `335781c2...` no longer exists)
-2. The `callQueue` function in `WhatsAppPanel.tsx` doesn't handle 401 responses — it calls `resp.json()` which parses `{"error":"Unauthorized"}` but the error bubbles up and causes a blank screen
-3. The user needs to **log out and log back in** to get a fresh session token
+## Root Cause
 
-## Fix (2 parts)
+The flow is broken between message generation and desktop execution:
 
-### 1. Handle 401 in `callQueue` (WhatsAppPanel.tsx ~line 270-278)
-- Check `resp.status === 401` before parsing JSON
-- If 401, call `supabase.auth.signOut()` and redirect to `/login`
-- Show a toast explaining the session expired
+1. **"Gerar mensagens"** calls `whatsapp-agent` → generates AI messages → returns them to the UI only (stored in React state `students[]`)
+2. **"Iniciar Execução"** calls `whatsapp-queue?action=start_execution` → looks for `pending` rows in `whatsapp_message_log` table → finds **0 items** because nothing was inserted
+
+The messages only exist in the browser's memory, not in the database queue.
+
+## Fix
+
+After generating messages successfully, automatically insert them into `whatsapp_message_log` with `delivery_status: 'pending'`, then start the desktop execution. This connects the two flows.
+
+### Changes to `src/components/admin/WhatsAppPanel.tsx`
+
+1. **After `generateMessages` succeeds**, insert all generated students into `whatsapp_message_log` as pending items:
 
 ```typescript
-const callQueue = async (action: string, body: any = {}) => {
-  if (!session) return null;
-  const resp = await fetch(`...whatsapp-queue?action=${action}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-    body: JSON.stringify(body),
-  });
-  if (resp.status === 401) {
-    toast({ title: "Sessão expirada", description: "Faça login novamente.", variant: "destructive" });
-    await supabase.auth.signOut();
-    window.location.assign("/login");
-    return null;
-  }
-  return resp.json();
-};
+// After setStudents(data.students) succeeds:
+const user = (await supabase.auth.getUser()).data.user;
+if (user && data.students?.length > 0) {
+  const rows = data.students
+    .filter(s => !s.already_sent_today && s.phone)
+    .map(s => ({
+      admin_user_id: user.id,
+      target_user_id: s.user_id,
+      message_text: s.message,
+      delivery_status: 'pending',
+      execution_mode: 'desktop',
+    }));
+  await supabase.from("whatsapp_message_log").insert(rows);
+}
 ```
 
-### 2. Immediate fix for the user
-- After deploying the code change, the user must **log out** from the app and **log back in** with the new password (`07114575`) to get a valid session token
+2. **After inserting**, automatically call `handleStartDesktopExecution()` and switch to the "desktop" tab so the user sees the queue populated and ready.
 
-## Files changed
+3. **Add a toast** indicating messages were queued for desktop execution.
+
+### Result
+- Click "Gerar mensagens" → messages are created by AI AND saved to the queue
+- Desktop execution tab shows all items with their status
+- The Python agent (`agent.py`) can poll and find pending items to send via WhatsApp Desktop
+
+## Files Changed
 | File | Change |
 |------|--------|
-| `src/components/admin/WhatsAppPanel.tsx` | Add 401 handling in `callQueue` with signOut + redirect |
+| `src/components/admin/WhatsAppPanel.tsx` | Insert generated messages into `whatsapp_message_log` after generation, auto-start execution, switch to desktop tab |
 
