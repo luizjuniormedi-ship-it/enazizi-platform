@@ -187,15 +187,18 @@ const QuestionsBank = () => {
   }, [questions]);
 
   const CURSINHO_KEYWORDS = ['estrategia', 'medway', 'sanar', 'medcel', 'medgrupo', 'jaleko', 'afya'];
+
+  const sanitizeSource = (s: string | null): string | null => {
+    if (!s) return s;
+    if (CURSINHO_KEYWORDS.some(k => s.toLowerCase().includes(k))) return "Banco Global";
+    return s;
+  };
+
   const sources = useMemo(() => {
     const set = new Set(
       questions
-        .map((q) => q.source)
-        .filter((s): s is string => {
-          if (!s) return false;
-          const lower = s.toLowerCase();
-          return !CURSINHO_KEYWORDS.some(k => lower.includes(k));
-        })
+        .map((q) => sanitizeSource(q.source))
+        .filter((s): s is string => !!s)
     );
     return Array.from(set).sort();
   }, [questions]);
@@ -214,7 +217,7 @@ const QuestionsBank = () => {
     return questions.filter((q) => {
       if (topicFilter !== "all" && q.topic !== topicFilter) return false;
       if (subtopicFilter !== "all" && q.subtopic !== subtopicFilter) return false;
-      if (sourceFilter !== "all" && q.source !== sourceFilter) return false;
+      if (sourceFilter !== "all" && sanitizeSource(q.source) !== sourceFilter) return false;
       if (searchTerm && !q.statement.toLowerCase().includes(searchTerm.toLowerCase())) return false;
       return true;
     });
