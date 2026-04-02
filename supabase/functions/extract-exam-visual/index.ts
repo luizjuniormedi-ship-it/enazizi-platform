@@ -205,7 +205,7 @@ serve(async (req) => {
     const validQuestions = questions.filter((q: any) => {
       if (!q.statement || !Array.isArray(q.options)) return false;
       if (q.options.length < 4 || q.options.length > 5) return false;
-      if (q.statement.length < 30) return false;
+      if (q.statement.length < 400) return false;
       return true;
     });
 

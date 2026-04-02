@@ -349,6 +349,7 @@ FORMATO JSON OBRIGATÓRIO:
     const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
     const questions = (parsed.questions || []).filter((q: any) =>
       q.statement && Array.isArray(q.options) && q.options.length >= 4 && q.options.length <= 5 && typeof q.correct_index === "number" &&
+      String(q.statement).trim().length >= 400 &&
       !INVALID_CONTENT_REGEX.test(q.statement) && !INVALID_CONTENT_REGEX.test(q.explanation || "") &&
       !ENGLISH_PATTERN.test(q.statement) && !IMAGE_REF_PATTERN.test(q.statement)
     );

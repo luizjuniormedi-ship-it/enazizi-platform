@@ -355,7 +355,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
     const questions = parsed.questions.filter((q: any) =>
       q.statement && Array.isArray(q.options) && q.options.length >= 4 && q.options.length <= 5 &&
       typeof q.correct_index === "number" &&
-      String(q.statement).trim().length >= 150 &&
+      String(q.statement).trim().length >= 400 &&
       (q.difficulty || 3) >= 3 &&
       !INVALID_CONTENT_REGEX.test(q.statement) &&
       !INVALID_CONTENT_REGEX.test(q.explanation || "") &&

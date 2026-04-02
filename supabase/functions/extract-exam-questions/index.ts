@@ -194,7 +194,8 @@ Deno.serve(async (req) => {
       // Insert new questions in batches
       const newQuestions = result.questions.filter(
         (q) => !existingStatements.has(normalizeForDedup(q.statement)) &&
-          q.options.length >= 4 && q.options.length <= 5
+          q.options.length >= 4 && q.options.length <= 5 &&
+          q.statement.length >= 400
       );
 
       const BATCH_SIZE = 50;
