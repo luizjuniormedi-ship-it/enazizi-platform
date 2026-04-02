@@ -584,10 +584,45 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
               </div>
             </>
           ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              <Monitor className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">Nenhuma execução ativa</p>
-              <p className="text-sm mt-1">Primeiro gere as mensagens na aba "Mensagens", depois inicie uma execução desktop.</p>
+            <div className="space-y-6">
+              {/* Agent download + setup */}
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold flex items-center gap-2"><Download className="h-4 w-4 text-primary" /> Agente WhatsApp Desktop</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Baixe e instale o agente Python no seu Windows para envio automático.</p>
+                  </div>
+                  <Button onClick={() => {
+                    fetch("/enazizi-whatsapp-agent.zip")
+                      .then(r => { if (!r.ok) throw new Error("Download falhou"); return r.blob(); })
+                      .then(b => { const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "enazizi-whatsapp-agent.zip"; a.click(); URL.revokeObjectURL(a.href); })
+                      .catch(err => toast({ title: "Erro", description: err.message, variant: "destructive" }));
+                  }} className="gap-1.5">
+                    <Download className="h-4 w-4" /> Baixar Agente Windows
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3 text-sm">
+                  {[
+                    { step: "1", text: "Instale o Python 3.10+" },
+                    { step: "2", text: "Baixe o agente (ZIP)" },
+                    { step: "3", text: "Extraia em C:\\enazizi-whatsapp-agent\\" },
+                    { step: "4", text: "py -m pip install -r requirements.txt" },
+                    { step: "5", text: "py agent.py" },
+                  ].map(({ step, text }) => (
+                    <div key={step} className="flex items-start gap-2 p-2 rounded bg-background border">
+                      <span className="flex-shrink-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">{step}</span>
+                      <span className="text-xs leading-tight mt-0.5">{text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="text-center py-8 text-muted-foreground">
+                <Monitor className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p className="font-medium">Nenhuma execução ativa</p>
+                <p className="text-sm mt-1">Gere as mensagens na aba "Mensagens", depois inicie uma execução desktop.</p>
+              </div>
             </div>
           )}
         </TabsContent>
