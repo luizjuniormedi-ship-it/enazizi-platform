@@ -22,7 +22,7 @@ export const SPECIALTY_SUBTOPICS: Record<string, string[]> = {
   "Hematologia": ["Anemias", "Leucemias", "Linfomas", "Coagulopatias", "Trombocitopenias", "Hemoglobinopatias", "Distúrbios da Hemostasia"],
   "Infectologia": ["HIV/AIDS", "Tuberculose", "Meningites", "Sepse", "Infecções Oportunistas", "Dengue", "Leptospirose", "Hepatites", "COVID-19", "Endocardite Infecciosa", "Arboviroses", "Resistência Antimicrobiana"],
   "Nefrologia": ["Insuficiência Renal Aguda", "Doença Renal Crônica", "Glomerulopatias", "Distúrbios Hidroeletrolíticos", "Distúrbios Ácido-Base", "Síndrome Nefrótica", "Síndrome Nefrítica"],
-  "Neurologia": ["AVC Isquêmico", "AVC Hemorrágico", "Epilepsia", "Cefaléias", "Esclerose Múltipla", "Parkinson", "Neuropatias Periféricas", "Meningites", "Demências"],
+  "Neurologia": ["AVC Isquêmico", "AVC Hemorrágico", "Epilepsia", "Cefaléias", "Esclerose Múltipla", "Parkinson", "Neuropatias Periféricas", "Meningites", "Demências", "Neuropatia Diabética"],
   "Oftalmologia": ["Glaucoma", "Catarata", "Retinopatia Diabética", "Descolamento de Retina", "Conjuntivites", "Trauma Ocular"],
   "Oncologia": ["Câncer de Mama", "Câncer de Pulmão", "Câncer Colorretal", "Câncer Gástrico", "Estadiamento TNM", "Síndromes Paraneoplásicas", "Neutropenia Febril"],
   "Ortopedia": ["Fraturas", "Luxações", "Osteomielite", "Artrose", "Lombalgia", "Trauma Musculoesquelético", "Lesões Ligamentares"],
