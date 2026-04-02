@@ -3351,30 +3351,152 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_execution_logs: {
+        Row: {
+          action: string
+          created_at: string
+          execution_id: string
+          id: string
+          message: string | null
+          metadata_json: Json | null
+          queue_item_id: string | null
+          status: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          execution_id: string
+          id?: string
+          message?: string | null
+          metadata_json?: Json | null
+          queue_item_id?: string | null
+          status: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          execution_id?: string
+          id?: string
+          message?: string | null
+          metadata_json?: Json | null
+          queue_item_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_execution_logs_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_send_executions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_execution_logs_queue_item_id_fkey"
+            columns: ["queue_item_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_message_log"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_message_log: {
         Row: {
           admin_user_id: string
+          attempts: number
           created_at: string
+          delivery_status: string
+          error_message: string | null
+          execution_id: string | null
+          execution_mode: string
           id: string
           message_text: string
           sent_at: string
           target_user_id: string
+          updated_at: string
         }
         Insert: {
           admin_user_id: string
+          attempts?: number
           created_at?: string
+          delivery_status?: string
+          error_message?: string | null
+          execution_id?: string | null
+          execution_mode?: string
           id?: string
           message_text: string
           sent_at?: string
           target_user_id: string
+          updated_at?: string
         }
         Update: {
           admin_user_id?: string
+          attempts?: number
           created_at?: string
+          delivery_status?: string
+          error_message?: string | null
+          execution_id?: string | null
+          execution_mode?: string
           id?: string
           message_text?: string
           sent_at?: string
           target_user_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_message_log_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_send_executions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_send_executions: {
+        Row: {
+          admin_user_id: string
+          created_at: string
+          execution_date: string
+          finished_at: string | null
+          id: string
+          mode: string
+          started_at: string | null
+          status: string
+          total_error: number
+          total_items: number
+          total_sent: number
+          total_skipped: number
+          updated_at: string
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string
+          execution_date?: string
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          started_at?: string | null
+          status?: string
+          total_error?: number
+          total_items?: number
+          total_sent?: number
+          total_skipped?: number
+          updated_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string
+          execution_date?: string
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          started_at?: string | null
+          status?: string
+          total_error?: number
+          total_items?: number
+          total_sent?: number
+          total_skipped?: number
+          updated_at?: string
         }
         Relationships: []
       }
