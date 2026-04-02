@@ -24,7 +24,7 @@ export const SPECIALTY_SUBTOPICS: Record<string, string[]> = {
   "Nefrologia": ["Insuficiência Renal Aguda", "Doença Renal Crônica", "Glomerulopatias", "Distúrbios Hidroeletrolíticos", "Distúrbios Ácido-Base", "Síndrome Nefrótica", "Síndrome Nefrítica"],
   "Neurologia": ["AVC Isquêmico", "AVC Hemorrágico", "Epilepsia", "Cefaléias", "Esclerose Múltipla", "Parkinson", "Neuropatias Periféricas", "Meningites", "Demências", "Neuropatia Diabética"],
   "Oftalmologia": ["Glaucoma", "Catarata", "Retinopatia Diabética", "Descolamento de Retina", "Conjuntivites", "Trauma Ocular"],
-  "Oncologia": ["Câncer de Mama", "Câncer de Pulmão", "Câncer Colorretal", "Câncer Gástrico", "Estadiamento TNM", "Síndromes Paraneoplásicas", "Neutropenia Febril"],
+  "Oncologia": ["Câncer de Mama", "Câncer de Pulmão", "Câncer Colorretal", "Câncer Gástrico", "Estadiamento TNM", "Síndromes Paraneoplásicas", "Neutropenia Febril", "Câncer de Endométrio", "Câncer de Ovário"],
   "Ortopedia": ["Fraturas", "Luxações", "Osteomielite", "Artrose", "Lombalgia", "Trauma Musculoesquelético", "Lesões Ligamentares"],
   "Otorrinolaringologia": ["Otite Média", "Sinusite", "Faringite", "Tonsilite", "Vertigem", "Perda Auditiva"],
   "Pneumologia": ["Asma", "DPOC", "Pneumonia", "Tuberculose Pulmonar", "Tromboembolismo Pulmonar", "Derrame Pleural", "Câncer de Pulmão", "SDRA", "Fibrose Pulmonar", "Propedêutica Respiratória", "Micoses Pulmonares"],
