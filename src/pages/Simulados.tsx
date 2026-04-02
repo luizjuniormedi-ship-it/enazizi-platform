@@ -161,7 +161,8 @@ function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
 function deduplicateQuestions(questions: SimQuestion[]): SimQuestion[] {
   const seen = new Set<string>();
   return questions.filter((q) => {
-    const key = q.statement.substring(0, 80).toLowerCase().replace(/\s+/g, " ");
+    // Use first 120 chars normalized for broader duplicate detection
+    const key = q.statement.substring(0, 120).toLowerCase().replace(/\s+/g, " ").replace(/[.,;:!?]/g, "");
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
