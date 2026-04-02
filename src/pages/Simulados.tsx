@@ -586,6 +586,7 @@ const Simulados = () => {
 
   return (
     <SimuladoExam
+      key="simulado-exam-stable"
       questions={questions}
       timeSeconds={restoredState?.timeLeft ?? ((mode === "prova" || mode === "extremo") ? questions.length * 3 * 60 : 0)}
       onFinish={handleFinish}
