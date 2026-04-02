@@ -6,7 +6,7 @@ export function mapTopicToSpecialty(topic: string): string | null {
     [["angiolog", "vascular", "varizes", "trombose venosa", "insuficiência venosa", "aneurisma de aorta", "doença arterial periférica", "claudicação", "isquemia de membro", "pé diabético", "linfedema", "fístula arteriovenosa", "endarterectomia", "safena", "doppler vascular", "linfangite", "erisipela"], "Angiologia"],
     [["cardio", "coração", "iam", "arritmia", "hipertensão", "insuficiência cardíaca", "valv"], "Cardiologia"],
     [["pneumo", "pulmão", "asma", "dpoc", "pneumonia", "tuberculose", "respirat", "micose pulmonar"], "Pneumologia"],
-    [["neuro", "avc", "epilepsia", "cefaleia", "meningite", "parkinson", "alzheimer"], "Neurologia"],
+    [["neuro", "avc", "epilepsia", "cefaleia", "meningite", "parkinson", "alzheimer", "neuropatia diabética"], "Neurologia"],
     [["endocrino", "diabetes", "tireoide", "hipotireoid", "hipertireoid", "adrenal", "hipófise", "hiperosmolar", "dislipidemia"], "Endocrinologia"],
     [["gastro", "fígado", "hepat", "intestin", "esôfago", "pancreat", "colite", "crohn", "dispepsia", "distúrbio motor"], "Gastroenterologia"],
     [["nefro", "rim", "renal", "diálise", "glomerul", "nefrit"], "Nefrologia"],
