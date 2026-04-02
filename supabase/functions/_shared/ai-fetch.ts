@@ -21,6 +21,7 @@ interface AiFetchOptions {
   tool_choice?: any;
   maxRetries?: number;
   timeoutMs?: number;
+  maxTokens?: number;
 }
 
 async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
