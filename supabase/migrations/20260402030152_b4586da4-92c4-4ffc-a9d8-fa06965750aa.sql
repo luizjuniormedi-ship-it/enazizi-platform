@@ -1,0 +1,1 @@
+UPDATE public.whatsapp_send_executions SET status = 'cancelled', finished_at = now(), updated_at = now() WHERE status IN ('queued', 'running');
