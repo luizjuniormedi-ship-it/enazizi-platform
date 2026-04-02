@@ -1,37 +1,82 @@
 
 
-# Adicionar Subtópicos Específicos às Especialidades
+# Expansão Massiva de Subtópicos — Residência Médica
 
-## Problema
-Vários subtópicos reais de provas de residência estão faltando no mapeamento `SPECIALTY_SUBTOPICS`. Isso limita a granularidade da geração de questões e dos filtros no painel do professor e simulados.
+## Contexto
+Após pesquisa nos 100 temas mais cobrados em provas de residência médica (fontes: MedProvas, Estratégia MED — USP, UNIFESP, SUS-SP, ENARE, Santa Casa), identifiquei **~40 subtópicos faltantes** no `SPECIALTY_SUBTOPICS` que são frequentemente cobrados.
 
-## Alterações
+## Subtópicos a Adicionar (por especialidade)
 
-### `src/constants/subtopics.ts`
+### Cirurgia (6 novos)
+- Abdome Agudo Obstrutivo
+- Doença Hemorroidária
+- Úlcera Perfurada
+- Doença Diverticular
+- Isquemia Mesentérica
+- Fístulas Digestivas
 
-Adicionar os subtópicos faltantes a cada especialidade (sem remover os existentes):
+### Ginecologia e Obstetrícia (7 novos)
+- Diabetes Gestacional
+- Distócias
+- Cesariana
+- Trabalho de Parto Prematuro
+- Puerpério
+- Anticoncepção
+- ISTs na Ginecologia
 
-| Especialidade | Subtópicos a adicionar |
-|---|---|
-| **Pediatria** | "IVAS", "Pneumonia na Criança", "ITU na Criança", "Tuberculose na Criança", "Piodermites na Criança" |
-| **Cardiologia** | "Crise Hipertensiva", "Doença Coronariana" |
-| **Angiologia** | "Linfangite e Erisipela" |
-| **Infectologia** | (já tem "HIV/AIDS", "Infecções Oportunistas", "Leptospirose" — ok) |
-| **Dermatologia** | "Lesões Elementares da Pele", "Piodermites", "Dermatoviroses", "Dermatozoonoses" |
-| **Gastroenterologia** | "Distúrbios Motores do Esôfago", "Dispepsia e Gastrite" |
-| **Pneumologia** | "Propedêutica Respiratória", "Micoses Pulmonares" |
-| **Oncologia** | (já tem "Câncer de Mama" — ok) |
+### Pediatria (7 novos)
+- Reanimação Neonatal
+- Icterícia Neonatal
+- Infecções Congênitas (TORCH)
+- Desidratação na Criança
+- Meningite na Criança
+- Febre sem Foco
+- Convulsão Febril
 
-### `src/lib/mapTopicToSpecialty.ts`
+### Medicina Preventiva (6 novos)
+- Sistemas de Informação em Saúde
+- Indicadores de Saúde
+- Níveis de Prevenção
+- Notificação Compulsória
+- Ética e Bioética Médica
+- Determinantes Sociais de Saúde
 
-Adicionar keywords para os novos subtópicos garantirem mapeamento correto:
-- Dermatologia: `"piodermite"`, `"dermatozoonose"`, `"dermatovirose"`, `"lesão elementar"`
-- Angiologia: `"linfangite"`, `"erisipela"`
-- Gastro: `"dispepsia"`, `"distúrbio motor"`
-- Pneumo: `"micose pulmonar"`
+### Endocrinologia (2 novos)
+- Síndrome Hiperosmolar
+- Dislipidemias
+
+### Infectologia (2 novos)
+- Arboviroses
+- Resistência Antimicrobiana
+
+### Oncologia (2 novos)
+- Câncer de Endométrio
+- Câncer de Ovário
+
+### Gastroenterologia (1 novo)
+- Doença Diverticular
+
+### Pneumologia (1 novo)
+- Pneumonia Nosocomial
+
+### Cardiologia (1 novo)
+- Síndromes Coronarianas Agudas
+
+### Medicina de Emergência (1 novo)
+- Choque Hipovolêmico
+
+### Neurologia (1 novo)
+- Neuropatia Diabética
+
+## Arquivos a Alterar
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/constants/subtopics.ts` | Adicionar ~15 subtópicos faltantes em 6 especialidades |
-| `src/lib/mapTopicToSpecialty.ts` | Adicionar ~8 keywords para novos subtópicos |
+| `src/constants/subtopics.ts` | Adicionar ~37 subtópicos faltantes em 12 especialidades |
+| `src/lib/mapTopicToSpecialty.ts` | Adicionar keywords para novos subtópicos (arbovirose, diverticular, TORCH, puerpério, etc.) |
+
+## Impacto
+- Geração de questões mais granular no painel do professor
+- Filtros mais precisos no banco de questões e simulados
+- Mapeamento automático correto de questões extraídas de provas reais
 
