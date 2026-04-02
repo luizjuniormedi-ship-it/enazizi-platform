@@ -186,8 +186,17 @@ const QuestionsBank = () => {
     return Array.from(set).sort();
   }, [questions]);
 
+  const CURSINHO_KEYWORDS = ['estrategia', 'medway', 'sanar', 'medcel', 'medgrupo', 'jaleko', 'afya'];
   const sources = useMemo(() => {
-    const set = new Set(questions.map((q) => q.source).filter(Boolean) as string[]);
+    const set = new Set(
+      questions
+        .map((q) => q.source)
+        .filter((s): s is string => {
+          if (!s) return false;
+          const lower = s.toLowerCase();
+          return !CURSINHO_KEYWORDS.some(k => lower.includes(k));
+        })
+    );
     return Array.from(set).sort();
   }, [questions]);
 
