@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 16px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .header img { width: 32px; height: 32px; border-radius: 8px; }
+    .header h1 { font-size: 16px; font-weight: 700; color: #38bdf8; }
+    .version {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .status-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .status-card.connected { border-color: #22c55e; }
+    .status-card.update { border-color: #ef4444; background: #1c1017; }
+    .status-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      margin-right: 6px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .label { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+    .value { font-size: 14px; font-weight: 600; }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      margin-top: 8px;
+    }
+    .btn-primary { background: #38bdf8; color: #0f172a; }
+    .btn-danger { background: #ef4444; color: #fff; }
+    .btn:hover { opacity: 0.9; }
+    .instructions {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+    .instructions strong { color: #94a3b8; }
+    .changelog {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 6px;
+      font-style: italic;
+    }
+    #update-section { display: none; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="icon.png" alt="ENAZIZI">
+    <div>
+      <h1>ENAZIZI WhatsApp</h1>
+      <div class="version" id="version-text">v1.0.0</div>
+    </div>
+  </div>
+
+  <div class="status-card connected">
+    <div class="label"><span class="status-dot"></span>Status</div>
+    <div class="value">Extensão ativa</div>
+  </div>
+
+  <div id="update-section" class="status-card update">
+    <div class="label">⚠️ Atualização disponível</div>
+    <div class="value" id="new-version-text">v?.?.?</div>
+    <div class="changelog" id="changelog-text"></div>
+    <a id="download-btn" class="btn btn-danger" href="#" download>
+      📥 Baixar atualização
+    </a>
+    <div class="instructions">
+      <strong>Como atualizar:</strong><br>
+      1. Descompacte o ZIP baixado<br>
+      2. Abra <code>chrome://extensions</code><br>
+      3. Clique em "Recarregar" na extensão ENAZIZI
+    </div>
+  </div>
+
+  <div class="instructions" style="margin-top: 16px;">
+    <strong>Como usar:</strong><br>
+    1. Abra o painel admin do ENAZIZI<br>
+    2. Gere as mensagens do dia<br>
+    3. Clique "Enviar via Extensão"<br>
+    4. A extensão abrirá e enviará automaticamente
+  </div>
+
+  <script>
+    const BASE_URL = "https://enazizi.com";
+
+    // Show current version
+    const ver = chrome.runtime.getManifest().version;
+    document.getElementById("version-text").textContent = `v${ver}`;
+
+    // Check for updates
+    chrome.storage.local.get(
+      ["needsUpdate", "latestVersion", "downloadUrl", "changelog"],
+      (data) => {
+        if (data.needsUpdate) {
+          document.getElementById("update-section").style.display = "block";
+          document.getElementById("new-version-text").textContent = `v${data.latestVersion}`;
+          document.getElementById("changelog-text").textContent = data.changelog || "";
+          document.getElementById("download-btn").href =
+            BASE_URL + (data.downloadUrl || "/enazizi-whatsapp-extension.zip");
+        }
+      }
+    );
+  </script>
+</body>
+</html>
