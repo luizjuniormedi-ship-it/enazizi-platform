@@ -44,58 +44,83 @@ Deno.serve(async (req) => {
     // ── Actions ──────────────────────────────────────────────
 
     if (action === "start_execution") {
-      // Check no active execution
-      const { data: active } = await supabaseAdmin
-        .from("whatsapp_send_executions")
-        .select("id")
-        .in("status", ["running", "paused"])
-        .limit(1);
-
-      if (active && active.length > 0) {
-        return respond({ error: "Já existe uma execução ativa", execution_id: active[0].id }, 409);
-      }
-
       const today = new Date().toISOString().slice(0, 10);
 
-      // Create execution
-      const { data: exec, error: execErr } = await supabaseAdmin
+      // Check for existing active execution of today — reuse if found
+      const { data: active } = await supabaseAdmin
         .from("whatsapp_send_executions")
-        .insert({
-          admin_user_id: user.id,
-          execution_date: today,
-          mode: "desktop",
-          status: "running",
-          started_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+        .select("*")
+        .in("status", ["running", "paused"])
+        .eq("execution_date", today)
+        .limit(1);
 
-      if (execErr) return respond({ error: execErr.message }, 500);
+      let exec: any;
+      let reused = false;
 
-      // Associate pending items from today
-      const { data: items, error: updateErr } = await supabaseAdmin
+      if (active && active.length > 0) {
+        // Reuse existing execution
+        exec = active[0];
+        reused = true;
+        // Ensure it's running
+        if (exec.status !== "running") {
+          await supabaseAdmin
+            .from("whatsapp_send_executions")
+            .update({ status: "running" })
+            .eq("id", exec.id);
+        }
+      } else {
+        // Create new execution
+        const { data: newExec, error: execErr } = await supabaseAdmin
+          .from("whatsapp_send_executions")
+          .insert({
+            admin_user_id: user.id,
+            execution_date: today,
+            mode: "desktop",
+            status: "running",
+            started_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (execErr) return respond({ error: execErr.message }, 500);
+        exec = newExec;
+      }
+
+      // Associate ONLY unlinked pending items from today
+      const { data: items } = await supabaseAdmin
         .from("whatsapp_message_log")
         .update({ execution_id: exec.id, delivery_status: "pending", execution_mode: "desktop" })
         .eq("delivery_status", "pending")
+        .is("execution_id", null)
         .gte("created_at", today + "T00:00:00Z")
         .lte("created_at", today + "T23:59:59Z")
         .select("id");
 
-      const count = items?.length || 0;
+      const newlyLinked = items?.length || 0;
+
+      // Count total items linked to this execution
+      const { count: totalCount } = await supabaseAdmin
+        .from("whatsapp_message_log")
+        .select("id", { count: "exact", head: true })
+        .eq("execution_id", exec.id);
+
+      const totalItems = totalCount || 0;
       await supabaseAdmin
         .from("whatsapp_send_executions")
-        .update({ total_items: count })
+        .update({ total_items: totalItems })
         .eq("id", exec.id);
 
       // Log
       await supabaseAdmin.from("whatsapp_execution_logs").insert({
         execution_id: exec.id,
-        action: "execution_started",
+        action: reused ? "execution_reused" : "execution_started",
         status: "success",
-        message: `Execução iniciada com ${count} itens`,
+        message: reused
+          ? `Execução reutilizada, ${newlyLinked} novos itens vinculados (total: ${totalItems})`
+          : `Execução iniciada com ${totalItems} itens`,
       });
 
-      return respond({ execution_id: exec.id, total_items: count });
+      return respond({ execution_id: exec.id, total_items: totalItems, reused });
     }
 
     if (action === "next_item") {
