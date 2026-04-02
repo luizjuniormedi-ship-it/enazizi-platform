@@ -15,7 +15,7 @@ export function mapTopicToSpecialty(topic: string): string | null {
     [["reumato", "lúpus", "artrite", "vasculite", "fibromialgia"], "Reumatologia"],
     [["pediatr", "neonat", "criança", "lactente", "recém-nascido"], "Pediatria"],
     [["gineco", "obstet", "gravidez", "parto", "gestação", "pré-natal", "útero", "ovário"], "Ginecologia e Obstetrícia"],
-    [["cirurg", "apendicite", "colecist", "hérnia", "abdome agudo", "trauma"], "Cirurgia"],
+    [["cirurg", "apendicite", "colecist", "hérnia", "abdome agudo", "trauma", "hemorroidária", "úlcera perfurada", "diverticular", "isquemia mesentérica", "fístula digestiva"], "Cirurgia"],
     [["psiqui", "depressão", "ansiedade", "esquizofrenia", "bipolar", "psicose"], "Psiquiatria"],
     [["dermato", "pele", "dermat", "psoríase", "melanoma", "piodermite", "dermatozoonose", "dermatovirose", "lesão elementar", "lesões elementares"], "Dermatologia"],
     [["oftalmo", "olho", "glaucoma", "catarata", "retina"], "Oftalmologia"],
