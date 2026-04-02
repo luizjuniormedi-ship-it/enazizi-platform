@@ -146,7 +146,10 @@ Cada questão DEVE ter o campo "difficulty_level" com valor "${difficulty}".`;
           "Urologia": ["Litíase Renal", "Infecção Urinária", "Hiperplasia Prostática"],
           "Terapia Intensiva": ["Ventilação Mecânica", "Sepse e Choque Séptico", "SDRA"],
         };
-        const priorityLines = topics
+        const baseTopics = topics
+          .map((t: string) => String(t).split("(")[0].trim())
+          .filter(Boolean);
+        const priorityLines = baseTopics
           .filter((t: string) => HIGH_YIELD[t])
           .map((t: string) => `- ${t}: ${HIGH_YIELD[t].join(", ")}`)
           .join("\n");
@@ -229,12 +232,12 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
         // Shuffle and take up to batchCount
         allCached.sort(() => Math.random() - 0.5);
         const fromCache = allCached.slice(0, batchCount).map((q: any) => ({
-          statement: q.statement,
+          statement: sanitizeStatement(q.statement || ""),
           options: Array.isArray(q.options) ? q.options : [],
           correct_index: q.correct_index ?? 0,
           explanation: q.explanation || "",
           topic: q.topic || topics[0],
-          block: q.topic || topics[0],
+          block: baseTopics.find((t: string) => String(q.topic || "").toLowerCase().includes(t.toLowerCase())) || baseTopics[0] || topics[0],
           difficulty_level: difficulty || "intermediario",
         }));
 
@@ -325,12 +328,12 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
               .limit(batchCount);
             if (bankRows && bankRows.length > 0) {
               questions = bankRows.map((r: any) => ({
-                statement: r.statement,
+                statement: sanitizeStatement(r.statement || ""),
                 options: Array.isArray(r.options) ? r.options : [],
                 correct_index: r.correct_index ?? 0,
                 explanation: r.explanation || "",
                 topic: r.topic || topics[0] || "",
-                block: r.topic || topics[0] || "",
+                block: baseTopics[0] || topics[0] || "Geral",
                 difficulty_level: "intermediario",
               }));
               source = "bank";
