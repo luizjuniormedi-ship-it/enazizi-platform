@@ -1,43 +1,50 @@
 
 
-# Busca de Alunos Aleatórios no Painel do Professor
+# Corrigir Simulado: Limite de 90 Questões e Resposta no Enunciado
 
-## Resumo
-Adicionar um campo de busca por nome/email que permite ao professor encontrar e adicionar qualquer aluno da plataforma, independente de faculdade ou período.
+## Problema 1: Só aparecem 90 de 104 questões
+O `BATCH_SIZE = 10` gera muitos lotes pequenos. Filtros rigorosos (mínimo 200 chars, regex anti-inglês, regex anti-imagem) rejeitam muitas questões. O complemento final só tenta **1 vez** com no máximo 10 questões. Para simulados grandes (100+), faltam questões.
 
-## Alterações
+## Problema 2: Resposta aparece no enunciado
+A IA às vezes inclui o tema e subtema no final do campo `statement`:
+```
+"...confirmação diagnóstica inicial?\n\nAngiologia\n\nDoença Arterial Obstrutiva Periférica (DAOP) - Diagnóstico"
+```
+O `mapQuestions` não limpa isso, e o aluno vê a resposta antes de responder.
 
-### `src/pages/ProfessorDashboard.tsx`
+## Solução
 
-1. **Novo campo de busca textual** abaixo dos filtros de faculdade/período:
-   - Input com placeholder "Buscar aluno por nome ou e-mail..."
-   - Estado `studentSearch: string` para o texto digitado
-   - Botão "Buscar" ao lado do input
-   - Ao clicar, chama `callAPI({ action: "search_students", query: studentSearch })`
-   - Resultados aparecem numa lista separada abaixo, com botão "+" para adicionar ao array `previewStudents` e `selectedStudentIds`
-   - Evita duplicatas (não adiciona se já estiver na lista)
+### `src/pages/Simulados.tsx`
 
-2. **Separação visual**: Label "Ou buscar aluno específico" com um input + botão, abaixo do botão "Ver alunos que receberão"
+1. **Aumentar BATCH_SIZE**: de 10 para 20 (menos lotes, menos perdas entre lotes)
 
-### `supabase/functions/professor-simulado/index.ts`
+2. **Limpar statement no `mapQuestions`**: após extrair o statement, cortar tudo depois do último `?` que aparece antes de quebras de linha com texto curto (padrão de "tema + subtema" solto no final). Regex:
+```typescript
+// Remove trailing topic/answer lines after the question mark
+statement = statement.replace(/\?\s*\n\n[\s\S]{0,200}$/, (match) => {
+  // Only strip if what follows looks like metadata (short lines, no clinical data)
+  const afterQuestion = match.slice(1).trim();
+  const lines = afterQuestion.split('\n').filter(l => l.trim());
+  if (lines.every(l => l.trim().length < 80 && !/\d+\s*(mg|ml|mmHg|bpm|°C|%)/.test(l))) {
+    return '?';
+  }
+  return match;
+});
+```
 
-1. **Novo case `search_students`**:
-   - Recebe `{ query: string }` (mínimo 3 caracteres)
-   - Busca em `profiles` com `ilike` no `display_name` e `email`
-   - Filtra apenas `status = 'active'` e `user_type = 'estudante'`
-   - Retorna até 20 resultados com `user_id, display_name, email, faculdade, periodo`
-   - Sem restrição de faculdade do professor
+3. **Loop de complemento mais agressivo**: se após todos os lotes ainda faltam questões, fazer até **3 tentativas** de complemento (não apenas 1), cada uma pedindo o déficit restante
 
-```text
-Fluxo:
-1. Professor filtra por faculdade/período → lista padrão
-2. Professor digita "João" no campo de busca → resultados de qualquer faculdade
-3. Clica "+" no aluno → aluno é adicionado à lista de selecionados
-4. Aluno aparece na lista principal com os demais
+4. **Relaxar filtro de comprimento mínimo para banco**: questões do banco (`bankQuestions`) já são aprovadas — o filtro `statement.length >= 200` só deve se aplicar a questões geradas por IA, não às do banco. Atualmente o banco filtra com `> 10` (ok), mas o `mapQuestions` da IA usa `>= 200` (correto, manter)
+
+### `supabase/functions/question-generator/index.ts`
+
+5. **Reforçar no prompt**: adicionar instrução explícita:
+```
+PROIBIDO: NÃO inclua o tema, especialidade, subtema ou gabarito dentro do campo "statement". O statement deve conter APENAS o caso clínico e a pergunta. O tema vai no campo "topic" separadamente.
 ```
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/pages/ProfessorDashboard.tsx` | Input de busca por nome/email + lógica de adicionar alunos avulsos |
-| `supabase/functions/professor-simulado/index.ts` | Novo case `search_students` com busca por nome/email sem filtro de faculdade |
+| `src/pages/Simulados.tsx` | BATCH_SIZE=20, sanitizar statement no mapQuestions, loop de complemento com 3 tentativas |
+| `supabase/functions/question-generator/index.ts` | Reforçar prompt para não incluir metadata no statement |
 
