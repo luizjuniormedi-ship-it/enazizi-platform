@@ -1,43 +1,31 @@
 
 
-# Corrigir Fluxo Automático WhatsApp: Gerar → Executar → Agente Detecta
+# Corrigir Fluxo da Mensagem BI das 20h
 
 ## Problema
-O `generateMessages` insere mensagens e chama `handleStartDesktopExecution()`, que faz `start_execution` na edge function. Porém, se já houver uma execução ativa (409), o fluxo pode falhar silenciosamente. Além disso, a lógica de `start_execution` pega itens "pending" do dia sem filtrar por `execution_id IS NULL`, podendo conflitar com itens já vinculados.
+A Edge Function `daily-bi-whatsapp` (cron às 23:00 UTC / 20:00 BRT) gera as mensagens e insere na tabela `whatsapp_message_log` com status `pending`, mas **nunca cria uma execução** em `whatsapp_send_executions`. O agente local não detecta essas mensagens porque ele procura uma execução `running`.
 
-## Solução
-Tornar `start_execution` idempotente e robusto:
-- Se já existir execução ativa do dia, **reutilizar** e vincular novos itens
-- Garantir que só itens sem `execution_id` sejam vinculados
-- Atualizar `total_items` com a contagem real
+É o mesmo problema que foi corrigido no fluxo manual/matinal -- falta criar e ativar a execução após gerar as mensagens.
 
-## Alterações
+Além disso, a função usa `ai-proxy` em vez do gateway Lovable AI (`ai.gateway.lovable.dev`).
 
-### 1. Edge Function `whatsapp-queue/index.ts` — action `start_execution`
-Modificar a lógica para:
-1. Se já houver execução `running`/`paused` do dia → reutilizar (em vez de retornar 409)
-2. Filtrar itens pendentes com `execution_id IS NULL` (evitar duplicatas)
-3. Recalcular `total_items` somando novos + existentes
-4. Retornar a execução (nova ou reutilizada) com status `running`
+## Alteração
+
+### `supabase/functions/daily-bi-whatsapp/index.ts`
+Após o loop de geração de mensagens (linha ~175), adicionar:
+
+1. Se `queued > 0`, criar uma execução em `whatsapp_send_executions` com `mode = "auto"`, `status = "running"`, `total_items = queued`
+2. Vincular os itens pendentes (sem `execution_id`) à execução criada
+3. Registrar log em `whatsapp_execution_logs` e `admin_audit_log`
+4. Trocar a chamada de IA de `ai-proxy` para `ai.gateway.lovable.dev` com `LOVABLE_API_KEY`
+5. Manter o fix de `e nazizi.com` → `enazizi.com`
 
 ```text
-Antes:  execução ativa? → 409 erro
-Depois: execução ativa do dia? → reutilizar, vincular novos itens, retornar OK
-        sem execução ativa? → criar nova, vincular itens
+Antes:  gera mensagens → insere pending → retorna (agente não detecta)
+Depois: gera mensagens → insere pending → cria execução running → vincula itens → agente detecta e envia
 ```
 
-### 2. Frontend `WhatsAppPanel.tsx` — `generateMessages`
-Simplificar o fluxo pós-geração:
-- Remover a lógica complexa de retry/stop/restart em `handleStartDesktopExecution`
-- Confiar que `start_execution` é idempotente
-- Após sucesso, buscar status da execução e atualizar UI
-
-### 3. Frontend `WhatsAppPanel.tsx` — `handleStartDesktopExecution`
-Simplificar para apenas chamar `start_execution` e lidar com o resultado, sem tentar parar execuções vazias e re-criar.
-
-## Arquivos alterados
 | Arquivo | Mudança |
 |---------|---------|
-| `supabase/functions/whatsapp-queue/index.ts` | `start_execution` idempotente: reutiliza execução do dia, filtra `execution_id IS NULL` |
-| `src/components/admin/WhatsAppPanel.tsx` | Simplificar `handleStartDesktopExecution` para confiar na idempotência |
+| `supabase/functions/daily-bi-whatsapp/index.ts` | Criar execução `running` após gerar mensagens; migrar para Lovable AI gateway |
 
