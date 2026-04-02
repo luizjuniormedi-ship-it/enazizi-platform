@@ -73,7 +73,7 @@ serve(async (req) => {
 
     switch (action) {
       case "generate_questions": {
-        const { topics, count = 10, difficulty = "intermediario", difficultyMix } = params;
+        const { topics, count = 10, difficulty = "intermediario", difficultyMix, previousStatements } = params;
         if (!topics || !topics.length) throw new Error("Selecione pelo menos um tema");
 
         const batchCount = Math.min(count, 30); // Cap at 30 per call (frontend handles batching)
