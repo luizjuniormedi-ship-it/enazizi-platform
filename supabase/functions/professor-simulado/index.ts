@@ -7,6 +7,27 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function sanitizeStatement(raw: string): string {
+  let s = raw;
+  // Remove gabarito/resposta correta that AI sometimes appends
+  s = s.replace(/\n?\s*\*{0,2}(Gabarito|Resposta|Alternativa correta|Correct answer|Answer)[:\s].*/gi, "");
+  // Remove metadata (topic/difficulty)
+  s = s.replace(/\n?\s*\*{0,2}(Tópico|Tema|Especialidade|Subtema|Dificuldade|Difficulty)[:\s].*/gi, "");
+  // Remove "Questão X:" prefix
+  s = s.replace(/^\s*\*{0,2}Questão\s*\d*\s*:?\s*\*{0,2}\s*/gi, "");
+  // Truncate after last "?" if trailing lines are short non-clinical metadata
+  const lastQ = s.lastIndexOf("?");
+  if (lastQ > 0 && lastQ < s.length - 2) {
+    const after = s.slice(lastQ + 1).trim();
+    const lines = after.split("\n").filter((l: string) => l.trim());
+    if (lines.length > 0 && lines.length <= 5 &&
+        lines.every((l: string) => l.trim().length < 100 && !/\d+\s*(mg|ml|mmHg|bpm|°C|%|U\/L|g\/dL|mEq|mmol)/.test(l))) {
+      s = s.slice(0, lastQ + 1);
+    }
+  }
+  return s.trim();
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
