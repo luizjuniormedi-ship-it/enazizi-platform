@@ -902,15 +902,61 @@ REGRAS:
           }));
           await sb.from("teacher_study_assignment_results").insert(results);
 
-          // Notify each student
+          // Notify each student (in-app)
           const notifications = studentIds.map((sid: string) => ({
             sender_id: user.id,
             recipient_id: sid,
-            title: `📚 Nova Atribuição: ${title}`,
-            content: `Você recebeu um tema de estudo: "${title}" — Especialidade: ${specialty}, Tópicos: ${topics_to_cover || "vários"}. Acesse a aba Proficiência para estudar.`,
+            title: `📚 Tema de Estudo do Prof. ${professorName}: ${title}`,
+            content: `O Prof. ${professorName} atribuiu o tema "${title}" — Especialidade: ${specialty}, Tópicos: ${topics_to_cover || "vários"}. Acesse a aba Proficiência para estudar.`,
             priority: "important",
           }));
           await sb.from("admin_messages").insert(notifications);
+
+          // WhatsApp notification
+          try {
+            const { data: phoneProfiles } = await sb
+              .from("profiles")
+              .select("user_id, display_name, phone, whatsapp_opt_out")
+              .in("user_id", studentIds)
+              .eq("whatsapp_opt_out", false)
+              .not("phone", "is", null);
+
+            const eligibleStudents = (phoneProfiles || []).filter((p: any) => p.phone && p.phone.length >= 10);
+
+            if (eligibleStudents.length > 0) {
+              const whatsappMessages = eligibleStudents.map((p: any) => ({
+                admin_user_id: user.id,
+                target_user_id: p.user_id,
+                message_text: `📚 *Novo Tema de Estudo — Prof. ${professorName}*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! O Prof. ${professorName} atribuiu o tema "${title}" (${specialty}).\n📌 Tópicos: ${topics_to_cover || "vários"}\n\nAcesse a plataforma para estudar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
+                delivery_status: "pending",
+                execution_mode: "auto",
+              }));
+              await sb.from("whatsapp_message_log").insert(whatsappMessages);
+
+              const { data: exec } = await sb.from("whatsapp_send_executions").insert({
+                admin_user_id: user.id,
+                execution_date: new Date().toISOString().slice(0, 10),
+                mode: "auto",
+                status: "running",
+                total_items: eligibleStudents.length,
+                total_sent: 0,
+                total_error: 0,
+                total_skipped: 0,
+                started_at: new Date().toISOString(),
+              }).select("id").single();
+
+              if (exec) {
+                await sb.from("whatsapp_message_log")
+                  .update({ execution_id: exec.id })
+                  .eq("delivery_status", "pending")
+                  .is("execution_id", null)
+                  .in("target_user_id", eligibleStudents.map((p: any) => p.user_id));
+              }
+              console.log(`WhatsApp: ${eligibleStudents.length} mensagens enfileiradas para tema ${assignment.id}`);
+            }
+          } catch (whatsappErr) {
+            console.error("Erro ao enfileirar WhatsApp tema estudo (não bloqueante):", whatsappErr);
+          }
         }
 
         return ok({ success: true, assignment_id: assignment.id, students_assigned: studentIds.length });
