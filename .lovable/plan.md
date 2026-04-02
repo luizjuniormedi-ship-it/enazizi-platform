@@ -1,49 +1,30 @@
 
 
-# Fix: Zero Items in Desktop Execution Queue
+# Fix: WhatsApp Message Links Showing Wrong URL
 
-## Root Cause
+## Problem
+Two places send the wrong link in WhatsApp messages:
 
-There are **two bugs** working together:
-
-1. **`whatsapp-agent` counts cancelled messages as "already sent"**: The edge function queries `whatsapp_message_log` filtering only by `sent_at >= today` but does NOT filter by `delivery_status = 'sent'`. The 56 cancelled messages from earlier today have `sent_at` set (because the column defaults to `now()`), so ALL students appear as `already_sent_today: true`.
-
-2. **Client-side filter blocks insert**: In `WhatsAppPanel.tsx`, the insert code filters with `!s.already_sent_today`, so when every student is marked as already sent, zero rows get inserted into the queue.
+1. **`src/components/admin/WhatsAppPanel.tsx` (line 181)**: Sends `window.location.origin` as `app_url`, which in preview is `https://87c4855c-...lovableproject.com`
+2. **`supabase/functions/whatsapp-auto-send/index.ts` (line 167)**: Hardcoded `https://enazizi-com-br.lovable.app` instead of canonical domain
 
 ## Fix
 
-### 1. Edge Function: `supabase/functions/whatsapp-agent/index.ts` (~line 61-65)
-
-Add `.eq("delivery_status", "sent")` to the today-logs query so only actually sent messages count:
-
+### 1. `src/components/admin/WhatsAppPanel.tsx`
+Replace `window.location.origin` with the canonical domain:
 ```typescript
-const { data: todayLogs } = await supabaseAdmin
-  .from("whatsapp_message_log")
-  .select("target_user_id, message_text")
-  .gte("sent_at", `${today}T00:00:00Z`)
-  .eq("delivery_status", "sent")          // ← ADD THIS
-  .in("target_user_id", userIds);
+body: JSON.stringify({ app_url: "https://enazizi.com" }),
 ```
 
-This ensures cancelled, pending, or errored messages don't block re-generation.
-
-### 2. Clean up stale data (one-time migration)
-
-Reset the 56 cancelled rows' `sent_at` to NULL so they don't interfere if the filter is ever loosened:
-
-```sql
-UPDATE whatsapp_message_log SET sent_at = NULL WHERE delivery_status = 'cancelled';
+### 2. `supabase/functions/whatsapp-auto-send/index.ts`
+Replace the hardcoded lovable.app URL:
 ```
-
-## Result
-
-- "Gerar mensagens" → students no longer marked as `already_sent_today` (since none were actually sent)
-- Messages get inserted as `pending` into the queue
-- "Iniciar Execução" finds the pending rows and creates the execution with the correct item count
+Link: https://enazizi.com
+```
 
 ## Files Changed
 | File | Change |
 |------|--------|
-| `supabase/functions/whatsapp-agent/index.ts` | Add `delivery_status = 'sent'` filter to today-logs query |
-| Migration (data fix) | Set `sent_at = NULL` on cancelled messages |
+| `src/components/admin/WhatsAppPanel.tsx` | Hardcode `https://enazizi.com` as `app_url` |
+| `supabase/functions/whatsapp-auto-send/index.ts` | Update link from `enazizi-com-br.lovable.app` to `enazizi.com` |
 
