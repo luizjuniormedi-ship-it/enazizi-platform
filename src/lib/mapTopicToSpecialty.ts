@@ -13,7 +13,7 @@ export function mapTopicToSpecialty(topic: string): string | null {
     [["infecto", "hiv", "aids", "sepse", "dengue", "malária", "antibiótico", "parasit"], "Infectologia"],
     [["hemato", "anemia", "leucemia", "linfoma", "coagul", "plaqueta"], "Hematologia"],
     [["reumato", "lúpus", "artrite", "vasculite", "fibromialgia"], "Reumatologia"],
-    [["pediatr", "neonat", "criança", "lactente", "recém-nascido"], "Pediatria"],
+    [["pediatr", "neonat", "criança", "lactente", "recém-nascido", "icterícia neonatal", "torch", "convulsão febril", "febre sem foco", "reanimação neonatal"], "Pediatria"],
     [["gineco", "obstet", "gravidez", "parto", "gestação", "pré-natal", "útero", "ovário", "puerpério", "distócia", "cesariana", "anticoncep", "ist na ginecologia"], "Ginecologia e Obstetrícia"],
     [["cirurg", "apendicite", "colecist", "hérnia", "abdome agudo", "trauma", "hemorroidária", "úlcera perfurada", "diverticular", "isquemia mesentérica", "fístula digestiva"], "Cirurgia"],
     [["psiqui", "depressão", "ansiedade", "esquizofrenia", "bipolar", "psicose"], "Psiquiatria"],
