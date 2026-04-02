@@ -1,24 +1,43 @@
 
 
-# Resposta: Mensagem Personalizada Respeita o Opt-Out
+# Corrigir Fluxo Automático WhatsApp: Gerar → Executar → Agente Detecta
 
-## Como funciona hoje
+## Problema
+O `generateMessages` insere mensagens e chama `handleStartDesktopExecution()`, que faz `start_execution` na edge function. Porém, se já houver uma execução ativa (409), o fluxo pode falhar silenciosamente. Além disso, a lógica de `start_execution` pega itens "pending" do dia sem filtrar por `execution_id IS NULL`, podendo conflitar com itens já vinculados.
 
-Quando você ativa "Usar mensagem personalizada" e clica "Gerar mensagens do dia":
+## Solução
+Tornar `start_execution` idempotente e robusto:
+- Se já existir execução ativa do dia, **reutilizar** e vincular novos itens
+- Garantir que só itens sem `execution_id` sejam vinculados
+- Atualizar `total_items` com a contagem real
 
-1. O sistema chama a mesma função backend (`whatsapp-agent`) que filtra os alunos
-2. Essa função **exclui automaticamente** quem:
-   - Marcou `whatsapp_opt_out = true` (respondeu SAIR)
-   - Está bloqueado (`is_blocked = true`)
-   - Não tem telefone cadastrado
-   - Não está com status `active`
-3. Só depois de receber a lista filtrada, o sistema substitui o texto da IA pelo texto que você digitou
+## Alterações
 
-**Resultado**: A mensagem personalizada vai para todos os alunos elegíveis, **respeitando** quem escolheu sair. Quem pediu SAIR **não recebe**.
+### 1. Edge Function `whatsapp-queue/index.ts` — action `start_execution`
+Modificar a lógica para:
+1. Se já houver execução `running`/`paused` do dia → reutilizar (em vez de retornar 409)
+2. Filtrar itens pendentes com `execution_id IS NULL` (evitar duplicatas)
+3. Recalcular `total_items` somando novos + existentes
+4. Retornar a execução (nova ou reutilizada) com status `running`
 
-## Nenhuma alteração necessária
+```text
+Antes:  execução ativa? → 409 erro
+Depois: execução ativa do dia? → reutilizar, vincular novos itens, retornar OK
+        sem execução ativa? → criar nova, vincular itens
+```
 
-O comportamento já está correto — o opt-out é respeitado tanto para mensagens geradas por IA quanto para mensagens personalizadas.
+### 2. Frontend `WhatsAppPanel.tsx` — `generateMessages`
+Simplificar o fluxo pós-geração:
+- Remover a lógica complexa de retry/stop/restart em `handleStartDesktopExecution`
+- Confiar que `start_execution` é idempotente
+- Após sucesso, buscar status da execução e atualizar UI
 
-Se você quiser que a mensagem personalizada **ignore** o opt-out (envie para todos mesmo), isso precisaria de uma alteração separada.
+### 3. Frontend `WhatsAppPanel.tsx` — `handleStartDesktopExecution`
+Simplificar para apenas chamar `start_execution` e lidar com o resultado, sem tentar parar execuções vazias e re-criar.
+
+## Arquivos alterados
+| Arquivo | Mudança |
+|---------|---------|
+| `supabase/functions/whatsapp-queue/index.ts` | `start_execution` idempotente: reutiliza execução do dia, filtra `execution_id IS NULL` |
+| `src/components/admin/WhatsAppPanel.tsx` | Simplificar `handleStartDesktopExecution` para confiar na idempotência |
 
