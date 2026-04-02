@@ -22,7 +22,6 @@ Deno.serve(async (req) => {
     const { data: users, error: usersErr } = await supabase
       .from("profiles")
       .select("user_id, display_name, phone")
-      .eq("whatsapp_daily_bi", true)
       .eq("whatsapp_opt_out", false)
       .not("phone", "is", null)
       .neq("phone", "");
@@ -54,7 +53,7 @@ Deno.serve(async (req) => {
           .from("whatsapp_message_log")
           .select("id")
           .eq("target_user_id", user.user_id)
-          .eq("delivery_status", "sent")
+          .eq("execution_mode", "daily_bi")
           .gte("sent_at", `${today}T00:00:00Z`)
           .limit(1);
 
@@ -237,7 +236,7 @@ Link do app: https://enazizi.com`;
           target_user_id: user.user_id,
           message_text: messageText,
           delivery_status: "pending",
-          execution_mode: "auto",
+          execution_mode: "daily_bi",
         });
 
         queued++;
@@ -253,7 +252,7 @@ Link do app: https://enazizi.com`;
           .from("whatsapp_send_executions")
           .insert({
             started_by: adminId,
-            mode: "auto",
+            mode: "daily_bi",
             status: "running",
             total_items: queued,
             sent_count: 0,
