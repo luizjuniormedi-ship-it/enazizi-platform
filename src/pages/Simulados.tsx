@@ -79,6 +79,7 @@ async function generateBatch(
   accessToken: string | undefined,
   specificTopic?: string,
   examBoard?: string,
+  avoidStatements?: string[],
 ): Promise<SimQuestion[]> {
   const res = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`,
@@ -95,6 +96,7 @@ async function generateBatch(
         difficulty,
         timeoutMs: 55000,
         messages: [{ role: "user", content: buildPrompt(topics, count, difficulty, specificTopic, examBoard) }],
+        ...(avoidStatements && avoidStatements.length > 0 ? { avoidStatements } : {}),
       }),
     },
   );
