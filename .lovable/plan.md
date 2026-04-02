@@ -1,52 +1,49 @@
 
 
-# Fix: Messages Not Appearing in Desktop Execution
+# Fix: Zero Items in Desktop Execution Queue
 
 ## Root Cause
 
-The flow is broken between message generation and desktop execution:
+There are **two bugs** working together:
 
-1. **"Gerar mensagens"** calls `whatsapp-agent` → generates AI messages → returns them to the UI only (stored in React state `students[]`)
-2. **"Iniciar Execução"** calls `whatsapp-queue?action=start_execution` → looks for `pending` rows in `whatsapp_message_log` table → finds **0 items** because nothing was inserted
+1. **`whatsapp-agent` counts cancelled messages as "already sent"**: The edge function queries `whatsapp_message_log` filtering only by `sent_at >= today` but does NOT filter by `delivery_status = 'sent'`. The 56 cancelled messages from earlier today have `sent_at` set (because the column defaults to `now()`), so ALL students appear as `already_sent_today: true`.
 
-The messages only exist in the browser's memory, not in the database queue.
+2. **Client-side filter blocks insert**: In `WhatsAppPanel.tsx`, the insert code filters with `!s.already_sent_today`, so when every student is marked as already sent, zero rows get inserted into the queue.
 
 ## Fix
 
-After generating messages successfully, automatically insert them into `whatsapp_message_log` with `delivery_status: 'pending'`, then start the desktop execution. This connects the two flows.
+### 1. Edge Function: `supabase/functions/whatsapp-agent/index.ts` (~line 61-65)
 
-### Changes to `src/components/admin/WhatsAppPanel.tsx`
-
-1. **After `generateMessages` succeeds**, insert all generated students into `whatsapp_message_log` as pending items:
+Add `.eq("delivery_status", "sent")` to the today-logs query so only actually sent messages count:
 
 ```typescript
-// After setStudents(data.students) succeeds:
-const user = (await supabase.auth.getUser()).data.user;
-if (user && data.students?.length > 0) {
-  const rows = data.students
-    .filter(s => !s.already_sent_today && s.phone)
-    .map(s => ({
-      admin_user_id: user.id,
-      target_user_id: s.user_id,
-      message_text: s.message,
-      delivery_status: 'pending',
-      execution_mode: 'desktop',
-    }));
-  await supabase.from("whatsapp_message_log").insert(rows);
-}
+const { data: todayLogs } = await supabaseAdmin
+  .from("whatsapp_message_log")
+  .select("target_user_id, message_text")
+  .gte("sent_at", `${today}T00:00:00Z`)
+  .eq("delivery_status", "sent")          // ← ADD THIS
+  .in("target_user_id", userIds);
 ```
 
-2. **After inserting**, automatically call `handleStartDesktopExecution()` and switch to the "desktop" tab so the user sees the queue populated and ready.
+This ensures cancelled, pending, or errored messages don't block re-generation.
 
-3. **Add a toast** indicating messages were queued for desktop execution.
+### 2. Clean up stale data (one-time migration)
 
-### Result
-- Click "Gerar mensagens" → messages are created by AI AND saved to the queue
-- Desktop execution tab shows all items with their status
-- The Python agent (`agent.py`) can poll and find pending items to send via WhatsApp Desktop
+Reset the 56 cancelled rows' `sent_at` to NULL so they don't interfere if the filter is ever loosened:
+
+```sql
+UPDATE whatsapp_message_log SET sent_at = NULL WHERE delivery_status = 'cancelled';
+```
+
+## Result
+
+- "Gerar mensagens" → students no longer marked as `already_sent_today` (since none were actually sent)
+- Messages get inserted as `pending` into the queue
+- "Iniciar Execução" finds the pending rows and creates the execution with the correct item count
 
 ## Files Changed
 | File | Change |
 |------|--------|
-| `src/components/admin/WhatsAppPanel.tsx` | Insert generated messages into `whatsapp_message_log` after generation, auto-start execution, switch to desktop tab |
+| `supabase/functions/whatsapp-agent/index.ts` | Add `delivery_status = 'sent'` filter to today-logs query |
+| Migration (data fix) | Set `sent_at = NULL` on cancelled messages |
 
