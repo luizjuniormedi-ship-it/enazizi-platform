@@ -156,6 +156,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       if (error) throw error;
       setProfileIncomplete(false);
       toast({ title: "Cadastro completo! 🎉" });
+      // Re-check activity assignments after completing registration
+      supabase.functions.invoke("auto-assign-simulados").catch(() => {});
     } catch (err: any) {
       toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
     } finally {
