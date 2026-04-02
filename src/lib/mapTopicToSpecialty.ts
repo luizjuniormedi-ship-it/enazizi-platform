@@ -17,7 +17,7 @@ export function mapTopicToSpecialty(topic: string): string | null {
     [["gineco", "obstet", "gravidez", "parto", "gestação", "pré-natal", "útero", "ovário"], "Ginecologia e Obstetrícia"],
     [["cirurg", "apendicite", "colecist", "hérnia", "abdome agudo", "trauma"], "Cirurgia"],
     [["psiqui", "depressão", "ansiedade", "esquizofrenia", "bipolar", "psicose"], "Psiquiatria"],
-    [["dermato", "pele", "dermat", "psoríase", "melanoma"], "Dermatologia"],
+    [["dermato", "pele", "dermat", "psoríase", "melanoma", "piodermite", "dermatozoonose", "dermatovirose", "lesão elementar", "lesões elementares"], "Dermatologia"],
     [["oftalmo", "olho", "glaucoma", "catarata", "retina"], "Oftalmologia"],
     [["otorrino", "ouvido", "nariz", "garganta", "sinusite", "otite"], "Otorrinolaringologia"],
     [["preventiva", "epidemio", "saúde pública", "sus", "atenção primária", "vacina"], "Medicina Preventiva"],
