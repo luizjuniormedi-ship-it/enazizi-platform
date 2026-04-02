@@ -49,7 +49,8 @@ Deno.serve(async (req) => {
       .not("phone", "is", null)
       .neq("phone", "")
       .eq("status", "active")
-      .eq("is_blocked", false);
+      .eq("is_blocked", false)
+      .eq("whatsapp_opt_out", false);
 
     if (!profiles?.length) {
       log("Nenhum aluno com telefone.");
@@ -166,7 +167,8 @@ ${revisoesText}
 
 Link: https://enazizi.com
 
-Comece com saudação pelo nome. Inclua piada médica. Mencione revisões.`;
+Comece com saudação pelo nome. Inclua piada médica. Mencione revisões.
+A ÚLTIMA LINHA da mensagem DEVE ser exatamente: "Responda SAIR para não receber mais."`;
 
         let message = "";
         try {

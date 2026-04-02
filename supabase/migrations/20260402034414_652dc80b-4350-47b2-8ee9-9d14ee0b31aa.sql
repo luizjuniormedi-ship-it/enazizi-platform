@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN whatsapp_opt_out boolean NOT NULL DEFAULT false;

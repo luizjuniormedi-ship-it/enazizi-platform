@@ -45,7 +45,8 @@ serve(async (req) => {
       .not("phone", "is", null)
       .neq("phone", "")
       .eq("status", "active")
-      .eq("is_blocked", false);
+      .eq("is_blocked", false)
+      .eq("whatsapp_opt_out", false);
 
     if (profilesError) throw profilesError;
     if (!profiles || profiles.length === 0) {
@@ -185,7 +186,8 @@ A mensagem DEVE:
 2. Incluir pelo menos UMA piada ou trocadilho médico ORIGINAL
 3. Mencionar revisões do dia
 4. Se streak=0, bronca HILÁRIA mas firme
-5. Terminar com encorajamento ou link do app`;
+5. Terminar com encorajamento ou link do app
+6. A ÚLTIMA LINHA da mensagem DEVE ser exatamente: "Responda SAIR para não receber mais."`;
 
         try {
           const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
