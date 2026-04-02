@@ -106,7 +106,7 @@ function parseQuestionsFromPdfExamText(text: string, fallbackTopic: string): Arr
 
   for (const rawBlock of blocks) {
     let block = rawBlock.replace(/^QUEST[ÃA]O\s+\d+\.\s*/i, "").trim();
-    if (block.length < 250) continue;
+    if (block.length < 400) continue;
 
     const markerRegex = /(?:^|\s)([A-E])[\.)]\s/g;
     const markers = Array.from(block.matchAll(markerRegex)).map((match) => ({

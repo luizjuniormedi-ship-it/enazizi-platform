@@ -385,7 +385,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
         // Reject incomplete/truncated questions (statement too short or missing question mark)
         questions = questions.filter((q: any) => {
           const s = String(q.statement || "");
-          if (s.length < 250) return false;
+          if (s.length < 400) return false;
           // Must end with ? or have options — reject mid-sentence truncation
           if (!/[?.]/.test(s.slice(-80))) return false;
           if (!Array.isArray(q.options) || q.options.length < 4) return false;
