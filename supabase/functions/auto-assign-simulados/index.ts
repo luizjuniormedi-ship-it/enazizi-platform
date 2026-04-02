@@ -32,7 +32,7 @@ serve(async (req) => {
       console.log(`Published ${publishedCount} scheduled simulados`);
     }
 
-    // 2. Auto-assign new students to simulados with auto_assign = true
+    // 2. Auto-assign students to simulados with auto_assign = true
     const { data: autoSims } = await sb
       .from("teacher_simulados")
       .select("id, faculdade_filter, periodo_filter, total_questions")
@@ -40,23 +40,18 @@ serve(async (req) => {
       .in("status", ["published"]);
 
     for (const sim of (autoSims || [])) {
-      // Find matching students
       let query = sb.from("profiles").select("user_id").eq("status", "active");
       if (sim.faculdade_filter) query = query.eq("faculdade", sim.faculdade_filter);
       if (sim.periodo_filter) query = query.eq("periodo", sim.periodo_filter);
       const { data: students } = await query;
-
       if (!students || students.length === 0) continue;
 
-      // Get existing results for this simulado
       const { data: existingResults } = await sb
         .from("teacher_simulado_results")
         .select("student_id")
         .eq("simulado_id", sim.id);
 
       const existingIds = new Set((existingResults || []).map((r: any) => r.student_id));
-
-      // Find new students not yet assigned
       const newStudents = students.filter((s: any) => !existingIds.has(s.user_id));
 
       if (newStudents.length > 0) {
@@ -68,12 +63,86 @@ serve(async (req) => {
         }));
         await sb.from("teacher_simulado_results").insert(results);
         assignedCount += newStudents.length;
-        console.log(`Assigned ${newStudents.length} new students to simulado ${sim.id}`);
+        console.log(`Assigned ${newStudents.length} students to simulado ${sim.id}`);
+      }
+    }
+
+    // 3. Auto-assign students to clinical cases
+    let clinicalAssigned = 0;
+    const { data: clinicalCases } = await sb
+      .from("teacher_clinical_cases")
+      .select("id, faculdade_filter, periodo_filter")
+      .eq("status", "published");
+
+    for (const cc of (clinicalCases || [])) {
+      let query = sb.from("profiles").select("user_id").eq("status", "active");
+      if (cc.faculdade_filter) query = query.eq("faculdade", cc.faculdade_filter);
+      if (cc.periodo_filter) query = query.eq("periodo", cc.periodo_filter);
+      const { data: students } = await query;
+      if (!students || students.length === 0) continue;
+
+      const { data: existingResults } = await sb
+        .from("teacher_clinical_case_results")
+        .select("student_id")
+        .eq("case_id", cc.id);
+
+      const existingIds = new Set((existingResults || []).map((r: any) => r.student_id));
+      const newStudents = students.filter((s: any) => !existingIds.has(s.user_id));
+
+      if (newStudents.length > 0) {
+        const results = newStudents.map((s: any) => ({
+          case_id: cc.id,
+          student_id: s.user_id,
+          status: "pending",
+        }));
+        await sb.from("teacher_clinical_case_results").insert(results);
+        clinicalAssigned += newStudents.length;
+        console.log(`Assigned ${newStudents.length} students to clinical case ${cc.id}`);
+      }
+    }
+
+    // 4. Auto-assign students to study assignments
+    let studyAssigned = 0;
+    const { data: studyAssignments } = await sb
+      .from("teacher_study_assignments")
+      .select("id, faculdade_filter, periodo_filter")
+      .eq("status", "published");
+
+    for (const sa of (studyAssignments || [])) {
+      let query = sb.from("profiles").select("user_id").eq("status", "active");
+      if (sa.faculdade_filter) query = query.eq("faculdade", sa.faculdade_filter);
+      if (sa.periodo_filter) query = query.eq("periodo", sa.periodo_filter);
+      const { data: students } = await query;
+      if (!students || students.length === 0) continue;
+
+      const { data: existingResults } = await sb
+        .from("teacher_study_assignment_results")
+        .select("student_id")
+        .eq("assignment_id", sa.id);
+
+      const existingIds = new Set((existingResults || []).map((r: any) => r.student_id));
+      const newStudents = students.filter((s: any) => !existingIds.has(s.user_id));
+
+      if (newStudents.length > 0) {
+        const results = newStudents.map((s: any) => ({
+          assignment_id: sa.id,
+          student_id: s.user_id,
+          status: "pending",
+        }));
+        await sb.from("teacher_study_assignment_results").insert(results);
+        studyAssigned += newStudents.length;
+        console.log(`Assigned ${newStudents.length} students to study assignment ${sa.id}`);
       }
     }
 
     return new Response(
-      JSON.stringify({ success: true, published: publishedCount, assigned: assignedCount }),
+      JSON.stringify({
+        success: true,
+        published: publishedCount,
+        assigned_simulados: assignedCount,
+        assigned_clinical: clinicalAssigned,
+        assigned_study: studyAssigned,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
