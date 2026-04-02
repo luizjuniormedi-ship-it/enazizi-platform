@@ -12,7 +12,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { messages, userContext, stream: clientStream, difficulty, maxRetries, timeoutMs, outputFormat } = body;
+    const { messages, userContext, stream: clientStream, difficulty, maxRetries, timeoutMs, outputFormat, avoidStatements } = body;
 
     // Default to streaming unless client explicitly sets stream=false
     const useStream = clientStream !== false;
@@ -219,6 +219,12 @@ Regras:
 
     if (userContext) {
       systemPrompt += `\n\n--- MATERIAL/CONTEXTO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
+    }
+
+    // Anti-repetition: inject previously generated question summaries
+    if (Array.isArray(avoidStatements) && avoidStatements.length > 0) {
+      const summaries = avoidStatements.slice(0, 200).map((s: string, i: number) => `${i + 1}. ${String(s).slice(0, 120)}`).join("\n");
+      systemPrompt += `\n\n=== QUESTÕES JÁ GERADAS (NÃO REPITA) ===\nAs seguintes questões já foram geradas em lotes anteriores. NÃO repita cenários clínicos similares, NÃO repita o mesmo perfil de paciente, NÃO repita o mesmo diagnóstico principal:\n${summaries}\n=== FIM DA LISTA ===`;
     }
 
     // Build AI fetch options

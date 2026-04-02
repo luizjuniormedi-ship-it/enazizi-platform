@@ -173,12 +173,16 @@ const ProfessorDashboard = () => {
 
         toast({ title: `Gerando lote ${b + 1}/${batches}...`, description: `${allQuestions.length}/${total} questões prontas` });
 
+        // Collect summaries of already-generated questions for anti-repetition
+        const previousStatements = allQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
+
         const res = await callAPI({
           action: "generate_questions",
           topics: topicsWithSubs,
           count: batchCount,
           difficulty,
           difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
+          previousStatements: previousStatements.length > 0 ? previousStatements : undefined,
         });
 
         const batchQ = res.questions || [];

@@ -73,7 +73,7 @@ serve(async (req) => {
 
     switch (action) {
       case "generate_questions": {
-        const { topics, count = 10, difficulty = "intermediario", difficultyMix } = params;
+        const { topics, count = 10, difficulty = "intermediario", difficultyMix, previousStatements } = params;
         if (!topics || !topics.length) throw new Error("Selecione pelo menos um tema");
 
         const batchCount = Math.min(count, 30); // Cap at 30 per call (frontend handles batching)
@@ -141,7 +141,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 - Variar comorbidades: DM, HAS, IRC, HIV, tabagismo, etilismo, gestante
 - Variar queixa principal e tempo de evolução (horas, dias, semanas, meses)
 - PROIBIDO: dois pacientes com mesmo perfil demográfico no mesmo bloco
-- Retorne APENAS o JSON, sem texto adicional`;
+- Retorne APENAS o JSON, sem texto adicional${Array.isArray(previousStatements) && previousStatements.length > 0 ? `\n\n=== QUESTÕES JÁ GERADAS (NÃO REPITA) ===\nNÃO repita cenários similares aos seguintes:\n${previousStatements.slice(0, 100).map((s: string, i: number) => `${i + 1}. ${String(s).slice(0, 120)}`).join("\n")}\n=== FIM ===` : ""}`;
 
         const response = await aiFetch({
           messages: [{ role: "user", content: prompt }],
@@ -162,7 +162,16 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
         const jsonMatch = content.match(/\[[\s\S]*\]/);
         if (!jsonMatch) throw new Error("Erro ao processar questões geradas");
 
-        const questions = JSON.parse(jsonMatch[0]);
+        let questions = JSON.parse(jsonMatch[0]);
+        
+        // Post-parse dedup against previousStatements
+        if (Array.isArray(previousStatements) && previousStatements.length > 0) {
+          const prevKeys = new Set(previousStatements.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
+          questions = questions.filter((q: any) => {
+            const key = String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ");
+            return !prevKeys.has(key);
+          });
+        }
         console.log(`Generated ${questions.length} questions`);
 
         return ok({ questions });
