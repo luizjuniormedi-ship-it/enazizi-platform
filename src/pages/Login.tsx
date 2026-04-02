@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Brain, Mail, Lock, BookOpen, Trophy, Sparkles, GraduationCap, AlertTriangle, Calendar, Users, FlaskConical } from "lucide-react";
+import { Brain, Mail, Lock, BookOpen, Trophy, Sparkles, GraduationCap, AlertTriangle, Calendar, Users, FlaskConical, Smartphone, Monitor, Globe, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -14,9 +14,9 @@ const errorMessages: Record<string, string> = {
 };
 
 const stats = [
-  { icon: Users, value: "147+", label: "Alunos" },
+  { icon: Users, value: "160+", label: "Alunos" },
   { icon: BookOpen, value: "6.700+", label: "Questões" },
-  { icon: Trophy, value: "5.700+", label: "Flashcards" },
+  { icon: Trophy, value: "6.100+", label: "Flashcards" },
   { icon: Brain, value: "8", label: "Agentes IA" },
 ];
 
@@ -27,6 +27,10 @@ const features = [
   { icon: GraduationCap, label: "Painel do Professor com BI" },
   { icon: AlertTriangle, label: "Banco de erros inteligente" },
   { icon: Calendar, label: "Cronograma adaptativo" },
+  { icon: MessageCircle, label: "Resumo diário via WhatsApp" },
+  { icon: Smartphone, label: "App móvel (PWA) — iOS e Android" },
+  { icon: Monitor, label: "Desktop — Windows, Mac e Linux" },
+  { icon: Globe, label: "Acesso web em qualquer navegador" },
 ];
 
 const Login = () => {
