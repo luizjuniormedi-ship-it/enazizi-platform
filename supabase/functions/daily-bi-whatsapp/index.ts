@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
 
         const totalQ = attempts?.length || 0;
         const correctQ = attempts?.filter((a: any) => a.correct).length || 0;
-        const accuracy = totalQ > 0 ? Math.round((correctQ / totalQ) * 100) : 0;
+        const accuracy = totalQ > 0 ? Math.min(100, Math.round((correctQ / totalQ) * 100)) : 0;
 
         // Gamification (XP, streak)
         const { data: gamif } = await supabase
@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
             const done = simResults.filter((r: any) => r.status === "completed");
             const pending = simResults.filter((r: any) => r.status === "pending").length;
             const avgScore = done.length > 0
-              ? Math.round(done.reduce((sum: number, r: any) => sum + ((r.score || 0) / (r.total_questions || 1) * 100), 0) / done.length)
+              ? Math.min(100, Math.round(done.reduce((sum: number, r: any) => sum + (r.score || 0), 0) / done.length))
               : 0;
             parts.push(`- Simulados: ${done.length} feito(s)${done.length > 0 ? ` (média ${avgScore}%)` : ""}, ${pending} pendente(s)`);
           }
@@ -177,6 +177,11 @@ Deno.serve(async (req) => {
         const nome = user.display_name?.split(" ")[0] || "Aluno";
 
         const prompt = `Gere uma mensagem WhatsApp curta e motivacional (máx 600 chars) em português brasileiro para o aluno ${nome} com este resumo do dia e programação de amanhã. Use emojis. Inclua TODOS os dados abaixo. Não invente dados.
+
+REGRAS IMPORTANTES:
+- NUNCA mostre percentuais acima de 100%. Valores são de 0% a 100%.
+- NÃO invente dados ou métricas que não foram fornecidos.
+- NÃO calcule "probabilidade de aprovação" — apenas relate os dados fornecidos.
 
 RESUMO DE HOJE:
 - Questões respondidas: ${totalQ}
