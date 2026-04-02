@@ -1,44 +1,43 @@
 
 
-# Padronizar Mensagens In-App do Professor com o Modelo WhatsApp
+# Re-atribuir Atividades Após Edição de Perfil do Aluno
 
 ## Problema
-As mensagens in-app (banner no dashboard do aluno) das atividades do professor estão com texto genérico e curto, enquanto as mensagens WhatsApp já têm o modelo correto com saudação, detalhes completos, horário e instrução de navegação.
+Quando um aluno corrige seus dados de cadastro (faculdade, período), o CRON `auto-assign-simulados` eventualmente o atribui, mas:
+1. Pode demorar até o próximo ciclo do CRON
+2. O CRON só cobre simulados — **não cobre casos clínicos nem temas de estudo**
+3. Se o aluno já estava com dados errados quando o simulado foi criado, ele ficou de fora
 
-**In-app atual (curto):**
-> O Prof. João disponibilizou o simulado "Cardio" — 100 questões, tempo: 60min. Acesse a aba Mais Ferramentas → Proficiência para realizar.
+## Solução
 
-**WhatsApp (modelo correto):**
-> 📋 *Novo Simulado — Prof. João*
-> Olá Maria! O Prof. João disponibilizou o simulado "Cardio" com 100 questões (60min).
-> ⏰ Agendado: 05/04/2026 às 14:00
-> 👉 Acesse *Mais Ferramentas* → *Proficiência* para realizar!
+### 1. Trigger imediato após salvar perfil (`src/pages/Profile.tsx`)
+Após o `update` do perfil, chamar a edge function `auto-assign-simulados` para re-verificar imediatamente:
 
-## Alteração
-
-### `supabase/functions/professor-simulado/index.ts`
-
-Atualizar o campo `content` dos 3 tipos de notificação in-app (simulado, caso clínico, tema de estudo) para incluir:
-
-1. **Saudação personalizada** com o primeiro nome do aluno
-2. **Detalhes completos** (número de questões, tempo, especialidade, dificuldade)
-3. **Horário agendado** quando aplicável
-4. **Instrução de navegação** clara com emojis
-5. **Link do app**
-
-Exemplo do novo formato in-app para simulado:
-```
-📋 Olá {nome}! O Prof. {professor} disponibilizou o simulado "{título}" com {N} questões ({tempo}min).
-⏰ Agendado: {data/hora}
-👉 Acesse Mais Ferramentas → Proficiência para realizar!
-🔗 https://enazizi.com
+```typescript
+// Após salvar perfil com sucesso
+await supabase.functions.invoke("auto-assign-simulados");
 ```
 
-Mesma padronização para caso clínico e tema de estudo.
+Mesmo tratamento no `ProtectedRoute.tsx` (tela de completar cadastro).
 
-**Nota:** O `display_name` do aluno já está disponível no `studentList` para simulados (via `profiles` join). Para casos clínicos e temas de estudo, já temos acesso ao `phoneProfiles` — precisarei garantir que o nome do aluno esteja acessível no momento da criação da notificação in-app.
+### 2. Expandir `auto-assign-simulados` para cobrir casos clínicos e temas
+Adicionar ao CRON a mesma lógica para `teacher_clinical_cases` → `teacher_clinical_case_results` e `teacher_study_assignments` → `teacher_study_assignment_results`, usando os mesmos filtros de `faculdade_filter` e `periodo_filter`.
+
+### 3. Lógica de atribuição expandida
+
+Para **casos clínicos**:
+- Buscar `teacher_clinical_cases` com `status = 'published'`
+- Encontrar alunos que correspondam aos filtros e ainda não tenham resultado
+- Inserir em `teacher_clinical_case_results` com `status: 'pending'`
+
+Para **temas de estudo**:
+- Buscar `teacher_study_assignments` com `status = 'published'`
+- Encontrar alunos correspondentes sem resultado
+- Inserir em `teacher_study_assignment_results` com `status: 'pending'`
 
 | Arquivo | Mudança |
 |---------|---------|
-| `supabase/functions/professor-simulado/index.ts` | Enriquecer `content` das 3 notificações in-app (simulado, caso clínico, tema) com saudação, detalhes, horário e instrução de navegação |
+| `supabase/functions/auto-assign-simulados/index.ts` | Expandir para auto-atribuir também casos clínicos e temas de estudo |
+| `src/pages/Profile.tsx` | Chamar `auto-assign-simulados` após salvar perfil |
+| `src/components/auth/ProtectedRoute.tsx` | Chamar `auto-assign-simulados` após completar cadastro |
 
