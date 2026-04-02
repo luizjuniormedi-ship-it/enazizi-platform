@@ -15,8 +15,8 @@ const BASIC_SCIENCES = [
   "Parasitologia", "Patologia", "Semiologia",
 ];
 
-const TARGET_CLINICAL = 250;
-const TARGET_BASIC = 150;
+const TARGET_CLINICAL = 400;
+const TARGET_BASIC = 250;
 
 const SPECIALTIES = [
   "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia",

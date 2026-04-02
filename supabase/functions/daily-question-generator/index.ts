@@ -494,9 +494,9 @@ serve(async (req) => {
         console.log(`${spec}: ${realCount} exam-style questions generated`);
       }
 
-      // Phase 2: Generate complementary questions to reach 10 total
+      // Phase 2: Generate complementary questions to reach 15 total
       const totalSoFar = webScrapeCount + realCount;
-      const remaining = Math.max(0, 10 - totalSoFar);
+      const remaining = Math.max(0, 15 - totalSoFar);
       let genCount = 0;
       if (remaining > 0) {
         genCount = await generateForSpecialty(spec, topics, userId, supabaseAdmin, existingStatements, remaining);

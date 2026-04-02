@@ -17,9 +17,15 @@ function normalizeText(s: string): string {
 function isValidQuestion(q: { statement?: string; options?: string[]; correct_index?: number }): boolean {
   if (!q.statement || !Array.isArray(q.options) || typeof q.correct_index !== "number") return false;
   if (q.options.length < 4 || q.options.length > 5) return false;
-  if (q.statement.length < 100) return false;
+  if (q.statement.length < 120) return false;
   if (IMAGE_REF_PATTERN.test(q.statement)) return false;
   if (ENGLISH_PATTERN.test(q.statement)) return false;
+  // Reject statements that contain metadata (topic/specialty names embedded)
+  const metadataPattern = /^(Cardiologia|Pediatria|Cirurgia|Neurologia|Pneumologia|Ginecologia|Obstetrícia|Infectologia|Dermatologia|Endocrinologia|Gastroenterologia|Hematologia|Nefrologia|Reumatologia|Urologia|Psiquiatria|Oncologia|Angiologia|Ortopedia)\s*[-–—:]/i;
+  if (metadataPattern.test(q.statement.trim())) return false;
+  // Reject empty/trivial options
+  const validOpts = q.options.filter(o => String(o).trim().length > 2);
+  if (validOpts.length < 4) return false;
   return true;
 }
 
