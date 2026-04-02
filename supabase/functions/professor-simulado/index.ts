@@ -995,11 +995,18 @@ REGRAS:
           const alreadyCaseInApp = await alreadyNotifiedInApp(caseTitleTag, studentIds);
           const newCaseInApp = studentIds.filter((sid: string) => !alreadyCaseInApp.includes(sid));
           if (newCaseInApp.length > 0) {
+            // Fetch student names for personalized in-app messages
+            const { data: caseInAppProfiles } = await sb.from("profiles")
+              .select("user_id, display_name")
+              .in("user_id", newCaseInApp);
+            const caseNameMap: Record<string, string> = {};
+            (caseInAppProfiles || []).forEach((p: any) => { caseNameMap[p.user_id] = (p.display_name || "").split(" ")[0] || "aluno(a)"; });
+
             const notifications = newCaseInApp.map((sid: string) => ({
               sender_id: user.id,
               recipient_id: sid,
               title: `🏥 ${caseTitleTag}`,
-              content: `O Prof. ${professorName} criou o caso clínico "${title || "Plantão"}" — Especialidade: ${specialty}, Dificuldade: ${difficulty || "intermediário"}. Acesse a aba Mais Ferramentas → Proficiência para realizar.`,
+              content: `🏥 Olá ${caseNameMap[sid] || "aluno(a)"}! O Prof. ${professorName} criou o caso clínico "${title || "Plantão"}" (${specialty}, dificuldade: ${difficulty || "intermediário"}).\n👉 Acesse Mais Ferramentas → Proficiência para realizar!\n🔗 https://enazizi.com`,
               priority: "important",
             }));
             await sb.from("admin_messages").insert(notifications);
