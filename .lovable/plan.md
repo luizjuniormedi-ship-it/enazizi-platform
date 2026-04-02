@@ -1,50 +1,69 @@
 
 
-# Corrigir Simulado: Limite de 90 Questões e Resposta no Enunciado
+# Corrigir Dashboard em Branco + Aprimoramentos
 
-## Problema 1: Só aparecem 90 de 104 questões
-O `BATCH_SIZE = 10` gera muitos lotes pequenos. Filtros rigorosos (mínimo 200 chars, regex anti-inglês, regex anti-imagem) rejeitam muitas questões. O complemento final só tenta **1 vez** com no máximo 10 questões. Para simulados grandes (100+), faltam questões.
+## Problema: Dashboard em branco
+O Dashboard tem vários componentes renderizados **fora** de `SafeCard`, o que significa que se qualquer um deles lançar um erro, o React derruba toda a página — mostrando apenas a tela genérica do ErrorBoundary ou, pior, uma tela branca.
 
-## Problema 2: Resposta aparece no enunciado
-A IA às vezes inclui o tema e subtema no final do campo `statement`:
-```
-"...confirmação diagnóstica inicial?\n\nAngiologia\n\nDoença Arterial Obstrutiva Periférica (DAOP) - Diagnóstico"
-```
-O `mapQuestions` não limpa isso, e o aluno vê a resposta antes de responder.
+**Componentes desprotegidos:**
+- `MotivationalGreeting` (recebe props diretas — se `data` tiver campo inesperado, crash)
+- `XpWidget` / `AchievementToast` / `PerformanceReport`
+- `ExamSetupReminder`
+- `FreeStudyCard`
+- `AdminMessagesBanner`
+- `OnboardingChecklist` (ambas instâncias)
+- `ActiveVideoRoomBanner`
+- `DailyPlanWidget` / `DailyGoalWidget` (dentro dos Sheets)
 
 ## Solução
 
-### `src/pages/Simulados.tsx`
+### 1. Envolver TODOS os componentes do Dashboard em SafeCard (`src/pages/Dashboard.tsx`)
 
-1. **Aumentar BATCH_SIZE**: de 10 para 20 (menos lotes, menos perdas entre lotes)
+Cada componente ou grupo de componentes que não está dentro de `SafeCard` será envolvido. Isso garante que uma falha isolada mostra apenas "Sem dados suficientes" naquele card, sem derrubar a página inteira.
 
-2. **Limpar statement no `mapQuestions`**: após extrair o statement, cortar tudo depois do último `?` que aparece antes de quebras de linha com texto curto (padrão de "tema + subtema" solto no final). Regex:
+```text
+Antes:
+  <MotivationalGreeting ... />        ← crash = tela branca
+  <XpWidget />                        ← crash = tela branca
+
+Depois:
+  <SafeCard name="Greeting">
+    <MotivationalGreeting ... />      ← crash = fallback local
+  </SafeCard>
+  <SafeCard name="XpWidget">
+    <XpWidget />
+  </SafeCard>
+```
+
+Componentes a proteger:
+- `MotivationalGreeting` + `XpWidget` + `PerformanceReport` + `AchievementToast`
+- `ActiveVideoRoomBanner`
+- `ExamSetupReminder`
+- `OnboardingChecklist` (ambas instâncias)
+- `FreeStudyCard`
+- `AdminMessagesBanner`
+- Conteúdo dos 4 Sheets (Desempenho, Cronograma, Streak, Simulados)
+
+### 2. Proteger acesso a `data` com fallback defensivo
+
+No bloco `const { stats, metrics, displayName, hasCompletedDiagnostic } = data;`, adicionar fallback:
+
 ```typescript
-// Remove trailing topic/answer lines after the question mark
-statement = statement.replace(/\?\s*\n\n[\s\S]{0,200}$/, (match) => {
-  // Only strip if what follows looks like metadata (short lines, no clinical data)
-  const afterQuestion = match.slice(1).trim();
-  const lines = afterQuestion.split('\n').filter(l => l.trim());
-  if (lines.every(l => l.trim().length < 80 && !/\d+\s*(mg|ml|mmHg|bpm|°C|%)/.test(l))) {
-    return '?';
-  }
-  return match;
-});
+const { stats, metrics, displayName, hasCompletedDiagnostic } = data || {};
+if (!stats || !metrics) {
+  return <PageLoader />;
+}
 ```
 
-3. **Loop de complemento mais agressivo**: se após todos os lotes ainda faltam questões, fazer até **3 tentativas** de complemento (não apenas 1), cada uma pedindo o déficit restante
+### 3. Aprimoramentos sugeridos
 
-4. **Relaxar filtro de comprimento mínimo para banco**: questões do banco (`bankQuestions`) já são aprovadas — o filtro `statement.length >= 200` só deve se aplicar a questões geradas por IA, não às do banco. Atualmente o banco filtra com `> 10` (ok), mas o `mapQuestions` da IA usa `>= 200` (correto, manter)
+- **`useDashboardData`**: O `try/catch` já retorna defaults vazios — verificar que nenhuma das 21 queries paralelas pode lançar exceção não-capturada (todas usam destructuring `{ data, error }` do Supabase, que nunca lança)
+- **Lazy-loaded components nos Sheets**: Já estão em `Suspense` — ok
+- **Popups lazy-loaded**: Já em `Suspense fallback={null}` — ok
 
-### `supabase/functions/question-generator/index.ts`
-
-5. **Reforçar no prompt**: adicionar instrução explícita:
-```
-PROIBIDO: NÃO inclua o tema, especialidade, subtema ou gabarito dentro do campo "statement". O statement deve conter APENAS o caso clínico e a pergunta. O tema vai no campo "topic" separadamente.
-```
+## Resumo das alterações
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/pages/Simulados.tsx` | BATCH_SIZE=20, sanitizar statement no mapQuestions, loop de complemento com 3 tentativas |
-| `supabase/functions/question-generator/index.ts` | Reforçar prompt para não incluir metadata no statement |
+| `src/pages/Dashboard.tsx` | Envolver todos os componentes desprotegidos em `SafeCard`; adicionar guard defensivo no destructuring de `data` |
 
