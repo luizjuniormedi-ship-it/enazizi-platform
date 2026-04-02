@@ -447,6 +447,7 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
                 <MessageSquare className="h-5 w-5 text-primary" /> Mensagens WhatsApp
               </h2>
               <p className="text-sm text-muted-foreground">Gere mensagens únicas por IA e envie todas com um clique.</p>
+              {optOutCount > 0 && <Badge variant="secondary" className="text-xs mt-1">🚫 {optOutCount} aluno(s) optaram por não receber</Badge>}
             </div>
             <Button onClick={generateMessages} disabled={loading || bulkSending} className="gap-1.5">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
