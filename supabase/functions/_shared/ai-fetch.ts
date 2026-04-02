@@ -21,6 +21,7 @@ interface AiFetchOptions {
   tool_choice?: any;
   maxRetries?: number;
   timeoutMs?: number;
+  maxTokens?: number;
 }
 
 async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
@@ -83,7 +84,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   const timeoutMs = options.timeoutMs ?? 45000;
 
   const buildBody = (model: string) => {
-    const body: any = { model, messages: options.messages, max_tokens: 16384 };
+    const body: any = { model, messages: options.messages, max_tokens: options.maxTokens ?? 16384 };
     if (options.stream !== undefined) body.stream = options.stream;
     if (options.tools) body.tools = options.tools;
     if (options.tool_choice) body.tool_choice = options.tool_choice;

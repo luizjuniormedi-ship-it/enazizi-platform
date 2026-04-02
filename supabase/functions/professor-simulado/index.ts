@@ -51,31 +51,40 @@ serve(async (req) => {
         const { topics, count = 10, difficulty = "intermediario", difficultyMix } = params;
         if (!topics || !topics.length) throw new Error("Selecione pelo menos um tema");
 
-        const topicList = topics.join(", ");
-        const perTopic = Math.max(1, Math.floor(count / topics.length));
+        const BATCH_SIZE = 20;
+        const batches = Math.ceil(count / BATCH_SIZE);
+        let allQuestions: any[] = [];
 
-        // Build difficulty instruction
-        let difficultyInstruction = "";
-        if (difficulty === "misto" && difficultyMix) {
-          const nFacil = Math.round(count * (difficultyMix.facil || 0) / 100);
-          const nInterm = Math.round(count * (difficultyMix.intermediario || 0) / 100);
-          const nDificil = count - nFacil - nInterm;
-          difficultyInstruction = `DISTRIBUIÇÃO DE DIFICULDADE OBRIGATÓRIA:
+        for (let b = 0; b < batches; b++) {
+          const batchCount = Math.min(BATCH_SIZE, count - allQuestions.length);
+          if (batchCount <= 0) break;
+
+          const topicList = topics.join(", ");
+          const perTopic = Math.max(1, Math.floor(batchCount / topics.length));
+
+          // Build difficulty instruction
+          let difficultyInstruction = "";
+          if (difficulty === "misto" && difficultyMix) {
+            const nFacil = Math.round(batchCount * (difficultyMix.facil || 0) / 100);
+            const nInterm = Math.round(batchCount * (difficultyMix.intermediario || 0) / 100);
+            const nDificil = batchCount - nFacil - nInterm;
+            difficultyInstruction = `DISTRIBUIÇÃO DE DIFICULDADE OBRIGATÓRIA:
 - ${nFacil} questões de nível FÁCIL (conceitos básicos, diagnóstico direto, caso clínico simples)
 - ${nInterm} questões de nível INTERMEDIÁRIO (raciocínio clínico moderado, diagnósticos diferenciais)
 - ${nDificil} questões de nível DIFÍCIL (casos complexos, pegadinhas de prova, múltiplas comorbidades, conduta em emergência)
 Cada questão DEVE ter o campo "difficulty_level" com valor "facil", "intermediario" ou "dificil".`;
-        } else {
-          const levelMap: Record<string, string> = {
-            facil: "FÁCIL (conceitos básicos, diagnóstico direto, caso clínico simples)",
-            intermediario: "INTERMEDIÁRIO (raciocínio clínico moderado, diagnósticos diferenciais)",
-            dificil: "DIFÍCIL (casos complexos, pegadinhas de prova, múltiplas comorbidades)",
-          };
-          difficultyInstruction = `NÍVEL DE DIFICULDADE: Todas as ${count} questões devem ser de nível ${levelMap[difficulty] || levelMap.intermediario}.
+          } else {
+            const levelMap: Record<string, string> = {
+              facil: "FÁCIL (conceitos básicos, diagnóstico direto, caso clínico simples)",
+              intermediario: "INTERMEDIÁRIO (raciocínio clínico moderado, diagnósticos diferenciais)",
+              dificil: "DIFÍCIL (casos complexos, pegadinhas de prova, múltiplas comorbidades)",
+            };
+            difficultyInstruction = `NÍVEL DE DIFICULDADE: Todas as ${batchCount} questões devem ser de nível ${levelMap[difficulty] || levelMap.intermediario}.
 Cada questão DEVE ter o campo "difficulty_level" com valor "${difficulty}".`;
-        }
+          }
 
-        const prompt = `Gere exatamente ${count} questões objetivas de múltipla escolha (A-E) para residência médica sobre: ${topicList}.
+          const batchLabel = batches > 1 ? ` (lote ${b + 1}/${batches})` : "";
+          const prompt = `Gere exatamente ${batchCount} questões objetivas de múltipla escolha (A-E) para residência médica sobre: ${topicList}.${batchLabel}
 
 IDIOMA OBRIGATÓRIO: TUDO deve ser escrito em PORTUGUÊS BRASILEIRO. Enunciados, alternativas, explicações, blocos — absolutamente TUDO em pt-BR. NUNCA use inglês.
 
@@ -97,7 +106,7 @@ Para cada questão, retorne APENAS um array JSON válido no formato:
 ]
 
 REGRAS:
-- OBRIGATÓRIO: No mínimo 70% das questões (${Math.ceil(count * 0.7)} de ${count}) devem ser baseadas em CASOS CLÍNICOS com apresentação de paciente, história, exame físico e/ou exames complementares
+- OBRIGATÓRIO: No mínimo 70% das questões (${Math.ceil(batchCount * 0.7)} de ${batchCount}) devem ser baseadas em CASOS CLÍNICOS com apresentação de paciente, história, exame físico e/ou exames complementares
 - As demais (até 30%) podem ser questões teóricas diretas
 - 5 alternativas (A-E)
 - correct_index é o índice (0-4) da alternativa correta
@@ -116,26 +125,31 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 - PROIBIDO: dois pacientes com mesmo perfil demográfico no mesmo bloco
 - Retorne APENAS o JSON, sem texto adicional`;
 
-        const response = await aiFetch({
-          messages: [{ role: "user", content: prompt }],
-          model: "google/gemini-2.5-flash",
-        });
+          const response = await aiFetch({
+            messages: [{ role: "user", content: prompt }],
+            model: "google/gemini-2.5-flash",
+            maxTokens: 32768,
+            timeoutMs: 90000,
+          });
 
-        if (!response.ok) {
-          const t = await response.text();
-          console.error("AI error:", t);
-          throw new Error("Erro ao gerar questões");
+          if (!response.ok) {
+            const t = await response.text();
+            console.error(`AI error batch ${b + 1}:`, t);
+            throw new Error(`Erro ao gerar questões (lote ${b + 1})`);
+          }
+
+          const aiData = await response.json();
+          const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
+
+          const jsonMatch = content.match(/\[[\s\S]*\]/);
+          if (!jsonMatch) throw new Error(`Erro ao processar questões geradas (lote ${b + 1})`);
+
+          const batchQuestions = JSON.parse(jsonMatch[0]);
+          allQuestions = allQuestions.concat(batchQuestions);
+          console.log(`Batch ${b + 1}/${batches}: ${batchQuestions.length} questões geradas (total: ${allQuestions.length})`);
         }
 
-        const aiData = await response.json();
-        const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
-
-        // Parse JSON from response
-        const jsonMatch = content.match(/\[[\s\S]*\]/);
-        if (!jsonMatch) throw new Error("Erro ao processar questões geradas");
-
-        const questions = JSON.parse(jsonMatch[0]);
-        return ok({ questions });
+        return ok({ questions: allQuestions });
       }
 
       case "create_simulado": {
@@ -183,7 +197,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           }));
           await sb.from("teacher_simulado_results").insert(results);
 
-          // Notify each student
+          // Notify each student (in-app)
           const notifications = studentList.map((s: any) => ({
             sender_id: user.id,
             recipient_id: s.user_id,
@@ -192,6 +206,51 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
             priority: "important",
           }));
           await sb.from("admin_messages").insert(notifications);
+
+          // WhatsApp notification for students with phone
+          try {
+            const studentIds = studentList.map((s: any) => s.user_id);
+            const { data: phoneProfiles } = await sb
+              .from("profiles")
+              .select("user_id, display_name, phone, whatsapp_opt_out")
+              .in("user_id", studentIds)
+              .eq("whatsapp_opt_out", false)
+              .not("phone", "is", null);
+
+            const eligibleStudents = (phoneProfiles || []).filter((p: any) => p.phone && p.phone.length >= 10);
+
+            if (eligibleStudents.length > 0) {
+              const whatsappMessages = eligibleStudents.map((p: any) => ({
+                admin_user_id: user.id,
+                target_user_id: p.user_id,
+                message_text: `📋 *Novo Simulado Disponível!*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! Seu professor disponibilizou o simulado "${title || "Simulado"}" com ${questions_json?.length || total_questions} questões (${time_limit_minutes || 60}min).${scheduled_at ? `\n⏰ Agendado: ${new Date(scheduled_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}` : ""}\n\nAcesse a plataforma para realizar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
+                delivery_status: "pending",
+                execution_mode: "auto",
+              }));
+              await sb.from("whatsapp_message_log").insert(whatsappMessages);
+
+              // Create execution for the agent
+              const { data: exec } = await sb.from("whatsapp_send_executions").insert({
+                started_by: user.id,
+                status: "running",
+                total_items: eligibleStudents.length,
+                sent_count: 0,
+                error_count: 0,
+                source: "professor_simulado",
+              }).select("id").single();
+
+              if (exec) {
+                await sb.from("whatsapp_message_log")
+                  .update({ execution_id: exec.id })
+                  .eq("delivery_status", "pending")
+                  .is("execution_id", null)
+                  .in("target_user_id", eligibleStudents.map((p: any) => p.user_id));
+              }
+              console.log(`WhatsApp: ${eligibleStudents.length} mensagens enfileiradas para simulado ${simulado.id}`);
+            }
+          } catch (whatsappErr) {
+            console.error("Erro ao enfileirar WhatsApp (não bloqueante):", whatsappErr);
+          }
         }
 
         return ok({ success: true, simulado_id: simulado.id, students_assigned: studentList.length, status: simStatus });
