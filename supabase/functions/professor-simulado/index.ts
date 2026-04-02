@@ -325,12 +325,12 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
               .limit(batchCount);
             if (bankRows && bankRows.length > 0) {
               questions = bankRows.map((r: any) => ({
-                statement: r.statement,
+                statement: sanitizeStatement(r.statement || ""),
                 options: Array.isArray(r.options) ? r.options : [],
                 correct_index: r.correct_index ?? 0,
                 explanation: r.explanation || "",
                 topic: r.topic || topics[0] || "",
-                block: r.topic || topics[0] || "",
+                block: topics[0] || "Geral",
                 difficulty_level: "intermediario",
               }));
               source = "bank";
