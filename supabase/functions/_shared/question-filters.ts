@@ -11,6 +11,7 @@ export const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year
 /** Validates a question meets minimum quality standards */
 export function isValidQuestion(q: { statement?: string; options?: any[]; correct_index?: number }): boolean {
   if (!q.statement || !Array.isArray(q.options) || typeof q.correct_index !== "number") return false;
+  if (q.statement.length < 250) return false;
   if (q.options.length < 4 || q.options.length > 5) return false;
   if (IMAGE_REF_PATTERN.test(q.statement)) return false;
   if (ENGLISH_PATTERN.test(q.statement)) return false;
@@ -19,6 +20,6 @@ export function isValidQuestion(q: { statement?: string; options?: any[]; correc
 
 /** Checks if statement has minimum clinical context (age/time pattern + length) */
 export function hasMinimumContext(statement: string): boolean {
-  if (!statement || statement.length < 200) return false;
+  if (!statement || statement.length < 250) return false;
   return /\d+\s*(anos?|meses|dias|horas|semanas)/i.test(statement);
 }

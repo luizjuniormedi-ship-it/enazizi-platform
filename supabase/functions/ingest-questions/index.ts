@@ -17,7 +17,7 @@ function normalizeText(s: string): string {
 function isValidQuestion(q: { statement?: string; options?: string[]; correct_index?: number }): boolean {
   if (!q.statement || !Array.isArray(q.options) || typeof q.correct_index !== "number") return false;
   if (q.options.length < 4 || q.options.length > 5) return false;
-  if (q.statement.length < 120) return false;
+  if (q.statement.length < 250) return false;
   if (IMAGE_REF_PATTERN.test(q.statement)) return false;
   if (ENGLISH_PATTERN.test(q.statement)) return false;
   // Reject statements that contain metadata (topic/specialty names embedded)
@@ -106,7 +106,7 @@ function parseQuestionsFromPdfExamText(text: string, fallbackTopic: string): Arr
 
   for (const rawBlock of blocks) {
     let block = rawBlock.replace(/^QUEST[ÃA]O\s+\d+\.\s*/i, "").trim();
-    if (block.length < 120) continue;
+    if (block.length < 250) continue;
 
     const markerRegex = /(?:^|\s)([A-E])[\.)]\s/g;
     const markers = Array.from(block.matchAll(markerRegex)).map((match) => ({
