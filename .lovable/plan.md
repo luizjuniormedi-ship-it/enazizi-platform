@@ -1,33 +1,26 @@
 
 
-# Enviar BI Diário a Todos os Alunos (exceto opt-out)
+# Resolver Mensagens BI Diário Paradas — Agente Não Encontra a Fila
 
-## Problema
-A função `daily-bi-whatsapp` (linha 25) filtra apenas usuários com `whatsapp_daily_bi = true`. Isso exige que o aluno ative manualmente o recebimento. O comportamento correto é: **todos recebem por padrão**, exceto quem digitou SAIR (`whatsapp_opt_out = true`).
+## Diagnóstico
+
+As 112 mensagens do BI diário estão no banco com `delivery_status = 'pending'` e `execution_id = null`. O agente desktop tentou chamar `start_execution` mas a URL foi codificada incorretamente (`%3F` em vez de `?`), resultando em 404. Sem uma execução `running`, o agente não processa a fila.
 
 ## Solução
-Remover o filtro `.eq("whatsapp_daily_bi", true)` da query de seleção de usuários. Manter apenas:
-- `whatsapp_opt_out = false`
-- `phone IS NOT NULL` e `phone != ''`
 
-### Mudança em `supabase/functions/daily-bi-whatsapp/index.ts`
+1. **Criar execução manualmente via SQL** — inserir uma execução `running` de `mode = 'desktop'` e vincular as 112 mensagens pendentes do BI a ela. O agente ao chamar `execution_status` (que funciona) vai encontrar a execução ativa e começar a processar.
 
-**Linha 25** — Remover:
-```typescript
-.eq("whatsapp_daily_bi", true)
-```
+2. **Alternativa no painel** — o botão "Gerar Mensagens" no WhatsApp Panel já chama `start_execution` pelo painel web (sem bug de URL encoding). Basta clicar nele para criar a execução e vincular os itens pendentes.
 
-A query ficará:
-```typescript
-const { data: users, error: usersErr } = await supabase
-  .from("profiles")
-  .select("user_id, display_name, phone")
-  .eq("whatsapp_opt_out", false)
-  .not("phone", "is", null)
-  .neq("phone", "");
-```
+## Ação Recomendada
 
-| Arquivo | Mudança |
-|---------|---------|
-| `supabase/functions/daily-bi-whatsapp/index.ts` | Remover filtro `whatsapp_daily_bi = true` |
+A forma mais rápida é criar a execução via migration SQL diretamente, vinculando as 112 mensagens do BI e deixando o agente processá-las na próxima checagem.
+
+Alternativamente, basta ir ao painel WhatsApp e clicar em "Gerar Mensagens" — isso vai criar uma execução desktop e automaticamente vincular as mensagens pendentes.
+
+| Ação | Detalhe |
+|------|---------|
+| Criar execução `running` | Via SQL ou botão do painel |
+| Vincular 112 mensagens BI | `UPDATE whatsapp_message_log SET execution_id = X WHERE execution_mode = 'daily_bi' AND execution_id IS NULL` |
+| Agente processa | Na próxima checagem de `execution_status` |
 
