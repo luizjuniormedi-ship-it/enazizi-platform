@@ -198,6 +198,9 @@ A ÚLTIMA LINHA da mensagem DEVE ser exatamente: "Responda SAIR para não recebe
           message = `Olá ${firstName}! 📚 Você tem ${revisoes.length} revisão(ões) pendente(s) hoje. Bons estudos! 💪`;
         }
 
+        // Fix AI sometimes splitting "enazizi" into "e nazizi"
+        message = message.replace(/e\s+nazizi\.com/gi, "enazizi.com");
+
         return {
           admin_user_id: adminUserId,
           target_user_id: profile.user_id,
