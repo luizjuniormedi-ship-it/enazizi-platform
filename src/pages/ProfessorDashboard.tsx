@@ -77,17 +77,28 @@ const ProfessorDashboard = () => {
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/professor-simulado`;
 
   const callAPI = useCallback(async (body: Record<string, unknown>) => {
-    const resp = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session?.access_token}`,
-      },
-      body: JSON.stringify(body),
-    });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || "Erro na operação");
-    return data;
+    const controller = new AbortController();
+    const timeoutMs = body.action === "generate_questions" ? 180000 : 60000;
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const resp = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || "Erro na operação");
+      return data;
+    } catch (e: any) {
+      if (e.name === "AbortError") throw new Error("Tempo esgotado. Tente com menos questões.");
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
   }, [session, API_URL]);
 
   const loadSimulados = useCallback(async () => {
@@ -145,20 +156,37 @@ const ProfessorDashboard = () => {
       return;
     }
     setGenerating(true);
+    setGeneratedQuestions([]);
     try {
       const topicsWithSubs = selectedTopics.map((t) => {
         const subs = subtopics[t]?.trim();
         return subs ? `${t} (${subs})` : t;
       });
-      const res = await callAPI({
-        action: "generate_questions",
-        topics: topicsWithSubs,
-        count: parseInt(questionCount),
-        difficulty,
-        difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
-      });
-      setGeneratedQuestions(res.questions || []);
-      toast({ title: "Questões geradas!", description: `${res.questions?.length || 0} questões criadas pela IA.` });
+      const total = parseInt(questionCount);
+      const FRONTEND_BATCH = 25;
+      const batches = Math.ceil(total / FRONTEND_BATCH);
+      let allQuestions: any[] = [];
+
+      for (let b = 0; b < batches; b++) {
+        const batchCount = Math.min(FRONTEND_BATCH, total - allQuestions.length);
+        if (batchCount <= 0) break;
+
+        toast({ title: `Gerando lote ${b + 1}/${batches}...`, description: `${allQuestions.length}/${total} questões prontas` });
+
+        const res = await callAPI({
+          action: "generate_questions",
+          topics: topicsWithSubs,
+          count: batchCount,
+          difficulty,
+          difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
+        });
+
+        const batchQ = res.questions || [];
+        allQuestions = [...allQuestions, ...batchQ];
+        setGeneratedQuestions([...allQuestions]);
+      }
+
+      toast({ title: "Questões geradas!", description: `${allQuestions.length} questões criadas pela IA.` });
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao gerar", variant: "destructive" });
     } finally {
