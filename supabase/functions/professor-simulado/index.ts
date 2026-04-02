@@ -172,6 +172,31 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
             return !prevKeys.has(key);
           });
         }
+
+        // Fix consecutive repeated correct_index: swap options to vary the answer letter
+        for (let i = 1; i < questions.length; i++) {
+          const prev = questions[i - 1];
+          const curr = questions[i];
+          if (curr.correct_index === prev.correct_index && Array.isArray(curr.options) && curr.options.length === 5) {
+            // Pick a different index that wasn't used by prev (and ideally not by prev-prev)
+            const avoid = new Set([prev.correct_index]);
+            if (i >= 2) avoid.add(questions[i - 2].correct_index);
+            const candidates = [0, 1, 2, 3, 4].filter(x => !avoid.has(x));
+            const newIdx = candidates[Math.floor(Math.random() * candidates.length)];
+            // Swap the options so the correct answer moves to the new position
+            const oldIdx = curr.correct_index;
+            const temp = curr.options[newIdx];
+            curr.options[newIdx] = curr.options[oldIdx];
+            curr.options[oldIdx] = temp;
+            // Update option labels (A), B), etc.)
+            curr.options = curr.options.map((opt: string, oi: number) => {
+              const letter = String.fromCharCode(65 + oi);
+              return opt.replace(/^[A-E]\)\s*/, `${letter}) `);
+            });
+            curr.correct_index = newIdx;
+          }
+        }
+
         console.log(`Generated ${questions.length} questions`);
 
         return ok({ questions });
