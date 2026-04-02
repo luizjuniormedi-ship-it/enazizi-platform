@@ -22,7 +22,6 @@ Deno.serve(async (req) => {
     const { data: users, error: usersErr } = await supabase
       .from("profiles")
       .select("user_id, display_name, phone")
-      .eq("whatsapp_daily_bi", true)
       .eq("whatsapp_opt_out", false)
       .not("phone", "is", null)
       .neq("phone", "");
