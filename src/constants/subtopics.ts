@@ -37,6 +37,6 @@ export const SPECIALTY_SUBTOPICS: Record<string, string[]> = {
   "Ginecologia e Obstetrícia": ["Pré-eclâmpsia", "Eclâmpsia", "Pré-natal", "Trabalho de Parto", "Hemorragias da Gestação", "Infecções na Gestação", "Câncer de Colo", "Endometriose", "SOP", "Climatério", "Placenta Prévia", "DPP"],
   "Medicina de Emergência": ["PCR e RCP", "Choque", "Intoxicações", "Anafilaxia", "Trauma", "Emergências Hipertensivas", "Cetoacidose Diabética", "Status Epiléptico"],
   "Medicina Preventiva": ["Epidemiologia", "Vigilância em Saúde", "SUS", "Atenção Primária", "Vacinação", "Saúde do Trabalhador", "Bioestatística", "Estudos Epidemiológicos"],
-  "Pediatria": ["Neonatologia", "Aleitamento Materno", "Crescimento e Desenvolvimento", "Infecções na Infância", "Asma Infantil", "Bronquiolite", "Doenças Exantemáticas", "Desnutrição", "Imunização"],
+  "Pediatria": ["Neonatologia", "Aleitamento Materno", "Crescimento e Desenvolvimento", "Infecções na Infância", "Asma Infantil", "Bronquiolite", "Doenças Exantemáticas", "Desnutrição", "Imunização", "IVAS", "Pneumonia na Criança", "ITU na Criança", "Tuberculose na Criança", "Piodermites na Criança"],
   "Terapia Intensiva": ["Ventilação Mecânica", "Sepse e Choque Séptico", "Distúrbios Hidroeletrolíticos", "Sedação e Analgesia", "Monitorização Hemodinâmica", "SDRA", "Nutrição Enteral e Parenteral"],
 };
