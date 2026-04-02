@@ -51,6 +51,7 @@ const Profile = () => {
         setTargetSpecialty(data.target_specialty || "");
         setExamDate(data.exam_date || "");
         setDailyStudyHours(data.daily_study_hours ? String(data.daily_study_hours) : "4");
+        setWhatsappDailyBi(data.whatsapp_daily_bi || false);
       }
       setLoading(false);
     };
