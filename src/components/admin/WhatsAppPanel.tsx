@@ -522,6 +522,9 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
                 <p className="text-xs text-muted-foreground">
                   Use <code className="bg-muted px-1 rounded">{"{nome}"}</code> para personalizar. Se não usar, o nome será adicionado automaticamente no início (ex: "Olá João! sua mensagem").
                 </p>
+                <p className="text-xs text-muted-foreground">
+                  💡 Após gerar, use os checkboxes ao lado de cada aluno para escolher quem receberá. Se nenhum for selecionado, todos recebem.
+                </p>
               </div>
             )}
           </div>
