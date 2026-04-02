@@ -2,9 +2,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { Brain, Mail, Lock, BookOpen, Trophy, Sparkles, GraduationCap, AlertTriangle, Calendar, Users, FlaskConical, Smartphone, Monitor, Globe, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const errorMessages: Record<string, string> = {
   "Invalid login credentials": "Email ou senha incorretos.",
@@ -13,12 +14,13 @@ const errorMessages: Record<string, string> = {
   "Too many requests": "Muitas tentativas. Aguarde um momento.",
 };
 
-const stats = [
-  { icon: Users, value: "160+", label: "Alunos" },
-  { icon: BookOpen, value: "6.700+", label: "Questões" },
-  { icon: Trophy, value: "6.100+", label: "Flashcards" },
-  { icon: Brain, value: "8", label: "Agentes IA" },
-];
+const formatCount = (n: number): string => {
+  if (n >= 1000) {
+    const rounded = Math.floor(n / 100) * 100;
+    return `${rounded.toLocaleString("pt-BR")}+`;
+  }
+  return `${n}+`;
+};
 
 const features = [
   { icon: Sparkles, label: "Tutor IA personalizado" },
@@ -39,9 +41,45 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [dynamicStats, setDynamicStats] = useState({
+    alunos: "—",
+    questoes: "—",
+    flashcards: "—",
+  });
   const navigate = useNavigate();
   const { signIn, resetPassword } = useAuth();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [profilesRes, qbRes, reqRes, fcRes] = await Promise.all([
+          supabase.from("profiles").select("id", { count: "exact", head: true }).eq("user_type", "estudante"),
+          supabase.from("questions_bank").select("id", { count: "exact", head: true }),
+          supabase.from("real_exam_questions").select("id", { count: "exact", head: true }).eq("is_active", true),
+          supabase.from("flashcards").select("id", { count: "exact", head: true }),
+        ]);
+        const alunos = profilesRes.count ?? 0;
+        const questoes = (qbRes.count ?? 0) + (reqRes.count ?? 0);
+        const flashcards = fcRes.count ?? 0;
+        setDynamicStats({
+          alunos: formatCount(alunos),
+          questoes: formatCount(questoes),
+          flashcards: formatCount(flashcards),
+        });
+      } catch {
+        // keep "—" on error
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const stats = [
+    { icon: Users, value: dynamicStats.alunos, label: "Alunos" },
+    { icon: BookOpen, value: dynamicStats.questoes, label: "Questões" },
+    { icon: Trophy, value: dynamicStats.flashcards, label: "Flashcards" },
+    { icon: Brain, value: "8", label: "Agentes IA" },
+  ];
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
