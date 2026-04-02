@@ -123,6 +123,7 @@ const Profile = () => {
         user_type: userType,
         exam_date: examDate || null,
         daily_study_hours: parseFloat(dailyStudyHours) || 4,
+        whatsapp_daily_bi: whatsappDailyBi,
       };
       if (userType === "estudante") {
         updateData.periodo = periodo ? parseInt(periodo) : null;
