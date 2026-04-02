@@ -81,6 +81,11 @@ const ProfessorDashboard = () => {
   const [previewStudents, setPreviewStudents] = useState<any[]>([]);
   const [previewLoading, setPreviewLoading] = useState(false);
 
+  // Global student search
+  const [studentSearch, setStudentSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchingStudents, setSearchingStudents] = useState(false);
+
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/professor-simulado`;
 
   const callAPI = useCallback(async (body: Record<string, unknown>) => {
