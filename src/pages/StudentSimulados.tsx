@@ -925,6 +925,12 @@ const StudentSimulados = () => {
     const q = questions[questionIndex];
     const answeredCount = answers.filter((a) => a !== null).length;
     const isLowTime = timeLeft < 60;
+    const displayBlock = String(q?.block || "")
+      .replace(/\s*\([^)]*\)\s*$/, "")
+      .trim();
+    const previousDisplayBlock = String(questions[questionIndex - 1]?.block || "")
+      .replace(/\s*\([^)]*\)\s*$/, "")
+      .trim();
 
     return (
       <div className="space-y-4 animate-fade-in max-w-3xl mx-auto">
@@ -945,9 +951,9 @@ const StudentSimulados = () => {
         <Progress value={((questionIndex + 1) / questions.length) * 100} className="h-1.5" />
 
         {/* Block indicator */}
-        {q?.block && (questionIndex === 0 || questions[questionIndex - 1]?.block !== q.block) && (
+        {displayBlock && (questionIndex === 0 || previousDisplayBlock !== displayBlock) && (
           <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-lg">
-            <span className="text-sm font-semibold text-primary">📋 Bloco: {q.block}</span>
+            <span className="text-sm font-semibold text-primary">📋 Bloco: {displayBlock}</span>
           </div>
         )}
 
@@ -958,10 +964,6 @@ const StudentSimulados = () => {
               <Badge className="shrink-0 mt-0.5">{questionIndex + 1}</Badge>
               <div>
                 <p className="text-sm font-medium leading-relaxed">{q?.statement}</p>
-                <div className="flex items-center gap-1.5 mt-2">
-                  {q?.block && <Badge variant="secondary" className="text-[10px]">{q.block}</Badge>}
-                  {q?.topic && q.topic !== q.block && <Badge variant="outline" className="text-[10px]">{q.topic}</Badge>}
-                </div>
               </div>
             </div>
 
