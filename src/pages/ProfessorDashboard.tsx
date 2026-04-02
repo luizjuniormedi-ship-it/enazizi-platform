@@ -156,20 +156,37 @@ const ProfessorDashboard = () => {
       return;
     }
     setGenerating(true);
+    setGeneratedQuestions([]);
     try {
       const topicsWithSubs = selectedTopics.map((t) => {
         const subs = subtopics[t]?.trim();
         return subs ? `${t} (${subs})` : t;
       });
-      const res = await callAPI({
-        action: "generate_questions",
-        topics: topicsWithSubs,
-        count: parseInt(questionCount),
-        difficulty,
-        difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
-      });
-      setGeneratedQuestions(res.questions || []);
-      toast({ title: "Questões geradas!", description: `${res.questions?.length || 0} questões criadas pela IA.` });
+      const total = parseInt(questionCount);
+      const FRONTEND_BATCH = 25;
+      const batches = Math.ceil(total / FRONTEND_BATCH);
+      let allQuestions: any[] = [];
+
+      for (let b = 0; b < batches; b++) {
+        const batchCount = Math.min(FRONTEND_BATCH, total - allQuestions.length);
+        if (batchCount <= 0) break;
+
+        toast({ title: `Gerando lote ${b + 1}/${batches}...`, description: `${allQuestions.length}/${total} questões prontas` });
+
+        const res = await callAPI({
+          action: "generate_questions",
+          topics: topicsWithSubs,
+          count: batchCount,
+          difficulty,
+          difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
+        });
+
+        const batchQ = res.questions || [];
+        allQuestions = [...allQuestions, ...batchQ];
+        setGeneratedQuestions([...allQuestions]);
+      }
+
+      toast({ title: "Questões geradas!", description: `${allQuestions.length} questões criadas pela IA.` });
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao gerar", variant: "destructive" });
     } finally {
