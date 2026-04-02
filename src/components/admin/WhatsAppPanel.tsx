@@ -204,7 +204,17 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || "Erro ao gerar mensagens");
 
-      const generatedStudents = data.students || [];
+      let generatedStudents: Student[] = data.students || [];
+
+      // If custom message mode, override each student's message
+      if (useCustomMessage && customMessage.trim()) {
+        generatedStudents = generatedStudents.map((s: Student) => {
+          const firstName = (s.display_name || "Aluno").split(" ")[0];
+          const personalizedMsg = customMessage.replace(/\{nome\}/gi, firstName) + "\n\nResponda SAIR para não receber mais.";
+          return { ...s, message: personalizedMsg };
+        });
+      }
+
       setStudents(generatedStudents);
       const total = generatedStudents.length;
       const alreadySent = generatedStudents.filter((s: Student) => s.already_sent_today).length;
