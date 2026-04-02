@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from "react";
-import { MessageSquare, Send, Copy, Loader2, RefreshCw, Phone, AlertTriangle, CheckCircle, PlayCircle, StopCircle } from "lucide-react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { MessageSquare, Send, Copy, Loader2, RefreshCw, Phone, AlertTriangle, CheckCircle, PlayCircle, StopCircle, Download, Plug, PlugZap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,8 +23,10 @@ interface WhatsAppPanelProps {
 }
 
 const cleanPhone = (phone: string) => phone.replace(/\D/g, "");
-
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// Extension ID detection via externally_connectable
+const EXTENSION_ID_KEY = "enazizi_ext_id";
 
 const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
   const { toast } = useToast();
@@ -42,6 +44,108 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
   const [bulkCountdown, setBulkCountdown] = useState(0);
   const cancelRef = useRef(false);
 
+  // Extension state
+  const [extensionDetected, setExtensionDetected] = useState(false);
+  const [extensionVersion, setExtensionVersion] = useState("");
+  const [extensionOutdated, setExtensionOutdated] = useState(false);
+  const [extensionSending, setExtensionSending] = useState(false);
+  const [latestVersion, setLatestVersion] = useState("");
+
+  // ─── Extension detection ──────────────────────────────────
+  useEffect(() => {
+    // Listen for messages from extension relay
+    const handler = (event: MessageEvent) => {
+      if (!event.data?.type) return;
+      const { type } = event.data;
+
+      if (type === "ENAZIZI_PONG") {
+        setExtensionDetected(true);
+        setExtensionVersion(event.data.version || "?");
+      }
+      if (type === "ENAZIZI_SENDING") {
+        setBulkCurrentName(event.data.name || "Aluno");
+        setBulkProgress(event.data.index + 1);
+        setBulkTotal(event.data.total);
+      }
+      if (type === "ENAZIZI_SEND_STATUS") {
+        if (event.data.success && event.data.userId) {
+          setSentUsers((prev) => new Set(prev).add(event.data.userId));
+        }
+      }
+      if (type === "ENAZIZI_COUNTDOWN") {
+        let sec = event.data.seconds;
+        setBulkCountdown(sec);
+        const iv = setInterval(() => {
+          sec--;
+          setBulkCountdown(sec);
+          if (sec <= 0) clearInterval(iv);
+        }, 1000);
+      }
+      if (type === "ENAZIZI_QUEUE_DONE") {
+        setExtensionSending(false);
+        setBulkSending(false);
+        setBulkCountdown(0);
+        toast({ title: "Envio concluído! ✅", description: `${event.data.sent} mensagem(ns) enviada(s) via extensão.` });
+      }
+    };
+
+    window.addEventListener("message", handler);
+
+    // Ping extension
+    window.postMessage({ type: "ENAZIZI_PING" }, "*");
+    // Also try direct chrome.runtime if available
+    pingExtension();
+
+    // Check latest version
+    fetch("/extension-meta.json?_=" + Date.now())
+      .then((r) => r.json())
+      .then((meta) => setLatestVersion(meta.version || ""))
+      .catch(() => {});
+
+    return () => window.removeEventListener("message", handler);
+  }, []);
+
+  // Check if extension version is outdated
+  useEffect(() => {
+    if (extensionVersion && latestVersion) {
+      setExtensionOutdated(compareVersions(latestVersion, extensionVersion) > 0);
+    }
+  }, [extensionVersion, latestVersion]);
+
+  const pingExtension = () => {
+    // Try to communicate via postMessage
+    window.postMessage({ type: "ENAZIZI_PING" }, "*");
+  };
+
+  const compareVersions = (a: string, b: string) => {
+    const pa = a.split(".").map(Number);
+    const pb = b.split(".").map(Number);
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+      const na = pa[i] || 0;
+      const nb = pb[i] || 0;
+      if (na > nb) return 1;
+      if (na < nb) return -1;
+    }
+    return 0;
+  };
+
+  const downloadExtension = () => {
+    fetch("/enazizi-whatsapp-extension.zip")
+      .then((res) => {
+        if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+        return res.blob();
+      })
+      .then((blob) => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "enazizi-whatsapp-extension.zip";
+        a.click();
+        URL.revokeObjectURL(a.href);
+      })
+      .catch((err) => toast({ title: "Erro no download", description: err.message, variant: "destructive" }));
+  };
+
+  // ─── Generate messages ────────────────────────────────────
   const generateMessages = async () => {
     if (!session) return;
     setLoading(true);
@@ -64,10 +168,7 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
       if (total === 0) {
         toast({ title: "Nenhum aluno", description: data.message || "Nenhum aluno com telefone cadastrado." });
       } else {
-        toast({
-          title: "Mensagens geradas!",
-          description: `${total} mensagem(ns) prontas. ${alreadySent > 0 ? `${alreadySent} já receberam hoje.` : ""}`,
-        });
+        toast({ title: "Mensagens geradas!", description: `${total} mensagem(ns) prontas. ${alreadySent > 0 ? `${alreadySent} já receberam hoje.` : ""}` });
       }
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
@@ -111,6 +212,7 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
     toast({ title: "Copiado!", description: "Mensagem copiada para a área de transferência." });
   };
 
+  // ─── Bulk send (manual wa.me) ─────────────────────────────
   const handleBulkSend = useCallback(async () => {
     const pending = students.filter((s) => !sentUsers.has(s.user_id) && !s.already_sent_today);
     if (pending.length === 0) {
@@ -125,16 +227,13 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
 
     for (let i = 0; i < pending.length; i++) {
       if (cancelRef.current) break;
-
       const s = pending[i];
       setBulkCurrentName(s.display_name || "Aluno");
       setBulkProgress(i + 1);
-
       await logAndSend(s);
 
-      // Wait with countdown between sends (except last one)
       if (i < pending.length - 1 && !cancelRef.current) {
-        const waitSec = Math.floor(Math.random() * 8) + 8; // 8-15s
+        const waitSec = Math.floor(Math.random() * 8) + 8;
         for (let sec = waitSec; sec > 0; sec--) {
           if (cancelRef.current) break;
           setBulkCountdown(sec);
@@ -155,8 +254,39 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
     }
   }, [students, sentUsers, toast]);
 
+  // ─── Extension send ───────────────────────────────────────
+  const handleExtensionSend = useCallback(() => {
+    const pending = students.filter((s) => !sentUsers.has(s.user_id) && !s.already_sent_today);
+    if (pending.length === 0) {
+      toast({ title: "Nenhum pendente", description: "Todos já foram enviados ou já receberam hoje." });
+      return;
+    }
+
+    const payload = pending.map((s) => ({
+      user_id: s.user_id,
+      display_name: s.display_name,
+      phone: s.phone,
+      message: getMessage(s),
+    }));
+
+    setExtensionSending(true);
+    setBulkSending(true);
+    setBulkTotal(pending.length);
+    setBulkProgress(0);
+
+    // Send queue to extension
+    window.postMessage({ type: "ENAZIZI_SEND_QUEUE", payload }, "*");
+
+    toast({ title: "Fila enviada para extensão", description: `${pending.length} mensagem(ns) na fila.` });
+  }, [students, sentUsers, editedMessages, toast]);
+
   const handleCancelBulk = () => {
     cancelRef.current = true;
+    if (extensionSending) {
+      window.postMessage({ type: "ENAZIZI_CANCEL" }, "*");
+      setExtensionSending(false);
+      setBulkSending(false);
+    }
   };
 
   const sentCount = sentUsers.size;
@@ -180,9 +310,50 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
         </Button>
       </div>
 
+      {/* Extension status banner */}
+      <div className={`flex items-center justify-between p-3 rounded-lg border text-sm ${
+        extensionDetected
+          ? extensionOutdated
+            ? "bg-destructive/10 border-destructive/30"
+            : "bg-primary/5 border-primary/20"
+          : "bg-muted/50 border-muted"
+      }`}>
+        <div className="flex items-center gap-2">
+          {extensionDetected ? (
+            <>
+              <PlugZap className="h-4 w-4 text-primary" />
+              <span className="font-medium">Extensão conectada</span>
+              <Badge variant="outline" className="text-xs">v{extensionVersion}</Badge>
+              {extensionOutdated && (
+                <Badge variant="destructive" className="text-xs gap-1">
+                  <AlertTriangle className="h-3 w-3" /> Desatualizada (v{latestVersion} disponível)
+                </Badge>
+              )}
+            </>
+          ) : (
+            <>
+              <Plug className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Extensão não detectada</span>
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {!extensionDetected && (
+            <Button variant="outline" size="sm" onClick={downloadExtension} className="gap-1.5 text-xs">
+              <Download className="h-3.5 w-3.5" /> Baixar extensão
+            </Button>
+          )}
+          {extensionOutdated && (
+            <Button variant="destructive" size="sm" onClick={downloadExtension} className="gap-1.5 text-xs">
+              <Download className="h-3.5 w-3.5" /> Atualizar
+            </Button>
+          )}
+        </div>
+      </div>
+
       {students.length > 0 && (
         <>
-          {/* Summary bar + bulk send */}
+          {/* Summary bar + send buttons */}
           <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-secondary/50">
             <div className="flex items-center gap-3 text-sm flex-wrap">
               <Badge variant="outline" className="gap-1">
@@ -205,17 +376,27 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
               )}
             </div>
 
-            {!bulkSending ? (
-              <Button onClick={handleBulkSend} disabled={unsentCount === 0} className="gap-1.5">
-                <PlayCircle className="h-4 w-4" />
-                Enviar todos ({unsentCount})
-              </Button>
-            ) : (
-              <Button variant="destructive" onClick={handleCancelBulk} className="gap-1.5">
-                <StopCircle className="h-4 w-4" />
-                Cancelar envio
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {!bulkSending ? (
+                <>
+                  {extensionDetected && (
+                    <Button onClick={handleExtensionSend} disabled={unsentCount === 0} className="gap-1.5" variant="default">
+                      <PlugZap className="h-4 w-4" />
+                      Enviar via Extensão ({unsentCount})
+                    </Button>
+                  )}
+                  <Button onClick={handleBulkSend} disabled={unsentCount === 0} variant={extensionDetected ? "outline" : "default"} className="gap-1.5">
+                    <PlayCircle className="h-4 w-4" />
+                    {extensionDetected ? "wa.me" : "Enviar todos"} ({unsentCount})
+                  </Button>
+                </>
+              ) : (
+                <Button variant="destructive" onClick={handleCancelBulk} className="gap-1.5">
+                  <StopCircle className="h-4 w-4" />
+                  Cancelar envio
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Bulk progress bar */}
@@ -223,7 +404,7 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
             <div className="space-y-2 p-4 rounded-lg border border-primary/20 bg-primary/5">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium">
-                  📤 Enviando para {bulkCurrentName}... ({bulkProgress}/{bulkTotal})
+                  📤 {extensionSending ? "Extensão enviando para" : "Enviando para"} {bulkCurrentName}... ({bulkProgress}/{bulkTotal})
                 </span>
                 {bulkCountdown > 0 && (
                   <span className="text-muted-foreground text-xs">
