@@ -178,6 +178,15 @@ Para cada questão, retorne APENAS um array JSON válido no formato:
   }
 ]
 
+TAMANHO MÍNIMO OBRIGATÓRIO DO ENUNCIADO: cada enunciado deve ter NO MÍNIMO 400 caracteres (aproximadamente 6-8 linhas).
+Siga o padrão ENAMED/ENARE com caso clínico completo contendo:
+1. Identificação do paciente (nome fictício brasileiro, idade, sexo, profissão)
+2. Queixa principal e história da doença atual (tempo de evolução, sintomas detalhados)
+3. Antecedentes relevantes (comorbidades, medicações em uso, hábitos de vida)
+4. Exame físico relevante (sinais vitais, achados semiológicos)
+5. Exames complementares quando pertinente (laboratoriais com valores, imagem)
+6. Pergunta objetiva final clara
+
 REGRAS:
 - OBRIGATÓRIO: No mínimo 70% das questões (${Math.ceil(batchCount * 0.7)} de ${batchCount}) devem ser baseadas em CASOS CLÍNICOS com apresentação de paciente, história, exame físico e/ou exames complementares
 - As demais (até 30%) podem ser questões teóricas diretas
