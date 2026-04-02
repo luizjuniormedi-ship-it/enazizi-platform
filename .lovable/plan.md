@@ -1,21 +1,43 @@
 
 
-# Aumentar Mínimo de Caracteres para Questões
+# Equiparar Questões IA ao Padrão ENAMED (400-600 caracteres)
 
 ## Problema
-O limite atual de 120 caracteres é baixo demais — permite que questões truncadas ou fragmentadas passem pelo filtro. Uma questão médica de qualidade (caso clínico) raramente tem menos de 200-250 caracteres.
+As questões geradas pela IA têm enunciados curtos (~250-350 chars) enquanto questões reais de provas ENAMED/ENARE têm entre 400-800 caracteres com caso clínico completo (anamnese, exame físico, exames complementares, pergunta final).
 
 ## Solução
-Subir o mínimo de **120 → 250 caracteres** em todos os pontos de validação, garantindo consistência.
+Reforçar no prompt da IA a exigência de enunciados longos no padrão ENAMED e subir o filtro mínimo de 250 → 400 caracteres.
 
-## Arquivos Afetados
+## Mudanças
+
+### 1. `supabase/functions/professor-simulado/index.ts`
+
+**No prompt (linha ~160-199):**
+Adicionar regra explícita de tamanho mínimo:
+```
+TAMANHO MÍNIMO OBRIGATÓRIO DO ENUNCIADO: cada enunciado deve ter NO MÍNIMO 400 caracteres.
+Siga o padrão ENAMED/ENARE com caso clínico completo contendo:
+1. Identificação do paciente (nome fictício, idade, sexo, profissão)
+2. Queixa principal e história da doença atual (tempo de evolução, sintomas)  
+3. Antecedentes (comorbidades, medicações, hábitos)
+4. Exame físico relevante (sinais vitais, achados)
+5. Exames complementares quando pertinente (laboratoriais, imagem)
+6. Pergunta objetiva final
+```
+
+**No filtro de qualidade (linha ~377-384):**
+Subir `s.length < 250` → `s.length < 400`
+
+### 2. `supabase/functions/_shared/question-filters.ts`
+Subir `isValidQuestion` e `hasMinimumContext` de 250 → 400 caracteres para consistência global.
+
+### 3. `supabase/functions/ingest-questions/index.ts` e `search-real-questions/index.ts`
+Subir filtros de 250 → 400 caracteres.
 
 | Arquivo | Mudança |
 |---------|---------|
-| `supabase/functions/_shared/question-filters.ts` | `isValidQuestion`: adicionar check `q.statement.length < 250`; `hasMinimumContext`: já usa 200, subir para 250 |
-| `supabase/functions/professor-simulado/index.ts` | Alterar `s.length < 120` → `s.length < 250` no filtro de qualidade |
-| `supabase/functions/ingest-questions/index.ts` | Alterar `statement.length < 120` → `250` e `block.length < 120` → `250` |
-| `supabase/functions/search-real-questions/index.ts` | Alterar `stmt.length < 120` → `250` |
-
-Todas as edge functions afetadas serão re-deployadas.
+| `supabase/functions/professor-simulado/index.ts` | Prompt com regra de 400 chars + estrutura ENAMED; filtro 250→400 |
+| `supabase/functions/_shared/question-filters.ts` | Mínimo global 250→400 |
+| `supabase/functions/ingest-questions/index.ts` | Filtro 250→400 |
+| `supabase/functions/search-real-questions/index.ts` | Filtro 250→400 |
 
