@@ -1,45 +1,40 @@
 
 
-# Unificar Filtro de 400 Caracteres em Todos os Geradores
+# Corrigir Simulado Fechando Antes do Tempo
 
-## Resumo
-Aplicar o mínimo de 400 caracteres (padrão ENAMED) e prompt de caso clínico completo nos 6 geradores restantes que ainda não foram atualizados.
+## Problema Identificado
 
-## Mudanças por Arquivo
+O `SimuladoExam` tem um bug critico no timer (linha 45): o `onFinish` é chamado dentro de um `setInterval` com uma **closure stale** — `selectedAnswers` e `flaggedQuestions` capturam os valores iniciais (`{}` e `new Set()`) porque o `useEffect` tem `[]` como dependência. Quando o timer expira, envia respostas vazias.
 
-### 1. `supabase/functions/daily-question-generator/index.ts`
-- **Linha 158**: Prompt `searchRealQuestionsViaAI` — `≥250` → `≥400` caracteres
-- **Linha 174**: JSON format example — `≥250` → `≥400`
-- **Linha 222**: Filtro `s.length >= 250` → `s.length >= 400`
-- **Linha 290**: Prompt `generateForSpecialty` — remover `150 caracteres`, colocar `400 caracteres`
-- **Linha 313**: JSON format example — `≥150` → `≥400`
-- **Linha 358**: Filtro `s.length >= 150` → `s.length >= 400`
+Mas o problema principal de "atualizar e fechar" provavelmente é causado por:
 
-### 2. `supabase/functions/bulk-generate-content/index.ts`
-- **Linha 350-354**: Adicionar filtro `String(q.statement).trim().length >= 400` no `.filter()` das questões (atualmente sem filtro de tamanho)
+1. **Re-render do componente pai** (`Simulados.tsx`) — o `useSessionPersistence` faz auto-save a cada 30s, chamando `saveSession` que atualiza state. Isso pode causar re-render do `Simulados`, e como o `restoredState` pode mudar, o `SimuladoExam` é re-montado, reiniciando o timer.
 
-### 3. `supabase/functions/populate-questions/index.ts`
-- **Linha 119-122**: Adicionar `String(q.statement).trim().length >= 400` no `.filter()` das questões (atualmente sem filtro de tamanho)
+2. **Closure stale no timer** — mesmo sem re-mount, quando o timer expira naturalmente, `selectedAnswers` está vazio (closure do mount), então `onFinish({}, [])` é chamado com 0 respostas.
 
-### 4. `supabase/functions/question-generator/index.ts`
-- **Linha 38**: Prompt JSON — `Mínimo 250 caracteres` → `Mínimo 400 caracteres`
-- `isValidQuestion` e `hasMinimumContext` do shared já usam 400, então o filtro server-side (linha 417-418) já está correto
+3. **`timeLeft <= 0` no modo estudo** — no modo estudo, `timeSeconds` é passado como `0` (linha 589), e `initialState?.timeLeft` também pode ser `0`. O `useState` inicializa com `0`, mas a condição `timeLeft <= 0` no useEffect simplesmente retorna sem timer — isso é correto. Porém, se por algum motivo `timeLeft` for calculado errado, o timer pode disparar imediatamente.
 
-### 5. `supabase/functions/extract-exam-questions/index.ts`
-- **Linha 196-197**: Adicionar `q.statement.length >= 400` no filtro de `newQuestions` (extrações de provas reais — manter 400 apenas para consistência, mas questões reais geralmente são longas)
+## Solução
 
-### 6. `supabase/functions/extract-exam-visual/index.ts`
-- **Linha 208**: `q.statement.length < 30` → `q.statement.length < 400`
+### 1. `src/components/simulados/SimuladoExam.tsx` — Corrigir closure stale do timer
 
-### Deploy
-Re-deploy das 6 edge functions.
+- Usar `useRef` para `selectedAnswers` e `flaggedQuestions` no callback do timer
+- Adicionar `useRef` para manter a referência atualizada de `onFinish`
+- Proteger contra re-mount com ref de "já finalizado"
 
-| Arquivo | Mudança Principal |
-|---------|-------------------|
-| `daily-question-generator` | 250/150 → 400 em prompts e filtros |
-| `bulk-generate-content` | Adicionar filtro `length >= 400` |
-| `populate-questions` | Adicionar filtro `length >= 400` |
-| `question-generator` | Prompt 250 → 400 |
-| `extract-exam-questions` | Adicionar filtro `length >= 400` |
-| `extract-exam-visual` | 30 → 400 |
+### 2. `src/pages/Simulados.tsx` — Estabilizar props do SimuladoExam
+
+- Memoizar `restoredState` e `handleFinish` com `useMemo`/`useCallback` para evitar re-renders desnecessários que re-montam o componente
+- Usar `key` estável no `SimuladoExam` para evitar re-mount
+
+### 3. `src/components/simulados/SimuladoExam.tsx` — Proteção contra finalização duplicada
+
+- Adicionar flag `finishedRef` para impedir que `onFinish` seja chamado mais de uma vez
+
+## Mudanças Detalhadas
+
+| Arquivo | Mudança |
+|---------|---------|
+| `src/components/simulados/SimuladoExam.tsx` | Usar refs para selectedAnswers/flaggedQuestions no timer; adicionar finishedRef; estabilizar onFinish |
+| `src/pages/Simulados.tsx` | Memoizar handleFinish com useCallback; estabilizar restoredState com useMemo; adicionar key estável ao SimuladoExam |
 
