@@ -26,7 +26,7 @@ import SimuladoResult from "@/components/simulados/SimuladoResult";
 
 type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 20;
 
 function buildPrompt(topics: string[], count: number, difficulty: string, specificTopic?: string, examBoard?: string): string {
   const topicsStr = topics.join(", ");
