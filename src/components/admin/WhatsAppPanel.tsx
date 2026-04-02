@@ -119,6 +119,7 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
   // Custom message state
   const [useCustomMessage, setUseCustomMessage] = useState(false);
   const [customMessage, setCustomMessage] = useState("");
+  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
 
   // Fetch opt-out count
   useEffect(() => {
