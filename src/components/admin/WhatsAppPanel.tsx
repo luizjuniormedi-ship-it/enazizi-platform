@@ -403,6 +403,33 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
     setExecutionItems([]);
   };
 
+  const handleDeleteGenerated = async () => {
+    if (!window.confirm("Excluir todas as mensagens pendentes do dia? Esta ação não pode ser desfeita.")) return;
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const { error } = await supabase
+        .from("whatsapp_message_log")
+        .delete()
+        .eq("delivery_status", "pending")
+        .gte("created_at", `${today}T00:00:00`)
+        .lt("created_at", `${today}T23:59:59.999`);
+      if (error) throw error;
+
+      if (activeExecution) {
+        await callQueue("stop_execution", { execution_id: activeExecution.id });
+        setActiveExecution(null);
+        setExecutionItems([]);
+      }
+
+      setStudents([]);
+      setEditedMessages({});
+      setSentUsers(new Set());
+      toast({ title: "Mensagens excluídas", description: "Todas as mensagens pendentes do dia foram removidas." });
+    } catch (e) {
+      toast({ title: "Erro ao excluir", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    }
+  };
+
   const handleReprocessErrors = async () => {
     if (!activeExecution) return;
     const data = await callQueue("reprocess_errors", { execution_id: activeExecution.id });
