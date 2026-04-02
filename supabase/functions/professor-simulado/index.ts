@@ -182,6 +182,16 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
             status: "pending",
           }));
           await sb.from("teacher_simulado_results").insert(results);
+
+          // Notify each student
+          const notifications = studentList.map((s: any) => ({
+            sender_id: user.id,
+            recipient_id: s.user_id,
+            title: `📋 Novo Simulado: ${title || "Simulado"}`,
+            content: `Você foi incluído em um novo simulado: "${title || "Simulado"}" — ${questions_json?.length || total_questions} questões, tempo: ${time_limit_minutes || 60}min.${scheduled_at ? ` Agendado para: ${new Date(scheduled_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}.` : ""} Acesse a aba Proficiência para realizar.`,
+            priority: "important",
+          }));
+          await sb.from("admin_messages").insert(notifications);
         }
 
         return ok({ success: true, simulado_id: simulado.id, students_assigned: studentList.length, status: simStatus });
@@ -666,6 +676,16 @@ REGRAS:
             status: "pending",
           }));
           await sb.from("teacher_clinical_case_results").insert(results);
+
+          // Notify each student
+          const notifications = studentIds.map((sid: string) => ({
+            sender_id: user.id,
+            recipient_id: sid,
+            title: `🏥 Novo Caso Clínico: ${title || "Plantão"}`,
+            content: `Você foi incluído em um caso clínico: "${title || "Plantão"}" — Especialidade: ${specialty}. Acesse a aba Proficiência para realizar.`,
+            priority: "important",
+          }));
+          await sb.from("admin_messages").insert(notifications);
         }
 
         return ok({ success: true, case_id: clinicalCase.id, students_assigned: studentIds.length });
@@ -778,6 +798,16 @@ REGRAS:
             status: "pending",
           }));
           await sb.from("teacher_study_assignment_results").insert(results);
+
+          // Notify each student
+          const notifications = studentIds.map((sid: string) => ({
+            sender_id: user.id,
+            recipient_id: sid,
+            title: `📚 Nova Atribuição: ${title}`,
+            content: `Você recebeu um tema de estudo: "${title}" — Especialidade: ${specialty}, Tópicos: ${topics_to_cover || "vários"}. Acesse a aba Proficiência para estudar.`,
+            priority: "important",
+          }));
+          await sb.from("admin_messages").insert(notifications);
         }
 
         return ok({ success: true, assignment_id: assignment.id, students_assigned: studentIds.length });
