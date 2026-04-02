@@ -798,6 +798,16 @@ REGRAS:
             status: "pending",
           }));
           await sb.from("teacher_study_assignment_results").insert(results);
+
+          // Notify each student
+          const notifications = studentIds.map((sid: string) => ({
+            sender_id: user.id,
+            recipient_id: sid,
+            title: `📚 Nova Atribuição: ${title}`,
+            content: `Você recebeu um tema de estudo: "${title}" — Especialidade: ${specialty}, Tópicos: ${topics_to_cover || "vários"}. Acesse a aba Proficiência para estudar.`,
+            priority: "important",
+          }));
+          await sb.from("admin_messages").insert(notifications);
         }
 
         return ok({ success: true, assignment_id: assignment.id, students_assigned: studentIds.length });
