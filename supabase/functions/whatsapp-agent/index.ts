@@ -45,7 +45,8 @@ serve(async (req) => {
       .not("phone", "is", null)
       .neq("phone", "")
       .eq("status", "active")
-      .eq("is_blocked", false);
+      .eq("is_blocked", false)
+      .eq("whatsapp_opt_out", false);
 
     if (profilesError) throw profilesError;
     if (!profiles || profiles.length === 0) {
