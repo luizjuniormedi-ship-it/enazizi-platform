@@ -145,6 +145,17 @@ const Login = () => {
               <p className="text-[10px] lg:text-xs text-muted-foreground">{s.label}</p>
             </div>
           ))}
+        </div>
+
+        {/* Features list */}
+        <div className="hidden sm:grid sm:grid-cols-2 gap-2 lg:gap-3">
+          {features.map((f) => (
+            <div key={f.label} className="flex items-center gap-2 text-sm">
+              <f.icon className="h-4 w-4 text-primary shrink-0" />
+              <span className="text-muted-foreground">{f.label}</span>
+            </div>
+          ))}
+        </div>
 
         {/* Testimonials */}
         {testimonials.length > 0 && (
@@ -170,17 +181,6 @@ const Login = () => {
             </div>
           </div>
         )}
-      </div>
-
-        {/* Features list */}
-        <div className="hidden sm:grid sm:grid-cols-2 gap-2 lg:gap-3">
-          {features.map((f) => (
-            <div key={f.label} className="flex items-center gap-2 text-sm">
-              <f.icon className="h-4 w-4 text-primary shrink-0" />
-              <span className="text-muted-foreground">{f.label}</span>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Right panel - Form */}
