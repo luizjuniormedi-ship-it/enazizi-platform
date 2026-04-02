@@ -24,14 +24,14 @@ interface SimuladoExamProps {
   mode: SimuladoMode;
 }
 
-const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode }: SimuladoExamProps) => {
+const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, onStateChange }: SimuladoExamProps) => {
   const navigate = useNavigate();
   const [current, setCurrent] = useState(initialState?.current ?? 0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>(initialState?.selectedAnswers ?? {});
   const [timeLeft, setTimeLeft] = useState(initialState?.timeLeft ?? timeSeconds);
   const [showConfirmFinish, setShowConfirmFinish] = useState(false);
-  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
-  const [revealedQuestions, setRevealedQuestions] = useState<Set<number>>(new Set());
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set(initialState?.flaggedQuestions ?? []));
+  const [revealedQuestions, setRevealedQuestions] = useState<Set<number>>(new Set(initialState?.revealedQuestions ?? []));
   const timerRef = useRef<NodeJS.Timeout>();
 
   // Refs to avoid stale closures in timer
