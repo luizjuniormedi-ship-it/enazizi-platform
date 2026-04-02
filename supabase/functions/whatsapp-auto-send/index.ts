@@ -164,7 +164,7 @@ Nome: ${profile.display_name || "Aluno"} | Streak: ${streak} | Nível: ${gam.lev
 Revisões: ${revisoes.length} (${urgentes.length} urgentes)
 ${revisoesText}
 
-Link: https://enazizi-com-br.lovable.app
+Link: https://enazizi.com
 
 Comece com saudação pelo nome. Inclua piada médica. Mencione revisões.`;
 

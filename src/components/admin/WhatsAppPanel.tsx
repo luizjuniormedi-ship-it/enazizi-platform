@@ -178,7 +178,7 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-agent`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ app_url: window.location.origin }),
+        body: JSON.stringify({ app_url: "https://enazizi.com" }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || "Erro ao gerar mensagens");
