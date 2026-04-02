@@ -19,18 +19,19 @@ interface SimuladoExamProps {
   timeSeconds: number;
   onFinish: (answers: Record<number, number>, flagged: number[]) => void;
   onAutoSaveState: () => { current: number; selectedAnswers: Record<number, number>; timeLeft: number };
-  initialState?: { current?: number; selectedAnswers?: Record<number, number>; timeLeft?: number };
+  onStateChange?: (state: { current: number; selectedAnswers: Record<number, number>; timeLeft: number; flaggedQuestions: number[]; revealedQuestions: number[] }) => void;
+  initialState?: { current?: number; selectedAnswers?: Record<number, number>; timeLeft?: number; flaggedQuestions?: number[]; revealedQuestions?: number[] };
   mode: SimuladoMode;
 }
 
-const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode }: SimuladoExamProps) => {
+const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, onStateChange }: SimuladoExamProps) => {
   const navigate = useNavigate();
   const [current, setCurrent] = useState(initialState?.current ?? 0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>(initialState?.selectedAnswers ?? {});
   const [timeLeft, setTimeLeft] = useState(initialState?.timeLeft ?? timeSeconds);
   const [showConfirmFinish, setShowConfirmFinish] = useState(false);
-  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
-  const [revealedQuestions, setRevealedQuestions] = useState<Set<number>>(new Set());
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set(initialState?.flaggedQuestions ?? []));
+  const [revealedQuestions, setRevealedQuestions] = useState<Set<number>>(new Set(initialState?.revealedQuestions ?? []));
   const timerRef = useRef<NodeJS.Timeout>();
 
   // Refs to avoid stale closures in timer
@@ -43,6 +44,19 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode }: 
   useEffect(() => { selectedAnswersRef.current = selectedAnswers; }, [selectedAnswers]);
   useEffect(() => { flaggedQuestionsRef.current = flaggedQuestions; }, [flaggedQuestions]);
   useEffect(() => { onFinishRef.current = onFinish; }, [onFinish]);
+
+  // Report state changes to parent for auto-save
+  const onStateChangeRef = useRef(onStateChange);
+  useEffect(() => { onStateChangeRef.current = onStateChange; }, [onStateChange]);
+  useEffect(() => {
+    onStateChangeRef.current?.({
+      current,
+      selectedAnswers,
+      timeLeft,
+      flaggedQuestions: Array.from(flaggedQuestions),
+      revealedQuestions: Array.from(revealedQuestions),
+    });
+  }, [current, selectedAnswers, timeLeft, flaggedQuestions, revealedQuestions]);
 
   const isStudyMode = mode === "estudo";
 
