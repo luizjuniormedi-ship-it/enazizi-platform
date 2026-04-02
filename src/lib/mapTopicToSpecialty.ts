@@ -10,7 +10,7 @@ export function mapTopicToSpecialty(topic: string): string | null {
     [["endocrino", "diabetes", "tireoide", "hipotireoid", "hipertireoid", "adrenal", "hipófise", "hiperosmolar", "dislipidemia"], "Endocrinologia"],
     [["gastro", "fígado", "hepat", "intestin", "esôfago", "pancreat", "colite", "crohn", "dispepsia", "distúrbio motor"], "Gastroenterologia"],
     [["nefro", "rim", "renal", "diálise", "glomerul", "nefrit"], "Nefrologia"],
-    [["infecto", "hiv", "aids", "sepse", "dengue", "malária", "antibiótico", "parasit"], "Infectologia"],
+    [["infecto", "hiv", "aids", "sepse", "dengue", "malária", "antibiótico", "parasit", "arbovirose", "resistência antimicrobiana"], "Infectologia"],
     [["hemato", "anemia", "leucemia", "linfoma", "coagul", "plaqueta"], "Hematologia"],
     [["reumato", "lúpus", "artrite", "vasculite", "fibromialgia"], "Reumatologia"],
     [["pediatr", "neonat", "criança", "lactente", "recém-nascido", "icterícia neonatal", "torch", "convulsão febril", "febre sem foco", "reanimação neonatal"], "Pediatria"],
