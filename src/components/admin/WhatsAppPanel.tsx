@@ -189,6 +189,21 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
         toast({ title: "Nenhum aluno", description: data.message || "Nenhum aluno com telefone cadastrado." });
       } else {
         toast({ title: "Mensagens geradas!", description: `${total} mensagem(ns) prontas. ${alreadySent > 0 ? `${alreadySent} já receberam hoje.` : ""}` });
+
+        // Insert pending messages into whatsapp_message_log for desktop execution
+        const { data: { user } } = await supabase.auth.getUser();
+        const newStudents = (data.students || []).filter((s: Student) => !s.already_sent_today && s.phone);
+        if (user && newStudents.length > 0) {
+          const rows = newStudents.map((s: Student) => ({
+            admin_user_id: user.id,
+            target_user_id: s.user_id,
+            message_text: s.message,
+            delivery_status: "pending",
+            execution_mode: "desktop",
+          }));
+          await supabase.from("whatsapp_message_log").insert(rows as any);
+          toast({ title: "Fila criada", description: `${newStudents.length} mensagens inseridas na fila desktop.` });
+        }
       }
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
