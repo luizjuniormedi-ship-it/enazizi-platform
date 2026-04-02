@@ -346,6 +346,9 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           }
         }
 
+        // Sanitize statements: remove answers/metadata leaked by AI
+        questions = questions.map((q: any) => ({ ...q, statement: sanitizeStatement(q.statement || "") }));
+
         console.log(`Generated ${questions.length} questions (source: ${source})`);
 
         return ok({ questions, source });
