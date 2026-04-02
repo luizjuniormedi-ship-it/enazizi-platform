@@ -1,45 +1,60 @@
 
 
-# Anti-repetição de Questões na Geração em Lotes
+# Revisão de Questões Geradas no Painel do Professor
 
-## Problema
-Quando simulados são gerados em múltiplos lotes (ex: 100 questões = 4 lotes de 25), cada lote é enviado à IA de forma independente, sem contexto das questões já geradas. Isso causa questões repetidas ou muito similares entre lotes.
+## Resumo
+Transformar a pré-visualização de questões geradas por IA em uma interface interativa com: (1) clique para expandir e avaliar cada questão, (2) botão de excluir questões indesejadas, (3) regeneração automática para repor as excluídas, e (4) controle de quantidade de questões por especialidade.
 
-**Painel Professor**: lotes sequenciais sem passar contexto dos anteriores.
-**Simulado Normal**: lotes paralelos via `Promise.allSettled` — impossível evitar duplicação durante a geração. A deduplicação pós-geração (`deduplicateQuestions`) só compara os primeiros 80 caracteres.
+## Alterações
 
-## Solução
+### `src/pages/ProfessorDashboard.tsx`
 
-### 1. `src/pages/ProfessorDashboard.tsx` — Passar resumo dos lotes anteriores
-- Após cada lote, coletar os tópicos/enunciados curtos das questões já geradas
-- Enviar no próximo request um campo `previousStatements` com os primeiros 100 caracteres de cada questão já gerada
-- A edge function injeta isso no prompt como "questões já geradas, NÃO repita"
+#### 1. Estado expandido para avaliação de questões
+- Adicionar estado `expandedQuestion: number | null` para controlar qual questão está expandida
+- Ao clicar na questão, expandir mostrando: enunciado completo, todas as alternativas (com gabarito destacado), explicação e tópico
+- Permitir colapsar clicando novamente
 
-### 2. `supabase/functions/professor-simulado/index.ts` — Receber e usar anti-repetição
-- Aceitar campo `previousStatements` (array de strings)
-- Adicionar ao prompt: "QUESTÕES JÁ GERADAS (NÃO REPITA): [lista]"
-- Adicionar deduplicação pós-parse (fuzzy match 80 chars) removendo questões repetidas do lote
+#### 2. Botão excluir em questões geradas por IA
+- Atualmente o botão de excluir só aparece no modo manual (`questionMode === "manual"`)
+- Remover essa restrição — exibir o botão de excluir (Trash2) em **todas** as questões (IA e manual)
+- Ao excluir uma questão IA: remover do array `generatedQuestions`
 
-### 3. `src/pages/Simulados.tsx` — Converter batches paralelos em sequenciais + dedup reforçado
-- Trocar `Promise.allSettled` por loop sequencial (como no professor)
-- Passar `previousStatements` para cada batch via prompt
-- Reforçar `deduplicateQuestions` para comparar também similaridade nos primeiros 120 chars (normalizado)
+#### 3. Botão "Completar excluídas" — regenerar questões faltantes
+- Após exclusões, mostrar um aviso: "X questões excluídas. Total atual: Y"
+- Adicionar botão "Regenerar X questões faltantes" que chama `generateQuestionsAI` novamente pedindo apenas a diferença
+- Passar `previousStatements` das questões restantes para evitar duplicação
 
-### 4. Edge function `question-generator` — Aceitar contexto anti-repetição
-- Receber campo opcional `avoidStatements` no body
-- Injetar no prompt instruções para evitar esses enunciados
+#### 4. Distribuição de questões por área
+- Adicionar um campo opcional no formulário de criação: "Distribuição por tema"
+- Quando múltiplos temas estão selecionados, mostrar inputs numéricos para definir quantas questões de cada tema
+- Default: distribuição equilibrada (total / nº de temas)
+- Ao gerar, passar para cada lote o tema específico e a quantidade correspondente em vez de misturar tudo
 
-```text
-Lote 1: gera 25 questões → coleta resumos
-Lote 2: recebe resumos do lote 1 → gera 25 novas → coleta
-Lote 3: recebe resumos dos lotes 1+2 → gera 25 novas → ...
-Pós: deduplicação final por fuzzy match
+### Detalhes técnicos
+
+**Questão expandida** — o card atual mostra `q.statement?.slice(0, 120)`. Ao expandir:
 ```
+- Enunciado completo
+- Alternativas listadas (A-E) com a correta em verde
+- Explicação (se houver)
+- Badges: tópico, dificuldade, gabarito
+```
+
+**Excluir questão IA** — nova função:
+```typescript
+const removeGeneratedQuestion = (idx: number) => {
+  setGeneratedQuestions(prev => prev.filter((_, i) => i !== idx));
+};
+```
+
+**Regenerar faltantes** — calcular `deficit = parseInt(questionCount) - generatedQuestions.length`, chamar API com `count: deficit` e `previousStatements` das questões restantes, então concatenar.
+
+**Distribuição por área** — novo estado `topicDistribution: Record<string, number>`:
+- Quando professor seleciona 3 temas e 30 questões, default: 10 cada
+- Professor pode ajustar (ex: Cardiologia 15, Pediatria 10, Cirurgia 5)
+- Na geração, faz lotes por tema com a quantidade definida
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/pages/ProfessorDashboard.tsx` | Passar `previousStatements` entre lotes sequenciais |
-| `supabase/functions/professor-simulado/index.ts` | Receber e injetar anti-repetição no prompt + dedup pós-parse |
-| `src/pages/Simulados.tsx` | Converter batches para sequencial; passar contexto anti-repetição; reforçar dedup |
-| `supabase/functions/question-generator/index.ts` | Aceitar `avoidStatements` e injetar no prompt |
+| `src/pages/ProfessorDashboard.tsx` | Questão expandível ao clicar, excluir questões IA, botão regenerar faltantes, distribuição por tema |
 
