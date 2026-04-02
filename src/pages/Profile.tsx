@@ -358,7 +358,7 @@ const Profile = () => {
           <Switch checked={whatsappDailyBi} onCheckedChange={setWhatsappDailyBi} />
         </div>
 
-          {saving ? (
+          <Button onClick={handleSave} disabled={saving} className="w-full">
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               Salvando...
