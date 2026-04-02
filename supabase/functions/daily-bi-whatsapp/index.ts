@@ -125,10 +125,59 @@ Deno.serve(async (req) => {
 
         const temasFracos = erros?.map((e: any) => e.tema).join(", ") || "nenhum identificado";
 
+        // Proficiência — atividades do professor
+        const { data: simResults } = await supabase
+          .from("teacher_simulado_results")
+          .select("status, score, total_questions")
+          .eq("student_id", user.user_id);
+
+        const { data: caseResults } = await supabase
+          .from("teacher_clinical_case_results")
+          .select("status, final_score, grade, student_got_diagnosis")
+          .eq("student_id", user.user_id);
+
+        const { data: assignResults } = await supabase
+          .from("teacher_study_assignment_results")
+          .select("status")
+          .eq("student_id", user.user_id);
+
+        let proficienciaInfo = "";
+
+        if ((simResults && simResults.length > 0) || (caseResults && caseResults.length > 0) || (assignResults && assignResults.length > 0)) {
+          const parts: string[] = [];
+
+          if (simResults && simResults.length > 0) {
+            const done = simResults.filter((r: any) => r.status === "completed");
+            const pending = simResults.filter((r: any) => r.status === "pending").length;
+            const avgScore = done.length > 0
+              ? Math.round(done.reduce((sum: number, r: any) => sum + ((r.score || 0) / (r.total_questions || 1) * 100), 0) / done.length)
+              : 0;
+            parts.push(`- Simulados: ${done.length} feito(s)${done.length > 0 ? ` (média ${avgScore}%)` : ""}, ${pending} pendente(s)`);
+          }
+
+          if (caseResults && caseResults.length > 0) {
+            const done = caseResults.filter((r: any) => r.status === "completed");
+            const pending = caseResults.filter((r: any) => r.status === "pending").length;
+            const avgScore = done.length > 0
+              ? Math.round(done.reduce((sum: number, r: any) => sum + (r.final_score || 0), 0) / done.length)
+              : 0;
+            const diagOk = done.filter((r: any) => r.student_got_diagnosis).length;
+            parts.push(`- Casos clínicos: ${done.length} feito(s)${done.length > 0 ? ` (nota média ${avgScore}, diagnóstico correto ${diagOk}/${done.length})` : ""}, ${pending} pendente(s)`);
+          }
+
+          if (assignResults && assignResults.length > 0) {
+            const done = assignResults.filter((r: any) => r.status === "completed").length;
+            const pending = assignResults.filter((r: any) => r.status === "pending").length;
+            parts.push(`- Temas de estudo: ${done} concluído(s), ${pending} pendente(s)`);
+          }
+
+          proficienciaInfo = `\nATIVIDADES DO PROFESSOR:\n${parts.join("\n")}`;
+        }
+
         // 4. Gerar mensagem via IA
         const nome = user.display_name?.split(" ")[0] || "Aluno";
 
-        const prompt = `Gere uma mensagem WhatsApp curta e motivacional (máx 500 chars) em português brasileiro para o aluno ${nome} com este resumo do dia e programação de amanhã. Use emojis. Inclua TODOS os dados abaixo. Não invente dados.
+        const prompt = `Gere uma mensagem WhatsApp curta e motivacional (máx 600 chars) em português brasileiro para o aluno ${nome} com este resumo do dia e programação de amanhã. Use emojis. Inclua TODOS os dados abaixo. Não invente dados.
 
 RESUMO DE HOJE:
 - Questões respondidas: ${totalQ}
@@ -136,6 +185,7 @@ RESUMO DE HOJE:
 - Streak: ${streak} dias
 - XP total: ${xp}
 - Temas estudados: ${temasHoje}
+${proficienciaInfo}
 
 AMANHÃ:
 - Revisões: ${temasAmanha}
@@ -165,17 +215,17 @@ Link do app: https://enazizi.com`;
             if (aiResp.ok) {
               const aiData = await aiResp.json();
               messageText = aiData?.choices?.[0]?.message?.content ||
-                buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos);
+                buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos, proficienciaInfo);
             } else {
               console.warn(`AI returned ${aiResp.status}, using fallback`);
-              messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos);
+              messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos, proficienciaInfo);
             }
           } catch (aiErr) {
             console.error("AI fetch error:", aiErr);
-            messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos);
+            messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos, proficienciaInfo);
           }
         } else {
-          messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos);
+          messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos, proficienciaInfo);
         }
 
         // Fix AI sometimes splitting "enazizi" into "e nazizi"
@@ -261,7 +311,8 @@ Link do app: https://enazizi.com`;
 
 function buildFallbackMessage(
   nome: string, totalQ: number, accuracy: number, streak: number,
-  temasAmanha: string, temasFracos: string
+  temasAmanha: string, temasFracos: string, proficienciaInfo: string = ""
 ): string {
-  return `📊 Resumo de hoje, ${nome}:\n${totalQ} questões | ${accuracy}% acurácia | 🔥 ${streak} dias\n\n📋 Amanhã:\nRevisão: ${temasAmanha}\nFoco: ${temasFracos}\n\nhttps://enazizi.com\nResponda SAIR para não receber mais.`;
+  const profBlock = proficienciaInfo ? `\n📋 Proficiência:${proficienciaInfo}\n` : "";
+  return `📊 Resumo de hoje, ${nome}:\n${totalQ} questões | ${accuracy}% acurácia | 🔥 ${streak} dias\n${profBlock}\n📋 Amanhã:\nRevisão: ${temasAmanha}\nFoco: ${temasFracos}\n\nhttps://enazizi.com\nResponda SAIR para não receber mais.`;
 }
