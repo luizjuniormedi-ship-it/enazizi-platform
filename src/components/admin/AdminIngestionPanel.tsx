@@ -429,7 +429,7 @@ const AdminIngestionPanel = () => {
           <div className="space-y-3">
             <div className="flex gap-2">
               <Input value={navUrl} onChange={e => setNavUrl(e.target.value)}
-                placeholder="https://www.medway.com.br/..." className="text-xs h-8" />
+                placeholder="https://exemplo.com/prova.pdf" className="text-xs h-8" />
               <Button size="sm" className="h-8 text-xs" disabled={navLoading || !navUrl} onClick={handleNavigate}>
                 {navLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Search className="h-3 w-3 mr-1" />Buscar</>}
               </Button>
