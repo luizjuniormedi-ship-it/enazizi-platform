@@ -409,7 +409,7 @@ const Simulados = () => {
     }
   };
 
-  const handleFinish = async (answers: Record<number, number>, flagged: number[]) => {
+  const handleFinish = useCallback(async (answers: Record<number, number>, flagged: number[]) => {
     setFinalAnswers(answers);
     setFlaggedQuestions(flagged);
 
