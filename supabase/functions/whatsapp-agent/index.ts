@@ -62,6 +62,7 @@ serve(async (req) => {
       .from("whatsapp_message_log")
       .select("target_user_id, message_text")
       .gte("sent_at", `${today}T00:00:00Z`)
+      .eq("delivery_status", "sent")
       .in("target_user_id", userIds);
 
     const sentTodayByUser: Record<string, string[]> = {};
