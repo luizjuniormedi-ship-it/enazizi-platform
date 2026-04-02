@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { GraduationCap, Plus, Users, FileText, BarChart3, Loader2, Clock, CheckCircle, Send, Sparkles, Database, ChevronDown, ChevronUp, Eye, Trash2, PenLine, CheckSquare, Square, Video, Gauge, CalendarClock, ToggleLeft, Timer } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,13 @@ const ProfessorDashboard = () => {
   const [bankQuestions, setBankQuestions] = useState<any[]>([]);
   const [selectedBankQuestions, setSelectedBankQuestions] = useState<string[]>([]);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+
+  // Expanded question review
+  const [expandedQuestion, setExpandedQuestion] = useState<number | null>(null);
+
+  // Topic distribution
+  const [topicDistribution, setTopicDistribution] = useState<Record<string, number>>({});
+  const [useDistribution, setUseDistribution] = useState(false);
 
   // Results dialog
   const [resultsDialog, setResultsDialog] = useState<{ open: boolean; simulado: any; results: any[]; loading: boolean; questions_json: any[] }>({ open: false, simulado: null, results: [], loading: false, questions_json: [] });
@@ -150,6 +157,43 @@ const ProfessorDashboard = () => {
     }
   };
 
+  const removeGeneratedQuestion = (idx: number) => {
+    setGeneratedQuestions(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const regenerateMissing = async () => {
+    const target = parseInt(questionCount);
+    const deficit = target - generatedQuestions.length;
+    if (deficit <= 0) return;
+    setGenerating(true);
+    try {
+      const topicsWithSubs = selectedTopics.map((t) => {
+        const subs = subtopics[t]?.trim();
+        return subs ? `${t} (${subs})` : t;
+      });
+      const previousStatements = generatedQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
+      
+      toast({ title: "Regenerando...", description: `Gerando ${deficit} questões faltantes` });
+      
+      const res = await callAPI({
+        action: "generate_questions",
+        topics: topicsWithSubs,
+        count: deficit,
+        difficulty,
+        difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
+        previousStatements,
+      });
+      
+      const newQs = res.questions || [];
+      setGeneratedQuestions(prev => [...prev, ...newQs]);
+      toast({ title: "Pronto!", description: `${newQs.length} questões regeneradas.` });
+    } catch (e) {
+      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao regenerar", variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const generateQuestionsAI = async () => {
     if (selectedTopics.length === 0) {
       toast({ title: "Selecione temas", description: "Escolha pelo menos um tema para gerar questões.", variant: "destructive" });
@@ -157,37 +201,75 @@ const ProfessorDashboard = () => {
     }
     setGenerating(true);
     setGeneratedQuestions([]);
+    setExpandedQuestion(null);
     try {
-      const topicsWithSubs = selectedTopics.map((t) => {
-        const subs = subtopics[t]?.trim();
-        return subs ? `${t} (${subs})` : t;
-      });
       const total = parseInt(questionCount);
-      const FRONTEND_BATCH = 25;
-      const batches = Math.ceil(total / FRONTEND_BATCH);
       let allQuestions: any[] = [];
 
-      for (let b = 0; b < batches; b++) {
-        const batchCount = Math.min(FRONTEND_BATCH, total - allQuestions.length);
-        if (batchCount <= 0) break;
-
-        toast({ title: `Gerando lote ${b + 1}/${batches}...`, description: `${allQuestions.length}/${total} questões prontas` });
-
-        // Collect summaries of already-generated questions for anti-repetition
-        const previousStatements = allQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
-
-        const res = await callAPI({
-          action: "generate_questions",
-          topics: topicsWithSubs,
-          count: batchCount,
-          difficulty,
-          difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
-          previousStatements: previousStatements.length > 0 ? previousStatements : undefined,
+      // If using topic distribution, generate per-topic
+      if (useDistribution && selectedTopics.length > 1) {
+        for (const topic of selectedTopics) {
+          const topicCount = topicDistribution[topic] || 0;
+          if (topicCount <= 0) continue;
+          const subs = subtopics[topic]?.trim();
+          const topicLabel = subs ? `${topic} (${subs})` : topic;
+          
+          const BATCH = 25;
+          const batches = Math.ceil(topicCount / BATCH);
+          let topicQuestions: any[] = [];
+          
+          for (let b = 0; b < batches; b++) {
+            const batchCount = Math.min(BATCH, topicCount - topicQuestions.length);
+            if (batchCount <= 0) break;
+            
+            toast({ title: `${topic}: lote ${b + 1}/${batches}`, description: `${allQuestions.length + topicQuestions.length}/${total} questões prontas` });
+            
+            const previousStatements = [...allQuestions, ...topicQuestions].map((q: any) => String(q.statement || "").slice(0, 120));
+            
+            const res = await callAPI({
+              action: "generate_questions",
+              topics: [topicLabel],
+              count: batchCount,
+              difficulty,
+              difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
+              previousStatements: previousStatements.length > 0 ? previousStatements : undefined,
+            });
+            
+            topicQuestions = [...topicQuestions, ...(res.questions || [])];
+          }
+          allQuestions = [...allQuestions, ...topicQuestions];
+          setGeneratedQuestions([...allQuestions]);
+        }
+      } else {
+        // Original logic: all topics together in batches
+        const topicsWithSubs = selectedTopics.map((t) => {
+          const subs = subtopics[t]?.trim();
+          return subs ? `${t} (${subs})` : t;
         });
+        const FRONTEND_BATCH = 25;
+        const batches = Math.ceil(total / FRONTEND_BATCH);
 
-        const batchQ = res.questions || [];
-        allQuestions = [...allQuestions, ...batchQ];
-        setGeneratedQuestions([...allQuestions]);
+        for (let b = 0; b < batches; b++) {
+          const batchCount = Math.min(FRONTEND_BATCH, total - allQuestions.length);
+          if (batchCount <= 0) break;
+
+          toast({ title: `Gerando lote ${b + 1}/${batches}...`, description: `${allQuestions.length}/${total} questões prontas` });
+
+          const previousStatements = allQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
+
+          const res = await callAPI({
+            action: "generate_questions",
+            topics: topicsWithSubs,
+            count: batchCount,
+            difficulty,
+            difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
+            previousStatements: previousStatements.length > 0 ? previousStatements : undefined,
+          });
+
+          const batchQ = res.questions || [];
+          allQuestions = [...allQuestions, ...batchQ];
+          setGeneratedQuestions([...allQuestions]);
+        }
       }
 
       toast({ title: "Questões geradas!", description: `${allQuestions.length} questões criadas pela IA.` });
@@ -275,6 +357,9 @@ const ProfessorDashboard = () => {
     setManualCorrect("0");
     setManualTopic("");
     setManualQuestions([]);
+    setExpandedQuestion(null);
+    setTopicDistribution({});
+    setUseDistribution(false);
   };
 
   const addManualQuestion = () => {
@@ -597,6 +682,60 @@ const ProfessorDashboard = () => {
                   ))}
                 </div>
               )}
+
+              {/* Topic distribution */}
+              {selectedTopics.length > 1 && questionMode === "ai" && (
+                <div className="space-y-2 bg-primary/5 rounded-lg p-3 border border-primary/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4 text-primary" />
+                      <Label className="text-xs font-semibold">Distribuição por tema</Label>
+                    </div>
+                    <Switch checked={useDistribution} onCheckedChange={(v) => {
+                      setUseDistribution(v);
+                      if (v) {
+                        const total = parseInt(questionCount);
+                        const perTopic = Math.floor(total / selectedTopics.length);
+                        const remainder = total - perTopic * selectedTopics.length;
+                        const dist: Record<string, number> = {};
+                        selectedTopics.forEach((t, i) => {
+                          dist[t] = perTopic + (i < remainder ? 1 : 0);
+                        });
+                        setTopicDistribution(dist);
+                      }
+                    }} />
+                  </div>
+                  {useDistribution && (
+                    <div className="space-y-1.5">
+                      {selectedTopics.map((topic) => (
+                        <div key={topic} className="flex items-center gap-2">
+                          <Badge variant="outline" className="shrink-0 text-[10px] min-w-[100px]">{topic}</Badge>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={parseInt(questionCount)}
+                            value={topicDistribution[topic] || 0}
+                            onChange={(e) => setTopicDistribution(prev => ({ ...prev, [topic]: parseInt(e.target.value) || 0 }))}
+                            className="h-7 w-20 text-xs text-center"
+                          />
+                          <span className="text-[10px] text-muted-foreground">questões</span>
+                        </div>
+                      ))}
+                      {(() => {
+                        const sum = Object.values(topicDistribution).reduce((a, b) => a + b, 0);
+                        const target = parseInt(questionCount);
+                        return sum !== target ? (
+                          <p className="text-[10px] text-destructive font-medium">
+                            ⚠️ Total: {sum} (esperado: {target})
+                          </p>
+                        ) : (
+                          <p className="text-[10px] text-emerald-600 font-medium">✅ Total: {sum} questões</p>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Generation method */}
@@ -796,6 +935,8 @@ const ProfessorDashboard = () => {
             {/* Generated / manual questions preview */}
             {(questionMode === "ai" ? generatedQuestions : manualQuestions).length > 0 && (() => {
               const allQs = questionMode === "ai" ? generatedQuestions : manualQuestions;
+              const target = parseInt(questionCount);
+              const deficit = questionMode === "ai" ? target - allQs.length : 0;
               const grouped = allQs.reduce<Record<string, typeof allQs>>((acc, q) => {
                 const block = q.block || q.topic || "Geral";
                 if (!acc[block]) acc[block] = [];
@@ -805,10 +946,27 @@ const ProfessorDashboard = () => {
               const blocks = Object.entries(grouped);
               return (
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-primary">
-                    ✅ {allQs.length} questão(ões) {questionMode === "ai" ? "geradas" : "criadas"} {blocks.length > 1 ? `em ${blocks.length} blocos` : ""}
-                  </Label>
-                  <div className="max-h-64 overflow-y-auto space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium text-primary">
+                      ✅ {allQs.length}/{target} questão(ões) {questionMode === "ai" ? "geradas" : "criadas"} {blocks.length > 1 ? `em ${blocks.length} blocos` : ""}
+                    </Label>
+                    {deficit > 0 && questionMode === "ai" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={regenerateMissing}
+                        disabled={generating}
+                        className="gap-1.5 text-xs h-7 border-amber-300 text-amber-700 hover:bg-amber-50"
+                      >
+                        {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                        Regenerar {deficit} faltantes
+                      </Button>
+                    )}
+                  </div>
+                  {deficit > 0 && questionMode === "ai" && (
+                    <p className="text-[11px] text-amber-600">⚠️ {deficit} questão(ões) excluída(s). Clique em "Regenerar" para completar.</p>
+                  )}
+                  <div className="max-h-[400px] overflow-y-auto space-y-2">
                     {blocks.map(([block, questions]) => (
                       <div key={block}>
                         {blocks.length > 1 && (
@@ -816,30 +974,70 @@ const ProfessorDashboard = () => {
                             <span className="text-xs font-semibold text-primary">📋 Bloco: {block} — {questions.length} questão(ões)</span>
                           </div>
                         )}
-                        {questions.map((q, i) => {
+                        {questions.map((q) => {
                           const globalIdx = allQs.indexOf(q);
+                          const isExpanded = expandedQuestion === globalIdx;
                           return (
-                            <div key={globalIdx} className="bg-secondary/50 rounded-lg p-3 text-xs flex items-start justify-between gap-2">
-                              <div className="min-w-0 flex-1">
-                                <p className="font-medium mb-1">Q{globalIdx + 1}: {q.statement?.slice(0, 120)}...</p>
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <Badge variant="outline" className="text-[9px]">{q.topic || block}</Badge>
-                                  {q.difficulty_level && (
-                                    <Badge className={`text-[9px] ${
-                                      q.difficulty_level === "facil" ? "bg-emerald-500/20 text-emerald-700 border-emerald-300" :
-                                      q.difficulty_level === "dificil" ? "bg-red-500/20 text-red-700 border-red-300" :
-                                      "bg-yellow-500/20 text-yellow-700 border-yellow-300"
-                                    }`} variant="outline">
-                                      {q.difficulty_level === "facil" ? "🟢 Fácil" : q.difficulty_level === "dificil" ? "🔴 Difícil" : "🟡 Intermediário"}
-                                    </Badge>
-                                  )}
-                                  <span className="text-muted-foreground">Gabarito: {String.fromCharCode(65 + q.correct_index)}</span>
+                            <div key={globalIdx} className={`bg-secondary/50 rounded-lg text-xs transition-all ${isExpanded ? 'ring-1 ring-primary/30' : ''}`}>
+                              <div
+                                className="p-3 flex items-start justify-between gap-2 cursor-pointer hover:bg-secondary/80 rounded-lg"
+                                onClick={() => setExpandedQuestion(isExpanded ? null : globalIdx)}
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium mb-1">Q{globalIdx + 1}: {q.statement?.slice(0, 120)}{q.statement?.length > 120 ? '...' : ''}</p>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <Badge variant="outline" className="text-[9px]">{q.topic || block}</Badge>
+                                    {q.difficulty_level && (
+                                      <Badge className={`text-[9px] ${
+                                        q.difficulty_level === "facil" ? "bg-emerald-500/20 text-emerald-700 border-emerald-300" :
+                                        q.difficulty_level === "dificil" ? "bg-red-500/20 text-red-700 border-red-300" :
+                                        "bg-yellow-500/20 text-yellow-700 border-yellow-300"
+                                      }`} variant="outline">
+                                        {q.difficulty_level === "facil" ? "🟢 Fácil" : q.difficulty_level === "dificil" ? "🔴 Difícil" : "🟡 Intermediário"}
+                                      </Badge>
+                                    )}
+                                    <span className="text-muted-foreground">Gabarito: {String.fromCharCode(65 + q.correct_index)}</span>
+                                    {isExpanded ? <ChevronUp className="h-3 w-3 text-muted-foreground" /> : <ChevronDown className="h-3 w-3 text-muted-foreground" />}
+                                  </div>
                                 </div>
-                              </div>
-                              {questionMode === "manual" && (
-                                <button onClick={() => removeManualQuestion(globalIdx)} className="text-muted-foreground hover:text-destructive shrink-0">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (questionMode === "manual") removeManualQuestion(globalIdx);
+                                    else removeGeneratedQuestion(globalIdx);
+                                    if (expandedQuestion === globalIdx) setExpandedQuestion(null);
+                                  }}
+                                  className="text-muted-foreground hover:text-destructive shrink-0 p-1 rounded hover:bg-destructive/10"
+                                  title="Excluir questão"
+                                >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </button>
+                              </div>
+                              {isExpanded && (
+                                <div className="px-3 pb-3 space-y-2 border-t border-border/50 pt-2">
+                                  <p className="text-xs leading-relaxed whitespace-pre-wrap">{q.statement}</p>
+                                  {Array.isArray(q.options) && q.options.length > 0 && (
+                                    <div className="space-y-1">
+                                      {q.options.map((opt: string, oi: number) => (
+                                        <div
+                                          key={oi}
+                                          className={`px-2 py-1.5 rounded text-xs ${
+                                            oi === q.correct_index
+                                              ? 'bg-emerald-500/15 text-emerald-800 font-semibold border border-emerald-300'
+                                              : 'bg-muted/50'
+                                          }`}
+                                        >
+                                          {opt}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {q.explanation && (
+                                    <div className="bg-primary/5 rounded p-2 text-[11px] text-muted-foreground">
+                                      <span className="font-semibold">Explicação:</span> {q.explanation}
+                                    </div>
+                                  )}
+                                </div>
                               )}
                             </div>
                           );
