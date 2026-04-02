@@ -157,6 +157,43 @@ const ProfessorDashboard = () => {
     }
   };
 
+  const removeGeneratedQuestion = (idx: number) => {
+    setGeneratedQuestions(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const regenerateMissing = async () => {
+    const target = parseInt(questionCount);
+    const deficit = target - generatedQuestions.length;
+    if (deficit <= 0) return;
+    setGenerating(true);
+    try {
+      const topicsWithSubs = selectedTopics.map((t) => {
+        const subs = subtopics[t]?.trim();
+        return subs ? `${t} (${subs})` : t;
+      });
+      const previousStatements = generatedQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
+      
+      toast({ title: "Regenerando...", description: `Gerando ${deficit} questões faltantes` });
+      
+      const res = await callAPI({
+        action: "generate_questions",
+        topics: topicsWithSubs,
+        count: deficit,
+        difficulty,
+        difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
+        previousStatements,
+      });
+      
+      const newQs = res.questions || [];
+      setGeneratedQuestions(prev => [...prev, ...newQs]);
+      toast({ title: "Pronto!", description: `${newQs.length} questões regeneradas.` });
+    } catch (e) {
+      toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao regenerar", variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const generateQuestionsAI = async () => {
     if (selectedTopics.length === 0) {
       toast({ title: "Selecione temas", description: "Escolha pelo menos um tema para gerar questões.", variant: "destructive" });
@@ -164,37 +201,75 @@ const ProfessorDashboard = () => {
     }
     setGenerating(true);
     setGeneratedQuestions([]);
+    setExpandedQuestion(null);
     try {
-      const topicsWithSubs = selectedTopics.map((t) => {
-        const subs = subtopics[t]?.trim();
-        return subs ? `${t} (${subs})` : t;
-      });
       const total = parseInt(questionCount);
-      const FRONTEND_BATCH = 25;
-      const batches = Math.ceil(total / FRONTEND_BATCH);
       let allQuestions: any[] = [];
 
-      for (let b = 0; b < batches; b++) {
-        const batchCount = Math.min(FRONTEND_BATCH, total - allQuestions.length);
-        if (batchCount <= 0) break;
-
-        toast({ title: `Gerando lote ${b + 1}/${batches}...`, description: `${allQuestions.length}/${total} questões prontas` });
-
-        // Collect summaries of already-generated questions for anti-repetition
-        const previousStatements = allQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
-
-        const res = await callAPI({
-          action: "generate_questions",
-          topics: topicsWithSubs,
-          count: batchCount,
-          difficulty,
-          difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
-          previousStatements: previousStatements.length > 0 ? previousStatements : undefined,
+      // If using topic distribution, generate per-topic
+      if (useDistribution && selectedTopics.length > 1) {
+        for (const topic of selectedTopics) {
+          const topicCount = topicDistribution[topic] || 0;
+          if (topicCount <= 0) continue;
+          const subs = subtopics[topic]?.trim();
+          const topicLabel = subs ? `${topic} (${subs})` : topic;
+          
+          const BATCH = 25;
+          const batches = Math.ceil(topicCount / BATCH);
+          let topicQuestions: any[] = [];
+          
+          for (let b = 0; b < batches; b++) {
+            const batchCount = Math.min(BATCH, topicCount - topicQuestions.length);
+            if (batchCount <= 0) break;
+            
+            toast({ title: `${topic}: lote ${b + 1}/${batches}`, description: `${allQuestions.length + topicQuestions.length}/${total} questões prontas` });
+            
+            const previousStatements = [...allQuestions, ...topicQuestions].map((q: any) => String(q.statement || "").slice(0, 120));
+            
+            const res = await callAPI({
+              action: "generate_questions",
+              topics: [topicLabel],
+              count: batchCount,
+              difficulty,
+              difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
+              previousStatements: previousStatements.length > 0 ? previousStatements : undefined,
+            });
+            
+            topicQuestions = [...topicQuestions, ...(res.questions || [])];
+          }
+          allQuestions = [...allQuestions, ...topicQuestions];
+          setGeneratedQuestions([...allQuestions]);
+        }
+      } else {
+        // Original logic: all topics together in batches
+        const topicsWithSubs = selectedTopics.map((t) => {
+          const subs = subtopics[t]?.trim();
+          return subs ? `${t} (${subs})` : t;
         });
+        const FRONTEND_BATCH = 25;
+        const batches = Math.ceil(total / FRONTEND_BATCH);
 
-        const batchQ = res.questions || [];
-        allQuestions = [...allQuestions, ...batchQ];
-        setGeneratedQuestions([...allQuestions]);
+        for (let b = 0; b < batches; b++) {
+          const batchCount = Math.min(FRONTEND_BATCH, total - allQuestions.length);
+          if (batchCount <= 0) break;
+
+          toast({ title: `Gerando lote ${b + 1}/${batches}...`, description: `${allQuestions.length}/${total} questões prontas` });
+
+          const previousStatements = allQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
+
+          const res = await callAPI({
+            action: "generate_questions",
+            topics: topicsWithSubs,
+            count: batchCount,
+            difficulty,
+            difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
+            previousStatements: previousStatements.length > 0 ? previousStatements : undefined,
+          });
+
+          const batchQ = res.questions || [];
+          allQuestions = [...allQuestions, ...batchQ];
+          setGeneratedQuestions([...allQuestions]);
+        }
       }
 
       toast({ title: "Questões geradas!", description: `${allQuestions.length} questões criadas pela IA.` });
