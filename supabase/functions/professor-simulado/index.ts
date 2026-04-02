@@ -761,17 +761,22 @@ REGRAS:
           }));
           await sb.from("teacher_clinical_case_results").insert(results);
 
-          // Notify each student (in-app)
-          const notifications = studentIds.map((sid: string) => ({
-            sender_id: user.id,
-            recipient_id: sid,
-            title: `🏥 Caso Clínico do Prof. ${professorName}: ${title || "Plantão"}`,
-            content: `O Prof. ${professorName} criou o caso clínico "${title || "Plantão"}" — Especialidade: ${specialty}, Dificuldade: ${difficulty || "intermediário"}. Acesse a aba Proficiência para realizar.`,
-            priority: "important",
-          }));
-          await sb.from("admin_messages").insert(notifications);
+          // Notify each student (in-app) — dedup
+          const caseTitleTag = `Caso Clínico do Prof. ${professorName}: ${title || "Plantão"}`;
+          const alreadyCaseInApp = await alreadyNotifiedInApp(caseTitleTag, studentIds);
+          const newCaseInApp = studentIds.filter((sid: string) => !alreadyCaseInApp.includes(sid));
+          if (newCaseInApp.length > 0) {
+            const notifications = newCaseInApp.map((sid: string) => ({
+              sender_id: user.id,
+              recipient_id: sid,
+              title: `🏥 ${caseTitleTag}`,
+              content: `O Prof. ${professorName} criou o caso clínico "${title || "Plantão"}" — Especialidade: ${specialty}, Dificuldade: ${difficulty || "intermediário"}. Acesse a aba Proficiência para realizar.`,
+              priority: "important",
+            }));
+            await sb.from("admin_messages").insert(notifications);
+          }
 
-          // WhatsApp notification
+          // WhatsApp notification — dedup
           try {
             const { data: phoneProfiles } = await sb
               .from("profiles")
@@ -781,12 +786,14 @@ REGRAS:
               .not("phone", "is", null);
 
             const eligibleStudents = (phoneProfiles || []).filter((p: any) => p.phone && p.phone.length >= 10);
+            const alreadyCaseWA = await alreadyNotifiedWhatsApp(caseTitleTag, eligibleStudents.map((p: any) => p.user_id));
+            const newCaseWA = eligibleStudents.filter((p: any) => !alreadyCaseWA.includes(p.user_id));
 
-            if (eligibleStudents.length > 0) {
-              const whatsappMessages = eligibleStudents.map((p: any) => ({
+            if (newCaseWA.length > 0) {
+              const whatsappMessages = newCaseWA.map((p: any) => ({
                 admin_user_id: user.id,
                 target_user_id: p.user_id,
-                message_text: `🏥 *Novo Caso Clínico — Prof. ${professorName}*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! O Prof. ${professorName} criou o caso clínico "${title || "Plantão"}" (${specialty}, dificuldade: ${difficulty || "intermediário"}).\n\nAcesse a plataforma para realizar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
+                message_text: `🏥 *Novo ${caseTitleTag}*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! O Prof. ${professorName} criou o caso clínico "${title || "Plantão"}" (${specialty}, dificuldade: ${difficulty || "intermediário"}).\n\nAcesse a plataforma para realizar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
                 delivery_status: "pending",
                 execution_mode: "auto",
               }));
@@ -794,10 +801,10 @@ REGRAS:
 
               const { data: exec } = await sb.from("whatsapp_send_executions").insert({
                 admin_user_id: user.id,
-                execution_date: new Date().toISOString().slice(0, 10),
+                execution_date: today,
                 mode: "auto",
                 status: "running",
-                total_items: eligibleStudents.length,
+                total_items: newCaseWA.length,
                 total_sent: 0,
                 total_error: 0,
                 total_skipped: 0,
@@ -809,9 +816,9 @@ REGRAS:
                   .update({ execution_id: exec.id })
                   .eq("delivery_status", "pending")
                   .is("execution_id", null)
-                  .in("target_user_id", eligibleStudents.map((p: any) => p.user_id));
+                  .in("target_user_id", newCaseWA.map((p: any) => p.user_id));
               }
-              console.log(`WhatsApp: ${eligibleStudents.length} mensagens enfileiradas para caso clínico ${clinicalCase.id}`);
+              console.log(`WhatsApp: ${newCaseWA.length} mensagens enfileiradas para caso clínico ${clinicalCase.id}`);
             }
           } catch (whatsappErr) {
             console.error("Erro ao enfileirar WhatsApp caso clínico (não bloqueante):", whatsappErr);
