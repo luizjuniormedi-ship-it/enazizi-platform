@@ -215,17 +215,17 @@ Link do app: https://enazizi.com`;
             if (aiResp.ok) {
               const aiData = await aiResp.json();
               messageText = aiData?.choices?.[0]?.message?.content ||
-                buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos);
+                buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos, proficienciaInfo);
             } else {
               console.warn(`AI returned ${aiResp.status}, using fallback`);
-              messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos);
+              messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos, proficienciaInfo);
             }
           } catch (aiErr) {
             console.error("AI fetch error:", aiErr);
-            messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos);
+            messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos, proficienciaInfo);
           }
         } else {
-          messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos);
+          messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos, proficienciaInfo);
         }
 
         // Fix AI sometimes splitting "enazizi" into "e nazizi"
