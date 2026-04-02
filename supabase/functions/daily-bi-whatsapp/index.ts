@@ -248,23 +248,48 @@ Link do app: https://enazizi.com`;
     // 6. Criar execução ativa para o agente local detectar
     if (queued > 0) {
       try {
-        const { data: exec, error: execErr } = await supabase
+        // Check for existing active execution today — reuse if found
+        const { data: activeExecs } = await supabase
           .from("whatsapp_send_executions")
-          .insert({
-            started_by: adminId,
-            mode: "daily_bi",
-            status: "running",
-            total_items: queued,
-            sent_count: 0,
-            error_count: 0,
-          })
-          .select("id")
-          .single();
+          .select("*")
+          .in("status", ["running", "paused"])
+          .eq("execution_date", today)
+          .limit(1);
 
-        if (execErr) {
-          console.error("Failed to create execution:", execErr);
-        } else if (exec) {
-          // Vincular itens pendentes sem execution_id à execução criada
+        let exec: any;
+        let reused = false;
+
+        if (activeExecs && activeExecs.length > 0) {
+          exec = activeExecs[0];
+          reused = true;
+          if (exec.status !== "running") {
+            await supabase
+              .from("whatsapp_send_executions")
+              .update({ status: "running" })
+              .eq("id", exec.id);
+          }
+        } else {
+          const { data: newExec, error: execErr } = await supabase
+            .from("whatsapp_send_executions")
+            .insert({
+              admin_user_id: adminId,
+              execution_date: today,
+              mode: "desktop",
+              status: "running",
+              started_at: new Date().toISOString(),
+            })
+            .select("id")
+            .single();
+
+          if (execErr) {
+            console.error("Failed to create execution:", execErr);
+          } else {
+            exec = newExec;
+          }
+        }
+
+        if (exec) {
+          // Link pending orphan items from today to this execution
           const { error: linkErr } = await supabase
             .from("whatsapp_message_log")
             .update({ execution_id: exec.id })
@@ -276,21 +301,35 @@ Link do app: https://enazizi.com`;
             console.error("Failed to link items to execution:", linkErr);
           }
 
-          // Log da execução
+          // Update total_items count
+          const { count } = await supabase
+            .from("whatsapp_message_log")
+            .select("id", { count: "exact", head: true })
+            .eq("execution_id", exec.id);
+
+          await supabase
+            .from("whatsapp_send_executions")
+            .update({ total_items: count || queued })
+            .eq("id", exec.id);
+
+          // Log
           await supabase.from("whatsapp_execution_logs").insert({
             execution_id: exec.id,
-            event_type: "started",
-            details: { source: "daily-bi-whatsapp", queued },
+            action: reused ? "execution_reused" : "execution_started",
+            status: "success",
+            message: reused
+              ? `BI diário: ${queued} novos itens vinculados`
+              : `BI diário: execução criada com ${queued} itens`,
           });
 
           // Audit log
           await supabase.from("admin_audit_log").insert({
             admin_user_id: adminId,
             action: "whatsapp_daily_bi_execution",
-            details: { execution_id: exec.id, queued, date: today },
+            details: { execution_id: exec.id, queued, date: today, reused },
           });
 
-          console.log(`Created execution ${exec.id} with ${queued} items`);
+          console.log(`${reused ? "Reused" : "Created"} execution ${exec.id} with ${queued} items`);
         }
       } catch (execCreateErr) {
         console.error("Error creating execution:", execCreateErr);
