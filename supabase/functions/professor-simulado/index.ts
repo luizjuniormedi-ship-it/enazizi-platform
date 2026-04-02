@@ -143,26 +143,93 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 - PROIBIDO: dois pacientes com mesmo perfil demográfico no mesmo bloco
 - Retorne APENAS o JSON, sem texto adicional${Array.isArray(previousStatements) && previousStatements.length > 0 ? `\n\n=== QUESTÕES JÁ GERADAS (NÃO REPITA) ===\nNÃO repita cenários similares aos seguintes:\n${previousStatements.slice(0, 100).map((s: string, i: number) => `${i + 1}. ${String(s).slice(0, 120)}`).join("\n")}\n=== FIM ===` : ""}`;
 
-        const response = await aiFetch({
-          messages: [{ role: "user", content: prompt }],
-          model: "google/gemini-2.5-flash",
-          maxTokens: 32768,
-          timeoutMs: 120000,
-        });
+        let questions: any[] = [];
+        let source: "ai" | "bank" | "mixed" = "ai";
 
-        if (!response.ok) {
-          const t = await response.text();
-          console.error("AI error:", t);
-          throw new Error("Erro ao gerar questões");
+        // Try AI generation with 1 retry
+        let aiSuccess = false;
+        for (let attempt = 0; attempt < 2 && !aiSuccess; attempt++) {
+          try {
+            const response = await aiFetch({
+              messages: [{ role: "user", content: prompt }],
+              model: "google/gemini-2.5-flash",
+              maxTokens: 32768,
+              timeoutMs: 120000,
+            });
+
+            if (!response.ok) {
+              const t = await response.text();
+              console.error(`AI error attempt ${attempt + 1}:`, t);
+              continue;
+            }
+
+            const aiData = await response.json();
+            const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
+
+            const jsonMatch = content.match(/\[[\s\S]*\]/);
+            if (!jsonMatch) {
+              console.warn(`AI attempt ${attempt + 1}: no JSON array found`);
+              continue;
+            }
+
+            // Resilient JSON parse: fix trailing commas and truncated responses
+            let rawJson = jsonMatch[0];
+            rawJson = rawJson.replace(/,\s*([\]}])/g, "$1");
+            try {
+              questions = JSON.parse(rawJson);
+            } catch {
+              // Try to recover truncated JSON: find last complete object
+              const lastBrace = rawJson.lastIndexOf("}");
+              if (lastBrace > 0) {
+                const truncated = rawJson.slice(0, lastBrace + 1) + "]";
+                try {
+                  questions = JSON.parse(truncated);
+                  console.warn(`Recovered ${questions.length} questions from truncated JSON`);
+                } catch {
+                  console.warn(`AI attempt ${attempt + 1}: JSON recovery failed`);
+                  continue;
+                }
+              } else {
+                continue;
+              }
+            }
+
+            aiSuccess = questions.length > 0;
+          } catch (err) {
+            console.error(`AI attempt ${attempt + 1} exception:`, err);
+          }
         }
 
-        const aiData = await response.json();
-        const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
+        // Fallback to questions_bank if AI failed or returned nothing
+        if (!aiSuccess || questions.length === 0) {
+          console.warn("AI generation failed, falling back to questions_bank");
+          const { data: bankRows } = await sb
+            .from("questions_bank")
+            .select("statement, options, correct_index, explanation, topic")
+            .in("topic", topics)
+            .eq("is_global", true)
+            .order("created_at", { ascending: false })
+            .limit(batchCount);
 
-        const jsonMatch = content.match(/\[[\s\S]*\]/);
-        if (!jsonMatch) throw new Error("Erro ao processar questões geradas");
-
-        let questions = JSON.parse(jsonMatch[0]);
+          if (bankRows && bankRows.length > 0) {
+            const bankQuestions = bankRows.map((r: any, idx: number) => ({
+              statement: r.statement,
+              options: Array.isArray(r.options) ? r.options : [],
+              correct_index: r.correct_index ?? 0,
+              explanation: r.explanation || "",
+              topic: r.topic || topics[0] || "",
+              block: r.topic || topics[0] || "",
+              difficulty_level: "intermediario",
+            }));
+            if (questions.length > 0) {
+              questions = [...questions, ...bankQuestions];
+              source = "mixed";
+            } else {
+              questions = bankQuestions;
+              source = "bank";
+            }
+          }
+        }
         
         // Post-parse dedup against previousStatements
         if (Array.isArray(previousStatements) && previousStatements.length > 0) {
@@ -178,17 +245,14 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           const prev = questions[i - 1];
           const curr = questions[i];
           if (curr.correct_index === prev.correct_index && Array.isArray(curr.options) && curr.options.length === 5) {
-            // Pick a different index that wasn't used by prev (and ideally not by prev-prev)
             const avoid = new Set([prev.correct_index]);
             if (i >= 2) avoid.add(questions[i - 2].correct_index);
             const candidates = [0, 1, 2, 3, 4].filter(x => !avoid.has(x));
             const newIdx = candidates[Math.floor(Math.random() * candidates.length)];
-            // Swap the options so the correct answer moves to the new position
             const oldIdx = curr.correct_index;
             const temp = curr.options[newIdx];
             curr.options[newIdx] = curr.options[oldIdx];
             curr.options[oldIdx] = temp;
-            // Update option labels (A), B), etc.)
             curr.options = curr.options.map((opt: string, oi: number) => {
               const letter = String.fromCharCode(65 + oi);
               return opt.replace(/^[A-E]\)\s*/, `${letter}) `);
@@ -197,9 +261,9 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           }
         }
 
-        console.log(`Generated ${questions.length} questions`);
+        console.log(`Generated ${questions.length} questions (source: ${source})`);
 
-        return ok({ questions });
+        return ok({ questions, source });
       }
 
       case "create_simulado": {
