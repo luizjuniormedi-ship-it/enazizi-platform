@@ -734,15 +734,61 @@ REGRAS:
           }));
           await sb.from("teacher_clinical_case_results").insert(results);
 
-          // Notify each student
+          // Notify each student (in-app)
           const notifications = studentIds.map((sid: string) => ({
             sender_id: user.id,
             recipient_id: sid,
-            title: `🏥 Novo Caso Clínico: ${title || "Plantão"}`,
-            content: `Você foi incluído em um caso clínico: "${title || "Plantão"}" — Especialidade: ${specialty}. Acesse a aba Proficiência para realizar.`,
+            title: `🏥 Caso Clínico do Prof. ${professorName}: ${title || "Plantão"}`,
+            content: `O Prof. ${professorName} criou o caso clínico "${title || "Plantão"}" — Especialidade: ${specialty}, Dificuldade: ${difficulty || "intermediário"}. Acesse a aba Proficiência para realizar.`,
             priority: "important",
           }));
           await sb.from("admin_messages").insert(notifications);
+
+          // WhatsApp notification
+          try {
+            const { data: phoneProfiles } = await sb
+              .from("profiles")
+              .select("user_id, display_name, phone, whatsapp_opt_out")
+              .in("user_id", studentIds)
+              .eq("whatsapp_opt_out", false)
+              .not("phone", "is", null);
+
+            const eligibleStudents = (phoneProfiles || []).filter((p: any) => p.phone && p.phone.length >= 10);
+
+            if (eligibleStudents.length > 0) {
+              const whatsappMessages = eligibleStudents.map((p: any) => ({
+                admin_user_id: user.id,
+                target_user_id: p.user_id,
+                message_text: `🏥 *Novo Caso Clínico — Prof. ${professorName}*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! O Prof. ${professorName} criou o caso clínico "${title || "Plantão"}" (${specialty}, dificuldade: ${difficulty || "intermediário"}).\n\nAcesse a plataforma para realizar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
+                delivery_status: "pending",
+                execution_mode: "auto",
+              }));
+              await sb.from("whatsapp_message_log").insert(whatsappMessages);
+
+              const { data: exec } = await sb.from("whatsapp_send_executions").insert({
+                admin_user_id: user.id,
+                execution_date: new Date().toISOString().slice(0, 10),
+                mode: "auto",
+                status: "running",
+                total_items: eligibleStudents.length,
+                total_sent: 0,
+                total_error: 0,
+                total_skipped: 0,
+                started_at: new Date().toISOString(),
+              }).select("id").single();
+
+              if (exec) {
+                await sb.from("whatsapp_message_log")
+                  .update({ execution_id: exec.id })
+                  .eq("delivery_status", "pending")
+                  .is("execution_id", null)
+                  .in("target_user_id", eligibleStudents.map((p: any) => p.user_id));
+              }
+              console.log(`WhatsApp: ${eligibleStudents.length} mensagens enfileiradas para caso clínico ${clinicalCase.id}`);
+            }
+          } catch (whatsappErr) {
+            console.error("Erro ao enfileirar WhatsApp caso clínico (não bloqueante):", whatsappErr);
+          }
         }
 
         return ok({ success: true, case_id: clinicalCase.id, students_assigned: studentIds.length });
