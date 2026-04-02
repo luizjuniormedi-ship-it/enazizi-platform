@@ -83,6 +83,37 @@ const StudentSimulados = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const finishedRef = useRef(false);
+  const answersRef = useRef(answers);
+  const handleSubmitRef = useRef<() => Promise<void>>();
+
+  // Keep answersRef in sync
+  useEffect(() => { answersRef.current = answers; }, [answers]);
+
+  // Session persistence
+  const {
+    pendingSession,
+    checked: sessionChecked,
+    saveSession,
+    completeSession,
+    abandonSession,
+    registerAutoSave,
+    clearPending,
+  } = useSessionPersistence({ moduleKey: "student-simulados" });
+
+  // Register auto-save callback
+  useEffect(() => {
+    registerAutoSave(() => {
+      if (phase !== "quiz" || !current) return {};
+      return {
+        answers: answersRef.current,
+        questionIndex,
+        timeLeft,
+        resultId: current.result.id,
+        simuladoId: current.simulado.id,
+      };
+    });
+  }, [registerAutoSave, phase, current, questionIndex, timeLeft]);
 
   // Result state
   const [resultData, setResultData] = useState<{ score: number; total: number; correct: number; details: any[] } | null>(null);
