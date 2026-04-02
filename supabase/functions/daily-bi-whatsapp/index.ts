@@ -311,7 +311,8 @@ Link do app: https://enazizi.com`;
 
 function buildFallbackMessage(
   nome: string, totalQ: number, accuracy: number, streak: number,
-  temasAmanha: string, temasFracos: string
+  temasAmanha: string, temasFracos: string, proficienciaInfo: string = ""
 ): string {
-  return `📊 Resumo de hoje, ${nome}:\n${totalQ} questões | ${accuracy}% acurácia | 🔥 ${streak} dias\n\n📋 Amanhã:\nRevisão: ${temasAmanha}\nFoco: ${temasFracos}\n\nhttps://enazizi.com\nResponda SAIR para não receber mais.`;
+  const profBlock = proficienciaInfo ? `\n📋 Proficiência:${proficienciaInfo}\n` : "";
+  return `📊 Resumo de hoje, ${nome}:\n${totalQ} questões | ${accuracy}% acurácia | 🔥 ${streak} dias\n${profBlock}\n📋 Amanhã:\nRevisão: ${temasAmanha}\nFoco: ${temasFracos}\n\nhttps://enazizi.com\nResponda SAIR para não receber mais.`;
 }
