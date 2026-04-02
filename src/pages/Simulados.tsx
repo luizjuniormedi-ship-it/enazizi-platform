@@ -310,66 +310,49 @@ const Simulados = () => {
       if (deficit > 0) {
         const requestCount = Math.ceil(deficit * 1.3);
 
-        if (requestCount <= BATCH_SIZE) {
-          setLoadingPercent(40);
-          const batch = await generateBatch(config.topics, requestCount, config.difficulty, accessToken, config.specificTopic, config.examBoard);
-          allQuestions.push(...batch);
-          setLoadingPercent(70);
+        // Sequential generation with anti-repetition context
+        const batchCount = Math.ceil(requestCount / BATCH_SIZE);
+        const batchSizes = Array.from({ length: batchCount }, (_, i) => {
+          const remaining = requestCount - i * BATCH_SIZE;
+          return Math.min(BATCH_SIZE, remaining);
+        });
 
-          if (allQuestions.length < config.count) {
-            setLoadingProgress(`Complementando... (${allQuestions.length}/${config.count})`);
-            setLoadingPercent(80);
-            const extra = await generateBatch(
+        for (let i = 0; i < batchSizes.length; i++) {
+          const size = batchSizes[i];
+          const pctBase = 25;
+          const pctRange = 55;
+          setLoadingPercent(pctBase + Math.round((i / batchSizes.length) * pctRange));
+          setLoadingProgress(`Gerando lote ${i + 1}/${batchSizes.length}...`);
+
+          // Collect summaries for anti-repetition
+          const avoidStatements = allQuestions.map((q) => q.statement.slice(0, 120));
+
+          try {
+            const batch = await generateBatch(config.topics, size, config.difficulty, accessToken, config.specificTopic, config.examBoard, avoidStatements.length > 0 ? avoidStatements : undefined);
+            allQuestions.push(...batch);
+          } catch {
+            // continue with next batch
+          }
+        }
+
+        // Complement if still short
+        if (allQuestions.length < config.count) {
+          setLoadingProgress(`Complementando... (${allQuestions.length}/${config.count})`);
+          setLoadingPercent(85);
+          try {
+            const avoidStatements = allQuestions.map((q) => q.statement.slice(0, 120));
+            const retry = await generateBatch(
               config.topics,
               Math.min(config.count - allQuestions.length + 2, BATCH_SIZE),
               config.difficulty,
               accessToken,
               config.specificTopic,
               config.examBoard,
+              avoidStatements,
             );
-            allQuestions.push(...extra);
-          }
-        } else {
-          const batchCount = Math.ceil(requestCount / BATCH_SIZE);
-          const batchSizes = Array.from({ length: batchCount }, (_, i) => {
-            const remaining = requestCount - i * BATCH_SIZE;
-            return Math.min(BATCH_SIZE, remaining);
-          });
-
-          let completedBatches = 0;
-          const results = await Promise.allSettled(
-            batchSizes.map(async (size) => {
-              const result = await generateBatch(config.topics, size, config.difficulty, accessToken, config.specificTopic, config.examBoard);
-              completedBatches++;
-              const pct = 25 + Math.round((completedBatches / batchCount) * 55);
-              setLoadingPercent(pct);
-              setLoadingProgress(`Gerando lote ${completedBatches}/${batchCount}...`);
-              return result;
-            }),
-          );
-
-          for (const result of results) {
-            if (result.status === "fulfilled") {
-              allQuestions.push(...result.value);
-            }
-          }
-
-          if (allQuestions.length < config.count) {
-            setLoadingProgress(`Complementando... (${allQuestions.length}/${config.count})`);
-            setLoadingPercent(85);
-            try {
-              const retry = await generateBatch(
-                config.topics,
-                Math.min(config.count - allQuestions.length + 2, BATCH_SIZE),
-                config.difficulty,
-                accessToken,
-                config.specificTopic,
-                config.examBoard,
-              );
-              allQuestions.push(...retry);
-            } catch {
-              // accept partial
-            }
+            allQuestions.push(...retry);
+          } catch {
+            // accept partial
           }
         }
       }

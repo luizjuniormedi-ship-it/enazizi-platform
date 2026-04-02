@@ -162,7 +162,16 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
         const jsonMatch = content.match(/\[[\s\S]*\]/);
         if (!jsonMatch) throw new Error("Erro ao processar questões geradas");
 
-        const questions = JSON.parse(jsonMatch[0]);
+        let questions = JSON.parse(jsonMatch[0]);
+        
+        // Post-parse dedup against previousStatements
+        if (Array.isArray(previousStatements) && previousStatements.length > 0) {
+          const prevKeys = new Set(previousStatements.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
+          questions = questions.filter((q: any) => {
+            const key = String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ");
+            return !prevKeys.has(key);
+          });
+        }
         console.log(`Generated ${questions.length} questions`);
 
         return ok({ questions });
