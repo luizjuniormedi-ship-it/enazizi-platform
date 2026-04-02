@@ -1,30 +1,27 @@
 
 
-# Corrigir Mensagem Personalizada no WhatsApp
+# Botão "Excluir Mensagens Geradas" na aba WhatsApp
 
-## Problema
-Quando o admin digita uma mensagem personalizada, o sistema envia o texto exatamente como digitado para **todos** os alunos — sem substituir o nome de cada um. O admin escreveu `{Luiz Júnior} teste` (literalmente) e todos os 43 alunos receberam essa mesma mensagem com o nome errado.
+## Resumo
+Adicionar um botão para limpar/excluir as mensagens geradas do dia que ainda estão pendentes, tanto da lista local quanto da tabela `whatsapp_message_log` no banco.
 
-O placeholder `{nome}` existe no código mas não é óbvio para o usuário. Além disso, se o admin não usa `{nome}`, o sistema deveria automaticamente adicionar o nome do aluno no início da mensagem.
-
-## Solução
+## Alteração
 
 ### `src/components/admin/WhatsAppPanel.tsx`
 
-1. **Melhorar o placeholder do textarea** para deixar claro como usar `{nome}`:
-   - Trocar para: `"Olá {nome}! Sua mensagem aqui... (use {nome} para inserir o nome do aluno automaticamente)"`
+1. **Adicionar função `handleDeleteGenerated`**:
+   - Deleta da tabela `whatsapp_message_log` todos os itens com `delivery_status = 'pending'` do dia atual
+   - Limpa o estado local `students`, `editedMessages`, `sentUsers`
+   - Se houver execução ativa (`activeExecution`), marca como `stopped`
+   - Exibe toast de confirmação
 
-2. **Auto-prefixar o nome se `{nome}` não foi usado**: Na lógica de override (linhas 210-216), se o `customMessage` não contém `{nome}`, prefixar automaticamente com `"Olá {firstName}! "` antes do texto do admin.
-
-3. **Adicionar dica visual** abaixo do textarea informando: `"Use {nome} para personalizar. Se não usar, o nome será adicionado automaticamente no início."`
-
-```text
-Antes:  Admin digita "teste" → todos recebem "teste" (sem nome)
-Depois: Admin digita "teste" → cada aluno recebe "Olá [Nome]! teste"
-        Admin digita "{nome}, teste" → cada aluno recebe "[Nome], teste"
-```
+2. **Adicionar botão na UI** ao lado do botão "Gerar mensagens do dia":
+   - Ícone de lixeira (Trash2)
+   - Texto: "Excluir pendentes"
+   - Variante `destructive`, visível apenas quando há `students.length > 0`
+   - Confirmação via `window.confirm` antes de executar
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/components/admin/WhatsAppPanel.tsx` | Auto-prefixar nome quando `{nome}` ausente; melhorar placeholder e dica |
+| `src/components/admin/WhatsAppPanel.tsx` | Adicionar botão + função de exclusão de mensagens pendentes |
 
