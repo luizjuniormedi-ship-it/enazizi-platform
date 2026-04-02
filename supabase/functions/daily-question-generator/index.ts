@@ -155,7 +155,7 @@ INSTRUÇÕES CRÍTICAS:
    - Exame físico com achados positivos E negativos relevantes
    - Sinais vitais completos (PA, FC, FR, Temp, SpO2)
    - Pelo menos um exame complementar com valores numéricos e unidades
-4. MÍNIMO 250 caracteres no enunciado
+4. MÍNIMO 400 caracteres no enunciado (padrão ENAMED)
 5. 4 alternativas (A, B, C, D), apenas 1 correta — TODAS clinicamente plausíveis
 6. Explicação detalhada com raciocínio clínico passo a passo
 7. Dificuldade MÍNIMA: 3/5 (padrão REVALIDA). Distribua: 50% nível 3, 50% nível 4-5
@@ -171,7 +171,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
 {
   "questions": [
     {
-      "statement": "Caso clínico completo com ≥250 caracteres...",
+      "statement": "Caso clínico completo com ≥400 caracteres (padrão ENAMED)...",
       "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
       "correct_index": 0,
       "explanation": "Raciocínio clínico passo a passo...",
@@ -219,7 +219,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
     const questions = parsed.questions.filter((q: any) =>
       q.statement && Array.isArray(q.options) && q.options.length >= 4 && q.options.length <= 5 &&
       typeof q.correct_index === "number" &&
-      String(q.statement).trim().length >= 250 &&
+      String(q.statement).trim().length >= 400 &&
       (q.difficulty || 3) >= 3 &&
       hasClinicalContent(String(q.statement)) &&
       !INVALID_CONTENT_REGEX.test(q.statement) &&
@@ -287,7 +287,7 @@ ${priorityBlock2}${bibBlock}
 
 CALIBRAÇÃO OBRIGATÓRIA REVALIDA/ENAMED:
 - PROIBIDO: questões de definição pura ("O que é X?", "Defina Y", "Qual o conceito de Z")
-- PROIBIDO: enunciados com menos de 150 caracteres sem caso clínico
+- PROIBIDO: enunciados com menos de 400 caracteres (padrão ENAMED)
 - OBRIGATÓRIO: caso clínico com ≥3 dados clínicos relevantes (sinais vitais, exames, achados semiológicos)
 - OBRIGATÓRIO: ≥2 etapas de raciocínio clínico (ex: diagnóstico → conduta, ou achado → interpretação → tratamento)
 - OBRIGATÓRIO: pelo menos 2 distratores plausíveis baseados em diagnósticos diferenciais REAIS
@@ -310,7 +310,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
 {
   "questions": [
     {
-      "statement": "Caso clínico completo com ≥150 caracteres...",
+      "statement": "Caso clínico completo com ≥400 caracteres (padrão ENAMED)...",
       "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
       "explanation": "Raciocínio clínico passo a passo...",
       "topic": "${specialty}",
@@ -355,7 +355,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
     const questions = parsed.questions.filter((q: any) =>
       q.statement && Array.isArray(q.options) && q.options.length >= 4 && q.options.length <= 5 &&
       typeof q.correct_index === "number" &&
-      String(q.statement).trim().length >= 150 &&
+      String(q.statement).trim().length >= 400 &&
       (q.difficulty || 3) >= 3 &&
       !INVALID_CONTENT_REGEX.test(q.statement) &&
       !INVALID_CONTENT_REGEX.test(q.explanation || "") &&

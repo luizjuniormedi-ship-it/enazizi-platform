@@ -35,7 +35,7 @@ NÍVEL DE DIFICULDADE: RESIDÊNCIA MÉDICA (ALTO)
 REGRAS:
 - Responda APENAS com um JSON array puro, sem markdown, sem texto extra, sem code blocks
 - Cada questão DEVE ser um caso clínico COMPLEXO com: nome fictício, idade, sexo, profissão, queixa principal com tempo de evolução, antecedentes pessoais e medicações, exame físico com sinais vitais COMPLETOS (PA, FC, FR, Temp, SpO2), exames complementares com VALORES NUMÉRICOS e unidades
-- Mínimo 250 caracteres no enunciado — questões curtas serão rejeitadas
+- Mínimo 400 caracteres no enunciado (padrão ENAMED) — questões curtas serão rejeitadas
 - 5 alternativas plausíveis (a-e), todas clinicamente possíveis e com extensão similar
 - Distratores baseados em erros REAIS de raciocínio clínico que candidatos cometem em provas
 - Explicação detalhada analisando CADA alternativa individualmente (por que certa/errada)
