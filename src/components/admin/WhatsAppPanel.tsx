@@ -281,8 +281,9 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
       return null;
     }
     if (!resp.ok) {
-      const errText = await resp.text();
-      throw new Error(errText || `HTTP ${resp.status}`);
+      const errData = await resp.json().catch(() => null);
+      if (errData) return errData;
+      throw new Error(`HTTP ${resp.status}`);
     }
     return resp.json();
   };
