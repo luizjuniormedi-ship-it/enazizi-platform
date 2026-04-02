@@ -53,20 +53,14 @@ const Login = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [profilesRes, qbRes, reqRes, fcRes] = await Promise.all([
-          supabase.from("profiles").select("id", { count: "exact", head: true }).eq("user_type", "estudante"),
-          supabase.from("questions_bank").select("id", { count: "exact", head: true }),
-          supabase.from("real_exam_questions").select("id", { count: "exact", head: true }).eq("is_active", true),
-          supabase.from("flashcards").select("id", { count: "exact", head: true }),
-        ]);
-        const alunos = profilesRes.count ?? 0;
-        const questoes = (qbRes.count ?? 0) + (reqRes.count ?? 0);
-        const flashcards = fcRes.count ?? 0;
-        setDynamicStats({
-          alunos: formatCount(alunos),
-          questoes: formatCount(questoes),
-          flashcards: formatCount(flashcards),
-        });
+        const { data } = await supabase.rpc("get_login_stats").maybeSingle();
+        if (data) {
+          setDynamicStats({
+            alunos: formatCount(Number(data.alunos)),
+            questoes: formatCount(Number(data.questoes)),
+            flashcards: formatCount(Number(data.flashcards)),
+          });
+        }
       } catch {
         // keep "—" on error
       }
