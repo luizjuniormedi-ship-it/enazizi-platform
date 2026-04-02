@@ -322,7 +322,30 @@ const ProfessorDashboard = () => {
         }
       }
 
-      toast({ title: "Questões geradas!", description: `${allQuestions.length} questões criadas pela IA.` });
+      // Complement loop: fill deficit if fewer than target
+      const target = total;
+      for (let fill = 0; fill < 2 && allQuestions.length < target; fill++) {
+        const deficit = target - allQuestions.length;
+        toast({ title: `Completando déficit...`, description: `Faltam ${deficit} questões` });
+        const prevStmts = allQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
+        const topicsWithSubsFill = selectedTopics.map((t) => {
+          const subs = subtopics[t]?.trim();
+          return subs ? `${t} (${subs})` : t;
+        });
+        try {
+          const res = await callAPI({
+            action: "generate_questions",
+            topics: topicsWithSubsFill,
+            count: Math.min(deficit, 25),
+            difficulty,
+            previousStatements: prevStmts,
+          });
+          allQuestions = [...allQuestions, ...(res.questions || [])];
+          setGeneratedQuestions([...allQuestions]);
+        } catch { break; }
+      }
+
+      toast({ title: "Questões geradas!", description: `${allQuestions.length} questões criadas.` });
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao gerar", variant: "destructive" });
     } finally {

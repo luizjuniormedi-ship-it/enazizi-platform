@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Mail, AlertTriangle, Bell } from "lucide-react";
+import { Mail, AlertTriangle, Bell, GraduationCap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
@@ -63,8 +63,13 @@ const AdminMessagesBanner = () => {
     load();
   }, [user]);
 
+  const isProfessorMsg = (m: AdminMessage) =>
+    /Prof\.|Simulado|Caso Clínico|Tema de Estudo|Atividade/i.test(m.title);
+
   const unreadMessages = messages.filter((m) => !readIds.has(m.id));
   const urgentUnread = unreadMessages.filter((m) => m.priority === "urgent");
+  const professorMessages = messages.filter(isProfessorMsg);
+  const regularMessages = messages.filter((m) => !isProfessorMsg(m));
 
   const markAsRead = async (msgId: string) => {
     if (!user || readIds.has(msgId)) return;
@@ -135,25 +140,65 @@ const AdminMessagesBanner = () => {
               {messages.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-8">Nenhuma mensagem.</p>
               )}
-              {messages.map((m, i) => (
-                <div key={m.id}>
-                  <div className={`p-3 rounded-lg ${readIds.has(m.id) ? "bg-muted/30" : "bg-primary/5 border border-primary/20"}`}>
-                    <div className="flex items-center justify-between mb-1">
-                      <h4 className="text-sm font-semibold">{m.title}</h4>
-                      <Badge variant={priorityColor(m.priority)} className="text-[10px]">
-                        {priorityLabel(m.priority)}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground whitespace-pre-wrap">{m.content}</p>
-                    <p className="text-[10px] text-muted-foreground mt-2">
-                      {new Date(m.created_at).toLocaleDateString("pt-BR", {
-                        day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
-                      })}
-                    </p>
+              {professorMessages.length > 0 && (
+                <>
+                  <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                    <GraduationCap className="h-4 w-4" />
+                    📋 Atividades do Professor
                   </div>
-                  {i < messages.length - 1 && <Separator className="my-1" />}
-                </div>
-              ))}
+                  {professorMessages.map((m) => (
+                    <div key={m.id}>
+                      <div className={`p-3 rounded-lg border-l-4 border-l-blue-500 ${readIds.has(m.id) ? "bg-muted/30" : "bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800"}`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="text-sm font-semibold flex items-center gap-1.5">
+                            <GraduationCap className="h-3.5 w-3.5 text-blue-600" />
+                            {m.title}
+                          </h4>
+                          <Badge className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                            Atividade
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground whitespace-pre-wrap">{m.content}</p>
+                        <p className="text-[10px] text-muted-foreground mt-2">
+                          {new Date(m.created_at).toLocaleDateString("pt-BR", {
+                            day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {regularMessages.length > 0 && <Separator className="my-2" />}
+                </>
+              )}
+              {regularMessages.length > 0 && (
+                <>
+                  {professorMessages.length > 0 && (
+                    <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground mb-1">
+                      <Mail className="h-4 w-4" />
+                      Mensagens do Sistema
+                    </div>
+                  )}
+                  {regularMessages.map((m, i) => (
+                    <div key={m.id}>
+                      <div className={`p-3 rounded-lg ${readIds.has(m.id) ? "bg-muted/30" : "bg-primary/5 border border-primary/20"}`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="text-sm font-semibold">{m.title}</h4>
+                          <Badge variant={priorityColor(m.priority)} className="text-[10px]">
+                            {priorityLabel(m.priority)}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground whitespace-pre-wrap">{m.content}</p>
+                        <p className="text-[10px] text-muted-foreground mt-2">
+                          {new Date(m.created_at).toLocaleDateString("pt-BR", {
+                            day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
+                          })}
+                        </p>
+                      </div>
+                      {i < regularMessages.length - 1 && <Separator className="my-1" />}
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </ScrollArea>
         </DialogContent>
