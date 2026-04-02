@@ -1,44 +1,34 @@
 
 
-# Opt-out de Mensagens WhatsApp
+# Notificações do Painel do Professor para Alunos
 
 ## Resumo
-Adicionar nas mensagens WhatsApp uma frase de opt-out (ex: "Responda SAIR para não receber mais") e criar um sistema para processar respostas "SAIR"/"NÃO", excluindo o aluno dos envios futuros.
+Quando o professor criar uma atividade (simulado, caso clínico ou tema de estudo), cada aluno atribuído receberá uma mensagem no sistema (`admin_messages`). Para simulados agendados, criar também um lembrete 2h antes do início via cron job.
 
 ## Alterações
 
-### 1. Nova coluna no `profiles` — `whatsapp_opt_out`
-Migração SQL:
-```sql
-ALTER TABLE profiles ADD COLUMN whatsapp_opt_out boolean NOT NULL DEFAULT false;
-```
+### 1. Edge Function `professor-simulado/index.ts` — Inserir notificações
+Nos 3 cases de criação (`create_simulado`, `create_clinical_case`, `create_study_assignment`), após inserir os results dos alunos, inserir uma `admin_messages` para cada aluno atribuído:
 
-### 2. Atualizar prompts de geração de mensagem
-Em **ambas** as edge functions (`whatsapp-agent/index.ts` e `whatsapp-auto-send/index.ts`), adicionar ao prompt da IA:
-```
-A mensagem DEVE terminar com:
-"Responda SAIR para não receber mais."
-```
+- **Simulado**: "📋 Novo Simulado: {title} — {total_questions} questões, tempo: {time_limit}min. Acesse a aba Proficiência para realizar."
+- **Caso Clínico**: "🏥 Novo Caso Clínico: {title} — Especialidade: {specialty}. Acesse a aba Proficiência para realizar."
+- **Tema de Estudo**: "📚 Nova Atribuição: {title} — Tópicos: {topics}. Acesse a aba Proficiência para estudar."
 
-### 3. Filtrar alunos com opt-out nas consultas
-Em ambas as edge functions, adicionar `.eq("whatsapp_opt_out", false)` na query de profiles, para que alunos que optaram por sair não recebam mensagens.
+Cada mensagem será inserida com `sender_id = professor user.id` e `recipient_id = student_id`.
 
-### 4. Nova edge function `whatsapp-opt-out`
-Endpoint simples que o agente Python chama quando detecta uma resposta do aluno:
-- Recebe `{ phone, reply }` 
-- Se `reply` contém "SAIR" ou "NÃO" → marca `whatsapp_opt_out = true` no perfil
-- Se `reply` contém "SIM" ou "VOLTAR" → marca `whatsapp_opt_out = false`
-- Retorna status da operação
+### 2. Nova Edge Function `professor-reminder` — Lembrete 2h antes
+Função simples que:
+1. Busca simulados com `scheduled_at` entre agora e agora+5min (janela do cron)
+2. Para cada simulado, busca os alunos em `teacher_simulado_results` com status `pending`
+3. Insere `admin_messages` com lembrete: "⏰ Lembrete: O simulado '{title}' começa em 2 horas!"
 
-### 5. Painel admin — visibilidade
-No `WhatsAppPanel.tsx`, mostrar badge/indicador de quantos alunos fizeram opt-out, e permitir ao admin ver e reverter opt-outs manualmente.
+### 3. Cron Job — Executar a cada 5 minutos
+Agendar `professor-reminder` a cada 5 minutos. A função verifica simulados cujo `scheduled_at` está entre `now() + 115min` e `now() + 125min` (janela de 2h ± 5min).
 
 ## Arquivos alterados
 | Arquivo | Mudança |
 |---------|---------|
-| Migração SQL | Adicionar coluna `whatsapp_opt_out` em `profiles` |
-| `supabase/functions/whatsapp-agent/index.ts` | Filtrar opt-out + adicionar frase no prompt |
-| `supabase/functions/whatsapp-auto-send/index.ts` | Filtrar opt-out + adicionar frase no prompt |
-| `supabase/functions/whatsapp-opt-out/index.ts` | Nova função para processar respostas |
-| `src/components/admin/WhatsAppPanel.tsx` | Mostrar contagem de opt-outs |
+| `supabase/functions/professor-simulado/index.ts` | Inserir `admin_messages` nos 3 cases de criação |
+| `supabase/functions/professor-reminder/index.ts` | Nova função para lembrete 2h antes |
+| Cron Job (SQL insert) | Agendar `professor-reminder` a cada 5 minutos |
 
