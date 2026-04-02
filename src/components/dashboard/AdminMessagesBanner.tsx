@@ -63,8 +63,13 @@ const AdminMessagesBanner = () => {
     load();
   }, [user]);
 
+  const isProfessorMsg = (m: AdminMessage) =>
+    /Prof\.|Simulado|Caso Clínico|Tema de Estudo|Atividade/i.test(m.title);
+
   const unreadMessages = messages.filter((m) => !readIds.has(m.id));
   const urgentUnread = unreadMessages.filter((m) => m.priority === "urgent");
+  const professorMessages = messages.filter(isProfessorMsg);
+  const regularMessages = messages.filter((m) => !isProfessorMsg(m));
 
   const markAsRead = async (msgId: string) => {
     if (!user || readIds.has(msgId)) return;
