@@ -156,62 +156,83 @@ Deno.serve(async (req) => {
 
     if (action === "update_status") {
       const { item_id, status: newStatus, error_message: errMsg, execution_id: execId } = body;
-      if (!item_id || !newStatus) return respond({ error: "item_id and status required" }, 400);
+      if (!item_id || !newStatus) return respond({ success: false, error: "item_id and status required" }, 400);
 
       const validStatuses = ["sent", "error", "skipped"];
-      if (!validStatuses.includes(newStatus)) return respond({ error: "Invalid status" }, 400);
+      if (!validStatuses.includes(newStatus)) return respond({ success: false, error: "Invalid status" }, 400);
 
-      // Update item
-      const updateData: any = {
-        delivery_status: newStatus,
-        updated_at: new Date().toISOString(),
-      };
-      if (newStatus === "sent") updateData.sent_at = new Date().toISOString();
-      if (errMsg) updateData.error_message = errMsg;
-
-      // Skip RPC call, use manual increment below
-
-      // Manual increment
-      const { data: current } = await supabaseAdmin
-        .from("whatsapp_message_log")
-        .select("attempts")
-        .eq("id", item_id)
-        .single();
-
-      updateData.attempts = (current?.attempts || 0) + 1;
-
-      await supabaseAdmin
-        .from("whatsapp_message_log")
-        .update(updateData)
-        .eq("id", item_id);
-
-      // Update execution counters
-      if (execId) {
-        const counterField = newStatus === "sent" ? "total_sent" : newStatus === "error" ? "total_error" : "total_skipped";
-        const { data: execData } = await supabaseAdmin
-          .from("whatsapp_send_executions")
-          .select("total_sent, total_error, total_skipped")
-          .eq("id", execId)
+      try {
+        // Get current attempts
+        const { data: current, error: fetchErr } = await supabaseAdmin
+          .from("whatsapp_message_log")
+          .select("attempts")
+          .eq("id", item_id)
           .single();
 
-        if (execData) {
-          await supabaseAdmin
-            .from("whatsapp_send_executions")
-            .update({ [counterField]: (execData as any)[counterField] + 1 })
-            .eq("id", execId);
+        if (fetchErr) {
+          console.error("Fetch item error:", fetchErr.message);
+          return respond({ success: false, error: fetchErr.message }, 500);
         }
 
-        // Log
-        await supabaseAdmin.from("whatsapp_execution_logs").insert({
-          execution_id: execId,
-          queue_item_id: item_id,
-          action: `item_${newStatus}`,
-          status: newStatus,
-          message: errMsg || `Item marcado como ${newStatus}`,
-        });
-      }
+        // Build update payload
+        const updateData: any = {
+          delivery_status: newStatus,
+          updated_at: new Date().toISOString(),
+          attempts: (current?.attempts || 0) + 1,
+        };
+        if (newStatus === "sent") updateData.sent_at = new Date().toISOString();
+        if (errMsg) updateData.error_message = errMsg;
 
-      return respond({ ok: true });
+        // Update the item
+        const { error: updateErr } = await supabaseAdmin
+          .from("whatsapp_message_log")
+          .update(updateData)
+          .eq("id", item_id);
+
+        if (updateErr) {
+          console.error("Update item error:", updateErr.message);
+          return respond({ success: false, error: updateErr.message }, 500);
+        }
+
+        // Update execution counters
+        if (execId) {
+          const counterField = newStatus === "sent" ? "total_sent" : newStatus === "error" ? "total_error" : "total_skipped";
+          const { data: execData, error: execFetchErr } = await supabaseAdmin
+            .from("whatsapp_send_executions")
+            .select("total_sent, total_error, total_skipped")
+            .eq("id", execId)
+            .single();
+
+          if (!execFetchErr && execData) {
+            const { error: execUpdateErr } = await supabaseAdmin
+              .from("whatsapp_send_executions")
+              .update({ [counterField]: (execData as any)[counterField] + 1 })
+              .eq("id", execId);
+
+            if (execUpdateErr) {
+              console.error("Update execution counter error:", execUpdateErr.message);
+            }
+          }
+
+          // Audit log
+          const { error: logErr } = await supabaseAdmin.from("whatsapp_execution_logs").insert({
+            execution_id: execId,
+            queue_item_id: item_id,
+            action: `item_${newStatus}`,
+            status: newStatus,
+            message: errMsg || `Item marcado como ${newStatus}`,
+          });
+
+          if (logErr) {
+            console.error("Insert execution log error:", logErr.message);
+          }
+        }
+
+        return respond({ success: true });
+      } catch (e) {
+        console.error("update_status exception:", e.message);
+        return respond({ success: false, error: e.message }, 500);
+      }
     }
 
     if (action === "execution_status") {
