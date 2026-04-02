@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
 
         const totalQ = attempts?.length || 0;
         const correctQ = attempts?.filter((a: any) => a.correct).length || 0;
-        const accuracy = totalQ > 0 ? Math.round((correctQ / totalQ) * 100) : 0;
+        const accuracy = totalQ > 0 ? Math.min(100, Math.round((correctQ / totalQ) * 100)) : 0;
 
         // Gamification (XP, streak)
         const { data: gamif } = await supabase
