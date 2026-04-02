@@ -236,7 +236,7 @@ Link do app: https://enazizi.com`;
           target_user_id: user.user_id,
           message_text: messageText,
           delivery_status: "pending",
-          execution_mode: "auto",
+          execution_mode: "daily_bi",
         });
 
         queued++;
