@@ -136,11 +136,14 @@ async function searchRealQuestionsViaAI(
   const bibRef = (await import("../_shared/specialty-bibliography.ts")).getBibliographyForSpecialty(specialty);
   const bibBlock = bibRef ? `\nREFERÊNCIA BIBLIOGRÁFICA: ${bibRef}\n` : "";
 
+  const highYield = HIGH_YIELD[specialty];
+  const priorityBlock = highYield ? `\nSUBTÓPICOS PRIORITÁRIOS (dar preferência — mais cobrados em provas de residência): ${highYield.join(", ")}\n` : "";
+
   const prompt = `Você é um professor de medicina especialista em criar questões no ESTILO e NÍVEL de provas oficiais de residência médica brasileira.
 
 ESPECIALIDADE: ${specialty}
 TEMAS PRIORITÁRIOS: ${selectedTopics.join(", ")}
-${bibBlock}
+${priorityBlock}${bibBlock}
 BANCAS DE REFERÊNCIA (use como padrão de dificuldade e estilo): ${selectedSources.join(", ")}
 
 INSTRUÇÕES CRÍTICAS:
