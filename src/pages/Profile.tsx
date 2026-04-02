@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { User, Camera, Loader2, Save, GraduationCap, Building, Phone, Stethoscope, CalendarDays, Clock } from "lucide-react";
+import { User, Camera, Loader2, Save, GraduationCap, Building, Phone, Stethoscope, CalendarDays, Clock, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import FaculdadeCombobox from "@/components/FaculdadeCombobox";
 import { isValidPhone, isValidName } from "@/lib/profileValidation";
+import { Switch } from "@/components/ui/switch";
 import { ALL_SPECIALTIES } from "@/constants/specialties";
 
 const Profile = () => {
@@ -26,6 +27,7 @@ const Profile = () => {
   const [targetSpecialty, setTargetSpecialty] = useState("");
   const [examDate, setExamDate] = useState("");
   const [dailyStudyHours, setDailyStudyHours] = useState("4");
+  const [whatsappDailyBi, setWhatsappDailyBi] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -35,7 +37,7 @@ const Profile = () => {
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, email, periodo, faculdade, phone, user_type, target_specialty, exam_date, daily_study_hours")
+        .select("display_name, avatar_url, email, periodo, faculdade, phone, user_type, target_specialty, exam_date, daily_study_hours, whatsapp_daily_bi")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -49,6 +51,7 @@ const Profile = () => {
         setTargetSpecialty(data.target_specialty || "");
         setExamDate(data.exam_date || "");
         setDailyStudyHours(data.daily_study_hours ? String(data.daily_study_hours) : "4");
+        setWhatsappDailyBi(data.whatsapp_daily_bi || false);
       }
       setLoading(false);
     };
@@ -120,6 +123,7 @@ const Profile = () => {
         user_type: userType,
         exam_date: examDate || null,
         daily_study_hours: parseFloat(dailyStudyHours) || 4,
+        whatsapp_daily_bi: whatsappDailyBi,
       };
       if (userType === "estudante") {
         updateData.periodo = periodo ? parseInt(periodo) : null;
@@ -340,6 +344,18 @@ const Profile = () => {
             maxLength={16}
           />
           <p className="text-xs text-muted-foreground">Seu número para receber lembretes de estudo.</p>
+        </div>
+
+        {/* BI Diário via WhatsApp */}
+        <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-secondary/50">
+          <div className="flex items-center gap-3">
+            <MessageSquare className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-sm font-medium">Resumo diário via WhatsApp</p>
+              <p className="text-xs text-muted-foreground">Receba seu BI e programação do dia seguinte às 20h.</p>
+            </div>
+          </div>
+          <Switch checked={whatsappDailyBi} onCheckedChange={setWhatsappDailyBi} />
         </div>
 
         <Button onClick={handleSave} disabled={saving} className="w-full">

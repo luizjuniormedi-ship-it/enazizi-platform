@@ -1822,6 +1822,7 @@ export type Database = {
           updated_at: string
           user_id: string
           user_type: string
+          whatsapp_daily_bi: boolean
           whatsapp_opt_out: boolean
         }
         Insert: {
@@ -1848,6 +1849,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           user_type?: string
+          whatsapp_daily_bi?: boolean
           whatsapp_opt_out?: boolean
         }
         Update: {
@@ -1874,6 +1876,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           user_type?: string
+          whatsapp_daily_bi?: boolean
           whatsapp_opt_out?: boolean
         }
         Relationships: [
