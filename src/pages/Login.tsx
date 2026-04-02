@@ -145,7 +145,32 @@ const Login = () => {
               <p className="text-[10px] lg:text-xs text-muted-foreground">{s.label}</p>
             </div>
           ))}
-        </div>
+
+        {/* Testimonials */}
+        {testimonials.length > 0 && (
+          <div className="mt-6 lg:mt-8 space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Avaliações de alunos</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {testimonials.map((t, i) => (
+                <div key={i} className="rounded-xl border border-border/40 bg-card/60 p-3 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold">{t.display_name}</span>
+                    <div className="flex items-center gap-0.5">
+                      {Array.from({ length: 5 }).map((_, j) => (
+                        <Star key={j} className={`h-3 w-3 ${j < Math.round(t.avg_rating) ? "fill-primary text-primary" : "text-muted-foreground/30"}`} />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                    <Quote className="h-3 w-3 inline mr-1 text-primary/50" />
+                    {t.feedback_text}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
         {/* Features list */}
         <div className="hidden sm:grid sm:grid-cols-2 gap-2 lg:gap-3">
