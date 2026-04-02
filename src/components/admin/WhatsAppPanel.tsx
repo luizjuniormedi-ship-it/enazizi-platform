@@ -274,6 +274,16 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
       body: JSON.stringify(body),
     });
+    if (resp.status === 401) {
+      toast({ title: "Sessão expirada", description: "Faça login novamente.", variant: "destructive" });
+      await supabase.auth.signOut();
+      window.location.assign("/login");
+      return null;
+    }
+    if (!resp.ok) {
+      const errText = await resp.text();
+      throw new Error(errText || `HTTP ${resp.status}`);
+    }
     return resp.json();
   };
 
