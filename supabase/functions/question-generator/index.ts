@@ -313,6 +313,26 @@ Regras:
               parsed.questions = parsed.questions.filter((q: any) =>
                 isValidQuestion(q) && hasMinimumContext(q.statement || "")
               );
+              // Fix consecutive repeated correct_index by swapping options
+              for (let i = 1; i < parsed.questions.length; i++) {
+                const prev = parsed.questions[i - 1];
+                const curr = parsed.questions[i];
+                if (curr.correct_index === prev.correct_index && Array.isArray(curr.options) && curr.options.length === 5) {
+                  const avoid = new Set([prev.correct_index]);
+                  if (i >= 2) avoid.add(parsed.questions[i - 2].correct_index);
+                  const candidates = [0, 1, 2, 3, 4].filter(x => !avoid.has(x));
+                  const newIdx = candidates[Math.floor(Math.random() * candidates.length)];
+                  const oldIdx = curr.correct_index;
+                  const temp = curr.options[newIdx];
+                  curr.options[newIdx] = curr.options[oldIdx];
+                  curr.options[oldIdx] = temp;
+                  curr.options = curr.options.map((opt: string, oi: number) => {
+                    const letter = String.fromCharCode(65 + oi);
+                    return opt.replace(/^[A-E]\)\s*/, `${letter}) `);
+                  });
+                  curr.correct_index = newIdx;
+                }
+              }
               console.log(`[question-generator] Filtered: ${before} -> ${parsed.questions.length} questions`);
               toolCall.function.arguments = JSON.stringify(parsed);
             }
