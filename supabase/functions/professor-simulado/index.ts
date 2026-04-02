@@ -184,7 +184,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
             const response = await aiFetch({
               messages: [{ role: "user", content: prompt }],
               model: "google/gemini-2.5-flash",
-              maxTokens: 32768,
+              maxTokens: 16384,
               timeoutMs: 120000,
             });
 

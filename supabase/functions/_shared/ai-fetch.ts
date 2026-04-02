@@ -3,6 +3,11 @@
 const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const OPENAI_API = "https://api.openai.com/v1/chat/completions";
 
+const OPENAI_MAX_TOKENS: Record<string, number> = {
+  "gpt-4o-mini": 16384,
+  "gpt-4o": 16384,
+};
+
 const MODEL_MAP: Record<string, string> = {
   "google/gemini-3-flash-preview": "gpt-4o-mini",
   "google/gemini-2.5-flash": "gpt-4o-mini",
@@ -83,8 +88,13 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   const maxRetries = options.maxRetries ?? 2;
   const timeoutMs = options.timeoutMs ?? 45000;
 
-  const buildBody = (model: string) => {
-    const body: any = { model, messages: options.messages, max_tokens: options.maxTokens ?? 16384 };
+  const buildBody = (model: string, isOpenAI = false) => {
+    let maxTokens = options.maxTokens ?? 16384;
+    if (isOpenAI) {
+      const modelMax = OPENAI_MAX_TOKENS[model] || 16384;
+      maxTokens = Math.min(maxTokens, modelMax);
+    }
+    const body: any = { model, messages: options.messages, max_tokens: maxTokens };
     if (options.stream !== undefined) body.stream = options.stream;
     if (options.tools) body.tools = options.tools;
     if (options.tool_choice) body.tool_choice = options.tool_choice;
@@ -137,7 +147,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
           Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: buildBody(openaiModel),
+        body: buildBody(openaiModel, true),
       },
       maxRetries,
       timeoutMs,
