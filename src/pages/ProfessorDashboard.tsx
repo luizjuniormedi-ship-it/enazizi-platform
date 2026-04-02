@@ -77,17 +77,28 @@ const ProfessorDashboard = () => {
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/professor-simulado`;
 
   const callAPI = useCallback(async (body: Record<string, unknown>) => {
-    const resp = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session?.access_token}`,
-      },
-      body: JSON.stringify(body),
-    });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || "Erro na operação");
-    return data;
+    const controller = new AbortController();
+    const timeoutMs = body.action === "generate_questions" ? 180000 : 60000;
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const resp = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || "Erro na operação");
+      return data;
+    } catch (e: any) {
+      if (e.name === "AbortError") throw new Error("Tempo esgotado. Tente com menos questões.");
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
   }, [session, API_URL]);
 
   const loadSimulados = useCallback(async () => {
