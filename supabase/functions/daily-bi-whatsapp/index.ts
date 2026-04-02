@@ -252,7 +252,7 @@ Link do app: https://enazizi.com`;
           .from("whatsapp_send_executions")
           .insert({
             started_by: adminId,
-            mode: "auto",
+            mode: "daily_bi",
             status: "running",
             total_items: queued,
             sent_count: 0,
