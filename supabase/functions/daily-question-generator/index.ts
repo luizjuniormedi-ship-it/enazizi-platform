@@ -22,33 +22,33 @@ const SPECIALTIES = [
 ];
 
 const TOPICS_BY_SPECIALTY: Record<string, string[]> = {
-  "Cardiologia": ["Insuficiência Cardíaca", "IAM", "Arritmias", "Valvopatias", "Hipertensão Arterial", "Endocardite", "Pericardite", "Cardiopatias Congênitas", "Doença Coronariana", "Choque Cardiogênico", "Fibrilação Atrial", "Síndrome Coronariana Aguda", "Dissecção de Aorta", "Tromboembolismo Pulmonar", "Miocardiopatias"],
-  "Pneumologia": ["Pneumonia", "DPOC", "Asma", "TEP", "Tuberculose", "Derrame Pleural", "Pneumotórax", "Fibrose Pulmonar", "SDRA", "Câncer de Pulmão", "Bronquiectasia", "Sarcoidose", "Apneia do Sono", "Insuficiência Respiratória"],
-  "Neurologia": ["AVC Isquêmico", "AVC Hemorrágico", "Epilepsia", "Meningite", "Esclerose Múltipla", "Parkinson", "Alzheimer", "Cefaleia", "Neuropatias", "Tumores Cerebrais", "Miastenia Gravis", "Guillain-Barré", "Hipertensão Intracraniana", "Trauma Cranioencefálico"],
-  "Endocrinologia": ["Diabetes Mellitus Tipo 1", "Diabetes Mellitus Tipo 2", "Hipotireoidismo", "Hipertireoidismo", "Síndrome de Cushing", "Insuficiência Adrenal", "Feocromocitoma", "Hiperparatireoidismo", "Osteoporose", "Cetoacidose Diabética", "Estado Hiperosmolar", "Tireoidite de Hashimoto", "Doença de Graves", "Nódulos Tireoidianos"],
-  "Gastroenterologia": ["Doença do Refluxo", "Úlcera Péptica", "Doença de Crohn", "Retocolite Ulcerativa", "Cirrose Hepática", "Hepatites Virais", "Pancreatite Aguda", "Pancreatite Crônica", "Colelitíase", "Colecistite", "Hemorragia Digestiva", "Doença Celíaca", "Síndrome do Intestino Irritável", "Câncer Colorretal"],
-  "Pediatria": ["Bronquiolite", "Desidratação", "IVAS", "Otite Média", "Imunização", "Crescimento e Desenvolvimento", "Alergia Alimentar", "Febre Reumática", "Meningite Neonatal", "Icterícia Neonatal", "Distúrbios do Crescimento", "Asma Infantil", "Pneumonia Infantil", "Convulsão Febril"],
-  "Ginecologia e Obstetrícia": ["Pré-eclâmpsia", "Eclâmpsia", "Diabetes Gestacional", "Placenta Prévia", "DPP", "Gravidez Ectópica", "Endometriose", "SOP", "Mioma Uterino", "Câncer de Colo do Útero", "Câncer de Mama", "Infecções Vaginais", "Parto Normal vs Cesárea", "Hemorragia Pós-Parto"],
-  "Cirurgia Geral": ["Apendicite", "Colecistite Aguda", "Obstrução Intestinal", "Hérnia Inguinal", "Abdome Agudo", "Trauma Abdominal", "Pancreatite Cirúrgica", "Diverticulite", "Câncer Gástrico", "Politraumatismo", "Queimaduras", "Choque Hipovolêmico", "Feridas Cirúrgicas", "Complicações Pós-Operatórias"],
-  "Medicina Preventiva": ["Epidemiologia", "Vigilância em Saúde", "SUS", "Atenção Primária", "Rastreamento", "Saúde da Família", "Indicadores de Saúde", "Bioestatística", "Estudos Epidemiológicos", "Vacinação do Adulto", "Promoção da Saúde", "Saneamento Básico", "Doenças de Notificação Compulsória"],
+  "Cardiologia": ["Insuficiência Cardíaca", "IAM", "Arritmias", "Valvopatias", "Hipertensão Arterial", "Endocardite", "Pericardite", "Cardiopatias Congênitas", "Doença Coronariana", "Choque Cardiogênico", "Fibrilação Atrial", "Síndrome Coronariana Aguda", "Dissecção de Aorta", "Tromboembolismo Pulmonar", "Miocardiopatias", "Síndromes Coronarianas Agudas"],
+  "Pneumologia": ["Pneumonia", "DPOC", "Asma", "TEP", "Tuberculose", "Derrame Pleural", "Pneumotórax", "Fibrose Pulmonar", "SDRA", "Câncer de Pulmão", "Bronquiectasia", "Sarcoidose", "Apneia do Sono", "Insuficiência Respiratória", "Pneumonia Nosocomial", "Micoses Pulmonares"],
+  "Neurologia": ["AVC Isquêmico", "AVC Hemorrágico", "Epilepsia", "Meningite", "Esclerose Múltipla", "Parkinson", "Alzheimer", "Cefaleia", "Neuropatias", "Tumores Cerebrais", "Miastenia Gravis", "Guillain-Barré", "Hipertensão Intracraniana", "Trauma Cranioencefálico", "Neuropatia Diabética"],
+  "Endocrinologia": ["Diabetes Mellitus Tipo 1", "Diabetes Mellitus Tipo 2", "Hipotireoidismo", "Hipertireoidismo", "Síndrome de Cushing", "Insuficiência Adrenal", "Feocromocitoma", "Hiperparatireoidismo", "Osteoporose", "Cetoacidose Diabética", "Estado Hiperosmolar", "Tireoidite de Hashimoto", "Doença de Graves", "Nódulos Tireoidianos", "Síndrome Hiperosmolar", "Dislipidemias"],
+  "Gastroenterologia": ["Doença do Refluxo", "Úlcera Péptica", "Doença de Crohn", "Retocolite Ulcerativa", "Cirrose Hepática", "Hepatites Virais", "Pancreatite Aguda", "Pancreatite Crônica", "Colelitíase", "Colecistite", "Hemorragia Digestiva", "Doença Celíaca", "Síndrome do Intestino Irritável", "Câncer Colorretal", "Doença Diverticular", "Distúrbios Motores do Esôfago"],
+  "Pediatria": ["Bronquiolite", "Desidratação", "IVAS", "Otite Média", "Imunização", "Crescimento e Desenvolvimento", "Alergia Alimentar", "Febre Reumática", "Meningite Neonatal", "Icterícia Neonatal", "Distúrbios do Crescimento", "Asma Infantil", "Pneumonia Infantil", "Convulsão Febril", "Reanimação Neonatal", "Infecções Congênitas (TORCH)", "Desidratação na Criança", "Febre sem Foco"],
+  "Ginecologia e Obstetrícia": ["Pré-eclâmpsia", "Eclâmpsia", "Diabetes Gestacional", "Placenta Prévia", "DPP", "Gravidez Ectópica", "Endometriose", "SOP", "Mioma Uterino", "Câncer de Colo do Útero", "Câncer de Mama", "Infecções Vaginais", "Parto Normal vs Cesárea", "Hemorragia Pós-Parto", "Distócias", "Puerpério", "Anticoncepção", "ISTs na Ginecologia", "Trabalho de Parto Prematuro"],
+  "Cirurgia Geral": ["Apendicite", "Colecistite Aguda", "Obstrução Intestinal", "Hérnia Inguinal", "Abdome Agudo", "Trauma Abdominal", "Pancreatite Cirúrgica", "Diverticulite", "Câncer Gástrico", "Politraumatismo", "Queimaduras", "Choque Hipovolêmico", "Feridas Cirúrgicas", "Complicações Pós-Operatórias", "Abdome Agudo Obstrutivo", "Doença Hemorroidária", "Isquemia Mesentérica"],
+  "Medicina Preventiva": ["Epidemiologia", "Vigilância em Saúde", "SUS", "Atenção Primária", "Rastreamento", "Saúde da Família", "Indicadores de Saúde", "Bioestatística", "Estudos Epidemiológicos", "Vacinação do Adulto", "Promoção da Saúde", "Saneamento Básico", "Doenças de Notificação Compulsória", "Ética e Bioética Médica", "Determinantes Sociais de Saúde", "Níveis de Prevenção"],
   "Nefrologia": ["Insuficiência Renal Aguda", "Doença Renal Crônica", "Glomerulonefrites", "Síndrome Nefrótica", "Síndrome Nefrítica", "Distúrbios Hidroeletrolíticos", "Acidose e Alcalose", "Litíase Renal", "Infecção Urinária", "Transplante Renal", "Diálise", "Nefropatia Diabética"],
-  "Infectologia": ["HIV/AIDS", "Dengue", "Malária", "Leishmaniose", "Tuberculose", "Hanseníase", "Hepatites Virais", "COVID-19", "Sepse", "Infecções Hospitalares", "Antibioticoterapia", "Febre Amarela", "Parasitoses Intestinais"],
-  "Hematologia": ["Anemias", "Leucemias", "Linfomas", "Mieloma Múltiplo", "Coagulopatias", "Trombocitopenia", "Hemofilia", "CIVD", "Policitemia Vera", "Púrpura Trombocitopênica", "Anemia Falciforme", "Talassemias", "Hemotransfusão"],
+  "Infectologia": ["HIV/AIDS", "Dengue", "Malária", "Leishmaniose", "Tuberculose", "Hanseníase", "Hepatites Virais", "COVID-19", "Sepse", "Infecções Hospitalares", "Antibioticoterapia", "Febre Amarela", "Parasitoses Intestinais", "Arboviroses", "Resistência Antimicrobiana"],
+  "Hematologia": ["Anemias", "Leucemias", "Linfomas", "Mieloma Múltiplo", "Coagulopatias", "Trombocitopenia", "Hemofilia", "CIVD", "Policitemia Vera", "Púrpura Trombocitopênica", "Anemia Falciforme", "Talassemias", "Hemotransfusão", "Distúrbios da Hemostasia"],
   "Reumatologia": ["Artrite Reumatoide", "Lúpus Eritematoso", "Espondilite Anquilosante", "Gota", "Esclerodermia", "Síndrome de Sjögren", "Vasculites", "Fibromialgia", "Artrite Psoriásica", "Polimiosite", "Febre Reumática"],
-  "Dermatologia": ["Psoríase", "Dermatite Atópica", "Urticária", "Melanoma", "Carcinoma Basocelular", "Hanseníase", "Micoses Superficiais", "Herpes Zoster", "Acne", "Pênfigo", "Lúpus Cutâneo"],
+  "Dermatologia": ["Psoríase", "Dermatite Atópica", "Urticária", "Melanoma", "Carcinoma Basocelular", "Hanseníase", "Micoses Superficiais", "Herpes Zoster", "Acne", "Pênfigo", "Lúpus Cutâneo", "Lesões Elementares da Pele", "Piodermites", "Dermatoviroses", "Dermatozoonoses"],
   "Ortopedia": ["Fraturas", "Luxações", "Osteomielite", "Artrose", "Lombalgia", "Hérnia de Disco", "Síndrome do Túnel do Carpo", "Lesões de Menisco", "Tendinites", "Osteoporose Ortopédica"],
   "Urologia": ["Hiperplasia Prostática", "Câncer de Próstata", "Litíase Urinária", "Infecção Urinária", "Câncer de Bexiga", "Torção Testicular", "Varicocele", "Fimose", "Incontinência Urinária"],
-  "Psiquiatria": ["Depressão", "Transtorno Bipolar", "Esquizofrenia", "Transtorno de Ansiedade", "TOC", "TEPT", "Transtornos Alimentares", "Dependência Química", "Demência", "Psicofarmacologia"],
-  "Emergência": ["PCR e RCP", "Choque", "Intoxicações", "Anafilaxia", "Politrauma", "ATLS", "Queimaduras", "Afogamento", "Cetoacidose Diabética", "Crise Hipertensiva"],
+  "Psiquiatria": ["Depressão", "Transtorno Bipolar", "Esquizofrenia", "Transtorno de Ansiedade", "TOC", "TEPT", "Transtornos Alimentares", "Dependência Química", "Demência", "Psicofarmacologia", "Emergências Psiquiátricas"],
+  "Emergência": ["PCR e RCP", "Choque", "Intoxicações", "Anafilaxia", "Politrauma", "ATLS", "Queimaduras", "Afogamento", "Cetoacidose Diabética", "Crise Hipertensiva", "Choque Hipovolêmico"],
   "Oftalmologia": ["Glaucoma", "Catarata", "Descolamento de Retina", "Retinopatia Diabética", "Conjuntivite", "Uveíte", "Trauma Ocular"],
   "Otorrinolaringologia": ["Otite", "Sinusite", "Amigdalite", "Perda Auditiva", "Vertigem", "Epistaxe", "Câncer de Laringe"],
   "Semiologia": ["Anamnese", "Exame Físico Geral", "Semiologia Cardiovascular", "Semiologia Pulmonar", "Semiologia Abdominal", "Semiologia Neurológica", "Sinais Vitais"],
   "Anatomia": ["Anatomia do Tórax", "Anatomia Abdominal", "Anatomia do Pescoço", "Neuroanatomia", "Anatomia do Membro Superior", "Anatomia do Membro Inferior", "Anatomia Pélvica"],
   "Farmacologia": ["Farmacocinética (ADME)", "Farmacodinâmica e Receptores", "Antibioticoterapia", "Anti-hipertensivos", "Antiarrítmicos", "Anticoagulantes", "AINEs e Corticoides", "Psicofarmacologia"],
-  "Oncologia": ["Câncer de Mama", "Câncer de Pulmão", "Câncer Colorretal", "Estadiamento TNM", "Síndromes Paraneoplásicas", "Marcadores Tumorais", "Quimioterapia", "Imunoterapia", "Cuidados Paliativos", "Emergências Oncológicas"],
+  "Oncologia": ["Câncer de Mama", "Câncer de Pulmão", "Câncer Colorretal", "Estadiamento TNM", "Síndromes Paraneoplásicas", "Marcadores Tumorais", "Quimioterapia", "Imunoterapia", "Cuidados Paliativos", "Emergências Oncológicas", "Câncer de Endométrio", "Câncer de Ovário"],
   "Fisiologia": ["Fisiologia Cardiovascular", "Fisiologia Respiratória", "Fisiologia Renal", "Fisiologia do Sistema Nervoso", "Fisiologia Endócrina", "Fisiologia Gastrointestinal", "Fisiologia Muscular", "Neurofisiologia", "Potencial de Ação e Transmissão Sináptica", "Equilíbrio Ácido-Base", "Regulação da Pressão Arterial", "Hemodinâmica", "Termorregulação", "Fisiologia do Exercício"],
   "Bioquímica": ["Metabolismo de Carboidratos", "Metabolismo de Lipídios", "Metabolismo de Aminoácidos", "Ciclo de Krebs", "Cadeia Transportadora de Elétrons", "Glicólise e Gliconeogênese", "Beta-Oxidação", "Síntese de Ácidos Graxos", "Biologia Molecular do DNA e RNA", "Enzimologia Clínica", "Vitaminas e Coenzimas", "Bioenergética", "Erros Inatos do Metabolismo", "Integração Metabólica"],
-  "Angiologia": ["Doença Arterial Periférica", "Aneurisma de Aorta", "Trombose Venosa Profunda", "Insuficiência Venosa Crônica", "Varizes", "Isquemia Crítica de Membro", "Pé Diabético Vascular", "Linfedema", "Claudicação Intermitente", "Endarterectomia de Carótida", "Dissecção de Aorta", "Síndrome Compartimental"],
+  "Angiologia": ["Doença Arterial Periférica", "Aneurisma de Aorta", "Trombose Venosa Profunda", "Insuficiência Venosa Crônica", "Varizes", "Isquemia Crítica de Membro", "Pé Diabético Vascular", "Linfedema", "Claudicação Intermitente", "Endarterectomia de Carótida", "Dissecção de Aorta", "Síndrome Compartimental", "Linfangite e Erisipela"],
   "Histologia": ["Tecido Epitelial", "Tecido Conjuntivo", "Tecido Muscular", "Tecido Nervoso", "Sangue e Hematopoese", "Sistema Tegumentar", "Histologia do Trato Gastrointestinal", "Histologia do Sistema Respiratório", "Histologia Renal", "Histologia do Sistema Reprodutor"],
   "Embriologia": ["Gametogênese", "Fecundação e Implantação", "Gastrulação", "Neurulação", "Organogênese", "Desenvolvimento Cardiovascular", "Desenvolvimento do Sistema Nervoso", "Placenta e Membranas Fetais", "Teratogênese", "Malformações Congênitas"],
   "Microbiologia": ["Bacteriologia Geral", "Cocos Gram-Positivos", "Bacilos Gram-Negativos", "Micobactérias", "Virologia Geral", "Vírus Respiratórios", "Retrovírus e HIV", "Micologia Médica", "Resistência Antimicrobiana", "Microbiota e Infecções Hospitalares"],
@@ -56,6 +56,29 @@ const TOPICS_BY_SPECIALTY: Record<string, string[]> = {
   "Parasitologia": ["Protozoários Intestinais", "Protozoários Sanguíneos e Teciduais", "Helmintos Intestinais", "Esquistossomose", "Doença de Chagas", "Leishmanioses", "Malária", "Artrópodes Vetores", "Diagnóstico Parasitológico", "Epidemiologia das Parasitoses"],
   "Genética Médica": ["Herança Mendeliana", "Herança Ligada ao X", "Aberrações Cromossômicas", "Síndromes Genéticas", "Genética Molecular", "Aconselhamento Genético", "Erros Inatos do Metabolismo", "Citogenética", "Epigenética", "Genética do Câncer"],
   "Patologia": ["Lesão e Morte Celular", "Inflamação Aguda e Crônica", "Reparo Tecidual", "Distúrbios Hemodinâmicos", "Neoplasias Benignas e Malignas", "Patologia Ambiental", "Imunopatologia", "Patologia Cardiovascular", "Patologia Pulmonar", "Patologia do Trato GI"],
+};
+
+// High-yield subtopics — prioritized in generation prompts
+const HIGH_YIELD: Record<string, string[]> = {
+  "Cardiologia": ["Insuficiência Cardíaca", "Síndromes Coronarianas Agudas", "Hipertensão Arterial", "Arritmias", "Endocardite"],
+  "Cirurgia Geral": ["Abdome Agudo", "Politraumatismo", "Hérnia Inguinal", "Colecistite Aguda", "Apendicite"],
+  "Pediatria": ["Bronquiolite", "Icterícia Neonatal", "Imunização", "Reanimação Neonatal", "Desidratação"],
+  "Ginecologia e Obstetrícia": ["Pré-eclâmpsia", "Hemorragia Pós-Parto", "Diabetes Gestacional", "Anticoncepção", "Trabalho de Parto Prematuro"],
+  "Medicina Preventiva": ["SUS", "Epidemiologia", "Bioestatística", "Estudos Epidemiológicos", "Ética e Bioética Médica"],
+  "Infectologia": ["HIV/AIDS", "Tuberculose", "Sepse", "Arboviroses", "Meningite"],
+  "Pneumologia": ["Asma", "DPOC", "Pneumonia", "Tuberculose", "Tromboembolismo Pulmonar", "Derrame Pleural"],
+  "Gastroenterologia": ["Doença do Refluxo", "Hemorragia Digestiva", "Cirrose Hepática", "Hepatites Virais"],
+  "Endocrinologia": ["Diabetes Mellitus Tipo 2", "Cetoacidose Diabética", "Hipotireoidismo", "Dislipidemias"],
+  "Neurologia": ["AVC Isquêmico", "Epilepsia", "Cefaleia", "Meningite"],
+  "Dermatologia": ["Hanseníase", "Melanoma", "Lesões Elementares da Pele", "Piodermites"],
+  "Nefrologia": ["Insuficiência Renal Aguda", "Distúrbios Hidroeletrolíticos", "Acidose e Alcalose", "Glomerulonefrites"],
+  "Emergência": ["PCR e RCP", "Choque", "Politrauma", "Anafilaxia"],
+  "Oncologia": ["Câncer de Mama", "Câncer Colorretal", "Câncer de Pulmão", "Estadiamento TNM"],
+  "Hematologia": ["Anemias", "Leucemias", "Linfomas", "Distúrbios da Hemostasia"],
+  "Angiologia": ["Trombose Venosa Profunda", "Doença Arterial Periférica", "Aneurisma de Aorta"],
+  "Psiquiatria": ["Depressão", "Esquizofrenia", "Emergências Psiquiátricas", "Dependência Química"],
+  "Reumatologia": ["Lúpus Eritematoso", "Artrite Reumatoide", "Vasculites"],
+  "Urologia": ["Litíase Urinária", "Infecção Urinária", "Hiperplasia Prostática"],
 };
 
 const REAL_EXAM_SOURCES = [
@@ -113,11 +136,14 @@ async function searchRealQuestionsViaAI(
   const bibRef = (await import("../_shared/specialty-bibliography.ts")).getBibliographyForSpecialty(specialty);
   const bibBlock = bibRef ? `\nREFERÊNCIA BIBLIOGRÁFICA: ${bibRef}\n` : "";
 
+  const highYield = HIGH_YIELD[specialty];
+  const priorityBlock = highYield ? `\nSUBTÓPICOS PRIORITÁRIOS (dar preferência — mais cobrados em provas de residência): ${highYield.join(", ")}\n` : "";
+
   const prompt = `Você é um professor de medicina especialista em criar questões no ESTILO e NÍVEL de provas oficiais de residência médica brasileira.
 
 ESPECIALIDADE: ${specialty}
 TEMAS PRIORITÁRIOS: ${selectedTopics.join(", ")}
-${bibBlock}
+${priorityBlock}${bibBlock}
 BANCAS DE REFERÊNCIA (use como padrão de dificuldade e estilo): ${selectedSources.join(", ")}
 
 INSTRUÇÕES CRÍTICAS:
@@ -251,10 +277,13 @@ async function generateForSpecialty(
   const bibRef = (await import("../_shared/specialty-bibliography.ts")).getBibliographyForSpecialty(specialty);
   const bibBlock = bibRef ? `\nBIBLIOGRAFIA DE REFERÊNCIA OBRIGATÓRIA para ${specialty}: ${bibRef}\nUse estes livros como base para o conteúdo e cite-os nas explicações.\n` : "";
 
+  const highYield = HIGH_YIELD[specialty];
+  const priorityBlock2 = highYield ? `\nSUBTÓPICOS PRIORITÁRIOS (distribuir questões preferencialmente entre estes): ${highYield.join(", ")}\n` : "";
+
   const prompt = `Gere EXATAMENTE ${targetCount} questões de múltipla escolha de ${specialty} para Residência Médica.
 
 TEMAS: ${selectedTopics.join(", ")}
-${bibBlock}
+${priorityBlock2}${bibBlock}
 
 CALIBRAÇÃO OBRIGATÓRIA REVALIDA/ENAMED:
 - PROIBIDO: questões de definição pura ("O que é X?", "Defina Y", "Qual o conceito de Z")
@@ -465,9 +494,9 @@ serve(async (req) => {
         console.log(`${spec}: ${realCount} exam-style questions generated`);
       }
 
-      // Phase 2: Generate complementary questions to reach 10 total
+      // Phase 2: Generate complementary questions to reach 15 total
       const totalSoFar = webScrapeCount + realCount;
-      const remaining = Math.max(0, 10 - totalSoFar);
+      const remaining = Math.max(0, 15 - totalSoFar);
       let genCount = 0;
       if (remaining > 0) {
         genCount = await generateForSpecialty(spec, topics, userId, supabaseAdmin, existingStatements, remaining);

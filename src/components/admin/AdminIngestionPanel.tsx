@@ -45,8 +45,8 @@ const ALL_SPECIALTIES = [
 // dedupe
 const UNIQUE_SPECIALTIES = [...new Set(ALL_SPECIALTIES)];
 
-const TARGET_CLINICAL = 250;
-const TARGET_BASIC = 150;
+const TARGET_CLINICAL = 400;
+const TARGET_BASIC = 250;
 
 function getTarget(s: string) { return BASIC_SCIENCES.includes(s) ? TARGET_BASIC : TARGET_CLINICAL; }
 
