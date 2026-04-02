@@ -222,12 +222,15 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 
               // Create execution for the agent
               const { data: exec } = await sb.from("whatsapp_send_executions").insert({
-                started_by: user.id,
+                admin_user_id: user.id,
+                execution_date: new Date().toISOString().slice(0, 10),
+                mode: "auto",
                 status: "running",
                 total_items: eligibleStudents.length,
-                sent_count: 0,
-                error_count: 0,
-                source: "professor_simulado",
+                total_sent: 0,
+                total_error: 0,
+                total_skipped: 0,
+                started_at: new Date().toISOString(),
               }).select("id").single();
 
               if (exec) {
