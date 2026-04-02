@@ -5,6 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -47,14 +49,21 @@ Deno.serve(async (req) => {
 
     for (const user of users) {
       try {
-        // 2. Coletar BI do dia
-        const { count: questionsCount } = await supabase
-          .from("practice_attempts")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.user_id)
-          .gte("created_at", `${today}T00:00:00`)
-          .lt("created_at", `${today}T23:59:59`);
+        // Check if already sent today
+        const { data: alreadySent } = await supabase
+          .from("whatsapp_message_log")
+          .select("id")
+          .eq("target_user_id", user.user_id)
+          .eq("delivery_status", "sent")
+          .gte("sent_at", `${today}T00:00:00Z`)
+          .limit(1);
 
+        if (alreadySent && alreadySent.length > 0) {
+          console.log(`User ${user.user_id} already received message today, skipping`);
+          continue;
+        }
+
+        // 2. Coletar BI do dia
         const { data: attempts } = await supabase
           .from("practice_attempts")
           .select("correct")
@@ -135,25 +144,38 @@ AMANHÃ:
 No final, adicione: "Responda SAIR para não receber mais."
 Link do app: https://enazizi.com`;
 
-        const aiResp = await fetch("https://qszsyskumcmuknumwxtk.supabase.co/functions/v1/ai-proxy", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash-lite",
-            messages: [{ role: "user", content: prompt }],
-          }),
-        });
-
         let messageText: string;
-        if (aiResp.ok) {
-          const aiData = await aiResp.json();
-          messageText = aiData?.choices?.[0]?.message?.content ||
-            `📊 Resumo de hoje, ${nome}:\n${totalQ} questões | ${accuracy}% acurácia | 🔥 ${streak} dias\n\n📋 Amanhã:\nRevisão: ${temasAmanha}\nFoco: ${temasFracos}\n\nhttps://enazizi.com\nResponda SAIR para não receber mais.`;
+        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
+        if (LOVABLE_API_KEY) {
+          try {
+            const aiResp = await fetch(LOVABLE_GATEWAY, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              },
+              body: JSON.stringify({
+                model: "google/gemini-2.5-flash-lite",
+                messages: [{ role: "user", content: prompt }],
+                max_tokens: 1024,
+              }),
+            });
+
+            if (aiResp.ok) {
+              const aiData = await aiResp.json();
+              messageText = aiData?.choices?.[0]?.message?.content ||
+                buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos);
+            } else {
+              console.warn(`AI returned ${aiResp.status}, using fallback`);
+              messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos);
+            }
+          } catch (aiErr) {
+            console.error("AI fetch error:", aiErr);
+            messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos);
+          }
         } else {
-          messageText = `📊 Resumo de hoje, ${nome}:\n${totalQ} questões | ${accuracy}% acurácia | 🔥 ${streak} dias\n\n📋 Amanhã:\nRevisão: ${temasAmanha}\nFoco: ${temasFracos}\n\nhttps://enazizi.com\nResponda SAIR para não receber mais.`;
+          messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos);
         }
 
         // Fix AI sometimes splitting "enazizi" into "e nazizi"
@@ -174,6 +196,58 @@ Link do app: https://enazizi.com`;
       }
     }
 
+    // 6. Criar execução ativa para o agente local detectar
+    if (queued > 0) {
+      try {
+        const { data: exec, error: execErr } = await supabase
+          .from("whatsapp_send_executions")
+          .insert({
+            started_by: adminId,
+            mode: "auto",
+            status: "running",
+            total_items: queued,
+            sent_count: 0,
+            error_count: 0,
+          })
+          .select("id")
+          .single();
+
+        if (execErr) {
+          console.error("Failed to create execution:", execErr);
+        } else if (exec) {
+          // Vincular itens pendentes sem execution_id à execução criada
+          const { error: linkErr } = await supabase
+            .from("whatsapp_message_log")
+            .update({ execution_id: exec.id })
+            .eq("delivery_status", "pending")
+            .is("execution_id", null)
+            .gte("created_at", `${today}T00:00:00Z`);
+
+          if (linkErr) {
+            console.error("Failed to link items to execution:", linkErr);
+          }
+
+          // Log da execução
+          await supabase.from("whatsapp_execution_logs").insert({
+            execution_id: exec.id,
+            event_type: "started",
+            details: { source: "daily-bi-whatsapp", queued },
+          });
+
+          // Audit log
+          await supabase.from("admin_audit_log").insert({
+            admin_user_id: adminId,
+            action: "whatsapp_daily_bi_execution",
+            details: { execution_id: exec.id, queued, date: today },
+          });
+
+          console.log(`Created execution ${exec.id} with ${queued} items`);
+        }
+      } catch (execCreateErr) {
+        console.error("Error creating execution:", execCreateErr);
+      }
+    }
+
     return new Response(JSON.stringify({ message: "Daily BI queued", count: queued }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -184,3 +258,10 @@ Link do app: https://enazizi.com`;
     });
   }
 });
+
+function buildFallbackMessage(
+  nome: string, totalQ: number, accuracy: number, streak: number,
+  temasAmanha: string, temasFracos: string
+): string {
+  return `📊 Resumo de hoje, ${nome}:\n${totalQ} questões | ${accuracy}% acurácia | 🔥 ${streak} dias\n\n📋 Amanhã:\nRevisão: ${temasAmanha}\nFoco: ${temasFracos}\n\nhttps://enazizi.com\nResponda SAIR para não receber mais.`;
+}
