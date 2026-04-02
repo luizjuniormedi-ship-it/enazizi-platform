@@ -1,34 +1,45 @@
 
 
-# Notificações do Painel do Professor para Alunos
+# BI Diário + Programação do Próximo Dia via WhatsApp
 
 ## Resumo
-Quando o professor criar uma atividade (simulado, caso clínico ou tema de estudo), cada aluno atribuído receberá uma mensagem no sistema (`admin_messages`). Para simulados agendados, criar também um lembrete 2h antes do início via cron job.
+Criar uma opção para cada usuário receber automaticamente no fim do dia (via WhatsApp) um resumo do seu desempenho (BI pessoal) junto com a programação de estudos do dia seguinte.
 
 ## Alterações
 
-### 1. Edge Function `professor-simulado/index.ts` — Inserir notificações
-Nos 3 cases de criação (`create_simulado`, `create_clinical_case`, `create_study_assignment`), após inserir os results dos alunos, inserir uma `admin_messages` para cada aluno atribuído:
+### 1. Nova coluna `whatsapp_daily_bi` no `profiles`
+Coluna boolean (default `false`) para o usuário optar por receber o BI diário via WhatsApp.
 
-- **Simulado**: "📋 Novo Simulado: {title} — {total_questions} questões, tempo: {time_limit}min. Acesse a aba Proficiência para realizar."
-- **Caso Clínico**: "🏥 Novo Caso Clínico: {title} — Especialidade: {specialty}. Acesse a aba Proficiência para realizar."
-- **Tema de Estudo**: "📚 Nova Atribuição: {title} — Tópicos: {topics}. Acesse a aba Proficiência para estudar."
+### 2. Toggle no Perfil do usuário (`src/pages/Profile.tsx`)
+Adicionar um switch "Receber resumo diário via WhatsApp" na página de perfil, que ativa/desativa a coluna `whatsapp_daily_bi`.
 
-Cada mensagem será inserida com `sender_id = professor user.id` e `recipient_id = student_id`.
+### 3. Nova Edge Function `daily-bi-whatsapp`
+Função agendada via cron (executa às 20h) que:
+1. Busca usuários com `whatsapp_daily_bi = true`, `whatsapp_opt_out = false`, telefone preenchido
+2. Para cada aluno, coleta:
+   - **BI do dia**: questões respondidas, acurácia, streak, XP ganho, temas estudados
+   - **Programação de amanhã**: revisões pendentes (da tabela `revisoes`), temas críticos
+3. Gera mensagem personalizada via IA (Gemini Flash Lite) com formato:
+   ```
+   📊 Seu resumo de hoje:
+   - X questões | Y% acurácia | 🔥 streak Z
+   
+   📋 Amanhã:
+   - Revisão: [temas]
+   - Foco: [áreas fracas]
+   
+   Responda SAIR para não receber mais.
+   ```
+4. Insere na `whatsapp_message_log` como `pending` para o agente desktop enviar
 
-### 2. Nova Edge Function `professor-reminder` — Lembrete 2h antes
-Função simples que:
-1. Busca simulados com `scheduled_at` entre agora e agora+5min (janela do cron)
-2. Para cada simulado, busca os alunos em `teacher_simulado_results` com status `pending`
-3. Insere `admin_messages` com lembrete: "⏰ Lembrete: O simulado '{title}' começa em 2 horas!"
-
-### 3. Cron Job — Executar a cada 5 minutos
-Agendar `professor-reminder` a cada 5 minutos. A função verifica simulados cujo `scheduled_at` está entre `now() + 115min` e `now() + 125min` (janela de 2h ± 5min).
+### 4. Cron Job — Executar às 20h (horário de Brasília)
+Agendar `daily-bi-whatsapp` diariamente às 23:00 UTC (20h BRT).
 
 ## Arquivos alterados
 | Arquivo | Mudança |
 |---------|---------|
-| `supabase/functions/professor-simulado/index.ts` | Inserir `admin_messages` nos 3 cases de criação |
-| `supabase/functions/professor-reminder/index.ts` | Nova função para lembrete 2h antes |
-| Cron Job (SQL insert) | Agendar `professor-reminder` a cada 5 minutos |
+| Migração SQL | Adicionar coluna `whatsapp_daily_bi` em `profiles` |
+| `src/pages/Profile.tsx` | Toggle para ativar/desativar BI diário |
+| `supabase/functions/daily-bi-whatsapp/index.ts` | Nova função que gera e enfileira mensagens |
+| Cron Job (SQL) | Agendar execução às 20h BRT |
 
