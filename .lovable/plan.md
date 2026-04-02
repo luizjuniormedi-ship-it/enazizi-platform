@@ -1,63 +1,54 @@
 
 
-# Auto-Resolver Problemas da Fila WhatsApp
+# Corrigir Cálculo de Percentual nos Simulados do BI Diário
 
-## Problemas Atuais
+## Problema
+Na linha 152 do `daily-bi-whatsapp`, o cálculo faz `(score / total_questions) * 100`. Porém, o campo `score` na tabela `teacher_simulado_results` **já armazena um percentual** (ex: 68 = 68%). O código trata como número de acertos e divide por `total_questions` novamente, gerando valores como 227%.
 
-1. A `daily-bi-whatsapp` cria a execução com colunas erradas (`started_by`, `sent_count`) que podem não existir na tabela, causando falha silenciosa
-2. Mesmo quando a execução é criada, mensagens podem ficar com `execution_id = null` se o link falhar
-3. Não existe nenhum mecanismo de auto-correção — mensagens órfãs ficam paradas para sempre
+**Dados do Fábio**: `score = 68`, `total_questions = 30` → `(68/30)*100 = 226.7% ≈ 227%`
 
-## Solução: Dois Mecanismos Automáticos
+## Solução
 
-### 1. Corrigir `daily-bi-whatsapp` para usar a mesma estrutura do `whatsapp-queue`
+### 1. Corrigir o cálculo — usar `score` direto como percentual
 
-O `daily-bi-whatsapp` cria a execução com colunas que não batem com as usadas pelo `whatsapp-queue` (`started_by` vs `admin_user_id`, `sent_count` vs `total_sent`). Alinhar para usar as mesmas colunas e incluir `execution_date`.
+**Arquivo**: `supabase/functions/daily-bi-whatsapp/index.ts` (linhas 148-154)
 
-### 2. Adicionar auto-link no `execution_status` do `whatsapp-queue`
-
-Quando o agente chama `execution_status` (que funciona corretamente), adicionar lógica para:
-- Se existe uma execução `running` mas com 0 itens pendentes vinculados, buscar mensagens órfãs (`execution_id IS NULL`, `delivery_status = 'pending'`, do dia atual) e vinculá-las automaticamente
-- Se NÃO existe execução ativa, mas existem mensagens pendentes órfãs do dia, criar automaticamente uma execução e vincular
-
-Isso resolve 100% dos casos de travamento sem intervenção manual.
-
-### 3. Adicionar auto-complete na execução
-
-Quando `execution_status` detecta que todos os itens foram processados (nenhum `pending` ou `processing`), marcar a execução como `completed` automaticamente. Isso evita execuções "running" fantasmas.
-
-## Mudanças por Arquivo
-
-### `supabase/functions/daily-bi-whatsapp/index.ts` (linhas 248-297)
-- Alinhar colunas do INSERT em `whatsapp_send_executions`:
-  - `started_by` → `admin_user_id`
-  - `sent_count` / `error_count` → remover (defaults do banco)
-  - Adicionar `execution_date: today`
-  - Adicionar `started_at: new Date().toISOString()`
-
-### `supabase/functions/whatsapp-queue/index.ts` (action `execution_status`, linhas 263-301)
-- Após encontrar execução ativa, verificar se há mensagens órfãs do dia e vinculá-las automaticamente
-- Se não encontrar execução ativa, verificar se há mensagens pendentes órfãs e criar execução + vincular
-- Auto-complete: se todos itens da execução foram processados, marcar como `completed`
-
-## Fluxo Resultante
-
-```text
-Cron 18h (BRT) dispara daily-bi-whatsapp
-  ↓
-Gera mensagens + cria execução (colunas corretas)
-  ↓
-Agente checa execution_status (a cada minuto)
-  ↓
-Se execução existe → processa normalmente
-Se execução existe mas sem itens → auto-link órfãos
-Se não existe execução mas há órfãos → auto-cria + auto-link
-  ↓
-Todos processados → auto-complete
+Trocar:
+```typescript
+const avgScore = done.length > 0
+  ? Math.round(done.reduce((sum, r) => sum + ((r.score || 0) / (r.total_questions || 1) * 100), 0) / done.length)
+  : 0;
 ```
+
+Por:
+```typescript
+const avgScore = done.length > 0
+  ? Math.min(100, Math.round(done.reduce((sum, r) => sum + (r.score || 0), 0) / done.length))
+  : 0;
+```
+
+### 2. Adicionar `Math.min(100, ...)` como proteção extra em todos os percentuais
+
+Aplicar clamp de 0-100 em:
+- Linha 75: `accuracy` (questões do dia) — já está correto, mas adicionar `Math.min(100, ...)`
+- Linha 152: `avgScore` dos simulados — **bug principal**
+- Qualquer outro percentual passado ao prompt
+
+### 3. Adicionar instrução explícita ao prompt da IA
+
+No prompt (linha 179), adicionar regra:
+```
+REGRAS IMPORTANTES:
+- NUNCA mostre percentuais acima de 100%. Valores são de 0% a 100%.
+- NÃO invente dados ou métricas que não foram fornecidos.
+- NÃO calcule "probabilidade de aprovação" — apenas relate os dados fornecidos.
+```
+
+Isso impede a IA de inventar métricas ou somar percentuais de forma incorreta.
+
+## Mudanças
 
 | Arquivo | Mudança |
 |---------|---------|
-| `supabase/functions/daily-bi-whatsapp/index.ts` | Alinhar colunas da execução com o padrão do whatsapp-queue |
-| `supabase/functions/whatsapp-queue/index.ts` | Auto-link de mensagens órfãs + auto-create de execução + auto-complete |
+| `supabase/functions/daily-bi-whatsapp/index.ts` | Corrigir cálculo de `avgScore` (usar score direto); adicionar clamp 0-100; adicionar regras ao prompt da IA |
 
