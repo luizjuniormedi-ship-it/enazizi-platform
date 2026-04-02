@@ -27,6 +27,10 @@ const features = [
   { icon: GraduationCap, label: "Painel do Professor com BI" },
   { icon: AlertTriangle, label: "Banco de erros inteligente" },
   { icon: Calendar, label: "Cronograma adaptativo" },
+  { icon: MessageCircle, label: "Resumo diário via WhatsApp" },
+  { icon: Smartphone, label: "App móvel (PWA) — iOS e Android" },
+  { icon: Monitor, label: "Desktop — Windows, Mac e Linux" },
+  { icon: Globe, label: "Acesso web em qualquer navegador" },
 ];
 
 const Login = () => {
