@@ -1,53 +1,42 @@
 
 
-# Pacote do Agente WhatsApp + Download pelo Painel Admin
+# Fix: WhatsApp Queue 401 + Blank Screen
 
-## Problema Atual
+## Problem
+1. The password was changed, which invalidated the current session (session ID `335781c2...` no longer exists)
+2. The `callQueue` function in `WhatsAppPanel.tsx` doesn't handle 401 responses — it calls `resp.json()` which parses `{"error":"Unauthorized"}` but the error bubbles up and causes a blank screen
+3. The user needs to **log out and log back in** to get a fresh session token
 
-Os 4 arquivos do agente (`agent.py`, `config.json`, `requirements.txt`, `README.md`) foram gerados como artifacts no ambiente Lovable, mas o usuario nao consegue encontra-los para baixar. Precisamos de duas coisas:
+## Fix (2 parts)
 
-1. Regenerar os arquivos do agente Python como artifacts downloadaveis
-2. Adicionar botao de download do pacote direto no painel admin do WhatsApp
+### 1. Handle 401 in `callQueue` (WhatsAppPanel.tsx ~line 270-278)
+- Check `resp.status === 401` before parsing JSON
+- If 401, call `supabase.auth.signOut()` and redirect to `/login`
+- Show a toast explaining the session expired
 
-## O que ja existe
+```typescript
+const callQueue = async (action: string, body: any = {}) => {
+  if (!session) return null;
+  const resp = await fetch(`...whatsapp-queue?action=${action}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify(body),
+  });
+  if (resp.status === 401) {
+    toast({ title: "Sessão expirada", description: "Faça login novamente.", variant: "destructive" });
+    await supabase.auth.signOut();
+    window.location.assign("/login");
+    return null;
+  }
+  return resp.json();
+};
+```
 
-- Edge Functions `whatsapp-queue` (API da fila) e `whatsapp-auto-send` (envio automatico) ja implementadas
-- Tabelas `whatsapp_send_executions`, `whatsapp_execution_logs`, `whatsapp_message_log` ja existem com RLS
-- Painel `WhatsAppPanel.tsx` ja tem 3 abas: Mensagens, Execucao Desktop, Historico
-- Extensao Chrome ja tem botao de download no painel
+### 2. Immediate fix for the user
+- After deploying the code change, the user must **log out** from the app and **log back in** with the new password (`07114575`) to get a valid session token
 
-## Plano
-
-### Etapa 1 — Regenerar os 4 arquivos do agente como artifacts
-
-Recriar em `/mnt/documents/enazizi-whatsapp-agent/`:
-
-- **agent.py**: Script Python com GUI tkinter, login Supabase, loop de envio via `whatsapp://send` + pyautogui, controle de fila, logs, retomada
-- **config.json**: Preenchido com URL do Supabase, credenciais do admin, delays configuraveis
-- **requirements.txt**: requests, pyautogui, pyperclip
-- **README.md**: Instrucoes passo a passo de instalacao
-
-### Etapa 2 — Empacotar como ZIP
-
-Criar `/mnt/documents/enazizi-whatsapp-agent.zip` com os 4 arquivos para download facil.
-
-### Etapa 3 — Adicionar botao de download no painel admin
-
-Copiar o ZIP para `public/enazizi-whatsapp-agent.zip` e adicionar na aba "Execucao Desktop" do `WhatsAppPanel.tsx`:
-
-- Banner com instrucoes resumidas
-- Botao "Baixar Agente Windows" (usando fetch+blob como ja e feito para a extensao)
-- Checklist visual: 1) Instale Python, 2) Baixe o agente, 3) Extraia, 4) `py -m pip install -r requirements.txt`, 5) `py agent.py`
-
-### Arquivos criados/alterados
-
-| Arquivo | Acao |
-|---------|------|
-| `/mnt/documents/enazizi-whatsapp-agent/agent.py` | Criar agente Python |
-| `/mnt/documents/enazizi-whatsapp-agent/config.json` | Config preenchida |
-| `/mnt/documents/enazizi-whatsapp-agent/requirements.txt` | Dependencias |
-| `/mnt/documents/enazizi-whatsapp-agent/README.md` | Instrucoes |
-| `/mnt/documents/enazizi-whatsapp-agent.zip` | Pacote ZIP |
-| `public/enazizi-whatsapp-agent.zip` | ZIP servido estaticamente |
-| `src/components/admin/WhatsAppPanel.tsx` | Botao download + instrucoes na aba Desktop |
+## Files changed
+| File | Change |
+|------|--------|
+| `src/components/admin/WhatsAppPanel.tsx` | Add 401 handling in `callQueue` with signOut + redirect |
 
