@@ -169,9 +169,7 @@ Deno.serve(async (req) => {
       if (newStatus === "sent") updateData.sent_at = new Date().toISOString();
       if (errMsg) updateData.error_message = errMsg;
 
-      await supabaseAdmin.rpc("increment_whatsapp_attempts" as any, { p_item_id: item_id }).catch(() => {
-        // If RPC doesn't exist, do manual increment
-      });
+      // Skip RPC call, use manual increment below
 
       // Manual increment
       const { data: current } = await supabaseAdmin
