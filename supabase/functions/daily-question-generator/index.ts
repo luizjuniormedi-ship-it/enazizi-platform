@@ -287,7 +287,7 @@ ${priorityBlock2}${bibBlock}
 
 CALIBRAÇÃO OBRIGATÓRIA REVALIDA/ENAMED:
 - PROIBIDO: questões de definição pura ("O que é X?", "Defina Y", "Qual o conceito de Z")
-- PROIBIDO: enunciados com menos de 150 caracteres sem caso clínico
+- PROIBIDO: enunciados com menos de 400 caracteres (padrão ENAMED)
 - OBRIGATÓRIO: caso clínico com ≥3 dados clínicos relevantes (sinais vitais, exames, achados semiológicos)
 - OBRIGATÓRIO: ≥2 etapas de raciocínio clínico (ex: diagnóstico → conduta, ou achado → interpretação → tratamento)
 - OBRIGATÓRIO: pelo menos 2 distratores plausíveis baseados em diagnósticos diferenciais REAIS
