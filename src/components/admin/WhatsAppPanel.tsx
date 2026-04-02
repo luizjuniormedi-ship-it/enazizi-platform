@@ -210,7 +210,13 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
       if (useCustomMessage && customMessage.trim()) {
         generatedStudents = generatedStudents.map((s: Student) => {
           const firstName = (s.display_name || "Aluno").split(" ")[0];
-          const personalizedMsg = customMessage.replace(/\{nome\}/gi, firstName) + "\n\nResponda SAIR para não receber mais.";
+          let personalizedMsg = customMessage;
+          if (/\{nome\}/i.test(customMessage)) {
+            personalizedMsg = customMessage.replace(/\{nome\}/gi, firstName);
+          } else {
+            personalizedMsg = `Olá ${firstName}! ${customMessage}`;
+          }
+          personalizedMsg += "\n\nResponda SAIR para não receber mais.";
           return { ...s, message: personalizedMsg };
         });
       }
