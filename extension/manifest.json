@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "ENAZIZI WhatsApp Sender",
+  "version": "1.0.0",
+  "description": "Envio assistido de mensagens WhatsApp para alunos do ENAZIZI",
+  "permissions": ["activeTab", "storage", "tabs"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://web.whatsapp.com/*"],
+      "js": ["content-script.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://enazizi.com/*",
+        "https://*.lovable.app/*",
+        "http://localhost:*/*"
+      ],
+      "js": ["enazizi-relay.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "externally_connectable": {
+    "matches": [
+      "https://enazizi.com/*",
+      "https://enazizi-com-br.lovable.app/*",
+      "https://*.lovable.app/*",
+      "http://localhost:*/*"
+    ]
+  },
+  "icons": {
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}
