@@ -105,7 +105,16 @@ const Dashboard = () => {
     );
   }
 
-  const { stats, metrics, displayName, hasCompletedDiagnostic } = data;
+  const { stats, metrics, displayName, hasCompletedDiagnostic } = data || {};
+
+  if (!stats || !metrics) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+      </div>
+    );
+  }
+
   const taskPercent = stats.totalTasks > 0 ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0;
   const isNewUser = metrics.questionsAnswered === 0 && stats.flashcards === 0;
 
@@ -128,29 +137,30 @@ const Dashboard = () => {
           TOP — Saudação + XP (mínimo de ruído)
          ══════════════════════════════════════════ */}
       <div>
-        <MotivationalGreeting
-          streak={stats.streak}
-          todayCompleted={stats.todayCompleted}
-          todayTotal={stats.todayTotal}
-          completedTasks={stats.completedTasks}
-          totalTasks={stats.totalTasks}
-          daysUntilExam={stats.daysUntilExam}
-          questionsAnswered={metrics.questionsAnswered}
-          accuracy={metrics.accuracy}
-          displayName={displayName}
-        />
+        <SafeCard name="Greeting">
+          <MotivationalGreeting
+            streak={stats.streak}
+            todayCompleted={stats.todayCompleted}
+            todayTotal={stats.todayTotal}
+            completedTasks={stats.completedTasks}
+            totalTasks={stats.totalTasks}
+            daysUntilExam={stats.daysUntilExam}
+            questionsAnswered={metrics.questionsAnswered}
+            accuracy={metrics.accuracy}
+            displayName={displayName}
+          />
+        </SafeCard>
         <div className="mt-3 mb-1 flex items-center justify-between">
-          <XpWidget />
-          <PerformanceReport />
+          <SafeCard name="XpWidget"><XpWidget /></SafeCard>
+          <SafeCard name="PerformanceReport"><PerformanceReport /></SafeCard>
         </div>
-        <AchievementToast />
+        <SafeCard name="AchievementToast"><AchievementToast /></SafeCard>
         {/* Video room is urgent — stays at top */}
-        <ActiveVideoRoomBanner />
+        <SafeCard name="VideoRoom"><ActiveVideoRoomBanner /></SafeCard>
       </div>
 
       {/* Configuração obrigatória — action-driven, bloqueia progresso */}
-      <ExamSetupReminder />
-
+      <SafeCard name="ExamSetup"><ExamSetupReminder /></SafeCard>
 
       {/* ══════════════════════════════════════════
           BLOCO 0 — MISSÃO DO DIA (CTA principal)
@@ -161,11 +171,13 @@ const Dashboard = () => {
 
       {/* Onboarding checklist — high visibility for new users */}
       {isNewUser && (
-        <OnboardingChecklist
-          stats={stats}
-          metrics={metrics}
-          hasCompletedDiagnostic={hasCompletedDiagnostic}
-        />
+        <SafeCard name="OnboardingNew">
+          <OnboardingChecklist
+            stats={stats}
+            metrics={metrics}
+            hasCompletedDiagnostic={hasCompletedDiagnostic}
+          />
+        </SafeCard>
       )}
 
       {/* ══════════════════════════════════════════
@@ -186,14 +198,14 @@ const Dashboard = () => {
       {!isNewUser && <SafeCard name="ApprovalScore"><ApprovalScoreCard /></SafeCard>}
 
       {/* Nivelamento — only if user has completed it */}
-      <DiagnosticSummaryCard />
+      <SafeCard name="DiagnosticSummary"><DiagnosticSummaryCard /></SafeCard>
 
       {/* ══════════════════════════════════════════
           BLOCO 2.5 — NÍVEL POR ESPECIALIDADE
          ══════════════════════════════════════════ */}
       {!isNewUser && (
         <Suspense fallback={<ChartFallback />}>
-          <SpecialtyLevelsCard />
+          <SafeCard name="SpecialtyLevels"><SpecialtyLevelsCard /></SafeCard>
         </Suspense>
       )}
       {/* ══════════════════════════════════════════
@@ -215,46 +227,54 @@ const Dashboard = () => {
       {!isNewUser && (
         <Suspense fallback={<div className="space-y-4"><ChartFallback /><ChartFallback /></div>}>
           <div className="grid grid-cols-2 gap-3">
-            <DashboardSummaryCard
-              icon={Target}
-              title="Desempenho"
-              accentClass="text-primary bg-primary/10"
-              onClick={() => setOpenSection("desempenho")}
-              metrics={[
-                { label: "Acerto", value: `${metrics.accuracy}%` },
-                { label: "Questões", value: metrics.questionsAnswered },
-              ]}
-            />
-            <DashboardSummaryCard
-              icon={Calendar}
-              title="Plano Geral"
-              accentClass="text-blue-500 bg-blue-500/10"
-              onClick={() => setOpenSection("cronograma")}
-              metrics={[
-                { label: "Tarefas", value: `${stats.completedTasks}/${stats.totalTasks}` },
-                { label: "Concluído", value: `${taskPercent}%` },
-              ]}
-            />
-            <DashboardSummaryCard
-              icon={Flame}
-              title="Streak & Metas"
-              accentClass="text-orange-500 bg-orange-500/10"
-              onClick={() => setOpenSection("streak")}
-              metrics={[
-                { label: "Streak", value: `🔥 ${stats.streak} dias` },
-                { label: "Nível", value: metrics.gamificationLevel },
-              ]}
-            />
-            <DashboardSummaryCard
-              icon={ClipboardList}
-              title="Simulados"
-              accentClass="text-emerald-500 bg-emerald-500/10"
-              onClick={() => setOpenSection("simulados")}
-              metrics={[
-                { label: "Hoje", value: `${stats.todayCompleted}/${stats.todayTotal}` },
-                { label: "Dias p/ prova", value: stats.daysUntilExam ?? "—" },
-              ]}
-            />
+            <SafeCard name="SummaryDesempenho">
+              <DashboardSummaryCard
+                icon={Target}
+                title="Desempenho"
+                accentClass="text-primary bg-primary/10"
+                onClick={() => setOpenSection("desempenho")}
+                metrics={[
+                  { label: "Acerto", value: `${metrics.accuracy}%` },
+                  { label: "Questões", value: metrics.questionsAnswered },
+                ]}
+              />
+            </SafeCard>
+            <SafeCard name="SummaryCronograma">
+              <DashboardSummaryCard
+                icon={Calendar}
+                title="Plano Geral"
+                accentClass="text-blue-500 bg-blue-500/10"
+                onClick={() => setOpenSection("cronograma")}
+                metrics={[
+                  { label: "Tarefas", value: `${stats.completedTasks}/${stats.totalTasks}` },
+                  { label: "Concluído", value: `${taskPercent}%` },
+                ]}
+              />
+            </SafeCard>
+            <SafeCard name="SummaryStreak">
+              <DashboardSummaryCard
+                icon={Flame}
+                title="Streak & Metas"
+                accentClass="text-orange-500 bg-orange-500/10"
+                onClick={() => setOpenSection("streak")}
+                metrics={[
+                  { label: "Streak", value: `🔥 ${stats.streak} dias` },
+                  { label: "Nível", value: metrics.gamificationLevel },
+                ]}
+              />
+            </SafeCard>
+            <SafeCard name="SummarySimulados">
+              <DashboardSummaryCard
+                icon={ClipboardList}
+                title="Simulados"
+                accentClass="text-emerald-500 bg-emerald-500/10"
+                onClick={() => setOpenSection("simulados")}
+                metrics={[
+                  { label: "Hoje", value: `${stats.todayCompleted}/${stats.todayTotal}` },
+                  { label: "Dias p/ prova", value: stats.daysUntilExam ?? "—" },
+                ]}
+              />
+            </SafeCard>
           </div>
         </Suspense>
       )}
@@ -262,23 +282,25 @@ const Dashboard = () => {
       {/* ══════════════════════════════════════════
           BLOCO 6 — ACESSO LIVRE
          ══════════════════════════════════════════ */}
-      <FreeStudyCard />
+      <SafeCard name="FreeStudy"><FreeStudyCard /></SafeCard>
 
       {/* Mensagens do admin — secundário */}
-      <AdminMessagesBanner />
+      <SafeCard name="AdminMessages"><AdminMessagesBanner /></SafeCard>
 
       {/* Install app — secundário, lazy loaded */}
       <Suspense fallback={null}>
-        <InstallAppBanner />
+        <SafeCard name="InstallApp"><InstallAppBanner /></SafeCard>
       </Suspense>
 
       {/* Onboarding checklist for returning users (non-new) */}
       {!isNewUser && (
-        <OnboardingChecklist
-          stats={stats}
-          metrics={metrics}
-          hasCompletedDiagnostic={hasCompletedDiagnostic}
-        />
+        <SafeCard name="OnboardingReturning">
+          <OnboardingChecklist
+            stats={stats}
+            metrics={metrics}
+            hasCompletedDiagnostic={hasCompletedDiagnostic}
+          />
+        </SafeCard>
       )}
 
       {/* ===== Drill-down Sheets ===== */}
@@ -290,10 +312,10 @@ const Dashboard = () => {
           </SheetHeader>
           <div className="space-y-6 mt-4">
             <Suspense fallback={<ChartFallback />}>
-              <DashboardCharts stats={stats} metrics={metrics} />
-              <SpecialtyProgressCard />
-              <TopicEvolution />
-              <ApprovalTimeline />
+              <SafeCard name="SheetCharts"><DashboardCharts stats={stats} metrics={metrics} /></SafeCard>
+              <SafeCard name="SheetSpecialty"><SpecialtyProgressCard /></SafeCard>
+              <SafeCard name="SheetTopicEvo"><TopicEvolution /></SafeCard>
+              <SafeCard name="SheetTimeline"><ApprovalTimeline /></SafeCard>
             </Suspense>
           </div>
         </SheetContent>
@@ -306,8 +328,8 @@ const Dashboard = () => {
             <SheetDescription>Visão geral do seu plano de estudo</SheetDescription>
           </SheetHeader>
           <div className="space-y-6 mt-4">
-            <DailyPlanWidget />
-            <DailyGoalWidget />
+            <SafeCard name="SheetDailyPlan"><DailyPlanWidget /></SafeCard>
+            <SafeCard name="SheetDailyGoal"><DailyGoalWidget /></SafeCard>
           </div>
         </SheetContent>
       </Sheet>
@@ -320,9 +342,9 @@ const Dashboard = () => {
           </SheetHeader>
           <div className="space-y-6 mt-4">
             <Suspense fallback={<ChartFallback />}>
-              <StreakCalendar />
-              <WeeklyProgressCard />
-              <MiniLeaderboard />
+              <SafeCard name="SheetStreak"><StreakCalendar /></SafeCard>
+              <SafeCard name="SheetWeekly"><WeeklyProgressCard /></SafeCard>
+              <SafeCard name="SheetLeaderboard"><MiniLeaderboard /></SafeCard>
             </Suspense>
           </div>
         </SheetContent>
@@ -336,8 +358,8 @@ const Dashboard = () => {
           </SheetHeader>
           <div className="space-y-6 mt-4">
             <Suspense fallback={<ChartFallback />}>
-              <DashboardMetricsGrid stats={stats} metrics={metrics} />
-              <SpecialtyBenchmark />
+              <SafeCard name="SheetMetrics"><DashboardMetricsGrid stats={stats} metrics={metrics} /></SafeCard>
+              <SafeCard name="SheetBenchmark"><SpecialtyBenchmark /></SafeCard>
             </Suspense>
           </div>
         </SheetContent>
