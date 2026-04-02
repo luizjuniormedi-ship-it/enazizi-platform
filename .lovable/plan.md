@@ -1,45 +1,29 @@
 
 
-# BI Diário + Programação do Próximo Dia via WhatsApp
+# Atualizar Estatísticas em Tempo Real na Página de Login
 
 ## Resumo
-Criar uma opção para cada usuário receber automaticamente no fim do dia (via WhatsApp) um resumo do seu desempenho (BI pessoal) junto com a programação de estudos do dia seguinte.
+Trocar os valores estáticos (hardcoded) de alunos, questões e flashcards por consultas em tempo real ao banco de dados, para que a página de login sempre mostre os números atualizados.
+
+## Dados atuais no banco
+- Alunos: **155** (exibindo "160+")
+- Questões: **177** (exibindo "6.700+") — nota: provavelmente há outra tabela de questões, preciso verificar
+- Flashcards: **6.127** (exibindo "6.100+")
 
 ## Alterações
 
-### 1. Nova coluna `whatsapp_daily_bi` no `profiles`
-Coluna boolean (default `false`) para o usuário optar por receber o BI diário via WhatsApp.
-
-### 2. Toggle no Perfil do usuário (`src/pages/Profile.tsx`)
-Adicionar um switch "Receber resumo diário via WhatsApp" na página de perfil, que ativa/desativa a coluna `whatsapp_daily_bi`.
-
-### 3. Nova Edge Function `daily-bi-whatsapp`
-Função agendada via cron (executa às 20h) que:
-1. Busca usuários com `whatsapp_daily_bi = true`, `whatsapp_opt_out = false`, telefone preenchido
-2. Para cada aluno, coleta:
-   - **BI do dia**: questões respondidas, acurácia, streak, XP ganho, temas estudados
-   - **Programação de amanhã**: revisões pendentes (da tabela `revisoes`), temas críticos
-3. Gera mensagem personalizada via IA (Gemini Flash Lite) com formato:
-   ```
-   📊 Seu resumo de hoje:
-   - X questões | Y% acurácia | 🔥 streak Z
-   
-   📋 Amanhã:
-   - Revisão: [temas]
-   - Foco: [áreas fracas]
-   
-   Responda SAIR para não receber mais.
-   ```
-4. Insere na `whatsapp_message_log` como `pending` para o agente desktop enviar
-
-### 4. Cron Job — Executar às 20h (horário de Brasília)
-Agendar `daily-bi-whatsapp` diariamente às 23:00 UTC (20h BRT).
+### `src/pages/Login.tsx`
+1. Importar `useEffect`, `useState` e o cliente Supabase
+2. Criar um hook interno que ao montar o componente busca:
+   - `COUNT(*)` de `profiles` com `user_type = 'estudante'` → Alunos
+   - `COUNT(*)` de `real_exam_questions` com `is_active = true` + `COUNT(*)` de `questions` (se existir) → Questões
+   - `COUNT(*)` de `flashcards` → Flashcards
+3. Formatar os números com sufixo "+" (ex: "6.100+")
+4. Mover `stats` de constante estática para estado dinâmico, com valores iniciais como "—" até carregar
+5. Agentes IA permanece fixo ("8") pois não é dado do banco
 
 ## Arquivos alterados
 | Arquivo | Mudança |
 |---------|---------|
-| Migração SQL | Adicionar coluna `whatsapp_daily_bi` em `profiles` |
-| `src/pages/Profile.tsx` | Toggle para ativar/desativar BI diário |
-| `supabase/functions/daily-bi-whatsapp/index.ts` | Nova função que gera e enfileira mensagens |
-| Cron Job (SQL) | Agendar execução às 20h BRT |
+| `src/pages/Login.tsx` | Buscar contagens do banco e exibir dinamicamente |
 
