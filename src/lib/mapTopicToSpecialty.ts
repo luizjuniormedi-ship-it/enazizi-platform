@@ -7,7 +7,7 @@ export function mapTopicToSpecialty(topic: string): string | null {
     [["cardio", "coração", "iam", "arritmia", "hipertensão", "insuficiência cardíaca", "valv"], "Cardiologia"],
     [["pneumo", "pulmão", "asma", "dpoc", "pneumonia", "tuberculose", "respirat", "micose pulmonar"], "Pneumologia"],
     [["neuro", "avc", "epilepsia", "cefaleia", "meningite", "parkinson", "alzheimer"], "Neurologia"],
-    [["endocrino", "diabetes", "tireoide", "hipotireoid", "hipertireoid", "adrenal", "hipófise"], "Endocrinologia"],
+    [["endocrino", "diabetes", "tireoide", "hipotireoid", "hipertireoid", "adrenal", "hipófise", "hiperosmolar", "dislipidemia"], "Endocrinologia"],
     [["gastro", "fígado", "hepat", "intestin", "esôfago", "pancreat", "colite", "crohn", "dispepsia", "distúrbio motor"], "Gastroenterologia"],
     [["nefro", "rim", "renal", "diálise", "glomerul", "nefrit"], "Nefrologia"],
     [["infecto", "hiv", "aids", "sepse", "dengue", "malária", "antibiótico", "parasit"], "Infectologia"],
