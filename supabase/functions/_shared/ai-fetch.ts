@@ -147,7 +147,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
           Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: buildBody(openaiModel),
+        body: buildBody(openaiModel, true),
       },
       maxRetries,
       timeoutMs,
