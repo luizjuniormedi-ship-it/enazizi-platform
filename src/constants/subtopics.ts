@@ -20,7 +20,7 @@ export const SPECIALTY_SUBTOPICS: Record<string, string[]> = {
   "Endocrinologia": ["Diabetes Mellitus", "Cetoacidose Diabética", "Tireoidopatias", "Síndrome de Cushing", "Insuficiência Adrenal", "Distúrbios da Paratireoide", "Obesidade", "Síndrome Hiperosmolar", "Dislipidemias"],
   "Gastroenterologia": ["Doença do Refluxo", "Úlcera Péptica", "Doença Inflamatória Intestinal", "Hepatites Virais", "Cirrose Hepática", "Pancreatite", "Doença Celíaca", "Hemorragia Digestiva", "Distúrbios Motores do Esôfago", "Dispepsia e Gastrite", "Doença Diverticular"],
   "Hematologia": ["Anemias", "Leucemias", "Linfomas", "Coagulopatias", "Trombocitopenias", "Hemoglobinopatias", "Distúrbios da Hemostasia"],
-  "Infectologia": ["HIV/AIDS", "Tuberculose", "Meningites", "Sepse", "Infecções Oportunistas", "Dengue", "Leptospirose", "Hepatites", "COVID-19", "Endocardite Infecciosa"],
+  "Infectologia": ["HIV/AIDS", "Tuberculose", "Meningites", "Sepse", "Infecções Oportunistas", "Dengue", "Leptospirose", "Hepatites", "COVID-19", "Endocardite Infecciosa", "Arboviroses", "Resistência Antimicrobiana"],
   "Nefrologia": ["Insuficiência Renal Aguda", "Doença Renal Crônica", "Glomerulopatias", "Distúrbios Hidroeletrolíticos", "Distúrbios Ácido-Base", "Síndrome Nefrótica", "Síndrome Nefrítica"],
   "Neurologia": ["AVC Isquêmico", "AVC Hemorrágico", "Epilepsia", "Cefaléias", "Esclerose Múltipla", "Parkinson", "Neuropatias Periféricas", "Meningites", "Demências"],
   "Oftalmologia": ["Glaucoma", "Catarata", "Retinopatia Diabética", "Descolamento de Retina", "Conjuntivites", "Trauma Ocular"],
