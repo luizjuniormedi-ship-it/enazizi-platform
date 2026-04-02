@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
         sender_id: sim.professor_id,
         recipient_id: r.student_id,
         title: `⏰ Lembrete: Simulado em 2 horas!`,
-        content: `O simulado "${sim.title}" começa às ${scheduledTime}. Prepare-se e acesse a aba Proficiência para realizar.`,
+        content: `O simulado "${sim.title}" começa às ${scheduledTime}. Prepare-se e acesse a aba Mais Ferramentas → Proficiência para realizar.`,
         priority: "urgent",
       }));
 
