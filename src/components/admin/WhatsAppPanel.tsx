@@ -111,6 +111,21 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
   const [executions, setExecutions] = useState<Execution[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  // Opt-out state
+  const [optOutCount, setOptOutCount] = useState(0);
+
+  // Fetch opt-out count
+  useEffect(() => {
+    const fetchOptOut = async () => {
+      const { count } = await supabase
+        .from("profiles")
+        .select("user_id", { count: "exact", head: true })
+        .eq("whatsapp_opt_out", true);
+      setOptOutCount(count || 0);
+    };
+    fetchOptOut();
+  }, [students]);
+
   // ─── Extension detection ──────────────────────────────────
   useEffect(() => {
     const handler = (event: MessageEvent) => {
