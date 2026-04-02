@@ -1,87 +1,48 @@
 
-
-# Incluir Instrução de Navegação nas Mensagens WhatsApp do Professor
+# Fallback com Retry + Banco na Geração de Questões do Professor
 
 ## Problema
-As mensagens de WhatsApp enviadas quando o professor cria atividades (simulados, casos clínicos, temas de estudo) dizem apenas "Acesse a plataforma para realizar" — sem orientar o aluno sobre onde encontrar a atividade dentro do app.
+Quando a IA falha (JSON malformado, timeout, resposta vazia), o `generate_questions` lança erro e o professor fica sem questões. Não há fallback nem retry.
 
 ## Solução
-Atualizar as 3 mensagens WhatsApp e as 3 notificações in-app no `professor-simulado/index.ts` para incluir a instrução clara: **"Acesse a aba *Mais Ferramentas* e em seguida *Proficiência*"**.
 
-### Alterações em `supabase/functions/professor-simulado/index.ts`
+### 1. Edge Function `professor-simulado/index.ts` — case `generate_questions`
 
-**1. Simulado — WhatsApp (linha ~283)**
-De:
-```
-Acesse a plataforma para realizar!
-```
-Para:
-```
-👉 Acesse *Mais Ferramentas* → *Proficiência* para realizar!
-```
+**Retry com fallback ao banco de questões:**
 
-**2. Simulado — In-app (linha ~260)**
-De:
-```
-Acesse a aba Proficiência para realizar.
-```
-Para:
-```
-Acesse a aba Mais Ferramentas → Proficiência para realizar.
+```text
+Fluxo atual:
+  AI call → parse JSON → return questions (ou throw Error)
+
+Fluxo novo:
+  Tentativa 1: AI call → parse JSON
+  Se falhar → Tentativa 2: AI call (retry)
+  Se falhar → Fallback: buscar questões do questions_bank por topic
+  Retorna o que conseguiu (parcial é melhor que erro)
 ```
 
-**3. Caso Clínico — WhatsApp (linha ~844)**
-De:
-```
-Acesse a plataforma para realizar!
-```
-Para:
-```
-👉 Acesse *Mais Ferramentas* → *Proficiência* para realizar!
-```
+Mudanças específicas:
+- Envolver a chamada AI + parse em `try/catch` com **1 retry automático**
+- Se ambas tentativas falharem, fazer fallback ao `questions_bank`:
+  ```sql
+  SELECT * FROM questions_bank 
+  WHERE topic IN (topics) 
+  AND review_status = 'approved' 
+  AND is_global = true
+  ORDER BY random() 
+  LIMIT count
+  ```
+- Mapear as colunas do banco para o formato esperado (`statement`, `options`, `correct_index`, `explanation`, `topic`, `block`)
+- Retornar `{ questions, source: "ai" | "bank" | "mixed" }` para o frontend saber a origem
+- Se JSON.parse falhar, tentar sanitizar (remover trailing commas, fix encoding) antes de desistir
 
-**4. Caso Clínico — In-app (linha ~821)**
-De:
-```
-Acesse a aba Proficiência para realizar.
-```
-Para:
-```
-Acesse a aba Mais Ferramentas → Proficiência para realizar.
-```
+### 2. Frontend `src/pages/ProfessorDashboard.tsx`
 
-**5. Tema de Estudo — WhatsApp (linha ~1019)**
-De:
-```
-Acesse a plataforma para estudar!
-```
-Para:
-```
-👉 Acesse *Mais Ferramentas* → *Proficiência* para estudar!
-```
-
-**6. Tema de Estudo — In-app (linha ~996)**
-De:
-```
-Acesse a aba Proficiência para estudar.
-```
-Para:
-```
-Acesse a aba Mais Ferramentas → Proficiência para estudar.
-```
-
-**7. Professor Reminder (cron) — `professor-reminder/index.ts` (linha ~55)**
-De:
-```
-Acesse a aba Proficiência para realizar.
-```
-Para:
-```
-Acesse a aba Mais Ferramentas → Proficiência para realizar.
-```
+- No `generateQuestionsAI`, quando um batch retorna 0 questões, **não parar** — continuar para o próximo batch
+- Mostrar toast informativo quando questões vieram do banco: "Algumas questões foram obtidas do banco existente"
+- No final, se `allQuestions.length === 0`, mostrar mensagem clara em vez de erro genérico
 
 | Arquivo | Mudança |
 |---------|---------|
-| `supabase/functions/professor-simulado/index.ts` | Atualizar 6 mensagens (3 WhatsApp + 3 in-app) com instrução de navegação |
-| `supabase/functions/professor-reminder/index.ts` | Atualizar mensagem do lembrete com instrução de navegação |
-
+| `supabase/functions/professor-simulado/index.ts` | Retry + fallback ao questions_bank no case `generate_questions` |
+| `src/pages/ProfessorDashboard.tsx` | Tolerância a batches vazios; toast informativo sobre origem |
