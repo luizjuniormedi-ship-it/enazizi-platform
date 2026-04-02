@@ -33,7 +33,7 @@ export const SPECIALTY_SUBTOPICS: Record<string, string[]> = {
   "Urologia": ["Litíase Renal", "Hiperplasia Prostática", "Câncer de Próstata", "Infecção Urinária", "Trauma Urológico", "Incontinência Urinária"],
 
   // Internato
-  "Cirurgia": ["Abdome Agudo", "Apendicite", "Colecistite", "Hérnias", "Trauma Abdominal", "Trauma Torácico", "Pré e Pós-operatório", "Queimaduras", "Politrauma"],
+  "Cirurgia": ["Abdome Agudo", "Apendicite", "Colecistite", "Hérnias", "Trauma Abdominal", "Trauma Torácico", "Pré e Pós-operatório", "Queimaduras", "Politrauma", "Abdome Agudo Obstrutivo", "Doença Hemorroidária", "Úlcera Perfurada", "Doença Diverticular", "Isquemia Mesentérica", "Fístulas Digestivas"],
   "Ginecologia e Obstetrícia": ["Pré-eclâmpsia", "Eclâmpsia", "Pré-natal", "Trabalho de Parto", "Hemorragias da Gestação", "Infecções na Gestação", "Câncer de Colo", "Endometriose", "SOP", "Climatério", "Placenta Prévia", "DPP"],
   "Medicina de Emergência": ["PCR e RCP", "Choque", "Intoxicações", "Anafilaxia", "Trauma", "Emergências Hipertensivas", "Cetoacidose Diabética", "Status Epiléptico"],
   "Medicina Preventiva": ["Epidemiologia", "Vigilância em Saúde", "SUS", "Atenção Primária", "Vacinação", "Saúde do Trabalhador", "Bioestatística", "Estudos Epidemiológicos"],
