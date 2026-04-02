@@ -1177,11 +1177,18 @@ REGRAS:
           const alreadyAssignInApp = await alreadyNotifiedInApp(assignTitleTag, studentIds);
           const newAssignInApp = studentIds.filter((sid: string) => !alreadyAssignInApp.includes(sid));
           if (newAssignInApp.length > 0) {
+            // Fetch student names for personalized in-app messages
+            const { data: assignInAppProfiles } = await sb.from("profiles")
+              .select("user_id, display_name")
+              .in("user_id", newAssignInApp);
+            const assignNameMap: Record<string, string> = {};
+            (assignInAppProfiles || []).forEach((p: any) => { assignNameMap[p.user_id] = (p.display_name || "").split(" ")[0] || "aluno(a)"; });
+
             const notifications = newAssignInApp.map((sid: string) => ({
               sender_id: user.id,
               recipient_id: sid,
               title: `📚 ${assignTitleTag}`,
-              content: `O Prof. ${professorName} atribuiu o tema "${title}" — Especialidade: ${specialty}, Tópicos: ${topics_to_cover || "vários"}. Acesse a aba Mais Ferramentas → Proficiência para estudar.`,
+              content: `📚 Olá ${assignNameMap[sid] || "aluno(a)"}! O Prof. ${professorName} atribuiu o tema "${title}" (${specialty}).\n📌 Tópicos: ${topics_to_cover || "vários"}\n👉 Acesse Mais Ferramentas → Proficiência para estudar!\n🔗 https://enazizi.com`,
               priority: "important",
             }));
             await sb.from("admin_messages").insert(notifications);
