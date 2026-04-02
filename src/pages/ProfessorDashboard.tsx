@@ -66,6 +66,13 @@ const ProfessorDashboard = () => {
   const [selectedBankQuestions, setSelectedBankQuestions] = useState<string[]>([]);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
 
+  // Expanded question review
+  const [expandedQuestion, setExpandedQuestion] = useState<number | null>(null);
+
+  // Topic distribution
+  const [topicDistribution, setTopicDistribution] = useState<Record<string, number>>({});
+  const [useDistribution, setUseDistribution] = useState(false);
+
   // Results dialog
   const [resultsDialog, setResultsDialog] = useState<{ open: boolean; simulado: any; results: any[]; loading: boolean; questions_json: any[] }>({ open: false, simulado: null, results: [], loading: false, questions_json: [] });
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
