@@ -581,14 +581,46 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
                 </div>
               )}
 
+              {useCustomMessage && (
+                <div className="flex items-center gap-3 px-1">
+                  <Checkbox
+                    checked={selectedStudents.size === students.length && students.length > 0}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedStudents(new Set(students.map(s => s.user_id)));
+                      } else {
+                        setSelectedStudents(new Set());
+                      }
+                    }}
+                  />
+                  <span className="text-sm font-medium">
+                    Selecionar todos ({selectedStudents.size}/{students.length})
+                  </span>
+                </div>
+              )}
+
               <div className="space-y-3">
                 {students.map((s) => {
                   const isSent = sentUsers.has(s.user_id);
                   const isAlreadySentToday = s.already_sent_today;
+                  const isSelected = selectedStudents.has(s.user_id);
                   return (
                     <div key={s.user_id} className={`rounded-lg border p-4 space-y-3 transition-colors ${isSent ? "bg-primary/5 border-primary/20" : isAlreadySentToday ? "bg-muted/50 border-muted opacity-60" : "bg-secondary/30"}`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
+                          {useCustomMessage && (
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={(checked) => {
+                                setSelectedStudents(prev => {
+                                  const next = new Set(prev);
+                                  if (checked) next.add(s.user_id);
+                                  else next.delete(s.user_id);
+                                  return next;
+                                });
+                              }}
+                            />
+                          )}
                           <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">{(s.display_name || "?")[0].toUpperCase()}</div>
                           <div>
                             <div className="font-medium text-sm">{s.display_name || "Sem nome"}</div>
