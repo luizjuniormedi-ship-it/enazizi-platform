@@ -1,42 +1,37 @@
 
 
-# Adicionar Desempenho de Proficiência ao BI Diário WhatsApp
+# Persistir Respostas no Simulado do Professor (StudentSimulados)
 
 ## Problema
-O BI diário enviado às 18h não menciona atividades de proficiência (simulados, casos clínicos e temas de estudo atribuídos pelo professor). O aluno não sabe como foi seu desempenho nessas atividades.
+O `StudentSimulados.tsx` tem seu próprio quiz inline **sem nenhuma persistência de sessão**. Se o aluno fechar a tela ou atualizar, perde todas as respostas. Além disso, o timer tem o mesmo bug de stale closure que foi corrigido no `Simulados.tsx`.
 
 ## Solução
-Consultar as 3 tabelas de resultados do professor (`teacher_simulado_results`, `teacher_clinical_case_results`, `teacher_study_assignment_results`) e incluir no prompt da IA uma seção "ATIVIDADES DO PROFESSOR" quando houver dados.
 
-## Dados a coletar por aluno
+### 1. `src/pages/StudentSimulados.tsx` — Adicionar persistência + corrigir timer
 
-- **Simulados do professor**: total feitos, nota média, status pendentes
-- **Casos clínicos**: total feitos, nota média, se acertou diagnóstico
-- **Temas de estudo**: total concluídos vs pendentes
+**Persistência:**
+- Importar e usar `useSessionPersistence` com `moduleKey: "student-simulados"`
+- No `startQuiz`, verificar se há sessão pendente e restaurar `answers`, `questionIndex`, `timeLeft`
+- Registrar `registerAutoSave` com callback que retorna `{ answers, questionIndex, timeLeft, resultId, simuladoId }`
+- No `handleSubmit`, chamar `completeSession()`
+- No `backToList`, chamar `abandonSession()` se necessário
+- Adicionar banner de recuperação (usar `ResumeSessionBanner` existente ou lógica inline) quando `pendingSession` existir
 
-## Mudança
+**Correção do timer (mesmo padrão do SimuladoExam):**
+- Usar `useRef` para `answers` e `handleSubmit` para evitar stale closures
+- Adicionar `finishedRef` para impedir submit duplicado
+- Remover `timeLeft > 0` da dependência do useEffect (causa restart do timer a cada segundo)
 
-### `supabase/functions/daily-bi-whatsapp/index.ts`
+### 2. Restauração inteligente ao reabrir
 
-Após a coleta de `temasFracos` (linha ~126), adicionar 3 queries:
+- Quando o aluno volta à página e há sessão ativa em `module_sessions`:
+  - Verificar se o `teacher_simulado_results` correspondente ainda está `in_progress`
+  - Se sim, restaurar `answers`, `questionIndex`, `timeLeft` e retomar o quiz
+  - Se o simulado já foi completado/expirado, descartar a sessão
 
-1. `teacher_simulado_results` — filtrar por `student_id = user.user_id`, buscar `status`, `score`, `total_questions`
-2. `teacher_clinical_case_results` — filtrar por `student_id`, buscar `status`, `final_score`, `grade`, `student_got_diagnosis`
-3. `teacher_study_assignment_results` — filtrar por `student_id`, buscar `status`
-
-Montar string `proficienciaInfo` com resumo. Se não houver atividades, string vazia (não polui a mensagem).
-
-No prompt (linha ~131), adicionar bloco condicional:
-```
-ATIVIDADES DO PROFESSOR:
-- Simulados: 2 feitos (média 75%), 1 pendente
-- Casos clínicos: 1 feito (nota 8, diagnóstico correto), 0 pendentes
-- Temas de estudo: 3 concluídos, 2 pendentes
-```
-
-No `buildFallbackMessage`, adicionar parâmetro `proficienciaText` e incluir se não vazio.
+## Mudanças
 
 | Arquivo | Mudança |
 |---------|---------|
-| `supabase/functions/daily-bi-whatsapp/index.ts` | Consultar 3 tabelas de proficiência; incluir seção no prompt e fallback |
+| `src/pages/StudentSimulados.tsx` | Integrar `useSessionPersistence`; corrigir timer com refs; restaurar estado ao reabrir; proteger contra submit duplicado |
 
