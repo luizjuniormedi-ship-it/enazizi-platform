@@ -356,15 +356,16 @@ const Simulados = () => {
           }
         }
 
-        // Complement if still short
-        if (allQuestions.length < config.count) {
-          setLoadingProgress(`Complementando... (${allQuestions.length}/${config.count})`);
-          setLoadingPercent(85);
+        // Complement if still short — up to 3 retry attempts
+        for (let retryIdx = 0; retryIdx < 3 && allQuestions.length < config.count; retryIdx++) {
+          const gap = config.count - allQuestions.length;
+          setLoadingProgress(`Complementando... tentativa ${retryIdx + 1}/3 (${allQuestions.length}/${config.count})`);
+          setLoadingPercent(85 + retryIdx * 2);
           try {
             const avoidStatements = allQuestions.map((q) => q.statement.slice(0, 120));
             const retry = await generateBatch(
               config.topics,
-              Math.min(config.count - allQuestions.length + 2, BATCH_SIZE),
+              Math.min(gap + 3, BATCH_SIZE),
               config.difficulty,
               accessToken,
               config.specificTopic,

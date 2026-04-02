@@ -189,6 +189,7 @@ REGRAS DE FORMATO (INVIOLÁVEIS):
 - SEMPRE colocar cada alternativa em UMA LINHA SEPARADA
 - SEMPRE separar questões com "---"
 - NUNCA omitir a linha **Tópico:** antes de cada questão
+- NUNCA inclua o tema, especialidade ou gabarito DENTRO do enunciado/caso clínico. O enunciado deve terminar com a pergunta e ponto de interrogação, sem texto adicional após a pergunta.
 - NUNCA omitir a linha **Gabarito:** após as alternativas
 
 Regras:
