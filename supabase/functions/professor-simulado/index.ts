@@ -425,6 +425,20 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
         return ok({ students: students || [] });
       }
 
+      case "search_students": {
+        const { query } = params;
+        if (!query || query.length < 3) throw new Error("Digite pelo menos 3 caracteres para buscar");
+        const searchTerm = `%${query}%`;
+        const { data: found } = await sb.from("profiles")
+          .select("user_id, display_name, email, faculdade, periodo")
+          .eq("status", "active")
+          .eq("user_type", "estudante")
+          .or(`display_name.ilike.${searchTerm},email.ilike.${searchTerm}`)
+          .order("display_name")
+          .limit(20);
+        return ok({ students: found || [] });
+      }
+
       case "class_analytics": {
         const { faculdade, periodo } = params;
         const effectiveFaculdade = faculdade || professorFaculdade;

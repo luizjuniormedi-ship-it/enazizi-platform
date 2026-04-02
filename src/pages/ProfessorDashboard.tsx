@@ -81,6 +81,11 @@ const ProfessorDashboard = () => {
   const [previewStudents, setPreviewStudents] = useState<any[]>([]);
   const [previewLoading, setPreviewLoading] = useState(false);
 
+  // Global student search
+  const [studentSearch, setStudentSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchingStudents, setSearchingStudents] = useState(false);
+
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/professor-simulado`;
 
   const callAPI = useCallback(async (body: Record<string, unknown>) => {
@@ -141,6 +146,29 @@ const ProfessorDashboard = () => {
     } finally {
       setPreviewLoading(false);
     }
+  };
+
+  const searchStudentGlobal = async () => {
+    if (studentSearch.length < 3) {
+      toast({ title: "Digite pelo menos 3 caracteres", variant: "destructive" });
+      return;
+    }
+    setSearchingStudents(true);
+    try {
+      const res = await callAPI({ action: "search_students", query: studentSearch });
+      setSearchResults((res.students || []).filter((s: any) => !previewStudents.some((p: any) => p.user_id === s.user_id)));
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setSearchingStudents(false);
+    }
+  };
+
+  const addSearchedStudent = (student: any) => {
+    if (previewStudents.some((s: any) => s.user_id === student.user_id)) return;
+    setPreviewStudents((prev) => [...prev, student]);
+    setSelectedStudentIds((prev) => [...prev, student.user_id]);
+    setSearchResults((prev) => prev.filter((s: any) => s.user_id !== student.user_id));
   };
 
   const toggleStudentSelection = (userId: string) => {
@@ -347,6 +375,8 @@ const ProfessorDashboard = () => {
     setPreviewStudents([]);
     setSelectedBankQuestions([]);
     setSelectedStudentIds([]);
+    setStudentSearch("");
+    setSearchResults([]);
     setQuestionMode("ai");
     setDifficulty("intermediario");
     setDifficultyMix({ facil: 20, intermediario: 50, dificil: 30 });
@@ -636,9 +666,40 @@ const ProfessorDashboard = () => {
                   </div>
                 </div>
               )}
+              {/* Global student search */}
+              <div className="border-t border-border pt-3 mt-2 space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground">Ou buscar aluno específico</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Buscar por nome ou e-mail..."
+                    value={studentSearch}
+                    onChange={(e) => setStudentSearch(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && searchStudentGlobal()}
+                    className="h-8 text-xs"
+                  />
+                  <Button variant="outline" size="sm" onClick={searchStudentGlobal} disabled={searchingStudents} className="shrink-0 h-8 text-xs">
+                    {searchingStudents ? <Loader2 className="h-3 w-3 animate-spin" /> : "Buscar"}
+                  </Button>
+                </div>
+                {searchResults.length > 0 && (
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {searchResults.map((s: any) => (
+                      <button
+                        key={s.user_id}
+                        onClick={() => addSearchedStudent(s)}
+                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-xs bg-background/50 border border-border hover:border-primary/30 transition-colors"
+                      >
+                        <Plus className="h-3 w-3 text-primary shrink-0" />
+                        <span className="truncate font-medium">{s.display_name || s.email}</span>
+                        {s.faculdade && <span className="text-muted-foreground text-[10px] ml-auto shrink-0">{s.faculdade}</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Topics */}
+
             <div className="space-y-3">
               <Label className="text-base font-semibold">Temas ({selectedTopics.length} selecionados)</Label>
               <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-2" />
