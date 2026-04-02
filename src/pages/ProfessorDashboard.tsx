@@ -148,6 +148,29 @@ const ProfessorDashboard = () => {
     }
   };
 
+  const searchStudentGlobal = async () => {
+    if (studentSearch.length < 3) {
+      toast({ title: "Digite pelo menos 3 caracteres", variant: "destructive" });
+      return;
+    }
+    setSearchingStudents(true);
+    try {
+      const res = await callAPI({ action: "search_students", query: studentSearch });
+      setSearchResults((res.students || []).filter((s: any) => !previewStudents.some((p: any) => p.user_id === s.user_id)));
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setSearchingStudents(false);
+    }
+  };
+
+  const addSearchedStudent = (student: any) => {
+    if (previewStudents.some((s: any) => s.user_id === student.user_id)) return;
+    setPreviewStudents((prev) => [...prev, student]);
+    setSelectedStudentIds((prev) => [...prev, student.user_id]);
+    setSearchResults((prev) => prev.filter((s: any) => s.user_id !== student.user_id));
+  };
+
   const toggleStudentSelection = (userId: string) => {
     setSelectedStudentIds((prev) =>
       prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
