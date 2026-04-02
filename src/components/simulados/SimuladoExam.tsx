@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Clock, ArrowRight, ArrowLeft, Flag, Bookmark, GraduationCap, CheckCircle2, XCircle } from "lucide-react";
+import { Clock, ArrowRight, ArrowLeft, Flag, Bookmark, GraduationCap, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { SimuladoMode } from "./SimuladoSetup";
 
@@ -33,6 +33,17 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode }: 
   const [revealedQuestions, setRevealedQuestions] = useState<Set<number>>(new Set());
   const timerRef = useRef<NodeJS.Timeout>();
 
+  // Refs to avoid stale closures in timer
+  const selectedAnswersRef = useRef(selectedAnswers);
+  const flaggedQuestionsRef = useRef(flaggedQuestions);
+  const onFinishRef = useRef(onFinish);
+  const finishedRef = useRef(false);
+
+  // Keep refs in sync
+  useEffect(() => { selectedAnswersRef.current = selectedAnswers; }, [selectedAnswers]);
+  useEffect(() => { flaggedQuestionsRef.current = flaggedQuestions; }, [flaggedQuestions]);
+  useEffect(() => { onFinishRef.current = onFinish; }, [onFinish]);
+
   const isStudyMode = mode === "estudo";
 
   // Timer - only in prova mode
@@ -42,14 +53,17 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode }: 
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
-          onFinish(selectedAnswers, Array.from(flaggedQuestions));
+          if (!finishedRef.current) {
+            finishedRef.current = true;
+            onFinishRef.current(selectedAnswersRef.current, Array.from(flaggedQuestionsRef.current));
+          }
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(timerRef.current);
-  }, []);
+  }, [isStudyMode]);
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -59,7 +73,7 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode }: 
   };
 
   const selectAnswer = (questionIdx: number, optionIdx: number) => {
-    if (isStudyMode && revealedQuestions.has(questionIdx)) return; // locked after reveal
+    if (isStudyMode && revealedQuestions.has(questionIdx)) return;
     setSelectedAnswers(prev => ({ ...prev, [questionIdx]: optionIdx }));
     if (isStudyMode) {
       setRevealedQuestions(prev => new Set(prev).add(questionIdx));
@@ -75,10 +89,12 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode }: 
     });
   };
 
-  const handleFinish = () => {
+  const handleFinish = useCallback(() => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
     clearInterval(timerRef.current);
-    onFinish(selectedAnswers, Array.from(flaggedQuestions));
-  };
+    onFinishRef.current(selectedAnswersRef.current, Array.from(flaggedQuestionsRef.current));
+  }, []);
 
   const handleStudyWithTutor = (q: SimQuestion) => {
     navigate("/dashboard/chatgpt", {
@@ -94,7 +110,6 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode }: 
   const timeWarning = !isStudyMode && timeLeft < 300;
   const q = questions[current];
 
-  // Study mode counters
   const correctCount = isStudyMode
     ? Object.entries(selectedAnswers).filter(([i]) => selectedAnswers[Number(i)] === questions[Number(i)]?.correct).length
     : 0;

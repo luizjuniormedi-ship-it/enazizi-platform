@@ -409,7 +409,7 @@ const Simulados = () => {
     }
   };
 
-  const handleFinish = async (answers: Record<number, number>, flagged: number[]) => {
+  const handleFinish = useCallback(async (answers: Record<number, number>, flagged: number[]) => {
     setFinalAnswers(answers);
     setFlaggedQuestions(flagged);
 
@@ -488,7 +488,8 @@ const Simulados = () => {
 
     await completeSession();
     setPhase("finished");
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questions, user, mode]);
 
   const handleRetryErrors = async (sessionIdOrVoid?: string) => {
     if (sessionIdOrVoid) {
@@ -585,6 +586,7 @@ const Simulados = () => {
 
   return (
     <SimuladoExam
+      key="simulado-exam-stable"
       questions={questions}
       timeSeconds={restoredState?.timeLeft ?? ((mode === "prova" || mode === "extremo") ? questions.length * 3 * 60 : 0)}
       onFinish={handleFinish}
