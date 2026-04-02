@@ -1,69 +1,87 @@
 
 
-# Corrigir Dashboard em Branco + Aprimoramentos
+# Incluir Instrução de Navegação nas Mensagens WhatsApp do Professor
 
-## Problema: Dashboard em branco
-O Dashboard tem vários componentes renderizados **fora** de `SafeCard`, o que significa que se qualquer um deles lançar um erro, o React derruba toda a página — mostrando apenas a tela genérica do ErrorBoundary ou, pior, uma tela branca.
-
-**Componentes desprotegidos:**
-- `MotivationalGreeting` (recebe props diretas — se `data` tiver campo inesperado, crash)
-- `XpWidget` / `AchievementToast` / `PerformanceReport`
-- `ExamSetupReminder`
-- `FreeStudyCard`
-- `AdminMessagesBanner`
-- `OnboardingChecklist` (ambas instâncias)
-- `ActiveVideoRoomBanner`
-- `DailyPlanWidget` / `DailyGoalWidget` (dentro dos Sheets)
+## Problema
+As mensagens de WhatsApp enviadas quando o professor cria atividades (simulados, casos clínicos, temas de estudo) dizem apenas "Acesse a plataforma para realizar" — sem orientar o aluno sobre onde encontrar a atividade dentro do app.
 
 ## Solução
+Atualizar as 3 mensagens WhatsApp e as 3 notificações in-app no `professor-simulado/index.ts` para incluir a instrução clara: **"Acesse a aba *Mais Ferramentas* e em seguida *Proficiência*"**.
 
-### 1. Envolver TODOS os componentes do Dashboard em SafeCard (`src/pages/Dashboard.tsx`)
+### Alterações em `supabase/functions/professor-simulado/index.ts`
 
-Cada componente ou grupo de componentes que não está dentro de `SafeCard` será envolvido. Isso garante que uma falha isolada mostra apenas "Sem dados suficientes" naquele card, sem derrubar a página inteira.
-
-```text
-Antes:
-  <MotivationalGreeting ... />        ← crash = tela branca
-  <XpWidget />                        ← crash = tela branca
-
-Depois:
-  <SafeCard name="Greeting">
-    <MotivationalGreeting ... />      ← crash = fallback local
-  </SafeCard>
-  <SafeCard name="XpWidget">
-    <XpWidget />
-  </SafeCard>
+**1. Simulado — WhatsApp (linha ~283)**
+De:
+```
+Acesse a plataforma para realizar!
+```
+Para:
+```
+👉 Acesse *Mais Ferramentas* → *Proficiência* para realizar!
 ```
 
-Componentes a proteger:
-- `MotivationalGreeting` + `XpWidget` + `PerformanceReport` + `AchievementToast`
-- `ActiveVideoRoomBanner`
-- `ExamSetupReminder`
-- `OnboardingChecklist` (ambas instâncias)
-- `FreeStudyCard`
-- `AdminMessagesBanner`
-- Conteúdo dos 4 Sheets (Desempenho, Cronograma, Streak, Simulados)
-
-### 2. Proteger acesso a `data` com fallback defensivo
-
-No bloco `const { stats, metrics, displayName, hasCompletedDiagnostic } = data;`, adicionar fallback:
-
-```typescript
-const { stats, metrics, displayName, hasCompletedDiagnostic } = data || {};
-if (!stats || !metrics) {
-  return <PageLoader />;
-}
+**2. Simulado — In-app (linha ~260)**
+De:
+```
+Acesse a aba Proficiência para realizar.
+```
+Para:
+```
+Acesse a aba Mais Ferramentas → Proficiência para realizar.
 ```
 
-### 3. Aprimoramentos sugeridos
+**3. Caso Clínico — WhatsApp (linha ~844)**
+De:
+```
+Acesse a plataforma para realizar!
+```
+Para:
+```
+👉 Acesse *Mais Ferramentas* → *Proficiência* para realizar!
+```
 
-- **`useDashboardData`**: O `try/catch` já retorna defaults vazios — verificar que nenhuma das 21 queries paralelas pode lançar exceção não-capturada (todas usam destructuring `{ data, error }` do Supabase, que nunca lança)
-- **Lazy-loaded components nos Sheets**: Já estão em `Suspense` — ok
-- **Popups lazy-loaded**: Já em `Suspense fallback={null}` — ok
+**4. Caso Clínico — In-app (linha ~821)**
+De:
+```
+Acesse a aba Proficiência para realizar.
+```
+Para:
+```
+Acesse a aba Mais Ferramentas → Proficiência para realizar.
+```
 
-## Resumo das alterações
+**5. Tema de Estudo — WhatsApp (linha ~1019)**
+De:
+```
+Acesse a plataforma para estudar!
+```
+Para:
+```
+👉 Acesse *Mais Ferramentas* → *Proficiência* para estudar!
+```
+
+**6. Tema de Estudo — In-app (linha ~996)**
+De:
+```
+Acesse a aba Proficiência para estudar.
+```
+Para:
+```
+Acesse a aba Mais Ferramentas → Proficiência para estudar.
+```
+
+**7. Professor Reminder (cron) — `professor-reminder/index.ts` (linha ~55)**
+De:
+```
+Acesse a aba Proficiência para realizar.
+```
+Para:
+```
+Acesse a aba Mais Ferramentas → Proficiência para realizar.
+```
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/pages/Dashboard.tsx` | Envolver todos os componentes desprotegidos em `SafeCard`; adicionar guard defensivo no destructuring de `data` |
+| `supabase/functions/professor-simulado/index.ts` | Atualizar 6 mensagens (3 WhatsApp + 3 in-app) com instrução de navegação |
+| `supabase/functions/professor-reminder/index.ts` | Atualizar mensagem do lembrete com instrução de navegação |
 
