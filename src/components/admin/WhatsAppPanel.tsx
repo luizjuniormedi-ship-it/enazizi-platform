@@ -224,7 +224,11 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
       }
 
       setStudents(generatedStudents);
-      const total = generatedStudents.length;
+      // When custom message is on and students are selected, filter to only those
+      const finalStudents = (useCustomMessage && selectedStudents.size > 0)
+        ? generatedStudents.filter((s: Student) => selectedStudents.has(s.user_id))
+        : generatedStudents;
+      const total = finalStudents.length;
       const alreadySent = generatedStudents.filter((s: Student) => s.already_sent_today).length;
 
       if (total === 0) {
