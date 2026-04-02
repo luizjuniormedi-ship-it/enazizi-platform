@@ -209,6 +209,37 @@ Regras:
 
     let systemPrompt = isJsonMode ? jsonSystemPrompt : fullSystemPrompt;
 
+    // Inject high-yield subtopics when user message mentions a specialty
+    const HIGH_YIELD: Record<string, string[]> = {
+      "Cardiologia": ["Insuficiência Cardíaca", "Síndromes Coronarianas Agudas", "Hipertensão Arterial", "Arritmias", "Endocardite"],
+      "Cirurgia": ["Abdome Agudo", "Politrauma", "Hérnias", "Colecistite", "Apendicite"],
+      "Pediatria": ["Neonatologia", "Aleitamento Materno", "Bronquiolite", "Doenças Exantemáticas", "Imunização", "Reanimação Neonatal", "Icterícia Neonatal"],
+      "Ginecologia e Obstetrícia": ["Pré-eclâmpsia", "Hemorragias da Gestação", "Pré-natal", "Diabetes Gestacional", "Anticoncepção", "Trabalho de Parto"],
+      "Medicina Preventiva": ["SUS", "Epidemiologia", "Vacinação", "Estudos Epidemiológicos", "Bioestatística", "Ética e Bioética Médica"],
+      "Infectologia": ["HIV/AIDS", "Tuberculose", "Sepse", "Arboviroses", "Meningites"],
+      "Pneumologia": ["Asma", "DPOC", "Pneumonia", "Tuberculose Pulmonar", "Tromboembolismo Pulmonar", "Derrame Pleural"],
+      "Gastroenterologia": ["Doença do Refluxo", "Hemorragia Digestiva", "Cirrose Hepática", "Hepatites Virais", "Doença Inflamatória Intestinal"],
+      "Endocrinologia": ["Diabetes Mellitus", "Tireoidopatias", "Cetoacidose Diabética", "Dislipidemias"],
+      "Neurologia": ["AVC Isquêmico", "Epilepsia", "Cefaléias", "Meningites"],
+      "Dermatologia": ["Hanseníase", "Câncer de Pele", "Lesões Elementares da Pele", "Piodermites"],
+      "Nefrologia": ["Insuficiência Renal Aguda", "Distúrbios Hidroeletrolíticos", "Distúrbios Ácido-Base", "Glomerulopatias"],
+      "Hematologia": ["Anemias", "Leucemias", "Linfomas", "Distúrbios da Hemostasia"],
+      "Reumatologia": ["Lúpus Eritematoso Sistêmico", "Artrite Reumatoide", "Vasculites"],
+      "Oncologia": ["Câncer de Mama", "Câncer Colorretal", "Câncer de Pulmão", "Estadiamento TNM"],
+      "Medicina de Emergência": ["PCR e RCP", "Choque", "Trauma", "Anafilaxia"],
+      "Angiologia": ["Trombose Venosa Profunda", "Doença Arterial Periférica", "Aneurisma de Aorta"],
+      "Psiquiatria": ["Depressão", "Esquizofrenia", "Emergências Psiquiátricas", "Dependência Química"],
+      "Urologia": ["Litíase Renal", "Infecção Urinária", "Hiperplasia Prostática"],
+      "Terapia Intensiva": ["Ventilação Mecânica", "Sepse e Choque Séptico", "SDRA"],
+    };
+    const lastUserMsg = messages?.[messages.length - 1]?.content?.toLowerCase() || "";
+    const matchedPriorities = Object.entries(HIGH_YIELD)
+      .filter(([spec]) => lastUserMsg.includes(spec.toLowerCase()))
+      .map(([spec, subs]) => `- ${spec}: ${subs.join(", ")}`);
+    if (matchedPriorities.length > 0) {
+      systemPrompt += `\n\n=== SUBTÓPICOS PRIORITÁRIOS (mais cobrados em provas de residência — dar preferência) ===\n${matchedPriorities.join("\n")}\nDistribua as questões preferencialmente entre esses subtópicos quando nenhum subtema específico for solicitado.`;
+    }
+
     // Add difficulty instruction
     if (difficulty) {
       const diffMap: Record<string, string> = {

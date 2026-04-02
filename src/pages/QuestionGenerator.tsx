@@ -98,7 +98,12 @@ const QuestionGenerator = () => {
     const topicPart = specificTopic.trim() ? ` focadas no tema: "${specificTopic.trim()}"` : "";
     const diffLabel = difficulty === "dificil" ? "ALTO (padrão ENARE/USP-SP)" : difficulty === "intermediario" ? "intermediário-alto (padrão REVALIDA)" : difficulty === "misto" ? "misto (30% intermediário + 70% difícil)" : "intermediário";
     const boardPart = examBoard !== "all" ? ` no estilo da prova ${examBoard}, com formato, pegadinhas e abordagens típicas dessa banca` : "";
-    return `Gere ${quantity} questões ORIGINAIS de ${specPart}${topicPart} nível ${diffLabel}${boardPart}. OBRIGATÓRIO: cada questão deve ser um caso clínico COMPLEXO com nome fictício, idade, sexo, queixa com tempo de evolução, antecedentes, exame físico com sinais vitais completos (PA, FC, FR, Temp, SpO2), exames complementares com valores numéricos. Distratores devem explorar armadilhas reais de provas de residência. Explicação deve analisar cada alternativa e citar referência bibliográfica. Varie cenários clínicos e perfis de pacientes.`;
+    // Inject high-yield hints when no specific subtopic is selected
+    let priorityHint = "";
+    if (!specificTopic.trim() && effectiveSpecialty && HIGH_YIELD_SUBTOPICS[effectiveSpecialty]) {
+      priorityHint = ` Priorize os subtópicos mais cobrados em provas de residência: ${HIGH_YIELD_SUBTOPICS[effectiveSpecialty].join(", ")}.`;
+    }
+    return `Gere ${quantity} questões ORIGINAIS de ${specPart}${topicPart} nível ${diffLabel}${boardPart}.${priorityHint} OBRIGATÓRIO: cada questão deve ser um caso clínico COMPLEXO com nome fictício, idade, sexo, queixa com tempo de evolução, antecedentes, exame físico com sinais vitais completos (PA, FC, FR, Temp, SpO2), exames complementares com valores numéricos. Distratores devem explorar armadilhas reais de provas de residência. Explicação deve analisar cada alternativa e citar referência bibliográfica. Varie cenários clínicos e perfis de pacientes.`;
   };
 
   const quickActions = showSetup ? [] : [
