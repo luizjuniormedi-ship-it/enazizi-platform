@@ -1,43 +1,45 @@
 
 
-# Equiparar Questões IA ao Padrão ENAMED (400-600 caracteres)
+# Unificar Filtro de 400 Caracteres em Todos os Geradores
 
-## Problema
-As questões geradas pela IA têm enunciados curtos (~250-350 chars) enquanto questões reais de provas ENAMED/ENARE têm entre 400-800 caracteres com caso clínico completo (anamnese, exame físico, exames complementares, pergunta final).
+## Resumo
+Aplicar o mínimo de 400 caracteres (padrão ENAMED) e prompt de caso clínico completo nos 6 geradores restantes que ainda não foram atualizados.
 
-## Solução
-Reforçar no prompt da IA a exigência de enunciados longos no padrão ENAMED e subir o filtro mínimo de 250 → 400 caracteres.
+## Mudanças por Arquivo
 
-## Mudanças
+### 1. `supabase/functions/daily-question-generator/index.ts`
+- **Linha 158**: Prompt `searchRealQuestionsViaAI` — `≥250` → `≥400` caracteres
+- **Linha 174**: JSON format example — `≥250` → `≥400`
+- **Linha 222**: Filtro `s.length >= 250` → `s.length >= 400`
+- **Linha 290**: Prompt `generateForSpecialty` — remover `150 caracteres`, colocar `400 caracteres`
+- **Linha 313**: JSON format example — `≥150` → `≥400`
+- **Linha 358**: Filtro `s.length >= 150` → `s.length >= 400`
 
-### 1. `supabase/functions/professor-simulado/index.ts`
+### 2. `supabase/functions/bulk-generate-content/index.ts`
+- **Linha 350-354**: Adicionar filtro `String(q.statement).trim().length >= 400` no `.filter()` das questões (atualmente sem filtro de tamanho)
 
-**No prompt (linha ~160-199):**
-Adicionar regra explícita de tamanho mínimo:
-```
-TAMANHO MÍNIMO OBRIGATÓRIO DO ENUNCIADO: cada enunciado deve ter NO MÍNIMO 400 caracteres.
-Siga o padrão ENAMED/ENARE com caso clínico completo contendo:
-1. Identificação do paciente (nome fictício, idade, sexo, profissão)
-2. Queixa principal e história da doença atual (tempo de evolução, sintomas)  
-3. Antecedentes (comorbidades, medicações, hábitos)
-4. Exame físico relevante (sinais vitais, achados)
-5. Exames complementares quando pertinente (laboratoriais, imagem)
-6. Pergunta objetiva final
-```
+### 3. `supabase/functions/populate-questions/index.ts`
+- **Linha 119-122**: Adicionar `String(q.statement).trim().length >= 400` no `.filter()` das questões (atualmente sem filtro de tamanho)
 
-**No filtro de qualidade (linha ~377-384):**
-Subir `s.length < 250` → `s.length < 400`
+### 4. `supabase/functions/question-generator/index.ts`
+- **Linha 38**: Prompt JSON — `Mínimo 250 caracteres` → `Mínimo 400 caracteres`
+- `isValidQuestion` e `hasMinimumContext` do shared já usam 400, então o filtro server-side (linha 417-418) já está correto
 
-### 2. `supabase/functions/_shared/question-filters.ts`
-Subir `isValidQuestion` e `hasMinimumContext` de 250 → 400 caracteres para consistência global.
+### 5. `supabase/functions/extract-exam-questions/index.ts`
+- **Linha 196-197**: Adicionar `q.statement.length >= 400` no filtro de `newQuestions` (extrações de provas reais — manter 400 apenas para consistência, mas questões reais geralmente são longas)
 
-### 3. `supabase/functions/ingest-questions/index.ts` e `search-real-questions/index.ts`
-Subir filtros de 250 → 400 caracteres.
+### 6. `supabase/functions/extract-exam-visual/index.ts`
+- **Linha 208**: `q.statement.length < 30` → `q.statement.length < 400`
 
-| Arquivo | Mudança |
-|---------|---------|
-| `supabase/functions/professor-simulado/index.ts` | Prompt com regra de 400 chars + estrutura ENAMED; filtro 250→400 |
-| `supabase/functions/_shared/question-filters.ts` | Mínimo global 250→400 |
-| `supabase/functions/ingest-questions/index.ts` | Filtro 250→400 |
-| `supabase/functions/search-real-questions/index.ts` | Filtro 250→400 |
+### Deploy
+Re-deploy das 6 edge functions.
+
+| Arquivo | Mudança Principal |
+|---------|-------------------|
+| `daily-question-generator` | 250/150 → 400 em prompts e filtros |
+| `bulk-generate-content` | Adicionar filtro `length >= 400` |
+| `populate-questions` | Adicionar filtro `length >= 400` |
+| `question-generator` | Prompt 250 → 400 |
+| `extract-exam-questions` | Adicionar filtro `length >= 400` |
+| `extract-exam-visual` | 30 → 400 |
 
