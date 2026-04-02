@@ -357,6 +357,9 @@ const ProfessorDashboard = () => {
     setManualCorrect("0");
     setManualTopic("");
     setManualQuestions([]);
+    setExpandedQuestion(null);
+    setTopicDistribution({});
+    setUseDistribution(false);
   };
 
   const addManualQuestion = () => {
