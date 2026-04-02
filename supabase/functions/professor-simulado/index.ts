@@ -373,6 +373,16 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
         // Sanitize statements: remove answers/metadata leaked by AI
         questions = questions.map((q: any) => ({ ...q, statement: sanitizeStatement(q.statement || "") }));
 
+        // Reject incomplete/truncated questions (statement too short or missing question mark)
+        questions = questions.filter((q: any) => {
+          const s = String(q.statement || "");
+          if (s.length < 120) return false;
+          // Must end with ? or have options — reject mid-sentence truncation
+          if (!/[?.]/.test(s.slice(-80))) return false;
+          if (!Array.isArray(q.options) || q.options.length < 4) return false;
+          return true;
+        });
+
         console.log(`Generated ${questions.length} questions (source: ${source})`);
 
         return ok({ questions, source });

@@ -132,7 +132,9 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode }: 
       <div className="glass-card p-6">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">{q.topic}</span>
+            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+              {String(q.topic || "").replace(/\s*\(.*$/, "").trim() || q.topic}
+            </span>
             {!isRevealed && userAnswer === undefined && (
               <span className="text-xs px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-600">Não respondida</span>
             )}
