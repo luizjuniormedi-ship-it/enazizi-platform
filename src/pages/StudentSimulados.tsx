@@ -16,6 +16,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePendingProficiency } from "@/hooks/usePendingProficiency";
+import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 
 interface SimuladoResult {
   id: string;
@@ -81,6 +83,37 @@ const StudentSimulados = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const finishedRef = useRef(false);
+  const answersRef = useRef(answers);
+  const handleSubmitRef = useRef<() => Promise<void>>();
+
+  // Keep answersRef in sync
+  useEffect(() => { answersRef.current = answers; }, [answers]);
+
+  // Session persistence
+  const {
+    pendingSession,
+    checked: sessionChecked,
+    saveSession,
+    completeSession,
+    abandonSession,
+    registerAutoSave,
+    clearPending,
+  } = useSessionPersistence({ moduleKey: "student-simulados" });
+
+  // Register auto-save callback
+  useEffect(() => {
+    registerAutoSave(() => {
+      if (phase !== "quiz" || !current) return {};
+      return {
+        answers: answersRef.current,
+        questionIndex,
+        timeLeft,
+        resultId: current.result.id,
+        simuladoId: current.simulado.id,
+      };
+    });
+  }, [registerAutoSave, phase, current, questionIndex, timeLeft]);
 
   // Result state
   const [resultData, setResultData] = useState<{ score: number; total: number; correct: number; details: any[] } | null>(null);
@@ -240,14 +273,17 @@ const StudentSimulados = () => {
     loadErrorBank();
   }, [loadErrorBank]);
 
-  // Timer
+  // Timer — uses refs to avoid stale closures
   useEffect(() => {
-    if (phase !== "quiz" || timeLeft <= 0) return;
+    if (phase !== "quiz") return;
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timerRef.current!);
-          handleSubmit();
+          if (!finishedRef.current && handleSubmitRef.current) {
+            finishedRef.current = true;
+            handleSubmitRef.current();
+          }
           return 0;
         }
         return prev - 1;
@@ -256,15 +292,23 @@ const StudentSimulados = () => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [phase, timeLeft > 0]);
+  }, [phase]);
 
-  const startQuiz = async (item: AssignedSimulado) => {
+  const startQuiz = async (item: AssignedSimulado, restoredState?: { answers: (number | null)[]; questionIndex: number; timeLeft: number }) => {
+    finishedRef.current = false;
     setCurrent(item);
-    setQuestionIndex(0);
     const questions = (item.simulado.questions_json || []).filter((q: any) => isMedicalQuestion(q));
     item.simulado.questions_json = questions;
-    setAnswers(new Array(questions.length).fill(null));
-    setTimeLeft(item.simulado.time_limit_minutes * 60);
+
+    if (restoredState) {
+      setAnswers(restoredState.answers);
+      setQuestionIndex(restoredState.questionIndex);
+      setTimeLeft(restoredState.timeLeft);
+    } else {
+      setQuestionIndex(0);
+      setAnswers(new Array(questions.length).fill(null));
+      setTimeLeft(item.simulado.time_limit_minutes * 60);
+    }
     setPhase("quiz");
 
     if (item.result.status === "pending") {
@@ -275,6 +319,38 @@ const StudentSimulados = () => {
     }
   };
 
+  // Handle resume from persisted session
+  const handleResumeSession = useCallback(async () => {
+    if (!pendingSession) return;
+    const data = pendingSession.session_data as any;
+    if (!data?.simuladoId || !data?.resultId) {
+      abandonSession();
+      return;
+    }
+    // Check if the result is still in_progress
+    const { data: result } = await supabase
+      .from("teacher_simulado_results")
+      .select("status")
+      .eq("id", data.resultId)
+      .maybeSingle();
+    if (!result || result.status === "completed") {
+      abandonSession();
+      return;
+    }
+    // Find the matching assigned simulado
+    const match = assigned.find(a => a.result.id === data.resultId);
+    if (!match) {
+      abandonSession();
+      return;
+    }
+    clearPending();
+    startQuiz(match, {
+      answers: data.answers || [],
+      questionIndex: data.questionIndex || 0,
+      timeLeft: data.timeLeft || match.simulado.time_limit_minutes * 60,
+    });
+  }, [pendingSession, assigned, abandonSession, clearPending]);
+
   const selectAnswer = (optionIndex: number) => {
     setAnswers((prev) => {
       const copy = [...prev];
@@ -283,19 +359,22 @@ const StudentSimulados = () => {
     });
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!current) return;
+    if (finishedRef.current) return;
+    finishedRef.current = true;
     if (timerRef.current) clearInterval(timerRef.current);
     setSubmitting(true);
 
+    const currentAnswers = answersRef.current;
     const questions = current.simulado.questions_json || [];
     let correct = 0;
     const details = questions.map((q: any, i: number) => {
-      const isCorrect = answers[i] === q.correct_index;
+      const isCorrect = currentAnswers[i] === q.correct_index;
       if (isCorrect) correct++;
       return {
         question_index: i,
-        selected: answers[i],
+        selected: currentAnswers[i],
         correct_index: q.correct_index,
         is_correct: isCorrect,
         topic: q.topic,
@@ -330,20 +409,29 @@ const StudentSimulados = () => {
         })
         .eq("id", current.result.id);
 
+      await completeSession();
       setResultData({ score, total: questions.length, correct, details });
       setPhase("result");
       toast({ title: "Simulado concluído!", description: `Sua nota: ${score}%` });
     } catch {
+      finishedRef.current = false;
       toast({ title: "Erro ao enviar", variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [current, user, toast, completeSession]);
+
+  // Keep handleSubmitRef in sync
+  useEffect(() => { handleSubmitRef.current = handleSubmit; }, [handleSubmit]);
 
   const backToList = () => {
+    if (phase === "quiz") {
+      abandonSession();
+    }
     setPhase("list");
     setCurrent(null);
     setResultData(null);
+    finishedRef.current = false;
     loadAssigned();
   };
 
@@ -363,6 +451,15 @@ const StudentSimulados = () => {
 
     return (
       <div className="space-y-6 animate-fade-in">
+        {/* Resume session banner */}
+        {sessionChecked && pendingSession && (
+          <ResumeSessionBanner
+            updatedAt={pendingSession.updated_at}
+            onResume={handleResumeSession}
+            onDiscard={abandonSession}
+          />
+        )}
+
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <GraduationCap className="h-6 w-6 text-primary" />
