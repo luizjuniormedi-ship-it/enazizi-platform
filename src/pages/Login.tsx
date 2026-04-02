@@ -58,21 +58,27 @@ const Login = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchData = async () => {
       try {
-        const { data } = await supabase.rpc("get_login_stats").maybeSingle();
-        if (data) {
+        const [statsRes, testimonialsRes] = await Promise.all([
+          supabase.rpc("get_login_stats").maybeSingle(),
+          supabase.rpc("get_login_testimonials"),
+        ]);
+        if (statsRes.data) {
           setDynamicStats({
-            alunos: formatCount(Number(data.alunos)),
-            questoes: formatCount(Number(data.questoes)),
-            flashcards: formatCount(Number(data.flashcards)),
+            alunos: formatCount(Number(statsRes.data.alunos)),
+            questoes: formatCount(Number(statsRes.data.questoes)),
+            flashcards: formatCount(Number(statsRes.data.flashcards)),
           });
         }
+        if (testimonialsRes.data && Array.isArray(testimonialsRes.data)) {
+          setTestimonials(testimonialsRes.data as Testimonial[]);
+        }
       } catch {
-        // keep "—" on error
+        // keep defaults on error
       }
     };
-    fetchStats();
+    fetchData();
   }, []);
 
   const stats = [
