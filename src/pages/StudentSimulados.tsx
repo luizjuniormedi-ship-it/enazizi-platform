@@ -451,6 +451,15 @@ const StudentSimulados = () => {
 
     return (
       <div className="space-y-6 animate-fade-in">
+        {/* Resume session banner */}
+        {sessionChecked && pendingSession && (
+          <ResumeSessionBanner
+            updatedAt={pendingSession.updated_at}
+            onResume={handleResumeSession}
+            onDiscard={abandonSession}
+          />
+        )}
+
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <GraduationCap className="h-6 w-6 text-primary" />
