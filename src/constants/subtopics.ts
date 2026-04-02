@@ -27,7 +27,7 @@ export const SPECIALTY_SUBTOPICS: Record<string, string[]> = {
   "Oncologia": ["Câncer de Mama", "Câncer de Pulmão", "Câncer Colorretal", "Câncer Gástrico", "Estadiamento TNM", "Síndromes Paraneoplásicas", "Neutropenia Febril", "Câncer de Endométrio", "Câncer de Ovário"],
   "Ortopedia": ["Fraturas", "Luxações", "Osteomielite", "Artrose", "Lombalgia", "Trauma Musculoesquelético", "Lesões Ligamentares"],
   "Otorrinolaringologia": ["Otite Média", "Sinusite", "Faringite", "Tonsilite", "Vertigem", "Perda Auditiva"],
-  "Pneumologia": ["Asma", "DPOC", "Pneumonia", "Tuberculose Pulmonar", "Tromboembolismo Pulmonar", "Derrame Pleural", "Câncer de Pulmão", "SDRA", "Fibrose Pulmonar", "Propedêutica Respiratória", "Micoses Pulmonares"],
+  "Pneumologia": ["Asma", "DPOC", "Pneumonia", "Tuberculose Pulmonar", "Tromboembolismo Pulmonar", "Derrame Pleural", "Câncer de Pulmão", "SDRA", "Fibrose Pulmonar", "Propedêutica Respiratória", "Micoses Pulmonares", "Pneumonia Nosocomial"],
   "Psiquiatria": ["Depressão", "Transtorno Bipolar", "Esquizofrenia", "Transtornos de Ansiedade", "TOC", "TEPT", "Dependência Química", "Emergências Psiquiátricas"],
   "Reumatologia": ["Artrite Reumatoide", "Lúpus Eritematoso Sistêmico", "Espondiloartrites", "Gota", "Vasculites", "Esclerodermia", "Fibromialgia"],
   "Urologia": ["Litíase Renal", "Hiperplasia Prostática", "Câncer de Próstata", "Infecção Urinária", "Trauma Urológico", "Incontinência Urinária"],
