@@ -20,6 +20,6 @@ export function isValidQuestion(q: { statement?: string; options?: any[]; correc
 
 /** Checks if statement has minimum clinical context (age/time pattern + length) */
 export function hasMinimumContext(statement: string): boolean {
-  if (!statement || statement.length < 200) return false;
+  if (!statement || statement.length < 250) return false;
   return /\d+\s*(anos?|meses|dias|horas|semanas)/i.test(statement);
 }
