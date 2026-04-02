@@ -136,13 +136,34 @@ async function generateBatch(
   return [];
 }
 
+function sanitizeStatement(raw: string): string {
+  // Remove trailing metadata (topic/subtopic/answer) that AI sometimes appends after the question mark
+  let s = raw;
+  const lastQ = s.lastIndexOf("?");
+  if (lastQ > 0 && lastQ < s.length - 2) {
+    const after = s.slice(lastQ + 1).trim();
+    const lines = after.split("\n").filter((l) => l.trim());
+    // If all trailing lines are short and don't contain clinical data, strip them
+    if (
+      lines.length > 0 &&
+      lines.length <= 5 &&
+      lines.every(
+        (l) => l.trim().length < 100 && !/\d+\s*(mg|ml|mmHg|bpm|°C|%|U\/L|g\/dL|mEq|mmol)/.test(l),
+      )
+    ) {
+      s = s.slice(0, lastQ + 1);
+    }
+  }
+  return s.trim();
+}
+
 function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
   return (Array.isArray(arr) ? arr : [])
     .map((q: any) => {
       const options = Array.isArray(q.options) ? q.options.map(String) : [];
       const correctIdx = Number.isInteger(q.correct_index) ? q.correct_index : 0;
       return {
-        statement: String(q.statement || ""),
+        statement: sanitizeStatement(String(q.statement || "")),
         options,
         correct: correctIdx >= 0 && correctIdx < options.length ? correctIdx : 0,
         topic: String(q.topic || topics[0]),
