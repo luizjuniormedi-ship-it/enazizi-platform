@@ -167,7 +167,8 @@ ${revisoesText}
 
 Link: https://enazizi.com
 
-Comece com saudação pelo nome. Inclua piada médica. Mencione revisões.`;
+Comece com saudação pelo nome. Inclua piada médica. Mencione revisões.
+A ÚLTIMA LINHA da mensagem DEVE ser exatamente: "Responda SAIR para não receber mais."`;
 
         let message = "";
         try {
