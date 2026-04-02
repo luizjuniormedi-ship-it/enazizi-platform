@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
           .from("whatsapp_message_log")
           .select("id")
           .eq("target_user_id", user.user_id)
-          .eq("delivery_status", "sent")
+          .eq("execution_mode", "daily_bi")
           .gte("sent_at", `${today}T00:00:00Z`)
           .limit(1);
 
