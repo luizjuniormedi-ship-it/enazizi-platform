@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { MessageSquare, Send, Copy, Loader2, RefreshCw, Phone, AlertTriangle, CheckCircle, PlayCircle, StopCircle, Download, Plug, PlugZap, Monitor, History, PauseCircle, SkipForward, RotateCcw, Clock, Eye, PenLine, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -119,6 +120,7 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
   // Custom message state
   const [useCustomMessage, setUseCustomMessage] = useState(false);
   const [customMessage, setCustomMessage] = useState("");
+  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
 
   // Fetch opt-out count
   useEffect(() => {
@@ -222,7 +224,11 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
       }
 
       setStudents(generatedStudents);
-      const total = generatedStudents.length;
+      // When custom message is on and students are selected, filter to only those
+      const finalStudents = (useCustomMessage && selectedStudents.size > 0)
+        ? generatedStudents.filter((s: Student) => selectedStudents.has(s.user_id))
+        : generatedStudents;
+      const total = finalStudents.length;
       const alreadySent = generatedStudents.filter((s: Student) => s.already_sent_today).length;
 
       if (total === 0) {
@@ -231,7 +237,7 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
         toast({ title: "Mensagens geradas!", description: `${total} mensagem(ns) prontas. ${alreadySent > 0 ? `${alreadySent} já receberam hoje.` : ""}` });
 
         const { data: { user } } = await supabase.auth.getUser();
-        const queueCandidates = generatedStudents.filter((s: Student) => !s.already_sent_today && s.phone);
+        const queueCandidates = finalStudents.filter((s: Student) => !s.already_sent_today && s.phone);
 
         if (user && queueCandidates.length > 0) {
           const rows = queueCandidates.map((s: Student) => ({
@@ -516,6 +522,9 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
                 <p className="text-xs text-muted-foreground">
                   Use <code className="bg-muted px-1 rounded">{"{nome}"}</code> para personalizar. Se não usar, o nome será adicionado automaticamente no início (ex: "Olá João! sua mensagem").
                 </p>
+                <p className="text-xs text-muted-foreground">
+                  💡 Após gerar, use os checkboxes ao lado de cada aluno para escolher quem receberá. Se nenhum for selecionado, todos recebem.
+                </p>
               </div>
             )}
           </div>
@@ -572,14 +581,46 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
                 </div>
               )}
 
+              {useCustomMessage && (
+                <div className="flex items-center gap-3 px-1">
+                  <Checkbox
+                    checked={selectedStudents.size === students.length && students.length > 0}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedStudents(new Set(students.map(s => s.user_id)));
+                      } else {
+                        setSelectedStudents(new Set());
+                      }
+                    }}
+                  />
+                  <span className="text-sm font-medium">
+                    Selecionar todos ({selectedStudents.size}/{students.length})
+                  </span>
+                </div>
+              )}
+
               <div className="space-y-3">
                 {students.map((s) => {
                   const isSent = sentUsers.has(s.user_id);
                   const isAlreadySentToday = s.already_sent_today;
+                  const isSelected = selectedStudents.has(s.user_id);
                   return (
                     <div key={s.user_id} className={`rounded-lg border p-4 space-y-3 transition-colors ${isSent ? "bg-primary/5 border-primary/20" : isAlreadySentToday ? "bg-muted/50 border-muted opacity-60" : "bg-secondary/30"}`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
+                          {useCustomMessage && (
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={(checked) => {
+                                setSelectedStudents(prev => {
+                                  const next = new Set(prev);
+                                  if (checked) next.add(s.user_id);
+                                  else next.delete(s.user_id);
+                                  return next;
+                                });
+                              }}
+                            />
+                          )}
                           <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">{(s.display_name || "?")[0].toUpperCase()}</div>
                           <div>
                             <div className="font-medium text-sm">{s.display_name || "Sem nome"}</div>
