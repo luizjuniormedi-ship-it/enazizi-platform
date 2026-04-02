@@ -213,30 +213,37 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           }));
           await sb.from("teacher_simulado_results").insert(results);
 
-          // Notify each student (in-app)
-          const notifications = studentList.map((s: any) => ({
-            sender_id: user.id,
-            recipient_id: s.user_id,
-            title: `📋 Novo Simulado do Prof. ${professorName}: ${title || "Simulado"}`,
-            content: `O Prof. ${professorName} disponibilizou o simulado "${title || "Simulado"}" — ${questions_json?.length || total_questions} questões, tempo: ${time_limit_minutes || 60}min.${scheduled_at ? ` Agendado para: ${new Date(scheduled_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}.` : ""} Acesse a aba Proficiência para realizar.`,
-            priority: "important",
-          }));
-          await sb.from("admin_messages").insert(notifications);
+          // Notify each student (in-app) — dedup by title tag
+          const simTitleTag = `Simulado do Prof. ${professorName}: ${title || "Simulado"}`;
+          const allStudentIds = studentList.map((s: any) => s.user_id);
+          const alreadyInApp = await alreadyNotifiedInApp(simTitleTag, allStudentIds);
+          const newInApp = studentList.filter((s: any) => !alreadyInApp.includes(s.user_id));
+          if (newInApp.length > 0) {
+            const notifications = newInApp.map((s: any) => ({
+              sender_id: user.id,
+              recipient_id: s.user_id,
+              title: `📋 Novo ${simTitleTag}`,
+              content: `O Prof. ${professorName} disponibilizou o simulado "${title || "Simulado"}" — ${questions_json?.length || total_questions} questões, tempo: ${time_limit_minutes || 60}min.${scheduled_at ? ` Agendado para: ${new Date(scheduled_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}.` : ""} Acesse a aba Proficiência para realizar.`,
+              priority: "important",
+            }));
+            await sb.from("admin_messages").insert(notifications);
+          }
 
-          // WhatsApp notification for students with phone
+          // WhatsApp notification for students with phone — dedup
           try {
-            const studentIds = studentList.map((s: any) => s.user_id);
             const { data: phoneProfiles } = await sb
               .from("profiles")
               .select("user_id, display_name, phone, whatsapp_opt_out")
-              .in("user_id", studentIds)
+              .in("user_id", allStudentIds)
               .eq("whatsapp_opt_out", false)
               .not("phone", "is", null);
 
             const eligibleStudents = (phoneProfiles || []).filter((p: any) => p.phone && p.phone.length >= 10);
+            const alreadyWA = await alreadyNotifiedWhatsApp(simTitleTag, eligibleStudents.map((p: any) => p.user_id));
+            const newWA = eligibleStudents.filter((p: any) => !alreadyWA.includes(p.user_id));
 
-            if (eligibleStudents.length > 0) {
-              const whatsappMessages = eligibleStudents.map((p: any) => ({
+            if (newWA.length > 0) {
+              const whatsappMessages = newWA.map((p: any) => ({
                 admin_user_id: user.id,
                 target_user_id: p.user_id,
                 message_text: `📋 *Novo Simulado — Prof. ${professorName}*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! O Prof. ${professorName} disponibilizou o simulado "${title || "Simulado"}" com ${questions_json?.length || total_questions} questões (${time_limit_minutes || 60}min).${scheduled_at ? `\n⏰ Agendado: ${new Date(scheduled_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}` : ""}\n\nAcesse a plataforma para realizar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
@@ -245,13 +252,12 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
               }));
               await sb.from("whatsapp_message_log").insert(whatsappMessages);
 
-              // Create execution for the agent
               const { data: exec } = await sb.from("whatsapp_send_executions").insert({
                 admin_user_id: user.id,
-                execution_date: new Date().toISOString().slice(0, 10),
+                execution_date: today,
                 mode: "auto",
                 status: "running",
-                total_items: eligibleStudents.length,
+                total_items: newWA.length,
                 total_sent: 0,
                 total_error: 0,
                 total_skipped: 0,
@@ -263,9 +269,9 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
                   .update({ execution_id: exec.id })
                   .eq("delivery_status", "pending")
                   .is("execution_id", null)
-                  .in("target_user_id", eligibleStudents.map((p: any) => p.user_id));
+                  .in("target_user_id", newWA.map((p: any) => p.user_id));
               }
-              console.log(`WhatsApp: ${eligibleStudents.length} mensagens enfileiradas para simulado ${simulado.id}`);
+              console.log(`WhatsApp: ${newWA.length} mensagens enfileiradas para simulado ${simulado.id}`);
             }
           } catch (whatsappErr) {
             console.error("Erro ao enfileirar WhatsApp (não bloqueante):", whatsappErr);
