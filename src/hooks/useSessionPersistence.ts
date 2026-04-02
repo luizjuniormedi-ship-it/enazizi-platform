@@ -41,7 +41,8 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
       }
       setChecked(true);
       return data as SessionData | null;
-    } catch {
+    } catch (e) {
+      console.warn("[SessionPersistence] checkForSession error:", e);
       setChecked(true);
       return null;
     }
@@ -69,10 +70,19 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
           .single();
         if (data) sessionIdRef.current = data.id;
       }
-    } catch {
-      // silent fail
+    } catch (e) {
+      console.warn("[SessionPersistence] saveSession error:", e);
     }
   }, [user, moduleKey, enabled]);
+
+  // Save NOW (immediate, returns promise)
+  const saveNow = useCallback(async () => {
+    if (!getStateRef.current) return;
+    const state = getStateRef.current();
+    if (state && Object.keys(state).length > 0) {
+      await saveSession(state);
+    }
+  }, [saveSession]);
 
   // Complete session
   const completeSession = useCallback(async () => {
@@ -84,7 +94,9 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
         .eq("id", sessionIdRef.current);
       sessionIdRef.current = null;
       setPendingSession(null);
-    } catch {}
+    } catch (e) {
+      console.warn("[SessionPersistence] completeSession error:", e);
+    }
   }, []);
 
   // Abandon session
@@ -99,7 +111,9 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
         .eq("id", id);
       sessionIdRef.current = null;
       setPendingSession(null);
-    } catch {}
+    } catch (e) {
+      console.warn("[SessionPersistence] abandonSession error:", e);
+    }
   }, [pendingSession]);
 
   // Register getState callback for auto-save
@@ -107,7 +121,7 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
     getStateRef.current = getState;
   }, []);
 
-  // Auto-save interval
+  // Auto-save interval + beforeunload with sendBeacon
   useEffect(() => {
     if (!enabled || !user) return;
 
@@ -121,16 +135,42 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
     }, intervalMs);
 
     const handleBeforeUnload = () => {
-      if (getStateRef.current) {
-        const state = getStateRef.current();
-        if (state && Object.keys(state).length > 0) {
-          // Use sendBeacon for reliability on page close
-          const payload = JSON.stringify({
-            session_data: state,
-            updated_at: new Date().toISOString(),
-          });
-          // Fallback: just save via supabase (may not complete)
-          saveSession(state);
+      if (!getStateRef.current || !sessionIdRef.current) return;
+      const state = getStateRef.current();
+      if (!state || Object.keys(state).length === 0) return;
+
+      // Use sendBeacon with Supabase REST API for reliable save on page close
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      if (supabaseUrl && supabaseKey && sessionIdRef.current) {
+        const url = `${supabaseUrl}/rest/v1/module_sessions?id=eq.${sessionIdRef.current}`;
+        const body = JSON.stringify({
+          session_data: state,
+          updated_at: new Date().toISOString(),
+        });
+        const blob = new Blob([body], { type: "application/json" });
+        try {
+          navigator.sendBeacon(
+            url + `&apikey=${supabaseKey}`,
+            blob
+          );
+        } catch {
+          // sendBeacon not available, try fetch keepalive
+          try {
+            fetch(url, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                "apikey": supabaseKey,
+                "Authorization": `Bearer ${supabaseKey}`,
+                "Prefer": "return=minimal",
+              },
+              body,
+              keepalive: true,
+            }).catch(() => {});
+          } catch {
+            // silent
+          }
         }
       }
     };
@@ -151,6 +191,7 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
     pendingSession,
     checked,
     saveSession,
+    saveNow,
     completeSession,
     abandonSession,
     registerAutoSave,

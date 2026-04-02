@@ -19,7 +19,8 @@ interface SimuladoExamProps {
   timeSeconds: number;
   onFinish: (answers: Record<number, number>, flagged: number[]) => void;
   onAutoSaveState: () => { current: number; selectedAnswers: Record<number, number>; timeLeft: number };
-  initialState?: { current?: number; selectedAnswers?: Record<number, number>; timeLeft?: number };
+  onStateChange?: (state: { current: number; selectedAnswers: Record<number, number>; timeLeft: number; flaggedQuestions: number[]; revealedQuestions: number[] }) => void;
+  initialState?: { current?: number; selectedAnswers?: Record<number, number>; timeLeft?: number; flaggedQuestions?: number[]; revealedQuestions?: number[] };
   mode: SimuladoMode;
 }
 
