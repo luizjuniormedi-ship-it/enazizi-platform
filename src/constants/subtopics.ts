@@ -18,7 +18,7 @@ export const SPECIALTY_SUBTOPICS: Record<string, string[]> = {
   "Cardiologia": ["IAM com Supra de ST", "IAM sem Supra", "Insuficiência Cardíaca", "Arritmias", "Valvopatias", "Hipertensão Arterial", "Endocardite", "Pericardite", "Cardiopatias Congênitas", "Miocardiopatias", "Crise Hipertensiva", "Doença Coronariana"],
   "Dermatologia": ["Dermatoses Infecciosas", "Dermatoses Autoimunes", "Câncer de Pele", "Hanseníase", "Psoríase", "Dermatite Atópica", "Lesões Elementares da Pele", "Piodermites", "Dermatoviroses", "Dermatozoonoses"],
   "Endocrinologia": ["Diabetes Mellitus", "Cetoacidose Diabética", "Tireoidopatias", "Síndrome de Cushing", "Insuficiência Adrenal", "Distúrbios da Paratireoide", "Obesidade"],
-  "Gastroenterologia": ["Doença do Refluxo", "Úlcera Péptica", "Doença Inflamatória Intestinal", "Hepatites Virais", "Cirrose Hepática", "Pancreatite", "Doença Celíaca", "Hemorragia Digestiva"],
+  "Gastroenterologia": ["Doença do Refluxo", "Úlcera Péptica", "Doença Inflamatória Intestinal", "Hepatites Virais", "Cirrose Hepática", "Pancreatite", "Doença Celíaca", "Hemorragia Digestiva", "Distúrbios Motores do Esôfago", "Dispepsia e Gastrite"],
   "Hematologia": ["Anemias", "Leucemias", "Linfomas", "Coagulopatias", "Trombocitopenias", "Hemoglobinopatias", "Distúrbios da Hemostasia"],
   "Infectologia": ["HIV/AIDS", "Tuberculose", "Meningites", "Sepse", "Infecções Oportunistas", "Dengue", "Leptospirose", "Hepatites", "COVID-19", "Endocardite Infecciosa"],
   "Nefrologia": ["Insuficiência Renal Aguda", "Doença Renal Crônica", "Glomerulopatias", "Distúrbios Hidroeletrolíticos", "Distúrbios Ácido-Base", "Síndrome Nefrótica", "Síndrome Nefrítica"],
