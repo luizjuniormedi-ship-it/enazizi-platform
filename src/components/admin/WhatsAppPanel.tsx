@@ -359,28 +359,13 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
   const handleStartDesktopExecution = async () => {
     setExecutionLoading(true);
     try {
-      let data = await callQueue("start_execution");
-
-      if (data?.error && data.execution_id) {
-        const currentExecution = await callQueue("execution_status", { execution_id: data.execution_id });
-        const isEmptyActiveExecution = currentExecution?.execution && ["running", "paused"].includes(currentExecution.execution.status) && currentExecution.execution.total_items === 0;
-
-        if (isEmptyActiveExecution) {
-          await callQueue("stop_execution", { execution_id: currentExecution.execution.id });
-          setActiveExecution(null);
-          setExecutionItems([]);
-          data = await callQueue("start_execution");
-        } else if (currentExecution?.execution) {
-          setActiveExecution(currentExecution.execution);
-          setExecutionItems(currentExecution.items || []);
-        }
-      }
+      const data = await callQueue("start_execution");
 
       if (data?.error) {
         toast({ title: "Erro", description: data.error, variant: "destructive" });
-        if (data.execution_id) await fetchExecutionStatus(data.execution_id);
       } else {
-        toast({ title: "Execução iniciada!", description: `${data.total_items} itens na fila.` });
+        const label = data.reused ? "Execução reutilizada!" : "Execução iniciada!";
+        toast({ title: label, description: `${data.total_items} itens na fila.` });
         await fetchExecutionStatus(data.execution_id);
       }
     } catch (e) {
