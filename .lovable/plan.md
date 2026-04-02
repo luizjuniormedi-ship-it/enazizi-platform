@@ -1,60 +1,71 @@
 
-# Sincronizar as mudanças já feitas em web, PWA e mobile
 
-## Diagnóstico confirmado no código
-Eu revisei os arquivos e as mudanças principais já estão no source:
-- `src/pages/NotFound.tsx` já tem o botão para `https://enazizi.com`
-- `src/pages/Login.tsx`, `src/pages/Register.tsx`, `src/components/auth/ProtectedRoute.tsx` e `src/components/FaculdadeCombobox.tsx` já têm os ajustes mobile
-- `src/lib/profileValidation.ts` já invalida faculdade fora da lista oficial
-- `src/pages/Dashboard.tsx` já não renderiza `DashboardWarnings` nem `AdminSystemAlerts`
+# Atualização Automática da Extensão Chrome
 
-Ou seja: o problema não parece ser “faltou editar”. O problema parece ser que parte dos acessos ainda está carregando uma versão antiga.
+## Limitação técnica
 
-## Causa raiz mais provável
-Hoje o app usa PWA/service worker em produção (`src/main.tsx`) e o app mobile abre a URL web (`capacitor.config.ts` aponta para `https://enazizi.com`). Isso faz um cache antigo afetar tudo ao mesmo tempo:
+Extensões instaladas como "unpacked" (fora da Chrome Web Store) **não suportam auto-update nativo do Chrome**. Só extensões publicadas na Web Store recebem updates automáticos.
+
+## Solução viável: Verificação de versão + download assistido
+
+A extensão consulta periodicamente o servidor ENAZIZI para verificar se existe uma versão mais nova. Se sim, exibe um alerta e oferece o download do ZIP atualizado com um clique.
 
 ```text
-preview -> código novo
-produção / PWA / app mobile -> service worker/cache antigo -> interface antiga
+Extensão (background.js)          ENAZIZI (public/)
+┌─────────────────────┐           ┌──────────────────┐
+│ A cada 1h, fetch    │──GET────→ │ /extension-      │
+│ /extension-meta.json│           │  meta.json        │
+│                     │←─────────→│ { version: "1.2" }│
+│ Se version > local  │           │                   │
+│ → mostra badge 🔴   │           │ /enazizi-whatsapp-│
+│ → popup: "Atualizar"│           │  extension.zip    │
+│ → download ZIP      │           └──────────────────┘
+└─────────────────────┘
 ```
 
-Além disso, o link antigo `study-buddy-ai-560.lovable.app` não deve ser usado como referência de validação desse projeto.
+## Implementação
 
-## Plano de implementação
-1. Corrigir a camada de atualização em `src/main.tsx`
-   - adicionar um identificador de release (`APP_RELEASE`)
-   - quando a release mudar, desregistrar service workers antigos
-   - limpar `CacheStorage`
-   - gravar a release nova no `localStorage`
-   - forçar um único reload para baixar os assets novos
+### 1. Arquivo de metadados — `public/extension-meta.json`
+```json
+{
+  "version": "1.0.0",
+  "download_url": "/enazizi-whatsapp-extension.zip",
+  "changelog": "Versão inicial"
+}
+```
+Atualizado a cada nova versão da extensão.
 
-2. Endurecer a estratégia de atualização PWA
-   - manter preview sem service worker
-   - em produção, registrar novamente o PWA só depois da limpeza
-   - se necessário, desativar o service worker por 1 publicação para quebrar de vez o ciclo de cache velho
+### 2. Lógica no `background.js` da extensão
+- A cada 1 hora, faz `fetch("https://enazizi.com/extension-meta.json")`
+- Compara `remote.version` com `chrome.runtime.getManifest().version`
+- Se versão remota for maior:
+  - Mostra badge vermelho no ícone da extensão
+  - No popup, exibe "Nova versão disponível — Baixar agora"
+  - Botão baixa o ZIP diretamente
 
-3. Limpar código morto dos alertas antigos
-   - remover de vez `src/components/dashboard/DashboardWarnings.tsx`
-   - remover de vez `src/components/admin/AdminSystemAlerts.tsx`
-   - assim evitamos confusão futura entre “arquivo existente” e “arquivo realmente em uso”
+### 3. Popup da extensão (`popup.html`)
+- Exibe versão atual
+- Se desatualizada: botão "Baixar atualização" + instruções rápidas
+- Instruções: "Descompacte o ZIP, vá em chrome://extensions, clique Recarregar"
 
-4. Adicionar rastreabilidade de versão
-   - expor a release atual em log/console no boot
-   - opcionalmente mostrar essa versão no admin
-   - isso permite confirmar rapidamente se cada dispositivo está na versão certa
+### 4. Painel admin ENAZIZI
+- No `WhatsAppPanel.tsx`, detectar versão da extensão via postMessage
+- Se desatualizada, mostrar banner: "Extensão desatualizada — baixe a nova versão"
 
-5. Publicar novamente a versão limpa e validar no acesso oficial
-   - validar usando `enazizi.com`
-   - não usar o link antigo para testar
-   - conferir especificamente: dashboard, 404, login, cadastro e tela de completar cadastro
+## Arquivos
 
-## Resultado esperado
-Depois dessa correção:
-- o popup antigo de “Saúde do Sistema” para de reaparecer
-- o alerta antigo “Você ainda não estudou hoje” não volta
-- a 404 mostra o link novo
-- login/cadastro/mobile passam a refletir o que já está no código
-- web, PWA e app mobile passam a carregar a mesma versão real
+| Arquivo | Ação |
+|---------|------|
+| `public/extension-meta.json` | Criar — metadados de versão |
+| `extension/background.js` | Adicionar verificação periódica de versão |
+| `extension/popup.html` | Adicionar indicador de atualização disponível |
+| `src/components/admin/WhatsAppPanel.tsx` | Adicionar detecção de versão desatualizada |
 
-## Detalhe técnico
-O ponto decisivo é este: como `Dashboard.tsx` já não importa os componentes removidos, se eles ainda aparecem para o usuário então ele não está vendo o bundle atual. Por isso a correção precisa ser feita na inicialização/cache/publicação, e não reeditando pela terceira vez as mesmas telas.
+## Resultado
+
+O admin nunca ficará com uma versão velha sem saber. A cada hora a extensão verifica, e se houver update, avisa com destaque visual tanto na extensão quanto no painel admin.
+
+## Nota sobre Chrome Web Store
+
+Se no futuro quiser update 100% automático (sem nenhuma ação do admin), o caminho é publicar na Chrome Web Store. Isso requer uma conta de desenvolvedor ($5 uma vez) e revisão pela Google. Posso preparar isso como próximo passo se quiser.
+
