@@ -426,11 +426,19 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           const alreadyInApp = await alreadyNotifiedInApp(simTitleTag, allStudentIds);
           const newInApp = studentList.filter((s: any) => !alreadyInApp.includes(s.user_id));
           if (newInApp.length > 0) {
+            // Fetch student names for personalized in-app messages
+            const { data: inAppProfiles } = await sb.from("profiles")
+              .select("user_id, display_name")
+              .in("user_id", newInApp.map((s: any) => s.user_id));
+            const nameMap: Record<string, string> = {};
+            (inAppProfiles || []).forEach((p: any) => { nameMap[p.user_id] = (p.display_name || "").split(" ")[0] || "aluno(a)"; });
+
+            const scheduledStr = scheduled_at ? `\n⏰ Agendado: ${new Date(scheduled_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}` : "";
             const notifications = newInApp.map((s: any) => ({
               sender_id: user.id,
               recipient_id: s.user_id,
               title: `📋 Novo ${simTitleTag}`,
-              content: `O Prof. ${professorName} disponibilizou o simulado "${title || "Simulado"}" — ${questions_json?.length || total_questions} questões, tempo: ${time_limit_minutes || 60}min.${scheduled_at ? ` Agendado para: ${new Date(scheduled_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}.` : ""} Acesse a aba Mais Ferramentas → Proficiência para realizar.`,
+              content: `📋 Olá ${nameMap[s.user_id] || "aluno(a)"}! O Prof. ${professorName} disponibilizou o simulado "${title || "Simulado"}" com ${questions_json?.length || total_questions} questões (${time_limit_minutes || 60}min).${scheduledStr}\n👉 Acesse Mais Ferramentas → Proficiência para realizar!\n🔗 https://enazizi.com`,
               priority: "important",
             }));
             await sb.from("admin_messages").insert(notifications);
