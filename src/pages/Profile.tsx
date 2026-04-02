@@ -346,7 +346,18 @@ const Profile = () => {
           <p className="text-xs text-muted-foreground">Seu número para receber lembretes de estudo.</p>
         </div>
 
-        <Button onClick={handleSave} disabled={saving} className="w-full">
+        {/* BI Diário via WhatsApp */}
+        <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-secondary/50">
+          <div className="flex items-center gap-3">
+            <MessageSquare className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-sm font-medium">Resumo diário via WhatsApp</p>
+              <p className="text-xs text-muted-foreground">Receba seu BI e programação do dia seguinte às 20h.</p>
+            </div>
+          </div>
+          <Switch checked={whatsappDailyBi} onCheckedChange={setWhatsappDailyBi} />
+        </div>
+
           {saving ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
