@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { MessageSquare, Send, Copy, Loader2, RefreshCw, Phone, AlertTriangle, CheckCircle, PlayCircle, StopCircle, Download, Plug, PlugZap, Monitor, History, PauseCircle, SkipForward, RotateCcw, Clock, Eye, PenLine } from "lucide-react";
+import { MessageSquare, Send, Copy, Loader2, RefreshCw, Phone, AlertTriangle, CheckCircle, PlayCircle, StopCircle, Download, Plug, PlugZap, Monitor, History, PauseCircle, SkipForward, RotateCcw, Clock, Eye, PenLine, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -403,6 +403,33 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
     setExecutionItems([]);
   };
 
+  const handleDeleteGenerated = async () => {
+    if (!window.confirm("Excluir todas as mensagens pendentes do dia? Esta ação não pode ser desfeita.")) return;
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const { error } = await supabase
+        .from("whatsapp_message_log")
+        .delete()
+        .eq("delivery_status", "pending")
+        .gte("created_at", `${today}T00:00:00`)
+        .lt("created_at", `${today}T23:59:59.999`);
+      if (error) throw error;
+
+      if (activeExecution) {
+        await callQueue("stop_execution", { execution_id: activeExecution.id });
+        setActiveExecution(null);
+        setExecutionItems([]);
+      }
+
+      setStudents([]);
+      setEditedMessages({});
+      setSentUsers(new Set());
+      toast({ title: "Mensagens excluídas", description: "Todas as mensagens pendentes do dia foram removidas." });
+    } catch (e) {
+      toast({ title: "Erro ao excluir", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    }
+  };
+
   const handleReprocessErrors = async () => {
     if (!activeExecution) return;
     const data = await callQueue("reprocess_errors", { execution_id: activeExecution.id });
@@ -456,10 +483,17 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
               <p className="text-sm text-muted-foreground">Gere mensagens únicas por IA e envie todas com um clique.</p>
               {optOutCount > 0 && <Badge variant="secondary" className="text-xs mt-1">🚫 {optOutCount} aluno(s) optaram por não receber</Badge>}
             </div>
-            <Button onClick={generateMessages} disabled={loading || bulkSending || (useCustomMessage && !customMessage.trim())} className="gap-1.5">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              Gerar mensagens do dia
-            </Button>
+            <div className="flex items-center gap-2">
+              {students.length > 0 && (
+                <Button variant="destructive" onClick={handleDeleteGenerated} disabled={loading || bulkSending} className="gap-1.5">
+                  <Trash2 className="h-4 w-4" /> Excluir pendentes
+                </Button>
+              )}
+              <Button onClick={generateMessages} disabled={loading || bulkSending || (useCustomMessage && !customMessage.trim())} className="gap-1.5">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                Gerar mensagens do dia
+              </Button>
+            </div>
           </div>
 
           {/* Custom message toggle */}
