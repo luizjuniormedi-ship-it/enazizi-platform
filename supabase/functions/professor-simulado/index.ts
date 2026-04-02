@@ -237,7 +237,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           correct_index: q.correct_index ?? 0,
           explanation: q.explanation || "",
           topic: q.topic || topics[0],
-          block: topics.find((t: string) => String(q.topic || "").toLowerCase().includes(t.toLowerCase())) || topics[0],
+          block: baseTopics.find((t: string) => String(q.topic || "").toLowerCase().includes(t.toLowerCase())) || baseTopics[0] || topics[0],
           difficulty_level: difficulty || "intermediario",
         }));
 
