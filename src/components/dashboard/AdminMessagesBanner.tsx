@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Mail, AlertTriangle, Bell } from "lucide-react";
+import { Mail, AlertTriangle, Bell, GraduationCap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
