@@ -1,42 +1,33 @@
 
 
-# Corrigir Horário do Cron do BI Diário WhatsApp (20h → 18h BRT)
+# Enviar BI Diário a Todos os Alunos (exceto opt-out)
 
 ## Problema
-O cron job `daily-bi-whatsapp-20h` está agendado para `0 23 * * *` (23:00 UTC = **20:00 BRT**), mas deveria disparar às **18:00 BRT** (21:00 UTC).
-
-Além disso, a função nunca executou (sem logs), possivelmente porque foi deployada depois do último horário agendado.
+A função `daily-bi-whatsapp` (linha 25) filtra apenas usuários com `whatsapp_daily_bi = true`. Isso exige que o aluno ative manualmente o recebimento. O comportamento correto é: **todos recebem por padrão**, exceto quem digitou SAIR (`whatsapp_opt_out = true`).
 
 ## Solução
+Remover o filtro `.eq("whatsapp_daily_bi", true)` da query de seleção de usuários. Manter apenas:
+- `whatsapp_opt_out = false`
+- `phone IS NOT NULL` e `phone != ''`
 
-1. **Remover o cron antigo** (`daily-bi-whatsapp-20h`)
-2. **Criar novo cron** com schedule `0 21 * * *` (21:00 UTC = 18:00 BRT) e nome `daily-bi-whatsapp-18h`
-3. **Testar a edge function** manualmente para garantir que funciona
+### Mudança em `supabase/functions/daily-bi-whatsapp/index.ts`
 
-## Detalhes Técnicos
-
-Executar via SQL:
-```sql
-SELECT cron.unschedule('daily-bi-whatsapp-20h');
-
-SELECT cron.schedule(
-  'daily-bi-whatsapp-18h',
-  '0 21 * * *',
-  $$
-  SELECT net.http_post(
-    url:='https://qszsyskumcmuknumwxtk.supabase.co/functions/v1/daily-bi-whatsapp',
-    headers:='{"Content-Type": "application/json", "Authorization": "Bearer <anon_key>"}'::jsonb,
-    body:='{}'::jsonb
-  ) AS request_id;
-  $$
-);
+**Linha 25** — Remover:
+```typescript
+.eq("whatsapp_daily_bi", true)
 ```
 
-Depois, invocar a função manualmente para validar.
+A query ficará:
+```typescript
+const { data: users, error: usersErr } = await supabase
+  .from("profiles")
+  .select("user_id, display_name, phone")
+  .eq("whatsapp_opt_out", false)
+  .not("phone", "is", null)
+  .neq("phone", "");
+```
 
-| Ação | Detalhe |
-|------|---------|
-| Remover cron antigo | `daily-bi-whatsapp-20h` (23h UTC / 20h BRT) |
-| Criar cron novo | `daily-bi-whatsapp-18h` (21h UTC / 18h BRT) |
-| Testar função | Invocar manualmente e verificar logs |
+| Arquivo | Mudança |
+|---------|---------|
+| `supabase/functions/daily-bi-whatsapp/index.ts` | Remover filtro `whatsapp_daily_bi = true` |
 
