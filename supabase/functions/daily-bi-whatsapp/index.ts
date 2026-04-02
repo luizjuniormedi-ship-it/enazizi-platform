@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
             const done = simResults.filter((r: any) => r.status === "completed");
             const pending = simResults.filter((r: any) => r.status === "pending").length;
             const avgScore = done.length > 0
-              ? Math.round(done.reduce((sum: number, r: any) => sum + ((r.score || 0) / (r.total_questions || 1) * 100), 0) / done.length)
+              ? Math.min(100, Math.round(done.reduce((sum: number, r: any) => sum + (r.score || 0), 0) / done.length))
               : 0;
             parts.push(`- Simulados: ${done.length} feito(s)${done.length > 0 ? ` (média ${avgScore}%)` : ""}, ${pending} pendente(s)`);
           }
