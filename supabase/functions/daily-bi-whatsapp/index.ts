@@ -178,6 +178,11 @@ Deno.serve(async (req) => {
 
         const prompt = `Gere uma mensagem WhatsApp curta e motivacional (máx 600 chars) em português brasileiro para o aluno ${nome} com este resumo do dia e programação de amanhã. Use emojis. Inclua TODOS os dados abaixo. Não invente dados.
 
+REGRAS IMPORTANTES:
+- NUNCA mostre percentuais acima de 100%. Valores são de 0% a 100%.
+- NÃO invente dados ou métricas que não foram fornecidos.
+- NÃO calcule "probabilidade de aprovação" — apenas relate os dados fornecidos.
+
 RESUMO DE HOJE:
 - Questões respondidas: ${totalQ}
 - Acurácia: ${accuracy}%
