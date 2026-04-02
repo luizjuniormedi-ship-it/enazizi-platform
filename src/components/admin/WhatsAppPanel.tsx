@@ -237,7 +237,7 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
         toast({ title: "Mensagens geradas!", description: `${total} mensagem(ns) prontas. ${alreadySent > 0 ? `${alreadySent} já receberam hoje.` : ""}` });
 
         const { data: { user } } = await supabase.auth.getUser();
-        const queueCandidates = generatedStudents.filter((s: Student) => !s.already_sent_today && s.phone);
+        const queueCandidates = finalStudents.filter((s: Student) => !s.already_sent_today && s.phone);
 
         if (user && queueCandidates.length > 0) {
           const rows = queueCandidates.map((s: Student) => ({
