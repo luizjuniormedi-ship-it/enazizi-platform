@@ -182,27 +182,37 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || "Erro ao gerar mensagens");
-      setStudents(data.students || []);
-      const total = (data.students || []).length;
-      const alreadySent = (data.students || []).filter((s: Student) => s.already_sent_today).length;
+
+      const generatedStudents = data.students || [];
+      setStudents(generatedStudents);
+      const total = generatedStudents.length;
+      const alreadySent = generatedStudents.filter((s: Student) => s.already_sent_today).length;
+
       if (total === 0) {
         toast({ title: "Nenhum aluno", description: data.message || "Nenhum aluno com telefone cadastrado." });
       } else {
         toast({ title: "Mensagens geradas!", description: `${total} mensagem(ns) prontas. ${alreadySent > 0 ? `${alreadySent} já receberam hoje.` : ""}` });
 
-        // Insert pending messages into whatsapp_message_log for desktop execution
         const { data: { user } } = await supabase.auth.getUser();
-        const newStudents = (data.students || []).filter((s: Student) => !s.already_sent_today && s.phone);
-        if (user && newStudents.length > 0) {
-          const rows = newStudents.map((s: Student) => ({
+        const queueCandidates = generatedStudents.filter((s: Student) => !s.already_sent_today && s.phone);
+
+        if (user && queueCandidates.length > 0) {
+          const rows = queueCandidates.map((s: Student) => ({
             admin_user_id: user.id,
             target_user_id: s.user_id,
             message_text: s.message,
             delivery_status: "pending",
             execution_mode: "desktop",
           }));
-          await supabase.from("whatsapp_message_log").insert(rows as any);
-          toast({ title: "Fila criada", description: `${newStudents.length} mensagens inseridas na fila desktop.` });
+
+          const { error: insertError } = await supabase
+            .from("whatsapp_message_log")
+            .insert(rows as any);
+
+          if (insertError) throw insertError;
+
+          toast({ title: "Fila criada", description: `${queueCandidates.length} mensagens inseridas na fila desktop.` });
+          await handleStartDesktopExecution();
         }
       }
     } catch (e) {
@@ -318,7 +328,23 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
   const handleStartDesktopExecution = async () => {
     setExecutionLoading(true);
     try {
-      const data = await callQueue("start_execution");
+      let data = await callQueue("start_execution");
+
+      if (data?.error && data.execution_id) {
+        const currentExecution = await callQueue("execution_status", { execution_id: data.execution_id });
+        const isEmptyActiveExecution = currentExecution?.execution && ["running", "paused"].includes(currentExecution.execution.status) && currentExecution.execution.total_items === 0;
+
+        if (isEmptyActiveExecution) {
+          await callQueue("stop_execution", { execution_id: currentExecution.execution.id });
+          setActiveExecution(null);
+          setExecutionItems([]);
+          data = await callQueue("start_execution");
+        } else if (currentExecution?.execution) {
+          setActiveExecution(currentExecution.execution);
+          setExecutionItems(currentExecution.items || []);
+        }
+      }
+
       if (data?.error) {
         toast({ title: "Erro", description: data.error, variant: "destructive" });
         if (data.execution_id) await fetchExecutionStatus(data.execution_id);
