@@ -14,9 +14,9 @@ const errorMessages: Record<string, string> = {
 };
 
 const stats = [
-  { icon: Users, value: "147+", label: "Alunos" },
+  { icon: Users, value: "160+", label: "Alunos" },
   { icon: BookOpen, value: "6.700+", label: "Questões" },
-  { icon: Trophy, value: "5.700+", label: "Flashcards" },
+  { icon: Trophy, value: "6.100+", label: "Flashcards" },
   { icon: Brain, value: "8", label: "Agentes IA" },
 ];
 
