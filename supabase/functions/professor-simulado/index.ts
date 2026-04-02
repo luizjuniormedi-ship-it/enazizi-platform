@@ -39,12 +39,16 @@ serve(async (req) => {
     const { action, ...params } = await req.json();
     const ok = (data: unknown) => new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    // Get professor's faculdade for scoping
+    // Get professor's faculdade and name for scoping and notifications
     const isAdmin = roleData.some((r: any) => r.role === "admin");
     let professorFaculdade: string | null = null;
-    if (!isAdmin) {
-      const { data: profProfile } = await sb.from("profiles").select("faculdade").eq("user_id", user.id).single();
-      professorFaculdade = profProfile?.faculdade || null;
+    let professorName: string = "seu professor";
+    {
+      const { data: profProfile } = await sb.from("profiles").select("faculdade, display_name").eq("user_id", user.id).single();
+      if (profProfile) {
+        professorFaculdade = profProfile.faculdade || null;
+        professorName = (profProfile.display_name || "").split(" ")[0] || "seu professor";
+      }
     }
     switch (action) {
       case "generate_questions": {
