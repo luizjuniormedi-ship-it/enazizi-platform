@@ -14,11 +14,11 @@ export const SPECIALTY_SUBTOPICS: Record<string, string[]> = {
   "Semiologia": ["Propedêutica Cardiovascular", "Propedêutica Respiratória", "Propedêutica Abdominal", "Exame Neurológico", "Anamnese"],
 
   // Ciclo Clínico
-  "Angiologia": ["Doença Arterial Periférica", "Trombose Venosa Profunda", "Aneurisma de Aorta", "Varizes", "Insuficiência Venosa"],
-  "Cardiologia": ["IAM com Supra de ST", "IAM sem Supra", "Insuficiência Cardíaca", "Arritmias", "Valvopatias", "Hipertensão Arterial", "Endocardite", "Pericardite", "Cardiopatias Congênitas", "Miocardiopatias"],
-  "Dermatologia": ["Dermatoses Infecciosas", "Dermatoses Autoimunes", "Câncer de Pele", "Hanseníase", "Psoríase", "Dermatite Atópica"],
+  "Angiologia": ["Doença Arterial Periférica", "Trombose Venosa Profunda", "Aneurisma de Aorta", "Varizes", "Insuficiência Venosa", "Linfangite e Erisipela"],
+  "Cardiologia": ["IAM com Supra de ST", "IAM sem Supra", "Insuficiência Cardíaca", "Arritmias", "Valvopatias", "Hipertensão Arterial", "Endocardite", "Pericardite", "Cardiopatias Congênitas", "Miocardiopatias", "Crise Hipertensiva", "Doença Coronariana"],
+  "Dermatologia": ["Dermatoses Infecciosas", "Dermatoses Autoimunes", "Câncer de Pele", "Hanseníase", "Psoríase", "Dermatite Atópica", "Lesões Elementares da Pele", "Piodermites", "Dermatoviroses", "Dermatozoonoses"],
   "Endocrinologia": ["Diabetes Mellitus", "Cetoacidose Diabética", "Tireoidopatias", "Síndrome de Cushing", "Insuficiência Adrenal", "Distúrbios da Paratireoide", "Obesidade"],
-  "Gastroenterologia": ["Doença do Refluxo", "Úlcera Péptica", "Doença Inflamatória Intestinal", "Hepatites Virais", "Cirrose Hepática", "Pancreatite", "Doença Celíaca", "Hemorragia Digestiva"],
+  "Gastroenterologia": ["Doença do Refluxo", "Úlcera Péptica", "Doença Inflamatória Intestinal", "Hepatites Virais", "Cirrose Hepática", "Pancreatite", "Doença Celíaca", "Hemorragia Digestiva", "Distúrbios Motores do Esôfago", "Dispepsia e Gastrite"],
   "Hematologia": ["Anemias", "Leucemias", "Linfomas", "Coagulopatias", "Trombocitopenias", "Hemoglobinopatias", "Distúrbios da Hemostasia"],
   "Infectologia": ["HIV/AIDS", "Tuberculose", "Meningites", "Sepse", "Infecções Oportunistas", "Dengue", "Leptospirose", "Hepatites", "COVID-19", "Endocardite Infecciosa"],
   "Nefrologia": ["Insuficiência Renal Aguda", "Doença Renal Crônica", "Glomerulopatias", "Distúrbios Hidroeletrolíticos", "Distúrbios Ácido-Base", "Síndrome Nefrótica", "Síndrome Nefrítica"],
@@ -27,7 +27,7 @@ export const SPECIALTY_SUBTOPICS: Record<string, string[]> = {
   "Oncologia": ["Câncer de Mama", "Câncer de Pulmão", "Câncer Colorretal", "Câncer Gástrico", "Estadiamento TNM", "Síndromes Paraneoplásicas", "Neutropenia Febril"],
   "Ortopedia": ["Fraturas", "Luxações", "Osteomielite", "Artrose", "Lombalgia", "Trauma Musculoesquelético", "Lesões Ligamentares"],
   "Otorrinolaringologia": ["Otite Média", "Sinusite", "Faringite", "Tonsilite", "Vertigem", "Perda Auditiva"],
-  "Pneumologia": ["Asma", "DPOC", "Pneumonia", "Tuberculose Pulmonar", "Tromboembolismo Pulmonar", "Derrame Pleural", "Câncer de Pulmão", "SDRA", "Fibrose Pulmonar"],
+  "Pneumologia": ["Asma", "DPOC", "Pneumonia", "Tuberculose Pulmonar", "Tromboembolismo Pulmonar", "Derrame Pleural", "Câncer de Pulmão", "SDRA", "Fibrose Pulmonar", "Propedêutica Respiratória", "Micoses Pulmonares"],
   "Psiquiatria": ["Depressão", "Transtorno Bipolar", "Esquizofrenia", "Transtornos de Ansiedade", "TOC", "TEPT", "Dependência Química", "Emergências Psiquiátricas"],
   "Reumatologia": ["Artrite Reumatoide", "Lúpus Eritematoso Sistêmico", "Espondiloartrites", "Gota", "Vasculites", "Esclerodermia", "Fibromialgia"],
   "Urologia": ["Litíase Renal", "Hiperplasia Prostática", "Câncer de Próstata", "Infecção Urinária", "Trauma Urológico", "Incontinência Urinária"],
@@ -37,6 +37,6 @@ export const SPECIALTY_SUBTOPICS: Record<string, string[]> = {
   "Ginecologia e Obstetrícia": ["Pré-eclâmpsia", "Eclâmpsia", "Pré-natal", "Trabalho de Parto", "Hemorragias da Gestação", "Infecções na Gestação", "Câncer de Colo", "Endometriose", "SOP", "Climatério", "Placenta Prévia", "DPP"],
   "Medicina de Emergência": ["PCR e RCP", "Choque", "Intoxicações", "Anafilaxia", "Trauma", "Emergências Hipertensivas", "Cetoacidose Diabética", "Status Epiléptico"],
   "Medicina Preventiva": ["Epidemiologia", "Vigilância em Saúde", "SUS", "Atenção Primária", "Vacinação", "Saúde do Trabalhador", "Bioestatística", "Estudos Epidemiológicos"],
-  "Pediatria": ["Neonatologia", "Aleitamento Materno", "Crescimento e Desenvolvimento", "Infecções na Infância", "Asma Infantil", "Bronquiolite", "Doenças Exantemáticas", "Desnutrição", "Imunização"],
+  "Pediatria": ["Neonatologia", "Aleitamento Materno", "Crescimento e Desenvolvimento", "Infecções na Infância", "Asma Infantil", "Bronquiolite", "Doenças Exantemáticas", "Desnutrição", "Imunização", "IVAS", "Pneumonia na Criança", "ITU na Criança", "Tuberculose na Criança", "Piodermites na Criança"],
   "Terapia Intensiva": ["Ventilação Mecânica", "Sepse e Choque Séptico", "Distúrbios Hidroeletrolíticos", "Sedação e Analgesia", "Monitorização Hemodinâmica", "SDRA", "Nutrição Enteral e Parenteral"],
 };

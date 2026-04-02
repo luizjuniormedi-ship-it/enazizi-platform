@@ -3,12 +3,12 @@ export function mapTopicToSpecialty(topic: string): string | null {
   if (!topic) return null;
   const t = topic.toLowerCase();
   const map: [string[], string][] = [
-    [["angiolog", "vascular", "varizes", "trombose venosa", "insuficiência venosa", "aneurisma de aorta", "doença arterial periférica", "claudicação", "isquemia de membro", "pé diabético", "linfedema", "fístula arteriovenosa", "endarterectomia", "safena", "doppler vascular"], "Angiologia"],
+    [["angiolog", "vascular", "varizes", "trombose venosa", "insuficiência venosa", "aneurisma de aorta", "doença arterial periférica", "claudicação", "isquemia de membro", "pé diabético", "linfedema", "fístula arteriovenosa", "endarterectomia", "safena", "doppler vascular", "linfangite", "erisipela"], "Angiologia"],
     [["cardio", "coração", "iam", "arritmia", "hipertensão", "insuficiência cardíaca", "valv"], "Cardiologia"],
-    [["pneumo", "pulmão", "asma", "dpoc", "pneumonia", "tuberculose", "respirat"], "Pneumologia"],
+    [["pneumo", "pulmão", "asma", "dpoc", "pneumonia", "tuberculose", "respirat", "micose pulmonar"], "Pneumologia"],
     [["neuro", "avc", "epilepsia", "cefaleia", "meningite", "parkinson", "alzheimer"], "Neurologia"],
     [["endocrino", "diabetes", "tireoide", "hipotireoid", "hipertireoid", "adrenal", "hipófise"], "Endocrinologia"],
-    [["gastro", "fígado", "hepat", "intestin", "esôfago", "pancreat", "colite", "crohn"], "Gastroenterologia"],
+    [["gastro", "fígado", "hepat", "intestin", "esôfago", "pancreat", "colite", "crohn", "dispepsia", "distúrbio motor"], "Gastroenterologia"],
     [["nefro", "rim", "renal", "diálise", "glomerul", "nefrit"], "Nefrologia"],
     [["infecto", "hiv", "aids", "sepse", "dengue", "malária", "antibiótico", "parasit"], "Infectologia"],
     [["hemato", "anemia", "leucemia", "linfoma", "coagul", "plaqueta"], "Hematologia"],
@@ -17,7 +17,7 @@ export function mapTopicToSpecialty(topic: string): string | null {
     [["gineco", "obstet", "gravidez", "parto", "gestação", "pré-natal", "útero", "ovário"], "Ginecologia e Obstetrícia"],
     [["cirurg", "apendicite", "colecist", "hérnia", "abdome agudo", "trauma"], "Cirurgia"],
     [["psiqui", "depressão", "ansiedade", "esquizofrenia", "bipolar", "psicose"], "Psiquiatria"],
-    [["dermato", "pele", "dermat", "psoríase", "melanoma"], "Dermatologia"],
+    [["dermato", "pele", "dermat", "psoríase", "melanoma", "piodermite", "dermatozoonose", "dermatovirose", "lesão elementar", "lesões elementares"], "Dermatologia"],
     [["oftalmo", "olho", "glaucoma", "catarata", "retina"], "Oftalmologia"],
     [["otorrino", "ouvido", "nariz", "garganta", "sinusite", "otite"], "Otorrinolaringologia"],
     [["preventiva", "epidemio", "saúde pública", "sus", "atenção primária", "vacina"], "Medicina Preventiva"],
