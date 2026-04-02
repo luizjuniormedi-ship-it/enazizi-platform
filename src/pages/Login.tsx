@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Brain, Mail, Lock, BookOpen, Trophy, Sparkles, GraduationCap, AlertTriangle, Calendar, Users, FlaskConical, Smartphone, Monitor, Globe, MessageCircle } from "lucide-react";
+import { Brain, Mail, Lock, BookOpen, Trophy, Sparkles, GraduationCap, AlertTriangle, Calendar, Users, FlaskConical, Smartphone, Monitor, Globe, MessageCircle, Star, Quote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
@@ -35,12 +35,19 @@ const features = [
   { icon: Globe, label: "Acesso web em qualquer navegador" },
 ];
 
+interface Testimonial {
+  feedback_text: string;
+  avg_rating: number;
+  display_name: string;
+}
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [dynamicStats, setDynamicStats] = useState({
     alunos: "—",
     questoes: "—",
@@ -51,21 +58,27 @@ const Login = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchData = async () => {
       try {
-        const { data } = await supabase.rpc("get_login_stats").maybeSingle();
-        if (data) {
+        const [statsRes, testimonialsRes] = await Promise.all([
+          supabase.rpc("get_login_stats").maybeSingle(),
+          supabase.rpc("get_login_testimonials"),
+        ]);
+        if (statsRes.data) {
           setDynamicStats({
-            alunos: formatCount(Number(data.alunos)),
-            questoes: formatCount(Number(data.questoes)),
-            flashcards: formatCount(Number(data.flashcards)),
+            alunos: formatCount(Number(statsRes.data.alunos)),
+            questoes: formatCount(Number(statsRes.data.questoes)),
+            flashcards: formatCount(Number(statsRes.data.flashcards)),
           });
         }
+        if (testimonialsRes.data && Array.isArray(testimonialsRes.data)) {
+          setTestimonials(testimonialsRes.data as Testimonial[]);
+        }
       } catch {
-        // keep "—" on error
+        // keep defaults on error
       }
     };
-    fetchStats();
+    fetchData();
   }, []);
 
   const stats = [
@@ -132,7 +145,32 @@ const Login = () => {
               <p className="text-[10px] lg:text-xs text-muted-foreground">{s.label}</p>
             </div>
           ))}
-        </div>
+
+        {/* Testimonials */}
+        {testimonials.length > 0 && (
+          <div className="mt-6 lg:mt-8 space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Avaliações de alunos</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {testimonials.map((t, i) => (
+                <div key={i} className="rounded-xl border border-border/40 bg-card/60 p-3 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold">{t.display_name}</span>
+                    <div className="flex items-center gap-0.5">
+                      {Array.from({ length: 5 }).map((_, j) => (
+                        <Star key={j} className={`h-3 w-3 ${j < Math.round(t.avg_rating) ? "fill-primary text-primary" : "text-muted-foreground/30"}`} />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                    <Quote className="h-3 w-3 inline mr-1 text-primary/50" />
+                    {t.feedback_text}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
         {/* Features list */}
         <div className="hidden sm:grid sm:grid-cols-2 gap-2 lg:gap-3">

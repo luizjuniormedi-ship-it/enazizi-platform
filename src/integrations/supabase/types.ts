@@ -3519,6 +3519,14 @@ export type Database = {
           questoes: number
         }[]
       }
+      get_login_testimonials: {
+        Args: never
+        Returns: {
+          avg_rating: number
+          display_name: string
+          feedback_text: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
