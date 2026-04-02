@@ -102,7 +102,38 @@ Cada questão DEVE ter o campo "difficulty_level" com valor "facil", "intermedia
 Cada questão DEVE ter o campo "difficulty_level" com valor "${difficulty}".`;
         }
 
-        const prompt = `Gere exatamente ${batchCount} questões objetivas de múltipla escolha (A-E) para residência médica sobre: ${topicList}.
+        // High-yield subtopics map (inline — edge functions can't import from src/)
+        const HIGH_YIELD: Record<string, string[]> = {
+          "Cardiologia": ["Insuficiência Cardíaca", "Síndromes Coronarianas Agudas", "Hipertensão Arterial", "Arritmias", "Endocardite"],
+          "Cirurgia": ["Abdome Agudo", "Politrauma", "Hérnias", "Colecistite", "Apendicite"],
+          "Pediatria": ["Neonatologia", "Aleitamento Materno", "Bronquiolite", "Doenças Exantemáticas", "Imunização", "Reanimação Neonatal", "Icterícia Neonatal"],
+          "Ginecologia e Obstetrícia": ["Pré-eclâmpsia", "Hemorragias da Gestação", "Pré-natal", "Diabetes Gestacional", "Anticoncepção", "Trabalho de Parto"],
+          "Medicina Preventiva": ["SUS", "Epidemiologia", "Vacinação", "Estudos Epidemiológicos", "Bioestatística", "Ética e Bioética Médica"],
+          "Infectologia": ["HIV/AIDS", "Tuberculose", "Sepse", "Arboviroses", "Meningites"],
+          "Pneumologia": ["Asma", "DPOC", "Pneumonia", "Tuberculose Pulmonar", "Tromboembolismo Pulmonar", "Derrame Pleural"],
+          "Gastroenterologia": ["Doença do Refluxo", "Hemorragia Digestiva", "Cirrose Hepática", "Hepatites Virais", "Doença Inflamatória Intestinal"],
+          "Endocrinologia": ["Diabetes Mellitus", "Tireoidopatias", "Cetoacidose Diabética", "Dislipidemias"],
+          "Neurologia": ["AVC Isquêmico", "Epilepsia", "Cefaléias", "Meningites"],
+          "Dermatologia": ["Hanseníase", "Câncer de Pele", "Lesões Elementares da Pele", "Piodermites"],
+          "Nefrologia": ["Insuficiência Renal Aguda", "Distúrbios Hidroeletrolíticos", "Distúrbios Ácido-Base", "Glomerulopatias"],
+          "Hematologia": ["Anemias", "Leucemias", "Linfomas", "Distúrbios da Hemostasia"],
+          "Reumatologia": ["Lúpus Eritematoso Sistêmico", "Artrite Reumatoide", "Vasculites"],
+          "Oncologia": ["Câncer de Mama", "Câncer Colorretal", "Câncer de Pulmão", "Estadiamento TNM"],
+          "Medicina de Emergência": ["PCR e RCP", "Choque", "Trauma", "Anafilaxia"],
+          "Angiologia": ["Trombose Venosa Profunda", "Doença Arterial Periférica", "Aneurisma de Aorta"],
+          "Psiquiatria": ["Depressão", "Esquizofrenia", "Emergências Psiquiátricas", "Dependência Química"],
+          "Urologia": ["Litíase Renal", "Infecção Urinária", "Hiperplasia Prostática"],
+          "Terapia Intensiva": ["Ventilação Mecânica", "Sepse e Choque Séptico", "SDRA"],
+        };
+        const priorityLines = topics
+          .filter((t: string) => HIGH_YIELD[t])
+          .map((t: string) => `- ${t}: ${HIGH_YIELD[t].join(", ")}`)
+          .join("\n");
+        const priorityBlock = priorityLines
+          ? `\n\nSUBTÓPICOS PRIORITÁRIOS (dar preferência a estes por serem os mais cobrados em provas de residência):\n${priorityLines}\nDê preferência a esses subtópicos ao criar os casos clínicos, distribuindo as questões entre eles.`
+          : "";
+
+        const prompt = `Gere exatamente ${batchCount} questões objetivas de múltipla escolha (A-E) para residência médica sobre: ${topicList}.${priorityBlock}
 
 IDIOMA OBRIGATÓRIO: TUDO deve ser escrito em PORTUGUÊS BRASILEIRO. Enunciados, alternativas, explicações, blocos — absolutamente TUDO em pt-BR. NUNCA use inglês.
 
