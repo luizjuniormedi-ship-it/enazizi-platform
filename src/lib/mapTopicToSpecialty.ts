@@ -20,7 +20,7 @@ export function mapTopicToSpecialty(topic: string): string | null {
     [["dermato", "pele", "dermat", "psoríase", "melanoma", "piodermite", "dermatozoonose", "dermatovirose", "lesão elementar", "lesões elementares"], "Dermatologia"],
     [["oftalmo", "olho", "glaucoma", "catarata", "retina"], "Oftalmologia"],
     [["otorrino", "ouvido", "nariz", "garganta", "sinusite", "otite"], "Otorrinolaringologia"],
-    [["preventiva", "epidemio", "saúde pública", "sus", "atenção primária", "vacina"], "Medicina Preventiva"],
+    [["preventiva", "epidemio", "saúde pública", "sus", "atenção primária", "vacina", "notificação compulsória", "bioética", "determinantes sociais", "indicadores de saúde", "níveis de prevenção"], "Medicina Preventiva"],
     [["semiologia", "anamnese", "exame físico", "ausculta", "palpação", "percussão", "propedêutica", "sinal de", "inspeção"], "Semiologia"],
     [["anatomia", "anatômic", "muscul", "nervo", "artéria", "veia", "osso", "ligamento", "fáscia", "pelve", "mediastino", "neuroanatomia"], "Anatomia"],
     [["emergência", "urgência", "pcr", "choque", "politrauma", "reanimação"], "Medicina de Emergência"],
