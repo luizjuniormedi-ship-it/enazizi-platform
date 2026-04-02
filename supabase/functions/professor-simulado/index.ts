@@ -257,7 +257,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
               sender_id: user.id,
               recipient_id: s.user_id,
               title: `📋 Novo ${simTitleTag}`,
-              content: `O Prof. ${professorName} disponibilizou o simulado "${title || "Simulado"}" — ${questions_json?.length || total_questions} questões, tempo: ${time_limit_minutes || 60}min.${scheduled_at ? ` Agendado para: ${new Date(scheduled_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}.` : ""} Acesse a aba Proficiência para realizar.`,
+              content: `O Prof. ${professorName} disponibilizou o simulado "${title || "Simulado"}" — ${questions_json?.length || total_questions} questões, tempo: ${time_limit_minutes || 60}min.${scheduled_at ? ` Agendado para: ${new Date(scheduled_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}.` : ""} Acesse a aba Mais Ferramentas → Proficiência para realizar.`,
               priority: "important",
             }));
             await sb.from("admin_messages").insert(notifications);
@@ -280,7 +280,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
               const whatsappMessages = newWA.map((p: any) => ({
                 admin_user_id: user.id,
                 target_user_id: p.user_id,
-                message_text: `📋 *Novo Simulado — Prof. ${professorName}*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! O Prof. ${professorName} disponibilizou o simulado "${title || "Simulado"}" com ${questions_json?.length || total_questions} questões (${time_limit_minutes || 60}min).${scheduled_at ? `\n⏰ Agendado: ${new Date(scheduled_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}` : ""}\n\nAcesse a plataforma para realizar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
+                message_text: `📋 *Novo Simulado — Prof. ${professorName}*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! O Prof. ${professorName} disponibilizou o simulado "${title || "Simulado"}" com ${questions_json?.length || total_questions} questões (${time_limit_minutes || 60}min).${scheduled_at ? `\n⏰ Agendado: ${new Date(scheduled_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}` : ""}\n\n👉 Acesse *Mais Ferramentas* → *Proficiência* para realizar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
                 delivery_status: "pending",
                 execution_mode: "auto",
               }));
@@ -818,7 +818,7 @@ REGRAS:
               sender_id: user.id,
               recipient_id: sid,
               title: `🏥 ${caseTitleTag}`,
-              content: `O Prof. ${professorName} criou o caso clínico "${title || "Plantão"}" — Especialidade: ${specialty}, Dificuldade: ${difficulty || "intermediário"}. Acesse a aba Proficiência para realizar.`,
+              content: `O Prof. ${professorName} criou o caso clínico "${title || "Plantão"}" — Especialidade: ${specialty}, Dificuldade: ${difficulty || "intermediário"}. Acesse a aba Mais Ferramentas → Proficiência para realizar.`,
               priority: "important",
             }));
             await sb.from("admin_messages").insert(notifications);
@@ -841,7 +841,7 @@ REGRAS:
               const whatsappMessages = newCaseWA.map((p: any) => ({
                 admin_user_id: user.id,
                 target_user_id: p.user_id,
-                message_text: `🏥 *Novo ${caseTitleTag}*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! O Prof. ${professorName} criou o caso clínico "${title || "Plantão"}" (${specialty}, dificuldade: ${difficulty || "intermediário"}).\n\nAcesse a plataforma para realizar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
+                message_text: `🏥 *Novo ${caseTitleTag}*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! O Prof. ${professorName} criou o caso clínico "${title || "Plantão"}" (${specialty}, dificuldade: ${difficulty || "intermediário"}).\n\n👉 Acesse *Mais Ferramentas* → *Proficiência* para realizar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
                 delivery_status: "pending",
                 execution_mode: "auto",
               }));
@@ -993,7 +993,7 @@ REGRAS:
               sender_id: user.id,
               recipient_id: sid,
               title: `📚 ${assignTitleTag}`,
-              content: `O Prof. ${professorName} atribuiu o tema "${title}" — Especialidade: ${specialty}, Tópicos: ${topics_to_cover || "vários"}. Acesse a aba Proficiência para estudar.`,
+              content: `O Prof. ${professorName} atribuiu o tema "${title}" — Especialidade: ${specialty}, Tópicos: ${topics_to_cover || "vários"}. Acesse a aba Mais Ferramentas → Proficiência para estudar.`,
               priority: "important",
             }));
             await sb.from("admin_messages").insert(notifications);
@@ -1016,7 +1016,7 @@ REGRAS:
               const whatsappMessages = newAssignWA.map((p: any) => ({
                 admin_user_id: user.id,
                 target_user_id: p.user_id,
-                message_text: `📚 *Novo ${assignTitleTag}*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! O Prof. ${professorName} atribuiu o tema "${title}" (${specialty}).\n📌 Tópicos: ${topics_to_cover || "vários"}\n\nAcesse a plataforma para estudar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
+                message_text: `📚 *Novo ${assignTitleTag}*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! O Prof. ${professorName} atribuiu o tema "${title}" (${specialty}).\n📌 Tópicos: ${topics_to_cover || "vários"}\n\n👉 Acesse *Mais Ferramentas* → *Proficiência* para estudar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
                 delivery_status: "pending",
                 execution_mode: "auto",
               }));
