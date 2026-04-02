@@ -49,7 +49,8 @@ Deno.serve(async (req) => {
       .not("phone", "is", null)
       .neq("phone", "")
       .eq("status", "active")
-      .eq("is_blocked", false);
+      .eq("is_blocked", false)
+      .eq("whatsapp_opt_out", false);
 
     if (!profiles?.length) {
       log("Nenhum aluno com telefone.");
