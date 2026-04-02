@@ -229,12 +229,12 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
         // Shuffle and take up to batchCount
         allCached.sort(() => Math.random() - 0.5);
         const fromCache = allCached.slice(0, batchCount).map((q: any) => ({
-          statement: q.statement,
+          statement: sanitizeStatement(q.statement || ""),
           options: Array.isArray(q.options) ? q.options : [],
           correct_index: q.correct_index ?? 0,
           explanation: q.explanation || "",
           topic: q.topic || topics[0],
-          block: q.topic || topics[0],
+          block: topics.find((t: string) => String(q.topic || "").toLowerCase().includes(t.toLowerCase())) || topics[0],
           difficulty_level: difficulty || "intermediario",
         }));
 
