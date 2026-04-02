@@ -50,6 +50,27 @@ serve(async (req) => {
         professorName = (profProfile.display_name || "").split(" ")[0] || "seu professor";
       }
     }
+    // Helper: check if notification already sent for this activity (dedup)
+    const today = new Date().toISOString().slice(0, 10);
+    const alreadyNotifiedWhatsApp = async (activityTag: string, targetIds: string[]): Promise<string[]> => {
+      if (targetIds.length === 0) return [];
+      const { data } = await sb.from("whatsapp_message_log")
+        .select("target_user_id")
+        .in("target_user_id", targetIds)
+        .like("message_text", `%${activityTag}%`)
+        .gte("created_at", `${today}T00:00:00Z`);
+      return (data || []).map((r: any) => r.target_user_id);
+    };
+    const alreadyNotifiedInApp = async (titleTag: string, recipientIds: string[]): Promise<string[]> => {
+      if (recipientIds.length === 0) return [];
+      const { data } = await sb.from("admin_messages")
+        .select("recipient_id")
+        .in("recipient_id", recipientIds)
+        .like("title", `%${titleTag}%`)
+        .gte("created_at", `${today}T00:00:00Z`);
+      return (data || []).map((r: any) => r.recipient_id);
+    };
+
     switch (action) {
       case "generate_questions": {
         const { topics, count = 10, difficulty = "intermediario", difficultyMix } = params;
@@ -192,30 +213,37 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           }));
           await sb.from("teacher_simulado_results").insert(results);
 
-          // Notify each student (in-app)
-          const notifications = studentList.map((s: any) => ({
-            sender_id: user.id,
-            recipient_id: s.user_id,
-            title: `📋 Novo Simulado do Prof. ${professorName}: ${title || "Simulado"}`,
-            content: `O Prof. ${professorName} disponibilizou o simulado "${title || "Simulado"}" — ${questions_json?.length || total_questions} questões, tempo: ${time_limit_minutes || 60}min.${scheduled_at ? ` Agendado para: ${new Date(scheduled_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}.` : ""} Acesse a aba Proficiência para realizar.`,
-            priority: "important",
-          }));
-          await sb.from("admin_messages").insert(notifications);
+          // Notify each student (in-app) — dedup by title tag
+          const simTitleTag = `Simulado do Prof. ${professorName}: ${title || "Simulado"}`;
+          const allStudentIds = studentList.map((s: any) => s.user_id);
+          const alreadyInApp = await alreadyNotifiedInApp(simTitleTag, allStudentIds);
+          const newInApp = studentList.filter((s: any) => !alreadyInApp.includes(s.user_id));
+          if (newInApp.length > 0) {
+            const notifications = newInApp.map((s: any) => ({
+              sender_id: user.id,
+              recipient_id: s.user_id,
+              title: `📋 Novo ${simTitleTag}`,
+              content: `O Prof. ${professorName} disponibilizou o simulado "${title || "Simulado"}" — ${questions_json?.length || total_questions} questões, tempo: ${time_limit_minutes || 60}min.${scheduled_at ? ` Agendado para: ${new Date(scheduled_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}.` : ""} Acesse a aba Proficiência para realizar.`,
+              priority: "important",
+            }));
+            await sb.from("admin_messages").insert(notifications);
+          }
 
-          // WhatsApp notification for students with phone
+          // WhatsApp notification for students with phone — dedup
           try {
-            const studentIds = studentList.map((s: any) => s.user_id);
             const { data: phoneProfiles } = await sb
               .from("profiles")
               .select("user_id, display_name, phone, whatsapp_opt_out")
-              .in("user_id", studentIds)
+              .in("user_id", allStudentIds)
               .eq("whatsapp_opt_out", false)
               .not("phone", "is", null);
 
             const eligibleStudents = (phoneProfiles || []).filter((p: any) => p.phone && p.phone.length >= 10);
+            const alreadyWA = await alreadyNotifiedWhatsApp(simTitleTag, eligibleStudents.map((p: any) => p.user_id));
+            const newWA = eligibleStudents.filter((p: any) => !alreadyWA.includes(p.user_id));
 
-            if (eligibleStudents.length > 0) {
-              const whatsappMessages = eligibleStudents.map((p: any) => ({
+            if (newWA.length > 0) {
+              const whatsappMessages = newWA.map((p: any) => ({
                 admin_user_id: user.id,
                 target_user_id: p.user_id,
                 message_text: `📋 *Novo Simulado — Prof. ${professorName}*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! O Prof. ${professorName} disponibilizou o simulado "${title || "Simulado"}" com ${questions_json?.length || total_questions} questões (${time_limit_minutes || 60}min).${scheduled_at ? `\n⏰ Agendado: ${new Date(scheduled_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}` : ""}\n\nAcesse a plataforma para realizar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
@@ -224,13 +252,12 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
               }));
               await sb.from("whatsapp_message_log").insert(whatsappMessages);
 
-              // Create execution for the agent
               const { data: exec } = await sb.from("whatsapp_send_executions").insert({
                 admin_user_id: user.id,
-                execution_date: new Date().toISOString().slice(0, 10),
+                execution_date: today,
                 mode: "auto",
                 status: "running",
-                total_items: eligibleStudents.length,
+                total_items: newWA.length,
                 total_sent: 0,
                 total_error: 0,
                 total_skipped: 0,
@@ -242,9 +269,9 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
                   .update({ execution_id: exec.id })
                   .eq("delivery_status", "pending")
                   .is("execution_id", null)
-                  .in("target_user_id", eligibleStudents.map((p: any) => p.user_id));
+                  .in("target_user_id", newWA.map((p: any) => p.user_id));
               }
-              console.log(`WhatsApp: ${eligibleStudents.length} mensagens enfileiradas para simulado ${simulado.id}`);
+              console.log(`WhatsApp: ${newWA.length} mensagens enfileiradas para simulado ${simulado.id}`);
             }
           } catch (whatsappErr) {
             console.error("Erro ao enfileirar WhatsApp (não bloqueante):", whatsappErr);
@@ -734,17 +761,22 @@ REGRAS:
           }));
           await sb.from("teacher_clinical_case_results").insert(results);
 
-          // Notify each student (in-app)
-          const notifications = studentIds.map((sid: string) => ({
-            sender_id: user.id,
-            recipient_id: sid,
-            title: `🏥 Caso Clínico do Prof. ${professorName}: ${title || "Plantão"}`,
-            content: `O Prof. ${professorName} criou o caso clínico "${title || "Plantão"}" — Especialidade: ${specialty}, Dificuldade: ${difficulty || "intermediário"}. Acesse a aba Proficiência para realizar.`,
-            priority: "important",
-          }));
-          await sb.from("admin_messages").insert(notifications);
+          // Notify each student (in-app) — dedup
+          const caseTitleTag = `Caso Clínico do Prof. ${professorName}: ${title || "Plantão"}`;
+          const alreadyCaseInApp = await alreadyNotifiedInApp(caseTitleTag, studentIds);
+          const newCaseInApp = studentIds.filter((sid: string) => !alreadyCaseInApp.includes(sid));
+          if (newCaseInApp.length > 0) {
+            const notifications = newCaseInApp.map((sid: string) => ({
+              sender_id: user.id,
+              recipient_id: sid,
+              title: `🏥 ${caseTitleTag}`,
+              content: `O Prof. ${professorName} criou o caso clínico "${title || "Plantão"}" — Especialidade: ${specialty}, Dificuldade: ${difficulty || "intermediário"}. Acesse a aba Proficiência para realizar.`,
+              priority: "important",
+            }));
+            await sb.from("admin_messages").insert(notifications);
+          }
 
-          // WhatsApp notification
+          // WhatsApp notification — dedup
           try {
             const { data: phoneProfiles } = await sb
               .from("profiles")
@@ -754,12 +786,14 @@ REGRAS:
               .not("phone", "is", null);
 
             const eligibleStudents = (phoneProfiles || []).filter((p: any) => p.phone && p.phone.length >= 10);
+            const alreadyCaseWA = await alreadyNotifiedWhatsApp(caseTitleTag, eligibleStudents.map((p: any) => p.user_id));
+            const newCaseWA = eligibleStudents.filter((p: any) => !alreadyCaseWA.includes(p.user_id));
 
-            if (eligibleStudents.length > 0) {
-              const whatsappMessages = eligibleStudents.map((p: any) => ({
+            if (newCaseWA.length > 0) {
+              const whatsappMessages = newCaseWA.map((p: any) => ({
                 admin_user_id: user.id,
                 target_user_id: p.user_id,
-                message_text: `🏥 *Novo Caso Clínico — Prof. ${professorName}*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! O Prof. ${professorName} criou o caso clínico "${title || "Plantão"}" (${specialty}, dificuldade: ${difficulty || "intermediário"}).\n\nAcesse a plataforma para realizar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
+                message_text: `🏥 *Novo ${caseTitleTag}*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! O Prof. ${professorName} criou o caso clínico "${title || "Plantão"}" (${specialty}, dificuldade: ${difficulty || "intermediário"}).\n\nAcesse a plataforma para realizar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
                 delivery_status: "pending",
                 execution_mode: "auto",
               }));
@@ -767,10 +801,10 @@ REGRAS:
 
               const { data: exec } = await sb.from("whatsapp_send_executions").insert({
                 admin_user_id: user.id,
-                execution_date: new Date().toISOString().slice(0, 10),
+                execution_date: today,
                 mode: "auto",
                 status: "running",
-                total_items: eligibleStudents.length,
+                total_items: newCaseWA.length,
                 total_sent: 0,
                 total_error: 0,
                 total_skipped: 0,
@@ -782,9 +816,9 @@ REGRAS:
                   .update({ execution_id: exec.id })
                   .eq("delivery_status", "pending")
                   .is("execution_id", null)
-                  .in("target_user_id", eligibleStudents.map((p: any) => p.user_id));
+                  .in("target_user_id", newCaseWA.map((p: any) => p.user_id));
               }
-              console.log(`WhatsApp: ${eligibleStudents.length} mensagens enfileiradas para caso clínico ${clinicalCase.id}`);
+              console.log(`WhatsApp: ${newCaseWA.length} mensagens enfileiradas para caso clínico ${clinicalCase.id}`);
             }
           } catch (whatsappErr) {
             console.error("Erro ao enfileirar WhatsApp caso clínico (não bloqueante):", whatsappErr);
@@ -902,17 +936,22 @@ REGRAS:
           }));
           await sb.from("teacher_study_assignment_results").insert(results);
 
-          // Notify each student (in-app)
-          const notifications = studentIds.map((sid: string) => ({
-            sender_id: user.id,
-            recipient_id: sid,
-            title: `📚 Tema de Estudo do Prof. ${professorName}: ${title}`,
-            content: `O Prof. ${professorName} atribuiu o tema "${title}" — Especialidade: ${specialty}, Tópicos: ${topics_to_cover || "vários"}. Acesse a aba Proficiência para estudar.`,
-            priority: "important",
-          }));
-          await sb.from("admin_messages").insert(notifications);
+          // Notify each student (in-app) — dedup
+          const assignTitleTag = `Tema de Estudo do Prof. ${professorName}: ${title}`;
+          const alreadyAssignInApp = await alreadyNotifiedInApp(assignTitleTag, studentIds);
+          const newAssignInApp = studentIds.filter((sid: string) => !alreadyAssignInApp.includes(sid));
+          if (newAssignInApp.length > 0) {
+            const notifications = newAssignInApp.map((sid: string) => ({
+              sender_id: user.id,
+              recipient_id: sid,
+              title: `📚 ${assignTitleTag}`,
+              content: `O Prof. ${professorName} atribuiu o tema "${title}" — Especialidade: ${specialty}, Tópicos: ${topics_to_cover || "vários"}. Acesse a aba Proficiência para estudar.`,
+              priority: "important",
+            }));
+            await sb.from("admin_messages").insert(notifications);
+          }
 
-          // WhatsApp notification
+          // WhatsApp notification — dedup
           try {
             const { data: phoneProfiles } = await sb
               .from("profiles")
@@ -922,12 +961,14 @@ REGRAS:
               .not("phone", "is", null);
 
             const eligibleStudents = (phoneProfiles || []).filter((p: any) => p.phone && p.phone.length >= 10);
+            const alreadyAssignWA = await alreadyNotifiedWhatsApp(assignTitleTag, eligibleStudents.map((p: any) => p.user_id));
+            const newAssignWA = eligibleStudents.filter((p: any) => !alreadyAssignWA.includes(p.user_id));
 
-            if (eligibleStudents.length > 0) {
-              const whatsappMessages = eligibleStudents.map((p: any) => ({
+            if (newAssignWA.length > 0) {
+              const whatsappMessages = newAssignWA.map((p: any) => ({
                 admin_user_id: user.id,
                 target_user_id: p.user_id,
-                message_text: `📚 *Novo Tema de Estudo — Prof. ${professorName}*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! O Prof. ${professorName} atribuiu o tema "${title}" (${specialty}).\n📌 Tópicos: ${topics_to_cover || "vários"}\n\nAcesse a plataforma para estudar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
+                message_text: `📚 *Novo ${assignTitleTag}*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! O Prof. ${professorName} atribuiu o tema "${title}" (${specialty}).\n📌 Tópicos: ${topics_to_cover || "vários"}\n\nAcesse a plataforma para estudar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
                 delivery_status: "pending",
                 execution_mode: "auto",
               }));
@@ -935,10 +976,10 @@ REGRAS:
 
               const { data: exec } = await sb.from("whatsapp_send_executions").insert({
                 admin_user_id: user.id,
-                execution_date: new Date().toISOString().slice(0, 10),
+                execution_date: today,
                 mode: "auto",
                 status: "running",
-                total_items: eligibleStudents.length,
+                total_items: newAssignWA.length,
                 total_sent: 0,
                 total_error: 0,
                 total_skipped: 0,
@@ -950,9 +991,9 @@ REGRAS:
                   .update({ execution_id: exec.id })
                   .eq("delivery_status", "pending")
                   .is("execution_id", null)
-                  .in("target_user_id", eligibleStudents.map((p: any) => p.user_id));
+                  .in("target_user_id", newAssignWA.map((p: any) => p.user_id));
               }
-              console.log(`WhatsApp: ${eligibleStudents.length} mensagens enfileiradas para tema ${assignment.id}`);
+              console.log(`WhatsApp: ${newAssignWA.length} mensagens enfileiradas para tema ${assignment.id}`);
             }
           } catch (whatsappErr) {
             console.error("Erro ao enfileirar WhatsApp tema estudo (não bloqueante):", whatsappErr);
