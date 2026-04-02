@@ -262,6 +262,7 @@ Deno.serve(async (req) => {
 
     if (action === "execution_status") {
       const executionId = body.execution_id || url.searchParams.get("execution_id");
+      const today = new Date().toISOString().slice(0, 10);
 
       let query = supabaseAdmin.from("whatsapp_send_executions").select("*");
       if (executionId) {
@@ -271,10 +272,108 @@ Deno.serve(async (req) => {
       }
 
       const { data } = await query;
-      if (!data || data.length === 0) return respond({ execution: null });
+      let exec = data && data.length > 0 ? data[0] : null;
 
-      // Also get item breakdown
-      const exec = data[0];
+      // ── Self-healing: auto-link orphan messages ──
+      if (exec) {
+        // Check for orphan pending messages from today not linked to any execution
+        const { data: orphans } = await supabaseAdmin
+          .from("whatsapp_message_log")
+          .select("id")
+          .is("execution_id", null)
+          .eq("delivery_status", "pending")
+          .gte("created_at", `${today}T00:00:00Z`)
+          .limit(500);
+
+        if (orphans && orphans.length > 0) {
+          await supabaseAdmin
+            .from("whatsapp_message_log")
+            .update({ execution_id: exec.id })
+            .is("execution_id", null)
+            .eq("delivery_status", "pending")
+            .gte("created_at", `${today}T00:00:00Z`);
+
+          // Update total_items
+          const { count } = await supabaseAdmin
+            .from("whatsapp_message_log")
+            .select("id", { count: "exact", head: true })
+            .eq("execution_id", exec.id);
+
+          await supabaseAdmin
+            .from("whatsapp_send_executions")
+            .update({ total_items: count || 0 })
+            .eq("id", exec.id);
+
+          console.log(`Auto-linked ${orphans.length} orphan messages to execution ${exec.id}`);
+        }
+
+        // ── Auto-complete: if no pending/processing items remain, mark as completed ──
+        const { count: pendingCount } = await supabaseAdmin
+          .from("whatsapp_message_log")
+          .select("id", { count: "exact", head: true })
+          .eq("execution_id", exec.id)
+          .in("delivery_status", ["pending", "processing"]);
+
+        if ((pendingCount || 0) === 0 && (orphans?.length || 0) === 0) {
+          await supabaseAdmin
+            .from("whatsapp_send_executions")
+            .update({ status: "completed", finished_at: new Date().toISOString() })
+            .eq("id", exec.id);
+
+          exec = { ...exec, status: "completed" };
+          console.log(`Auto-completed execution ${exec.id}`);
+        }
+      } else if (!executionId) {
+        // ── Self-healing: auto-create execution if orphan messages exist but no active execution ──
+        const { data: orphans } = await supabaseAdmin
+          .from("whatsapp_message_log")
+          .select("id")
+          .is("execution_id", null)
+          .eq("delivery_status", "pending")
+          .gte("created_at", `${today}T00:00:00Z`)
+          .limit(1);
+
+        if (orphans && orphans.length > 0) {
+          const { data: newExec } = await supabaseAdmin
+            .from("whatsapp_send_executions")
+            .insert({
+              admin_user_id: user.id,
+              execution_date: today,
+              mode: "desktop",
+              status: "running",
+              started_at: new Date().toISOString(),
+            })
+            .select()
+            .single();
+
+          if (newExec) {
+            // Link all orphan messages
+            await supabaseAdmin
+              .from("whatsapp_message_log")
+              .update({ execution_id: newExec.id })
+              .is("execution_id", null)
+              .eq("delivery_status", "pending")
+              .gte("created_at", `${today}T00:00:00Z`);
+
+            const { count } = await supabaseAdmin
+              .from("whatsapp_message_log")
+              .select("id", { count: "exact", head: true })
+              .eq("execution_id", newExec.id);
+
+            await supabaseAdmin
+              .from("whatsapp_send_executions")
+              .update({ total_items: count || 0 })
+              .eq("id", newExec.id);
+
+            exec = newExec;
+            console.log(`Auto-created execution ${newExec.id} with ${count} orphan items`);
+          }
+        }
+      }
+
+      if (!exec) return respond({ execution: null });
+
+      // Get item breakdown
       const { data: items } = await supabaseAdmin
         .from("whatsapp_message_log")
         .select("id, target_user_id, message_text, delivery_status, attempts, error_message, sent_at")
