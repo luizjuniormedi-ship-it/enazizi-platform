@@ -35,12 +35,19 @@ const features = [
   { icon: Globe, label: "Acesso web em qualquer navegador" },
 ];
 
+interface Testimonial {
+  feedback_text: string;
+  avg_rating: number;
+  display_name: string;
+}
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [dynamicStats, setDynamicStats] = useState({
     alunos: "—",
     questoes: "—",
