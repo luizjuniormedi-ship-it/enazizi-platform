@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN whatsapp_daily_bi boolean NOT NULL DEFAULT false;
