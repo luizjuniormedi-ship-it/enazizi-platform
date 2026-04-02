@@ -333,7 +333,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
                 correct_index: r.correct_index ?? 0,
                 explanation: r.explanation || "",
                 topic: r.topic || topics[0] || "",
-                block: topics[0] || "Geral",
+                block: baseTopics[0] || topics[0] || "Geral",
                 difficulty_level: "intermediario",
               }));
               source = "bank";
