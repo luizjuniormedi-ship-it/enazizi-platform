@@ -488,7 +488,8 @@ const Simulados = () => {
 
     await completeSession();
     setPhase("finished");
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questions, user, mode]);
 
   const handleRetryErrors = async (sessionIdOrVoid?: string) => {
     if (sessionIdOrVoid) {
