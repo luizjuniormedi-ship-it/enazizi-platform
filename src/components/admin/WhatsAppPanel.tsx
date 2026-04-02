@@ -1,5 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { MessageSquare, Send, Copy, Loader2, RefreshCw, Phone, AlertTriangle, CheckCircle, PlayCircle, StopCircle, Download, Plug, PlugZap, Monitor, History, PauseCircle, SkipForward, RotateCcw, Clock, Eye } from "lucide-react";
+import { MessageSquare, Send, Copy, Loader2, RefreshCw, Phone, AlertTriangle, CheckCircle, PlayCircle, StopCircle, Download, Plug, PlugZap, Monitor, History, PauseCircle, SkipForward, RotateCcw, Clock, Eye, PenLine } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -114,6 +116,10 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
   // Opt-out state
   const [optOutCount, setOptOutCount] = useState(0);
 
+  // Custom message state
+  const [useCustomMessage, setUseCustomMessage] = useState(false);
+  const [customMessage, setCustomMessage] = useState("");
+
   // Fetch opt-out count
   useEffect(() => {
     const fetchOptOut = async () => {
@@ -198,7 +204,17 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || "Erro ao gerar mensagens");
 
-      const generatedStudents = data.students || [];
+      let generatedStudents: Student[] = data.students || [];
+
+      // If custom message mode, override each student's message
+      if (useCustomMessage && customMessage.trim()) {
+        generatedStudents = generatedStudents.map((s: Student) => {
+          const firstName = (s.display_name || "Aluno").split(" ")[0];
+          const personalizedMsg = customMessage.replace(/\{nome\}/gi, firstName) + "\n\nResponda SAIR para não receber mais.";
+          return { ...s, message: personalizedMsg };
+        });
+      }
+
       setStudents(generatedStudents);
       const total = generatedStudents.length;
       const alreadySent = generatedStudents.filter((s: Student) => s.already_sent_today).length;
@@ -449,10 +465,34 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
               <p className="text-sm text-muted-foreground">Gere mensagens únicas por IA e envie todas com um clique.</p>
               {optOutCount > 0 && <Badge variant="secondary" className="text-xs mt-1">🚫 {optOutCount} aluno(s) optaram por não receber</Badge>}
             </div>
-            <Button onClick={generateMessages} disabled={loading || bulkSending} className="gap-1.5">
+            <Button onClick={generateMessages} disabled={loading || bulkSending || (useCustomMessage && !customMessage.trim())} className="gap-1.5">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               Gerar mensagens do dia
             </Button>
+          </div>
+
+          {/* Custom message toggle */}
+          <div className="rounded-lg border p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <PenLine className="h-4 w-4 text-primary" />
+                <Label htmlFor="custom-msg-toggle" className="font-medium cursor-pointer">Usar mensagem personalizada</Label>
+              </div>
+              <Switch id="custom-msg-toggle" checked={useCustomMessage} onCheckedChange={setUseCustomMessage} />
+            </div>
+            {useCustomMessage && (
+              <div className="space-y-2">
+                <Textarea
+                  value={customMessage}
+                  onChange={(e) => setCustomMessage(e.target.value)}
+                  placeholder="Olá {nome}! Escreva aqui a mensagem que será enviada para todos os alunos..."
+                  className="min-h-[120px]"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Use <code className="bg-muted px-1 rounded">{"{nome}"}</code> para inserir o primeiro nome do aluno. O sufixo de opt-out será adicionado automaticamente.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Extension status banner */}
