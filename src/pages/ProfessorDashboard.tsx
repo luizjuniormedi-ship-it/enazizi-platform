@@ -682,6 +682,60 @@ const ProfessorDashboard = () => {
                   ))}
                 </div>
               )}
+
+              {/* Topic distribution */}
+              {selectedTopics.length > 1 && questionMode === "ai" && (
+                <div className="space-y-2 bg-primary/5 rounded-lg p-3 border border-primary/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4 text-primary" />
+                      <Label className="text-xs font-semibold">Distribuição por tema</Label>
+                    </div>
+                    <Switch checked={useDistribution} onCheckedChange={(v) => {
+                      setUseDistribution(v);
+                      if (v) {
+                        const total = parseInt(questionCount);
+                        const perTopic = Math.floor(total / selectedTopics.length);
+                        const remainder = total - perTopic * selectedTopics.length;
+                        const dist: Record<string, number> = {};
+                        selectedTopics.forEach((t, i) => {
+                          dist[t] = perTopic + (i < remainder ? 1 : 0);
+                        });
+                        setTopicDistribution(dist);
+                      }
+                    }} />
+                  </div>
+                  {useDistribution && (
+                    <div className="space-y-1.5">
+                      {selectedTopics.map((topic) => (
+                        <div key={topic} className="flex items-center gap-2">
+                          <Badge variant="outline" className="shrink-0 text-[10px] min-w-[100px]">{topic}</Badge>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={parseInt(questionCount)}
+                            value={topicDistribution[topic] || 0}
+                            onChange={(e) => setTopicDistribution(prev => ({ ...prev, [topic]: parseInt(e.target.value) || 0 }))}
+                            className="h-7 w-20 text-xs text-center"
+                          />
+                          <span className="text-[10px] text-muted-foreground">questões</span>
+                        </div>
+                      ))}
+                      {(() => {
+                        const sum = Object.values(topicDistribution).reduce((a, b) => a + b, 0);
+                        const target = parseInt(questionCount);
+                        return sum !== target ? (
+                          <p className="text-[10px] text-destructive font-medium">
+                            ⚠️ Total: {sum} (esperado: {target})
+                          </p>
+                        ) : (
+                          <p className="text-[10px] text-emerald-600 font-medium">✅ Total: {sum} questões</p>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Generation method */}
