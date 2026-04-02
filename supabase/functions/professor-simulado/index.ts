@@ -50,6 +50,27 @@ serve(async (req) => {
         professorName = (profProfile.display_name || "").split(" ")[0] || "seu professor";
       }
     }
+    // Helper: check if notification already sent for this activity (dedup)
+    const today = new Date().toISOString().slice(0, 10);
+    const alreadyNotifiedWhatsApp = async (activityTag: string, targetIds: string[]): Promise<string[]> => {
+      if (targetIds.length === 0) return [];
+      const { data } = await sb.from("whatsapp_message_log")
+        .select("target_user_id")
+        .in("target_user_id", targetIds)
+        .like("message_text", `%${activityTag}%`)
+        .gte("created_at", `${today}T00:00:00Z`);
+      return (data || []).map((r: any) => r.target_user_id);
+    };
+    const alreadyNotifiedInApp = async (titleTag: string, recipientIds: string[]): Promise<string[]> => {
+      if (recipientIds.length === 0) return [];
+      const { data } = await sb.from("admin_messages")
+        .select("recipient_id")
+        .in("recipient_id", recipientIds)
+        .like("title", `%${titleTag}%`)
+        .gte("created_at", `${today}T00:00:00Z`);
+      return (data || []).map((r: any) => r.recipient_id);
+    };
+
     switch (action) {
       case "generate_questions": {
         const { topics, count = 10, difficulty = "intermediario", difficultyMix } = params;
