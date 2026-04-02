@@ -254,16 +254,23 @@ const ProfessorDashboard = () => {
             
             const previousStatements = [...allQuestions, ...topicQuestions].map((q: any) => String(q.statement || "").slice(0, 120));
             
-            const res = await callAPI({
-              action: "generate_questions",
-              topics: [topicLabel],
-              count: batchCount,
-              difficulty,
-              difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
-              previousStatements: previousStatements.length > 0 ? previousStatements : undefined,
-            });
-            
-            topicQuestions = [...topicQuestions, ...(res.questions || [])];
+            try {
+              const res = await callAPI({
+                action: "generate_questions",
+                topics: [topicLabel],
+                count: batchCount,
+                difficulty,
+                difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
+                previousStatements: previousStatements.length > 0 ? previousStatements : undefined,
+              });
+              if (res.source === "bank" || res.source === "mixed") {
+                toast({ title: "Algumas questões vieram do banco existente", description: "A IA não conseguiu gerar todas, complementamos com o banco." });
+              }
+              topicQuestions = [...topicQuestions, ...(res.questions || [])];
+            } catch (batchErr) {
+              console.error(`Batch ${b + 1} for ${topic} failed:`, batchErr);
+              toast({ title: `Erro no lote ${b + 1} de ${topic}`, description: "Continuando com os próximos...", variant: "destructive" });
+            }
           }
           allQuestions = [...allQuestions, ...topicQuestions];
           setGeneratedQuestions([...allQuestions]);
