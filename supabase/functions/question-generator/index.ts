@@ -50,10 +50,12 @@ COMPLEXIDADE EXIGIDA:
 - 20% questões de interpretação de exames (ECG, gasometria, imagem, laboratório)
 - 10% questões de prognóstico/complicações
 
+PROIBIDO NO CAMPO "statement": NÃO inclua o tema, especialidade, subtema, gabarito ou qualquer metadata dentro do campo "statement". O statement deve conter APENAS o caso clínico e a pergunta final. O tema/especialidade vai SOMENTE no campo "topic".
+
 FORMATO JSON OBRIGATÓRIO (array puro):
 [
   {
-    "statement": "Caso clínico complexo com dados completos...",
+    "statement": "Caso clínico complexo com dados completos terminando com a pergunta?",
     "options": ["alternativa a", "alternativa b", "alternativa c", "alternativa d", "alternativa e"],
     "correct_index": 0,
     "topic": "Especialidade - Subtema",
@@ -187,6 +189,7 @@ REGRAS DE FORMATO (INVIOLÁVEIS):
 - SEMPRE colocar cada alternativa em UMA LINHA SEPARADA
 - SEMPRE separar questões com "---"
 - NUNCA omitir a linha **Tópico:** antes de cada questão
+- NUNCA inclua o tema, especialidade ou gabarito DENTRO do enunciado/caso clínico. O enunciado deve terminar com a pergunta e ponto de interrogação, sem texto adicional após a pergunta.
 - NUNCA omitir a linha **Gabarito:** após as alternativas
 
 Regras:
