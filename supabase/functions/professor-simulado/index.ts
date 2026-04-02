@@ -146,7 +146,10 @@ Cada questão DEVE ter o campo "difficulty_level" com valor "${difficulty}".`;
           "Urologia": ["Litíase Renal", "Infecção Urinária", "Hiperplasia Prostática"],
           "Terapia Intensiva": ["Ventilação Mecânica", "Sepse e Choque Séptico", "SDRA"],
         };
-        const priorityLines = topics
+        const baseTopics = topics
+          .map((t: string) => String(t).split("(")[0].trim())
+          .filter(Boolean);
+        const priorityLines = baseTopics
           .filter((t: string) => HIGH_YIELD[t])
           .map((t: string) => `- ${t}: ${HIGH_YIELD[t].join(", ")}`)
           .join("\n");
