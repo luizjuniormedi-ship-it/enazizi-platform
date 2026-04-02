@@ -375,6 +375,8 @@ const ProfessorDashboard = () => {
     setPreviewStudents([]);
     setSelectedBankQuestions([]);
     setSelectedStudentIds([]);
+    setStudentSearch("");
+    setSearchResults([]);
     setQuestionMode("ai");
     setDifficulty("intermediario");
     setDifficultyMix({ facil: 20, intermediario: 50, dificil: 30 });
