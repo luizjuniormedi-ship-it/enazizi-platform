@@ -476,11 +476,11 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
                 <Textarea
                   value={customMessage}
                   onChange={(e) => setCustomMessage(e.target.value)}
-                  placeholder="Olá {nome}! Escreva aqui a mensagem que será enviada para todos os alunos..."
+                  placeholder="Sua mensagem aqui... (use {nome} para inserir o nome do aluno)"
                   className="min-h-[120px]"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Use <code className="bg-muted px-1 rounded">{"{nome}"}</code> para inserir o primeiro nome do aluno. O sufixo de opt-out será adicionado automaticamente.
+                  Use <code className="bg-muted px-1 rounded">{"{nome}"}</code> para personalizar. Se não usar, o nome será adicionado automaticamente no início (ex: "Olá João! sua mensagem").
                 </p>
               </div>
             )}
