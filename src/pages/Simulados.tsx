@@ -591,10 +591,13 @@ const Simulados = () => {
       timeSeconds={restoredState?.timeLeft ?? ((mode === "prova" || mode === "extremo") ? questions.length * 3 * 60 : 0)}
       onFinish={handleFinish}
       onAutoSaveState={() => ({ current: 0, selectedAnswers: {}, timeLeft: 0 })}
+      onStateChange={(state) => { examStateRef.current = state; }}
       initialState={restoredState ? {
         current: restoredState.current ?? 0,
         selectedAnswers: restoredState.selectedAnswers ?? {},
         timeLeft: restoredState.timeLeft,
+        flaggedQuestions: restoredState.flaggedQuestions,
+        revealedQuestions: restoredState.revealedQuestions,
       } : undefined}
       mode={mode}
     />

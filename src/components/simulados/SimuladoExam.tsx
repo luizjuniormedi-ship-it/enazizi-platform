@@ -45,6 +45,19 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
   useEffect(() => { flaggedQuestionsRef.current = flaggedQuestions; }, [flaggedQuestions]);
   useEffect(() => { onFinishRef.current = onFinish; }, [onFinish]);
 
+  // Report state changes to parent for auto-save
+  const onStateChangeRef = useRef(onStateChange);
+  useEffect(() => { onStateChangeRef.current = onStateChange; }, [onStateChange]);
+  useEffect(() => {
+    onStateChangeRef.current?.({
+      current,
+      selectedAnswers,
+      timeLeft,
+      flaggedQuestions: Array.from(flaggedQuestions),
+      revealedQuestions: Array.from(revealedQuestions),
+    });
+  }, [current, selectedAnswers, timeLeft, flaggedQuestions, revealedQuestions]);
+
   const isStudyMode = mode === "estudo";
 
   // Timer - only in prova mode

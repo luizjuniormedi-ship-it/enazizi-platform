@@ -357,6 +357,18 @@ const StudentSimulados = () => {
       copy[questionIndex] = optionIndex;
       return copy;
     });
+    // Immediate save on answer change
+    setTimeout(() => {
+      if (current) {
+        saveSession({
+          answers: answersRef.current,
+          questionIndex,
+          timeLeft,
+          resultId: current.result.id,
+          simuladoId: current.simulado.id,
+        });
+      }
+    }, 100);
   };
 
   const handleSubmit = useCallback(async () => {
