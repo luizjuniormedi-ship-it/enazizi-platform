@@ -156,6 +156,9 @@ Link do app: https://enazizi.com`;
           messageText = `📊 Resumo de hoje, ${nome}:\n${totalQ} questões | ${accuracy}% acurácia | 🔥 ${streak} dias\n\n📋 Amanhã:\nRevisão: ${temasAmanha}\nFoco: ${temasFracos}\n\nhttps://enazizi.com\nResponda SAIR para não receber mais.`;
         }
 
+        // Fix AI sometimes splitting "enazizi" into "e nazizi"
+        messageText = messageText.replace(/e\s+nazizi\.com/gi, "enazizi.com");
+
         // 5. Inserir na fila
         await supabase.from("whatsapp_message_log").insert({
           admin_user_id: adminId,
