@@ -141,7 +141,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 - Variar comorbidades: DM, HAS, IRC, HIV, tabagismo, etilismo, gestante
 - Variar queixa principal e tempo de evolução (horas, dias, semanas, meses)
 - PROIBIDO: dois pacientes com mesmo perfil demográfico no mesmo bloco
-- Retorne APENAS o JSON, sem texto adicional`;
+- Retorne APENAS o JSON, sem texto adicional${Array.isArray(previousStatements) && previousStatements.length > 0 ? `\n\n=== QUESTÕES JÁ GERADAS (NÃO REPITA) ===\nNÃO repita cenários similares aos seguintes:\n${previousStatements.slice(0, 100).map((s: string, i: number) => `${i + 1}. ${String(s).slice(0, 120)}`).join("\n")}\n=== FIM ===` : ""}`;
 
         const response = await aiFetch({
           messages: [{ role: "user", content: prompt }],
