@@ -218,7 +218,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
               const whatsappMessages = eligibleStudents.map((p: any) => ({
                 admin_user_id: user.id,
                 target_user_id: p.user_id,
-                message_text: `📋 *Novo Simulado Disponível!*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! Seu professor disponibilizou o simulado "${title || "Simulado"}" com ${questions_json?.length || total_questions} questões (${time_limit_minutes || 60}min).${scheduled_at ? `\n⏰ Agendado: ${new Date(scheduled_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}` : ""}\n\nAcesse a plataforma para realizar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
+                message_text: `📋 *Novo Simulado — Prof. ${professorName}*\n\nOlá ${(p.display_name || "").split(" ")[0] || "aluno(a)"}! O Prof. ${professorName} disponibilizou o simulado "${title || "Simulado"}" com ${questions_json?.length || total_questions} questões (${time_limit_minutes || 60}min).${scheduled_at ? `\n⏰ Agendado: ${new Date(scheduled_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}` : ""}\n\nAcesse a plataforma para realizar!\n🔗 https://enazizi.com\n\nResponda SAIR para não receber mais.`,
                 delivery_status: "pending",
                 execution_mode: "auto",
               }));
