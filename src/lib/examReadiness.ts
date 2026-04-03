@@ -3,7 +3,7 @@
  * Estimates approval chance per target exam/banca based on real user data.
  */
 
-import { EXAM_PROFILES, type ExamProfile, getExamProfile } from "./examProfiles";
+import { EXAM_PROFILES, type ExamProfile, type ReadinessWeights, getExamProfile } from "./examProfiles";
 import { BASE_CURRICULUM, type CurriculumTopic } from "@/constants/baseCurriculum";
 
 export type ReadinessLabel = "muito_baixa" | "em_construcao" | "competitiva" | "alta";
@@ -177,15 +177,16 @@ export function calculateExamReadiness(
   // 7. Review penalty (5%)
   const reviewPenalty = Math.min(input.overdueReviews * 2, 30);
 
-  // Combine with coverage_score as new dimension
+  // Use per-banca readiness weights
+  const w = profile.readinessWeights;
   const raw =
-    specScore * 0.30 +
-    baseScore * 0.20 +
-    simScore * 0.15 +
-    coverageScore * 0.10 +
-    Math.min(practScore, 100) * 0.10 +
-    consistencyScore * 0.10 -
-    reviewPenalty * 0.05;
+    specScore * w.specAccuracy +
+    baseScore * w.approvalScore +
+    simScore * w.simulado +
+    coverageScore * w.coverage +
+    Math.min(practScore, 100) * w.practical +
+    consistencyScore * w.consistency -
+    reviewPenalty * w.reviewPenalty;
 
   const readinessScore = Math.max(0, Math.min(100, Math.round(raw)));
   const readinessLabel = getLabel(readinessScore);
