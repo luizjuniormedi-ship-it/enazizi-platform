@@ -3,6 +3,7 @@ import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
 import { NON_MEDICAL_CONTENT_REGEX } from "@/lib/medicalValidation";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
+import { filterValidQuestions } from "@/lib/aiOutputValidation";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
