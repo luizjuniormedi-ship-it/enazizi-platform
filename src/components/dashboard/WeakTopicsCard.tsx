@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { TrendingDown, ChevronRight } from "lucide-react";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
 import { buildStudyPath } from "@/lib/studyRouter";
+import { getHumanReadableReason } from "@/lib/humanizedReasons";
 
 export default function WeakTopicsCard() {
   const navigate = useNavigate();
