@@ -1,43 +1,59 @@
-# Múltiplas Provas Alvo (até 3)
 
-## 1. Migração de Banco de Dados
-- Adicionar coluna `target_exams text[]` na tabela `profiles`
-- Migrar dados existentes: copiar `target_exam` para `target_exams` como array de 1 elemento
-- Manter `target_exam` temporariamente para retrocompatibilidade (não remover)
 
-## 2. Onboarding (`OnboardingV2Flow.tsx`)
-- Trocar `Select` por grid de checkboxes com limite de 3
-- Estado muda de `string` para `string[]`
-- Salvar em `target_exams` (array) + `target_exam` (primeiro da lista, para compatibilidade)
-- UI: badges selecionáveis com contador "X/3 selecionadas"
+# Refinamento UX do ENAZIZI
 
-## 3. Perfil (`Profile.tsx`)
-- Adicionar campo de seleção múltipla de provas (mesmo padrão do onboarding)
-- Carregar e salvar `target_exams`
+## Problema
+O sistema tem funcionalidades robustas mas a experiência apresenta inconsistências que prejudicam a fluidez:
+1. **Menu mobile desatualizado** — contém itens removidos (Gerador Flashcards, Gerador Questões, Banco de Questões) e falta "Prova Prática"
+2. **FreeStudyCard aponta para rotas obsoletas** — "Questões" aponta para banco-questoes que foi removido da navegação
+3. **Dashboard acima da dobra tem elementos demais** — greeting + badges + XP + achievement + video room + exam setup antes do HeroStudyCard
+4. **Sidebar e mobile nav dessincronizados** — estrutura de grupos e itens diferente entre os dois
 
-## 4. Study Engine (`studyEngine.ts`)
-- Ler `target_exams` do perfil
-- Para múltiplas provas: combinar os `ExamProfile` (média ponderada dos modifiers)
-- Nova função `getMergedExamProfile(exams: string[])` em `examProfiles.ts`
+## Alterações
 
-## 5. Edge Function (`generate-study-plan`)
-- Ler `target_exams` do perfil
-- Combinar perfis de banca para gerar plano equilibrado
+### 1. Sincronizar menu mobile com sidebar (`DashboardLayout.tsx`)
+- Remover itens obsoletos: `gerar-flashcards`, `questoes`, `banco-questoes`
+- Adicionar `prova-pratica` no grupo "Avaliação" (renomear para "Prática")
+- Alinhar grupos mobile com a mesma estrutura da sidebar
 
-## 6. Study Session (`StudySession.tsx`)
-- Ler `target_exams` em vez de `target_exam`
+### 2. Atualizar FreeStudyCard (`FreeStudyCard.tsx`)
+- Trocar "Questões" (banco-questoes) por "Prova Prática" (prova-pratica)
+- Manter 6 módulos de acesso rápido, todos apontando para rotas ativas
 
-## 7. Dashboard
-- Exibir badges com as provas selecionadas (ex: "USP • ENARE • SUS-SP")
+### 3. Compactar zona acima do HeroStudyCard (`Dashboard.tsx`)
+- Mover badges de provas alvo para dentro do greeting (inline, sem card extra)
+- Remover `ExamSetupReminder` e `ActiveVideoRoomBanner` do topo — já existem como popups/banners independentes
+- Garantir que o HeroStudyCard esteja visível sem scroll em viewport 430x661
+
+### 4. Simplificar greeting
+- Condensar greeting + streak + provas alvo em uma única linha compacta
+- XpWidget permanece no canto direito
+
+### 5. Reordenar cards pós-hero para fluxo lógico
+Ordem final no Dashboard (abaixo do hero):
+1. SmartAlertCard (máx 1 alerta)
+2. MentorshipBanner (condicional)
+3. ExamReadinessCard (chance por prova)
+4. WeeklyEvolutionBar (progresso semanal)
+5. Grid 2x2 de métricas drill-down
+6. FreeStudyCard (acesso livre)
+7. AdminMessages + InstallApp (secundários)
+
+### 6. Otimização de performance
+- Mover `OnboardingChecklist` para dentro de `Suspense` (já é condicional, lazy load não prejudica)
+- Certificar que nenhum componente do Dashboard importa módulos pesados de forma síncrona
 
 ## Arquivos afetados
+
 | Arquivo | Ação |
 |---------|------|
-| Migração SQL | Adicionar coluna `target_exams text[]` |
-| `src/components/onboarding/OnboardingV2Flow.tsx` | Seleção múltipla (checkboxes) |
-| `src/pages/Profile.tsx` | Seleção múltipla de provas |
-| `src/lib/examProfiles.ts` | Nova função `getMergedExamProfile` |
-| `src/lib/studyEngine.ts` | Usar `target_exams` + merge de perfis |
-| `src/pages/StudySession.tsx` | Ler `target_exams` |
-| `supabase/functions/generate-study-plan/index.ts` | Ler `target_exams` |
-| `src/components/dashboard/ExamSetupReminder.tsx` | Exibir múltiplas provas |
+| `src/components/layout/DashboardLayout.tsx` | Sincronizar mobileNavGroups com sidebar |
+| `src/components/dashboard/FreeStudyCard.tsx` | Trocar rota obsoleta por Prova Prática |
+| `src/pages/Dashboard.tsx` | Reordenar e compactar zona acima da dobra |
+
+## Resultado
+- Menu mobile e desktop 100% sincronizados
+- Nenhuma rota quebrada nos atalhos
+- HeroStudyCard visível sem scroll no mobile
+- Fluxo visual: ação primeiro, informação depois
+
