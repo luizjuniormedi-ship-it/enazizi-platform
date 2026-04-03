@@ -1,78 +1,46 @@
 
 
-# Documento de Funcionalidades Detalhadas — ENAZIZI
+# Melhorias na Mentoria — Temas livres, destinatários visíveis e alunos avulsos
 
-## Objetivo
-Gerar um documento PDF profissional e completo descrevendo todos os módulos da plataforma ENAZIZI, detalhando a experiência do usuário em cada um.
+## Resumo
+Refatorar o formulário de criação de mentoria para: (1) permitir digitar temas e subtópicos livremente, (2) mostrar lista dos destinatários antes de publicar, (3) permitir adicionar alunos avulsos independente do público-alvo escolhido.
 
-## Conteúdo do Documento
+## Alterações em `src/components/professor/MentorThemePlans.tsx`
 
-O PDF será organizado nas seguintes seções:
+### 1. Temas — Input livre (substituir Select)
+- Remover imports: `CycleFilter`, `getFilteredSpecialties`, `ALL_SPECIALTIES`, `SPECIALTY_SUBTOPICS`
+- Remover state `cycleFilter` e `subtopicOptions`
+- Trocar o `<Select>` de tema por `<Input placeholder="Digite o tema (ex: Cardiologia)">`
+- Trocar o `<Select>` de subtópico por `<Input placeholder="Subtópico (opcional)">`
+- Manter botão "Adicionar" e badges removíveis
 
-### Capa
-- Logo/nome ENAZIZI
-- Título: "Guia Completo de Funcionalidades"
-- Subtítulo: "Experiência do Usuário — Módulo a Módulo"
+### 2. Destinatários — Múltiplos alunos avulsos
+- Trocar `selectedStudentId` (string) por `selectedStudents` (array de `{user_id, display_name, faculdade, periodo}`)
+- Ao clicar num resultado de busca, adicionar à lista (toggle — clicar de novo remove)
+- Mostrar badges dos alunos selecionados com ✕ para remover
+- Adicionar filtros de **faculdade** (`<Select>` com `FACULDADES`) e **período** (`<Select>` 1-12) na busca de alunos
+- Aplicar filtros na query Supabase (`.eq("faculdade", ...)`, `.eq("periodo", ...)`)
 
-### 1. Visão Geral da Plataforma
-- Arquitetura de camadas: Dashboard → Study Engine → Missão → Módulos
-- Fluxo principal do aluno (onboarding → plano → estudo → avaliação)
-- Adaptação por banca (ENARE, Revalida, USP, etc.)
+### 3. Seção "Quem receberá" (preview de destinatários)
+- Adicionar botão `👥 Ver destinatários` que carrega e exibe a lista de alunos que receberão a mentoria
+- Para turma: buscar `class_members` e cruzar com `profiles`
+- Para instituição: buscar `institution_members` e cruzar com `profiles`
+- Para alunos avulsos: mostrar diretamente os `selectedStudents`
+- Exibir lista compacta com nome, faculdade e período
+- Mostrar contador: "X aluno(s) receberão esta mentoria"
 
-### 2. Módulos Detalhados (cada um com: descrição, fluxo do usuário passo a passo, integração com o sistema)
+### 4. Lógica de criação — suportar múltiplos alunos
+- No `handleCreate`, inserir um `mentor_theme_plan_targets` para cada aluno avulso selecionado (target_type: "student", target_id: user_id)
+- Coletar todos os `studentIds` dos alunos avulsos para gerar `mentor_theme_plan_progress`
+- Permitir combinar turma/instituição + alunos avulsos extras
 
-| # | Módulo | Descrição resumida |
-|---|--------|--------------------|
-| 1 | **Dashboard** | Tela operacional com HeroStudyCard, alertas inteligentes, progresso semanal |
-| 2 | **Onboarding** | 4 etapas: prova alvo, data, horas/dia → plano automático |
-| 3 | **Tutor IA** | 5 estilos de aprendizado, streaming, PubMed, adaptação por banca |
-| 4 | **Modo Missão** | Sequência guiada: Revisão → Conteúdo → Questões → Reforço |
-| 5 | **Plano do Dia** | Visualização operacional das tarefas geradas pelo Study Engine |
-| 6 | **Plano Geral (Planner)** | Estratégia macro com mentoria do professor integrada |
-| 7 | **Simulados** | Modo prova (cronômetro, flags, navegação) + modo estudo |
-| 8 | **Flashcards** | Geração automática por tema, revisão FSRS, interface estilo simulado |
-| 9 | **Banco de Erros** | Coleta automática de erros, revisão contextual com Tutor |
-| 10 | **Mapa de Evolução** | Visualização por especialidade com níveis de domínio |
-| 11 | **Anamnese** | Treino semiológico com feedback em tempo real e Quality Stars |
-| 12 | **Plantão (Simulação Clínica)** | Casos clínicos interativos com decisões cronometradas |
-| 13 | **Prova Prática (OSCE)** | Simulação estilo residência com avaliação estruturada em 4 critérios |
-| 14 | **Crônicas Médicas** | Narrativas clínicas imersivas → conversão automática em OSCE |
-| 15 | **Nivelamento (Diagnóstico)** | Avaliação inicial para calibrar o Study Engine |
-| 16 | **Resumos** | Geração de resumos via IA |
-| 17 | **Apostilas (Study Guides)** | Material estruturado por tema |
-| 18 | **Discursivas** | Treino de questões dissertativas |
-| 19 | **Coach Motivacional** | Apoio emocional e estratégico via IA |
-| 20 | **Previsão de Desempenho** | Predição de aprovação baseada em dados |
-| 21 | **Proficiência** | Simulados do professor + Sala de Aula virtual |
-| 22 | **Rankings** | Competição entre alunos |
-| 23 | **Conquistas** | Gamificação com XP e badges |
-| 24 | **Analytics** | Gráficos detalhados de desempenho |
+### 5. Reset e cleanup
+- Atualizar `resetForm` para limpar `selectedStudents` e filtros
+- Remover imports e states não utilizados
 
-### 3. Painel do Professor
-- Criação de simulados e temas
-- Mentoria com boost no Study Engine
-- Relatório de acompanhamento (4 grupos de alunos)
-- BI avançado com heatmaps e correlações
+## Arquivos afetados
 
-### 4. Painel Administrativo
-- Gestão de usuários, mensagens, QA automatizado
-
-### 5. Integrações Inteligentes
-- Study Engine (motor central de decisão)
-- Adaptação por banca
-- Repetição espaçada (FSRS)
-- Cache e otimização de IA
-
-## Implementação Técnica
-
-1. **Script Python** gerando PDF com `reportlab` ou `fpdf2`
-2. Layout profissional com cores da marca (primary indigo/cyan)
-3. Ícones e emojis para cada módulo
-4. Seções com headers claros e texto descritivo
-5. Output em `/mnt/documents/ENAZIZI_Funcionalidades_Detalhadas.pdf`
-
-## Escopo
-- Apenas geração do documento (sem alteração de código)
-- Documento em português (pt-BR)
-- Aproximadamente 15-20 páginas
+| Arquivo | Ação |
+|---------|------|
+| `src/components/professor/MentorThemePlans.tsx` | Refatorar formulário completo |
 
