@@ -1,57 +1,39 @@
 
 
-# Flashcards com Apresentação Estilo Simulado
+# Flashcards: Input de Tema Livre + Geração Automática do Banco Global
 
 ## Problema
-O módulo Flashcards tem uma UI artesanal (card flip, input de texto, botões soltos) bem diferente do Simulados que tem: header sticky com progresso, grid de navegação, flags, barra de progresso, layout profissional e consistente.
+O filtro de temas usa uma lista de badges baseada nos flashcards existentes, limitando o usuário. O gerador de flashcards depende de chat com IA (AgentChat). Queremos: (1) substituir a lista de badges por um campo de texto livre para digitar o tema, e (2) adicionar geração automática de flashcards a partir do banco global de questões (questions_bank + real_exam_questions), sem depender de IA.
 
 ## Solução
-Criar um componente `FlashcardExam` que replica a estrutura visual do `SimuladoExam` mas adaptado para flashcards (flip, avaliação FSRS em vez de MCQ). Manter toda a lógica de FSRS, XP, error_bank, etc.
 
-## Arquitetura
+### 1. Substituir filtro de badges por input de texto livre (`Flashcards.tsx`)
+- Remover o bloco de badges de especialidades (linhas 387-417)
+- Adicionar um `<Input>` com placeholder "Digite o tema (ex: Cardiologia, IAM, Pneumonia)"
+- Filtrar cards por correspondência parcial no campo `topic` (case-insensitive)
+- Manter lógica de `selectedTopics` adaptada para funcionar com texto digitado
 
-```text
-Flashcards.tsx (setup/empty/loading — simplificado)
-  │
-  ├─ Tela inicial: escolha modo (Revisão / Todos / Sprint) + filtro tema + Iniciar
-  │
-  └─ FlashcardExam.tsx (novo componente, estilo SimuladoExam)
-       ├─ Header sticky: contador, progresso, tempo (sprint)
-       ├─ Barra de progresso
-       ├─ Card: topic badge + flag + enunciado + flip + resposta
-       ├─ Botões FSRS: Errei / Bom / Fácil
-       ├─ Navegação: Anterior / Próxima / Finalizar
-       └─ Grid de navegação (verde=acertou, vermelho=errou, cinza=pendente)
-```
+### 2. Adicionar botão "Gerar Flashcards do Banco" na tela de setup (`Flashcards.tsx`)
+- Novo botão na seção de modos: "Gerar do Banco de Questões"
+- Ao clicar, busca questões do banco global (`questions_bank` + `real_exam_questions`) filtradas pelo tema digitado
+- Converte cada questão em flashcard: `statement` → pergunta, `explanation + correct option` → resposta
+- Insere automaticamente na tabela `flashcards` com `user_id` e `topic`
+- Atualiza a lista local sem recarregar a página
+- Limite: 20 flashcards por geração (evitar sobrecarga)
 
-## Mudanças
+### 3. Lógica de conversão questão → flashcard
+- **Pergunta**: Enunciado da questão (statement)
+- **Resposta**: Alternativa correta + explicação (se houver)
+- **Tópico**: Campo `topic` da questão original
+- Deduplicação: ignorar questões cujo `statement_hash` (primeiros 80 chars) já existe nos flashcards do usuário
 
-### 1. Criar `src/components/flashcards/FlashcardExam.tsx`
-Componente inspirado no `SimuladoExam`:
-- **Header sticky**: `{idx+1}/{total}` | acertos/erros (contadores) | tempo restante (sprint)
-- **Barra de progresso**: baseada em cards revisados
-- **Card principal**: glass-card com topic badge, botão flag, pergunta visível, área de resposta oculta
-- **Input de resposta** + botão "Responder" ou "Pular" (mostra resposta)
-- **Após flip**: feedback visual (acerto/erro), botões FSRS (Errei/Bom/Fácil), botão "Aprofundar com Tutor IA"
-- **Navegação**: Anterior / Próxima com setas
-- **Grid de navegação** no rodapé: quadrados coloridos por status (pendente, acertou, errou, atual, flagged)
-- Props: `cards`, `fsrsStates`, `mode`, `sprintConfig?`, `onReview`, `onFinish`, `onDelete`
-
-### 2. Simplificar `src/pages/Flashcards.tsx`
-- Adicionar fase `"setup" | "active" | "finished"`
-- Fase **setup**: tela limpa com escolha de modo + filtro de temas + botão "Iniciar Revisão" (estilo SimuladoSetup)
-- Fase **active**: renderiza `<FlashcardExam />`
-- Fase **finished**: tela de resultado com estatísticas da sessão (acertos, erros, taxa, tempo)
-- Mover toda a lógica de review/delete/sprint para callbacks passados ao componente
-- Remover o bloco de UI inline (linhas 340-620)
-
-### 3. Tela de resultado (`FlashcardResult`)
-- Inline no próprio Flashcards.tsx ou componente separado
-- Mostra: total revisados, acertos, erros, taxa %, temas com mais erros
-- Botões: "Nova Sessão" / "Voltar ao Dashboard"
+### 4. Atualizar `FlashcardGenerator.tsx`
+- Substituir Select de especialidade por Input de texto livre
+- Remover CycleFilter
+- Manter toda a lógica de AgentChat para geração via IA
 
 | Arquivo | Ação |
 |---------|------|
-| `src/components/flashcards/FlashcardExam.tsx` | Criar — componente principal estilo simulado |
-| `src/pages/Flashcards.tsx` | Refatorar — setup → exam → result |
+| `src/pages/Flashcards.tsx` | Trocar badges por input + adicionar geração do banco |
+| `src/pages/FlashcardGenerator.tsx` | Trocar Select por Input de texto livre |
 
