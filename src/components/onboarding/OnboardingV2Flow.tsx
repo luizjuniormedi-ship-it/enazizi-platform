@@ -295,7 +295,6 @@ export default function OnboardingV2Flow({ onComplete, onSkip }: Props) {
 
             <div className="rounded-xl border bg-card p-5 text-left space-y-4">
               <div className="space-y-3">
-                {targetExam && (
                 {targetExams.length > 0 && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Provas</span>
