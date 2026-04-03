@@ -252,26 +252,8 @@ const MentorThemePlans = () => {
   };
 
   const viewProgress = async (plan: MentorPlan) => {
-    setDetailPlan(plan);
-    setProgressLoading(true);
-    const { data } = await supabase
-      .from("mentor_theme_plan_progress")
-      .select("*, mentor_theme_plan_topics(topic, subtopic)")
-      .eq("plan_id", plan.id);
-
-    // Get student names
-    const userIds = [...new Set((data || []).map(d => d.user_id))];
-    let profileMap: Record<string, string> = {};
-    if (userIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, display_name")
-        .in("user_id", userIds);
-      (profiles || []).forEach(p => { profileMap[p.user_id] = p.display_name || "Aluno"; });
-    }
-
-    setProgressData((data || []).map(d => ({ ...d, student_name: profileMap[d.user_id] || "Aluno" })));
-    setProgressLoading(false);
+  const viewProgress = (plan: MentorPlan) => {
+    setReportPlan(plan);
   };
 
   const subtopicOptions = currentTopic ? (SPECIALTY_SUBTOPICS as Record<string, string[]>)[currentTopic] || [] : [];
