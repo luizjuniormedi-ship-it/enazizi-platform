@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { User, Camera, Loader2, Save, GraduationCap, Building, Phone, Stethoscope, CalendarDays, Clock, MessageSquare } from "lucide-react";
+import { User, Camera, Loader2, Save, GraduationCap, Building, Phone, Stethoscope, CalendarDays, Clock, MessageSquare, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +14,25 @@ import FaculdadeCombobox from "@/components/FaculdadeCombobox";
 import { isValidPhone, isValidName } from "@/lib/profileValidation";
 import { Switch } from "@/components/ui/switch";
 import { ALL_SPECIALTIES } from "@/constants/specialties";
+import { cn } from "@/lib/utils";
+
+const EXAM_OPTIONS = [
+  { value: "enare", label: "ENARE" },
+  { value: "revalida", label: "Revalida (INEP)" },
+  { value: "usp", label: "USP" },
+  { value: "unicamp", label: "UNICAMP" },
+  { value: "unifesp", label: "UNIFESP" },
+  { value: "sus-sp", label: "SUS-SP" },
+  { value: "sus-rj", label: "SUS-RJ" },
+  { value: "amrigs", label: "AMRIGS" },
+  { value: "ses-df", label: "SES-DF" },
+  { value: "psu-mg", label: "PSU-MG" },
+  { value: "hcpa", label: "HCPA" },
+  { value: "santa-casa-sp", label: "Santa Casa SP" },
+  { value: "einstein", label: "Einstein" },
+  { value: "sirio-libanes", label: "Sírio-Libanês" },
+  { value: "outra", label: "Outra prova de residência" },
+];
 
 const Profile = () => {
   const { user } = useAuth();
@@ -28,6 +49,7 @@ const Profile = () => {
   const [examDate, setExamDate] = useState("");
   const [dailyStudyHours, setDailyStudyHours] = useState("4");
   const [whatsappDailyBi, setWhatsappDailyBi] = useState(false);
+  const [targetExams, setTargetExams] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -37,7 +59,7 @@ const Profile = () => {
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, email, periodo, faculdade, phone, user_type, target_specialty, exam_date, daily_study_hours, whatsapp_daily_bi")
+        .select("display_name, avatar_url, email, periodo, faculdade, phone, user_type, target_specialty, exam_date, daily_study_hours, whatsapp_daily_bi, target_exams, target_exam")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -52,6 +74,12 @@ const Profile = () => {
         setExamDate(data.exam_date || "");
         setDailyStudyHours(data.daily_study_hours ? String(data.daily_study_hours) : "4");
         setWhatsappDailyBi(data.whatsapp_daily_bi || false);
+        const exams = (data as any).target_exams;
+        if (Array.isArray(exams) && exams.length > 0) {
+          setTargetExams(exams);
+        } else if ((data as any).target_exam) {
+          setTargetExams([(data as any).target_exam]);
+        }
       }
       setLoading(false);
     };
@@ -124,6 +152,8 @@ const Profile = () => {
         exam_date: examDate || null,
         daily_study_hours: parseFloat(dailyStudyHours) || 4,
         whatsapp_daily_bi: whatsappDailyBi,
+        target_exams: targetExams,
+        target_exam: targetExams[0] || null,
       };
       if (userType === "estudante") {
         updateData.periodo = periodo ? parseInt(periodo) : null;
@@ -296,6 +326,56 @@ const Profile = () => {
         )}
 
         {/* Exam & Study Config */}
+        {/* Target Exams */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-1.5">
+            <Target className="h-3.5 w-3.5 text-muted-foreground" />
+            Provas alvo
+            <span className="text-xs text-muted-foreground ml-auto">{targetExams.length}/3</span>
+          </Label>
+          <div className="grid grid-cols-2 gap-2 max-h-44 overflow-y-auto pr-1">
+            {EXAM_OPTIONS.map((opt) => {
+              const checked = targetExams.includes(opt.value);
+              const disabled = !checked && targetExams.length >= 3;
+              return (
+                <label
+                  key={opt.value}
+                  className={cn(
+                    "flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition-colors",
+                    checked
+                      ? "border-primary bg-primary/10 text-primary font-medium"
+                      : disabled
+                        ? "border-border bg-muted text-muted-foreground cursor-not-allowed opacity-50"
+                        : "border-border hover:border-primary/50 hover:bg-accent"
+                  )}
+                >
+                  <Checkbox
+                    checked={checked}
+                    disabled={disabled}
+                    onCheckedChange={(v) => {
+                      if (v) {
+                        setTargetExams(prev => [...prev, opt.value].slice(0, 3));
+                      } else {
+                        setTargetExams(prev => prev.filter(e => e !== opt.value));
+                      }
+                    }}
+                  />
+                  {opt.label}
+                </label>
+              );
+            })}
+          </div>
+          {targetExams.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {targetExams.map(e => (
+                <Badge key={e} variant="secondary" className="text-xs">
+                  {EXAM_OPTIONS.find(o => o.value === e)?.label || e}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
             <Label className="flex items-center gap-1.5">

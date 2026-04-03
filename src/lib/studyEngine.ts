@@ -3,7 +3,7 @@ import { adjustPlanByApprovalScore, getAdaptiveMode, type PlanWeights, type Adap
 import { adjustNewTopicsByLock, type ContentLockStatus } from "@/hooks/useContentLock";
 import { retrievability as fsrsRetrievability, State as FsrsState } from "./fsrs";
 import type { StudyTaskType, StudyObjective } from "./studyContext";
-import { getExamProfile, applyExamModifiers, type ExamProfile } from "./examProfiles";
+import { getExamProfile, getMergedExamProfile, applyExamModifiers, type ExamProfile } from "./examProfiles";
 
 export type RecommendationType = "review" | "practice" | "clinical" | "new" | "error_review" | "simulado" | "chronicle";
 export type TargetModule = "tutor" | "questoes" | "flashcards" | "plantao" | "anamnese" | "simulado" | "cronograma" | "banco-erros" | "cronicas";
@@ -249,7 +249,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     // Profile for exam_date
     safe(() => supabase
       .from("profiles")
-      .select("exam_date, target_exam")
+      .select("exam_date, target_exam, target_exams")
       .eq("user_id", userId)
       .single(), "profile"),
   ]);
@@ -298,7 +298,10 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
 
   // ── Apply exam profile modifiers ─────────────────────────────
   const profile = profileData as any;
-  const examProfile = getExamProfile(profile?.target_exam);
+  const targetExams: string[] = profile?.target_exams;
+  const examProfile = (Array.isArray(targetExams) && targetExams.length > 0)
+    ? getMergedExamProfile(targetExams)
+    : getExamProfile(profile?.target_exam);
   const weights = applyExamModifiers(baseWeights, examProfile) as PlanWeights;
 
   // ── Content Lock — compute inline for engine use ─────────────
