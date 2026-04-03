@@ -1,82 +1,50 @@
 
 
-# Relatório de Validação E2E — Dashboard vs Jornada Real
+# Integrar Perfil de Banca e Dados do Aluno ao Modo Plantão
 
-## Metodologia
-Auditoria completa do código-fonte: Dashboard.tsx, useDashboardData.ts, studyEngine.ts (800 linhas), useMissionMode.ts, MentorshipBanner.tsx, SmartAlertCard.tsx, ExamReadinessCard.tsx, PlannerMentorshipBlock.tsx e fluxos relacionados.
+## Situação Atual
+O Modo Plantão já implementa tudo que o prompt descreve: apresentação do paciente, etapas de diagnóstico/conduta/tratamento adaptativo, feedback final com scores detalhados, adaptação por dificuldade/triage, e deterioração por inatividade. O sistema já tem 2336 linhas de UI e 538 linhas de edge function.
 
----
+**O que falta**: o sistema não recebe nem usa os dados de banca do aluno (ENARE/USP/SUS-SP/ENAMED), seu histórico de erros, nem a proximidade da prova para adaptar o estilo do caso.
 
-## INCONSISTÊNCIAS ENCONTRADAS
+## Mudanças
 
-### 🔴 CRÍTICA — Dados de outros alunos vazando
+### 1. Frontend — Enviar dados do perfil ao iniciar caso
+**Arquivo**: `src/pages/ClinicalSimulation.tsx`
+- No `startSimulation()`, buscar do perfil do usuário: `target_exams` (bancas), erros recentes na especialidade (via `error_bank`), e data da prova
+- Enviar esses dados no body da request `action: "start"`:
+  - `target_exams: ["enare", "usp"]`
+  - `user_level: "intermediário"` (já existe via `difficulty`)
+  - `recent_errors: { has_errors: true, error_types: ["diagnóstico", "conduta"] }`
+  - `exam_proximity_days: 45`
 
-| # | Problema | Arquivo | Impacto |
-|---|---------|---------|---------|
-| 1 | **Study Engine busca mentorias de TODOS os alunos** — query `mentor_theme_plan_targets` na linha 239-242 não tem filtro `.eq("target_id", userId)`. Resultado: temas de mentoria de outros alunos influenciam a missão do usuário. | `src/lib/studyEngine.ts` | **ALTO — dados incorretos** |
-| 2 | **PlannerMentorshipBlock** — mesma query sem filtro de user_id (linha 30-32). Planner mostra mentorias de todos os alunos. | `src/components/planner/PlannerMentorshipBlock.tsx` | **ALTO — dados incorretos** |
+### 2. Edge Function — Injetar contexto de banca no prompt
+**Arquivo**: `supabase/functions/clinical-simulation/index.ts`
+- Importar `getBancaProfile` e `buildBancaBlock` de `_shared/banca-profiles.ts`
+- No bloco `action === "start"`, adicionar ao prompt do usuário:
+  - Bloco de adaptação por banca (estilo, profundidade, ênfases)
+  - Informações de erros prévios para reforço
+  - Proximidade da prova para aumentar complexidade
+- Exemplo de instrução adicionada: "Adapte o estilo do caso para a banca ENARE: direto, objetivo, foco em conduta. O aluno errou recentemente em diagnóstico de cardiologia — inclua pistas que testem esse tipo de raciocínio."
 
-### 🟡 MODERADAS
-
-| # | Problema | Detalhe |
-|---|---------|---------|
-| 3 | **SmartAlertCard usa `errorsCount` total** (linha 78) — mostra alerta genérico "X erros acumulados" sem identificar POR TEMA. Um aluno com 5 erros em 5 temas diferentes (1 cada) recebe o mesmo alerta que alguém com 5 erros no mesmo tema. | Alerta impreciso |
-| 4 | **WeeklyEvolutionBar** — calcula horas apenas via `study_tasks`. Se o aluno estuda pela Missão/Tutor sem criar tarefas no plano, progresso semanal = 0. | Subcontagem potencial |
-| 5 | **MentorshipBanner CTA** aponta para `/dashboard/chatgpt?topic=...` mas não passa contexto de banca — o Tutor abre sem saber qual prova contextualizar. | UX parcial |
-
-### 🟢 CORRETAS — Pontos Fortes
-
-| Componente | Status |
-|-----------|--------|
-| **HeroStudyCard** — dados do Study Engine, CTA claro, missão real | ✅ Consistente |
-| **ExamReadinessCard** — cálculo por banca com 7 dimensões e pesos | ✅ Consistente |
-| **MentorshipBanner** — corrigido com filtro `.eq("target_id", user.id)` | ✅ Consistente |
-| **Greeting + Streak + Target Exams** — inline, compacto | ✅ Consistente |
-| **Cache invalidation** — 3 caches (dashboard-data, exam-readiness, study-engine) no mount | ✅ Implementado |
-| **Realtime** — 5 tabelas (practice_attempts, reviews, exam_sessions, error_bank, user_gamification) | ✅ Implementado |
-| **Study Engine** — hierarquia correta: FSRS (95-100) → Erros (70-90) → Low accuracy (65) → Clinical/OSCE → Simulados → Novos | ✅ Coerente |
-| **Missão** — persiste via localStorage 24h, sequência respeitada | ✅ Correto |
-| **OSCE** — triggers inteligentes (conduta, nota baixa, prova próxima) | ✅ Integrado |
-| **Cronograma** — curriculum gap filler + boost de +8 | ✅ Integrado |
-| **Mentoria no Engine** — boost dinâmico (+10 a +25) por proximidade | ✅ Correto (porém usa dados errados — ver item #1) |
-| **Fallback** — sempre retorna pelo menos 1 tarefa | ✅ Robusto |
-
----
-
-## PLANO DE CORREÇÃO
-
-### 1. Filtrar mentor_theme_plan_targets por userId no Study Engine
-**Arquivo**: `src/lib/studyEngine.ts` (linha 239-242)
-- Adicionar `.eq("target_id", userId)` à query
-
-### 2. Filtrar mentor_theme_plan_targets no PlannerMentorshipBlock
-**Arquivo**: `src/components/planner/PlannerMentorshipBlock.tsx` (linha 30-32)
-- Adicionar `.eq("target_id", user.id)` à query
-
-### 3. (Opcional) Refinar SmartAlertCard para agrupar erros por tema
-**Arquivo**: `src/components/dashboard/SmartAlertCard.tsx`
-- Buscar tema com mais erros no error_bank em vez de contar total bruto
-
----
-
-## AVALIAÇÃO FINAL
-
-| Dimensão | Nota |
-|----------|------|
-| Clareza | 9/10 — CTA claro, hierarquia visual correta |
-| Fluidez | 9/10 — transições rápidas, lazy loading, cache invalidation |
-| Coerência dos dados | 7/10 — **vazamento de mentorias de outros alunos é crítico** |
-| Confiança do usuário | 8/10 — alertas e readiness transmitem confiança |
-| Aderência à jornada real | 9/10 — Study Engine cobre todos os cenários |
-| **Média** | **8.4/10** |
+### 3. Lookup de erros no frontend
+**Arquivo**: `src/pages/ClinicalSimulation.tsx`
+- Antes de chamar a API, fazer query rápida ao `error_bank` filtrando pela especialidade selecionada e pelo user_id
+- Extrair tipos de erro predominantes (diagnóstico/conduta/tratamento) e temas
+- Passar como `recent_errors` no body
 
 ## Arquivos Afetados
 
 | Arquivo | Ação |
 |---------|------|
-| `src/lib/studyEngine.ts` | Adicionar filtro `.eq("target_id", userId)` na query de mentoria |
-| `src/components/planner/PlannerMentorshipBlock.tsx` | Adicionar filtro `.eq("target_id", user.id)` |
+| `src/pages/ClinicalSimulation.tsx` | Buscar target_exams do perfil + erros recentes, enviar no start |
+| `supabase/functions/clinical-simulation/index.ts` | Receber e injetar contexto de banca + erros no prompt de geração |
+
+## O que NÃO muda
+- Toda a lógica de interação, ABCDE, deterioração, prescrição, avaliação final
+- UI existente permanece intacta
+- Nenhuma funcionalidade removida
 
 ## Resultado
-Após corrigir os 2 filtros de mentoria, o sistema atinge consistência 9.5/10. A jornada do usuário no ENAZIZI foi validada ponta a ponta, com foco em coerência do Dashboard, integração entre módulos e alinhamento com a experiência real do estudante.
+O Plantão passa a gerar casos adaptados ao perfil real do aluno: estilo da banca, reforço de erros anteriores e pressão proporcional à proximidade da prova.
 
