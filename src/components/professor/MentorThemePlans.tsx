@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { BookMarked, Plus, Loader2, Users, Trash2, Eye, Calendar, CheckCircle, AlertTriangle } from "lucide-react";
+import { BookMarked, Plus, Loader2, Users, Trash2, Eye, Calendar, CheckCircle, AlertTriangle, BarChart3 } from "lucide-react";
+import MentorshipReport from "@/components/professor/MentorshipReport";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,10 +59,8 @@ const MentorThemePlans = () => {
   const [studentSearch, setStudentSearch] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
-  // Detail dialog
-  const [detailPlan, setDetailPlan] = useState<MentorPlan | null>(null);
-  const [progressData, setProgressData] = useState<any[]>([]);
-  const [progressLoading, setProgressLoading] = useState(false);
+  // Detail view — full report
+  const [reportPlan, setReportPlan] = useState<MentorPlan | null>(null);
 
   const loadPlans = useCallback(async () => {
     if (!user) return;
@@ -253,26 +252,8 @@ const MentorThemePlans = () => {
   };
 
   const viewProgress = async (plan: MentorPlan) => {
-    setDetailPlan(plan);
-    setProgressLoading(true);
-    const { data } = await supabase
-      .from("mentor_theme_plan_progress")
-      .select("*, mentor_theme_plan_topics(topic, subtopic)")
-      .eq("plan_id", plan.id);
-
-    // Get student names
-    const userIds = [...new Set((data || []).map(d => d.user_id))];
-    let profileMap: Record<string, string> = {};
-    if (userIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, display_name")
-        .in("user_id", userIds);
-      (profiles || []).forEach(p => { profileMap[p.user_id] = p.display_name || "Aluno"; });
-    }
-
-    setProgressData((data || []).map(d => ({ ...d, student_name: profileMap[d.user_id] || "Aluno" })));
-    setProgressLoading(false);
+  const viewProgress = (plan: MentorPlan) => {
+    setReportPlan(plan);
   };
 
   const subtopicOptions = currentTopic ? (SPECIALTY_SUBTOPICS as Record<string, string[]>)[currentTopic] || [] : [];
@@ -283,6 +264,11 @@ const MentorThemePlans = () => {
         <Loader2 className="h-6 w-6 text-primary animate-spin" />
       </div>
     );
+  }
+
+  // If viewing report, show full report view
+  if (reportPlan) {
+    return <MentorshipReport plan={reportPlan} onBack={() => { setReportPlan(null); loadPlans(); }} />;
   }
 
   return (
@@ -341,7 +327,7 @@ const MentorThemePlans = () => {
                   </div>
                   <div className="flex gap-1">
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewProgress(plan)}>
-                      <Eye className="h-4 w-4" />
+                      <BarChart3 className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deletePlan(plan.id)}>
                       <Trash2 className="h-4 w-4" />
@@ -465,65 +451,6 @@ const MentorThemePlans = () => {
               Criar e Publicar
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Progress detail dialog */}
-      <Dialog open={!!detailPlan} onOpenChange={() => setDetailPlan(null)}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{detailPlan?.name} — Acompanhamento</DialogTitle>
-          </DialogHeader>
-          {progressLoading ? (
-            <div className="flex justify-center p-8">
-              <Loader2 className="h-6 w-6 text-primary animate-spin" />
-            </div>
-          ) : progressData.length === 0 ? (
-            <div className="text-center p-6 text-muted-foreground">
-              <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-40" />
-              <p className="text-sm">Nenhum progresso registrado ainda.</p>
-              <p className="text-xs">Os alunos verão os temas sugeridos no dashboard e o Study Engine priorizará automaticamente.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {/* Group by student */}
-              {[...new Set(progressData.map(d => d.user_id))].map(uid => {
-                const studentProgress = progressData.filter(d => d.user_id === uid);
-                const studentName = studentProgress[0]?.student_name || "Aluno";
-                const totalQ = studentProgress.reduce((s, p) => s + (p.questions_answered || 0), 0);
-                const totalC = studentProgress.reduce((s, p) => s + (p.correct_answers || 0), 0);
-                const accuracy = totalQ > 0 ? Math.round((totalC / totalQ) * 100) : 0;
-
-                return (
-                  <Card key={uid}>
-                    <CardContent className="p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{studentName}</span>
-                        <Badge variant="outline" className="text-[10px]">
-                          {totalQ > 0 ? `${accuracy}% • ${totalQ} questões` : "Sem atividade"}
-                        </Badge>
-                      </div>
-                      {studentProgress.map(p => (
-                        <div key={p.id} className="flex items-center gap-2 text-xs">
-                          {p.questions_answered > 0 ? (
-                            <CheckCircle className="h-3 w-3 text-green-500 shrink-0" />
-                          ) : (
-                            <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
-                          )}
-                          <span className="flex-1">{p.mentor_theme_plan_topics?.topic || "Tema"}</span>
-                          {p.questions_answered > 0 && (
-                            <span className="text-muted-foreground">
-                              {p.correct_answers}/{p.questions_answered}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
         </DialogContent>
       </Dialog>
     </div>
