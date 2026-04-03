@@ -58,6 +58,7 @@ const MedicalChronicles = lazy(() => import("./pages/MedicalChronicles"));
 const AIMentor = lazy(() => import("./pages/AIMentor"));
 const SmartPlanner = lazy(() => import("./pages/SmartPlanner"));
 const AdminMonitoring = lazy(() => import("./pages/AdminMonitoring"));
+const AdminCEO = lazy(() => import("./pages/AdminCEO"));
 const MissionMode = lazy(() => import("./pages/MissionMode"));
 const StudySession = lazy(() => import("./pages/StudySession"));
 const Rankings = lazy(() => import("./pages/Rankings"));
@@ -148,6 +149,7 @@ const App = () => (
               <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />
                 <Route path="monitoring" element={<AdminMonitoring />} />
+                <Route path="ceo" element={<AdminCEO />} />
               </Route>
               <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
