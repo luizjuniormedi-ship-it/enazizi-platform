@@ -1049,12 +1049,12 @@ const ProfessorDashboard = () => {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs">Tema</Label>
-                      <Select value={manualTopic} onValueChange={setManualTopic}>
-                        <SelectTrigger className="h-8"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                        <SelectContent>
-                          {SPECIALTIES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <Input
+                        value={manualTopic}
+                        onChange={(e) => setManualTopic(e.target.value)}
+                        placeholder="Digite o tema (ex: Cardiologia)"
+                        className="h-8 text-xs"
+                      />
                     </div>
                   </div>
 
