@@ -1,4 +1,6 @@
 import { useStudyContext, getSourceLabel, getObjectiveLabel } from "@/lib/studyContext";
+import { getHumanReadableReason } from "@/lib/humanizedReasons";
+import type { StudyRecommendation } from "@/lib/studyEngine";
 import { Badge } from "@/components/ui/badge";
 import { Target, ArrowLeft, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
