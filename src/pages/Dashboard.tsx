@@ -171,6 +171,11 @@ const Dashboard = () => {
         <HeroStudyCard />
       </SafeCard>
 
+      {/* ══════════════════════════════════════════
+          MENTORIA ATIVA — logo após o CTA principal
+         ══════════════════════════════════════════ */}
+      <SafeCard name="MentorshipBanner"><MentorshipBanner /></SafeCard>
+
       {/* Onboarding checklist — high visibility for new users */}
       {isNewUser && (
         <SafeCard name="OnboardingNew">
@@ -288,8 +293,6 @@ const Dashboard = () => {
       {/* Mensagens do admin — secundário */}
       <SafeCard name="AdminMessages"><AdminMessagesBanner /></SafeCard>
 
-      {/* Mentoria do professor */}
-      <SafeCard name="MentorshipBanner"><MentorshipBanner /></SafeCard>
 
       {/* Install app — secundário, lazy loaded */}
       <Suspense fallback={null}>
