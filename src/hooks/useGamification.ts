@@ -276,9 +276,10 @@ export function useGamification() {
       xp: newXp, level, currentStreak: newStreak, longestStreak,
       weeklyXp: newWeeklyXp, totalQuestions: 0, totalSimulados: 0, totalFlashcards: 0,
       totalPlantao: 0, totalAnamnese: 0, totalReviews: 0, totalMissions: 0, approvalScore: 0,
+      errorsCorrected: 0, topicsImproved: 0, specialtiesMastered: 0,
     };
 
-    const [qRes, simRes, fcRes, plRes, anRes, revRes, apRes] = await Promise.all([
+    const [qRes, simRes, fcRes, plRes, anRes, revRes, apRes, errRes, domRes] = await Promise.all([
       supabase.from("practice_attempts").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       supabase.from("exam_sessions").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "finished"),
       supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", user.id),
@@ -286,6 +287,8 @@ export function useGamification() {
       supabase.from("anamnesis_results").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       supabase.from("revisoes").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "concluida"),
       supabase.from("approval_scores").select("score").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1),
+      supabase.from("error_bank").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("dominado", true),
+      supabase.from("medical_domain_map").select("domain_score").eq("user_id", user.id),
     ]);
     stats.totalQuestions = qRes.count || 0;
     stats.totalSimulados = simRes.count || 0;
@@ -294,6 +297,11 @@ export function useGamification() {
     stats.totalAnamnese = anRes.count || 0;
     stats.totalReviews = revRes.count || 0;
     stats.approvalScore = (apRes.data && apRes.data[0]) ? Number((apRes.data[0] as any).score) : 0;
+    stats.errorsCorrected = errRes.count || 0;
+    stats.specialtiesMastered = (domRes.data || []).filter((d: any) => d.domain_score >= 80).length;
+    // topicsImproved: count topics with accuracy >= 70 and at least 5 questions
+    const { count: improvedCount } = await supabase.from("user_topic_profiles").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("accuracy", 70).gte("total_questions", 5);
+    stats.topicsImproved = improvedCount || 0;
 
     for (const ach of ACHIEVEMENTS) {
       if (!unlockedKeys.has(ach.key) && ach.condition(stats)) {
