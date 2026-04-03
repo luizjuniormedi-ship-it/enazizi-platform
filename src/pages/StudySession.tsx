@@ -403,6 +403,7 @@ const StudySession = () => {
           topic: currentTopic,
           performanceData: performance,
           studyMode,
+          targetExam,
         }),
       });
 
