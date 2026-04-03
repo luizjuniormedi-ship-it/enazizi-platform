@@ -54,6 +54,7 @@ const navGroups: NavGroup[] = [
     defaultOpen: false,
     items: [
       { to: "/dashboard/anamnese", icon: MessageCircle, label: "Anamnese" },
+      { to: "/dashboard/prova-pratica", icon: Stethoscope, label: "Prova Prática" },
       { to: "/dashboard/plantao", icon: Activity, label: "Plantão" },
       { to: "/dashboard/banco-erros", icon: AlertTriangle, label: "Banco de Erros" },
       { to: "/dashboard/mapa-dominio", icon: Map, label: "Mapa de Evolução" },
