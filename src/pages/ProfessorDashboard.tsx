@@ -1373,6 +1373,10 @@ const ProfessorDashboard = () => {
         <TabsContent value="mentoria" className="mt-4">
           <MentorThemePlans />
         </TabsContent>
+
+        <TabsContent value="osce" className="mt-4">
+          <ProfessorPracticalExams />
+        </TabsContent>
       </Tabs>
     </div>
   );
