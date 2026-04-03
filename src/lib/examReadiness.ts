@@ -4,6 +4,7 @@
  */
 
 import { EXAM_PROFILES, type ExamProfile, getExamProfile } from "./examProfiles";
+import { BASE_CURRICULUM, type CurriculumTopic } from "@/constants/baseCurriculum";
 
 export type ReadinessLabel = "muito_baixa" | "em_construcao" | "competitiva" | "alta";
 
@@ -19,6 +20,12 @@ export interface ExamReadiness {
   topPositive: string;
   /** What's dragging score down */
   topNegative: string;
+  /** Curriculum coverage score 0-100 */
+  coverageScore: number;
+  /** Number of curriculum topics covered */
+  topicsCovered: number;
+  /** Total curriculum topics for this banca */
+  topicsTotal: number;
 }
 
 export interface ReadinessInput {
@@ -30,6 +37,8 @@ export interface ReadinessInput {
   totalQuestionsAnswered: number;
   streak: number;
   recentAccuracy: number; // last 50 questions accuracy %
+  /** Topics already studied by the user (lowercase) */
+  studiedTopics?: string[];
 }
 
 function getLabel(score: number): ReadinessLabel {
@@ -51,6 +60,66 @@ export function getLabelText(label: ReadinessLabel): string {
 }
 
 /**
+ * Get curriculum topics relevant to a specific banca (filtered by specialtyWeights)
+ */
+function getCurriculumForBanca(profile: ExamProfile): CurriculumTopic[] {
+  const bancaSpecs = new Set(Object.keys(profile.specialtyWeights));
+  return BASE_CURRICULUM.filter(t => bancaSpecs.has(t.specialty));
+}
+
+/**
+ * Calculate coverage score: how many banca-relevant curriculum topics the student has studied
+ */
+function calculateCoverageScore(
+  profile: ExamProfile,
+  studiedTopics: string[],
+): { coverageScore: number; topicsCovered: number; topicsTotal: number } {
+  const bancaTopics = getCurriculumForBanca(profile);
+  const uniqueTopics = [...new Set(bancaTopics.map(t => t.topic))];
+  const topicsTotal = uniqueTopics.length;
+  if (topicsTotal === 0) return { coverageScore: 0, topicsCovered: 0, topicsTotal: 0 };
+
+  let covered = 0;
+  for (const topic of uniqueTopics) {
+    const lower = topic.toLowerCase();
+    const isCovered = studiedTopics.some(
+      (st) => st.includes(lower.slice(0, 10)) || lower.includes(st.slice(0, 10))
+    );
+    if (isCovered) covered++;
+  }
+
+  // Weight coverage by specialty importance
+  const specWeights = profile.specialtyWeights;
+  const bySpec: Record<string, { covered: number; total: number }> = {};
+  for (const t of bancaTopics) {
+    if (!bySpec[t.specialty]) bySpec[t.specialty] = { covered: 0, total: 0 };
+    bySpec[t.specialty].total++;
+  }
+  for (const t of bancaTopics) {
+    const lower = t.topic.toLowerCase();
+    const isCovered = studiedTopics.some(
+      (st) => st.includes(lower.slice(0, 10)) || lower.includes(st.slice(0, 10))
+    );
+    if (isCovered && bySpec[t.specialty]) bySpec[t.specialty].covered++;
+  }
+
+  let weightedCoverage = 0;
+  let totalWeight = 0;
+  for (const [spec, data] of Object.entries(bySpec)) {
+    const w = specWeights[spec] || 10;
+    const ratio = data.total > 0 ? data.covered / data.total : 0;
+    weightedCoverage += ratio * w;
+    totalWeight += w;
+  }
+
+  const coverageScore = totalWeight > 0
+    ? Math.round((weightedCoverage / totalWeight) * 100)
+    : Math.round((covered / topicsTotal) * 100);
+
+  return { coverageScore, topicsCovered: covered, topicsTotal };
+}
+
+/**
  * Calculate readiness for a single exam profile
  */
 export function calculateExamReadiness(
@@ -60,7 +129,7 @@ export function calculateExamReadiness(
   const profile = getExamProfile(examKey);
   const weights = profile.specialtyWeights;
 
-  // 1. Weighted accuracy by banca specialty emphasis (35%)
+  // 1. Weighted accuracy by banca specialty emphasis (30%)
   let weightedAcc = 0;
   let totalWeight = 0;
   const strongAreas: string[] = [];
@@ -78,37 +147,42 @@ export function calculateExamReadiness(
   }
   const specScore = totalWeight > 0 ? weightedAcc / totalWeight : input.approvalScore;
 
-  // 2. Base approval score component (25%)
+  // 2. Base approval score component (20%)
   const baseScore = input.approvalScore;
 
   // 3. Simulado performance adjusted by difficulty (15%)
   const simAvg = input.simuladoScores.length > 0
     ? input.simuladoScores.reduce((a, b) => a + b, 0) / input.simuladoScores.length
     : 0;
-  // Harder bancas penalize more if sim scores are low
-  const difficultyPenalty = (profile.difficulty - 3) * 3; // -6 to +6
+  const difficultyPenalty = (profile.difficulty - 3) * 3;
   const simScore = Math.max(0, simAvg - difficultyPenalty);
 
-  // 4. Practical performance for OSCE-heavy bancas (10%)
+  // 4. Curriculum coverage score (10%)
+  const { coverageScore, topicsCovered, topicsTotal } = calculateCoverageScore(
+    profile, input.studiedTopics || []
+  );
+
+  // 5. Practical performance for OSCE-heavy bancas (10%)
   const practAvg = input.practicalScores.length > 0
     ? input.practicalScores.reduce((a, b) => a + b, 0) / input.practicalScores.length
     : 0;
   const practicalMultiplier = profile.osceEmphasis ? 1.3 : 0.7;
   const practScore = practAvg * practicalMultiplier;
 
-  // 5. Consistency & volume (10%)
+  // 6. Consistency & volume (10%)
   const volumeScore = Math.min((input.totalQuestionsAnswered / 500) * 100, 100);
   const streakBonus = Math.min(input.streak * 2, 20);
   const consistencyScore = Math.min(volumeScore * 0.7 + streakBonus + input.recentAccuracy * 0.1, 100);
 
-  // 6. Review penalty (5%)
+  // 7. Review penalty (5%)
   const reviewPenalty = Math.min(input.overdueReviews * 2, 30);
 
-  // Combine
+  // Combine with coverage_score as new dimension
   const raw =
-    specScore * 0.35 +
-    baseScore * 0.25 +
+    specScore * 0.30 +
+    baseScore * 0.20 +
     simScore * 0.15 +
+    coverageScore * 0.10 +
     Math.min(practScore, 100) * 0.10 +
     consistencyScore * 0.10 -
     reviewPenalty * 0.05;
@@ -117,13 +191,14 @@ export function calculateExamReadiness(
   const readinessLabel = getLabel(readinessScore);
 
   // Generate insight
-  const insight = generateInsight(profile, input, strongAreas, weakAreas, readinessScore);
+  const insight = generateInsight(profile, input, strongAreas, weakAreas, readinessScore, coverageScore);
 
   // Top positive/negative
   const factors: { label: string; value: number }[] = [
     { label: "Acurácia por especialidade", value: specScore },
     { label: "Score de aprovação geral", value: baseScore },
     { label: "Simulados", value: simScore },
+    { label: "Cobertura do cronograma", value: coverageScore },
     { label: "Prática clínica", value: Math.min(practScore, 100) },
     { label: "Consistência e volume", value: consistencyScore },
   ];
@@ -141,6 +216,9 @@ export function calculateExamReadiness(
     weakAreas: weakAreas.slice(0, 3),
     topPositive,
     topNegative,
+    coverageScore,
+    topicsCovered,
+    topicsTotal,
   };
 }
 
@@ -150,9 +228,14 @@ function generateInsight(
   strongAreas: string[],
   weakAreas: string[],
   score: number,
+  coverageScore: number,
 ): string {
   if (input.totalQuestionsAnswered < 30) {
     return `Continue praticando para termos dados suficientes sobre sua preparação para ${profile.label}.`;
+  }
+
+  if (coverageScore < 40 && input.totalQuestionsAnswered >= 50) {
+    return `Sua cobertura de temas para ${profile.label} ainda está baixa (${coverageScore}%). Amplie os assuntos estudados.`;
   }
 
   if (score >= 75 && strongAreas.length >= 2) {
@@ -168,6 +251,10 @@ function generateInsight(
     return `Foque em ${weakAreas.slice(0, 2).join(" e ")} para melhorar na ${profile.label}.`;
   }
 
+  if (coverageScore >= 70 && score < 60) {
+    return `Boa cobertura de temas (${coverageScore}%), mas o desempenho precisa melhorar para ${profile.label}.`;
+  }
+
   if (input.simuladoScores.length === 0) {
     return `Faça simulados para refinar sua projeção na ${profile.label}.`;
   }
@@ -176,7 +263,7 @@ function generateInsight(
     return `A ${profile.label} cobra prova prática — pratique OSCE e anamnese.`;
   }
 
-  return `Seu bom volume de questões favorece sua preparação para ${profile.label}.`;
+  return `Você já cobriu ${coverageScore}% dos temas da ${profile.label}. Continue assim!`;
 }
 
 /**

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trophy, TrendingUp, TrendingDown, ChevronRight, AlertTriangle, CheckCircle2, Info } from "lucide-react";
+import { Trophy, TrendingUp, TrendingDown, ChevronRight, AlertTriangle, CheckCircle2, Info, BookOpen } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -71,7 +71,12 @@ export default function ExamReadinessCard() {
                   </div>
                 </div>
                 <Progress value={exam.readinessScore} className={`h-1.5 ${PROGRESS_COLORS[exam.readinessLabel]}`} />
-                <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1">{exam.insight}</p>
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-[11px] text-muted-foreground line-clamp-1 flex-1">{exam.insight}</p>
+                  <span className="text-[10px] text-muted-foreground ml-2 flex-shrink-0 flex items-center gap-0.5">
+                    <BookOpen className="h-2.5 w-2.5" /> {exam.coverageScore}%
+                  </span>
+                </div>
               </button>
             ))}
           </div>
@@ -106,6 +111,19 @@ export default function ExamReadinessCard() {
                 {/* Insight */}
                 <div className="rounded-lg bg-muted/50 p-3">
                   <p className="text-sm">{selectedExam.insight}</p>
+                </div>
+
+                {/* Coverage */}
+                <div className="rounded-lg border p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                    <h4 className="text-sm font-semibold">Cobertura do cronograma</h4>
+                    <span className="ml-auto text-sm font-bold text-primary">{selectedExam.coverageScore}%</span>
+                  </div>
+                  <Progress value={selectedExam.coverageScore} className="h-1.5" />
+                  <p className="text-[11px] text-muted-foreground">
+                    {selectedExam.topicsCovered} de {selectedExam.topicsTotal} temas relevantes para {selectedExam.examName} estudados
+                  </p>
                 </div>
 
                 {/* Áreas fortes */}
