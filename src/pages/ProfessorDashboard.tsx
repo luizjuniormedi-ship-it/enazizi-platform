@@ -24,7 +24,6 @@ import ProfessorBIPanel from "@/components/professor/ProfessorBIPanel";
 import ProfessorPracticalExams from "@/components/professor/ProfessorPracticalExams";
 
 import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
-import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 
 import { FACULDADES } from "@/constants/faculdades";
 
