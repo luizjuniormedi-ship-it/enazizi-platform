@@ -59,10 +59,8 @@ const MentorThemePlans = () => {
   const [studentSearch, setStudentSearch] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
-  // Detail dialog
-  const [detailPlan, setDetailPlan] = useState<MentorPlan | null>(null);
-  const [progressData, setProgressData] = useState<any[]>([]);
-  const [progressLoading, setProgressLoading] = useState(false);
+  // Detail view — full report
+  const [reportPlan, setReportPlan] = useState<MentorPlan | null>(null);
 
   const loadPlans = useCallback(async () => {
     if (!user) return;
