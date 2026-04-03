@@ -300,6 +300,9 @@ const Dashboard = () => {
           <div className="space-y-6 mt-4">
             <SafeCard name="SheetDailyPlan"><DailyPlanWidget /></SafeCard>
             <SafeCard name="SheetDailyGoal"><DailyGoalWidget /></SafeCard>
+            <Suspense fallback={<ChartFallback />}>
+              <SafeCard name="SheetCurriculum"><CurriculumCoverageCard /></SafeCard>
+            </Suspense>
           </div>
         </SheetContent>
       </Sheet>
