@@ -121,9 +121,28 @@ export function useTutorPerformance(userId: string | undefined) {
         } catch (e) { console.error("Error updating domain map:", e); }
       }
     }
-    const xpGained = sessionQuestions > 0
+
+    // Smart XP calculation
+    const sessionAccuracy = sessionQuestions > 0 ? (sessionCorrect / sessionQuestions) * 100 : 0;
+    const previousAccuracy = performance.taxa_acerto;
+    const isImproved = sessionAccuracy > previousAccuracy && previousAccuracy > 0;
+    const isRepetition = sessionQuestions > 0 && sessionAccuracy > 90 && previousAccuracy > 85;
+
+    const multiplier = getSmartXpMultiplier({
+      isTopicImproved: isImproved,
+      isRepetition,
+      consecutiveCorrect: sessionCorrect,
+    });
+
+    const baseXp = sessionQuestions > 0
       ? (sessionCorrect * XP_REWARDS.question_correct) + ((sessionQuestions - sessionCorrect) * XP_REWARDS.question_answered)
       : 0;
+    const xpGained = Math.round(baseXp * multiplier);
+
+    // Evolution feedback
+    if (isImproved && sessionQuestions >= 3) {
+      showEvolutionFeedback("topic_improved", currentTopic);
+    }
     if (xpGained > 0) await addXp(xpGained);
     await saveEnaziziStepCb(1, null);
     await completeSessionCb();
