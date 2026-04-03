@@ -170,6 +170,8 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     clinicalSimData,
     fsrsDueData,
     mentorTargets,
+    practicalExamData,
+    profileData,
   ] = await Promise.all([
     safe(() => supabase
       .from("revisoes")
