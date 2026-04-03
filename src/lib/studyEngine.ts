@@ -4,8 +4,8 @@ import { adjustNewTopicsByLock, type ContentLockStatus } from "@/hooks/useConten
 import { retrievability as fsrsRetrievability, State as FsrsState } from "./fsrs";
 import type { StudyTaskType, StudyObjective } from "./studyContext";
 
-export type RecommendationType = "review" | "practice" | "clinical" | "new" | "error_review" | "simulado";
-export type TargetModule = "tutor" | "questoes" | "flashcards" | "plantao" | "anamnese" | "simulado" | "cronograma" | "banco-erros";
+export type RecommendationType = "review" | "practice" | "clinical" | "new" | "error_review" | "simulado" | "chronicle";
+export type TargetModule = "tutor" | "questoes" | "flashcards" | "plantao" | "anamnese" | "simulado" | "cronograma" | "banco-erros" | "cronicas";
 
 export interface StudyRecommendation {
   id: string;
