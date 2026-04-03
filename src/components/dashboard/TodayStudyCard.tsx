@@ -60,6 +60,7 @@ function TaskRow({ task, onStart, evolution }: { task: StudyRecommendation; onSt
 export default function TodayStudyCard() {
   const navigate = useNavigate();
   const { data: recommendations, isLoading } = useStudyEngine();
+  const { data: evolutions } = useTopicEvolution();
 
   if (isLoading) {
     return (
