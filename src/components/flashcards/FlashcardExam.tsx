@@ -1,0 +1,332 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Clock, ArrowRight, ArrowLeft, Bookmark, GraduationCap,
+  CheckCircle2, XCircle, RotateCcw, Send, Eye, Flag,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Rating } from "@/hooks/useFsrs";
+
+export interface FlashcardItem {
+  id: string;
+  question: string;
+  answer: string;
+  topic: string | null;
+  is_global?: boolean;
+  user_id?: string;
+}
+
+export type FlashcardReviewStatus = "pending" | "correct" | "wrong";
+
+interface FlashcardExamProps {
+  cards: FlashcardItem[];
+  mode: "due" | "all" | "sprint";
+  sprintTimeLeft?: number;
+  onReview: (cardId: string, rating: Rating, userAnswer: string) => void;
+  onFinish: (stats: { correct: number; wrong: number; skipped: number }) => void;
+  onDelete?: (cardId: string) => void;
+  userId?: string;
+}
+
+const FlashcardExam = ({
+  cards, mode, sprintTimeLeft: externalTimeLeft,
+  onReview, onFinish, onDelete, userId,
+}: FlashcardExamProps) => {
+  const navigate = useNavigate();
+  const [current, setCurrent] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const [userAnswer, setUserAnswer] = useState("");
+  const [answerSubmitted, setAnswerSubmitted] = useState(false);
+  const [flagged, setFlagged] = useState<Set<number>>(new Set());
+  const [statuses, setStatuses] = useState<Map<number, FlashcardReviewStatus>>(new Map());
+  const [showConfirmFinish, setShowConfirmFinish] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const stats = {
+    correct: Array.from(statuses.values()).filter(s => s === "correct").length,
+    wrong: Array.from(statuses.values()).filter(s => s === "wrong").length,
+    skipped: 0,
+  };
+  const reviewedCount = statuses.size;
+  const card = cards[current];
+
+  // Focus input when navigating
+  useEffect(() => {
+    if (!flipped) inputRef.current?.focus();
+  }, [current, flipped]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  };
+
+  const isAnswerCorrect = useCallback(() => {
+    if (!card || !userAnswer.trim()) return false;
+    const normalize = (s: string) =>
+      s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s]/g, "").trim();
+    const userNorm = normalize(userAnswer);
+    const answerNorm = normalize(card.answer);
+    const answerWords = answerNorm.split(/\s+/).filter(w => w.length > 3);
+    if (answerWords.length === 0) return userNorm === answerNorm;
+    const matchCount = answerWords.filter(w => userNorm.includes(w)).length;
+    return matchCount / answerWords.length >= 0.4;
+  }, [card, userAnswer]);
+
+  const handleSubmitAnswer = () => {
+    if (!userAnswer.trim()) return;
+    setAnswerSubmitted(true);
+    setFlipped(true);
+  };
+
+  const handleReview = (quality: "again" | "good" | "easy") => {
+    if (!card) return;
+    const ratingMap: Record<string, Rating> = {
+      again: Rating.Again, good: Rating.Good, easy: Rating.Easy,
+    };
+    const isCorrect = quality !== "again";
+    setStatuses(prev => new Map(prev).set(current, isCorrect ? "correct" : "wrong"));
+    onReview(card.id, ratingMap[quality], userAnswer);
+
+    // Auto-advance
+    if (current < cards.length - 1) {
+      setCurrent(c => c + 1);
+    }
+    setFlipped(false);
+    setUserAnswer("");
+    setAnswerSubmitted(false);
+  };
+
+  const handleFinish = useCallback(() => {
+    const skipped = cards.length - statuses.size;
+    onFinish({
+      correct: Array.from(statuses.values()).filter(s => s === "correct").length,
+      wrong: Array.from(statuses.values()).filter(s => s === "wrong").length,
+      skipped,
+    });
+  }, [cards.length, statuses, onFinish]);
+
+  const toggleFlag = (idx: number) => {
+    setFlagged(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx); else next.add(idx);
+      return next;
+    });
+  };
+
+  const navigateTo = (idx: number) => {
+    setCurrent(idx);
+    setFlipped(false);
+    setUserAnswer("");
+    setAnswerSubmitted(false);
+  };
+
+  if (!card) return null;
+
+  const unreviewedCount = cards.length - reviewedCount;
+  const timeWarning = mode === "sprint" && (externalTimeLeft ?? 999) < 30;
+
+  return (
+    <div className="space-y-4 animate-fade-in max-w-3xl mx-auto">
+      {/* Header sticky */}
+      <div className="flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur py-2">
+        <span className="text-sm font-medium">{current + 1}/{cards.length}</span>
+        <div className="flex items-center gap-3 text-sm font-medium">
+          <span className="text-green-500 flex items-center gap-1">
+            <CheckCircle2 className="h-4 w-4" />{stats.correct}
+          </span>
+          <span className="text-destructive flex items-center gap-1">
+            <XCircle className="h-4 w-4" />{stats.wrong}
+          </span>
+        </div>
+        {mode === "sprint" && externalTimeLeft !== undefined && (
+          <span className={`flex items-center gap-1 text-sm font-mono font-bold ${timeWarning ? "text-destructive animate-pulse" : "text-muted-foreground"}`}>
+            <Clock className="h-4 w-4" /> {formatTime(externalTimeLeft)}
+          </span>
+        )}
+        <span className="text-xs text-muted-foreground">{reviewedCount}/{cards.length} revisados</span>
+      </div>
+
+      {/* Progress bar */}
+      <div className="h-1 rounded-full bg-secondary">
+        <div
+          className="h-full rounded-full bg-primary transition-all"
+          style={{ width: `${(reviewedCount / cards.length) * 100}%` }}
+        />
+      </div>
+
+      {/* Card */}
+      <div className="glass-card p-6">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+              {card.topic || "Geral"}
+            </span>
+            {!statuses.has(current) && (
+              <span className="text-xs px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-600">Pendente</span>
+            )}
+          </div>
+          <button
+            onClick={() => toggleFlag(current)}
+            className={`p-1.5 rounded-lg transition-all ${flagged.has(current) ? "text-yellow-500 bg-yellow-500/10" : "text-muted-foreground hover:text-yellow-500"}`}
+            title="Marcar para revisão"
+          >
+            <Bookmark className={`h-5 w-5 ${flagged.has(current) ? "fill-current" : ""}`} />
+          </button>
+        </div>
+
+        {/* Question */}
+        <div className="text-xs uppercase tracking-wider text-primary mb-2 font-semibold">Pergunta</div>
+        <p className="text-base font-medium mb-6">{card.question}</p>
+
+        {/* Answer (flipped) */}
+        {flipped && (
+          <div className={`w-full border-t border-border pt-4 mt-2 ${answerSubmitted ? (isAnswerCorrect() ? "bg-green-500/5 rounded-b-lg" : "bg-destructive/5 rounded-b-lg") : ""}`}>
+            <div className="text-xs uppercase tracking-wider text-primary mb-2 font-semibold flex items-center justify-center gap-2">
+              Resposta
+              {answerSubmitted && (
+                isAnswerCorrect()
+                  ? <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  : <XCircle className="h-4 w-4 text-destructive" />
+              )}
+            </div>
+            {answerSubmitted && (
+              <div className="mb-3 p-2 rounded-md bg-muted/50 text-sm">
+                <span className="text-muted-foreground">Sua resposta: </span>
+                <span className={isAnswerCorrect() ? "text-green-500 font-medium" : "text-destructive font-medium"}>
+                  {userAnswer}
+                </span>
+              </div>
+            )}
+            <p className="text-lg leading-relaxed font-medium text-center">{card.answer}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Input / FSRS buttons */}
+      {!flipped ? (
+        <div className="flex items-center gap-2 max-w-3xl mx-auto w-full">
+          <Button variant="outline" size="icon" onClick={() => navigateTo(Math.max(0, current - 1))} disabled={current === 0}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <form onSubmit={(e) => { e.preventDefault(); handleSubmitAnswer(); }} className="flex-1 flex gap-2">
+            <Input
+              ref={inputRef}
+              value={userAnswer}
+              onChange={(e) => setUserAnswer(e.target.value)}
+              placeholder="Digite sua resposta..."
+              className="flex-1"
+            />
+            <Button type="submit" disabled={!userAnswer.trim()}>
+              <Send className="h-4 w-4 mr-2" /> Responder
+            </Button>
+          </form>
+          <Button variant="ghost" size="sm" onClick={() => { setFlipped(true); setAnswerSubmitted(false); }} className="text-muted-foreground text-xs">
+            <Eye className="h-4 w-4 mr-1" /> Ver
+          </Button>
+          <Button variant="outline" size="icon" onClick={() => navigateTo(Math.min(cards.length - 1, current + 1))} disabled={current === cards.length - 1}>
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-center gap-3 flex-wrap">
+          <Button variant="destructive" onClick={() => handleReview("again")} className="min-w-[100px]">
+            <RotateCcw className="h-4 w-4 mr-2" /> Errei
+          </Button>
+          <Button variant="outline" onClick={() => handleReview("good")} className="min-w-[100px]">
+            Bom
+          </Button>
+          <Button className="bg-green-600 hover:bg-green-700 text-white min-w-[100px]" onClick={() => handleReview("easy")}>
+            Fácil
+          </Button>
+          {onDelete && card.user_id === userId && (
+            <Button variant="ghost" size="sm" title="Remover" onClick={() => onDelete(card.id)}>
+              <XCircle className="h-4 w-4" />
+            </Button>
+          )}
+          {answerSubmitted && !isAnswerCorrect() && card.topic && (
+            <Button
+              variant="outline" size="sm" className="gap-1.5 text-xs"
+              onClick={() => navigate("/dashboard/chatgpt", {
+                state: {
+                  initialMessage: `Errei um flashcard sobre "${card.topic}". A pergunta era: "${card.question}". A resposta correta era: "${card.answer}". Me explique este tema seguindo o protocolo ENAZIZI.`,
+                  fromErrorBank: true,
+                },
+              })}
+            >
+              <GraduationCap className="h-3.5 w-3.5" /> Aprofundar no Tutor IA
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Navigation */}
+      <div className="flex gap-2">
+        <Button variant="outline" disabled={current === 0} onClick={() => navigateTo(current - 1)} className="flex-1">
+          <ArrowLeft className="h-4 w-4 mr-1" /> Anterior
+        </Button>
+        {current < cards.length - 1 ? (
+          <Button onClick={() => navigateTo(current + 1)} className="flex-1">
+            Próxima <ArrowRight className="h-4 w-4 ml-1" />
+          </Button>
+        ) : (
+          <Button
+            onClick={() => unreviewedCount > 0 ? setShowConfirmFinish(true) : handleFinish()}
+            variant="default" className="flex-1"
+          >
+            <Flag className="h-4 w-4 mr-1" /> Finalizar
+          </Button>
+        )}
+      </div>
+
+      {/* Confirm finish */}
+      {showConfirmFinish && (
+        <div className="glass-card p-4 border-yellow-500/30 bg-yellow-500/5">
+          <p className="text-sm font-medium mb-2">⚠️ Você tem {unreviewedCount} flashcards não revisados.</p>
+          <div className="flex gap-2">
+            <Button size="sm" variant="destructive" onClick={handleFinish}>Finalizar mesmo assim</Button>
+            <Button size="sm" variant="outline" onClick={() => setShowConfirmFinish(false)}>Voltar</Button>
+          </div>
+        </div>
+      )}
+
+      {/* Question grid */}
+      <div className="glass-card p-3">
+        <div className="flex flex-wrap gap-1">
+          {cards.map((_, i) => {
+            const isFlagged = flagged.has(i);
+            const status = statuses.get(i);
+            const isCurrent = i === current;
+
+            let bgClass = "bg-secondary text-muted-foreground";
+            if (isCurrent) bgClass = "bg-primary text-primary-foreground";
+            else if (status === "correct") bgClass = "bg-green-500/20 text-green-700";
+            else if (status === "wrong") bgClass = "bg-destructive/20 text-destructive";
+
+            return (
+              <button
+                key={i}
+                onClick={() => navigateTo(i)}
+                className={`h-7 w-7 rounded text-xs font-medium transition-all relative ${bgClass}`}
+              >
+                {i + 1}
+                {isFlagged && (
+                  <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-yellow-500" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-4 mt-2 text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-500 inline-block" /> Marcada</span>
+          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500 inline-block" /> Acertou</span>
+          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive inline-block" /> Errou</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default FlashcardExam;

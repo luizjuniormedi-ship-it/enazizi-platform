@@ -2,12 +2,15 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { isMedicalContent } from "@/lib/medicalValidation";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
-import { createPortal } from "react-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useFsrs, Rating } from "@/hooks/useFsrs";
-import { FlipVertical, RotateCcw, ChevronLeft, ChevronRight, Loader2, X, Brain, CalendarDays, Send, CheckCircle, XCircle, GraduationCap, Filter, Download, Zap, Clock, Award, Maximize2, Minimize2, MoreVertical, HelpCircle } from "lucide-react";
+import {
+  FlipVertical, Loader2, Brain, GraduationCap, Filter,
+  Download, Zap, Clock, Award, Maximize2, Minimize2,
+  MoreVertical, HelpCircle, ArrowLeft,
+} from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import ModuleEmptyState from "@/components/layout/ModuleEmptyState";
@@ -19,17 +22,11 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { createPortal } from "react-dom";
+import FlashcardExam, { type FlashcardItem } from "@/components/flashcards/FlashcardExam";
 
-interface Flashcard {
-  id: string;
-  question: string;
-  answer: string;
-  topic: string | null;
-  is_global?: boolean;
-  user_id?: string;
-}
+type Phase = "setup" | "active" | "finished";
 
 interface FsrsReviewState {
   due: string;
@@ -40,122 +37,64 @@ interface FsrsReviewState {
 const Flashcards = () => {
   const navigate = useNavigate();
   const studyCtx = useStudyContext();
-  const [allCards, setAllCards] = useState<Flashcard[]>([]);
-  const [dueCards, setDueCards] = useState<Flashcard[]>([]);
+  const [allCards, setAllCards] = useState<FlashcardItem[]>([]);
+  const [dueCards, setDueCards] = useState<FlashcardItem[]>([]);
   const [fsrsStates, setFsrsStates] = useState<Map<string, FsrsReviewState>>(new Map());
   const [loading, setLoading] = useState(true);
-  const [idx, setIdx] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-  const [userAnswer, setUserAnswer] = useState("");
-  const [answerSubmitted, setAnswerSubmitted] = useState(false);
+  const [phase, setPhase] = useState<Phase>("setup");
   const [mode, setMode] = useState<"due" | "all" | "sprint">("due");
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(() => {
     if (studyCtx?.topic) return new Set([studyCtx.topic]);
     return new Set();
   });
   const [showTopicFilter, setShowTopicFilter] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const { addXp } = useGamification();
-  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Sprint
+  const [sprintConfig] = useState({ cardCount: 10, timeMinutes: 5 });
+  const [sprintTimeLeft, setSprintTimeLeft] = useState(0);
+  const sprintTimerRef = useRef<NodeJS.Timeout>();
+
+  // Session result
+  const [sessionStats, setSessionStats] = useState({ correct: 0, wrong: 0, skipped: 0 });
 
   const {
     pendingSession, checked: sessionChecked, saveSession: persistSession,
     completeSession, abandonSession, registerAutoSave, clearPending,
   } = useSessionPersistence({ moduleKey: "flashcards" });
 
-  // Register auto-save
   useEffect(() => {
     registerAutoSave(() => {
       if (allCards.length === 0) return {};
-      return { idx, mode, flipped, selectedTopics: Array.from(selectedTopics) };
+      return { mode, selectedTopics: Array.from(selectedTopics), phase };
     });
-  }, [registerAutoSave, idx, mode, flipped, selectedTopics, allCards.length]);
+  }, [registerAutoSave, mode, selectedTopics, allCards.length, phase]);
 
   const handleRestoreSession = () => {
     if (!pendingSession) return;
     const data = pendingSession.session_data as any;
-    if (data.idx != null) setIdx(data.idx);
     if (data.mode) setMode(data.mode);
     if (data.selectedTopics) setSelectedTopics(new Set(data.selectedTopics));
     clearPending();
-  };
-
-  // Sprint mode state
-  const [sprintConfig, setSprintConfig] = useState({ cardCount: 10, timeMinutes: 5 });
-  const [sprintActive, setSprintActive] = useState(false);
-  const [sprintTimeLeft, setSprintTimeLeft] = useState(0);
-  const [sprintStats, setSprintStats] = useState({ correct: 0, wrong: 0, skipped: 0 });
-  const [sprintFinished, setSprintFinished] = useState(false);
-  const sprintTimerRef = useRef<NodeJS.Timeout>();
-  const sprintStartRef = useRef<Date>();
-
-  // Sprint timer
-  useEffect(() => {
-    if (!sprintActive || sprintTimeLeft <= 0) return;
-    sprintTimerRef.current = setInterval(() => {
-      setSprintTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(sprintTimerRef.current);
-          setSprintActive(false);
-          setSprintFinished(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(sprintTimerRef.current);
-  }, [sprintActive]);
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  };
-
-  const startSprint = () => {
-    const cards = filteredCards.slice(0, sprintConfig.cardCount);
-    if (cards.length === 0) {
-      toast({ title: "Nenhum flashcard disponível para sprint", variant: "destructive" });
-      return;
-    }
-    setIdx(0);
-    setFlipped(false);
-    setUserAnswer("");
-    setAnswerSubmitted(false);
-    setSprintStats({ correct: 0, wrong: 0, skipped: 0 });
-    setSprintTimeLeft(sprintConfig.timeMinutes * 60);
-    setSprintActive(true);
-    setSprintFinished(false);
-    sprintStartRef.current = new Date();
-    setMode("sprint");
-  };
-
-  const endSprint = () => {
-    clearInterval(sprintTimerRef.current);
-    setSprintActive(false);
-    setSprintFinished(true);
   };
 
   const { review: fsrsReview, getDueCards: getFsrsDue } = useFsrs();
 
   const fetchData = useCallback(async () => {
     if (!user) return;
-
-    // Fetch own cards + global cards + FSRS states in parallel
     const [ownRes, globalRes, fsrsRes] = await Promise.all([
       supabase.from("flashcards").select("id, question, answer, topic, is_global, user_id").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10000),
       supabase.from("flashcards").select("id, question, answer, topic, is_global, user_id").eq("is_global", true).neq("user_id", user.id).order("created_at", { ascending: false }).limit(10000),
       supabase.from("fsrs_cards").select("card_ref_id, due, stability, state").eq("user_id", user.id).eq("card_type", "flashcard"),
     ]);
-
-    // Merge and deduplicate
     const ownCards = ownRes.data || [];
     const globalCards = globalRes.data || [];
     const ownIds = new Set(ownCards.map(c => c.id));
     const merged = [...ownCards, ...globalCards.filter(c => !ownIds.has(c.id))]
       .filter(c => isMedicalContent(`${c.question} ${c.answer}`));
-
     setAllCards(merged);
 
     const stateMap = new Map<string, FsrsReviewState>();
@@ -173,7 +112,6 @@ const Flashcards = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Extract unique topics
   const availableTopics = useMemo(() => {
     const topics = new Set<string>();
     allCards.forEach(c => { if (c.topic) topics.add(c.topic); });
@@ -186,63 +124,54 @@ const Flashcards = () => {
       if (next.has(topic)) next.delete(topic); else next.add(topic);
       return next;
     });
-    setIdx(0);
-    setFlipped(false);
-    setUserAnswer("");
-    setAnswerSubmitted(false);
   };
 
   const filteredCards = useMemo(() => {
     const base = mode === "due" ? dueCards : allCards;
-    if (selectedTopics.size === 0) return base;
-    return base.filter(c => c.topic && selectedTopics.has(c.topic));
-  }, [mode, dueCards, allCards, selectedTopics]);
+    let result = selectedTopics.size === 0 ? base : base.filter(c => c.topic && selectedTopics.has(c.topic));
+    if (mode === "sprint") result = result.slice(0, sprintConfig.cardCount);
+    return result;
+  }, [mode, dueCards, allCards, selectedTopics, sprintConfig.cardCount]);
 
-  const card = filteredCards[idx];
+  // Sprint timer
+  useEffect(() => {
+    if (phase !== "active" || mode !== "sprint" || sprintTimeLeft <= 0) return;
+    sprintTimerRef.current = setInterval(() => {
+      setSprintTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(sprintTimerRef.current);
+          setPhase("finished");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(sprintTimerRef.current);
+  }, [phase, mode, sprintTimeLeft > 0]);
 
-  const handleSubmitAnswer = () => {
-    if (!userAnswer.trim()) return;
-    setAnswerSubmitted(true);
-    setFlipped(true);
+  const handleStartSession = (selectedMode: "due" | "all" | "sprint") => {
+    setMode(selectedMode);
+    if (selectedMode === "sprint") {
+      setSprintTimeLeft(sprintConfig.timeMinutes * 60);
+    }
+    setSessionStats({ correct: 0, wrong: 0, skipped: 0 });
+    setPhase("active");
   };
 
-  const isAnswerCorrect = useCallback(() => {
-    if (!card || !userAnswer.trim()) return false;
-    const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, "").trim();
-    const userNorm = normalize(userAnswer);
-    const answerNorm = normalize(card.answer);
-    const answerWords = answerNorm.split(/\s+/).filter(w => w.length > 3);
-    if (answerWords.length === 0) return userNorm === answerNorm;
-    const matchCount = answerWords.filter(w => userNorm.includes(w)).length;
-    return matchCount / answerWords.length >= 0.4;
-  }, [card, userAnswer]);
+  const handleReview = async (cardId: string, rating: Rating, userAnswer: string) => {
+    if (!user) return;
+    const card = allCards.find(c => c.id === cardId);
+    if (!card) return;
 
-  const handleReview = async (quality: "again" | "good" | "easy") => {
-    if (!user || !card) return;
-
-    // Map quality to FSRS Rating
-    const ratingMap: Record<string, Rating> = {
-      again: Rating.Again,
-      good: Rating.Good,
-      easy: Rating.Easy,
-    };
-    const rating = ratingMap[quality];
-
-    // Run FSRS review — handles card creation/update + logging
-    const updatedCard = await fsrsReview("flashcard", card.id, rating);
+    const updatedCard = await fsrsReview("flashcard", cardId, rating);
     const scheduledDays = Math.round(updatedCard.scheduled_days);
+    const isCorrect = rating !== Rating.Again;
 
-    // Award XP for flashcard review
-    const isCorrect = quality !== "again";
     await addXp(isCorrect ? XP_REWARDS.question_correct : XP_REWARDS.question_answered);
-
-    // Update medical domain map
     if (card.topic) {
       await updateDomainMap(user.id, [{ topic: card.topic, correct: isCorrect }]);
     }
-
-    // Log error to error_bank if wrong
-    if (quality === "again" && card.topic) {
+    if (rating === Rating.Again && card.topic) {
       await logErrorToBank({
         userId: user.id,
         tema: card.topic || "Flashcard",
@@ -253,48 +182,27 @@ const Flashcards = () => {
       });
     }
 
-    // Track sprint stats
-    if (sprintActive) {
-      if (quality === "again") {
-        setSprintStats(prev => ({ ...prev, wrong: prev.wrong + 1 }));
-      } else {
-        setSprintStats(prev => ({ ...prev, correct: prev.correct + 1 }));
-      }
-      if (idx + 1 >= Math.min(sprintConfig.cardCount, filteredCards.length)) {
-        endSprint();
-      } else {
-        setIdx(idx + 1);
-      }
-    } else if (mode === "due") {
-      const newDue = dueCards.filter((c) => c.id !== card.id);
-      setDueCards(newDue);
-      setIdx(Math.min(idx, Math.max(0, newDue.length - 1)));
-    } else {
-      setIdx(Math.min(idx + 1, filteredCards.length - 1));
-    }
-    setFlipped(false);
-    setUserAnswer("");
-    setAnswerSubmitted(false);
-
-    const labels = {
-      again: "Revisar em breve",
-      good: scheduledDays > 0 ? `Próxima em ${scheduledDays} dias` : "Revisar em breve",
-      easy: scheduledDays > 0 ? `Próxima em ${scheduledDays} dias` : "Revisar em breve",
+    const labels: Record<string, string> = {
+      [Rating.Again]: "Revisar em breve",
+      [Rating.Good]: scheduledDays > 0 ? `Próxima em ${scheduledDays} dias` : "Revisar em breve",
+      [Rating.Easy]: scheduledDays > 0 ? `Próxima em ${scheduledDays} dias` : "Revisar em breve",
     };
-    toast({ title: labels[quality] });
+    toast({ title: labels[rating] || "Revisado" });
   };
 
-  const handleDelete = async () => {
-    if (!card) return;
-    await supabase.from("flashcards").delete().eq("id", card.id);
-    setAllCards((prev) => prev.filter((c) => c.id !== card.id));
-    setDueCards((prev) => prev.filter((c) => c.id !== card.id));
-    setIdx(Math.min(idx, Math.max(0, filteredCards.length - 2)));
-    setFlipped(false);
-    setUserAnswer("");
-    setAnswerSubmitted(false);
+  const handleDelete = async (cardId: string) => {
+    await supabase.from("flashcards").delete().eq("id", cardId);
+    setAllCards(prev => prev.filter(c => c.id !== cardId));
+    setDueCards(prev => prev.filter(c => c.id !== cardId));
   };
 
+  const handleFinish = (stats: { correct: number; wrong: number; skipped: number }) => {
+    clearInterval(sprintTimerRef.current);
+    setSessionStats(stats);
+    setPhase("finished");
+  };
+
+  // ── Loading ──
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -303,24 +211,22 @@ const Flashcards = () => {
     );
   }
 
+  // ── Empty state ──
   if (allCards.length === 0) {
     return (
       <div className="space-y-8 animate-fade-in">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
-              <FlipVertical className="h-6 w-6 text-primary" />
-              Flashcards
+              <FlipVertical className="h-6 w-6 text-primary" /> Flashcards
             </h1>
             <p className="text-muted-foreground">Revise seus flashcards com repetição espaçada.</p>
           </div>
           <ModuleHelpButton moduleKey="flashcards" moduleName="Flashcards" steps={[
             "Vá em 'Gerar Flashcards' no menu lateral para criar cards com IA por tema",
             "Cada card tem frente (pergunta) e verso (resposta) — clique para virar",
-            "Após virar, avalie: Fácil (revê em 7d), Médio (3d) ou Difícil (1d)",
-            "O algoritmo de repetição espaçada agenda revisões automáticas",
+            "Após virar, avalie: Fácil, Bom ou Errei — o algoritmo agenda revisões",
             "Use o modo Sprint ⚡ para revisar vários cards com cronômetro",
-            "Filtre por tema e exporte cards em PDF para estudo offline",
           ]} />
         </div>
         <ModuleEmptyState
@@ -337,9 +243,87 @@ const Flashcards = () => {
 
   const reviewedCount = allCards.length - dueCards.length;
 
-  const content = (
-    <div className={`animate-fade-in ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4 overflow-auto" : "space-y-6"}`}>
-      {/* Resume Session Banner */}
+  // ── PHASE: Finished ──
+  if (phase === "finished") {
+    const total = sessionStats.correct + sessionStats.wrong;
+    const rate = total > 0 ? Math.round((sessionStats.correct / total) * 100) : 0;
+
+    return (
+      <div className="max-w-xl mx-auto space-y-6 animate-fade-in">
+        <div className="glass-card p-8 text-center space-y-4">
+          <Award className="h-12 w-12 text-primary mx-auto" />
+          <h2 className="text-xl font-bold">
+            {mode === "sprint" ? "Sprint Concluído!" : "Sessão Concluída!"}
+          </h2>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="p-3 rounded-lg bg-green-500/10">
+              <div className="text-2xl font-bold text-green-500">{sessionStats.correct}</div>
+              <div className="text-xs text-muted-foreground">Acertos</div>
+            </div>
+            <div className="p-3 rounded-lg bg-destructive/10">
+              <div className="text-2xl font-bold text-destructive">{sessionStats.wrong}</div>
+              <div className="text-xs text-muted-foreground">Erros</div>
+            </div>
+            <div className="p-3 rounded-lg bg-muted">
+              <div className="text-2xl font-bold text-muted-foreground">{sessionStats.skipped}</div>
+              <div className="text-xs text-muted-foreground">Pulados</div>
+            </div>
+          </div>
+          {total > 0 && (
+            <p className="text-sm text-muted-foreground">Taxa de acerto: {rate}%</p>
+          )}
+          <div className="flex gap-2 justify-center">
+            <Button onClick={() => { setPhase("setup"); }}>Nova Sessão</Button>
+            <Button variant="outline" onClick={() => navigate("/dashboard")}>Voltar ao Dashboard</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── PHASE: Active ──
+  if (phase === "active") {
+    if (filteredCards.length === 0) {
+      return (
+        <div className="max-w-xl mx-auto glass-card p-12 text-center animate-fade-in">
+          <p className="text-lg font-medium mb-2">Nenhum flashcard disponível</p>
+          <p className="text-sm text-muted-foreground mb-4">Selecione outros temas ou modo.</p>
+          <Button onClick={() => setPhase("setup")}>
+            <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
+          </Button>
+        </div>
+      );
+    }
+
+    const content = (
+      <div className={isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4 overflow-auto" : ""}>
+        <div className="flex justify-end mb-2 gap-2">
+          <Button variant="outline" size="sm" onClick={() => setPhase("setup")}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Sair
+          </Button>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setIsFullscreen(!isFullscreen)}>
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </Button>
+        </div>
+        <FlashcardExam
+          cards={filteredCards}
+          mode={mode}
+          sprintTimeLeft={mode === "sprint" ? sprintTimeLeft : undefined}
+          onReview={handleReview}
+          onFinish={handleFinish}
+          onDelete={handleDelete}
+          userId={user?.id}
+        />
+      </div>
+    );
+
+    if (isFullscreen) return createPortal(content, document.body);
+    return content;
+  }
+
+  // ── PHASE: Setup ──
+  return (
+    <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
       {pendingSession && (
         <ResumeSessionBanner
           updatedAt={pendingSession.updated_at}
@@ -348,20 +332,23 @@ const Flashcards = () => {
         />
       )}
       <StudyContextBanner />
+
       <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
+        <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-            <FlipVertical className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
-            <span className="truncate">Flashcards</span>
+            <FlipVertical className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+            Flashcards
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground">
             {allCards.length} total • {dueCards.length} para revisar • {reviewedCount} em dia
           </p>
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <Button variant="outline" size="icon" onClick={() => setIsFullscreen(!isFullscreen)} className="h-8 w-8" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
-            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </Button>
+        <div className="flex items-center gap-1.5">
+          <ModuleHelpButton moduleKey="flashcards" moduleName="Flashcards" steps={[
+            "Escolha um modo de revisão e inicie a sessão",
+            "Responda cada card e avalie seu desempenho",
+            "O algoritmo FSRS agenda revisões automáticas",
+          ]} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-8 w-8">
@@ -369,258 +356,126 @@ const Flashcards = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => { setMode("due"); setIdx(0); setFlipped(false); }}>
-                <Brain className="h-4 w-4 mr-2" /> Revisão ({dueCards.length}) {mode === "due" && "✓"}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { setMode("all"); setIdx(0); setFlipped(false); setSprintActive(false); setSprintFinished(false); }}>
-                <GraduationCap className="h-4 w-4 mr-2" /> Todos ({allCards.length}) {mode === "all" && "✓"}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowTopicFilter(!showTopicFilter)}>
-                <Filter className="h-4 w-4 mr-2" /> Filtrar temas {selectedTopics.size > 0 && `(${selectedTopics.size})`}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={startSprint}>
-                <Zap className="h-4 w-4 mr-2" /> Modo Sprint
-              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => exportToPdf(
-                  filteredCards.map((c) => ({ title: c.question, content: c.answer, subtitle: c.topic || undefined })),
+                  allCards.map(c => ({ title: c.question, content: c.answer, subtitle: c.topic || undefined })),
                   "Flashcards_ENAZIZI"
                 )}
-                disabled={filteredCards.length === 0}
               >
                 <Download className="h-4 w-4 mr-2" /> Exportar PDF
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {}}>
-                <HelpCircle className="h-4 w-4 mr-2" /> Como usar
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
 
-      {/* Topic filter */}
-      {showTopicFilter && (
-        <div className="glass-card p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold">Filtrar por especialidade</h3>
-            {selectedTopics.size > 0 && (
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setSelectedTopics(new Set()); setIdx(0); }}>
-                Limpar filtros
-              </Button>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {availableTopics.map(topic => (
-              <Badge
-                key={topic}
-                variant={selectedTopics.has(topic) ? "default" : "outline"}
-                className="cursor-pointer hover:bg-primary/20 transition-colors"
-                onClick={() => toggleTopic(topic)}
-              >
-                {topic}
-                <span className="ml-1 text-xs opacity-70">
-                  ({allCards.filter(c => c.topic === topic).length})
-                </span>
-              </Badge>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* FSRS Stats bar */}
+      {/* FSRS Stats */}
       <div className="grid grid-cols-4 gap-2">
         {[
-          { label: "Novos", filter: (s: FsrsReviewState) => s.state === 0 },
-          { label: "Aprendendo", filter: (s: FsrsReviewState) => s.state === 1 || s.state === 3 },
-          { label: "Revisão", filter: (s: FsrsReviewState) => s.state === 2 },
-          { label: "Total", filter: () => true },
-        ].map(({ label, filter }) => {
-          const count = Array.from(fsrsStates.values()).filter(filter).length;
-          return (
-            <div key={label} className="glass-card p-3 text-center">
-              <div className="text-lg font-bold text-primary">{count}</div>
-              <div className="text-xs text-muted-foreground">{label}</div>
-            </div>
-          );
-        })}
+          { label: "Novos", count: Array.from(fsrsStates.values()).filter(s => s.state === 0).length },
+          { label: "Aprendendo", count: Array.from(fsrsStates.values()).filter(s => s.state === 1 || s.state === 3).length },
+          { label: "Revisão", count: Array.from(fsrsStates.values()).filter(s => s.state === 2).length },
+          { label: "Total", count: allCards.length },
+        ].map(({ label, count }) => (
+          <div key={label} className="glass-card p-3 text-center">
+            <div className="text-lg font-bold text-primary">{count}</div>
+            <div className="text-xs text-muted-foreground">{label}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Sprint finished screen */}
-      {sprintFinished && (
-        <div className="glass-card p-8 text-center space-y-4 animate-fade-in">
-          <Award className="h-12 w-12 text-primary mx-auto" />
-          <h2 className="text-xl font-bold">Sprint Concluído!</h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="p-3 rounded-lg bg-green-500/10">
-              <div className="text-2xl font-bold text-green-500">{sprintStats.correct}</div>
-              <div className="text-xs text-muted-foreground">Acertos</div>
+      {/* Topic filter */}
+      <div className="glass-card p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <Filter className="h-4 w-4" /> Filtrar por especialidade
+          </h3>
+          {selectedTopics.size > 0 && (
+            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setSelectedTopics(new Set())}>
+              Limpar filtros
+            </Button>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {availableTopics.map(topic => (
+            <Badge
+              key={topic}
+              variant={selectedTopics.has(topic) ? "default" : "outline"}
+              className="cursor-pointer hover:bg-primary/20 transition-colors"
+              onClick={() => toggleTopic(topic)}
+            >
+              {topic}
+              <span className="ml-1 text-xs opacity-70">
+                ({allCards.filter(c => c.topic === topic).length})
+              </span>
+            </Badge>
+          ))}
+          {availableTopics.length === 0 && (
+            <p className="text-xs text-muted-foreground">Nenhum tema disponível</p>
+          )}
+        </div>
+      </div>
+
+      {/* Mode selection */}
+      <div className="grid gap-3">
+        <button
+          onClick={() => handleStartSession("due")}
+          className="glass-card p-5 text-left hover:border-primary/40 transition-all group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Brain className="h-5 w-5 text-primary" />
             </div>
-            <div className="p-3 rounded-lg bg-destructive/10">
-              <div className="text-2xl font-bold text-destructive">{sprintStats.wrong}</div>
-              <div className="text-xs text-muted-foreground">Erros</div>
+            <div className="flex-1">
+              <h3 className="font-semibold">Revisão Inteligente</h3>
+              <p className="text-xs text-muted-foreground">
+                {dueCards.length} cards pendentes — prioridade por risco de esquecimento
+              </p>
             </div>
-            <div className="p-3 rounded-lg bg-muted">
-              <div className="text-2xl font-bold text-muted-foreground">{sprintStats.skipped}</div>
-              <div className="text-xs text-muted-foreground">Pulados</div>
+            <Badge variant="secondary">{dueCards.length}</Badge>
+          </div>
+        </button>
+
+        <button
+          onClick={() => handleStartSession("all")}
+          className="glass-card p-5 text-left hover:border-primary/40 transition-all group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <GraduationCap className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold">Todos os Cards</h3>
+              <p className="text-xs text-muted-foreground">
+                Revise todos os flashcards disponíveis
+              </p>
+            </div>
+            <Badge variant="secondary">{allCards.length}</Badge>
+          </div>
+        </button>
+
+        <button
+          onClick={() => handleStartSession("sprint")}
+          className="glass-card p-5 text-left hover:border-primary/40 transition-all group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-yellow-500/10">
+              <Zap className="h-5 w-5 text-yellow-500" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold">Modo Sprint</h3>
+              <p className="text-xs text-muted-foreground">
+                {sprintConfig.cardCount} cards em {sprintConfig.timeMinutes} minutos — velocidade máxima
+              </p>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3" /> {sprintConfig.timeMinutes}min
             </div>
           </div>
-          {(sprintStats.correct + sprintStats.wrong) > 0 && (
-            <p className="text-sm text-muted-foreground">
-              Taxa de acerto: {Math.round((sprintStats.correct / (sprintStats.correct + sprintStats.wrong)) * 100)}%
-            </p>
-          )}
-          <div className="flex gap-2 justify-center">
-            <Button onClick={startSprint}>Novo Sprint</Button>
-            <Button variant="outline" onClick={() => { setMode("due"); setSprintFinished(false); setIdx(0); }}>Voltar</Button>
-          </div>
-        </div>
-      )}
-
-      {/* Sprint timer */}
-      {sprintActive && (
-        <div className="flex items-center justify-between glass-card p-3">
-          <span className="text-sm font-semibold flex items-center gap-2">
-            <Zap className="h-4 w-4 text-primary" /> Modo Sprint
-          </span>
-          <span className={`font-mono font-bold ${sprintTimeLeft < 30 ? "text-destructive animate-pulse" : "text-muted-foreground"}`}>
-            <Clock className="h-4 w-4 inline mr-1" />{formatTime(sprintTimeLeft)}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            ✅ {sprintStats.correct} ❌ {sprintStats.wrong}
-          </span>
-          <Button variant="outline" size="sm" onClick={endSprint}>Encerrar</Button>
-        </div>
-      )}
-
-      {!sprintFinished && filteredCards.length === 0 ? (
-        <div className="glass-card p-12 text-center">
-          <CalendarDays className="h-12 w-12 text-primary/30 mx-auto mb-4" />
-          <p className="text-lg font-medium mb-2">
-            {selectedTopics.size > 0 ? "Nenhum flashcard neste tema" : "Tudo em dia! 🎉"}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {selectedTopics.size > 0 ? "Selecione outros temas ou limpe o filtro." : "Nenhum flashcard para revisar agora. Volte mais tarde."}
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className="flex items-center justify-center">
-            <div className="glass-card w-full max-w-2xl min-h-[320px] p-8 flex flex-col items-center justify-center text-center relative group transition-all">
-              <div className="absolute top-4 left-4 flex items-center gap-2">
-                <span className="text-xs text-primary/70 font-medium px-2 py-1 rounded-md bg-primary/10">
-                  {card.topic || "Geral"}
-                </span>
-                {card.is_global && card.user_id !== user?.id && (
-                  <span className="text-xs text-muted-foreground px-2 py-1 rounded-md bg-muted">🌐 Global</span>
-                )}
-              </div>
-              <div className="absolute top-4 right-4 text-xs text-muted-foreground">
-                {idx + 1}/{filteredCards.length}
-              </div>
-              {fsrsStates.get(card.id) && (
-                <div className="absolute bottom-4 left-4 text-xs text-muted-foreground flex items-center gap-1">
-                  <CalendarDays className="h-3 w-3" />
-                  Estabilidade: {fsrsStates.get(card.id)!.stability.toFixed(1)}d
-                </div>
-              )}
-
-              <div className="text-xs uppercase tracking-wider text-primary mb-4 font-semibold">
-                Pergunta
-              </div>
-              <p className="text-lg leading-relaxed mb-6">{card.question}</p>
-
-              {flipped && (
-                <div className={`w-full border-t border-border pt-4 mt-2 rounded-b-lg ${answerSubmitted ? (isAnswerCorrect() ? "bg-success/5" : "bg-destructive/5") : ""}`}>
-                  <div className="text-xs uppercase tracking-wider text-primary mb-2 font-semibold flex items-center justify-center gap-2">
-                    Resposta
-                    {answerSubmitted && (
-                      isAnswerCorrect()
-                        ? <CheckCircle className="h-4 w-4 text-success" />
-                        : <XCircle className="h-4 w-4 text-destructive" />
-                    )}
-                  </div>
-                  {answerSubmitted && (
-                    <div className="mb-3 p-2 rounded-md bg-muted/50 text-sm">
-                      <span className="text-muted-foreground">Sua resposta: </span>
-                      <span className={isAnswerCorrect() ? "text-success font-medium" : "text-destructive font-medium"}>
-                        {userAnswer}
-                      </span>
-                    </div>
-                  )}
-                  <p className="text-lg leading-relaxed font-medium">{card.answer}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {!flipped && (
-            <div className="flex items-center justify-center gap-2 max-w-2xl mx-auto w-full">
-              <Button variant="outline" size="icon" onClick={() => { setIdx(Math.max(0, idx - 1)); setFlipped(false); setUserAnswer(""); setAnswerSubmitted(false); }} disabled={idx === 0}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <form onSubmit={(e) => { e.preventDefault(); handleSubmitAnswer(); }} className="flex-1 flex gap-2">
-                <Input
-                  value={userAnswer}
-                  onChange={(e) => setUserAnswer(e.target.value)}
-                  placeholder="Digite sua resposta..."
-                  className="flex-1"
-                />
-                <Button type="submit" disabled={!userAnswer.trim()}>
-                  <Send className="h-4 w-4 mr-2" />
-                  Responder
-                </Button>
-              </form>
-              <Button variant="ghost" size="sm" onClick={() => { setFlipped(true); setAnswerSubmitted(false); }} className="text-muted-foreground text-xs">
-                Pular
-              </Button>
-              <Button variant="outline" size="icon" onClick={() => { setIdx(Math.min(filteredCards.length - 1, idx + 1)); setFlipped(false); setUserAnswer(""); setAnswerSubmitted(false); }} disabled={idx === filteredCards.length - 1}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-
-          {flipped && (
-            <div className="flex items-center justify-center gap-3 flex-wrap">
-              <Button variant="destructive" onClick={() => handleReview("again")} className="min-w-[100px]">
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Errei (1d)
-              </Button>
-              <Button variant="outline" onClick={() => handleReview("good")} className="min-w-[100px]">
-                Bom
-              </Button>
-              <Button className="bg-success hover:bg-success/90 min-w-[100px]" onClick={() => handleReview("easy")}>
-                Fácil
-              </Button>
-              {card.user_id === user?.id && (
-                <Button variant="ghost" size="icon" title="Remover" onClick={handleDelete}>
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-              {answerSubmitted && !isAnswerCorrect() && card.topic && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 text-xs"
-                  onClick={() => navigate("/dashboard/chatgpt", {
-                    state: {
-                      initialMessage: `Errei um flashcard sobre "${card.topic}". A pergunta era: "${card.question}". A resposta correta era: "${card.answer}". Me explique este tema seguindo o protocolo ENAZIZI.`,
-                      fromErrorBank: true,
-                    },
-                  })}
-                >
-                  <GraduationCap className="h-3.5 w-3.5" />
-                  Aprofundar no Tutor IA
-                </Button>
-              )}
-            </div>
-          )}
-        </>
-      )}
+        </button>
+      </div>
     </div>
   );
-
-  if (isFullscreen) return createPortal(content, document.body);
-  return content;
 };
 
 export default Flashcards;
