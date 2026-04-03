@@ -14,6 +14,12 @@ export interface BancaProfile {
 }
 
 const PROFILES: Record<string, BancaProfile> = {
+  enamed: {
+    key: "enamed", label: "ENAMED", difficulty: 3, osceEmphasis: false,
+    specialtyWeights: { "Clínica Médica": 25, "Cirurgia": 20, "Pediatria": 15, "Ginecologia e Obstetrícia": 15, "Medicina Preventiva": 15, "Medicina de Emergência": 10 },
+    style: "Questões objetivas com caso clínico padrão. Cobertura ampla das grandes áreas. Foco em conduta e diagnóstico.",
+    tutorGuidance: "Explicações objetivas e completas. O ENAMED cobra base ampla com foco em diagnóstico e conduta prática.",
+  },
   enare: {
     key: "enare", label: "ENARE", difficulty: 4, osceEmphasis: false,
     specialtyWeights: { "Clínica Médica": 25, "Cirurgia": 20, "Pediatria": 15, "Ginecologia e Obstetrícia": 15, "Medicina Preventiva": 15, "Medicina de Emergência": 10 },
