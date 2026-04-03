@@ -171,6 +171,11 @@ const Dashboard = () => {
         <HeroStudyCard />
       </SafeCard>
 
+      {/* ══════════════════════════════════════════
+          MENTORIA ATIVA — logo após o CTA principal
+         ══════════════════════════════════════════ */}
+      <SafeCard name="MentorshipBanner"><MentorshipBanner /></SafeCard>
+
       {/* Onboarding checklist — high visibility for new users */}
       {isNewUser && (
         <SafeCard name="OnboardingNew">
