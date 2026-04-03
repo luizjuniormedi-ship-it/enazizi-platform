@@ -389,6 +389,9 @@ const Admin = () => {
             <TabsTrigger value="uploads" className="gap-1.5">
               <Upload className="h-3.5 w-3.5" /> Uploads
             </TabsTrigger>
+            <TabsTrigger value="qa" className="gap-1.5">
+              <Bug className="h-3.5 w-3.5" /> QA
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="whatsapp">
