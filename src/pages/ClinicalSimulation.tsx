@@ -859,6 +859,23 @@ const ClinicalSimulation = () => {
         setVitalsSnapshots((prev) => [...prev, parseVitalsToSnapshot(vitals as any, newTimeElapsed)]);
       }
 
+      // Handle treatment outcome feedback
+      if (res.treatment_outcome) {
+        const outcomeMap: Record<string, { title: string; desc: string; variant: "default" | "destructive" }> = {
+          improved: { title: "✅ Paciente melhorando", desc: "O tratamento prescrito está surtindo efeito positivo.", variant: "default" },
+          partial: { title: "⚠️ Melhora parcial", desc: "O tratamento teve efeito parcial. Considere ajustar dose ou adicionar outra intervenção.", variant: "default" },
+          worsened: { title: "🚨 Paciente piorou após tratamento", desc: "A medicação prescrita pode estar inadequada ou contraindicada!", variant: "destructive" },
+          no_effect: { title: "⏳ Sem efeito observado", desc: "O tratamento não apresentou resultado significativo ainda.", variant: "default" },
+        };
+        const outcome = outcomeMap[res.treatment_outcome];
+        if (outcome) {
+          toast({ title: outcome.title, description: outcome.desc, variant: outcome.variant });
+          if (res.treatment_outcome === "improved") playSound("positive");
+          if (res.treatment_outcome === "worsened") playSound("worsened");
+        }
+        addToTimeline(`💊 Tratamento: ${res.treatment_outcome === "improved" ? "eficaz" : res.treatment_outcome === "worsened" ? "inadequado" : "parcial"}`, "💊");
+      }
+
       // Handle critical action needed
       if (res.critical_action_needed) {
         toast({
