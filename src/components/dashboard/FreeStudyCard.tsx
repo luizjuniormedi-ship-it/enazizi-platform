@@ -1,8 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  MessageSquare, BookOpen, Layers, ClipboardList,
-  Stethoscope, HeartPulse, FileText, BookMarked,
+  MessageSquare, BookOpen, Layers, ClipboardList, FileText, BookMarked,
 } from "lucide-react";
 
 const MODULES = [
@@ -24,7 +23,7 @@ export default function FreeStudyCard() {
           Acesso livre
         </CardTitle>
       </CardHeader>
-      <CardContent className="px-4 pb-4">
+      <CardContent className="px-3 pb-4">
         <div className="grid grid-cols-3 gap-2">
           {MODULES.map((mod) => {
             const Icon = mod.icon;
@@ -32,10 +31,10 @@ export default function FreeStudyCard() {
               <button
                 key={mod.path}
                 onClick={() => navigate(mod.path)}
-                className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-border/40 bg-muted/20 hover:bg-muted hover:border-primary/20 transition-all group"
+                className="flex flex-col items-center gap-2 p-3.5 rounded-xl border border-border/40 bg-muted/20 hover:bg-muted active:bg-muted/60 active:scale-[0.97] hover:border-primary/20 transition-all group min-h-[72px] justify-center"
               >
                 <Icon className={`h-5 w-5 ${mod.color} group-hover:scale-110 transition-transform`} />
-                <span className="text-[11px] font-medium text-muted-foreground group-hover:text-foreground transition-colors leading-tight text-center">
+                <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors leading-tight text-center">
                   {mod.label}
                 </span>
               </button>

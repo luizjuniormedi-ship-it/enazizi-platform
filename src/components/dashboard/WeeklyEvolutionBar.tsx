@@ -8,10 +8,9 @@ export default function WeeklyEvolutionBar() {
 
   if (!data) return null;
 
-  const { stats, metrics } = data;
+  const { stats } = data;
   const weeklyChart = stats.weeklyChart || [];
 
-  // Calculate weekly evolution
   const thisWeekHours = weeklyChart.length > 0 ? weeklyChart[weeklyChart.length - 1]?.hours || 0 : 0;
   const lastWeekHours = weeklyChart.length > 1 ? weeklyChart[weeklyChart.length - 2]?.hours || 0 : 0;
 
@@ -19,7 +18,6 @@ export default function WeeklyEvolutionBar() {
     ? Math.round(((thisWeekHours - lastWeekHours) / lastWeekHours) * 100)
     : thisWeekHours > 0 ? 100 : 0;
 
-  // Simple weekly progress: tasks completed / total
   const taskPercent = stats.totalTasks > 0
     ? Math.min(Math.round((stats.completedTasks / stats.totalTasks) * 100), 100)
     : 0;
@@ -31,19 +29,19 @@ export default function WeeklyEvolutionBar() {
   return (
     <Card className="border-border/40">
       <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-semibold">Progresso semanal</span>
           <span className={`text-xs font-medium flex items-center gap-1 ${trendColor}`}>
             <TrendIcon className="h-3.5 w-3.5" />
-            {trendText} vs semana anterior
+            {trendText}
           </span>
         </div>
-        <Progress value={taskPercent} className="h-2.5" />
-        <div className="flex items-center justify-between mt-2">
+        <Progress value={taskPercent} className="h-3" />
+        <div className="flex items-center justify-between mt-2.5">
           <span className="text-xs text-muted-foreground">
             {stats.completedTasks}/{stats.totalTasks} tarefas
           </span>
-          <span className="text-xs font-medium text-foreground">{taskPercent}%</span>
+          <span className="text-sm font-bold text-foreground">{taskPercent}%</span>
         </div>
       </CardContent>
     </Card>

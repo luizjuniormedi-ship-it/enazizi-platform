@@ -21,22 +21,22 @@ export default function SmartAlertCard() {
   if (metrics.pendingRevisoes >= 3) {
     return (
       <Card className="border-amber-500/30 bg-amber-500/5">
-        <CardContent className="p-3 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-amber-500/10 shrink-0">
-            <Clock className="h-4 w-4 text-amber-500" />
+        <CardContent className="p-4 flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-amber-500/10 shrink-0">
+            <Clock className="h-5 w-5 text-amber-500" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium">
+            <p className="text-sm font-medium leading-snug">
               Você tem {metrics.pendingRevisoes} revisões atrasadas
             </p>
           </div>
           <Button
             size="sm"
             variant="outline"
-            className="shrink-0 text-xs gap-1 h-8"
+            className="shrink-0 text-xs gap-1 h-10 px-3 active:scale-[0.97] transition-transform"
             onClick={() => navigate("/dashboard/missao")}
           >
-            Resolver <ArrowRight className="h-3 w-3" />
+            Resolver <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         </CardContent>
       </Card>
