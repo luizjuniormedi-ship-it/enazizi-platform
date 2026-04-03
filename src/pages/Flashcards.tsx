@@ -9,7 +9,7 @@ import { useFsrs, Rating } from "@/hooks/useFsrs";
 import {
   FlipVertical, Loader2, Brain, GraduationCap, Filter,
   Download, Zap, Clock, Award, Maximize2, Minimize2,
-  MoreVertical, HelpCircle, ArrowLeft,
+  MoreVertical, HelpCircle, ArrowLeft, Search, DatabaseZap,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
@@ -19,6 +19,7 @@ import { useNavigate } from "react-router-dom";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
