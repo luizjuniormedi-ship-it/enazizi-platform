@@ -1,20 +1,43 @@
+# Múltiplas Provas Alvo (até 3)
 
+## 1. Migração de Banco de Dados
+- Adicionar coluna `target_exams text[]` na tabela `profiles`
+- Migrar dados existentes: copiar `target_exam` para `target_exams` como array de 1 elemento
+- Manter `target_exam` temporariamente para retrocompatibilidade (não remover)
 
-# Adicionar "Prova Prática" aos Menus de Navegação
+## 2. Onboarding (`OnboardingV2Flow.tsx`)
+- Trocar `Select` por grid de checkboxes com limite de 3
+- Estado muda de `string` para `string[]`
+- Salvar em `target_exams` (array) + `target_exam` (primeiro da lista, para compatibilidade)
+- UI: badges selecionáveis com contador "X/3 selecionadas"
 
-## Problema
-O módulo "Prova Prática" (OSCE) tem rota funcional (`/dashboard/prova-pratica`) mas **não aparece em nenhum menu** — nem na sidebar, nem na barra inferior mobile. O acesso só é possível via cards no Dashboard.
+## 3. Perfil (`Profile.tsx`)
+- Adicionar campo de seleção múltipla de provas (mesmo padrão do onboarding)
+- Carregar e salvar `target_exams`
 
-## Alteração
+## 4. Study Engine (`studyEngine.ts`)
+- Ler `target_exams` do perfil
+- Para múltiplas provas: combinar os `ExamProfile` (média ponderada dos modifiers)
+- Nova função `getMergedExamProfile(exams: string[])` em `examProfiles.ts`
 
-### Arquivo: `src/components/layout/DashboardSidebar.tsx`
-- Adicionar item `{ to: "/dashboard/prova-pratica", icon: Stethoscope, label: "Prova Prática" }` no grupo **"Prática e Progresso"** (entre "Anamnese" e "Plantão")
-- O ícone `Stethoscope` já está importado no arquivo
+## 5. Edge Function (`generate-study-plan`)
+- Ler `target_exams` do perfil
+- Combinar perfis de banca para gerar plano equilibrado
 
-### Arquivo: `src/components/layout/BottomTabBar.tsx` (se aplicável)
-- Verificar se o módulo deve aparecer também na navegação mobile inferior ou se já está acessível pelo menu lateral mobile
+## 6. Study Session (`StudySession.tsx`)
+- Ler `target_exams` em vez de `target_exam`
 
-## Resultado
-- "Prova Prática" visível e acessível diretamente pelo menu lateral
-- Consistente com os outros módulos de prática clínica
+## 7. Dashboard
+- Exibir badges com as provas selecionadas (ex: "USP • ENARE • SUS-SP")
 
+## Arquivos afetados
+| Arquivo | Ação |
+|---------|------|
+| Migração SQL | Adicionar coluna `target_exams text[]` |
+| `src/components/onboarding/OnboardingV2Flow.tsx` | Seleção múltipla (checkboxes) |
+| `src/pages/Profile.tsx` | Seleção múltipla de provas |
+| `src/lib/examProfiles.ts` | Nova função `getMergedExamProfile` |
+| `src/lib/studyEngine.ts` | Usar `target_exams` + merge de perfis |
+| `src/pages/StudySession.tsx` | Ler `target_exams` |
+| `supabase/functions/generate-study-plan/index.ts` | Ler `target_exams` |
+| `src/components/dashboard/ExamSetupReminder.tsx` | Exibir múltiplas provas |
