@@ -45,7 +45,9 @@ function TaskRow({ task, onStart }: { task: StudyRecommendation; onStart: () => 
           )}
         </div>
         <p className="font-medium text-sm truncate">{task.topic}</p>
-        <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{task.reason}</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+          💡 {getHumanReadableReason(task)}
+        </p>
       </div>
       <Play className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
     </div>

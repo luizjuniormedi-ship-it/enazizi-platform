@@ -51,7 +51,7 @@ export default function WeakTopicsCard() {
           >
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium truncate">{item.topic}</p>
-              <p className="text-[10px] text-muted-foreground">{item.reason}</p>
+              <p className="text-[10px] text-muted-foreground">💡 {getHumanReadableReason(item)}</p>
             </div>
             <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-primary shrink-0">
               Reforçar

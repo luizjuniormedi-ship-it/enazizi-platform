@@ -84,7 +84,7 @@ export default function PlannerDayView({ revisoes, temas, temasComputados, engin
           >
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium truncate">{rec.topic}</p>
-              <p className="text-[10px] text-muted-foreground">{rec.reason}</p>
+              <p className="text-[10px] text-muted-foreground">💡 {getHumanReadableReason(rec)}</p>
             </div>
             <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 shrink-0">
               <Clock className="h-3 w-3" />

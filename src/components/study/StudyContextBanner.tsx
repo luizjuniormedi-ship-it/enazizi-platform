@@ -60,12 +60,10 @@ export default function StudyContextBanner() {
           Voltar
         </Button>
       </div>
-      {reasonText && (
-        <div className="flex items-center gap-1.5 px-3 text-[10px] text-muted-foreground">
-          <Info className="h-3 w-3 shrink-0" />
-          <span>{reasonText}</span>
-        </div>
-      )}
+      <div className="flex items-center gap-1.5 px-3 text-[10px] text-muted-foreground">
+        <Info className="h-3 w-3 shrink-0" />
+        <span>💡 {reasonText}</span>
+      </div>
     </div>
   );
 }
