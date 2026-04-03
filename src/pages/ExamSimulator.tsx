@@ -6,6 +6,7 @@ import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
 import { isMedicalQuestion } from "@/lib/medicalValidation";
+import { filterValidQuestions } from "@/lib/aiOutputValidation";
 import { FileText, Clock, Play, CheckCircle2, Loader2, ArrowRight, Award, AlertTriangle, BarChart3, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
