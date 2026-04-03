@@ -6,7 +6,7 @@
 export const IMAGE_REF_PATTERN = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo|observe o gráfico|observe a figura|observe a foto|imagem a seguir|figura a seguir|vide imagem|conforme a imagem|conforme a figura|de acordo com a imagem|de acordo com a figura)\b/i;
 
 /** Rejects English-language questions */
-export const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female|diagnosis|management|regarding|concerning|history of|laboratory findings|clinical presentation|what is the|correct answer|following statements|chest x-ray shows|blood pressure|heart rate)\b/i;
+export const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female|diagnosis is|management of|regarding the|concerning the|history of presenting|laboratory findings|clinical presentation|what is the|correct answer|following statements|chest x-ray shows|blood pressure is|heart rate is|all of the following|except which|best describes|chief complaint|past medical history|social history|family history|review of systems)\b/i;
 
 /** Validates a question meets minimum quality standards */
 export function isValidQuestion(q: { statement?: string; options?: any[]; correct_index?: number }): boolean {
