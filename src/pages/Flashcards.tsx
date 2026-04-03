@@ -7,7 +7,7 @@ import { updateDomainMap } from "@/lib/updateDomainMap";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useFsrs, Rating } from "@/hooks/useFsrs";
 import {
-  FlipVertical, Loader2, Brain, GraduationCap, Filter,
+  FlipVertical, Loader2, Brain, GraduationCap,
   Download, Zap, Clock, Award, Maximize2, Minimize2,
   MoreVertical, HelpCircle, ArrowLeft, Search, DatabaseZap,
 } from "lucide-react";
