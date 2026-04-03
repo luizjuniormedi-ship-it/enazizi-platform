@@ -169,6 +169,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     anamnesisData,
     clinicalSimData,
     fsrsDueData,
+    mentorTargets,
   ] = await Promise.all([
     safe(() => supabase
       .from("revisoes")
@@ -215,7 +216,6 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(10), "anamnesis"),
-    // Use anamnesis_sessions as clinical simulation proxy (simulation_history doesn't exist)
     safe(() => supabase
       .from("anamnesis_sessions")
       .select("id, specialty, final_score, created_at")
@@ -230,7 +230,32 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       .lte("due", new Date().toISOString())
       .order("due", { ascending: true })
       .limit(30), "fsrs"),
+    // Mentor theme plans targeting this student
+    safe(() => supabase
+      .from("mentor_theme_plan_targets")
+      .select("plan_id")
+      , "mentor_targets"),
   ]);
+
+  // ── Load mentor topics if any active mentorships ───────────────
+  let mentorTopics: string[] = [];
+  const targetPlans = (mentorTargets || []) as any[];
+  if (targetPlans.length > 0) {
+    const planIds = [...new Set(targetPlans.map((t: any) => t.plan_id))];
+    const activePlans = await safe(() => supabase
+      .from("mentor_theme_plans")
+      .select("id")
+      .in("id", planIds)
+      .eq("status", "active"), "mentor_active_plans");
+    if (activePlans && (activePlans as any[]).length > 0) {
+      const activeIds = (activePlans as any[]).map((p: any) => p.id);
+      const topicsData = await safe(() => supabase
+        .from("mentor_theme_plan_topics")
+        .select("topic")
+        .in("plan_id", activeIds), "mentor_topics");
+      mentorTopics = [...new Set((topicsData as any[] || []).map((t: any) => t.topic))];
+    }
+  }
 
   // ── Compute approval score & weights ─────────────────────────
   const practiceAttempts = (practiceData || []) as any[];
@@ -501,6 +526,22 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       estimatedMinutes: Math.max(5, flashcardDue.length * 2),
       objective: "review",
     });
+  }
+
+  // ── Mentor topic priority boost ───────────────────────────────
+  if (mentorTopics.length > 0) {
+    for (const rec of recs) {
+      const isMentorTopic = mentorTopics.some(mt =>
+        rec.topic.toLowerCase().includes(mt.toLowerCase()) ||
+        rec.specialty.toLowerCase().includes(mt.toLowerCase())
+      );
+      if (isMentorTopic) {
+        rec.priority = cap(rec.priority + 10);
+        if (!rec.reason.includes("📋")) {
+          rec.reason = `📋 ${rec.reason}`;
+        }
+      }
+    }
   }
 
   // ── Sort by priority then apply weight-based slot limits ─────

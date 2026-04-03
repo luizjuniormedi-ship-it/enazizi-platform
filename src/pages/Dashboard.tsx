@@ -25,6 +25,7 @@ import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import AdaptiveModeCard from "@/components/dashboard/AdaptiveModeCard";
 import ExamSetupReminder from "@/components/dashboard/ExamSetupReminder";
 import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
+import MentorshipBanner from "@/components/dashboard/MentorshipBanner";
 import DashboardSummaryCard from "@/components/dashboard/DashboardSummaryCard";
 import ApprovalTimeline from "@/components/dashboard/ApprovalTimeline";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
@@ -284,6 +285,9 @@ const Dashboard = () => {
 
       {/* Mensagens do admin — secundário */}
       <SafeCard name="AdminMessages"><AdminMessagesBanner /></SafeCard>
+
+      {/* Mentoria do professor */}
+      <SafeCard name="MentorshipBanner"><MentorshipBanner /></SafeCard>
 
       {/* Install app — secundário, lazy loaded */}
       <Suspense fallback={null}>

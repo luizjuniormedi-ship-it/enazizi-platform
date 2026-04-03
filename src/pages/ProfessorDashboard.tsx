@@ -19,6 +19,7 @@ import ProfessorPlantao from "@/components/professor/ProfessorPlantao";
 import StudentTracker from "@/components/professor/StudentTracker";
 import VideoRoom from "@/components/professor/VideoRoom";
 import TeacherStudyAssignments from "@/components/professor/TeacherStudyAssignments";
+import MentorThemePlans from "@/components/professor/MentorThemePlans";
 import ProfessorBIPanel from "@/components/professor/ProfessorBIPanel";
 
 import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
@@ -489,7 +490,8 @@ const ProfessorDashboard = () => {
           <TabsTrigger value="temas">📖 Temas de Estudo</TabsTrigger>
           <TabsTrigger value="alunos">👤 Aluno Individual</TabsTrigger>
           <TabsTrigger value="analytics">📊 Análise da Turma</TabsTrigger>
-          <TabsTrigger value="bi">📈 BI</TabsTrigger>
+           <TabsTrigger value="bi">📈 BI</TabsTrigger>
+           <TabsTrigger value="mentoria">📋 Mentoria</TabsTrigger>
         </TabsList>
 
         <TabsContent value="simulados" className="space-y-4 mt-4">
@@ -1364,6 +1366,10 @@ const ProfessorDashboard = () => {
 
         <TabsContent value="bi" className="mt-4">
           <ProfessorBIPanel callAPI={callAPI} />
+        </TabsContent>
+
+        <TabsContent value="mentoria" className="mt-4">
+          <MentorThemePlans />
         </TabsContent>
       </Tabs>
     </div>
