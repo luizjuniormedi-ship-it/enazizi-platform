@@ -6,6 +6,8 @@ import { Play, Sparkles, Clock, CheckCircle2, List } from "lucide-react";
 import { useStudyEngine, type StudyRecommendation } from "@/hooks/useStudyEngine";
 import { buildStudyPath } from "@/lib/studyRouter";
 import { getHumanReadableReason } from "@/lib/humanizedReasons";
+import { useTopicEvolution, getEvolutionForTopic } from "@/hooks/useTopicEvolution";
+import EvolutionBadge from "@/components/dashboard/EvolutionBadge";
 
 const TYPE_LABELS: Record<string, string> = {
   review: "Revisão",
@@ -25,7 +27,7 @@ const TYPE_COLORS: Record<string, string> = {
   simulado: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
 };
 
-function TaskRow({ task, onStart }: { task: StudyRecommendation; onStart: () => void }) {
+function TaskRow({ task, onStart, evolution }: { task: StudyRecommendation; onStart: () => void; evolution?: ReturnType<typeof getEvolutionForTopic> }) {
   return (
     <div
       className="flex items-center gap-3 p-2.5 rounded-xl bg-card border border-border/60 hover:border-primary/30 cursor-pointer transition-all group"
@@ -43,6 +45,7 @@ function TaskRow({ task, onStart }: { task: StudyRecommendation; onStart: () => 
           {task.priority >= 80 && (
             <span className="text-[10px] text-destructive font-medium">Alta prioridade</span>
           )}
+          {evolution && <EvolutionBadge status={evolution.status} />}
         </div>
         <p className="font-medium text-sm truncate">{task.topic}</p>
         <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
@@ -57,6 +60,7 @@ function TaskRow({ task, onStart }: { task: StudyRecommendation; onStart: () => 
 export default function TodayStudyCard() {
   const navigate = useNavigate();
   const { data: recommendations, isLoading } = useStudyEngine();
+  const { data: evolutions } = useTopicEvolution();
 
   if (isLoading) {
     return (
@@ -112,6 +116,7 @@ export default function TodayStudyCard() {
           <TaskRow
             key={task.id}
             task={task}
+            evolution={getEvolutionForTopic(evolutions, task.topic)}
             onStart={() => navigate(buildStudyPath(task, "daily-plan"))}
           />
         ))}

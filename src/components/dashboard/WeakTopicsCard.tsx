@@ -6,10 +6,13 @@ import { TrendingDown, ChevronRight } from "lucide-react";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
 import { buildStudyPath } from "@/lib/studyRouter";
 import { getHumanReadableReason } from "@/lib/humanizedReasons";
+import { useTopicEvolution, getEvolutionForTopic } from "@/hooks/useTopicEvolution";
+import EvolutionBadge from "@/components/dashboard/EvolutionBadge";
 
 export default function WeakTopicsCard() {
   const navigate = useNavigate();
   const { data: recommendations } = useStudyEngine();
+  const { data: evolutions } = useTopicEvolution();
 
   const weakTopics = (recommendations || []).filter(
     (r) => r.type === "practice" || r.type === "error_review"
@@ -50,7 +53,10 @@ export default function WeakTopicsCard() {
             onClick={() => navigate(buildStudyPath(item, "weak-topics"))}
           >
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium truncate">{item.topic}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs font-medium truncate">{item.topic}</p>
+                {(() => { const evo = getEvolutionForTopic(evolutions, item.topic); return evo ? <EvolutionBadge status={evo.status} /> : null; })()}
+              </div>
               <p className="text-[10px] text-muted-foreground">💡 {getHumanReadableReason(item)}</p>
             </div>
             <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-primary shrink-0">
