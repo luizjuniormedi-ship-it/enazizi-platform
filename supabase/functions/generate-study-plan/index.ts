@@ -82,6 +82,7 @@ Dados do aluno:
 - Horas disponíveis por dia: ${hoursPerDay}
 - Dias de estudo por semana: ${daysPerWeek}
 ${editalPreview ? `\n📋 CONTEÚDO PROGRAMÁTICO / CRONOGRAMA ENVIADO PELO ALUNO:\n---\n${editalPreview}\n---` : ""}
+${bancaBlock}
 
 🎯 INSTRUÇÕES CRÍTICAS:
 
