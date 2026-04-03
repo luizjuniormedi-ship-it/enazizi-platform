@@ -163,10 +163,10 @@ const Dashboard = () => {
       <SafeCard name="ExamSetup"><ExamSetupReminder /></SafeCard>
 
       {/* ══════════════════════════════════════════
-          BLOCO 0 — MISSÃO DO DIA (CTA principal)
+          BLOCO PRINCIPAL — Fluxo Único de Estudo
          ══════════════════════════════════════════ */}
-      <SafeCard name="MissionStart">
-        <MissionStartButton />
+      <SafeCard name="HeroStudy">
+        <HeroStudyCard />
       </SafeCard>
 
       {/* Onboarding checklist — high visibility for new users */}
@@ -179,13 +179,6 @@ const Dashboard = () => {
           />
         </SafeCard>
       )}
-
-      {/* ══════════════════════════════════════════
-          BLOCO 1 — O que estudar hoje
-         ══════════════════════════════════════════ */}
-      <SafeCard name="TodayStudy">
-        <TodayStudyCard />
-      </SafeCard>
 
       {/* ══════════════════════════════════════════
           BLOCO 1.5 — MODO ADAPTATIVO (feedback sutil + ação)
