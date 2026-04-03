@@ -611,19 +611,56 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     });
   }
 
-  // ── Mentor topic priority boost ───────────────────────────────
+  // ── Mentor topic priority boost (dynamic by exam proximity) ────
   if (mentorTopics.length > 0) {
+    // Dynamic boost: flat +10, +15 if ≤30 days, +20 if ≤14 days, +25 if ≤7 days
+    const proximityBoost = mentorDaysUntilExam !== null
+      ? mentorDaysUntilExam <= 7 ? 25
+        : mentorDaysUntilExam <= 14 ? 20
+        : mentorDaysUntilExam <= 30 ? 15
+        : 10
+      : 10;
+
+    const boostedTopics = new Set<string>();
     for (const rec of recs) {
       const isMentorTopic = mentorTopics.some(mt =>
         rec.topic.toLowerCase().includes(mt.toLowerCase()) ||
         rec.specialty.toLowerCase().includes(mt.toLowerCase())
       );
       if (isMentorTopic) {
-        rec.priority = cap(rec.priority + 10);
+        rec.priority = cap(rec.priority + proximityBoost);
         if (!rec.reason.includes("📋")) {
           rec.reason = `📋 ${rec.reason}`;
         }
+        boostedTopics.add(rec.topic.toLowerCase());
       }
+    }
+
+    // Proactive: create new recs for mentor topics not already covered
+    const uncoveredTopics = mentorTopics.filter(mt =>
+      !boostedTopics.has(mt.toLowerCase()) &&
+      ![...boostedTopics].some(bt => bt.includes(mt.toLowerCase()) || mt.toLowerCase().includes(bt))
+    );
+    for (let i = 0; i < Math.min(uncoveredTopics.length, 3); i++) {
+      const mt = uncoveredTopics[i];
+      const urgencyLabel = mentorDaysUntilExam !== null && mentorDaysUntilExam <= 14
+        ? `⚠️ Prova em ${mentorDaysUntilExam} dias!`
+        : mentorDaysUntilExam !== null
+        ? `Prova em ${mentorDaysUntilExam} dias.`
+        : "";
+      addRec({
+        id: id("mentor", i),
+        type: "new",
+        topic: mt,
+        specialty: mt,
+        priority: cap(60 + proximityBoost - i * 3),
+        reason: `📋 Tema da mentoria: "${mt}". ${urgencyLabel} Estude com o Tutor IA.`,
+        targetModule: "tutor",
+        targetPath: "/dashboard/chatgpt",
+        estimatedMinutes: 25,
+        objective: "new_content",
+        _groupKey: `mentor:${mt}`,
+      });
     }
   }
 
