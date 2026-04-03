@@ -1765,6 +1765,48 @@ export type Database = {
         }
         Relationships: []
       }
+      practical_exam_results: {
+        Row: {
+          case_summary: string | null
+          created_at: string
+          difficulty: string
+          feedback_json: Json
+          final_score: number
+          id: string
+          scores_json: Json
+          specialty: string
+          steps_json: Json
+          time_total_seconds: number
+          user_id: string
+        }
+        Insert: {
+          case_summary?: string | null
+          created_at?: string
+          difficulty?: string
+          feedback_json?: Json
+          final_score?: number
+          id?: string
+          scores_json?: Json
+          specialty: string
+          steps_json?: Json
+          time_total_seconds?: number
+          user_id: string
+        }
+        Update: {
+          case_summary?: string | null
+          created_at?: string
+          difficulty?: string
+          feedback_json?: Json
+          final_score?: number
+          id?: string
+          scores_json?: Json
+          specialty?: string
+          steps_json?: Json
+          time_total_seconds?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       practice_attempts: {
         Row: {
           correct: boolean

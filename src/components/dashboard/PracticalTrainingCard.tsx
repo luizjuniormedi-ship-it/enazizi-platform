@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Stethoscope, HeartPulse, ClipboardCheck, ChevronRight } from "lucide-react";
+import { Stethoscope, HeartPulse, ClipboardCheck, ChevronRight, GraduationCap } from "lucide-react";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
 import { buildStudyPath } from "@/lib/studyRouter";
 
@@ -21,6 +21,14 @@ const CLINICAL_MODULES = [
     icon: HeartPulse,
     iconColor: "text-rose-500",
     bgColor: "bg-rose-500/5 hover:bg-rose-500/10 border-rose-500/10",
+  },
+  {
+    label: "Prova Prática",
+    desc: "Simulação OSCE com avaliação",
+    path: "/dashboard/prova-pratica",
+    icon: GraduationCap,
+    iconColor: "text-violet-500",
+    bgColor: "bg-violet-500/5 hover:bg-violet-500/10 border-violet-500/10",
   },
 ];
 
@@ -58,7 +66,7 @@ export default function PracticalTrainingCard() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {CLINICAL_MODULES.map((mod) => {
             const Icon = mod.icon;
             return (

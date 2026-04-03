@@ -1,106 +1,54 @@
 
-
-# Camada de Controle de Contexto na Geração de Questões
+# Modo Prova Prática (OSCE) no ENAZIZI
 
 ## Visão Geral
 
-Implementar validação obrigatória de contexto antes e depois da geração de questões, garantindo que toda questão esteja em pt-BR, dentro do tema correto, e alinhada ao objetivo pedagógico. Sem quebrar fluxos existentes.
+Criar um modo "Prova Prática" que reutiliza a infraestrutura existente de `ClinicalSimulation` (Plantão) e `AnamnesisTrainer`, adicionando pressão de tempo, avaliação estruturada (0-10) e registro de resultados.
 
 ## Arquitetura
 
 ```text
-Caller (Simulados, Diagnostic, AutoReplenish, etc.)
+Dashboard (PracticalTrainingCard)
   │
-  ├─ [NOVO] buildGenerationContext() ← fallback chain
+  ├─ Modo Normal (Plantão/Anamnese) → já existe
   │
-  ▼
-question-generator edge function
-  │
-  ├─ [NOVO] Validação de contexto no body (specialty, topic, language)
-  ├─ [ATUALIZADO] Prompt com regras de escopo rígidas
-  ├─ [EXISTENTE] aiFetch → IA gera questões
-  │
-  ▼
-  ├─ [EXISTENTE] isValidQuestion + hasMinimumContext
-  ├─ [ATUALIZADO] + validateQuestionContext() ← verifica specialty/topic match
-  ├─ [ATUALIZADO] + ENGLISH_PATTERN reforçado
-  │
-  ▼
-  ├─ [NOVO] Log de rejeições (console structured)
-  │
-  ▼
-Questões filtradas retornadas ao caller
+  └─ Modo Prova Prática (novo)
+       │
+       ├─ Setup: escolha especialidade + dificuldade
+       ├─ Execução: caso clínico com timer por decisão (30-90s)
+       ├─ Etapas: Anamnese → Exame → Diagnóstico → Conduta
+       ├─ Avaliação: nota 0-10 por critério
+       └─ Resultado: feedback detalhado + registro no banco
 ```
 
-## Arquivos e Mudanças
+## Implementação
 
-### 1. `src/lib/questionGenerationContext.ts` (NOVO)
+### 1. Edge Function: `practical-exam` (nova)
+- Gera caso clínico estruturado em múltiplas etapas (anamnese, exame físico, exames complementares, diagnóstico, conduta)
+- Avalia cada decisão do aluno com score parcial
+- Gera feedback final com nota 0-10 por critério (raciocínio, conduta, priorização, tempo)
+- Usa Lovable AI (Gemini 2.5 Flash)
 
-Criar tipo `QuestionGenerationContext` e função `buildGenerationContext()` com cadeia de fallback:
+### 2. Tabela: `practical_exam_results` (nova)
+- `user_id`, `specialty`, `difficulty`, `case_summary`, `scores_json` (raciocínio, conduta, priorização, tempo), `final_score`, `feedback_json`, `time_total_seconds`, `steps_json`, `created_at`
+- RLS: usuário lê/escreve próprios resultados, admin lê todos
 
-1. StudyContext ativo (URL params `sc_*`)
-2. Último tema da sessão (`temas_estudados` mais recente)
-3. Tema fraco do Study Engine
-4. Fallback seguro: `{ specialty: "Clínica Médica", topic: "Clínica Médica Geral", language: "pt-BR" }`
+### 3. Página: `PracticalExam.tsx` (nova rota `/dashboard/prova-pratica`)
+- Tela de setup: especialidade + dificuldade
+- Execução: apresentação do caso → decisões com timer visível → múltiplas etapas
+- Resultado: nota por critério + feedback + ações (revisar no Tutor, repetir)
 
-Exportar também `validateContextBeforeGeneration()` que rejeita contexto sem specialty/topic.
+### 4. Integrações
+- `PracticalTrainingCard`: adicionar botão "Simulação de Prova"
+- `StudyEngine`: recomendar quando erro de conduta ou prova próxima
+- Rota no `App.tsx`
 
-### 2. `supabase/functions/_shared/question-filters.ts` (ATUALIZAR)
+## Mudanças
 
-- Expandir `ENGLISH_PATTERN` com mais termos ("correct answer", "regarding", "concerning", etc.) — alguns já existem, consolidar
-- Adicionar `validateQuestionContext(question, expectedContext)`:
-  - Verifica se `topic` da questão contém a specialty/topic esperado
-  - Rejeita se não bater
-- Adicionar `logGenerationRejection(reason, expected, snippet)` para log estruturado
-
-### 3. `supabase/functions/question-generator/index.ts` (ATUALIZAR)
-
-- Aceitar campos opcionais no body: `generationContext: { specialty, topic, subtopic, objective, difficulty, studentLevel, language }`
-- Quando `generationContext` presente:
-  - Injetar no prompt: "ESCOPO OBRIGATÓRIO: Gere APENAS sobre {specialty} > {topic} > {subtopic}. NÃO amplie para outros temas."
-  - Injetar objetivo pedagógico no prompt
-  - Após geração (JSON mode): validar cada questão contra o contexto esperado, descartar as que não batem
-- Prompt reforçado: adicionar bloco "PROIBIÇÕES ABSOLUTAS" sobre idioma e escopo
-
-### 4. Callers — injetar contexto (ATUALIZAR)
-
-**`src/pages/Simulados.tsx`** — Na `generateBatch()`, passar `generationContext` com specialty dos topics selecionados
-
-**`src/pages/Diagnostic.tsx`** — Na invocação, passar `generationContext` com specialty da área atual
-
-**`src/pages/ExamSimulator.tsx`** — Passar `generationContext` com areas do examConfig
-
-**`src/hooks/useAutoReplenish.ts`** — Passar `generationContext` com o topic ativo
-
-**`src/components/daily-plan/MicroQuizDialog.tsx`** — Passar `generationContext` com specialty e topic
-
-### 5. Testes — `src/test/questionGenerationContext.test.ts` (NOVO)
-
-- `buildGenerationContext` sem contexto → retorna fallback "Clínica Médica"
-- `buildGenerationContext` com StudyContext → retorna specialty/topic corretos
-- `validateQuestionContext` com questão em inglês → rejeita
-- `validateQuestionContext` com topic errado → rejeita
-- `validateQuestionContext` com questão válida → aceita
-
-## O Que NÃO Muda
-
-- Rotas existentes
-- Estrutura de resposta da edge function
-- Fluxo de streaming (modo texto)
-- Funcionalidades existentes (cache, anti-repetição, filtros de qualidade)
-- Tabelas do banco de dados
-
-## Resumo de Arquivos
-
-| Arquivo | Ação |
-|---------|------|
-| `src/lib/questionGenerationContext.ts` | Criar (tipo + fallback + validação) |
-| `supabase/functions/_shared/question-filters.ts` | Expandir filtros + context validation |
-| `supabase/functions/question-generator/index.ts` | Aceitar/injetar contexto + validação pós-geração |
-| `src/pages/Simulados.tsx` | Passar generationContext |
-| `src/pages/Diagnostic.tsx` | Passar generationContext |
-| `src/pages/ExamSimulator.tsx` | Passar generationContext |
-| `src/hooks/useAutoReplenish.ts` | Passar generationContext |
-| `src/components/daily-plan/MicroQuizDialog.tsx` | Passar generationContext |
-| `src/test/questionGenerationContext.test.ts` | Criar testes |
-
+| Arquivo | Mudança |
+|---------|---------|
+| `supabase/functions/practical-exam/index.ts` | Nova edge function para geração e avaliação |
+| Migração DB | Tabela `practical_exam_results` com RLS |
+| `src/pages/PracticalExam.tsx` | Nova página com setup + execução + resultado |
+| `src/App.tsx` | Nova rota `/dashboard/prova-pratica` |
+| `src/components/dashboard/PracticalTrainingCard.tsx` | Adicionar link para prova prática |
