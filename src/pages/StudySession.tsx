@@ -596,7 +596,7 @@ const StudySession = () => {
         </div>
 
         {/* Phase Progress Bar */}
-        {phase !== "start" && (
+        {phase !== "start" && phase !== "style-select" && (
           <div className="px-4 py-1.5 border-b border-border">
             <Progress value={progressPercent} className="h-1.5" />
             <div className="flex gap-1 mt-1.5 overflow-x-auto pb-0.5">
