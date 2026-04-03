@@ -376,7 +376,7 @@ const StudySession = () => {
     } catch (err) {
       console.error("Error registering MCQ attempt:", err);
     }
-  }, [user, topic]);
+  }, [user, topic, reinforcementCycles, phase, messages, performance, studyMode]);
 
   const streamChat = async (msgs: Msg[], currentPhase: Phase, currentTopic: string) => {
     setIsLoading(true);
