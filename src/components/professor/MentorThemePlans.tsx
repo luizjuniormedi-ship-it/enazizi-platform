@@ -251,7 +251,6 @@ const MentorThemePlans = () => {
     loadPlans();
   };
 
-  const viewProgress = async (plan: MentorPlan) => {
   const viewProgress = (plan: MentorPlan) => {
     setReportPlan(plan);
   };
