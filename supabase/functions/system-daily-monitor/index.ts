@@ -457,14 +457,20 @@ Deno.serve(async (req) => {
     const studyEngineOk = !checks.some(c => c.name.startsWith("study_engine") && c.status === "critical");
     const aiOk = !checks.some(c => c.name.startsWith("ai_") && c.status === "critical");
 
+    const journeyChecks = checks.filter(c => c.name.startsWith("journey_"));
+    const journeyOk = !journeyChecks.some(c => c.status === "critical");
+
     const metrics = {
       totalAiCalls,
       aiFailRate: Math.round(aiFailRate * 10) / 10,
       avgResponseMs,
       execRate,
       totalPlans: plansList.length,
-      activeUsersNow: 0, // from presence check
+      activeUsersNow: 0,
       executionTimeMs: Date.now() - startTime,
+      journeyChecksTotal: journeyChecks.length,
+      journeyChecksPassed: journeyChecks.filter(c => c.status === "ok").length,
+      journeyOk,
     };
 
     // ══════════════════════════════════════════════════════════
