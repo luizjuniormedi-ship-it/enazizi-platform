@@ -57,6 +57,7 @@ const StreakCalendar = lazy(() => import("@/components/dashboard/StreakCalendar"
 const WeeklyProgressCard = lazy(() => import("@/components/dashboard/WeeklyProgressCard"));
 const MiniLeaderboard = lazy(() => import("@/components/dashboard/MiniLeaderboard"));
 const SpecialtyBenchmark = lazy(() => import("@/components/dashboard/SpecialtyBenchmark"));
+const CurriculumCoverageCard = lazy(() => import("@/components/dashboard/CurriculumCoverageCard"));
 const InstallAppBanner = lazy(() => import("@/components/dashboard/InstallAppBanner"));
 
 const ChartFallback = () => (
@@ -299,6 +300,9 @@ const Dashboard = () => {
           <div className="space-y-6 mt-4">
             <SafeCard name="SheetDailyPlan"><DailyPlanWidget /></SafeCard>
             <SafeCard name="SheetDailyGoal"><DailyGoalWidget /></SafeCard>
+            <Suspense fallback={<ChartFallback />}>
+              <SafeCard name="SheetCurriculum"><CurriculumCoverageCard /></SafeCard>
+            </Suspense>
           </div>
         </SheetContent>
       </Sheet>
