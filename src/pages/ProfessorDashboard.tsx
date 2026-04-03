@@ -23,8 +23,7 @@ import MentorThemePlans from "@/components/professor/MentorThemePlans";
 import ProfessorBIPanel from "@/components/professor/ProfessorBIPanel";
 import ProfessorPracticalExams from "@/components/professor/ProfessorPracticalExams";
 
-import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
-import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
+
 
 import { FACULDADES } from "@/constants/faculdades";
 
@@ -42,7 +41,7 @@ const ProfessorDashboard = () => {
   const [title, setTitle] = useState("Simulado");
   const [description, setDescription] = useState("");
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
-  const [cycleFilter, setCycleFilter] = useState<string | null>(null);
+  const [newTopicInput, setNewTopicInput] = useState("");
   const [subtopics, setSubtopics] = useState<Record<string, string>>({});
   const [faculdadeFilter, setFaculdadeFilter] = useState("");
   const [periodoFilter, setPeriodoFilter] = useState("");
@@ -461,9 +460,6 @@ const ProfessorDashboard = () => {
     setManualQuestions((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const toggleTopic = (topic: string) => {
-    setSelectedTopics((prev) => prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]);
-  };
 
   const totalStudentsAssigned = simulados.reduce((s, sim) => s + (sim.results_summary?.total || 0), 0);
   const totalCompleted = simulados.reduce((s, sim) => s + (sim.results_summary?.completed || 0), 0);
@@ -751,25 +747,54 @@ const ProfessorDashboard = () => {
 
             <div className="space-y-3">
               <Label className="text-base font-semibold">Temas ({selectedTopics.length} selecionados)</Label>
-              <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-2" />
-              <div className="flex flex-wrap gap-1.5">
-                {getFilteredSpecialties(cycleFilter).map((topic) => (
-                  <button
-                    key={topic}
-                    onClick={() => {
-                      toggleTopic(topic);
-                      if (selectedTopics.includes(topic)) {
-                        setSubtopics((prev) => { const next = { ...prev }; delete next[topic]; return next; });
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Digite o tema (ex: Cardiologia, Pneumologia...)"
+                  value={newTopicInput}
+                  onChange={(e) => setNewTopicInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (newTopicInput.trim()) {
+                        const topic = newTopicInput.trim();
+                        if (!selectedTopics.includes(topic)) {
+                          setSelectedTopics((prev) => [...prev, topic]);
+                        }
+                        setNewTopicInput("");
                       }
+                    }
+                  }}
+                  className="flex-1"
+                />
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    if (newTopicInput.trim()) {
+                      const topic = newTopicInput.trim();
+                      if (!selectedTopics.includes(topic)) {
+                        setSelectedTopics((prev) => [...prev, topic]);
+                      }
+                      setNewTopicInput("");
+                    }
+                  }}
+                  disabled={!newTopicInput.trim()}
+                >
+                  Adicionar
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {selectedTopics.map((topic) => (
+                  <Badge
+                    key={topic}
+                    variant="secondary"
+                    className="gap-1 cursor-pointer"
+                    onClick={() => {
+                      setSelectedTopics((prev) => prev.filter((t) => t !== topic));
+                      setSubtopics((prev) => { const next = { ...prev }; delete next[topic]; return next; });
                     }}
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                      selectedTopics.includes(topic)
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-secondary border-border hover:border-primary/40"
-                    }`}
                   >
-                    {topic}
-                  </button>
+                    {topic} ✕
+                  </Badge>
                 ))}
               </div>
 
@@ -1020,12 +1045,12 @@ const ProfessorDashboard = () => {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs">Tema</Label>
-                      <Select value={manualTopic} onValueChange={setManualTopic}>
-                        <SelectTrigger className="h-8"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                        <SelectContent>
-                          {SPECIALTIES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <Input
+                        value={manualTopic}
+                        onChange={(e) => setManualTopic(e.target.value)}
+                        placeholder="Digite o tema (ex: Cardiologia)"
+                        className="h-8 text-xs"
+                      />
                     </div>
                   </div>
 
