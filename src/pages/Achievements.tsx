@@ -9,6 +9,7 @@ const categoryLabels: Record<string, { label: string; icon: React.ReactNode }> =
   study: { label: "Estudo", icon: <BookOpen className="h-4 w-4" /> },
   streak: { label: "Consistência", icon: <Flame className="h-4 w-4" /> },
   social: { label: "Social", icon: <Users className="h-4 w-4" /> },
+  evolution: { label: "Evolução", icon: <Trophy className="h-4 w-4" /> },
 };
 
 const Achievements = () => {
