@@ -249,7 +249,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     // Profile for exam_date
     safe(() => supabase
       .from("profiles")
-      .select("exam_date")
+      .select("exam_date, target_exam")
       .eq("user_id", userId)
       .single(), "profile"),
   ]);
