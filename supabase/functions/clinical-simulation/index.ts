@@ -368,9 +368,28 @@ serve(async (req) => {
         ? ` O paciente DEVE ser pediátrico (0-17 anos). Use sinais vitais adequados para a faixa etária. O responsável acompanha a criança.`
         : "";
 
+      // Build banca adaptation block
+      let bancaBlock = "";
+      if (target_exams && Array.isArray(target_exams) && target_exams.length > 0) {
+        const profiles = target_exams.map((k: string) => getBancaProfile(k));
+        bancaBlock = profiles.map((p: any) => buildBancaBlock(p)).join("\n");
+      }
+
+      let errorsBlock = "";
+      if (recent_errors && recent_errors.has_errors) {
+        const types = (recent_errors.error_types || []).join(", ");
+        const themes = (recent_errors.themes || []).join(", ");
+        errorsBlock = `\n## REFORÇO DE ERROS PRÉVIOS\nO aluno errou recentemente em: ${types || "vários tipos"}. Temas com erro: ${themes || "diversos"}. Inclua pistas que testem esse tipo de raciocínio para reforço pedagógico.`;
+      }
+
+      let proximityBlock = "";
+      if (exam_proximity_days && typeof exam_proximity_days === "number" && exam_proximity_days <= 90) {
+        proximityBlock = `\n## PROXIMIDADE DA PROVA\nA prova do aluno é em ${exam_proximity_days} dias. ${exam_proximity_days <= 30 ? "Aumente a complexidade e exija mais rigor nas condutas." : "Mantenha nível desafiador."}`;
+      }
+
       messages.push({
         role: "user",
-        content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}${subtopic ? ` — Subassunto/Tema específico: ${subtopic}. O caso DEVE ser sobre este subassunto.` : ""}. Dificuldade: ${difficulty || "intermediário"}. Classificação de risco obrigatória: ${triage.toUpperCase()}. O campo triage_color DEVE ser "${triage}". Os sinais vitais e a gravidade do caso DEVEM ser coerentes com a classificação ${triage.toUpperCase()}.${pediatricInstruction} Responda APENAS em JSON válido.`,
+        content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}${subtopic ? ` — Subassunto/Tema específico: ${subtopic}. O caso DEVE ser sobre este subassunto.` : ""}. Dificuldade: ${difficulty || "intermediário"}. Classificação de risco obrigatória: ${triage.toUpperCase()}. O campo triage_color DEVE ser "${triage}". Os sinais vitais e a gravidade do caso DEVEM ser coerentes com a classificação ${triage.toUpperCase()}.${pediatricInstruction}${bancaBlock}${errorsBlock}${proximityBlock} Responda APENAS em JSON válido.`,
       });
     } else if (action === "interact") {
       if (conversation_history && Array.isArray(conversation_history)) {
