@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -239,6 +240,7 @@ export function getPreparationLevel(pct: number): { label: string; color: string
 
 const CronogramaInteligente = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [temas, setTemas] = useState<TemaEstudado[]>([]);
   const [revisoes, setRevisoes] = useState<Revisao[]>([]);
   const [desempenhos, setDesempenhos] = useState<Desempenho[]>([]);
@@ -383,6 +385,10 @@ const CronogramaInteligente = () => {
 
     toast({ title: "✅ Revisão concluída!", description: `Acerto: ${taxa}% | Erro: ${taxaErro}%` });
     setActiveRevisao(null);
+    // Invalidate dashboard cache so counts update
+    queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+    queryClient.invalidateQueries({ queryKey: ["study-engine"] });
+    queryClient.invalidateQueries({ queryKey: ["smart-notifications"] });
     // Sync study context for Tutor IA
     const tema = temas.find(t => t.id === revisao.tema_id);
     if (tema) {
