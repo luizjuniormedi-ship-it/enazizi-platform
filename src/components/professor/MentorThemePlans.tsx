@@ -178,7 +178,51 @@ const MentorThemePlans = () => {
         });
       }
 
-      toast({ title: "Mentoria criada!", description: `"${name}" publicada com sucesso.` });
+      // Initialize progress for targeted students so Study Engine picks up changes
+      let studentIds: string[] = [];
+      if (targetType === "student" && selectedStudentId) {
+        studentIds = [selectedStudentId];
+      } else if (targetType === "class" && selectedClassId) {
+        const { data: members } = await supabase
+          .from("class_members")
+          .select("user_id")
+          .eq("class_id", selectedClassId)
+          .eq("is_active", true);
+        studentIds = (members || []).map(m => m.user_id);
+      } else if (targetType === "institution" && targetId) {
+        const { data: members } = await supabase
+          .from("institution_members")
+          .select("user_id")
+          .eq("institution_id", targetId)
+          .eq("is_active", true)
+          .limit(200);
+        studentIds = (members || []).map(m => m.user_id);
+      }
+
+      // Create progress entries so students see the mentorship immediately
+      if (studentIds.length > 0 && topicRows.length > 0) {
+        const { data: insertedTopics } = await supabase
+          .from("mentor_theme_plan_topics")
+          .select("id")
+          .eq("plan_id", plan.id);
+        
+        if (insertedTopics && insertedTopics.length > 0) {
+          const progressRows = studentIds.flatMap(uid =>
+            insertedTopics.map(t => ({
+              plan_id: plan.id,
+              topic_id: t.id,
+              user_id: uid,
+              status: "pending" as const,
+            }))
+          );
+          // Insert in batches of 100
+          for (let i = 0; i < progressRows.length; i += 100) {
+            await supabase.from("mentor_theme_plan_progress").insert(progressRows.slice(i, i + 100));
+          }
+        }
+      }
+
+      toast({ title: "Mentoria criada!", description: `"${name}" publicada para ${studentIds.length} aluno(s). O plano de estudo será atualizado automaticamente.` });
       setShowCreate(false);
       resetForm();
       loadPlans();
