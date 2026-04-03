@@ -253,6 +253,10 @@ Regras:
       systemPrompt += `\n\n=== NÍVEL DE DIFICULDADE ===\n${diffMap[difficulty] || diffMap.intermediario}`;
     }
 
+    // Inject banca-specific adaptation
+    const bancaProfile = getBancaProfile(targetExam);
+    systemPrompt += buildBancaBlock(bancaProfile);
+
     if (userContext) {
       systemPrompt += `\n\n--- MATERIAL/CONTEXTO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
     }
