@@ -59,6 +59,10 @@ const MedicalChronicles = () => {
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [userScrolledUp, setUserScrolledUp] = useState(false);
+  // OSCE state
+  const [osceData, setOsceData] = useState<any>(null);
+  const [osceLoading, setOsceLoading] = useState(false);
+  const [chronicleDbId, setChronicleDbId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
