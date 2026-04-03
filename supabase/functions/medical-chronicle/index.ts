@@ -198,19 +198,14 @@ serve(async (req) => {
   try {
     const { messages, specialty, subtopic, difficulty } = await req.json();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-
     // Build messages array
     const aiMessages: Array<{ role: string; content: string }> = [
       { role: "system", content: SYSTEM_PROMPT },
     ];
 
     if (messages && messages.length > 0) {
-      // Conversational mode - pass all messages
       aiMessages.push(...messages);
     } else {
-      // Initial generation mode
       const diffLabel = difficulty === "expert" ? "EXPERT (apresentação rara/atípica, armadilhas múltiplas, complicações graves)" :
                         difficulty === "avancado" ? "AVANÇADO (caso atípico, raciocínio complexo, diagnóstico diferencial desafiador)" :
                         "INTERMEDIÁRIO (caso clássico com nuances e armadilhas sutis)";
@@ -233,35 +228,22 @@ Siga RIGOROSAMENTE a estrutura completa de 18 seções. Inclua:
       });
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: aiMessages,
-        stream: true,
-        max_tokens: 32768,
-      }),
+    // Use aiFetch with model tiering — chronicles use standard model (flash)
+    const response = await aiFetch({
+      model: "google/gemini-2.5-flash",
+      messages: aiMessages,
+      stream: true,
+      maxTokens: 32768,
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit excedido. Tente novamente em instantes." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos de IA esgotados." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
       const t = await response.text();
       console.error("AI error:", response.status, t);
-      return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      const errorMsg = response.status === 429 ? "Rate limit excedido. Tente novamente em instantes."
+        : response.status === 402 ? "Créditos de IA esgotados."
+        : "Erro no serviço de IA";
+      return new Response(JSON.stringify({ error: errorMsg }), {
+        status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
