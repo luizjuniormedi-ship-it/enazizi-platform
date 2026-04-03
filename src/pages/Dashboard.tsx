@@ -85,9 +85,11 @@ const queryClient = useQueryClient();
   const [openSection, setOpenSection] = useState<SectionKey>(null);
   const isMobile = useIsMobile();
 
-  // Invalidate dashboard cache on mount (returning from modules)
+  // Invalidate all dashboard-related caches on mount (returning from modules)
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+    queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
+    queryClient.invalidateQueries({ queryKey: ["study-engine"] });
   }, [queryClient]);
 
   // Realtime subscription for critical tables
