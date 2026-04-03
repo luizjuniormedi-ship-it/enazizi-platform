@@ -255,6 +255,32 @@ Regras:
       systemPrompt += `\n\n--- MATERIAL/CONTEXTO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
     }
 
+    // Inject generation context enforcement
+    if (generationContext && typeof generationContext === "object") {
+      const gc = generationContext;
+      const scopeParts = [gc.specialty, gc.topic, gc.subtopic].filter(Boolean).join(" > ");
+      systemPrompt += `\n\n=== ESCOPO OBRIGATÓRIO DE GERAÇÃO ===
+ESPECIALIDADE: ${gc.specialty || "Não especificada"}
+TEMA: ${gc.topic || "Não especificado"}
+${gc.subtopic ? `SUBTÓPICO: ${gc.subtopic}` : ""}
+OBJETIVO PEDAGÓGICO: ${gc.objective || "practice"}
+NÍVEL DO ALUNO: ${gc.studentLevel || "intermediario"}
+
+REGRAS DE ESCOPO (INVIOLÁVEIS):
+- Gere APENAS questões sobre: ${scopeParts}
+- NÃO amplie para outros temas ou especialidades
+- NÃO gere questões genéricas fora do escopo
+- Se houver subtópico, PRIORIZE-o sobre o tema geral
+- TUDO em PORTUGUÊS BRASILEIRO (pt-BR) — ZERO inglês
+- Ajuste a abordagem conforme o objetivo:
+  * review → revisão direta dos conceitos-chave
+  * correction → foco em erros comuns e armadilhas
+  * reinforcement → reforço conceitual profundo
+  * new_content → introdução progressiva
+  * practice → estilo prova de residência
+=== FIM DO ESCOPO ===`;
+    }
+
     // Anti-repetition: inject previously generated question summaries
     if (Array.isArray(avoidStatements) && avoidStatements.length > 0) {
       const summaries = avoidStatements.slice(0, 200).map((s: string, i: number) => `${i + 1}. ${String(s).slice(0, 120)}`).join("\n");
