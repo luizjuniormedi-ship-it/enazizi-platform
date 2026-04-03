@@ -2142,6 +2142,7 @@ export type Database = {
           periodo: number | null
           phone: string | null
           status: string
+          target_exam: string | null
           target_specialty: string | null
           updated_at: string
           user_id: string
@@ -2169,6 +2170,7 @@ export type Database = {
           periodo?: number | null
           phone?: string | null
           status?: string
+          target_exam?: string | null
           target_specialty?: string | null
           updated_at?: string
           user_id: string
@@ -2196,6 +2198,7 @@ export type Database = {
           periodo?: number | null
           phone?: string | null
           status?: string
+          target_exam?: string | null
           target_specialty?: string | null
           updated_at?: string
           user_id?: string
