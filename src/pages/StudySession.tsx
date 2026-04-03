@@ -447,8 +447,24 @@ const StudySession = () => {
       }
       // After streaming completes, check if this was an MCQ answer
       const lastUserMsg = msgs[msgs.length - 1];
-      if (lastUserMsg?.role === "user" && assistantContent && (currentPhase === "questions" || currentPhase === "discussion")) {
-        detectAndRegisterMCQ(assistantContent, lastUserMsg.content);
+      if (lastUserMsg?.role === "user" && assistantContent) {
+        if (currentPhase === "reinforcement") {
+          // Check if reinforcement question was answered correctly
+          const answerMatch = lastUserMsg.content.trim().match(/^[A-Ea-e]$/);
+          if (answerMatch) {
+            const lower = assistantContent.toLowerCase();
+            const wasCorrect = (lower.includes("✅") || lower.includes("correta") || lower.includes("acertou")) && !(lower.includes("❌") || lower.includes("incorreta"));
+            if (wasCorrect) {
+              // Success! Return to previous phase after a beat
+              toast({ title: "✅ Conceito corrigido!", description: "Você fixou o ponto. Continuando..." });
+              setTimeout(() => setPhase(preReinforcementPhase), 2000);
+            }
+            // If wrong again and under limit, detectAndRegisterMCQ will trigger another cycle
+            detectAndRegisterMCQ(assistantContent, lastUserMsg.content);
+          }
+        } else if (currentPhase === "questions" || currentPhase === "discussion") {
+          detectAndRegisterMCQ(assistantContent, lastUserMsg.content);
+        }
       }
     } catch {
       toast({ title: "Erro de conexão", description: "Não foi possível conectar ao servidor.", variant: "destructive" });
