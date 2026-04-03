@@ -245,7 +245,7 @@ NÃO inclua texto extra, APENAS o JSON.` }],
     // Apply global AI validation
     const validated = filterValidQuestions(parsed, { specialty: area, topic: area });
     // Post-parse: filter out duplicates against already accumulated questions
-    const unique = parsed.filter(q => !isDuplicate(q, allQuestionsSoFar));
+    const unique = validated.filter(q => !isDuplicate(q, allQuestionsSoFar));
     return unique.slice(0, QUESTIONS_PER_AREA);
   };
 
