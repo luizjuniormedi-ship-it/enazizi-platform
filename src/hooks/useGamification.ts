@@ -138,7 +138,27 @@ export const XP_REWARDS = {
   mission_completed: 100,
   review_on_time: 15,
   approval_improvement: 25,
+  // Smart XP - learning-based
+  error_corrected: 20,
+  topic_improved: 30,
+  specialty_level_up: 50,
+  reinforcement_success: 15,
 };
+
+/** Calculate smart XP multiplier based on learning context */
+export function getSmartXpMultiplier(context: {
+  isErrorCorrection?: boolean;
+  isTopicImproved?: boolean;
+  isRepetition?: boolean;
+  consecutiveCorrect?: number;
+}): number {
+  let multiplier = 1.0;
+  if (context.isErrorCorrection) multiplier += 0.5;
+  if (context.isTopicImproved) multiplier += 0.3;
+  if (context.isRepetition) multiplier *= 0.6;
+  if (context.consecutiveCorrect && context.consecutiveCorrect >= 3) multiplier += 0.2;
+  return Math.round(multiplier * 10) / 10;
+}
 
 interface GamificationData {
   xp: number;
