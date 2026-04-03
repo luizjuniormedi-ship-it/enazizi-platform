@@ -96,6 +96,16 @@ export const ACHIEVEMENTS: Achievement[] = [
   { key: "approval_50", title: "Meio Caminho", description: "Approval Score acima de 50", icon: "📈", category: "milestone", condition: (s) => s.approvalScore >= 50 },
   { key: "approval_70", title: "Zona de Aprovação", description: "Approval Score acima de 70", icon: "🎓", category: "milestone", condition: (s) => s.approvalScore >= 70 },
   { key: "approval_90", title: "Quase Lá", description: "Approval Score acima de 90", icon: "🏅", category: "milestone", condition: (s) => s.approvalScore >= 90 },
+  // Evolution - Learning-based achievements
+  { key: "error_corrected_5", title: "Corretor de Falhas", description: "Corrigiu 5 erros recorrentes", icon: "🔧", category: "evolution", condition: (s) => s.errorsCorrected >= 5 },
+  { key: "error_corrected_20", title: "Depurador Clínico", description: "Corrigiu 20 erros recorrentes", icon: "🛠️", category: "evolution", condition: (s) => s.errorsCorrected >= 20 },
+  { key: "error_corrected_50", title: "Zero Defeitos", description: "Corrigiu 50 erros recorrentes", icon: "✅", category: "evolution", condition: (s) => s.errorsCorrected >= 50 },
+  { key: "topics_improved_3", title: "Evoluindo", description: "Melhorou em 3 temas diferentes", icon: "📈", category: "evolution", condition: (s) => s.topicsImproved >= 3 },
+  { key: "topics_improved_10", title: "Crescimento Constante", description: "Melhorou em 10 temas diferentes", icon: "🌱", category: "evolution", condition: (s) => s.topicsImproved >= 10 },
+  { key: "topics_improved_25", title: "Transformação Total", description: "Melhorou em 25 temas diferentes", icon: "🦋", category: "evolution", condition: (s) => s.topicsImproved >= 25 },
+  { key: "specialty_mastered_1", title: "Especialista", description: "Dominou uma especialidade (>80%)", icon: "🎓", category: "evolution", condition: (s) => s.specialtiesMastered >= 1 },
+  { key: "specialty_mastered_3", title: "Polivalente", description: "Dominou 3 especialidades", icon: "🏆", category: "evolution", condition: (s) => s.specialtiesMastered >= 3 },
+  { key: "specialty_mastered_5", title: "Domínio Amplo", description: "Dominou 5 especialidades", icon: "👑", category: "evolution", condition: (s) => s.specialtiesMastered >= 5 },
 ];
 
 const XP_PER_LEVEL_BASE = 100;
