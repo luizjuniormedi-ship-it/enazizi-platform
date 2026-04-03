@@ -19,7 +19,9 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ReactMarkdown from "react-markdown";
 
-type Phase = "start" | "performance" | "lesson" | "active-recall" | "questions" | "discussion" | "discursive" | "scoring";
+import StudyStyleSelector, { type StudyMode } from "@/components/tutor/StudyStyleSelector";
+
+type Phase = "start" | "style-select" | "performance" | "lesson" | "active-recall" | "questions" | "discussion" | "discursive" | "scoring";
 type Msg = { role: "user" | "assistant"; content: string };
 
 interface SpecialtyScore {
