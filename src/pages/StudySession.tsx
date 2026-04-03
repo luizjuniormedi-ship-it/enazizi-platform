@@ -263,14 +263,100 @@ const StudySession = () => {
       await updateDomainMap(user.id, [{ topic, correct }]);
 
       if (!correct) {
+        const errorCategory = "conceito";
         await logErrorToBank({
           userId: user.id,
           tema: topic,
           tipoQuestao: "objetiva",
           conteudo: `Questão MCQ do Tutor IA sobre ${topic}`,
           motivoErro: "Erro em questão objetiva durante sessão de estudo",
-          categoriaErro: "conceito",
+          categoriaErro: errorCategory,
         });
+
+        // Trigger reinforcement loop if under max cycles
+        const currentCycles = reinforcementCycles[topic] || 0;
+        if (currentCycles < 2 && phase !== "reinforcement") {
+          const nextCycle = currentCycles + 1;
+          setReinforcementCycles(prev => ({ ...prev, [topic]: nextCycle }));
+          setPreReinforcementPhase(phase);
+
+          // Short delay so the user reads the correction first
+          setTimeout(async () => {
+            setPhase("reinforcement");
+            const reinforceMsg: Msg = {
+              role: "user",
+              content: `Errei a questão sobre ${topic}. Preciso de reforço rápido.`,
+            };
+            const newMsgs = [...messages, { role: "assistant" as const, content: assistantContent }, reinforceMsg];
+            setMessages(newMsgs);
+
+            // Pass reinforcement context in performanceData
+            const reinforcementPerf = {
+              ...performance,
+              reinforcement: {
+                topic,
+                categoriaErro: errorCategory,
+                content: assistantContent.slice(0, 500),
+                cycle: nextCycle,
+              },
+            };
+            setIsLoading(true);
+            const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/study-session`;
+            try {
+              const resp = await fetch(url, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+                },
+                body: JSON.stringify({
+                  messages: newMsgs,
+                  phase: "reinforcement",
+                  topic,
+                  performanceData: reinforcementPerf,
+                  studyMode,
+                }),
+              });
+              if (resp.ok) {
+                const reader = resp.body!.getReader();
+                const decoder = new TextDecoder();
+                let buf = "";
+                let content = "";
+                while (true) {
+                  const { done, value } = await reader.read();
+                  if (done) break;
+                  buf += decoder.decode(value, { stream: true });
+                  let idx2: number;
+                  while ((idx2 = buf.indexOf("\n")) !== -1) {
+                    let line = buf.slice(0, idx2);
+                    buf = buf.slice(idx2 + 1);
+                    if (line.endsWith("\r")) line = line.slice(0, -1);
+                    if (!line.startsWith("data: ")) continue;
+                    const json = line.slice(6).trim();
+                    if (json === "[DONE]") break;
+                    try {
+                      const parsed = JSON.parse(json);
+                      const delta = parsed.choices?.[0]?.delta?.content;
+                      if (delta) {
+                        content += delta;
+                        setMessages(prev => {
+                          const last = prev[prev.length - 1];
+                          if (last?.role === "assistant") {
+                            return prev.map((m, i) => i === prev.length - 1 ? { ...m, content } : m);
+                          }
+                          return [...prev, { role: "assistant", content }];
+                        });
+                      }
+                    } catch {}
+                  }
+                }
+              }
+            } catch (e) {
+              console.error("Reinforcement error:", e);
+            }
+            setIsLoading(false);
+          }, 1500);
+        }
       }
 
       // Update local performance
