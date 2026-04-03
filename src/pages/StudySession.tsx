@@ -21,7 +21,7 @@ import ReactMarkdown from "react-markdown";
 
 import StudyStyleSelector, { type StudyMode } from "@/components/tutor/StudyStyleSelector";
 
-type Phase = "start" | "style-select" | "performance" | "lesson" | "active-recall" | "questions" | "discussion" | "discursive" | "scoring";
+type Phase = "start" | "style-select" | "performance" | "lesson" | "active-recall" | "questions" | "discussion" | "discursive" | "scoring" | "reinforcement";
 type Msg = { role: "user" | "assistant"; content: string };
 
 interface SpecialtyScore {
