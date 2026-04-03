@@ -116,6 +116,7 @@ export default function TodayStudyCard() {
           <TaskRow
             key={task.id}
             task={task}
+            evolution={getEvolutionForTopic(evolutions, task.topic)}
             onStart={() => navigate(buildStudyPath(task, "daily-plan"))}
           />
         ))}

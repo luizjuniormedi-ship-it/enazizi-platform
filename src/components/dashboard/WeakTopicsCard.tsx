@@ -6,6 +6,8 @@ import { TrendingDown, ChevronRight } from "lucide-react";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
 import { buildStudyPath } from "@/lib/studyRouter";
 import { getHumanReadableReason } from "@/lib/humanizedReasons";
+import { useTopicEvolution, getEvolutionForTopic } from "@/hooks/useTopicEvolution";
+import EvolutionBadge from "@/components/dashboard/EvolutionBadge";
 
 export default function WeakTopicsCard() {
   const navigate = useNavigate();
