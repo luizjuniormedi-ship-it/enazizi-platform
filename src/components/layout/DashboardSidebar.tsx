@@ -44,7 +44,6 @@ const navGroups: NavGroup[] = [
     defaultOpen: false,
     items: [
       { to: "/dashboard/planner", icon: CalendarDays, label: "Plano Geral" },
-      { to: "/dashboard/banco-questoes", icon: Database, label: "Questões" },
       { to: "/dashboard/flashcards", icon: FlipVertical, label: "Flashcards" },
       { to: "/dashboard/simulados", icon: FileText, label: "Simulados" },
       { to: "/dashboard/resumos", icon: BookOpen, label: "Resumos" },
