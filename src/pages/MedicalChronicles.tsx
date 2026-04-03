@@ -682,7 +682,7 @@ const MedicalChronicles = () => {
                 Ações rápidas
                 <ChevronDown className={`h-3 w-3 transition-transform ${showQuickActions ? "rotate-180" : ""}`} />
               </button>
-              <div className={`flex flex-wrap gap-1.5 overflow-x-auto ${showQuickActions ? "" : "hidden sm:flex"}`}>
+               <div className={`flex flex-wrap gap-1.5 overflow-x-auto ${showQuickActions ? "" : "hidden sm:flex"}`}>
                 {QUICK_ACTIONS.map((action) => (
                   <Button
                     key={action.label}
@@ -695,6 +695,17 @@ const MedicalChronicles = () => {
                     {action.label}
                   </Button>
                 ))}
+                {/* OSCE Button */}
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0 gap-1"
+                  onClick={handleGenerateOSCE}
+                  disabled={isLoading || osceLoading}
+                >
+                  {osceLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Swords className="h-3 w-3" />}
+                  Transformar em Simulação
+                </Button>
               </div>
             </div>
           )}
