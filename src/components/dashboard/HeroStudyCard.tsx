@@ -31,28 +31,23 @@ function getDynamicTitle(
   return { title: "Ainda dá tempo hoje", subtitle: "Uma sessão antes de dormir faz diferença" };
 }
 
-/* ── Simplified Day Plan Row ── */
+/* ── Day Plan Row — thumb-friendly ── */
 const STEP_ICONS: Record<string, string> = {
-  review: "🔄",
-  error_review: "❌",
-  practice: "📝",
-  clinical: "🩺",
-  new: "📚",
-  simulado: "📋",
+  review: "🔄", error_review: "❌", practice: "📝",
+  clinical: "🩺", new: "📚", simulado: "📋",
 };
 const STEP_LABELS: Record<string, string> = {
-  review: "Revisão",
-  error_review: "Correção",
-  practice: "Questões",
-  clinical: "Clínica",
-  new: "Conteúdo novo",
-  simulado: "Simulado",
+  review: "Revisão", error_review: "Correção", practice: "Questões",
+  clinical: "Clínica", new: "Conteúdo novo", simulado: "Simulado",
 };
 
-function DayPlanRow({ task }: { task: StudyRecommendation }) {
+function DayPlanRow({ task, onTap }: { task: StudyRecommendation; onTap: () => void }) {
   return (
-    <div className="flex items-center gap-3 py-2 px-1">
-      <span className="text-base">{STEP_ICONS[task.type] || "📖"}</span>
+    <button
+      onClick={onTap}
+      className="w-full flex items-center gap-3 py-3 px-2 active:bg-muted/50 transition-colors rounded-lg text-left"
+    >
+      <span className="text-lg shrink-0">{STEP_ICONS[task.type] || "📖"}</span>
       <span className="flex-1 text-sm font-medium truncate">
         {STEP_LABELS[task.type] || task.type} — {task.topic}
       </span>
@@ -60,7 +55,7 @@ function DayPlanRow({ task }: { task: StudyRecommendation }) {
         <Clock className="h-3 w-3" />
         {task.estimatedMinutes}min
       </span>
-    </div>
+    </button>
   );
 }
 
@@ -85,10 +80,7 @@ export default function HeroStudyCard() {
     : false;
 
   const { title, subtitle } = getDynamicTitle(
-    isMissionActive,
-    isMissionPaused,
-    isNewUser,
-    tasks.length,
+    isMissionActive, isMissionPaused, isNewUser, tasks.length,
   );
 
   // ─── Mission Active/Paused ───
@@ -96,32 +88,26 @@ export default function HeroStudyCard() {
     return (
       <Card className="border-primary/40 bg-gradient-to-br from-primary/10 via-primary/5 to-background shadow-[0_0_40px_hsl(var(--primary)/0.12)] animate-fade-in overflow-hidden">
         <CardContent className="p-0">
-          {/* Progress strip */}
-          <div className="h-1.5 bg-muted">
-            <div
-              className="h-full bg-primary transition-all duration-500 rounded-full"
-              style={{ width: `${progress}%` }}
-            />
+          <div className="h-2 bg-muted">
+            <div className="h-full bg-primary transition-all duration-500 rounded-full" style={{ width: `${progress}%` }} />
           </div>
-
-          <div className="p-5 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center animate-pulse">
-                <Rocket className="h-6 w-6 text-primary" />
+          <div className="p-5 sm:p-6 space-y-5">
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 rounded-2xl bg-primary/20 flex items-center justify-center animate-pulse shrink-0">
+                <Rocket className="h-7 w-7 text-primary" />
               </div>
-              <div className="flex-1">
-                <p className="font-bold text-base">{title}</p>
-                <p className="text-xs text-muted-foreground">
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-lg leading-tight">{title}</p>
+                <p className="text-sm text-muted-foreground mt-0.5">
                   {state.completedIds.length}/{state.tasks.length} tarefas · {completedMinutes}/{totalMinutes}min
                 </p>
               </div>
-              <Badge variant="outline" className="text-xs font-bold px-2.5 py-1">
+              <Badge variant="outline" className="text-sm font-bold px-3 py-1.5 shrink-0">
                 {Math.round(progress)}%
               </Badge>
             </div>
-
             <Button
-              className="w-full gap-2 font-bold text-lg py-6 shadow-lg shadow-primary/20"
+              className="w-full gap-2 font-bold text-lg h-14 shadow-lg shadow-primary/20"
               size="lg"
               onClick={() => {
                 if (isMissionPaused) resumeMission();
@@ -141,9 +127,9 @@ export default function HeroStudyCard() {
   if (isLoading) {
     return (
       <Card className="border-primary/40 bg-gradient-to-br from-primary/10 via-primary/5 to-background shadow-[0_0_40px_hsl(var(--primary)/0.12)]">
-        <CardContent className="p-6">
-          <div className="flex flex-col items-center gap-4">
-            <div className="h-14 w-14 rounded-2xl bg-primary/20 animate-pulse" />
+        <CardContent className="p-6 sm:p-8">
+          <div className="flex flex-col items-center gap-5">
+            <div className="h-16 w-16 rounded-2xl bg-primary/20 animate-pulse" />
             <div className="h-5 w-56 bg-muted animate-pulse rounded" />
             <div className="h-14 w-full bg-muted animate-pulse rounded-xl" />
           </div>
@@ -156,9 +142,9 @@ export default function HeroStudyCard() {
   if (tasks.length === 0) {
     return (
       <Card className="border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 to-background shadow-[0_0_30px_hsl(142_70%_45%/0.08)]">
-        <CardContent className="p-6 text-center space-y-3">
-          <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto" />
-          <p className="font-bold text-lg">{title}</p>
+        <CardContent className="p-6 sm:p-8 text-center space-y-3">
+          <CheckCircle2 className="h-14 w-14 text-emerald-500 mx-auto" />
+          <p className="font-bold text-xl">{title}</p>
           <p className="text-sm text-muted-foreground">{subtitle}</p>
         </CardContent>
       </Card>
@@ -179,24 +165,24 @@ export default function HeroStudyCard() {
   return (
     <Card className="border-primary/40 bg-gradient-to-br from-primary/10 via-primary/5 to-background shadow-[0_0_40px_hsl(var(--primary)/0.12)] animate-fade-in overflow-hidden">
       <CardContent className="p-0">
-        {/* ── Header ── */}
-        <div className="p-5 pb-4 text-center space-y-3">
+        {/* ── Header — fills first screen on mobile ── */}
+        <div className="p-5 sm:p-6 pb-5 text-center space-y-4">
           <div className="flex justify-center">
-            <div className="h-14 w-14 rounded-2xl bg-primary/20 flex items-center justify-center">
-              <Sparkles className="h-7 w-7 text-primary" />
+            <div className="h-16 w-16 rounded-2xl bg-primary/20 flex items-center justify-center">
+              <Sparkles className="h-8 w-8 text-primary" />
             </div>
           </div>
 
-          <div>
-            <h3 className="font-bold text-lg">{title}</h3>
-            <p className="text-sm text-muted-foreground mt-1">
+          <div className="space-y-1">
+            <h3 className="font-bold text-xl leading-tight">{title}</h3>
+            <p className="text-sm text-muted-foreground">
               {topTask.topic} · ~{totalStudyMinutes}min
             </p>
           </div>
 
-          {/* ── Primary CTA — biggest element ── */}
+          {/* ── Primary CTA — min 56px height, thumb-friendly ── */}
           <Button
-            className="w-full gap-2 font-bold text-lg py-7 shadow-lg shadow-primary/20"
+            className="w-full gap-2.5 font-bold text-lg h-14 shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform"
             size="lg"
             disabled={isLoading}
             onClick={handleStart}
@@ -206,26 +192,30 @@ export default function HeroStudyCard() {
           </Button>
         </div>
 
-        {/* ── Day Plan (collapsible) ── */}
+        {/* ── Day Plan (collapsible, tappable rows) ── */}
         <div className="border-t border-border/30">
           <button
             onClick={() => setExpanded(!expanded)}
-            className="w-full flex items-center justify-center gap-1 py-2.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 py-3 text-xs text-muted-foreground hover:text-foreground active:bg-muted/30 transition-colors"
           >
             {expanded ? (
-              <>Ocultar plano <ChevronUp className="h-3 w-3" /></>
+              <>Ocultar plano <ChevronUp className="h-3.5 w-3.5" /></>
             ) : (
-              <>Ver plano do dia ({tasks.length} {tasks.length === 1 ? "tarefa" : "tarefas"}) <ChevronDown className="h-3 w-3" /></>
+              <>Ver plano do dia ({tasks.length} {tasks.length === 1 ? "tarefa" : "tarefas"}) <ChevronDown className="h-3.5 w-3.5" /></>
             )}
           </button>
 
           {expanded && (
-            <div className="px-5 pb-4 divide-y divide-border/30 animate-fade-in">
+            <div className="px-4 sm:px-5 pb-4 divide-y divide-border/30 animate-fade-in">
               {tasks.slice(0, 4).map((task) => (
-                <DayPlanRow key={task.id} task={task} />
+                <DayPlanRow
+                  key={task.id}
+                  task={task}
+                  onTap={() => navigate(buildStudyPath(task, "daily-plan"))}
+                />
               ))}
               {tasks.length > 4 && (
-                <p className="text-[10px] text-center text-muted-foreground pt-2">
+                <p className="text-xs text-center text-muted-foreground pt-3">
                   +{tasks.length - 4} {tasks.length - 4 === 1 ? "tarefa" : "tarefas"} no plano completo
                 </p>
               )}
