@@ -371,12 +371,38 @@ const StudySession = () => {
     if (!topicInput.trim()) return;
     const t = topicInput.trim();
     setTopic(t);
-    setPhase("lesson");
+    // Go to style selection instead of directly to lesson
+    setPhase("style-select");
+  };
+
+  const handleStyleSelect = async (mode: StudyMode) => {
+    setStudyMode(mode);
+    const t = topic;
+
+    // Map mode to initial phase
+    const phaseMap: Record<StudyMode, Phase> = {
+      compact: "lesson",
+      full: "lesson",
+      review: "lesson",
+      correction: "lesson",
+      practice: "questions",
+    };
+    const targetPhase = phaseMap[mode];
+    setPhase(targetPhase);
+
     const updated = { ...performance, studiedTopics: [...new Set([...performance.studiedTopics, t])] };
     savePerformance(updated);
 
-    // Build user message with professor context if available
-    let userContent = `Quero estudar: ${t}. Comece pela aula completa.`;
+    // Build user message based on mode
+    const modeMessages: Record<StudyMode, string> = {
+      compact: `Quero estudar: ${t}. Modo RÁPIDO: explicação curta e direta (300-400 palavras), estilo Feynman + aplicação + ponto-chave + pergunta.`,
+      full: `Quero estudar: ${t}. Comece pela aula completa.`,
+      review: `Quero estudar: ${t}. Modo REVISÃO PARA PROVA: foque em pegadinhas, pontos cobrados em residência e diagnósticos diferenciais.`,
+      correction: `Quero estudar: ${t}. Modo CORREÇÃO DE ERROS: foque nos meus erros anteriores nesse tema e reforce os conceitos que errei.`,
+      practice: `Quero estudar: ${t}. Modo QUESTÃO DIRETA: gere uma questão de caso clínico com 5 alternativas imediatamente.`,
+    };
+
+    let userContent = modeMessages[mode];
     if (professorContext) {
       userContent += `\n\n[CONTEXTO DO PROFESSOR - TÓPICOS OBRIGATÓRIOS]\n${professorContext.topics}`;
       if (professorContext.materialUrl) {
@@ -387,7 +413,6 @@ const StudySession = () => {
     const userMsg: Msg = { role: "user", content: userContent };
     setMessages([userMsg]);
 
-    // Update assignment status to "studying"
     if (professorContext?.assignmentId && user) {
       supabase
         .from("teacher_study_assignment_results")
@@ -397,7 +422,7 @@ const StudySession = () => {
         .then(() => {});
     }
 
-    await streamChat([userMsg], "lesson", t);
+    await streamChat([userMsg], targetPhase, t);
   };
 
   const goToPhase = async (targetPhase: Phase) => {
