@@ -6,6 +6,8 @@ import { Play, Sparkles, Clock, CheckCircle2, List } from "lucide-react";
 import { useStudyEngine, type StudyRecommendation } from "@/hooks/useStudyEngine";
 import { buildStudyPath } from "@/lib/studyRouter";
 import { getHumanReadableReason } from "@/lib/humanizedReasons";
+import { useTopicEvolution, getEvolutionForTopic } from "@/hooks/useTopicEvolution";
+import EvolutionBadge from "@/components/dashboard/EvolutionBadge";
 
 const TYPE_LABELS: Record<string, string> = {
   review: "Revisão",
