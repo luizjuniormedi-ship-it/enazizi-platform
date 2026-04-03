@@ -439,7 +439,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       priority: cap(65 - i * 3),
       reason: `Acerto de ${Math.round(w.taxa_acerto)}% em "${tema}". Pratique mais questões.`,
       targetModule: "questoes",
-      targetPath: "/dashboard/banco-questoes",
+      targetPath: "/dashboard/simulados",
       estimatedMinutes: 20,
       objective: "reinforcement",
       _groupKey: `practice:${tema}`,
