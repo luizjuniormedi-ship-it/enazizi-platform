@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { SessionMemoryProvider } from "@/contexts/SessionMemoryContext";
 import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
+import { useJourneyRefresh } from "@/hooks/useJourneyRefresh";
 import { useLandscapeTablet } from "@/hooks/useLandscapeTablet";
 import DashboardSidebar from "./DashboardSidebar";
 import GlobalSearch from "./GlobalSearch";
