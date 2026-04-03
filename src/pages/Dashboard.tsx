@@ -1,3 +1,13 @@
+import { Badge } from "@/components/ui/badge";
+
+const EXAM_LABELS: Record<string, string> = {
+  enare: "ENARE", revalida: "Revalida", usp: "USP", unicamp: "UNICAMP",
+  unifesp: "UNIFESP", "sus-sp": "SUS-SP", "sus-rj": "SUS-RJ", amrigs: "AMRIGS",
+  "ses-df": "SES-DF", "psu-mg": "PSU-MG", hcpa: "HCPA",
+  "santa-casa-sp": "Santa Casa SP", einstein: "Einstein",
+  "sirio-libanes": "Sírio-Libanês", outra: "Outra",
+};
+
 import { useEffect, useRef, lazy, Suspense, useState } from "react";
 import SafeCard from "@/components/layout/SafeCard";
 import { Loader2, Target, Calendar, Flame, ClipboardList } from "lucide-react";
