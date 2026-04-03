@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Stethoscope, HeartPulse, ClipboardCheck, ChevronRight } from "lucide-react";
+import { Stethoscope, HeartPulse, ClipboardCheck, ChevronRight, GraduationCap } from "lucide-react";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
 import { buildStudyPath } from "@/lib/studyRouter";
 
