@@ -495,7 +495,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
 
   // ── 4b. OSCE Practical Exam — smart triggers ─────────────────
   const practicalExams = (practicalExamData || []) as any[];
-  const profile = profileData as any;
+  // profile already loaded above as `profile`
   const examDate = profile?.exam_date ? new Date(profile.exam_date) : null;
   const daysUntilExam = examDate ? Math.ceil((examDate.getTime() - Date.now()) / 86400000) : null;
 
