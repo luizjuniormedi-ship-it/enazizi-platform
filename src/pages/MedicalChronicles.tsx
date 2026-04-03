@@ -386,6 +386,40 @@ const MedicalChronicles = () => {
     );
   };
 
+  const handleGenerateOSCE = async () => {
+    const chronicleContent = messages.filter(m => m.role === "assistant").map(m => m.content).join("\n\n");
+    if (!chronicleContent || chronicleContent.length < 200) {
+      toast({ title: "Crônica muito curta", description: "Aguarde a geração completa da crônica.", variant: "destructive" });
+      return;
+    }
+    setOsceLoading(true);
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-chronicle-osce`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          chronicle_content: chronicleContent,
+          specialty,
+          topic: currentTopic,
+          difficulty,
+        }),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || `Erro ${resp.status}`);
+      }
+      const data = await resp.json();
+      setOsceData(data);
+    } catch (e: any) {
+      toast({ title: "Erro ao gerar OSCE", description: e.message || "Tente novamente.", variant: "destructive" });
+    } finally {
+      setOsceLoading(false);
+    }
+  };
+
   const QUICK_ACTIONS = [
     { label: "🔥 Nível Extremo", prompt: "Agora evolua para nível extremo: adicione complicações graves (choque, arritmia, insuficiência respiratória). Crie uma nova crônica com armadilhas múltiplas e decisão sob pressão máxima." },
     { label: "❓ Mais Questões", prompt: "Gere mais 3 questões de prova sobre o tema desta crônica, estilo USP/ENARE, com gabarito comentado." },
