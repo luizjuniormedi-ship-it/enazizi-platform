@@ -336,7 +336,7 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
             explanation: q.explanation || "",
           }));
 
-          console.log(`[question-generator] Served ${cachedQuestions.length} questions from cache (0 AI calls)`);
+          console.log(`[question-generator] Served ${cachedQuestions.length} questions from cache (0 AI calls, source=cache)`);
 
           const cachedResponse = {
             choices: [{
