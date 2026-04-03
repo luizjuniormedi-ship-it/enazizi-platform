@@ -26,6 +26,9 @@ export interface GamificationStats {
   totalReviews: number;
   totalMissions: number;
   approvalScore: number;
+  errorsCorrected: number;
+  topicsImproved: number;
+  specialtiesMastered: number;
 }
 
 export const LEVEL_NAMES: Record<number, string> = {
