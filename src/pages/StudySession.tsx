@@ -87,6 +87,7 @@ const StudySession = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [studyMode, setStudyMode] = useState<StudyMode>("full");
   const [phase, setPhase] = useState<Phase>("start");
   const [topic, setTopic] = useState("");
   const [topicInput, setTopicInput] = useState("");
