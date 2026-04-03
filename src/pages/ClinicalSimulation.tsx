@@ -1156,6 +1156,7 @@ const ClinicalSimulation = () => {
       lab_result: FileSearch,
       imaging: FileSearch,
       prescription: Syringe,
+      treatment: Pill,
       diagnosis_attempt: Target,
       preceptor_hint: HelpCircle,
       specialist_opinion: Users,
