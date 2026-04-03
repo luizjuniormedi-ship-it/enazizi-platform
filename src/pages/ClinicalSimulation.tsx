@@ -723,6 +723,41 @@ const ClinicalSimulation = () => {
     setMedicalRecord([]);
     setCategoryScores({ anamnesis: 0, physical_exam: 0, complementary_exams: 0, management: 0 });
     try {
+      // Fetch user profile (target_exams, exam_date) and recent errors for this specialty
+      let targetExams: string[] = [];
+      let examProximityDays: number | null = null;
+      let recentErrors: { has_errors: boolean; error_types: string[]; themes: string[] } = { has_errors: false, error_types: [], themes: [] };
+
+      if (user) {
+        const [profileRes, errorsRes] = await Promise.all([
+          supabase.from("profiles").select("target_exams, exam_date").eq("user_id", user.id).maybeSingle(),
+          supabase.from("error_bank").select("tema, categoria_erro").eq("user_id", user.id).eq("dominado", false).limit(50),
+        ]);
+
+        if (profileRes.data) {
+          const te = profileRes.data.target_exams;
+          if (Array.isArray(te)) targetExams = te as string[];
+          if (profileRes.data.exam_date) {
+            const diff = Math.ceil((new Date(profileRes.data.exam_date as string).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+            if (diff > 0) examProximityDays = diff;
+          }
+        }
+
+        if (errorsRes.data && errorsRes.data.length > 0) {
+          // Filter errors related to current specialty via tema mapping
+          const specLower = (specialty || "").toLowerCase();
+          const relevantErrors = errorsRes.data.filter((e: any) => {
+            const tema = (e.tema || "").toLowerCase();
+            return tema.includes(specLower) || specLower.includes(tema) || true; // include all for broad context
+          });
+          if (relevantErrors.length > 0) {
+            const errorTypes = [...new Set(relevantErrors.map((e: any) => e.categoria_erro).filter(Boolean))] as string[];
+            const themes = [...new Set(relevantErrors.slice(0, 5).map((e: any) => e.tema).filter(Boolean))] as string[];
+            recentErrors = { has_errors: true, error_types: errorTypes, themes };
+          }
+        }
+      }
+
       const res = await callAPI({
         action: "start",
         specialty,
@@ -731,6 +766,9 @@ const ClinicalSimulation = () => {
         learner_mode: learnerMode,
         ...(teacherCaseId ? { teacher_case_id: teacherCaseId } : {}),
         ...(isPediatrics && pediatricAge !== "aleatorio" ? { pediatric_age_range: pediatricAge } : {}),
+        ...(targetExams.length > 0 ? { target_exams: targetExams } : {}),
+        ...(recentErrors.has_errors ? { recent_errors: recentErrors } : {}),
+        ...(examProximityDays !== null ? { exam_proximity_days: examProximityDays } : {}),
       });
 
       setVitals(res.vitals);
