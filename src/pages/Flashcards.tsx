@@ -67,15 +67,15 @@ const Flashcards = () => {
   useEffect(() => {
     registerAutoSave(() => {
       if (allCards.length === 0) return {};
-      return { mode, selectedTopics: Array.from(selectedTopics), phase };
+      return { mode, topicSearch, phase };
     });
-  }, [registerAutoSave, mode, selectedTopics, allCards.length, phase]);
+  }, [registerAutoSave, mode, topicSearch, allCards.length, phase]);
 
   const handleRestoreSession = () => {
     if (!pendingSession) return;
     const data = pendingSession.session_data as any;
     if (data.mode) setMode(data.mode);
-    if (data.selectedTopics) setSelectedTopics(new Set(data.selectedTopics));
+    if (data.topicSearch) setTopicSearch(data.topicSearch);
     clearPending();
   };
 
