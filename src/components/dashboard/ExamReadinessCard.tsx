@@ -71,7 +71,12 @@ export default function ExamReadinessCard() {
                   </div>
                 </div>
                 <Progress value={exam.readinessScore} className={`h-1.5 ${PROGRESS_COLORS[exam.readinessLabel]}`} />
-                <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1">{exam.insight}</p>
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-[11px] text-muted-foreground line-clamp-1 flex-1">{exam.insight}</p>
+                  <span className="text-[10px] text-muted-foreground ml-2 flex-shrink-0 flex items-center gap-0.5">
+                    <BookOpen className="h-2.5 w-2.5" /> {exam.coverageScore}%
+                  </span>
+                </div>
               </button>
             ))}
           </div>
