@@ -31,11 +31,10 @@ const MentorshipBanner = () => {
   const loadMentorships = async () => {
     if (!user) return;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: targets } = await (supabase
+    const { data: targets } = await supabase
       .from("mentor_theme_plan_targets")
       .select("plan_id")
-      .eq("user_id", user.id) as any);
+      .eq("target_id", user.id);
 
     if (!targets || targets.length === 0) return;
 
