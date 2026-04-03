@@ -23,3 +23,46 @@ export function hasMinimumContext(statement: string): boolean {
   if (!statement || statement.length < 400) return false;
   return /\d+\s*(anos?|meses|dias|horas|semanas)/i.test(statement);
 }
+
+/** Context-aware validation: checks if question matches expected specialty/topic */
+export function validateQuestionContext(
+  question: { statement?: string; topic?: string; options?: any[]; correct_index?: number; explanation?: string },
+  expectedContext: { specialty?: string; topic?: string; subtopic?: string }
+): { valid: boolean; reason?: string } {
+  const stmt = question.statement || "";
+  const qTopic = question.topic || "";
+
+  // Reject English
+  if (ENGLISH_PATTERN.test(stmt)) {
+    return { valid: false, reason: "english_content" };
+  }
+
+  // Reject image references
+  if (IMAGE_REF_PATTERN.test(stmt)) {
+    return { valid: false, reason: "image_reference" };
+  }
+
+  // Structure validation
+  if (!stmt || stmt.length < 50) return { valid: false, reason: "statement_too_short" };
+  if (!Array.isArray(question.options) || question.options.length < 4) return { valid: false, reason: "invalid_options" };
+  if (typeof question.correct_index !== "number") return { valid: false, reason: "no_correct_index" };
+
+  // Specialty match (loose)
+  if (expectedContext.specialty) {
+    const specLower = expectedContext.specialty.toLowerCase();
+    const isBroad = ["clínica médica", "clinica medica"].some(s => specLower.includes(s));
+    if (!isBroad) {
+      const specWords = specLower.split(/\s+/).filter(w => w.length > 3);
+      const textLower = `${qTopic} ${stmt}`.toLowerCase();
+      const matches = specWords.some(w => textLower.includes(w));
+      if (!matches) return { valid: false, reason: "specialty_mismatch" };
+    }
+  }
+
+  return { valid: true };
+}
+
+/** Log structured rejection for debugging */
+export function logGenerationRejection(reason: string, expected: { specialty?: string; topic?: string }, snippet: string): void {
+  console.warn(`[QuestionFilter] REJECTED | reason=${reason} | expected=${expected.specialty || "?"}/${expected.topic || "?"} | snippet="${snippet.slice(0, 100)}"`);
+}
