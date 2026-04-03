@@ -5,7 +5,7 @@ import { calculateAllExamReadiness, type ExamReadiness, type ReadinessInput } fr
 
 async function fetchReadinessData(userId: string): Promise<ExamReadiness[]> {
   // Fetch all needed data in parallel
-  const [profileRes, practiceRes, domainRes, examRes, reviewsRes, gamRes, anamnesisRes, practicalRes] = await Promise.all([
+  const [profileRes, practiceRes, domainRes, examRes, reviewsRes, gamRes, anamnesisRes, practicalRes, temasRes] = await Promise.all([
     supabase.from("profiles").select("target_exams, target_exam").eq("user_id", userId).maybeSingle(),
     supabase.from("practice_attempts").select("correct, created_at, question_id, questions_bank(topic)").eq("user_id", userId),
     supabase.from("medical_domain_map").select("specialty, domain_score, questions_answered, correct_answers").eq("user_id", userId),
@@ -14,6 +14,7 @@ async function fetchReadinessData(userId: string): Promise<ExamReadiness[]> {
     supabase.from("user_gamification").select("current_streak").eq("user_id", userId).maybeSingle(),
     supabase.from("anamnesis_results").select("final_score").eq("user_id", userId).order("created_at", { ascending: false }).limit(10),
     supabase.from("practical_exam_results").select("final_score").eq("user_id", userId).order("created_at", { ascending: false }).limit(10),
+    supabase.from("temas_estudados").select("tema").eq("user_id", userId),
   ]);
 
   const ep = profileRes.data as any;
@@ -52,6 +53,9 @@ async function fetchReadinessData(userId: string): Promise<ExamReadiness[]> {
   const volumeScore = Math.min((totalQuestions / 500) * 100, 100);
   const approvalScore = Math.round(accuracy * 0.35 + avgDomain * 0.25 + volumeScore * 0.20 + 20 * 0.20);
 
+  // Studied topics for coverage calculation
+  const studiedTopics = (temasRes.data || []).map((t: any) => ((t.tema as string) || "").toLowerCase());
+
   const input: ReadinessInput = {
     approvalScore,
     accuracyBySpecialty,
@@ -64,6 +68,7 @@ async function fetchReadinessData(userId: string): Promise<ExamReadiness[]> {
     totalQuestionsAnswered: totalQuestions,
     streak: gamRes.data?.current_streak || 0,
     recentAccuracy,
+    studiedTopics,
   };
 
   return calculateAllExamReadiness(input, targetExams);
