@@ -222,6 +222,7 @@ const MobileNav = () => {
 
 const DashboardLayout = () => {
   usePresenceHeartbeat();
+  useJourneyRefresh();
   useLandscapeTablet();
   const { theme, toggle: toggleTheme } = useTheme();
   const location = useLocation();
