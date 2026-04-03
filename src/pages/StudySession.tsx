@@ -323,6 +323,7 @@ const StudySession = () => {
                   topic,
                   performanceData: reinforcementPerf,
                   studyMode,
+                  targetExam,
                 }),
               });
               if (resp.ok) {
