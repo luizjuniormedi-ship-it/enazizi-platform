@@ -24,7 +24,17 @@ export default function StudyContextBanner() {
 
   if (!ctx) return null;
 
-  const reasonText = ctx.reason || (ctx.objective && REASON_LABELS[ctx.objective]) || null;
+  // Build a lightweight task-like object for the humanized reason function
+  const pseudoTask = {
+    type: ctx.taskType || "review",
+    topic: ctx.topic || "",
+    specialty: ctx.specialty || "",
+    priority: ctx.priority || 50,
+    reason: ctx.reason || "",
+    objective: ctx.objective,
+  } as StudyRecommendation;
+
+  const reasonText = getHumanReadableReason(pseudoTask);
 
   return (
     <div className="space-y-1 mb-3">
