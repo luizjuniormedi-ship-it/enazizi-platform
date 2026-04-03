@@ -42,6 +42,7 @@ interface PerformanceData {
 
 const PHASE_META: Record<Phase, { label: string; icon: typeof BookOpen; shortLabel: string }> = {
   start: { label: "Início", icon: Play, shortLabel: "Início" },
+  "style-select": { label: "Estilo", icon: Play, shortLabel: "Estilo" },
   performance: { label: "📊 Painel", icon: BarChart3, shortLabel: "Painel" },
   lesson: { label: "📚 Aula", icon: BookOpen, shortLabel: "Aula" },
   "active-recall": { label: "🧠 Recall", icon: Brain, shortLabel: "Recall" },
