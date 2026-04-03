@@ -329,12 +329,6 @@ Deno.serve(async (req) => {
         .select("id", { count: "exact", head: true }), "temas_total"
     );
 
-    const temasNunca = await safe(() =>
-      supabase.from("temas_estudados")
-        .select("id", { count: "exact", head: true })
-        .eq("total_questoes", 0), "temas_never_studied"
-    );
-
     checks.push({
       name: "journey_cronograma_coverage",
       status: "ok",
