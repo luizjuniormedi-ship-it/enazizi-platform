@@ -120,24 +120,17 @@ const FlashcardGenerator = () => {
 
         <div className="flex-1 flex items-center justify-center">
           <div className="glass-card p-6 sm:p-8 max-w-lg w-full space-y-6">
-            {/* Specialty */}
+            {/* Tema */}
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-1.5">
                 <Target className="h-4 w-4 text-primary" />
-                Especialidade
+                Tema / Especialidade
               </label>
-              <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-2" />
-              <Select value={specialty} onValueChange={setSpecialty}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas (misto)" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  <SelectItem value="all">Todas (misto)</SelectItem>
-                  {getFilteredSpecialties(cycleFilter).map(s => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                placeholder="Ex: Cardiologia, IAM, Pneumonia (vazio = misto)"
+                value={specialty}
+                onChange={e => setSpecialty(e.target.value)}
+              />
             </div>
 
             {/* Quantity */}

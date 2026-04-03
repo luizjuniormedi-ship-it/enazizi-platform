@@ -446,36 +446,42 @@ const Flashcards = () => {
         ))}
       </div>
 
-      {/* Topic filter */}
-      <div className="glass-card p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold flex items-center gap-2">
-            <Filter className="h-4 w-4" /> Filtrar por especialidade
-          </h3>
-          {selectedTopics.size > 0 && (
-            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setSelectedTopics(new Set())}>
-              Limpar filtros
+      {/* Topic search + generate from bank */}
+      <div className="glass-card p-4 space-y-3">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <Search className="h-4 w-4" /> Filtrar por tema
+        </h3>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Digite o tema (ex: Cardiologia, IAM, Pneumonia)"
+            value={topicSearch}
+            onChange={e => setTopicSearch(e.target.value)}
+            className="flex-1"
+          />
+          {topicSearch.trim() && (
+            <Button variant="ghost" size="sm" className="text-xs shrink-0" onClick={() => setTopicSearch("")}>
+              Limpar
             </Button>
           )}
         </div>
-        <div className="flex flex-wrap gap-2">
-          {availableTopics.map(topic => (
-            <Badge
-              key={topic}
-              variant={selectedTopics.has(topic) ? "default" : "outline"}
-              className="cursor-pointer hover:bg-primary/20 transition-colors"
-              onClick={() => toggleTopic(topic)}
-            >
-              {topic}
-              <span className="ml-1 text-xs opacity-70">
-                ({allCards.filter(c => c.topic === topic).length})
-              </span>
-            </Badge>
-          ))}
-          {availableTopics.length === 0 && (
-            <p className="text-xs text-muted-foreground">Nenhum tema disponível</p>
+        <Button
+          variant="outline"
+          className="w-full gap-2"
+          onClick={handleGenerateFromBank}
+          disabled={generatingFromBank || !topicSearch.trim()}
+        >
+          {generatingFromBank ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <DatabaseZap className="h-4 w-4" />
           )}
-        </div>
+          Gerar Flashcards do Banco de Questões
+        </Button>
+        {topicSearch.trim() && (
+          <p className="text-xs text-muted-foreground">
+            {filteredCards.length} card(s) encontrado(s) para "{topicSearch}"
+          </p>
+        )}
       </div>
 
       {/* Mode selection */}
