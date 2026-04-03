@@ -109,6 +109,21 @@ const QUICK_ACTION_CATEGORIES = [
       { label: "IOT", prompt: "Preparo para intubação orotraqueal: kit de via aérea, drogas de sequência rápida, posicionamento." },
     ],
   },
+  {
+    label: "Tratamento",
+    icon: Pill,
+    color: "text-orange-500",
+    actions: [
+      { label: "Analgesia", prompt: "Prescrevo analgesia: dipirona 1g EV ou tramadol 100mg EV, conforme intensidade da dor. Avaliar escala de dor." },
+      { label: "Antibiótico", prompt: "Inicio antibioticoterapia empírica. Qual o esquema mais adequado para a suspeita clínica? Prescrevo conforme protocolo institucional." },
+      { label: "Anticoagulação", prompt: "Avalio indicação de anticoagulação. Prescrevo heparina conforme peso e indicação clínica." },
+      { label: "Corticoide", prompt: "Prescrevo corticoterapia: hidrocortisona/metilprednisolona EV conforme indicação." },
+      { label: "Droga Vasoativa", prompt: "Inicio noradrenalina 0,1 mcg/kg/min em BIC, titular conforme PAM alvo ≥ 65 mmHg." },
+      { label: "Sedação", prompt: "Prescrevo sedação: midazolam + fentanil em BIC para paciente intubado, ou diazepam EV para agitação." },
+      { label: "Cristaloide", prompt: "Prescrevo expansão volêmica com SF 0,9% 500-1000ml EV rápido, reavaliar resposta hemodinâmica." },
+      { label: "Alta/Internação", prompt: "Defino destino do paciente: alta hospitalar com orientações, ou internação em enfermaria/UTI. Justifico a decisão." },
+    ],
+  },
 ];
 
 const DIFFICULTY_TIMER: Record<string, number> = {
