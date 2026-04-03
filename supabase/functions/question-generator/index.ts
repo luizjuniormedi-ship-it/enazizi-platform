@@ -443,6 +443,24 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
               parsed.questions = parsed.questions.filter((q: any) =>
                 isValidQuestion(q) && hasMinimumContext(q.statement || "")
               );
+
+              // Context-aware filtering when generationContext is provided
+              if (generationContext && typeof generationContext === "object") {
+                const contextBefore = parsed.questions.length;
+                parsed.questions = parsed.questions.filter((q: any) => {
+                  const result = validateQuestionContext(q, generationContext);
+                  if (!result.valid) {
+                    logGenerationRejection(
+                      result.reason || "unknown",
+                      { specialty: generationContext.specialty, topic: generationContext.topic },
+                      q.statement || ""
+                    );
+                    return false;
+                  }
+                  return true;
+                });
+                console.log(`[question-generator] Context filter: ${contextBefore} -> ${parsed.questions.length} questions`);
+              }
               // Fix consecutive repeated correct_index by swapping options
               for (let i = 1; i < parsed.questions.length; i++) {
                 const prev = parsed.questions[i - 1];
