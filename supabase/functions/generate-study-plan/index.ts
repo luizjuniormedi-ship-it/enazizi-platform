@@ -44,7 +44,20 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { examDate, hoursPerDay, daysPerWeek, editalText, currentPlanId } = await req.json();
+    const { examDate, hoursPerDay, daysPerWeek, editalText, currentPlanId, targetExam } = await req.json();
+
+    // Load target_exam from profile if not passed directly
+    let bancaKey = targetExam || null;
+    if (!bancaKey) {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("target_exam")
+        .eq("user_id", userId)
+        .single();
+      bancaKey = prof?.target_exam || null;
+    }
+    const bancaProfile = getBancaProfile(bancaKey);
+    const bancaBlock = buildBancaBlock(bancaProfile);
 
     if (!examDate || !hoursPerDay || !daysPerWeek) {
       return new Response(JSON.stringify({ error: "Missing required fields: examDate, hoursPerDay, daysPerWeek" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
