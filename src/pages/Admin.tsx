@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload } from "lucide-react";
+import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,6 +25,7 @@ import AdminMessagesPanel from "@/components/admin/AdminMessagesPanel";
 import AdminBIPanel from "@/components/admin/AdminBIPanel";
 import AdminUploadsPanel from "@/components/admin/AdminUploadsPanel";
 import AdminHealthHistory from "@/components/admin/AdminHealthHistory";
+import AdminQAPanel from "@/components/admin/AdminQAPanel";
 import type { AdminUser, Stats } from "@/components/admin/AdminTypes";
 
 const Admin = () => {
@@ -388,6 +389,9 @@ const Admin = () => {
             <TabsTrigger value="uploads" className="gap-1.5">
               <Upload className="h-3.5 w-3.5" /> Uploads
             </TabsTrigger>
+            <TabsTrigger value="qa" className="gap-1.5">
+              <Bug className="h-3.5 w-3.5" /> QA
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="whatsapp">
@@ -417,7 +421,11 @@ const Admin = () => {
             <AdminUploadsPanel />
           </TabsContent>
 
-          <TabsContent value={activeTab === "whatsapp" || activeTab === "telegram" || activeTab === "feedbacks" || activeTab === "messages" || activeTab === "bi" || activeTab === "uploads" ? "__none__" : activeTab}>
+          <TabsContent value="qa">
+            <AdminQAPanel />
+          </TabsContent>
+
+          <TabsContent value={activeTab === "whatsapp" || activeTab === "telegram" || activeTab === "feedbacks" || activeTab === "messages" || activeTab === "bi" || activeTab === "uploads" || activeTab === "qa" ? "__none__" : activeTab}>
             {loading ? (
               <div className="flex justify-center py-12">
                 <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />

@@ -2213,6 +2213,101 @@ export type Database = {
           },
         ]
       }
+      qa_test_results: {
+        Row: {
+          created_at: string
+          details_json: Json | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          module_tested: string | null
+          run_id: string
+          status: string
+          suggestion: string | null
+          test_name: string
+          test_suite: string
+        }
+        Insert: {
+          created_at?: string
+          details_json?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          module_tested?: string | null
+          run_id: string
+          status?: string
+          suggestion?: string | null
+          test_name: string
+          test_suite: string
+        }
+        Update: {
+          created_at?: string
+          details_json?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          module_tested?: string | null
+          run_id?: string
+          status?: string
+          suggestion?: string | null
+          test_name?: string
+          test_suite?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qa_test_results_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "qa_test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qa_test_runs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          failed_tests: number
+          finished_at: string | null
+          id: string
+          passed_tests: number
+          run_type: string
+          started_at: string
+          status: string
+          summary_json: Json | null
+          total_tests: number
+          warning_tests: number
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          failed_tests?: number
+          finished_at?: string | null
+          id?: string
+          passed_tests?: number
+          run_type?: string
+          started_at?: string
+          status?: string
+          summary_json?: Json | null
+          total_tests?: number
+          warning_tests?: number
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          failed_tests?: number
+          finished_at?: string | null
+          id?: string
+          passed_tests?: number
+          run_type?: string
+          started_at?: string
+          status?: string
+          summary_json?: Json | null
+          total_tests?: number
+          warning_tests?: number
+        }
+        Relationships: []
+      }
       questions_bank: {
         Row: {
           correct_index: number | null
