@@ -149,6 +149,7 @@ const App = () => (
               <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />
                 <Route path="monitoring" element={<AdminMonitoring />} />
+                <Route path="ceo" element={<AdminCEO />} />
               </Route>
               <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
