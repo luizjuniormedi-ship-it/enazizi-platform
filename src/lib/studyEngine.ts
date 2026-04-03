@@ -528,6 +528,22 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     });
   }
 
+  // ── Mentor topic priority boost ───────────────────────────────
+  if (mentorTopics.length > 0) {
+    for (const rec of recs) {
+      const isMentorTopic = mentorTopics.some(mt =>
+        rec.topic.toLowerCase().includes(mt.toLowerCase()) ||
+        rec.specialty.toLowerCase().includes(mt.toLowerCase())
+      );
+      if (isMentorTopic) {
+        rec.priority = cap(rec.priority + 10);
+        if (!rec.reason.includes("📋")) {
+          rec.reason = `📋 ${rec.reason}`;
+        }
+      }
+    }
+  }
+
   // ── Sort by priority then apply weight-based slot limits ─────
   recs.sort((a, b) => b.priority - a.priority);
   const result = applyWeights(recs, weights, 8);
