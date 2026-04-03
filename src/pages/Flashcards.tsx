@@ -44,11 +44,8 @@ const Flashcards = () => {
   const [loading, setLoading] = useState(true);
   const [phase, setPhase] = useState<Phase>("setup");
   const [mode, setMode] = useState<"due" | "all" | "sprint">("due");
-  const [selectedTopics, setSelectedTopics] = useState<Set<string>>(() => {
-    if (studyCtx?.topic) return new Set([studyCtx.topic]);
-    return new Set();
-  });
-  const [showTopicFilter, setShowTopicFilter] = useState(false);
+  const [topicSearch, setTopicSearch] = useState(studyCtx?.topic || "");
+  const [generatingFromBank, setGeneratingFromBank] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
