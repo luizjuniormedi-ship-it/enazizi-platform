@@ -41,6 +41,14 @@ const MicroQuizDialog = ({ open, onOpenChange, topic, specialty, onPass }: Props
           count: 2,
           difficulty: "medium",
           format: "micro-quiz",
+          generationContext: {
+            specialty,
+            topic,
+            objective: "review",
+            difficulty: "medium",
+            language: "pt-BR",
+            source: "micro-quiz",
+          },
         },
       });
 

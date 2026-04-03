@@ -97,6 +97,14 @@ async function generateBatch(
         timeoutMs: 55000,
         messages: [{ role: "user", content: buildPrompt(topics, count, difficulty, specificTopic, examBoard) }],
         ...(avoidStatements && avoidStatements.length > 0 ? { avoidStatements } : {}),
+        generationContext: {
+          specialty: topics[0] || "Clínica Médica",
+          topic: specificTopic || topics.join(", "),
+          objective: "practice",
+          difficulty: difficulty === "dificil" ? "hard" : difficulty === "facil" ? "easy" : difficulty === "misto" ? "mixed" : "medium",
+          language: "pt-BR",
+          source: "simulado",
+        },
       }),
     },
   );
