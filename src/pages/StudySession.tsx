@@ -693,8 +693,19 @@ const StudySession = () => {
           </div>
         )}
 
+        {/* Style Select Screen */}
+        {phase === "style-select" && (
+          <div className="flex-1 flex items-center justify-center p-6">
+            <StudyStyleSelector
+              topic={topic}
+              onSelect={handleStyleSelect}
+              hasErrors={performance.weakTopics.some(w => w.toLowerCase().includes(topic.toLowerCase()) || topic.toLowerCase().includes(w.toLowerCase()))}
+            />
+          </div>
+        )}
+
         {/* Chat */}
-        {phase !== "start" && (
+        {phase !== "start" && phase !== "style-select" && (
           <>
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
               {messages.map((m, i) => (
