@@ -4,31 +4,22 @@ import { Loader2, Target, Calendar, Flame, ClipboardList } from "lucide-react";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
 
-import MotivationalGreeting from "@/components/dashboard/MotivationalGreeting";
-import PerformanceReport from "@/components/dashboard/PerformanceReport";
-import DailyPlanWidget from "@/components/dashboard/DailyPlanWidget";
-import DailyGoalWidget from "@/components/dashboard/DailyGoalWidget";
-import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner";
-import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
-
-// Dashboard 2.0 — Strategic blocks
+// Dashboard 2.0 — Action-focused blocks
 import HeroStudyCard from "@/components/dashboard/HeroStudyCard";
-import ApprovalScoreCard from "@/components/dashboard/ApprovalScoreCard";
-import PendingReviewsCard from "@/components/dashboard/PendingReviewsCard";
-import WeakTopicsCard from "@/components/dashboard/WeakTopicsCard";
+import MentorshipBanner from "@/components/dashboard/MentorshipBanner";
+import SmartAlertCard from "@/components/dashboard/SmartAlertCard";
+import WeeklyEvolutionBar from "@/components/dashboard/WeeklyEvolutionBar";
 import FreeStudyCard from "@/components/dashboard/FreeStudyCard";
-import RecentProgressCard from "@/components/dashboard/RecentProgressCard";
-import PracticalTrainingCard from "@/components/dashboard/PracticalTrainingCard";
-import PracticalPerformanceCard from "@/components/dashboard/PracticalPerformanceCard";
-import DiagnosticSummaryCard from "@/components/dashboard/DiagnosticSummaryCard";
-import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
-
-import AdaptiveModeCard from "@/components/dashboard/AdaptiveModeCard";
+import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner";
 import ExamSetupReminder from "@/components/dashboard/ExamSetupReminder";
 import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
-import MentorshipBanner from "@/components/dashboard/MentorshipBanner";
+import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
+
 import DashboardSummaryCard from "@/components/dashboard/DashboardSummaryCard";
-import ApprovalTimeline from "@/components/dashboard/ApprovalTimeline";
+import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
+import DailyPlanWidget from "@/components/dashboard/DailyPlanWidget";
+import DailyGoalWidget from "@/components/dashboard/DailyGoalWidget";
+
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useMessageDelivery } from "@/hooks/useMessageDelivery";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -46,15 +37,14 @@ const OnboardingTour = lazy(() => import("@/components/dashboard/OnboardingTour"
 const DashboardSmartPopups = lazy(() => import("@/components/onboarding/DashboardSmartPopups"));
 const EndOfDaySummary = lazy(() => import("@/components/dashboard/EndOfDaySummary"));
 
-// Lazy load heavy chart/analytics components
-const StreakCalendar = lazy(() => import("@/components/dashboard/StreakCalendar"));
-const SpecialtyProgressCard = lazy(() => import("@/components/dashboard/SpecialtyProgressCard"));
-const SpecialtyLevelsCard = lazy(() => import("@/components/dashboard/SpecialtyLevelsCard"));
+// Lazy load drill-down content
 const DashboardCharts = lazy(() => import("@/components/dashboard/DashboardCharts"));
+const SpecialtyProgressCard = lazy(() => import("@/components/dashboard/SpecialtyProgressCard"));
+const TopicEvolution = lazy(() => import("@/components/dashboard/TopicEvolution"));
+const ApprovalTimeline = lazy(() => import("@/components/dashboard/ApprovalTimeline"));
+const StreakCalendar = lazy(() => import("@/components/dashboard/StreakCalendar"));
 const WeeklyProgressCard = lazy(() => import("@/components/dashboard/WeeklyProgressCard"));
 const MiniLeaderboard = lazy(() => import("@/components/dashboard/MiniLeaderboard"));
-const ApprovalThermometer = lazy(() => import("@/components/dashboard/ApprovalThermometer"));
-const TopicEvolution = lazy(() => import("@/components/dashboard/TopicEvolution"));
 const SpecialtyBenchmark = lazy(() => import("@/components/dashboard/SpecialtyBenchmark"));
 const InstallAppBanner = lazy(() => import("@/components/dashboard/InstallAppBanner"));
 
@@ -82,19 +72,16 @@ const Dashboard = () => {
   useEffect(() => {
     if (!data) return;
     const { metrics, stats } = data;
-
     if (prevLevelRef.current !== null && metrics.gamificationLevel > prevLevelRef.current) {
       fireCelebration("levelup");
     }
     prevLevelRef.current = metrics.gamificationLevel;
-
     if (prevStreakRef.current !== null && stats.streak > prevStreakRef.current && stats.streak % 7 === 0) {
       fireCelebration("streak");
     }
     prevStreakRef.current = stats.streak;
   }, [data]);
 
-  // Smart message delivery
   useEffect(() => {
     if (data) evaluateAndDeliver();
   }, [data, evaluateAndDeliver]);
@@ -107,7 +94,7 @@ const Dashboard = () => {
     );
   }
 
-  const { stats, metrics, displayName, hasCompletedDiagnostic } = data || {};
+  const { stats, metrics, displayName, hasCompletedDiagnostic } = data;
 
   if (!stats || !metrics) {
     return (
@@ -119,13 +106,17 @@ const Dashboard = () => {
 
   const taskPercent = stats.totalTasks > 0 ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0;
   const isNewUser = metrics.questionsAnswered === 0 && stats.flashcards === 0;
-
   const sheetSide = isMobile ? "bottom" as const : "right" as const;
 
-  return (
-    <div className="space-y-4 animate-fade-in pb-16 lg:pb-0">
+  // Greeting — minimal, no card
+  const name = displayName?.split(" ")[0] || "Doutor(a)";
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
 
-      {/* Popup queue — lazy loaded, each checks internally if should show */}
+  return (
+    <div className="space-y-3 animate-fade-in pb-16 lg:pb-0">
+
+      {/* Popup queue */}
       <Suspense fallback={null}>
         <OnboardingTour />
         <WhatsNewPopup />
@@ -136,179 +127,123 @@ const Dashboard = () => {
       </Suspense>
 
       {/* ══════════════════════════════════════════
-          TOP — Saudação + XP (mínimo de ruído)
+          GREETING — compact, inline
          ══════════════════════════════════════════ */}
-      <div>
-        <SafeCard name="Greeting">
-          <MotivationalGreeting
-            streak={stats.streak}
-            todayCompleted={stats.todayCompleted}
-            todayTotal={stats.todayTotal}
-            completedTasks={stats.completedTasks}
-            totalTasks={stats.totalTasks}
-            daysUntilExam={stats.daysUntilExam}
-            questionsAnswered={metrics.questionsAnswered}
-            accuracy={metrics.accuracy}
-            displayName={displayName}
-          />
-        </SafeCard>
-        <div className="mt-3 mb-1 flex items-center justify-between">
-          <SafeCard name="XpWidget"><XpWidget /></SafeCard>
-          <SafeCard name="PerformanceReport"><PerformanceReport /></SafeCard>
+      <div className="flex items-center justify-between px-1">
+        <div>
+          <p className="text-sm text-muted-foreground">
+            {greeting}, <span className="text-foreground font-semibold">{name}</span>
+          </p>
+          {stats.streak > 0 && (
+            <p className="text-xs text-muted-foreground">🔥 {stats.streak} dias seguidos</p>
+          )}
         </div>
-        <SafeCard name="AchievementToast"><AchievementToast /></SafeCard>
-        {/* Video room is urgent — stays at top */}
-        <SafeCard name="VideoRoom"><ActiveVideoRoomBanner /></SafeCard>
+        <div className="flex items-center gap-2">
+          <SafeCard name="XpWidget"><XpWidget /></SafeCard>
+        </div>
       </div>
 
-      {/* Configuração obrigatória — action-driven, bloqueia progresso */}
+      <SafeCard name="AchievementToast"><AchievementToast /></SafeCard>
+      <SafeCard name="VideoRoom"><ActiveVideoRoomBanner /></SafeCard>
       <SafeCard name="ExamSetup"><ExamSetupReminder /></SafeCard>
 
       {/* ══════════════════════════════════════════
-          BLOCO PRINCIPAL — Fluxo Único de Estudo
+          BLOCO PRINCIPAL — HERO (40-50% da tela)
          ══════════════════════════════════════════ */}
       <SafeCard name="HeroStudy">
         <HeroStudyCard />
       </SafeCard>
 
       {/* ══════════════════════════════════════════
-          MENTORIA ATIVA — logo após o CTA principal
+          ALERTA INTELIGENTE — máximo 1
+         ══════════════════════════════════════════ */}
+      <SafeCard name="SmartAlert"><SmartAlertCard /></SafeCard>
+
+      {/* ══════════════════════════════════════════
+          MENTORIA ATIVA (condicional)
          ══════════════════════════════════════════ */}
       <SafeCard name="MentorshipBanner"><MentorshipBanner /></SafeCard>
 
-      {/* Onboarding checklist — high visibility for new users */}
+      {/* Onboarding checklist — new users only */}
       {isNewUser && (
         <SafeCard name="OnboardingNew">
-          <OnboardingChecklist
-            stats={stats}
-            metrics={metrics}
-            hasCompletedDiagnostic={hasCompletedDiagnostic}
-          />
+          <OnboardingChecklist stats={stats} metrics={metrics} hasCompletedDiagnostic={hasCompletedDiagnostic} />
         </SafeCard>
       )}
 
       {/* ══════════════════════════════════════════
-          BLOCO 1.5 — MODO ADAPTATIVO (feedback sutil + ação)
+          PROGRESSO SEMANAL — visual simples
          ══════════════════════════════════════════ */}
-      {!isNewUser && <SafeCard name="AdaptiveMode"><AdaptiveModeCard /></SafeCard>}
+      {!isNewUser && <SafeCard name="WeeklyEvolution"><WeeklyEvolutionBar /></SafeCard>}
 
       {/* ══════════════════════════════════════════
-          BLOCO 2 — PROGRESSO E APROVAÇÃO
-         ══════════════════════════════════════════ */}
-      {!isNewUser && <SafeCard name="ApprovalScore"><ApprovalScoreCard /></SafeCard>}
-
-      {/* Nivelamento — only if user has completed it */}
-      <SafeCard name="DiagnosticSummary"><DiagnosticSummaryCard /></SafeCard>
-
-      {/* ══════════════════════════════════════════
-          BLOCO 2.5 — NÍVEL POR ESPECIALIDADE
+          MÉTRICAS DRILL-DOWN — grid compacto
          ══════════════════════════════════════════ */}
       {!isNewUser && (
-        <Suspense fallback={<ChartFallback />}>
-          <SafeCard name="SpecialtyLevels"><SpecialtyLevelsCard /></SafeCard>
-        </Suspense>
-      )}
-      {/* ══════════════════════════════════════════
-          BLOCO 3 — REVISÕES E FRAQUEZAS
-         ══════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <SafeCard name="PendingReviews"><PendingReviewsCard /></SafeCard>
-        <SafeCard name="WeakTopics"><WeakTopicsCard /></SafeCard>
-      </div>
-
-      {/* ══════════════════════════════════════════
-          BLOCO 3.5 — PROGRESSO RECENTE POR TEMA
-         ══════════════════════════════════════════ */}
-      {!isNewUser && <SafeCard name="RecentProgress"><RecentProgressCard /></SafeCard>}
-
-      {/* ══════════════════════════════════════════
-          BLOCO 4 — TREINO PRÁTICO
-         ══════════════════════════════════════════ */}
-      <SafeCard name="PracticalTraining"><PracticalTrainingCard /></SafeCard>
-      <SafeCard name="PracticalPerformance"><PracticalPerformanceCard /></SafeCard>
-
-      {/* ══════════════════════════════════════════
-          BLOCO 5 — MÉTRICAS DRILL-DOWN
-         ══════════════════════════════════════════ */}
-      {!isNewUser && (
-        <Suspense fallback={<div className="space-y-4"><ChartFallback /><ChartFallback /></div>}>
-          <div className="grid grid-cols-2 gap-3">
-            <SafeCard name="SummaryDesempenho">
-              <DashboardSummaryCard
-                icon={Target}
-                title="Desempenho"
-                accentClass="text-primary bg-primary/10"
-                onClick={() => setOpenSection("desempenho")}
-                metrics={[
-                  { label: "Acerto", value: `${metrics.accuracy}%` },
-                  { label: "Questões", value: metrics.questionsAnswered },
-                ]}
-              />
-            </SafeCard>
-            <SafeCard name="SummaryCronograma">
-              <DashboardSummaryCard
-                icon={Calendar}
-                title="Plano Geral"
-                accentClass="text-blue-500 bg-blue-500/10"
-                onClick={() => setOpenSection("cronograma")}
-                metrics={[
-                  { label: "Tarefas", value: `${stats.completedTasks}/${stats.totalTasks}` },
-                  { label: "Concluído", value: `${taskPercent}%` },
-                ]}
-              />
-            </SafeCard>
-            <SafeCard name="SummaryStreak">
-              <DashboardSummaryCard
-                icon={Flame}
-                title="Streak & Metas"
-                accentClass="text-orange-500 bg-orange-500/10"
-                onClick={() => setOpenSection("streak")}
-                metrics={[
-                  { label: "Streak", value: `🔥 ${stats.streak} dias` },
-                  { label: "Nível", value: metrics.gamificationLevel },
-                ]}
-              />
-            </SafeCard>
-            <SafeCard name="SummarySimulados">
-              <DashboardSummaryCard
-                icon={ClipboardList}
-                title="Simulados"
-                accentClass="text-emerald-500 bg-emerald-500/10"
-                onClick={() => setOpenSection("simulados")}
-                metrics={[
-                  { label: "Hoje", value: `${stats.todayCompleted}/${stats.todayTotal}` },
-                  { label: "Dias p/ prova", value: stats.daysUntilExam ?? "—" },
-                ]}
-              />
-            </SafeCard>
-          </div>
-        </Suspense>
+        <div className="grid grid-cols-2 gap-2.5">
+          <SafeCard name="SummaryDesempenho">
+            <DashboardSummaryCard
+              icon={Target}
+              title="Desempenho"
+              accentClass="text-primary bg-primary/10"
+              onClick={() => setOpenSection("desempenho")}
+              metrics={[
+                { label: "Acerto", value: `${metrics.accuracy}%` },
+                { label: "Questões", value: metrics.questionsAnswered },
+              ]}
+            />
+          </SafeCard>
+          <SafeCard name="SummaryCronograma">
+            <DashboardSummaryCard
+              icon={Calendar}
+              title="Plano"
+              accentClass="text-blue-500 bg-blue-500/10"
+              onClick={() => setOpenSection("cronograma")}
+              metrics={[
+                { label: "Tarefas", value: `${stats.completedTasks}/${stats.totalTasks}` },
+                { label: "Concluído", value: `${taskPercent}%` },
+              ]}
+            />
+          </SafeCard>
+          <SafeCard name="SummaryStreak">
+            <DashboardSummaryCard
+              icon={Flame}
+              title="Streak"
+              accentClass="text-orange-500 bg-orange-500/10"
+              onClick={() => setOpenSection("streak")}
+              metrics={[
+                { label: "Dias", value: `🔥 ${stats.streak}` },
+                { label: "Nível", value: metrics.gamificationLevel },
+              ]}
+            />
+          </SafeCard>
+          <SafeCard name="SummarySimulados">
+            <DashboardSummaryCard
+              icon={ClipboardList}
+              title="Simulados"
+              accentClass="text-emerald-500 bg-emerald-500/10"
+              onClick={() => setOpenSection("simulados")}
+              metrics={[
+                { label: "Feitos", value: metrics.simuladosCompleted },
+                { label: "Prova", value: stats.daysUntilExam ? `${stats.daysUntilExam}d` : "—" },
+              ]}
+            />
+          </SafeCard>
+        </div>
       )}
 
       {/* ══════════════════════════════════════════
-          BLOCO 6 — ACESSO LIVRE
+          ACESSO RÁPIDO — rodapé discreto
          ══════════════════════════════════════════ */}
       <SafeCard name="FreeStudy"><FreeStudyCard /></SafeCard>
 
-      {/* Mensagens do admin — secundário */}
+      {/* Admin messages — secondary */}
       <SafeCard name="AdminMessages"><AdminMessagesBanner /></SafeCard>
 
-
-      {/* Install app — secundário, lazy loaded */}
+      {/* Install app — secondary */}
       <Suspense fallback={null}>
         <SafeCard name="InstallApp"><InstallAppBanner /></SafeCard>
       </Suspense>
-
-      {/* Onboarding checklist for returning users (non-new) */}
-      {!isNewUser && (
-        <SafeCard name="OnboardingReturning">
-          <OnboardingChecklist
-            stats={stats}
-            metrics={metrics}
-            hasCompletedDiagnostic={hasCompletedDiagnostic}
-          />
-        </SafeCard>
-      )}
 
       {/* ===== Drill-down Sheets ===== */}
       <Sheet open={openSection === "desempenho"} onOpenChange={(o) => !o && setOpenSection(null)}>
