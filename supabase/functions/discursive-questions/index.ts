@@ -91,6 +91,13 @@ REGRA: Gere SEMPRE entre 2 e 4 sub-perguntas separadas, cada uma focada em um as
 
         const questionData = JSON.parse(jsonMatch[0]);
 
+        // Validate AI output
+        const validation = validateAIOutput(questionData, { specialty }, "discursiva");
+        if (!validation.valid) {
+          console.warn(`[discursive-questions] Rejected: ${validation.reason} | ${specialty}`);
+          // Still proceed — the content passed structural parse, just log the issue
+        }
+
         // Normalize: support both old "question" (string) and new "questions" (array) formats
         const questions: string[] = Array.isArray(questionData.questions)
           ? questionData.questions
