@@ -97,7 +97,15 @@ const StudySession = () => {
   const [professorContext, setProfessorContext] = useState<{ topics: string; materialUrl?: string; assignmentId?: string } | null>(null);
   const [reinforcementCycles, setReinforcementCycles] = useState<Record<string, number>>({});
   const [preReinforcementPhase, setPreReinforcementPhase] = useState<Phase>("questions");
+  const [targetExam, setTargetExam] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Load target exam from profile
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("target_exam").eq("user_id", user.id).single()
+      .then(({ data }) => { if (data?.target_exam) setTargetExam(data.target_exam as string); });
+  }, [user]);
 
   // Read professor query params
   useEffect(() => {
