@@ -22,6 +22,14 @@ const CLINICAL_MODULES = [
     iconColor: "text-rose-500",
     bgColor: "bg-rose-500/5 hover:bg-rose-500/10 border-rose-500/10",
   },
+  {
+    label: "Prova Prática",
+    desc: "Simulação OSCE com avaliação",
+    path: "/dashboard/prova-pratica",
+    icon: GraduationCap,
+    iconColor: "text-violet-500",
+    bgColor: "bg-violet-500/5 hover:bg-violet-500/10 border-violet-500/10",
+  },
 ];
 
 export default function PracticalTrainingCard() {
