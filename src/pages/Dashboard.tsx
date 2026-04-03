@@ -286,6 +286,9 @@ const Dashboard = () => {
       {/* Mensagens do admin — secundário */}
       <SafeCard name="AdminMessages"><AdminMessagesBanner /></SafeCard>
 
+      {/* Mentoria do professor */}
+      <SafeCard name="MentorshipBanner"><MentorshipBanner /></SafeCard>
+
       {/* Install app — secundário, lazy loaded */}
       <Suspense fallback={null}>
         <SafeCard name="InstallApp"><InstallAppBanner /></SafeCard>
