@@ -100,12 +100,54 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_content_cache: {
+        Row: {
+          cache_key: string
+          content_json: Json
+          content_type: string
+          created_at: string
+          expires_at: string | null
+          hit_count: number
+          id: string
+          model_used: string | null
+          quality_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          cache_key: string
+          content_json: Json
+          content_type?: string
+          created_at?: string
+          expires_at?: string | null
+          hit_count?: number
+          id?: string
+          model_used?: string | null
+          quality_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          cache_key?: string
+          content_json?: Json
+          content_type?: string
+          created_at?: string
+          expires_at?: string | null
+          hit_count?: number
+          id?: string
+          model_used?: string | null
+          quality_score?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_usage_logs: {
         Row: {
+          cache_hit: boolean | null
+          cost_estimate: number | null
           created_at: string
           error_message: string | null
           function_name: string
           id: string
+          model_tier: string | null
           model_used: string | null
           response_time_ms: number | null
           success: boolean
@@ -113,10 +155,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cache_hit?: boolean | null
+          cost_estimate?: number | null
           created_at?: string
           error_message?: string | null
           function_name: string
           id?: string
+          model_tier?: string | null
           model_used?: string | null
           response_time_ms?: number | null
           success?: boolean
@@ -124,10 +169,13 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cache_hit?: boolean | null
+          cost_estimate?: number | null
           created_at?: string
           error_message?: string | null
           function_name?: string
           id?: string
+          model_tier?: string | null
           model_used?: string | null
           response_time_ms?: number | null
           success?: boolean
