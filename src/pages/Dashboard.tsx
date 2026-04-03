@@ -197,6 +197,13 @@ const Dashboard = () => {
       {!isNewUser && <SafeCard name="WeeklyEvolution"><WeeklyEvolutionBar /></SafeCard>}
 
       {/* ══════════════════════════════════════════
+          CHANCE POR PROVA — readiness per exam
+         ══════════════════════════════════════════ */}
+      {!isNewUser && (
+        <SafeCard name="ExamReadiness"><ExamReadinessCard /></SafeCard>
+      )}
+
+      {/* ══════════════════════════════════════════
           MÉTRICAS DRILL-DOWN — grid compacto
          ══════════════════════════════════════════ */}
       {!isNewUser && (
