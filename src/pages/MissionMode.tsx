@@ -37,8 +37,13 @@ const TYPE_ICONS: Record<string, string> = {
 
 export default function MissionMode() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { adaptive } = useStudyEngine();
+
+  const invalidateDashboard = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+  }, [queryClient]);
   const {
     state, currentTask, nextTask, progress,
     totalMinutes, completedMinutes,
