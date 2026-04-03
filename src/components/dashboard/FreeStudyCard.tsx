@@ -1,12 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  MessageSquare, BookOpen, Layers, ClipboardList, FileText, BookMarked,
+  MessageSquare, Stethoscope, Layers, ClipboardList, FileText, BookMarked,
 } from "lucide-react";
 
 const MODULES = [
   { label: "Tutor IA", path: "/dashboard/chatgpt", icon: MessageSquare, color: "text-primary" },
-  { label: "Questões", path: "/dashboard/banco-questoes", icon: BookOpen, color: "text-blue-500" },
+  { label: "Prova Prática", path: "/dashboard/prova-pratica", icon: Stethoscope, color: "text-blue-500" },
   { label: "Flashcards", path: "/dashboard/flashcards", icon: Layers, color: "text-violet-500" },
   { label: "Simulados", path: "/dashboard/simulados", icon: ClipboardList, color: "text-emerald-500" },
   { label: "Resumos", path: "/dashboard/resumos", icon: FileText, color: "text-orange-500" },

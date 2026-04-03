@@ -34,7 +34,7 @@ const mobileNavGroups: MobileNavGroup[] = [
     title: "Principal",
     items: [
       { to: "/dashboard", label: "📊 Dashboard" },
-      { to: "/dashboard/chatgpt", label: "Tutor" },
+      { to: "/dashboard/chatgpt", label: "✨ Tutor" },
       { to: "/dashboard/plano-dia", label: "⚡ Plano do Dia" },
       { to: "/dashboard/diagnostico", label: "🩺 Nivelamento" },
     ],
@@ -42,35 +42,34 @@ const mobileNavGroups: MobileNavGroup[] = [
   {
     title: "Estudo",
     items: [
-      { to: "/dashboard/planner", label: "🧠 Planner IA" },
+      { to: "/dashboard/planner", label: "📅 Plano Geral" },
       { to: "/dashboard/flashcards", label: "🃏 Flashcards" },
-      { to: "/dashboard/gerar-flashcards", label: "🃏 Gerador Flashcards" },
-      { to: "/dashboard/resumos", label: "📖 Resumidor" },
-      { to: "/dashboard/apostilas", label: "📚 Apostilas & Resumos" },
-      { to: "/dashboard/cronicas", label: "📖 Crônicas Médicas" },
-    ],
-  },
-  {
-    title: "Avaliação",
-    items: [
       { to: "/dashboard/simulados", label: "📝 Simulados" },
-      { to: "/dashboard/questoes", label: "❓ Gerador Questões" },
-      { to: "/dashboard/banco-questoes", label: "🗃️ Banco de Questões" },
-      { to: "/dashboard/discursivas", label: "✍️ Discursivas" },
-      { to: "/dashboard/anamnese", label: "🩺 Anamnese" },
-      { to: "/dashboard/plantao", label: "🚨 Modo Plantão" },
+      { to: "/dashboard/resumos", label: "📖 Resumos" },
     ],
   },
   {
-    title: "Progresso",
+    title: "Prática e Progresso",
     items: [
+      { to: "/dashboard/anamnese", label: "💬 Anamnese" },
+      { to: "/dashboard/prova-pratica", label: "🩺 Prova Prática" },
+      { to: "/dashboard/plantao", label: "🚨 Plantão" },
+      { to: "/dashboard/banco-erros", label: "⚠️ Banco de Erros" },
+      { to: "/dashboard/mapa-dominio", label: "🗺️ Mapa de Evolução" },
+      { to: "/dashboard/analytics", label: "📊 Analytics" },
+      { to: "/dashboard/rankings", label: "👑 Rankings" },
+      { to: "/dashboard/conquistas", label: "🏆 Conquistas" },
+    ],
+  },
+  {
+    title: "Mais Ferramentas",
+    items: [
+      { to: "/dashboard/apostilas", label: "📚 Apostilas" },
+      { to: "/dashboard/cronicas", label: "📖 Crônicas Médicas" },
+      { to: "/dashboard/discursivas", label: "✍️ Discursivas" },
       { to: "/dashboard/predictor", label: "📈 Previsão" },
-      { to: "/dashboard/banco-erros", label: "🚨 Banco de Erros" },
-      { to: "/dashboard/mapa-dominio", label: "🗺️ Mapa Evolução" },
       { to: "/dashboard/proficiencia", label: "🎓 Proficiência" },
       { to: "/dashboard/coach", label: "💪 Coach" },
-      { to: "/dashboard/conquistas", label: "🏆 Conquistas" },
-      { to: "/dashboard/analytics", label: "📊 Analytics" },
     ],
   },
 ];
