@@ -252,14 +252,16 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       .single(), "profile"),
   ]);
 
-  // ── Load mentor topics if any active mentorships ───────────────
+  // ── Load mentor topics & exam dates if any active mentorships ──
   let mentorTopics: string[] = [];
+  let mentorExamDate: Date | null = null;
+  let mentorDaysUntilExam: number | null = null;
   const targetPlans = (mentorTargets || []) as any[];
   if (targetPlans.length > 0) {
     const planIds = [...new Set(targetPlans.map((t: any) => t.plan_id))];
     const activePlans = await safe(() => supabase
       .from("mentor_theme_plans")
-      .select("id")
+      .select("id, exam_date")
       .in("id", planIds)
       .eq("status", "active"), "mentor_active_plans");
     if (activePlans && (activePlans as any[]).length > 0) {
@@ -269,6 +271,17 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
         .select("topic")
         .in("plan_id", activeIds), "mentor_topics");
       mentorTopics = [...new Set((topicsData as any[] || []).map((t: any) => t.topic))];
+
+      // Find closest mentor exam date
+      for (const p of activePlans as any[]) {
+        if (p.exam_date) {
+          const d = new Date(p.exam_date);
+          if (!mentorExamDate || d < mentorExamDate) mentorExamDate = d;
+        }
+      }
+      if (mentorExamDate) {
+        mentorDaysUntilExam = Math.ceil((mentorExamDate.getTime() - Date.now()) / 86400000);
+      }
     }
   }
 
