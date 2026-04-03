@@ -1,39 +1,78 @@
 
 
-# Flashcards: Input de Tema Livre + Geração Automática do Banco Global
+# Documento de Funcionalidades Detalhadas — ENAZIZI
 
-## Problema
-O filtro de temas usa uma lista de badges baseada nos flashcards existentes, limitando o usuário. O gerador de flashcards depende de chat com IA (AgentChat). Queremos: (1) substituir a lista de badges por um campo de texto livre para digitar o tema, e (2) adicionar geração automática de flashcards a partir do banco global de questões (questions_bank + real_exam_questions), sem depender de IA.
+## Objetivo
+Gerar um documento PDF profissional e completo descrevendo todos os módulos da plataforma ENAZIZI, detalhando a experiência do usuário em cada um.
 
-## Solução
+## Conteúdo do Documento
 
-### 1. Substituir filtro de badges por input de texto livre (`Flashcards.tsx`)
-- Remover o bloco de badges de especialidades (linhas 387-417)
-- Adicionar um `<Input>` com placeholder "Digite o tema (ex: Cardiologia, IAM, Pneumonia)"
-- Filtrar cards por correspondência parcial no campo `topic` (case-insensitive)
-- Manter lógica de `selectedTopics` adaptada para funcionar com texto digitado
+O PDF será organizado nas seguintes seções:
 
-### 2. Adicionar botão "Gerar Flashcards do Banco" na tela de setup (`Flashcards.tsx`)
-- Novo botão na seção de modos: "Gerar do Banco de Questões"
-- Ao clicar, busca questões do banco global (`questions_bank` + `real_exam_questions`) filtradas pelo tema digitado
-- Converte cada questão em flashcard: `statement` → pergunta, `explanation + correct option` → resposta
-- Insere automaticamente na tabela `flashcards` com `user_id` e `topic`
-- Atualiza a lista local sem recarregar a página
-- Limite: 20 flashcards por geração (evitar sobrecarga)
+### Capa
+- Logo/nome ENAZIZI
+- Título: "Guia Completo de Funcionalidades"
+- Subtítulo: "Experiência do Usuário — Módulo a Módulo"
 
-### 3. Lógica de conversão questão → flashcard
-- **Pergunta**: Enunciado da questão (statement)
-- **Resposta**: Alternativa correta + explicação (se houver)
-- **Tópico**: Campo `topic` da questão original
-- Deduplicação: ignorar questões cujo `statement_hash` (primeiros 80 chars) já existe nos flashcards do usuário
+### 1. Visão Geral da Plataforma
+- Arquitetura de camadas: Dashboard → Study Engine → Missão → Módulos
+- Fluxo principal do aluno (onboarding → plano → estudo → avaliação)
+- Adaptação por banca (ENARE, Revalida, USP, etc.)
 
-### 4. Atualizar `FlashcardGenerator.tsx`
-- Substituir Select de especialidade por Input de texto livre
-- Remover CycleFilter
-- Manter toda a lógica de AgentChat para geração via IA
+### 2. Módulos Detalhados (cada um com: descrição, fluxo do usuário passo a passo, integração com o sistema)
 
-| Arquivo | Ação |
-|---------|------|
-| `src/pages/Flashcards.tsx` | Trocar badges por input + adicionar geração do banco |
-| `src/pages/FlashcardGenerator.tsx` | Trocar Select por Input de texto livre |
+| # | Módulo | Descrição resumida |
+|---|--------|--------------------|
+| 1 | **Dashboard** | Tela operacional com HeroStudyCard, alertas inteligentes, progresso semanal |
+| 2 | **Onboarding** | 4 etapas: prova alvo, data, horas/dia → plano automático |
+| 3 | **Tutor IA** | 5 estilos de aprendizado, streaming, PubMed, adaptação por banca |
+| 4 | **Modo Missão** | Sequência guiada: Revisão → Conteúdo → Questões → Reforço |
+| 5 | **Plano do Dia** | Visualização operacional das tarefas geradas pelo Study Engine |
+| 6 | **Plano Geral (Planner)** | Estratégia macro com mentoria do professor integrada |
+| 7 | **Simulados** | Modo prova (cronômetro, flags, navegação) + modo estudo |
+| 8 | **Flashcards** | Geração automática por tema, revisão FSRS, interface estilo simulado |
+| 9 | **Banco de Erros** | Coleta automática de erros, revisão contextual com Tutor |
+| 10 | **Mapa de Evolução** | Visualização por especialidade com níveis de domínio |
+| 11 | **Anamnese** | Treino semiológico com feedback em tempo real e Quality Stars |
+| 12 | **Plantão (Simulação Clínica)** | Casos clínicos interativos com decisões cronometradas |
+| 13 | **Prova Prática (OSCE)** | Simulação estilo residência com avaliação estruturada em 4 critérios |
+| 14 | **Crônicas Médicas** | Narrativas clínicas imersivas → conversão automática em OSCE |
+| 15 | **Nivelamento (Diagnóstico)** | Avaliação inicial para calibrar o Study Engine |
+| 16 | **Resumos** | Geração de resumos via IA |
+| 17 | **Apostilas (Study Guides)** | Material estruturado por tema |
+| 18 | **Discursivas** | Treino de questões dissertativas |
+| 19 | **Coach Motivacional** | Apoio emocional e estratégico via IA |
+| 20 | **Previsão de Desempenho** | Predição de aprovação baseada em dados |
+| 21 | **Proficiência** | Simulados do professor + Sala de Aula virtual |
+| 22 | **Rankings** | Competição entre alunos |
+| 23 | **Conquistas** | Gamificação com XP e badges |
+| 24 | **Analytics** | Gráficos detalhados de desempenho |
+
+### 3. Painel do Professor
+- Criação de simulados e temas
+- Mentoria com boost no Study Engine
+- Relatório de acompanhamento (4 grupos de alunos)
+- BI avançado com heatmaps e correlações
+
+### 4. Painel Administrativo
+- Gestão de usuários, mensagens, QA automatizado
+
+### 5. Integrações Inteligentes
+- Study Engine (motor central de decisão)
+- Adaptação por banca
+- Repetição espaçada (FSRS)
+- Cache e otimização de IA
+
+## Implementação Técnica
+
+1. **Script Python** gerando PDF com `reportlab` ou `fpdf2`
+2. Layout profissional com cores da marca (primary indigo/cyan)
+3. Ícones e emojis para cada módulo
+4. Seções com headers claros e texto descritivo
+5. Output em `/mnt/documents/ENAZIZI_Funcionalidades_Detalhadas.pdf`
+
+## Escopo
+- Apenas geração do documento (sem alteração de código)
+- Documento em português (pt-BR)
+- Aproximadamente 15-20 páginas
 
