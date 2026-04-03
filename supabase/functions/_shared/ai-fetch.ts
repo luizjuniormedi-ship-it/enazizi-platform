@@ -1,4 +1,8 @@
 // Shared AI fetch helper with retry, backoff, and OpenAI fallback
+// Re-exports model tiering utilities for convenience
+
+export { getModelForTier, getRecommendedTier, getMaxTokensForTier, type ModelTier } from "./ai-model-tier.ts";
+export { buildCacheKey, getCachedContent, setCachedContent, logAiUsage } from "./ai-cache.ts";
 
 const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const OPENAI_API = "https://api.openai.com/v1/chat/completions";

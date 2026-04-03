@@ -159,8 +159,10 @@ Usar emojis nos títulos de seção para facilitar identificação visual.`;
     }
 
     const response = await aiFetch({
+      model: "google/gemini-3-flash-preview",
       messages: [{ role: "system", content: fullSystemPrompt }, ...messages],
       stream: true,
+      maxTokens: 8192,
     });
 
     if (!response.ok) {

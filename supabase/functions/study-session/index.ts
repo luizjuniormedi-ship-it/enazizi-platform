@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import ENAZIZI_PROMPT from "../_shared/enazizi-prompt.ts";
-import { aiFetch } from "../_shared/ai-fetch.ts";
+import { aiFetch, getModelForTier } from "../_shared/ai-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -435,9 +435,15 @@ ${session_memory.erros_consecutivos >= 3 ? "⚠️ TRAVAMENTO DETECTADO: Simplif
 --- FIM DA MEMÓRIA DE SESSÃO ---`;
     }
 
+    // Use lighter model for performance/recall phases, pro for teaching
+    const isLightPhase = ["performance", "recall", "recall_result"].includes(phase);
+    const modelTier = isLightPhase ? "standard" : "pro";
+
     const response = await aiFetch({
+      model: getModelForTier(modelTier),
       messages: [{ role: "system", content: systemPrompt }, ...messages],
       stream: true,
+      maxTokens: isLightPhase ? 8192 : 16384,
     });
 
     if (!response.ok) {

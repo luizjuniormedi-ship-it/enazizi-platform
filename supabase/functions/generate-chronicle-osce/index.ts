@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { buildCacheKey, getCachedContent, setCachedContent } from "../_shared/ai-cache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -57,6 +58,16 @@ serve(async (req) => {
     if (!chronicle_content || chronicle_content.length < 100) {
       return new Response(JSON.stringify({ error: "Conteúdo da crônica insuficiente" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Try cache first for OSCE structures
+    const cacheKey = buildCacheKey({ specialty, topic, difficulty, objective: "osce" });
+    const cached = await getCachedContent(cacheKey, "osce");
+    if (cached) {
+      console.log(`[generate-chronicle-osce] Cache HIT for ${cacheKey}`);
+      return new Response(JSON.stringify(cached), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -177,6 +188,9 @@ serve(async (req) => {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Cache the result for future reuse (fire-and-forget)
+    setCachedContent(cacheKey, "osce", osceData, "google/gemini-2.5-flash", 30).catch(() => {});
 
     return new Response(JSON.stringify(osceData), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
