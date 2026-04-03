@@ -48,13 +48,12 @@ const FlashcardGenerator = () => {
   const { user } = useAuth();
   const { addXp } = useGamification();
   const studyCtx = useStudyContext();
-  const [specialty, setSpecialty] = useState<string>(studyCtx?.specialty || "");
-  const [cycleFilter, setCycleFilter] = useState<string | null>(null);
+  const [specialty, setSpecialty] = useState<string>(studyCtx?.specialty || studyCtx?.topic || "");
   const [quantity, setQuantity] = useState(10);
   const [showSetup, setShowSetup] = useState(true);
   const initialPromptRef = useRef<string>("");
 
-  const effectiveSpecialty = specialty && specialty !== "all" ? specialty : "";
+  const effectiveSpecialty = specialty.trim();
 
   const buildPrompt = () => {
     const specPart = effectiveSpecialty || "várias especialidades médicas (variando)";
