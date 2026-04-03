@@ -428,6 +428,21 @@ const MedicalChronicles = () => {
     { label: "📖 Nova Crônica", prompt: "Crie uma nova crônica médica completa sobre um tema diferente da mesma especialidade, mantendo o nível de dificuldade." },
   ];
 
+  // If OSCE is active, show OSCE component
+  if (osceData) {
+    const osceContent = (
+      <div className={`flex flex-col animate-fade-in min-w-0 ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-[calc(100vh-7rem)] sm:h-[calc(100vh-4rem)] overflow-y-auto"}`}>
+        <ChronicleOSCE
+          osceData={osceData}
+          chronicleId={chronicleDbId}
+          onBack={() => setOsceData(null)}
+        />
+      </div>
+    );
+    if (isFullscreen) return createPortal(osceContent, document.body);
+    return osceContent;
+  }
+
   const content = (
     <div className={`flex flex-col animate-fade-in min-w-0 ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-[calc(100vh-7rem)] sm:h-[calc(100vh-4rem)]"}`}>
       {/* Header */}
