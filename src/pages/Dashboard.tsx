@@ -12,7 +12,7 @@ import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner"
 import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
 
 // Dashboard 2.0 — Strategic blocks
-import TodayStudyCard from "@/components/dashboard/TodayStudyCard";
+import HeroStudyCard from "@/components/dashboard/HeroStudyCard";
 import ApprovalScoreCard from "@/components/dashboard/ApprovalScoreCard";
 import PendingReviewsCard from "@/components/dashboard/PendingReviewsCard";
 import WeakTopicsCard from "@/components/dashboard/WeakTopicsCard";
@@ -22,7 +22,6 @@ import PracticalTrainingCard from "@/components/dashboard/PracticalTrainingCard"
 import DiagnosticSummaryCard from "@/components/dashboard/DiagnosticSummaryCard";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 
-import MissionStartButton from "@/components/dashboard/MissionStartButton";
 import AdaptiveModeCard from "@/components/dashboard/AdaptiveModeCard";
 import ExamSetupReminder from "@/components/dashboard/ExamSetupReminder";
 import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
@@ -164,10 +163,10 @@ const Dashboard = () => {
       <SafeCard name="ExamSetup"><ExamSetupReminder /></SafeCard>
 
       {/* ══════════════════════════════════════════
-          BLOCO 0 — MISSÃO DO DIA (CTA principal)
+          BLOCO PRINCIPAL — Fluxo Único de Estudo
          ══════════════════════════════════════════ */}
-      <SafeCard name="MissionStart">
-        <MissionStartButton />
+      <SafeCard name="HeroStudy">
+        <HeroStudyCard />
       </SafeCard>
 
       {/* Onboarding checklist — high visibility for new users */}
@@ -180,13 +179,6 @@ const Dashboard = () => {
           />
         </SafeCard>
       )}
-
-      {/* ══════════════════════════════════════════
-          BLOCO 1 — O que estudar hoje
-         ══════════════════════════════════════════ */}
-      <SafeCard name="TodayStudy">
-        <TodayStudyCard />
-      </SafeCard>
 
       {/* ══════════════════════════════════════════
           BLOCO 1.5 — MODO ADAPTATIVO (feedback sutil + ação)
