@@ -114,7 +114,7 @@ const Dashboard = () => {
   const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
 
   return (
-    <div className="space-y-3 animate-fade-in pb-16 lg:pb-0">
+    <div className="space-y-3 sm:space-y-4 animate-fade-in pb-20 lg:pb-0">
 
       {/* Popup queue */}
       <Suspense fallback={null}>
@@ -127,15 +127,15 @@ const Dashboard = () => {
       </Suspense>
 
       {/* ══════════════════════════════════════════
-          GREETING — compact, inline
+          GREETING — compact, inline, thumb-safe zone
          ══════════════════════════════════════════ */}
-      <div className="flex items-center justify-between px-1">
+      <div className="flex items-center justify-between px-1 py-1">
         <div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base sm:text-sm text-muted-foreground">
             {greeting}, <span className="text-foreground font-semibold">{name}</span>
           </p>
           {stats.streak > 0 && (
-            <p className="text-xs text-muted-foreground">🔥 {stats.streak} dias seguidos</p>
+            <p className="text-sm sm:text-xs text-muted-foreground mt-0.5">🔥 {stats.streak} dias seguidos</p>
           )}
         </div>
         <div className="flex items-center gap-2">
