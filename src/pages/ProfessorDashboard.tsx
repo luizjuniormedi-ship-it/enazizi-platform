@@ -493,6 +493,7 @@ const ProfessorDashboard = () => {
           <TabsTrigger value="analytics">📊 Análise da Turma</TabsTrigger>
            <TabsTrigger value="bi">📈 BI</TabsTrigger>
            <TabsTrigger value="mentoria">📋 Mentoria</TabsTrigger>
+           <TabsTrigger value="osce">🩺 Prova Prática</TabsTrigger>
         </TabsList>
 
         <TabsContent value="simulados" className="space-y-4 mt-4">
