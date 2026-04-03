@@ -1,22 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
-import { BookMarked, Plus, Loader2, Users, Trash2, Eye, Calendar, CheckCircle, AlertTriangle, BarChart3 } from "lucide-react";
+import { BookMarked, Plus, Loader2, Users, Trash2, Calendar, BarChart3, Eye } from "lucide-react";
 import MentorshipReport from "@/components/professor/MentorshipReport";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FACULDADES } from "@/constants/faculdades";
-import { ALL_SPECIALTIES } from "@/constants/specialties";
-import { SPECIALTY_SUBTOPICS } from "@/constants/subtopics";
-import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 
 interface MentorPlan {
   id: string;
@@ -27,6 +23,13 @@ interface MentorPlan {
   created_at: string;
   topics?: { id: string; topic: string; subtopic: string | null; priority: number }[];
   targets?: { id: string; target_type: string; target_id: string }[];
+}
+
+interface SelectedStudent {
+  user_id: string;
+  display_name: string;
+  faculdade: string | null;
+  periodo: number | null;
 }
 
 const MentorThemePlans = () => {
@@ -42,24 +45,28 @@ const MentorThemePlans = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [examDate, setExamDate] = useState("");
-  const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [selectedTopics, setSelectedTopics] = useState<{ topic: string; subtopic: string }[]>([]);
   const [currentTopic, setCurrentTopic] = useState("");
   const [currentSubtopic, setCurrentSubtopic] = useState("");
 
   // Target
   const [targetType, setTargetType] = useState<"student" | "class" | "institution">("class");
-  const [faculdadeFilter, setFaculdadeFilter] = useState("");
-  const [periodoFilter, setPeriodoFilter] = useState("");
-  const [previewStudents, setPreviewStudents] = useState<any[]>([]);
-  const [previewLoading, setPreviewLoading] = useState(false);
   const [classes, setClasses] = useState<any[]>([]);
   const [selectedClassId, setSelectedClassId] = useState("");
-  const [selectedStudentId, setSelectedStudentId] = useState("");
+
+  // Multiple students
+  const [selectedStudents, setSelectedStudents] = useState<SelectedStudent[]>([]);
   const [studentSearch, setStudentSearch] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [faculdadeFilter, setFaculdadeFilter] = useState("");
+  const [periodoFilter, setPeriodoFilter] = useState("");
 
-  // Detail view — full report
+  // Recipients preview
+  const [showRecipients, setShowRecipients] = useState(false);
+  const [recipientsList, setRecipientsList] = useState<SelectedStudent[]>([]);
+  const [recipientsLoading, setRecipientsLoading] = useState(false);
+
+  // Detail view
   const [reportPlan, setReportPlan] = useState<MentorPlan | null>(null);
 
   const loadPlans = useCallback(async () => {
@@ -100,8 +107,8 @@ const MentorThemePlans = () => {
   }, [user]);
 
   const addTopic = () => {
-    if (!currentTopic) return;
-    setSelectedTopics(prev => [...prev, { topic: currentTopic, subtopic: currentSubtopic }]);
+    if (!currentTopic.trim()) return;
+    setSelectedTopics(prev => [...prev, { topic: currentTopic.trim(), subtopic: currentSubtopic.trim() }]);
     setCurrentTopic("");
     setCurrentSubtopic("");
   };
@@ -111,14 +118,93 @@ const MentorThemePlans = () => {
   };
 
   const searchStudents = async () => {
-    if (studentSearch.length < 3) return;
-    const { data } = await supabase
+    if (studentSearch.length < 2 && !faculdadeFilter && !periodoFilter) return;
+    let query = supabase
       .from("profiles")
       .select("user_id, display_name, email, faculdade, periodo")
-      .ilike("display_name", `%${studentSearch}%`)
       .eq("user_type", "estudante")
-      .limit(10);
+      .limit(20);
+
+    if (studentSearch.length >= 2) {
+      query = query.ilike("display_name", `%${studentSearch}%`);
+    }
+    if (faculdadeFilter) {
+      query = query.eq("faculdade", faculdadeFilter);
+    }
+    if (periodoFilter) {
+      query = query.eq("periodo", parseInt(periodoFilter));
+    }
+
+    const { data } = await query;
     setSearchResults(data || []);
+  };
+
+  const toggleStudent = (s: any) => {
+    setSelectedStudents(prev => {
+      const exists = prev.find(x => x.user_id === s.user_id);
+      if (exists) return prev.filter(x => x.user_id !== s.user_id);
+      return [...prev, { user_id: s.user_id, display_name: s.display_name, faculdade: s.faculdade, periodo: s.periodo }];
+    });
+  };
+
+  const removeStudent = (uid: string) => {
+    setSelectedStudents(prev => prev.filter(x => x.user_id !== uid));
+  };
+
+  const loadRecipients = async () => {
+    setRecipientsLoading(true);
+    let list: SelectedStudent[] = [...selectedStudents];
+
+    if (targetType === "class" && selectedClassId) {
+      const { data: members } = await supabase
+        .from("class_members")
+        .select("user_id")
+        .eq("class_id", selectedClassId)
+        .eq("is_active", true);
+      if (members && members.length > 0) {
+        const uids = members.map(m => m.user_id).filter(uid => !list.find(s => s.user_id === uid));
+        if (uids.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("user_id, display_name, faculdade, periodo")
+            .in("user_id", uids);
+          if (profiles) list = [...list, ...profiles.map(p => ({ user_id: p.user_id, display_name: p.display_name, faculdade: p.faculdade, periodo: p.periodo }))];
+        }
+      }
+    } else if (targetType === "institution") {
+      const { data: inst } = await supabase
+        .from("institution_members")
+        .select("institution_id")
+        .eq("user_id", user!.id)
+        .eq("is_active", true)
+        .limit(1)
+        .single();
+      if (inst) {
+        const { data: members } = await supabase
+          .from("institution_members")
+          .select("user_id")
+          .eq("institution_id", inst.institution_id)
+          .eq("is_active", true)
+          .limit(200);
+        if (members) {
+          const uids = members.map(m => m.user_id).filter(uid => !list.find(s => s.user_id === uid));
+          if (uids.length > 0) {
+            const { data: profiles } = await supabase
+              .from("profiles")
+              .select("user_id, display_name, faculdade, periodo")
+              .in("user_id", uids);
+            if (profiles) list = [...list, ...profiles.map(p => ({ user_id: p.user_id, display_name: p.display_name, faculdade: p.faculdade, periodo: p.periodo }))];
+          }
+        }
+      }
+    }
+
+    // Deduplicate
+    const seen = new Set<string>();
+    const unique = list.filter(s => { if (seen.has(s.user_id)) return false; seen.add(s.user_id); return true; });
+    setRecipientsList(unique);
+    setRecipientsLoading(false);
+    setShowRecipients(true);
   };
 
   const handleCreate = async () => {
@@ -129,7 +215,6 @@ const MentorThemePlans = () => {
 
     setCreating(true);
     try {
-      // Create plan
       const { data: plan, error: planErr } = await supabase
         .from("mentor_theme_plans")
         .insert({
@@ -143,7 +228,6 @@ const MentorThemePlans = () => {
         .single();
       if (planErr || !plan) throw planErr;
 
-      // Insert topics
       const topicRows = selectedTopics.map((t, i) => ({
         plan_id: plan.id,
         topic: t.topic,
@@ -153,11 +237,10 @@ const MentorThemePlans = () => {
       await supabase.from("mentor_theme_plan_topics").insert(topicRows);
 
       // Insert targets
-      let targetId = "";
+      const targetInserts: any[] = [];
+
       if (targetType === "class" && selectedClassId) {
-        targetId = selectedClassId;
-      } else if (targetType === "student" && selectedStudentId) {
-        targetId = selectedStudentId;
+        targetInserts.push({ plan_id: plan.id, target_type: "class", target_id: selectedClassId });
       } else if (targetType === "institution") {
         const { data: inst } = await supabase
           .from("institution_members")
@@ -166,45 +249,48 @@ const MentorThemePlans = () => {
           .eq("is_active", true)
           .limit(1)
           .single();
-        if (inst) targetId = inst.institution_id;
+        if (inst) targetInserts.push({ plan_id: plan.id, target_type: "institution", target_id: inst.institution_id });
       }
 
-      if (targetId) {
-        await supabase.from("mentor_theme_plan_targets").insert({
-          plan_id: plan.id,
-          target_type: targetType,
-          target_id: targetId,
-        });
+      // Add individual students as targets
+      for (const s of selectedStudents) {
+        targetInserts.push({ plan_id: plan.id, target_type: "student", target_id: s.user_id });
       }
 
-      // Initialize progress for targeted students so Study Engine picks up changes
-      let studentIds: string[] = [];
-      if (targetType === "student" && selectedStudentId) {
-        studentIds = [selectedStudentId];
-      } else if (targetType === "class" && selectedClassId) {
+      if (targetInserts.length > 0) {
+        await supabase.from("mentor_theme_plan_targets").insert(targetInserts);
+      }
+
+      // Collect all student IDs for progress
+      let studentIds: string[] = [...selectedStudents.map(s => s.user_id)];
+
+      if (targetType === "class" && selectedClassId) {
         const { data: members } = await supabase
           .from("class_members")
           .select("user_id")
           .eq("class_id", selectedClassId)
           .eq("is_active", true);
-        studentIds = (members || []).map(m => m.user_id);
-      } else if (targetType === "institution" && targetId) {
+        if (members) studentIds.push(...members.map(m => m.user_id));
+      } else if (targetType === "institution" && targetInserts.find(t => t.target_type === "institution")) {
+        const instId = targetInserts.find(t => t.target_type === "institution")!.target_id;
         const { data: members } = await supabase
           .from("institution_members")
           .select("user_id")
-          .eq("institution_id", targetId)
+          .eq("institution_id", instId)
           .eq("is_active", true)
           .limit(200);
-        studentIds = (members || []).map(m => m.user_id);
+        if (members) studentIds.push(...members.map(m => m.user_id));
       }
 
-      // Create progress entries so students see the mentorship immediately
-      if (studentIds.length > 0 && topicRows.length > 0) {
+      // Deduplicate
+      studentIds = [...new Set(studentIds)];
+
+      if (studentIds.length > 0) {
         const { data: insertedTopics } = await supabase
           .from("mentor_theme_plan_topics")
           .select("id")
           .eq("plan_id", plan.id);
-        
+
         if (insertedTopics && insertedTopics.length > 0) {
           const progressRows = studentIds.flatMap(uid =>
             insertedTopics.map(t => ({
@@ -214,14 +300,13 @@ const MentorThemePlans = () => {
               status: "pending" as const,
             }))
           );
-          // Insert in batches of 100
           for (let i = 0; i < progressRows.length; i += 100) {
             await supabase.from("mentor_theme_plan_progress").insert(progressRows.slice(i, i + 100));
           }
         }
       }
 
-      toast({ title: "Mentoria criada!", description: `"${name}" publicada para ${studentIds.length} aluno(s). O plano de estudo será atualizado automaticamente.` });
+      toast({ title: "Mentoria criada!", description: `"${name}" publicada para ${studentIds.length} aluno(s).` });
       setShowCreate(false);
       resetForm();
       loadPlans();
@@ -241,7 +326,13 @@ const MentorThemePlans = () => {
     setCurrentSubtopic("");
     setTargetType("class");
     setSelectedClassId("");
-    setSelectedStudentId("");
+    setSelectedStudents([]);
+    setStudentSearch("");
+    setSearchResults([]);
+    setFaculdadeFilter("");
+    setPeriodoFilter("");
+    setShowRecipients(false);
+    setRecipientsList([]);
   };
 
   const deletePlan = async (planId: string) => {
@@ -251,12 +342,6 @@ const MentorThemePlans = () => {
     loadPlans();
   };
 
-  const viewProgress = (plan: MentorPlan) => {
-    setReportPlan(plan);
-  };
-
-  const subtopicOptions = currentTopic ? (SPECIALTY_SUBTOPICS as Record<string, string[]>)[currentTopic] || [] : [];
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-32">
@@ -265,7 +350,6 @@ const MentorThemePlans = () => {
     );
   }
 
-  // If viewing report, show full report view
   if (reportPlan) {
     return <MentorshipReport plan={reportPlan} onBack={() => { setReportPlan(null); loadPlans(); }} />;
   }
@@ -325,7 +409,7 @@ const MentorThemePlans = () => {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewProgress(plan)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReportPlan(plan)}>
                       <BarChart3 className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deletePlan(plan.id)}>
@@ -359,31 +443,25 @@ const MentorThemePlans = () => {
               <Input type="date" value={examDate} onChange={e => setExamDate(e.target.value)} />
             </div>
 
-            {/* Topics */}
+            {/* Topics — free text */}
             <div className="space-y-2">
               <Label>Temas</Label>
-              <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-1" />
               <div className="flex gap-2">
-                <Select value={currentTopic} onValueChange={v => { setCurrentTopic(v); setCurrentSubtopic(""); }}>
-                  <SelectTrigger className="flex-1"><SelectValue placeholder="Selecione o tema" /></SelectTrigger>
-                  <SelectContent className="max-h-48">
-                    {getFilteredSpecialties(cycleFilter).map(s => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button size="sm" onClick={addTopic} disabled={!currentTopic}>Adicionar</Button>
+                <Input
+                  placeholder="Digite o tema (ex: Cardiologia)"
+                  value={currentTopic}
+                  onChange={e => setCurrentTopic(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addTopic())}
+                  className="flex-1"
+                />
+                <Button size="sm" onClick={addTopic} disabled={!currentTopic.trim()}>Adicionar</Button>
               </div>
-              {subtopicOptions.length > 0 && (
-                <Select value={currentSubtopic} onValueChange={setCurrentSubtopic}>
-                  <SelectTrigger><SelectValue placeholder="Subtópico (opcional)" /></SelectTrigger>
-                  <SelectContent className="max-h-48">
-                    {subtopicOptions.map(s => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+              <Input
+                placeholder="Subtópico (opcional, ex: Insuficiência Cardíaca)"
+                value={currentSubtopic}
+                onChange={e => setCurrentSubtopic(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addTopic())}
+              />
               <div className="flex flex-wrap gap-1.5">
                 {selectedTopics.map((t, i) => (
                   <Badge key={i} variant="secondary" className="gap-1 cursor-pointer" onClick={() => removeTopic(i)}>
@@ -395,12 +473,12 @@ const MentorThemePlans = () => {
 
             {/* Target */}
             <div className="space-y-2">
-              <Label>Público-alvo</Label>
+              <Label>Público-alvo principal</Label>
               <Select value={targetType} onValueChange={v => setTargetType(v as any)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="class">Turma</SelectItem>
-                  <SelectItem value="student">Aluno individual</SelectItem>
+                  <SelectItem value="student">Apenas alunos avulsos</SelectItem>
                   <SelectItem value="institution">Instituição</SelectItem>
                 </SelectContent>
               </Select>
@@ -415,28 +493,89 @@ const MentorThemePlans = () => {
                   </SelectContent>
                 </Select>
               )}
+            </div>
 
-              {targetType === "student" && (
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <Input placeholder="Buscar aluno por nome..." value={studentSearch} onChange={e => setStudentSearch(e.target.value)} />
-                    <Button size="sm" variant="outline" onClick={searchStudents}>Buscar</Button>
-                  </div>
-                  {searchResults.length > 0 && (
-                    <div className="space-y-1 max-h-32 overflow-y-auto">
-                      {searchResults.map(s => (
-                        <button
-                          key={s.user_id}
-                          className={`w-full text-left p-2 rounded-lg border text-xs transition-colors ${
-                            selectedStudentId === s.user_id ? "border-primary bg-primary/10" : "border-border hover:bg-muted"
-                          }`}
-                          onClick={() => setSelectedStudentId(s.user_id)}
-                        >
-                          <span className="font-medium">{s.display_name}</span>
-                          <span className="text-muted-foreground ml-2">{s.faculdade} • {s.periodo}° período</span>
-                        </button>
-                      ))}
+            {/* Individual students — always visible */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5" />
+                Adicionar alunos avulsos {targetType !== "student" && "(opcional)"}
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={faculdadeFilter} onValueChange={setFaculdadeFilter}>
+                  <SelectTrigger className="text-xs"><SelectValue placeholder="Faculdade" /></SelectTrigger>
+                  <SelectContent className="max-h-48">
+                    <SelectItem value="all">Todas</SelectItem>
+                    {FACULDADES.map(f => (
+                      <SelectItem key={f} value={f}>{f}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={periodoFilter} onValueChange={setPeriodoFilter}>
+                  <SelectTrigger className="text-xs"><SelectValue placeholder="Período" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(p => (
+                      <SelectItem key={p} value={String(p)}>{p}° período</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2">
+                <Input placeholder="Buscar aluno por nome..." value={studentSearch} onChange={e => setStudentSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && searchStudents()} />
+                <Button size="sm" variant="outline" onClick={searchStudents}>Buscar</Button>
+              </div>
+
+              {searchResults.length > 0 && (
+                <div className="space-y-1 max-h-32 overflow-y-auto border rounded-md p-1">
+                  {searchResults.map(s => {
+                    const isSelected = selectedStudents.some(x => x.user_id === s.user_id);
+                    return (
+                      <button
+                        key={s.user_id}
+                        className={`w-full text-left p-2 rounded-lg border text-xs transition-colors ${
+                          isSelected ? "border-primary bg-primary/10" : "border-border hover:bg-muted"
+                        }`}
+                        onClick={() => toggleStudent(s)}
+                      >
+                        <span className="font-medium">{s.display_name}</span>
+                        <span className="text-muted-foreground ml-2">{s.faculdade} • {s.periodo}° período</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {selectedStudents.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedStudents.map(s => (
+                    <Badge key={s.user_id} variant="secondary" className="gap-1 cursor-pointer text-[10px]" onClick={() => removeStudent(s.user_id)}>
+                      {s.display_name} ✕
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Recipients preview */}
+            <div>
+              <Button variant="outline" size="sm" className="gap-1.5 w-full" onClick={loadRecipients} disabled={recipientsLoading}>
+                {recipientsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
+                👥 Ver destinatários
+              </Button>
+              {showRecipients && (
+                <div className="mt-2 border rounded-md p-2 space-y-1 max-h-40 overflow-y-auto">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">
+                    {recipientsList.length} aluno(s) receberão esta mentoria
+                  </p>
+                  {recipientsList.map(s => (
+                    <div key={s.user_id} className="text-xs flex items-center gap-2 py-0.5">
+                      <span className="font-medium">{s.display_name}</span>
+                      <span className="text-muted-foreground">{s.faculdade || "—"} • {s.periodo ? `${s.periodo}°` : "—"}</span>
                     </div>
+                  ))}
+                  {recipientsList.length === 0 && (
+                    <p className="text-xs text-muted-foreground">Nenhum destinatário encontrado. Selecione uma turma ou adicione alunos.</p>
                   )}
                 </div>
               )}
