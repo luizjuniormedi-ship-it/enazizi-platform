@@ -16,6 +16,7 @@ import AchievementToast from "@/components/gamification/AchievementToast";
 
 // Dashboard 2.0 — Action-focused blocks
 import HeroStudyCard from "@/components/dashboard/HeroStudyCard";
+import ExamReadinessCard from "@/components/dashboard/ExamReadinessCard";
 import MentorshipBanner from "@/components/dashboard/MentorshipBanner";
 import SmartAlertCard from "@/components/dashboard/SmartAlertCard";
 import WeeklyEvolutionBar from "@/components/dashboard/WeeklyEvolutionBar";
@@ -194,6 +195,13 @@ const Dashboard = () => {
           PROGRESSO SEMANAL — visual simples
          ══════════════════════════════════════════ */}
       {!isNewUser && <SafeCard name="WeeklyEvolution"><WeeklyEvolutionBar /></SafeCard>}
+
+      {/* ══════════════════════════════════════════
+          CHANCE POR PROVA — readiness per exam
+         ══════════════════════════════════════════ */}
+      {!isNewUser && (
+        <SafeCard name="ExamReadiness"><ExamReadinessCard /></SafeCard>
+      )}
 
       {/* ══════════════════════════════════════════
           MÉTRICAS DRILL-DOWN — grid compacto
