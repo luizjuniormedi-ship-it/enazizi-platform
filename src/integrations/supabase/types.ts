@@ -417,6 +417,47 @@ export type Database = {
           },
         ]
       }
+      chronicle_osce_sessions: {
+        Row: {
+          chronicle_id: string
+          created_at: string
+          decisions: Json | null
+          evaluation: Json | null
+          id: string
+          score: number | null
+          time_seconds: number | null
+          user_id: string
+        }
+        Insert: {
+          chronicle_id: string
+          created_at?: string
+          decisions?: Json | null
+          evaluation?: Json | null
+          id?: string
+          score?: number | null
+          time_seconds?: number | null
+          user_id: string
+        }
+        Update: {
+          chronicle_id?: string
+          created_at?: string
+          decisions?: Json | null
+          evaluation?: Json | null
+          id?: string
+          score?: number | null
+          time_seconds?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chronicle_osce_sessions_chronicle_id_fkey"
+            columns: ["chronicle_id"]
+            isOneToOne: false
+            referencedRelation: "medical_chronicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_members: {
         Row: {
           class_id: string
@@ -1463,6 +1504,45 @@ export type Database = {
           settings_json?: Json | null
           type?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      medical_chronicles: {
+        Row: {
+          content: string
+          created_at: string
+          difficulty: string
+          id: string
+          osce_payload: Json | null
+          specialty: string
+          structured_data: Json | null
+          subtopic: string | null
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          difficulty?: string
+          id?: string
+          osce_payload?: Json | null
+          specialty: string
+          structured_data?: Json | null
+          subtopic?: string | null
+          topic: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          difficulty?: string
+          id?: string
+          osce_payload?: Json | null
+          specialty?: string
+          structured_data?: Json | null
+          subtopic?: string | null
+          topic?: string
+          user_id?: string
         }
         Relationships: []
       }

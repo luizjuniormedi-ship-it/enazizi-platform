@@ -2,8 +2,9 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { createPortal } from "react-dom";
-import { Send, Bot, User, Loader2, Plus, History, Trash2, BookOpen, Maximize2, Minimize2, Heart, HeartOff, Lightbulb, AlertTriangle, ChevronDown, Zap, MoreVertical, HelpCircle } from "lucide-react";
+import { Send, Bot, User, Loader2, Plus, History, Trash2, BookOpen, Maximize2, Minimize2, Heart, HeartOff, Lightbulb, AlertTriangle, ChevronDown, Zap, MoreVertical, HelpCircle, Swords } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import ChronicleOSCE from "@/components/chronicles/ChronicleOSCE";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import ChronicleProgressBar from "@/components/chronicles/ChronicleProgressBar";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,10 @@ const MedicalChronicles = () => {
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [userScrolledUp, setUserScrolledUp] = useState(false);
+  // OSCE state
+  const [osceData, setOsceData] = useState<any>(null);
+  const [osceLoading, setOsceLoading] = useState(false);
+  const [chronicleDbId, setChronicleDbId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -296,8 +301,23 @@ const MedicalChronicles = () => {
 
       // Award XP for completing a chronicle
       if (user && assistantSoFar && !xpAwarded) {
-        await addXp(XP_REWARDS.question_answered * 3); // 3x XP for reading a full chronicle
+        await addXp(XP_REWARDS.question_answered * 3);
         setXpAwarded(true);
+
+        // Save chronicle to medical_chronicles for OSCE conversion
+        try {
+          const { data: chrRec } = await supabase.from("medical_chronicles").insert({
+            user_id: user.id,
+            specialty: specialty,
+            topic: currentTopic || specialty,
+            subtopic: subtopic || null,
+            difficulty,
+            content: assistantSoFar,
+          }).select("id").single();
+          if (chrRec) setChronicleDbId(chrRec.id);
+        } catch (e) {
+          console.error("Failed to save chronicle:", e);
+        }
       }
 
       // Save to DB
@@ -366,6 +386,40 @@ const MedicalChronicles = () => {
     );
   };
 
+  const handleGenerateOSCE = async () => {
+    const chronicleContent = messages.filter(m => m.role === "assistant").map(m => m.content).join("\n\n");
+    if (!chronicleContent || chronicleContent.length < 200) {
+      toast({ title: "Crônica muito curta", description: "Aguarde a geração completa da crônica.", variant: "destructive" });
+      return;
+    }
+    setOsceLoading(true);
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-chronicle-osce`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          chronicle_content: chronicleContent,
+          specialty,
+          topic: currentTopic,
+          difficulty,
+        }),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || `Erro ${resp.status}`);
+      }
+      const data = await resp.json();
+      setOsceData(data);
+    } catch (e: any) {
+      toast({ title: "Erro ao gerar OSCE", description: e.message || "Tente novamente.", variant: "destructive" });
+    } finally {
+      setOsceLoading(false);
+    }
+  };
+
   const QUICK_ACTIONS = [
     { label: "🔥 Nível Extremo", prompt: "Agora evolua para nível extremo: adicione complicações graves (choque, arritmia, insuficiência respiratória). Crie uma nova crônica com armadilhas múltiplas e decisão sob pressão máxima." },
     { label: "❓ Mais Questões", prompt: "Gere mais 3 questões de prova sobre o tema desta crônica, estilo USP/ENARE, com gabarito comentado." },
@@ -373,6 +427,21 @@ const MedicalChronicles = () => {
     { label: "⚖️ Diferenciais", prompt: "Faça uma discussão completa dos diagnósticos diferenciais deste caso, com tabela comparativa detalhada." },
     { label: "📖 Nova Crônica", prompt: "Crie uma nova crônica médica completa sobre um tema diferente da mesma especialidade, mantendo o nível de dificuldade." },
   ];
+
+  // If OSCE is active, show OSCE component
+  if (osceData) {
+    const osceContent = (
+      <div className={`flex flex-col animate-fade-in min-w-0 ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-[calc(100vh-7rem)] sm:h-[calc(100vh-4rem)] overflow-y-auto"}`}>
+        <ChronicleOSCE
+          osceData={osceData}
+          chronicleId={chronicleDbId}
+          onBack={() => setOsceData(null)}
+        />
+      </div>
+    );
+    if (isFullscreen) return createPortal(osceContent, document.body);
+    return osceContent;
+  }
 
   const content = (
     <div className={`flex flex-col animate-fade-in min-w-0 ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-[calc(100vh-7rem)] sm:h-[calc(100vh-4rem)]"}`}>
@@ -613,7 +682,7 @@ const MedicalChronicles = () => {
                 Ações rápidas
                 <ChevronDown className={`h-3 w-3 transition-transform ${showQuickActions ? "rotate-180" : ""}`} />
               </button>
-              <div className={`flex flex-wrap gap-1.5 overflow-x-auto ${showQuickActions ? "" : "hidden sm:flex"}`}>
+               <div className={`flex flex-wrap gap-1.5 overflow-x-auto ${showQuickActions ? "" : "hidden sm:flex"}`}>
                 {QUICK_ACTIONS.map((action) => (
                   <Button
                     key={action.label}
@@ -626,6 +695,17 @@ const MedicalChronicles = () => {
                     {action.label}
                   </Button>
                 ))}
+                {/* OSCE Button */}
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0 gap-1"
+                  onClick={handleGenerateOSCE}
+                  disabled={isLoading || osceLoading}
+                >
+                  {osceLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Swords className="h-3 w-3" />}
+                  Transformar em Simulação
+                </Button>
               </div>
             </div>
           )}

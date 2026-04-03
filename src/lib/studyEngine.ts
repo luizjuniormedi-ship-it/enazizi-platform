@@ -4,8 +4,8 @@ import { adjustNewTopicsByLock, type ContentLockStatus } from "@/hooks/useConten
 import { retrievability as fsrsRetrievability, State as FsrsState } from "./fsrs";
 import type { StudyTaskType, StudyObjective } from "./studyContext";
 
-export type RecommendationType = "review" | "practice" | "clinical" | "new" | "error_review" | "simulado";
-export type TargetModule = "tutor" | "questoes" | "flashcards" | "plantao" | "anamnese" | "simulado" | "cronograma" | "banco-erros";
+export type RecommendationType = "review" | "practice" | "clinical" | "new" | "error_review" | "simulado" | "chronicle";
+export type TargetModule = "tutor" | "questoes" | "flashcards" | "plantao" | "anamnese" | "simulado" | "cronograma" | "banco-erros" | "cronicas";
 
 export interface StudyRecommendation {
   id: string;
@@ -100,7 +100,7 @@ function applyWeights(recs: StudyRecommendation[], weights: PlanWeights, maxTota
   const slotNew = weights.maxNewTopics;
 
   const buckets: Record<string, number> = {
-    review: 0, error_review: 0, practice: 0, clinical: 0, simulado: 0, new: 0,
+    review: 0, error_review: 0, practice: 0, clinical: 0, simulado: 0, new: 0, chronicle: 0,
   };
   const limits: Record<string, number> = {
     review: slotReview,
@@ -109,6 +109,7 @@ function applyWeights(recs: StudyRecommendation[], weights: PlanWeights, maxTota
     clinical: slotClinical,
     simulado: slotClinical,
     new: slotNew,
+    chronicle: 1,
   };
 
   const result: StudyRecommendation[] = [];
@@ -561,7 +562,39 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     });
   }
 
-  // ── 6. New topics (blocked if critical errors exist) ──────────
+  // ── 5b. Chronicle recommendation — complex/error topics ──────
+  const topErrorTopic = errors.length > 0 ? errors[0] : null;
+  const chroniclePriority = weights.phase === "competitivo" || weights.phase === "pronto" ? 60 : 45;
+  if (topErrorTopic && topErrorTopic.vezes_errado >= 3) {
+    addRec({
+      id: "chronicle-error",
+      type: "chronicle",
+      topic: topErrorTopic.tema,
+      specialty: topErrorTopic.subtema || topErrorTopic.tema,
+      priority: chroniclePriority,
+      reason: `Crônica imersiva sobre "${topErrorTopic.tema}" para fixar conceito errado ${topErrorTopic.vezes_errado}x.`,
+      targetModule: "cronicas",
+      targetPath: "/dashboard/cronicas",
+      estimatedMinutes: 20,
+      objective: "reinforcement",
+      _groupKey: `chronicle:${topErrorTopic.tema}`,
+    });
+  } else if (overallAccuracy >= 60 && (weights.phase === "competitivo" || weights.phase === "pronto")) {
+    addRec({
+      id: "chronicle-practice",
+      type: "chronicle",
+      topic: "Caso Clínico Imersivo",
+      specialty: "Prática Clínica",
+      priority: chroniclePriority - 5,
+      reason: "Aprofunde com uma crônica médica e transforme em simulação prática.",
+      targetModule: "cronicas",
+      targetPath: "/dashboard/cronicas",
+      estimatedMinutes: 20,
+      objective: "practice",
+      _groupKey: "chronicle:general",
+    });
+  }
+
   // Aggressive: if any topic has vezes_errado >= 5 and accuracy < 50%, block new topics
   if (!hasCriticalBlock) {
     const temas = (temasData || []) as any[];

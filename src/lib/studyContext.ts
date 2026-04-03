@@ -36,7 +36,8 @@ export type StudyTaskType =
   | "practice"
   | "clinical"
   | "new"
-  | "simulado";
+  | "simulado"
+  | "chronicle";
 
 export type StudyObjective =
   | "review"
