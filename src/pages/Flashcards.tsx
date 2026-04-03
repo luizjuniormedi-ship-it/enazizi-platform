@@ -38,6 +38,7 @@ interface FsrsReviewState {
 
 const Flashcards = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const studyCtx = useStudyContext();
   const [allCards, setAllCards] = useState<FlashcardItem[]>([]);
   const [dueCards, setDueCards] = useState<FlashcardItem[]>([]);

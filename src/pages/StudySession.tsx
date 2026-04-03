@@ -84,6 +84,7 @@ const SUGGESTED_TOPICS = [
 
 const StudySession = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
