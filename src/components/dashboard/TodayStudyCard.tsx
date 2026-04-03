@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Play, Sparkles, Clock, CheckCircle2, List } from "lucide-react";
 import { useStudyEngine, type StudyRecommendation } from "@/hooks/useStudyEngine";
 import { buildStudyPath } from "@/lib/studyRouter";
+import { getHumanReadableReason } from "@/lib/humanizedReasons";
 
 const TYPE_LABELS: Record<string, string> = {
   review: "Revisão",
