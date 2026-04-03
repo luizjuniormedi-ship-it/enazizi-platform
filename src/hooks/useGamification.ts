@@ -8,7 +8,7 @@ export interface Achievement {
   title: string;
   description: string;
   icon: string;
-  category: "study" | "streak" | "social" | "milestone";
+  category: "study" | "streak" | "social" | "milestone" | "evolution";
   condition: (stats: GamificationStats) => boolean;
 }
 
@@ -26,6 +26,9 @@ export interface GamificationStats {
   totalReviews: number;
   totalMissions: number;
   approvalScore: number;
+  errorsCorrected: number;
+  topicsImproved: number;
+  specialtiesMastered: number;
 }
 
 export const LEVEL_NAMES: Record<number, string> = {
@@ -93,6 +96,16 @@ export const ACHIEVEMENTS: Achievement[] = [
   { key: "approval_50", title: "Meio Caminho", description: "Approval Score acima de 50", icon: "📈", category: "milestone", condition: (s) => s.approvalScore >= 50 },
   { key: "approval_70", title: "Zona de Aprovação", description: "Approval Score acima de 70", icon: "🎓", category: "milestone", condition: (s) => s.approvalScore >= 70 },
   { key: "approval_90", title: "Quase Lá", description: "Approval Score acima de 90", icon: "🏅", category: "milestone", condition: (s) => s.approvalScore >= 90 },
+  // Evolution - Learning-based achievements
+  { key: "error_corrected_5", title: "Corretor de Falhas", description: "Corrigiu 5 erros recorrentes", icon: "🔧", category: "evolution", condition: (s) => s.errorsCorrected >= 5 },
+  { key: "error_corrected_20", title: "Depurador Clínico", description: "Corrigiu 20 erros recorrentes", icon: "🛠️", category: "evolution", condition: (s) => s.errorsCorrected >= 20 },
+  { key: "error_corrected_50", title: "Zero Defeitos", description: "Corrigiu 50 erros recorrentes", icon: "✅", category: "evolution", condition: (s) => s.errorsCorrected >= 50 },
+  { key: "topics_improved_3", title: "Evoluindo", description: "Melhorou em 3 temas diferentes", icon: "📈", category: "evolution", condition: (s) => s.topicsImproved >= 3 },
+  { key: "topics_improved_10", title: "Crescimento Constante", description: "Melhorou em 10 temas diferentes", icon: "🌱", category: "evolution", condition: (s) => s.topicsImproved >= 10 },
+  { key: "topics_improved_25", title: "Transformação Total", description: "Melhorou em 25 temas diferentes", icon: "🦋", category: "evolution", condition: (s) => s.topicsImproved >= 25 },
+  { key: "specialty_mastered_1", title: "Especialista", description: "Dominou uma especialidade (>80%)", icon: "🎓", category: "evolution", condition: (s) => s.specialtiesMastered >= 1 },
+  { key: "specialty_mastered_3", title: "Polivalente", description: "Dominou 3 especialidades", icon: "🏆", category: "evolution", condition: (s) => s.specialtiesMastered >= 3 },
+  { key: "specialty_mastered_5", title: "Domínio Amplo", description: "Dominou 5 especialidades", icon: "👑", category: "evolution", condition: (s) => s.specialtiesMastered >= 5 },
 ];
 
 const XP_PER_LEVEL_BASE = 100;
@@ -125,7 +138,27 @@ export const XP_REWARDS = {
   mission_completed: 100,
   review_on_time: 15,
   approval_improvement: 25,
+  // Smart XP - learning-based
+  error_corrected: 20,
+  topic_improved: 30,
+  specialty_level_up: 50,
+  reinforcement_success: 15,
 };
+
+/** Calculate smart XP multiplier based on learning context */
+export function getSmartXpMultiplier(context: {
+  isErrorCorrection?: boolean;
+  isTopicImproved?: boolean;
+  isRepetition?: boolean;
+  consecutiveCorrect?: number;
+}): number {
+  let multiplier = 1.0;
+  if (context.isErrorCorrection) multiplier += 0.5;
+  if (context.isTopicImproved) multiplier += 0.3;
+  if (context.isRepetition) multiplier *= 0.6;
+  if (context.consecutiveCorrect && context.consecutiveCorrect >= 3) multiplier += 0.2;
+  return Math.round(multiplier * 10) / 10;
+}
 
 interface GamificationData {
   xp: number;
@@ -243,9 +276,10 @@ export function useGamification() {
       xp: newXp, level, currentStreak: newStreak, longestStreak,
       weeklyXp: newWeeklyXp, totalQuestions: 0, totalSimulados: 0, totalFlashcards: 0,
       totalPlantao: 0, totalAnamnese: 0, totalReviews: 0, totalMissions: 0, approvalScore: 0,
+      errorsCorrected: 0, topicsImproved: 0, specialtiesMastered: 0,
     };
 
-    const [qRes, simRes, fcRes, plRes, anRes, revRes, apRes] = await Promise.all([
+    const [qRes, simRes, fcRes, plRes, anRes, revRes, apRes, errRes, domRes] = await Promise.all([
       supabase.from("practice_attempts").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       supabase.from("exam_sessions").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "finished"),
       supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", user.id),
@@ -253,6 +287,8 @@ export function useGamification() {
       supabase.from("anamnesis_results").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       supabase.from("revisoes").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "concluida"),
       supabase.from("approval_scores").select("score").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1),
+      supabase.from("error_bank").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("dominado", true),
+      supabase.from("medical_domain_map").select("domain_score").eq("user_id", user.id),
     ]);
     stats.totalQuestions = qRes.count || 0;
     stats.totalSimulados = simRes.count || 0;
@@ -261,6 +297,11 @@ export function useGamification() {
     stats.totalAnamnese = anRes.count || 0;
     stats.totalReviews = revRes.count || 0;
     stats.approvalScore = (apRes.data && apRes.data[0]) ? Number((apRes.data[0] as any).score) : 0;
+    stats.errorsCorrected = errRes.count || 0;
+    stats.specialtiesMastered = (domRes.data || []).filter((d: any) => d.domain_score >= 80).length;
+    // topicsImproved: count topics with accuracy >= 70 and at least 5 questions
+    const { count: improvedCount } = await supabase.from("user_topic_profiles").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("accuracy", 70).gte("total_questions", 5);
+    stats.topicsImproved = improvedCount || 0;
 
     for (const ach of ACHIEVEMENTS) {
       if (!unlockedKeys.has(ach.key) && ach.condition(stats)) {

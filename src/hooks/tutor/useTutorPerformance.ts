@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { mapTopicToSpecialty } from "@/lib/mapTopicToSpecialty";
-import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
+import { useGamification, XP_REWARDS, getSmartXpMultiplier } from "@/hooks/useGamification";
+import { showEvolutionFeedback } from "@/lib/evolutionFeedback";
 import { useToast } from "@/hooks/use-toast";
 import type { StudyPerformance } from "@/components/tutor/TutorConstants";
 
@@ -120,9 +121,28 @@ export function useTutorPerformance(userId: string | undefined) {
         } catch (e) { console.error("Error updating domain map:", e); }
       }
     }
-    const xpGained = sessionQuestions > 0
+
+    // Smart XP calculation
+    const sessionAccuracy = sessionQuestions > 0 ? (sessionCorrect / sessionQuestions) * 100 : 0;
+    const previousAccuracy = performance.taxa_acerto;
+    const isImproved = sessionAccuracy > previousAccuracy && previousAccuracy > 0;
+    const isRepetition = sessionQuestions > 0 && sessionAccuracy > 90 && previousAccuracy > 85;
+
+    const multiplier = getSmartXpMultiplier({
+      isTopicImproved: isImproved,
+      isRepetition,
+      consecutiveCorrect: sessionCorrect,
+    });
+
+    const baseXp = sessionQuestions > 0
       ? (sessionCorrect * XP_REWARDS.question_correct) + ((sessionQuestions - sessionCorrect) * XP_REWARDS.question_answered)
       : 0;
+    const xpGained = Math.round(baseXp * multiplier);
+
+    // Evolution feedback
+    if (isImproved && sessionQuestions >= 3) {
+      showEvolutionFeedback("topic_improved", currentTopic);
+    }
     if (xpGained > 0) await addXp(xpGained);
     await saveEnaziziStepCb(1, null);
     await completeSessionCb();
