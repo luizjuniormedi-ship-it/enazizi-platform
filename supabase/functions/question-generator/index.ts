@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
 import { isValidQuestion, hasMinimumContext, validateQuestionContext, logGenerationRejection } from "../_shared/question-filters.ts";
+import { validateQuestionBatch } from "../_shared/ai-validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -460,6 +461,16 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
                   return true;
                 });
                 console.log(`[question-generator] Context filter: ${contextBefore} -> ${parsed.questions.length} questions`);
+              }
+
+              // Global AI validation layer
+              {
+                const valCtx = generationContext ? { specialty: generationContext.specialty, topic: generationContext.topic } : {};
+                const { valid: validQs, rejected } = validateQuestionBatch(parsed.questions, valCtx);
+                if (rejected.length > 0) {
+                  console.log(`[question-generator] AI validation rejected ${rejected.length} questions: ${rejected.map(r => r.reason).join(", ")}`);
+                }
+                parsed.questions = validQs;
               }
               // Fix consecutive repeated correct_index by swapping options
               for (let i = 1; i < parsed.questions.length; i++) {

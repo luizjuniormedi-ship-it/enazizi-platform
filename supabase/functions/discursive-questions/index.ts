@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
+import { validateAIOutput } from "../_shared/ai-validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -89,6 +90,13 @@ REGRA: Gere SEMPRE entre 2 e 4 sub-perguntas separadas, cada uma focada em um as
         if (!jsonMatch) throw new Error("Erro ao processar questão gerada");
 
         const questionData = JSON.parse(jsonMatch[0]);
+
+        // Validate AI output
+        const validation = validateAIOutput(questionData, { specialty }, "discursiva");
+        if (!validation.valid) {
+          console.warn(`[discursive-questions] Rejected: ${validation.reason} | ${specialty}`);
+          // Still proceed — the content passed structural parse, just log the issue
+        }
 
         // Normalize: support both old "question" (string) and new "questions" (array) formats
         const questions: string[] = Array.isArray(questionData.questions)

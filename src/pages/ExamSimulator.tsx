@@ -6,6 +6,7 @@ import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
 import { isMedicalQuestion } from "@/lib/medicalValidation";
+import { filterValidQuestions } from "@/lib/aiOutputValidation";
 import { FileText, Clock, Play, CheckCircle2, Loader2, ArrowRight, Award, AlertTriangle, BarChart3, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -186,7 +187,9 @@ const ExamSimulator = () => {
                 .filter((q) => q.options.length >= 2)
                 .filter(isMedicalQuestion);
 
-              examQuestions = [...examQuestions, ...extra];
+              // Apply global AI validation
+              const validatedExtra = filterValidQuestions(extra, { specialty: examConfig.areas[0] });
+              examQuestions = [...examQuestions, ...validatedExtra];
             }
           } catch {
             // ignore parse errors

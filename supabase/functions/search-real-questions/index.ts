@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch } from "../_shared/ai-fetch.ts";
+import { validateAIOutput, logValidationRejection } from "../_shared/ai-validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -417,6 +418,13 @@ function isValidQuestion(q: any): { valid: boolean; reason: string } {
 
   // English check
   if (ENGLISH_PATTERN.test(stmt)) return { valid: false, reason: "english_content" };
+
+  // Global AI validation layer
+  const aiVal = validateAIOutput({ statement: stmt, options: q.options, correct_index: q.correct_index, topic: q.topic }, {}, "question");
+  if (!aiVal.valid) {
+    logValidationRejection("question", aiVal.reason || "unknown", { specialty: q.topic }, stmt);
+    return { valid: false, reason: aiVal.reason || "ai_validation_failed" };
+  }
 
   return { valid: true, reason: "" };
 }
