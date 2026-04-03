@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+const EXAM_LABELS: Record<string, string> = {
+  enare: "ENARE", revalida: "Revalida", usp: "USP", unicamp: "UNICAMP",
+  unifesp: "UNIFESP", "sus-sp": "SUS-SP", "sus-rj": "SUS-RJ", amrigs: "AMRIGS",
+  "ses-df": "SES-DF", "psu-mg": "PSU-MG", hcpa: "HCPA",
+  "santa-casa-sp": "Santa Casa SP", einstein: "Einstein",
+  "sirio-libanes": "Sírio-Libanês", outra: "Outra",
+};
 
 interface GreetingProps {
   streak: number;
@@ -11,6 +20,7 @@ interface GreetingProps {
   questionsAnswered: number;
   accuracy: number;
   displayName: string | null;
+  targetExams?: string[];
 }
 
 type Mood = "champion" | "good" | "meh" | "slacking" | "danger";
@@ -126,6 +136,15 @@ const MotivationalGreeting = (props: GreetingProps) => {
           <p className="text-sm sm:text-base font-medium text-foreground mt-1 leading-relaxed">
             {phrase}
           </p>
+          {props.targetExams && props.targetExams.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {props.targetExams.map(e => (
+                <Badge key={e} variant="outline" className="text-[10px] px-1.5 py-0">
+                  {EXAM_LABELS[e] || e}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
         <Sparkles className="h-4 w-4 text-muted-foreground/40 flex-shrink-0 mt-1 hidden sm:block" />
       </div>
