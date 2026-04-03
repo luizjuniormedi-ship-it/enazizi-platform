@@ -266,6 +266,11 @@ const MentorThemePlans = () => {
     );
   }
 
+  // If viewing report, show full report view
+  if (reportPlan) {
+    return <MentorshipReport plan={reportPlan} onBack={() => { setReportPlan(null); loadPlans(); }} />;
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -322,7 +327,7 @@ const MentorThemePlans = () => {
                   </div>
                   <div className="flex gap-1">
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewProgress(plan)}>
-                      <Eye className="h-4 w-4" />
+                      <BarChart3 className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deletePlan(plan.id)}>
                       <Trash2 className="h-4 w-4" />
@@ -446,65 +451,6 @@ const MentorThemePlans = () => {
               Criar e Publicar
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Progress detail dialog */}
-      <Dialog open={!!detailPlan} onOpenChange={() => setDetailPlan(null)}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{detailPlan?.name} — Acompanhamento</DialogTitle>
-          </DialogHeader>
-          {progressLoading ? (
-            <div className="flex justify-center p-8">
-              <Loader2 className="h-6 w-6 text-primary animate-spin" />
-            </div>
-          ) : progressData.length === 0 ? (
-            <div className="text-center p-6 text-muted-foreground">
-              <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-40" />
-              <p className="text-sm">Nenhum progresso registrado ainda.</p>
-              <p className="text-xs">Os alunos verão os temas sugeridos no dashboard e o Study Engine priorizará automaticamente.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {/* Group by student */}
-              {[...new Set(progressData.map(d => d.user_id))].map(uid => {
-                const studentProgress = progressData.filter(d => d.user_id === uid);
-                const studentName = studentProgress[0]?.student_name || "Aluno";
-                const totalQ = studentProgress.reduce((s, p) => s + (p.questions_answered || 0), 0);
-                const totalC = studentProgress.reduce((s, p) => s + (p.correct_answers || 0), 0);
-                const accuracy = totalQ > 0 ? Math.round((totalC / totalQ) * 100) : 0;
-
-                return (
-                  <Card key={uid}>
-                    <CardContent className="p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{studentName}</span>
-                        <Badge variant="outline" className="text-[10px]">
-                          {totalQ > 0 ? `${accuracy}% • ${totalQ} questões` : "Sem atividade"}
-                        </Badge>
-                      </div>
-                      {studentProgress.map(p => (
-                        <div key={p.id} className="flex items-center gap-2 text-xs">
-                          {p.questions_answered > 0 ? (
-                            <CheckCircle className="h-3 w-3 text-green-500 shrink-0" />
-                          ) : (
-                            <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
-                          )}
-                          <span className="flex-1">{p.mentor_theme_plan_topics?.topic || "Tema"}</span>
-                          {p.questions_answered > 0 && (
-                            <span className="text-muted-foreground">
-                              {p.correct_answers}/{p.questions_answered}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
         </DialogContent>
       </Dialog>
     </div>
