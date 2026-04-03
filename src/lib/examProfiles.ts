@@ -1,0 +1,328 @@
+/**
+ * Perfis de bancas médicas brasileiras.
+ * Cada perfil ajusta o comportamento do Study Engine, Tutor IA e geração de conteúdo.
+ */
+
+export interface ExamProfile {
+  key: string;
+  label: string;
+  /** Nível de dificuldade geral: 1 (fácil) a 5 (muito difícil) */
+  difficulty: number;
+  /** Foco: 0 = 100% teórico, 1 = 100% prático */
+  practicalFocus: number;
+  /** Ênfase em OSCE / prova prática */
+  osceEmphasis: boolean;
+  /** Peso por especialidade (soma ~100). Especialidades não listadas = peso padrão */
+  specialtyWeights: Record<string, number>;
+  /** Estilo de cobrança injetado nos prompts de IA */
+  style: string;
+  /** Ajuste de pesos do Study Engine */
+  engineModifiers: {
+    reviewWeightMod: number;   // +/- sobre o peso base
+    questionsWeightMod: number;
+    practicalWeightMod: number;
+    theoryWeightMod: number;
+  };
+  /** Instruções extras para o Tutor IA */
+  tutorGuidance: string;
+}
+
+export const EXAM_PROFILES: Record<string, ExamProfile> = {
+  enare: {
+    key: "enare",
+    label: "ENARE",
+    difficulty: 4,
+    practicalFocus: 0.3,
+    osceEmphasis: false,
+    specialtyWeights: {
+      "Clínica Médica": 25,
+      "Cirurgia": 20,
+      "Pediatria": 15,
+      "Ginecologia e Obstetrícia": 15,
+      "Medicina Preventiva": 15,
+      "Medicina de Emergência": 10,
+    },
+    style: "Questões longas com caso clínico detalhado, 5 alternativas, foco em raciocínio clínico e conduta. Pegadinhas sutis baseadas em detalhes do caso.",
+    engineModifiers: { reviewWeightMod: 0, questionsWeightMod: 0.05, practicalWeightMod: 0, theoryWeightMod: -0.05 },
+    tutorGuidance: "Explique com profundidade clínica, sempre incluindo diagnósticos diferenciais e critérios diagnósticos. Nível de residência médica.",
+  },
+  revalida: {
+    key: "revalida",
+    label: "Revalida (INEP)",
+    difficulty: 3,
+    practicalFocus: 0.5,
+    osceEmphasis: true,
+    specialtyWeights: {
+      "Clínica Médica": 25,
+      "Cirurgia": 20,
+      "Pediatria": 15,
+      "Ginecologia e Obstetrícia": 15,
+      "Medicina Preventiva": 15,
+      "Medicina de Emergência": 10,
+    },
+    style: "Duas etapas: teórica (MCQ com caso clínico) e prática (OSCE com estações). Foco em protocolos do SUS e Atenção Primária.",
+    engineModifiers: { reviewWeightMod: -0.05, questionsWeightMod: 0, practicalWeightMod: 0.10, theoryWeightMod: -0.05 },
+    tutorGuidance: "Sempre contextualizar com protocolos do SUS e Ministério da Saúde. Incluir manejo em UBS quando aplicável. Preparar para estações OSCE.",
+  },
+  usp: {
+    key: "usp",
+    label: "USP",
+    difficulty: 5,
+    practicalFocus: 0.35,
+    osceEmphasis: true,
+    specialtyWeights: {
+      "Clínica Médica": 30,
+      "Cirurgia": 25,
+      "Pediatria": 15,
+      "Ginecologia e Obstetrícia": 15,
+      "Medicina de Emergência": 10,
+      "Medicina Preventiva": 5,
+    },
+    style: "Questões de alta complexidade com casos clínicos elaborados. Pegadinhas baseadas em exceções clínicas e detalhes fisiopatológicos. Valoriza raciocínio sobre memorização.",
+    engineModifiers: { reviewWeightMod: -0.05, questionsWeightMod: 0.10, practicalWeightMod: 0.05, theoryWeightMod: -0.10 },
+    tutorGuidance: "Aprofundar fisiopatologia e mecanismos. A USP cobra exceções e situações atípicas. Incluir discussão de evidências científicas recentes.",
+  },
+  unicamp: {
+    key: "unicamp",
+    label: "UNICAMP",
+    difficulty: 5,
+    practicalFocus: 0.4,
+    osceEmphasis: true,
+    specialtyWeights: {
+      "Clínica Médica": 25,
+      "Cirurgia": 20,
+      "Pediatria": 20,
+      "Ginecologia e Obstetrícia": 15,
+      "Medicina de Emergência": 10,
+      "Medicina Preventiva": 10,
+    },
+    style: "Questões discursivas e de múltipla escolha. Casos clínicos complexos com múltiplas comorbidades. Valoriza abordagem integral do paciente.",
+    engineModifiers: { reviewWeightMod: 0, questionsWeightMod: 0.05, practicalWeightMod: 0.05, theoryWeightMod: -0.10 },
+    tutorGuidance: "A UNICAMP valoriza a abordagem integral. Incluir aspectos biopsicossociais e manejo multidisciplinar quando relevante.",
+  },
+  unifesp: {
+    key: "unifesp",
+    label: "UNIFESP",
+    difficulty: 4,
+    practicalFocus: 0.35,
+    osceEmphasis: true,
+    specialtyWeights: {
+      "Clínica Médica": 25,
+      "Cirurgia": 25,
+      "Pediatria": 15,
+      "Ginecologia e Obstetrícia": 15,
+      "Medicina de Emergência": 10,
+      "Medicina Preventiva": 10,
+    },
+    style: "Questões objetivas com caso clínico. Boa distribuição entre grandes áreas. Foco em condutas baseadas em evidências.",
+    engineModifiers: { reviewWeightMod: 0, questionsWeightMod: 0.05, practicalWeightMod: 0.05, theoryWeightMod: -0.10 },
+    tutorGuidance: "Foco em medicina baseada em evidências. A UNIFESP cobra condutas atualizadas e protocolos internacionais.",
+  },
+  "sus-sp": {
+    key: "sus-sp",
+    label: "SUS-SP",
+    difficulty: 3,
+    practicalFocus: 0.25,
+    osceEmphasis: false,
+    specialtyWeights: {
+      "Clínica Médica": 30,
+      "Cirurgia": 15,
+      "Pediatria": 15,
+      "Ginecologia e Obstetrícia": 15,
+      "Medicina Preventiva": 15,
+      "Medicina de Emergência": 10,
+    },
+    style: "Questões objetivas com casos curtos. Foco em Atenção Primária e protocolos do SUS. Cobrança de saúde coletiva e vigilância epidemiológica.",
+    engineModifiers: { reviewWeightMod: 0.05, questionsWeightMod: 0, practicalWeightMod: -0.05, theoryWeightMod: 0 },
+    tutorGuidance: "Sempre contextualizar com protocolos do SUS-SP. Incluir manejo na Atenção Primária e referências do Ministério da Saúde.",
+  },
+  "sus-rj": {
+    key: "sus-rj",
+    label: "SUS-RJ",
+    difficulty: 3,
+    practicalFocus: 0.25,
+    osceEmphasis: false,
+    specialtyWeights: {
+      "Clínica Médica": 30,
+      "Cirurgia": 15,
+      "Pediatria": 15,
+      "Ginecologia e Obstetrícia": 15,
+      "Medicina Preventiva": 15,
+      "Medicina de Emergência": 10,
+    },
+    style: "Questões objetivas focadas em protocolos do SUS. Casos clínicos curtos a moderados.",
+    engineModifiers: { reviewWeightMod: 0.05, questionsWeightMod: 0, practicalWeightMod: -0.05, theoryWeightMod: 0 },
+    tutorGuidance: "Contextualizar com protocolos do SUS. Foco em Atenção Primária e manejo ambulatorial.",
+  },
+  amrigs: {
+    key: "amrigs",
+    label: "AMRIGS",
+    difficulty: 3,
+    practicalFocus: 0.3,
+    osceEmphasis: false,
+    specialtyWeights: {
+      "Clínica Médica": 25,
+      "Cirurgia": 20,
+      "Pediatria": 15,
+      "Ginecologia e Obstetrícia": 15,
+      "Medicina Preventiva": 15,
+      "Medicina de Emergência": 10,
+    },
+    style: "Questões de múltipla escolha com casos clínicos. Padrão consolidado e previsível. Boa distribuição entre especialidades.",
+    engineModifiers: { reviewWeightMod: 0, questionsWeightMod: 0, practicalWeightMod: 0, theoryWeightMod: 0 },
+    tutorGuidance: "Explicações objetivas e diretas. A AMRIGS cobra conteúdo clássico com boa distribuição.",
+  },
+  "ses-df": {
+    key: "ses-df",
+    label: "SES-DF",
+    difficulty: 4,
+    practicalFocus: 0.3,
+    osceEmphasis: false,
+    specialtyWeights: {
+      "Clínica Médica": 25,
+      "Cirurgia": 20,
+      "Pediatria": 15,
+      "Ginecologia e Obstetrícia": 15,
+      "Medicina Preventiva": 15,
+      "Medicina de Emergência": 10,
+    },
+    style: "Questões elaboradas com casos clínicos detalhados. Nível elevado de dificuldade. Cobra detalhes de conduta e diagnóstico.",
+    engineModifiers: { reviewWeightMod: 0, questionsWeightMod: 0.05, practicalWeightMod: 0, theoryWeightMod: -0.05 },
+    tutorGuidance: "Aprofundar condutas e critérios diagnósticos. A SES-DF cobra detalhes que diferenciam alternativas próximas.",
+  },
+  "psu-mg": {
+    key: "psu-mg",
+    label: "PSU-MG",
+    difficulty: 3,
+    practicalFocus: 0.25,
+    osceEmphasis: false,
+    specialtyWeights: {
+      "Clínica Médica": 25,
+      "Cirurgia": 20,
+      "Pediatria": 15,
+      "Ginecologia e Obstetrícia": 15,
+      "Medicina Preventiva": 15,
+      "Medicina de Emergência": 10,
+    },
+    style: "Questões de múltipla escolha com casos clínicos. Foco em protocolos e diretrizes nacionais.",
+    engineModifiers: { reviewWeightMod: 0, questionsWeightMod: 0, practicalWeightMod: 0, theoryWeightMod: 0 },
+    tutorGuidance: "Explicações claras com foco em diretrizes nacionais e protocolos atualizados.",
+  },
+  hcpa: {
+    key: "hcpa",
+    label: "HCPA",
+    difficulty: 4,
+    practicalFocus: 0.35,
+    osceEmphasis: true,
+    specialtyWeights: {
+      "Clínica Médica": 25,
+      "Cirurgia": 20,
+      "Pediatria": 20,
+      "Ginecologia e Obstetrícia": 15,
+      "Medicina de Emergência": 10,
+      "Medicina Preventiva": 10,
+    },
+    style: "Questões de alto nível com casos complexos. Prova prática com estações OSCE. Foco em raciocínio clínico.",
+    engineModifiers: { reviewWeightMod: -0.05, questionsWeightMod: 0.05, practicalWeightMod: 0.05, theoryWeightMod: -0.05 },
+    tutorGuidance: "Aprofundar raciocínio clínico e preparar para estações OSCE. O HCPA cobra excelência em abordagem clínica.",
+  },
+  "santa-casa-sp": {
+    key: "santa-casa-sp",
+    label: "Santa Casa SP",
+    difficulty: 4,
+    practicalFocus: 0.3,
+    osceEmphasis: false,
+    specialtyWeights: {
+      "Clínica Médica": 25,
+      "Cirurgia": 25,
+      "Pediatria": 15,
+      "Ginecologia e Obstetrícia": 15,
+      "Medicina de Emergência": 10,
+      "Medicina Preventiva": 10,
+    },
+    style: "Questões com casos clínicos detalhados. Forte ênfase em Cirurgia. Pegadinhas baseadas em detalhes anatômicos e técnicos.",
+    engineModifiers: { reviewWeightMod: 0, questionsWeightMod: 0.05, practicalWeightMod: 0, theoryWeightMod: -0.05 },
+    tutorGuidance: "A Santa Casa SP tem forte ênfase cirúrgica. Incluir detalhes técnicos e anatômicos nas explicações.",
+  },
+  einstein: {
+    key: "einstein",
+    label: "Einstein",
+    difficulty: 5,
+    practicalFocus: 0.4,
+    osceEmphasis: true,
+    specialtyWeights: {
+      "Clínica Médica": 30,
+      "Cirurgia": 20,
+      "Pediatria": 15,
+      "Ginecologia e Obstetrícia": 15,
+      "Medicina de Emergência": 10,
+      "Medicina Preventiva": 10,
+    },
+    style: "Questões de altíssima complexidade. Casos com múltiplas comorbidades e decisões em cenário complexo. Prova prática OSCE sofisticada.",
+    engineModifiers: { reviewWeightMod: -0.05, questionsWeightMod: 0.10, practicalWeightMod: 0.05, theoryWeightMod: -0.10 },
+    tutorGuidance: "O Einstein cobra excelência. Incluir evidências de alto nível, guidelines internacionais e abordagem de casos complexos com comorbidades.",
+  },
+  "sirio-libanes": {
+    key: "sirio-libanes",
+    label: "Sírio-Libanês",
+    difficulty: 5,
+    practicalFocus: 0.4,
+    osceEmphasis: true,
+    specialtyWeights: {
+      "Clínica Médica": 30,
+      "Cirurgia": 20,
+      "Pediatria": 15,
+      "Ginecologia e Obstetrícia": 15,
+      "Medicina de Emergência": 10,
+      "Medicina Preventiva": 10,
+    },
+    style: "Questões de altíssima complexidade, similar ao Einstein. Forte componente prático. Casos raros e atípicos.",
+    engineModifiers: { reviewWeightMod: -0.05, questionsWeightMod: 0.10, practicalWeightMod: 0.05, theoryWeightMod: -0.10 },
+    tutorGuidance: "O Sírio-Libanês cobra casos atípicos e raros. Incluir apresentações incomuns e diagnósticos diferenciais amplos.",
+  },
+  outra: {
+    key: "outra",
+    label: "Outra prova de residência",
+    difficulty: 3,
+    practicalFocus: 0.3,
+    osceEmphasis: false,
+    specialtyWeights: {
+      "Clínica Médica": 25,
+      "Cirurgia": 20,
+      "Pediatria": 15,
+      "Ginecologia e Obstetrícia": 15,
+      "Medicina Preventiva": 15,
+      "Medicina de Emergência": 10,
+    },
+    style: "Questões de múltipla escolha com caso clínico padrão residência médica.",
+    engineModifiers: { reviewWeightMod: 0, questionsWeightMod: 0, practicalWeightMod: 0, theoryWeightMod: 0 },
+    tutorGuidance: "Explicações completas no padrão de residência médica brasileira.",
+  },
+};
+
+/** Get profile for an exam key; falls back to 'outra' */
+export function getExamProfile(examKey: string | null | undefined): ExamProfile {
+  if (!examKey) return EXAM_PROFILES.outra;
+  return EXAM_PROFILES[examKey] || EXAM_PROFILES.outra;
+}
+
+/** Apply exam profile modifiers to base PlanWeights */
+export function applyExamModifiers(
+  baseWeights: { reviewWeight: number; theoryWeight: number; questionsWeight: number; practicalWeight: number; maxNewTopics: number; phase: string },
+  profile: ExamProfile,
+): typeof baseWeights {
+  const m = profile.engineModifiers;
+  const clamp = (v: number) => Math.max(0, Math.min(1, v));
+  return {
+    ...baseWeights,
+    reviewWeight: clamp(baseWeights.reviewWeight + m.reviewWeightMod),
+    theoryWeight: clamp(baseWeights.theoryWeight + m.theoryWeightMod),
+    questionsWeight: clamp(baseWeights.questionsWeight + m.questionsWeightMod),
+    practicalWeight: clamp(baseWeights.practicalWeight + m.practicalWeightMod),
+  };
+}
+
+/** Build banca style instruction for AI prompts */
+export function buildBancaPromptBlock(profile: ExamProfile): string {
+  return `\n\n## ESTILO DA BANCA: ${profile.label}\nDificuldade: ${profile.difficulty}/5\nEstilo: ${profile.style}\n${profile.tutorGuidance}\n`;
+}

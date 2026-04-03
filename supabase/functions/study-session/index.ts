@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import ENAZIZI_PROMPT from "../_shared/enazizi-prompt.ts";
 import { aiFetch, getModelForTier } from "../_shared/ai-fetch.ts";
+import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -419,9 +420,14 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, phase, topic, userContext, performanceData, session_memory, studyMode } = await req.json();
+    const { messages, phase, topic, userContext, performanceData, session_memory, studyMode, targetExam } = await req.json();
 
     let systemPrompt = getPhasePrompt(phase, topic, performanceData, studyMode);
+
+    // Inject banca-specific adaptation
+    const bancaProfile = getBancaProfile(targetExam);
+    systemPrompt += buildBancaBlock(bancaProfile);
+
     if (userContext) {
       systemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
     }

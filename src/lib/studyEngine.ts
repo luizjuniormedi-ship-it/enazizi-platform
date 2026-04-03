@@ -3,6 +3,7 @@ import { adjustPlanByApprovalScore, getAdaptiveMode, type PlanWeights, type Adap
 import { adjustNewTopicsByLock, type ContentLockStatus } from "@/hooks/useContentLock";
 import { retrievability as fsrsRetrievability, State as FsrsState } from "./fsrs";
 import type { StudyTaskType, StudyObjective } from "./studyContext";
+import { getExamProfile, applyExamModifiers, type ExamProfile } from "./examProfiles";
 
 export type RecommendationType = "review" | "practice" | "clinical" | "new" | "error_review" | "simulado" | "chronicle";
 export type TargetModule = "tutor" | "questoes" | "flashcards" | "plantao" | "anamnese" | "simulado" | "cronograma" | "banco-erros" | "cronicas";
@@ -248,7 +249,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     // Profile for exam_date
     safe(() => supabase
       .from("profiles")
-      .select("exam_date")
+      .select("exam_date, target_exam")
       .eq("user_id", userId)
       .single(), "profile"),
   ]);
@@ -293,7 +294,12 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   const clinicalSims = (clinicalSimData || []) as any[];
 
   const approvalScore = await computeApprovalScore(userId, practiceAttempts, exams, anamnesisResults, clinicalSims);
-  const weights = adjustPlanByApprovalScore(approvalScore);
+  const baseWeights = adjustPlanByApprovalScore(approvalScore);
+
+  // ── Apply exam profile modifiers ─────────────────────────────
+  const profile = profileData as any;
+  const examProfile = getExamProfile(profile?.target_exam);
+  const weights = applyExamModifiers(baseWeights, examProfile) as PlanWeights;
 
   // ── Content Lock — compute inline for engine use ─────────────
   const today = new Date().toISOString().split("T")[0];
@@ -489,7 +495,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
 
   // ── 4b. OSCE Practical Exam — smart triggers ─────────────────
   const practicalExams = (practicalExamData || []) as any[];
-  const profile = profileData as any;
+  // profile already loaded above as `profile`
   const examDate = profile?.exam_date ? new Date(profile.exam_date) : null;
   const daysUntilExam = examDate ? Math.ceil((examDate.getTime() - Date.now()) / 86400000) : null;
 
