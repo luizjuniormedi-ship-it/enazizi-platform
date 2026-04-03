@@ -66,7 +66,7 @@ const DashboardMetricsGrid = ({ stats, metrics }: Props) => {
               { to: "/dashboard/simulados", icon: Award, value: metrics.simuladosCompleted, label: "Simulados feitos" },
               { to: "/dashboard/banco-erros", icon: AlertTriangle, value: metrics.errorsCount, label: "Erros registrados", iconColor: metrics.errorsCount > 0 ? "text-red-500" : "text-green-500" },
               { to: "/dashboard/flashcards", icon: FlipVertical, value: stats.flashcards, label: "Flashcards" },
-              { to: "/dashboard/questoes", icon: PenTool, value: metrics.questionsCreated, label: "Questões criadas" },
+              { to: "/dashboard/simulados", icon: PenTool, value: metrics.questionsCreated, label: "Questões criadas" },
               { to: "/dashboard/plantao", icon: Activity, value: metrics.clinicalSimulations, label: "Simulações clínicas" },
               { to: "/dashboard/anamnese", icon: ClipboardList, value: metrics.anamnesisCompleted, label: "Anamneses" },
               { to: "/dashboard/planner", icon: CheckCircle2, value: `${stats.completedTasks}/${stats.totalTasks}`, label: "Tarefas concluídas" },
