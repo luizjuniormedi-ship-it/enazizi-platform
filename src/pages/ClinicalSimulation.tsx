@@ -109,6 +109,21 @@ const QUICK_ACTION_CATEGORIES = [
       { label: "IOT", prompt: "Preparo para intubação orotraqueal: kit de via aérea, drogas de sequência rápida, posicionamento." },
     ],
   },
+  {
+    label: "Tratamento",
+    icon: Pill,
+    color: "text-orange-500",
+    actions: [
+      { label: "Analgesia", prompt: "Prescrevo analgesia: dipirona 1g EV ou tramadol 100mg EV, conforme intensidade da dor. Avaliar escala de dor." },
+      { label: "Antibiótico", prompt: "Inicio antibioticoterapia empírica. Qual o esquema mais adequado para a suspeita clínica? Prescrevo conforme protocolo institucional." },
+      { label: "Anticoagulação", prompt: "Avalio indicação de anticoagulação. Prescrevo heparina conforme peso e indicação clínica." },
+      { label: "Corticoide", prompt: "Prescrevo corticoterapia: hidrocortisona/metilprednisolona EV conforme indicação." },
+      { label: "Droga Vasoativa", prompt: "Inicio noradrenalina 0,1 mcg/kg/min em BIC, titular conforme PAM alvo ≥ 65 mmHg." },
+      { label: "Sedação", prompt: "Prescrevo sedação: midazolam + fentanil em BIC para paciente intubado, ou diazepam EV para agitação." },
+      { label: "Cristaloide", prompt: "Prescrevo expansão volêmica com SF 0,9% 500-1000ml EV rápido, reavaliar resposta hemodinâmica." },
+      { label: "Alta/Internação", prompt: "Defino destino do paciente: alta hospitalar com orientações, ou internação em enfermaria/UTI. Justifico a decisão." },
+    ],
+  },
 ];
 
 const DIFFICULTY_TIMER: Record<string, number> = {
@@ -844,6 +859,23 @@ const ClinicalSimulation = () => {
         setVitalsSnapshots((prev) => [...prev, parseVitalsToSnapshot(vitals as any, newTimeElapsed)]);
       }
 
+      // Handle treatment outcome feedback
+      if (res.treatment_outcome) {
+        const outcomeMap: Record<string, { title: string; desc: string; variant: "default" | "destructive" }> = {
+          improved: { title: "✅ Paciente melhorando", desc: "O tratamento prescrito está surtindo efeito positivo.", variant: "default" },
+          partial: { title: "⚠️ Melhora parcial", desc: "O tratamento teve efeito parcial. Considere ajustar dose ou adicionar outra intervenção.", variant: "default" },
+          worsened: { title: "🚨 Paciente piorou após tratamento", desc: "A medicação prescrita pode estar inadequada ou contraindicada!", variant: "destructive" },
+          no_effect: { title: "⏳ Sem efeito observado", desc: "O tratamento não apresentou resultado significativo ainda.", variant: "default" },
+        };
+        const outcome = outcomeMap[res.treatment_outcome];
+        if (outcome) {
+          toast({ title: outcome.title, description: outcome.desc, variant: outcome.variant });
+          if (res.treatment_outcome === "improved") playSound("positive");
+          if (res.treatment_outcome === "worsened") playSound("worsened");
+        }
+        addToTimeline(`💊 Tratamento: ${res.treatment_outcome === "improved" ? "eficaz" : res.treatment_outcome === "worsened" ? "inadequado" : "parcial"}`, "💊");
+      }
+
       // Handle critical action needed
       if (res.critical_action_needed) {
         toast({
@@ -1124,6 +1156,7 @@ const ClinicalSimulation = () => {
       lab_result: FileSearch,
       imaging: FileSearch,
       prescription: Syringe,
+      treatment: Pill,
       diagnosis_attempt: Target,
       preceptor_hint: HelpCircle,
       specialist_opinion: Users,
