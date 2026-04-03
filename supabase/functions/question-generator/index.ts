@@ -14,7 +14,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { messages, userContext, stream: clientStream, difficulty, maxRetries, timeoutMs, outputFormat, avoidStatements, generationContext } = body;
+    const { messages, userContext, stream: clientStream, difficulty, maxRetries, timeoutMs, outputFormat, avoidStatements, generationContext, targetExam } = body;
 
     // Default to streaming unless client explicitly sets stream=false
     const useStream = clientStream !== false;
