@@ -76,22 +76,34 @@ export default function PlannerDayView({ revisoes, temas, temasComputados, engin
         })}
 
         {/* Study Engine recommendations */}
-        {engineRecs.slice(0, 3).map(rec => (
-          <div
-            key={rec.id}
-            className="flex items-center gap-2 p-2.5 rounded-lg bg-card border border-border/60 hover:border-primary/30 transition-colors cursor-pointer group"
-            onClick={() => navigate(rec.targetPath)}
-          >
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium truncate">{rec.topic}</p>
-              <p className="text-[10px] text-muted-foreground">💡 {getHumanReadableReason(rec)}</p>
+        {engineRecs.slice(0, 3).map(rec => {
+          const isMentor = rec.reason?.includes("📋");
+          return (
+            <div
+              key={rec.id}
+              className={`flex items-center gap-2 p-2.5 rounded-lg bg-card border transition-colors cursor-pointer group ${
+                isMentor ? "border-primary/30 bg-primary/5" : "border-border/60 hover:border-primary/30"
+              }`}
+              onClick={() => navigate(rec.targetPath)}
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1">
+                  <p className="text-xs font-medium truncate">{rec.topic}</p>
+                  {isMentor && (
+                    <Badge variant="outline" className="text-[8px] px-1 py-0 border-primary/40 shrink-0">
+                      Mentoria
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-[10px] text-muted-foreground">💡 {getHumanReadableReason(rec)}</p>
+              </div>
+              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 shrink-0">
+                <Clock className="h-3 w-3" />
+                {rec.estimatedMinutes}min
+              </span>
             </div>
-            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 shrink-0">
-              <Clock className="h-3 w-3" />
-              {rec.estimatedMinutes}min
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </CardContent>
     </Card>
   );

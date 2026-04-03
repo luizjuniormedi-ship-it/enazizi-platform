@@ -2,6 +2,7 @@ import { Loader2, BookOpen, RotateCcw, CalendarDays, HelpCircle, XCircle, Target
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import type { TemaEstudado, Revisao, TemaComputado } from "@/pages/CronogramaInteligente";
+import PlannerMentorshipBlock from "@/components/planner/PlannerMentorshipBlock";
 
 interface Props {
   temas: TemaEstudado[];
@@ -49,6 +50,8 @@ const CronogramaVisaoGeral = ({
 
   return (
     <div className="space-y-4">
+      {/* Mentorship block */}
+      <PlannerMentorshipBlock />
       {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
         {stats.map((s) => (
