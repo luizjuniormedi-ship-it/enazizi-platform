@@ -27,7 +27,7 @@ const TYPE_COLORS: Record<string, string> = {
   simulado: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
 };
 
-function TaskRow({ task, onStart }: { task: StudyRecommendation; onStart: () => void }) {
+function TaskRow({ task, onStart, evolution }: { task: StudyRecommendation; onStart: () => void; evolution?: ReturnType<typeof getEvolutionForTopic> }) {
   return (
     <div
       className="flex items-center gap-3 p-2.5 rounded-xl bg-card border border-border/60 hover:border-primary/30 cursor-pointer transition-all group"
