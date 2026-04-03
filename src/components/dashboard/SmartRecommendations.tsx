@@ -57,7 +57,7 @@ export default function SmartRecommendations({ stats, metrics, hasCompletedDiagn
         icon: <AlertTriangle className="h-5 w-5 text-amber-500" />,
         title: "Reforce com Questões",
         description: `Sua precisão está em ${metrics.accuracy}%. Pratique questões para melhorar.`,
-        path: "/dashboard/banco-questoes",
+        path: "/dashboard/simulados",
         priority: "alta",
         reason: `Precisão ${metrics.accuracy}% abaixo de 60%`,
       });

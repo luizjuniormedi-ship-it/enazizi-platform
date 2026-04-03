@@ -110,7 +110,7 @@ const DashboardMetricsGrid = ({ stats, metrics }: Props) => {
                 <div className="text-xs text-muted-foreground">Flashcards globais</div>
               </div>
             </Link>
-            <Link to="/dashboard/banco-questoes" className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary/80 transition-colors">
+            <Link to="/dashboard/simulados" className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary/80 transition-colors">
               <HelpCircle className="h-4 w-4 text-primary flex-shrink-0" />
               <div>
                 <div className="text-lg font-bold">{metrics.globalQuestions}</div>

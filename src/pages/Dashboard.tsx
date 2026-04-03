@@ -97,8 +97,11 @@ const queryClient = useQueryClient();
     if (!user?.id) return;
     const channel = supabase
       .channel('dashboard-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'practice_attempts', filter: `user_id=eq.${user.id}` }, () => queryClient.invalidateQueries({ queryKey: ["dashboard-data"] }))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'practice_attempts', filter: `user_id=eq.${user.id}` }, () => { queryClient.invalidateQueries({ queryKey: ["dashboard-data"] }); queryClient.invalidateQueries({ queryKey: ["study-engine"] }); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews', filter: `user_id=eq.${user.id}` }, () => queryClient.invalidateQueries({ queryKey: ["dashboard-data"] }))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_sessions', filter: `user_id=eq.${user.id}` }, () => { queryClient.invalidateQueries({ queryKey: ["dashboard-data"] }); queryClient.invalidateQueries({ queryKey: ["exam-readiness"] }); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'error_bank', filter: `user_id=eq.${user.id}` }, () => queryClient.invalidateQueries({ queryKey: ["dashboard-data"] }))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_gamification', filter: `user_id=eq.${user.id}` }, () => queryClient.invalidateQueries({ queryKey: ["dashboard-data"] }))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user?.id, queryClient]);
