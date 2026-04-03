@@ -231,7 +231,7 @@ const MentorThemePlans = () => {
     setProgressLoading(false);
   };
 
-  const subtopicOptions = currentTopic ? (SUBTOPICS_MAP as Record<string, string[]>)[currentTopic] || [] : [];
+  const subtopicOptions = currentTopic ? (SPECIALTY_SUBTOPICS as Record<string, string[]>)[currentTopic] || [] : [];
 
   if (loading) {
     return (
