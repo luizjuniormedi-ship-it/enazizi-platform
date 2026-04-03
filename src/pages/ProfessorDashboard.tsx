@@ -1367,6 +1367,10 @@ const ProfessorDashboard = () => {
         <TabsContent value="bi" className="mt-4">
           <ProfessorBIPanel callAPI={callAPI} />
         </TabsContent>
+
+        <TabsContent value="mentoria" className="mt-4">
+          <MentorThemePlans />
+        </TabsContent>
       </Tabs>
     </div>
   );
