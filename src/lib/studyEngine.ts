@@ -631,9 +631,39 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
         objective: "new_content",
       });
     }
+
+    // ── 6b. Curriculum gap filler — suggest unstudied curriculum topics ──
+    const { getCurriculumBySpecialty } = await import("@/constants/baseCurriculum");
+    const curriculumBySpec = getCurriculumBySpecialty();
+    const studiedTopicNames = new Set(temas.map((t: any) => (t.tema || "").toLowerCase()));
+    const curriculumGaps: { topic: string; specialty: string }[] = [];
+    for (const [spec, topics] of Object.entries(curriculumBySpec)) {
+      for (const topic of topics) {
+        if (!studiedTopicNames.has(topic.toLowerCase()) &&
+            ![...studiedTopicNames].some(st => st.includes(topic.toLowerCase().slice(0, 10)))) {
+          curriculumGaps.push({ topic, specialty: spec });
+        }
+      }
+    }
+    // Add up to 2 curriculum gap recs (lower priority than errors/reviews)
+    for (let i = 0; i < Math.min(curriculumGaps.length, 2); i++) {
+      const gap = curriculumGaps[i];
+      addRec({
+        id: id("curriculum", i),
+        type: "new",
+        topic: gap.topic,
+        specialty: gap.specialty,
+        priority: cap(40 - i * 5),
+        reason: `📚 Tema do cronograma base: "${gap.topic}" (${gap.specialty}). Garanta cobertura completa.`,
+        targetModule: "tutor",
+        targetPath: "/dashboard/chatgpt",
+        estimatedMinutes: 25,
+        objective: "new_content",
+        _groupKey: `curriculum:${gap.topic}`,
+      });
+    }
   }
 
-  // ── 7. FSRS due flashcard reviews ────────────────────────────
   const flashcardDue = fsrsDue.filter((c: any) => c.card_type === "flashcard");
   if (flashcardDue.length > 0) {
     flashcardDue.sort((a: any, b: any) => a.stability - b.stability);
