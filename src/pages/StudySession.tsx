@@ -95,6 +95,8 @@ const StudySession = () => {
   const [performance, setPerformance] = useState<PerformanceData>(INITIAL_PERFORMANCE);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [professorContext, setProfessorContext] = useState<{ topics: string; materialUrl?: string; assignmentId?: string } | null>(null);
+  const [reinforcementCycles, setReinforcementCycles] = useState<Record<string, number>>({});
+  const [preReinforcementPhase, setPreReinforcementPhase] = useState<Phase>("questions");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Read professor query params
