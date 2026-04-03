@@ -50,7 +50,7 @@ REGRA DE REFORÇO POR ERRO:
 - Ao retomar: use ângulo diferente (se errou diagnóstico → foque em conduta; se errou conduta → foque em complicações)`;
 }
 
-function getPhasePrompt(phase: string, topic: string, performanceData: unknown): string {
+function getPhasePrompt(phase: string, topic: string, performanceData: unknown, studyMode?: string): string {
   const base = ENAZIZI_PROMPT;
   const levelPrompt = getLevelPrompt(performanceData);
   const weakTopicsPrompt = getWeakTopicsPrompt(performanceData);
