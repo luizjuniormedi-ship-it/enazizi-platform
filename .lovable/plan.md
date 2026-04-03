@@ -1,46 +1,73 @@
 
 
-# Melhorias na Mentoria — Temas livres, destinatários visíveis e alunos avulsos
+# Validação End-to-End do ENAZIZI
 
-## Resumo
-Refatorar o formulário de criação de mentoria para: (1) permitir digitar temas e subtópicos livremente, (2) mostrar lista dos destinatários antes de publicar, (3) permitir adicionar alunos avulsos independente do público-alvo escolhido.
+## Objetivo
+Executar uma jornada completa simulando um usuário real, desde o primeiro acesso até uso contínuo, e gerar um relatório de prontidão.
 
-## Alterações em `src/components/professor/MentorThemePlans.tsx`
+## Metodologia
 
-### 1. Temas — Input livre (substituir Select)
-- Remover imports: `CycleFilter`, `getFilteredSpecialties`, `ALL_SPECIALTIES`, `SPECIALTY_SUBTOPICS`
-- Remover state `cycleFilter` e `subtopicOptions`
-- Trocar o `<Select>` de tema por `<Input placeholder="Digite o tema (ex: Cardiologia)">`
-- Trocar o `<Select>` de subtópico por `<Input placeholder="Subtópico (opcional)">`
-- Manter botão "Adicionar" e badges removíveis
+Usar as ferramentas de browser para navegar pela aplicação em viewport mobile (430x661) e desktop, testando cada fluxo. Complementar com leitura de código, console logs e network requests para identificar falhas silenciosas.
 
-### 2. Destinatários — Múltiplos alunos avulsos
-- Trocar `selectedStudentId` (string) por `selectedStudents` (array de `{user_id, display_name, faculdade, periodo}`)
-- Ao clicar num resultado de busca, adicionar à lista (toggle — clicar de novo remove)
-- Mostrar badges dos alunos selecionados com ✕ para remover
-- Adicionar filtros de **faculdade** (`<Select>` com `FACULDADES`) e **período** (`<Select>` 1-12) na busca de alunos
-- Aplicar filtros na query Supabase (`.eq("faculdade", ...)`, `.eq("periodo", ...)`)
+## Etapas de Validação
 
-### 3. Seção "Quem receberá" (preview de destinatários)
-- Adicionar botão `👥 Ver destinatários` que carrega e exibe a lista de alunos que receberão a mentoria
-- Para turma: buscar `class_members` e cruzar com `profiles`
-- Para instituição: buscar `institution_members` e cruzar com `profiles`
-- Para alunos avulsos: mostrar diretamente os `selectedStudents`
-- Exibir lista compacta com nome, faculdade e período
-- Mostrar contador: "X aluno(s) receberão esta mentoria"
+### Fase 1 — Primeiro Acesso e Registro
+- Navegar para `/` (landing page)
+- Verificar CTA principal, layout mobile, textos em pt-BR
+- Navegar para `/register` e `/login`
+- Verificar formulários, validações e fluxo
 
-### 4. Lógica de criação — suportar múltiplos alunos
-- No `handleCreate`, inserir um `mentor_theme_plan_targets` para cada aluno avulso selecionado (target_type: "student", target_id: user_id)
-- Coletar todos os `studentIds` dos alunos avulsos para gerar `mentor_theme_plan_progress`
-- Permitir combinar turma/instituição + alunos avulsos extras
+### Fase 2 — Onboarding
+- Verificar se o fluxo OnboardingV2 aparece para novo usuário
+- Testar as 3-4 etapas (prova alvo, data, horas)
+- Verificar tela "Analisando seu perfil" e "Seu plano está pronto"
 
-### 5. Reset e cleanup
-- Atualizar `resetForm` para limpar `selectedStudents` e filtros
-- Remover imports e states não utilizados
+### Fase 3 — Dashboard
+- Verificar HeroStudyCard com CTA "COMEÇAR ESTUDO"
+- Validar layout mobile (thumb-friendly)
+- Checar cards de mentoria, progresso semanal, alertas
+- Verificar ausência de excesso de informação
 
-## Arquivos afetados
+### Fase 4 — Modo Missão e Tutor IA
+- Inspecionar código do fluxo de missão (MissionMode)
+- Verificar sequência pedagógica (Revisão → Conteúdo → Questões → Reforço)
+- Inspecionar StudySession e estilos de aprendizado do Tutor
+- Verificar prompts e adaptação por banca via código
 
-| Arquivo | Ação |
-|---------|------|
-| `src/components/professor/MentorThemePlans.tsx` | Refatorar formulário completo |
+### Fase 5 — Continuidade e Persistência
+- Verificar ResumeSessionBanner no código
+- Inspecionar lógica de `module_sessions` e `sendBeacon`
+
+### Fase 6 — Mentoria do Professor
+- Navegar para `/professor` (se autenticado)
+- Verificar MentorThemePlans com inputs livres
+- Verificar MentorshipReport e filtros
+
+### Fase 7 — Módulos Específicos
+- Verificar rotas de Simulados, Flashcards, OSCE, Crônicas
+- Inspecionar integração com Study Engine via código
+- Verificar fallbacks e error boundaries
+
+### Fase 8 — Performance e Erros
+- Coletar console logs e network requests
+- Verificar chamadas duplicadas
+- Inspecionar error boundaries (SafeCard, ErrorBoundary)
+- Verificar fallbacks de IA (safeQuery, aiFetch retry)
+
+### Fase 9 — Mobile e UX
+- Testar em viewport 430x661
+- Verificar BottomTabBar, scroll, touch targets
+- Validar que CTA principal é visível sem scroll
+
+## Entregável
+
+Relatório completo em PDF (`/mnt/documents/ENAZIZI_Validacao_E2E.pdf`) contendo:
+- Checklist de funcionalidades (OK / Problema / Não testável)
+- Screenshots de telas principais
+- Problemas encontrados com severidade
+- Melhorias sugeridas
+- Nível de prontidão geral
+
+## Limitação
+Fluxos que requerem autenticação real (cadastro, Tutor IA com chamada de edge function, mentoria ativa) serão validados por inspeção de código + logs quando não for possível simular no browser sem conta logada.
 
