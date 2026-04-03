@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import ENAZIZI_PROMPT from "../_shared/enazizi-prompt.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
 import { searchPubMed, formatPubMedForPrompt, extractSearchTopic } from "../_shared/pubmed-search.ts";
+import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,9 +13,16 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, userContext, session_memory } = await req.json();
+    const { messages, userContext, session_memory, targetExam } = await req.json();
 
     let systemPrompt = ENAZIZI_PROMPT;
+
+    // Inject banca adaptation
+    if (targetExam) {
+      const bancaProfile = getBancaProfile(targetExam);
+      systemPrompt += buildBancaBlock(bancaProfile);
+    }
+
     if (userContext) {
       systemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
     }

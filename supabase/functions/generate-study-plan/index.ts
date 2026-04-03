@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
+import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,7 +44,20 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { examDate, hoursPerDay, daysPerWeek, editalText, currentPlanId } = await req.json();
+    const { examDate, hoursPerDay, daysPerWeek, editalText, currentPlanId, targetExam } = await req.json();
+
+    // Load target_exam from profile if not passed directly
+    let bancaKey = targetExam || null;
+    if (!bancaKey) {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("target_exam")
+        .eq("user_id", userId)
+        .single();
+      bancaKey = prof?.target_exam || null;
+    }
+    const bancaProfile = getBancaProfile(bancaKey);
+    const bancaBlock = buildBancaBlock(bancaProfile);
 
     if (!examDate || !hoursPerDay || !daysPerWeek) {
       return new Response(JSON.stringify({ error: "Missing required fields: examDate, hoursPerDay, daysPerWeek" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -68,6 +82,7 @@ Dados do aluno:
 - Horas disponíveis por dia: ${hoursPerDay}
 - Dias de estudo por semana: ${daysPerWeek}
 ${editalPreview ? `\n📋 CONTEÚDO PROGRAMÁTICO / CRONOGRAMA ENVIADO PELO ALUNO:\n---\n${editalPreview}\n---` : ""}
+${bancaBlock}
 
 🎯 INSTRUÇÕES CRÍTICAS:
 

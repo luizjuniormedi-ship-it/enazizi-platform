@@ -50,6 +50,36 @@ const PROFILES: Record<string, BancaProfile> = {
     style: "Casos curtos. Foco em Atenção Primária e protocolos do SUS. Saúde coletiva e vigilância epidemiológica.",
     tutorGuidance: "Contextualizar com protocolos do SUS-SP. Manejo na Atenção Primária.",
   },
+  "sus-rj": {
+    key: "sus-rj", label: "SUS-RJ", difficulty: 3, osceEmphasis: false,
+    specialtyWeights: { "Clínica Médica": 30, "Cirurgia": 15, "Pediatria": 15, "Ginecologia e Obstetrícia": 15, "Medicina Preventiva": 15, "Medicina de Emergência": 10 },
+    style: "Questões objetivas focadas em protocolos do SUS. Casos clínicos curtos a moderados.",
+    tutorGuidance: "Contextualizar com protocolos do SUS. Foco em Atenção Primária e manejo ambulatorial.",
+  },
+  amrigs: {
+    key: "amrigs", label: "AMRIGS", difficulty: 3, osceEmphasis: false,
+    specialtyWeights: { "Clínica Médica": 25, "Cirurgia": 20, "Pediatria": 15, "Ginecologia e Obstetrícia": 15, "Medicina Preventiva": 15, "Medicina de Emergência": 10 },
+    style: "Questões de múltipla escolha com casos clínicos. Padrão consolidado e previsível. Boa distribuição entre especialidades.",
+    tutorGuidance: "Explicações objetivas e diretas. A AMRIGS cobra conteúdo clássico com boa distribuição.",
+  },
+  "ses-df": {
+    key: "ses-df", label: "SES-DF", difficulty: 4, osceEmphasis: false,
+    specialtyWeights: { "Clínica Médica": 25, "Cirurgia": 20, "Pediatria": 15, "Ginecologia e Obstetrícia": 15, "Medicina Preventiva": 15, "Medicina de Emergência": 10 },
+    style: "Questões elaboradas com casos clínicos detalhados. Nível elevado. Cobra detalhes de conduta e diagnóstico.",
+    tutorGuidance: "Aprofundar condutas e critérios diagnósticos. A SES-DF cobra detalhes que diferenciam alternativas próximas.",
+  },
+  "psu-mg": {
+    key: "psu-mg", label: "PSU-MG", difficulty: 3, osceEmphasis: false,
+    specialtyWeights: { "Clínica Médica": 25, "Cirurgia": 20, "Pediatria": 15, "Ginecologia e Obstetrícia": 15, "Medicina Preventiva": 15, "Medicina de Emergência": 10 },
+    style: "Questões de múltipla escolha com casos clínicos. Foco em protocolos e diretrizes nacionais.",
+    tutorGuidance: "Explicações claras com foco em diretrizes nacionais e protocolos atualizados.",
+  },
+  hcpa: {
+    key: "hcpa", label: "HCPA", difficulty: 4, osceEmphasis: true,
+    specialtyWeights: { "Clínica Médica": 25, "Cirurgia": 20, "Pediatria": 20, "Ginecologia e Obstetrícia": 15, "Medicina de Emergência": 10, "Medicina Preventiva": 10 },
+    style: "Questões de alto nível com casos complexos. Prova prática com estações OSCE. Foco em raciocínio clínico.",
+    tutorGuidance: "Aprofundar raciocínio clínico e preparar para estações OSCE. O HCPA cobra excelência em abordagem clínica.",
+  },
   einstein: {
     key: "einstein", label: "Einstein", difficulty: 5, osceEmphasis: true,
     specialtyWeights: { "Clínica Médica": 30, "Cirurgia": 20, "Pediatria": 15, "Ginecologia e Obstetrícia": 15, "Medicina de Emergência": 10, "Medicina Preventiva": 10 },
@@ -84,10 +114,18 @@ export function getBancaProfile(key: string | null | undefined): BancaProfile {
 
 /** Build prompt block to inject into AI system prompts */
 export function buildBancaBlock(profile: BancaProfile): string {
+  const weights = Object.entries(profile.specialtyWeights)
+    .sort(([, a], [, b]) => b - a)
+    .map(([s, w]) => `  - ${s}: ${w}%`)
+    .join("\n");
+
   return `
 ## ADAPTAÇÃO À BANCA: ${profile.label}
 - Nível de dificuldade: ${profile.difficulty}/5
+- Prova prática (OSCE): ${profile.osceEmphasis ? "SIM — incluir preparação prática" : "Não"}
 - Estilo: ${profile.style}
-- Orientação: ${profile.tutorGuidance}
+- Orientação pedagógica: ${profile.tutorGuidance}
+- Distribuição por especialidade:
+${weights}
 `;
 }
