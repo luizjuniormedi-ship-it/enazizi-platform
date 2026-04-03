@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
