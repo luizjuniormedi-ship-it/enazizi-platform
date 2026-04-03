@@ -237,6 +237,19 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       .from("mentor_theme_plan_targets")
       .select("plan_id")
       , "mentor_targets"),
+    // Practical exam results for OSCE integration
+    safe(() => supabase
+      .from("practical_exam_results")
+      .select("final_score, specialty, scores_json, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10), "practical_exams"),
+    // Profile for exam_date
+    safe(() => supabase
+      .from("profiles")
+      .select("exam_date")
+      .eq("user_id", userId)
+      .single(), "profile"),
   ]);
 
   // ── Load mentor topics if any active mentorships ───────────────
