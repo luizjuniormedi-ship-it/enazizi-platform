@@ -420,9 +420,14 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, phase, topic, userContext, performanceData, session_memory, studyMode } = await req.json();
+    const { messages, phase, topic, userContext, performanceData, session_memory, studyMode, targetExam } = await req.json();
 
     let systemPrompt = getPhasePrompt(phase, topic, performanceData, studyMode);
+
+    // Inject banca-specific adaptation
+    const bancaProfile = getBancaProfile(targetExam);
+    systemPrompt += buildBancaBlock(bancaProfile);
+
     if (userContext) {
       systemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
     }
