@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
-import { isValidQuestion, hasMinimumContext } from "../_shared/question-filters.ts";
+import { isValidQuestion, hasMinimumContext, validateQuestionContext, logGenerationRejection } from "../_shared/question-filters.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,7 +12,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { messages, userContext, stream: clientStream, difficulty, maxRetries, timeoutMs, outputFormat, avoidStatements } = body;
+    const { messages, userContext, stream: clientStream, difficulty, maxRetries, timeoutMs, outputFormat, avoidStatements, generationContext } = body;
 
     // Default to streaming unless client explicitly sets stream=false
     const useStream = clientStream !== false;
@@ -255,6 +255,32 @@ Regras:
       systemPrompt += `\n\n--- MATERIAL/CONTEXTO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
     }
 
+    // Inject generation context enforcement
+    if (generationContext && typeof generationContext === "object") {
+      const gc = generationContext;
+      const scopeParts = [gc.specialty, gc.topic, gc.subtopic].filter(Boolean).join(" > ");
+      systemPrompt += `\n\n=== ESCOPO OBRIGATÓRIO DE GERAÇÃO ===
+ESPECIALIDADE: ${gc.specialty || "Não especificada"}
+TEMA: ${gc.topic || "Não especificado"}
+${gc.subtopic ? `SUBTÓPICO: ${gc.subtopic}` : ""}
+OBJETIVO PEDAGÓGICO: ${gc.objective || "practice"}
+NÍVEL DO ALUNO: ${gc.studentLevel || "intermediario"}
+
+REGRAS DE ESCOPO (INVIOLÁVEIS):
+- Gere APENAS questões sobre: ${scopeParts}
+- NÃO amplie para outros temas ou especialidades
+- NÃO gere questões genéricas fora do escopo
+- Se houver subtópico, PRIORIZE-o sobre o tema geral
+- TUDO em PORTUGUÊS BRASILEIRO (pt-BR) — ZERO inglês
+- Ajuste a abordagem conforme o objetivo:
+  * review → revisão direta dos conceitos-chave
+  * correction → foco em erros comuns e armadilhas
+  * reinforcement → reforço conceitual profundo
+  * new_content → introdução progressiva
+  * practice → estilo prova de residência
+=== FIM DO ESCOPO ===`;
+    }
+
     // Anti-repetition: inject previously generated question summaries
     if (Array.isArray(avoidStatements) && avoidStatements.length > 0) {
       const summaries = avoidStatements.slice(0, 200).map((s: string, i: number) => `${i + 1}. ${String(s).slice(0, 120)}`).join("\n");
@@ -417,6 +443,24 @@ Regras:
               parsed.questions = parsed.questions.filter((q: any) =>
                 isValidQuestion(q) && hasMinimumContext(q.statement || "")
               );
+
+              // Context-aware filtering when generationContext is provided
+              if (generationContext && typeof generationContext === "object") {
+                const contextBefore = parsed.questions.length;
+                parsed.questions = parsed.questions.filter((q: any) => {
+                  const result = validateQuestionContext(q, generationContext);
+                  if (!result.valid) {
+                    logGenerationRejection(
+                      result.reason || "unknown",
+                      { specialty: generationContext.specialty, topic: generationContext.topic },
+                      q.statement || ""
+                    );
+                    return false;
+                  }
+                  return true;
+                });
+                console.log(`[question-generator] Context filter: ${contextBefore} -> ${parsed.questions.length} questions`);
+              }
               // Fix consecutive repeated correct_index by swapping options
               for (let i = 1; i < parsed.questions.length; i++) {
                 const prev = parsed.questions[i - 1];

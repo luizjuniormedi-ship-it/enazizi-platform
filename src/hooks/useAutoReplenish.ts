@@ -62,6 +62,14 @@ export function useAutoReplenish(activeTopic: string | null) {
             },
           ],
           saveToBank: true,
+          generationContext: {
+            specialty: topic,
+            topic: topic,
+            objective: "practice",
+            difficulty: "medium",
+            language: "pt-BR",
+            source: "auto-replenish",
+          },
         },
       });
 

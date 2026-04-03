@@ -190,6 +190,14 @@ const Diagnostic = () => {
       stream: false,
       maxRetries: 0,
       timeoutMs: 30000,
+      generationContext: {
+        specialty: area,
+        topic: area,
+        objective: "practice",
+        difficulty: difficulty.includes("avançado") ? "hard" : "medium",
+        language: "pt-BR",
+        source: "diagnostic",
+      },
       messages: [{ role: "user", content: `Gere EXATAMENTE ${QUESTIONS_PER_AREA} questões de múltipla escolha de ${area} para simulado diagnóstico de residência médica. Nível: ${difficulty}. Seed: ${seed}.
 
 CALIBRAÇÃO OBRIGATÓRIA REVALIDA/ENAMED:

@@ -155,6 +155,14 @@ const ExamSimulator = () => {
               stream: false,
               difficulty: examConfig.difficulty,
               messages: [{ role: "user", content: `Gere ${needed} questões EXCLUSIVAMENTE médicas para simulado de residência médica. Áreas: ${examConfig.areas.join(", ")}. Retorne JSON array puro sem markdown: [{"statement":"...", "options":["a","b","c","d","e"], "correct_index": 0, "topic":"Área", "explanation":"..."}]` }],
+              generationContext: {
+                specialty: examConfig.areas[0] || "Clínica Médica",
+                topic: examConfig.areas.join(", "),
+                objective: "practice",
+                difficulty: examConfig.difficulty === "dificil" ? "hard" : examConfig.difficulty === "facil" ? "easy" : "medium",
+                language: "pt-BR",
+                source: "exam-simulator",
+              },
             }),
           }
         );
