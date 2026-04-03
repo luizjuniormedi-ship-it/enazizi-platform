@@ -61,6 +61,16 @@ serve(async (req) => {
       });
     }
 
+    // Try cache first for OSCE structures
+    const cacheKey = buildCacheKey({ specialty, topic, difficulty, objective: "osce" });
+    const cached = await getCachedContent(cacheKey, "osce");
+    if (cached) {
+      console.log(`[generate-chronicle-osce] Cache HIT for ${cacheKey}`);
+      return new Response(JSON.stringify(cached), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
