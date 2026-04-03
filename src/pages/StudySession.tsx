@@ -50,6 +50,7 @@ const PHASE_META: Record<Phase, { label: string; icon: typeof BookOpen; shortLab
   discussion: { label: "🔬 Discussão", icon: MessageSquare, shortLabel: "Discussão" },
   discursive: { label: "🏥 Caso Discursivo", icon: Stethoscope, shortLabel: "Discursivo" },
   scoring: { label: "📈 Pontuação", icon: TrendingUp, shortLabel: "Score" },
+  reinforcement: { label: "💡 Reforço", icon: AlertTriangle, shortLabel: "Reforço" },
 };
 
 const FLOW_PHASES: Phase[] = ["performance", "lesson", "active-recall", "questions", "discussion", "discursive", "scoring"];
