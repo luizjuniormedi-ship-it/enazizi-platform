@@ -189,6 +189,9 @@ serve(async (req) => {
       });
     }
 
+    // Cache the result for future reuse (fire-and-forget)
+    setCachedContent(cacheKey, "osce", osceData, "google/gemini-2.5-flash", 30).catch(() => {});
+
     return new Response(JSON.stringify(osceData), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
