@@ -121,7 +121,7 @@ const Flashcards = () => {
     return result;
   }, [mode, dueCards, allCards, topicSearch, sprintConfig.cardCount]);
 
-  const handleGenerateFromBank = async () => {
+  const handleGenerateFromBank = async (autoStart = true) => {
     if (!user) return;
     const search = topicSearch.trim();
     if (!search) {
@@ -130,35 +130,32 @@ const Flashcards = () => {
     }
     setGeneratingFromBank(true);
     try {
-      // Get existing flashcard statements to deduplicate
       const { data: existing } = await supabase
         .from("flashcards")
         .select("question")
         .eq("user_id", user.id);
       const existingHashes = new Set((existing || []).map(f => f.question?.slice(0, 80).toLowerCase()));
 
-      // Search questions_bank
-      const { data: bankQ } = await supabase
-        .from("questions_bank")
-        .select("statement, explanation, options, correct_index, topic")
-        .or(`topic.ilike.%${search}%,statement.ilike.%${search}%`)
-        .eq("is_global", true)
-        .limit(30);
-
-      // Search real_exam_questions
-      const { data: realQ } = await supabase
-        .from("real_exam_questions")
-        .select("statement, explanation, options, correct_index, topic")
-        .or(`topic.ilike.%${search}%,statement.ilike.%${search}%`)
-        .eq("is_active", true)
-        .limit(30);
+      const limit = Math.min(generateQuantity + 15, 60);
+      const [{ data: bankQ }, { data: realQ }] = await Promise.all([
+        supabase
+          .from("questions_bank")
+          .select("statement, explanation, options, correct_index, topic")
+          .or(`topic.ilike.%${search}%,statement.ilike.%${search}%`)
+          .eq("is_global", true)
+          .limit(limit),
+        supabase
+          .from("real_exam_questions")
+          .select("statement, explanation, options, correct_index, topic")
+          .or(`topic.ilike.%${search}%,statement.ilike.%${search}%`)
+          .eq("is_active", true)
+          .limit(limit),
+      ]);
 
       const allQuestions = [...(bankQ || []), ...(realQ || [])];
-
-      // Convert & deduplicate
       const newCards: { user_id: string; question: string; answer: string; topic: string }[] = [];
       for (const q of allQuestions) {
-        if (newCards.length >= 20) break;
+        if (newCards.length >= generateQuantity) break;
         const hash = q.statement?.slice(0, 80).toLowerCase();
         if (!hash || existingHashes.has(hash)) continue;
         existingHashes.add(hash);
@@ -184,11 +181,18 @@ const Flashcards = () => {
         return;
       }
 
-      const { error } = await supabase.from("flashcards").insert(newCards);
+      const { error, data: inserted } = await supabase.from("flashcards").insert(newCards).select("id, question, answer, topic, is_global, user_id");
       if (error) throw error;
 
-      toast({ title: `${newCards.length} flashcards gerados!`, description: `Criados a partir do banco de questões para "${search}".` });
+      toast({ title: `${newCards.length} flashcards gerados!`, description: `Prontos para revisão de "${search}".` });
       await fetchData();
+
+      if (autoStart && inserted && inserted.length > 0) {
+        // Auto-start session with the newly generated cards
+        setMode("all");
+        setSessionStats({ correct: 0, wrong: 0, skipped: 0 });
+        setPhase("active");
+      }
     } catch (e: any) {
       toast({ title: "Erro ao gerar", description: e.message, variant: "destructive" });
     } finally {
