@@ -7,9 +7,9 @@ import { updateDomainMap } from "@/lib/updateDomainMap";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useFsrs, Rating } from "@/hooks/useFsrs";
 import {
-  FlipVertical, Loader2, Brain, GraduationCap, Filter,
+  FlipVertical, Loader2, Brain, GraduationCap,
   Download, Zap, Clock, Award, Maximize2, Minimize2,
-  MoreVertical, HelpCircle, ArrowLeft,
+  MoreVertical, HelpCircle, ArrowLeft, Search, DatabaseZap,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
@@ -19,6 +19,7 @@ import { useNavigate } from "react-router-dom";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -43,11 +44,8 @@ const Flashcards = () => {
   const [loading, setLoading] = useState(true);
   const [phase, setPhase] = useState<Phase>("setup");
   const [mode, setMode] = useState<"due" | "all" | "sprint">("due");
-  const [selectedTopics, setSelectedTopics] = useState<Set<string>>(() => {
-    if (studyCtx?.topic) return new Set([studyCtx.topic]);
-    return new Set();
-  });
-  const [showTopicFilter, setShowTopicFilter] = useState(false);
+  const [topicSearch, setTopicSearch] = useState(studyCtx?.topic || "");
+  const [generatingFromBank, setGeneratingFromBank] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -69,15 +67,15 @@ const Flashcards = () => {
   useEffect(() => {
     registerAutoSave(() => {
       if (allCards.length === 0) return {};
-      return { mode, selectedTopics: Array.from(selectedTopics), phase };
+      return { mode, topicSearch, phase };
     });
-  }, [registerAutoSave, mode, selectedTopics, allCards.length, phase]);
+  }, [registerAutoSave, mode, topicSearch, allCards.length, phase]);
 
   const handleRestoreSession = () => {
     if (!pendingSession) return;
     const data = pendingSession.session_data as any;
     if (data.mode) setMode(data.mode);
-    if (data.selectedTopics) setSelectedTopics(new Set(data.selectedTopics));
+    if (data.topicSearch) setTopicSearch(data.topicSearch);
     clearPending();
   };
 
@@ -112,26 +110,90 @@ const Flashcards = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const availableTopics = useMemo(() => {
-    const topics = new Set<string>();
-    allCards.forEach(c => { if (c.topic) topics.add(c.topic); });
-    return Array.from(topics).sort();
-  }, [allCards]);
-
-  const toggleTopic = (topic: string) => {
-    setSelectedTopics(prev => {
-      const next = new Set(prev);
-      if (next.has(topic)) next.delete(topic); else next.add(topic);
-      return next;
-    });
-  };
-
   const filteredCards = useMemo(() => {
     const base = mode === "due" ? dueCards : allCards;
-    let result = selectedTopics.size === 0 ? base : base.filter(c => c.topic && selectedTopics.has(c.topic));
+    const search = topicSearch.trim().toLowerCase();
+    let result = search
+      ? base.filter(c => c.topic?.toLowerCase().includes(search) || c.question?.toLowerCase().includes(search))
+      : base;
     if (mode === "sprint") result = result.slice(0, sprintConfig.cardCount);
     return result;
-  }, [mode, dueCards, allCards, selectedTopics, sprintConfig.cardCount]);
+  }, [mode, dueCards, allCards, topicSearch, sprintConfig.cardCount]);
+
+  const handleGenerateFromBank = async () => {
+    if (!user) return;
+    const search = topicSearch.trim();
+    if (!search) {
+      toast({ title: "Digite um tema", description: "Informe o tema para buscar questões no banco.", variant: "destructive" });
+      return;
+    }
+    setGeneratingFromBank(true);
+    try {
+      // Get existing flashcard statements to deduplicate
+      const { data: existing } = await supabase
+        .from("flashcards")
+        .select("question")
+        .eq("user_id", user.id);
+      const existingHashes = new Set((existing || []).map(f => f.question?.slice(0, 80).toLowerCase()));
+
+      // Search questions_bank
+      const { data: bankQ } = await supabase
+        .from("questions_bank")
+        .select("statement, explanation, options, correct_index, topic")
+        .or(`topic.ilike.%${search}%,statement.ilike.%${search}%`)
+        .eq("is_global", true)
+        .limit(30);
+
+      // Search real_exam_questions
+      const { data: realQ } = await supabase
+        .from("real_exam_questions")
+        .select("statement, explanation, options, correct_index, topic")
+        .or(`topic.ilike.%${search}%,statement.ilike.%${search}%`)
+        .eq("is_active", true)
+        .limit(30);
+
+      const allQuestions = [...(bankQ || []), ...(realQ || [])];
+
+      // Convert & deduplicate
+      const newCards: { user_id: string; question: string; answer: string; topic: string }[] = [];
+      for (const q of allQuestions) {
+        if (newCards.length >= 20) break;
+        const hash = q.statement?.slice(0, 80).toLowerCase();
+        if (!hash || existingHashes.has(hash)) continue;
+        existingHashes.add(hash);
+
+        const opts = Array.isArray(q.options) ? q.options as string[] : [];
+        const correctOpt = q.correct_index != null && opts[q.correct_index]
+          ? `✅ ${opts[q.correct_index]}`
+          : "";
+        const answer = [correctOpt, q.explanation ? `\n\n🧠 ${q.explanation}` : ""].join("").trim();
+        if (!answer) continue;
+
+        newCards.push({
+          user_id: user.id,
+          question: q.statement,
+          answer,
+          topic: q.topic || search,
+        });
+      }
+
+      if (newCards.length === 0) {
+        toast({ title: "Nenhuma questão encontrada", description: `Não encontramos questões novas para "${search}".` });
+        setGeneratingFromBank(false);
+        return;
+      }
+
+      const { error } = await supabase.from("flashcards").insert(newCards);
+      if (error) throw error;
+
+      toast({ title: `${newCards.length} flashcards gerados!`, description: `Criados a partir do banco de questões para "${search}".` });
+      await fetchData();
+    } catch (e: any) {
+      toast({ title: "Erro ao gerar", description: e.message, variant: "destructive" });
+    } finally {
+      setGeneratingFromBank(false);
+    }
+  };
 
   // Sprint timer
   useEffect(() => {
@@ -384,36 +446,42 @@ const Flashcards = () => {
         ))}
       </div>
 
-      {/* Topic filter */}
-      <div className="glass-card p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold flex items-center gap-2">
-            <Filter className="h-4 w-4" /> Filtrar por especialidade
-          </h3>
-          {selectedTopics.size > 0 && (
-            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setSelectedTopics(new Set())}>
-              Limpar filtros
+      {/* Topic search + generate from bank */}
+      <div className="glass-card p-4 space-y-3">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <Search className="h-4 w-4" /> Filtrar por tema
+        </h3>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Digite o tema (ex: Cardiologia, IAM, Pneumonia)"
+            value={topicSearch}
+            onChange={e => setTopicSearch(e.target.value)}
+            className="flex-1"
+          />
+          {topicSearch.trim() && (
+            <Button variant="ghost" size="sm" className="text-xs shrink-0" onClick={() => setTopicSearch("")}>
+              Limpar
             </Button>
           )}
         </div>
-        <div className="flex flex-wrap gap-2">
-          {availableTopics.map(topic => (
-            <Badge
-              key={topic}
-              variant={selectedTopics.has(topic) ? "default" : "outline"}
-              className="cursor-pointer hover:bg-primary/20 transition-colors"
-              onClick={() => toggleTopic(topic)}
-            >
-              {topic}
-              <span className="ml-1 text-xs opacity-70">
-                ({allCards.filter(c => c.topic === topic).length})
-              </span>
-            </Badge>
-          ))}
-          {availableTopics.length === 0 && (
-            <p className="text-xs text-muted-foreground">Nenhum tema disponível</p>
+        <Button
+          variant="outline"
+          className="w-full gap-2"
+          onClick={handleGenerateFromBank}
+          disabled={generatingFromBank || !topicSearch.trim()}
+        >
+          {generatingFromBank ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <DatabaseZap className="h-4 w-4" />
           )}
-        </div>
+          Gerar Flashcards do Banco de Questões
+        </Button>
+        {topicSearch.trim() && (
+          <p className="text-xs text-muted-foreground">
+            {filteredCards.length} card(s) encontrado(s) para "{topicSearch}"
+          </p>
+        )}
       </div>
 
       {/* Mode selection */}

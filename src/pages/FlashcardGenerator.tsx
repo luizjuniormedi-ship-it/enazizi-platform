@@ -5,8 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCallback, useState, useRef } from "react";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
+import { Input } from "@/components/ui/input";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
 
@@ -49,13 +48,12 @@ const FlashcardGenerator = () => {
   const { user } = useAuth();
   const { addXp } = useGamification();
   const studyCtx = useStudyContext();
-  const [specialty, setSpecialty] = useState<string>(studyCtx?.specialty || "");
-  const [cycleFilter, setCycleFilter] = useState<string | null>(null);
+  const [specialty, setSpecialty] = useState<string>(studyCtx?.specialty || studyCtx?.topic || "");
   const [quantity, setQuantity] = useState(10);
   const [showSetup, setShowSetup] = useState(true);
   const initialPromptRef = useRef<string>("");
 
-  const effectiveSpecialty = specialty && specialty !== "all" ? specialty : "";
+  const effectiveSpecialty = specialty.trim();
 
   const buildPrompt = () => {
     const specPart = effectiveSpecialty || "várias especialidades médicas (variando)";
@@ -122,24 +120,17 @@ const FlashcardGenerator = () => {
 
         <div className="flex-1 flex items-center justify-center">
           <div className="glass-card p-6 sm:p-8 max-w-lg w-full space-y-6">
-            {/* Specialty */}
+            {/* Tema */}
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-1.5">
                 <Target className="h-4 w-4 text-primary" />
-                Especialidade
+                Tema / Especialidade
               </label>
-              <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-2" />
-              <Select value={specialty} onValueChange={setSpecialty}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas (misto)" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  <SelectItem value="all">Todas (misto)</SelectItem>
-                  {getFilteredSpecialties(cycleFilter).map(s => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                placeholder="Ex: Cardiologia, IAM, Pneumonia (vazio = misto)"
+                value={specialty}
+                onChange={e => setSpecialty(e.target.value)}
+              />
             </div>
 
             {/* Quantity */}
