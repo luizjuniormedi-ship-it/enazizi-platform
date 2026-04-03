@@ -50,6 +50,8 @@ const CronogramaVisaoGeral = ({
 
   return (
     <div className="space-y-4">
+      {/* Mentorship block */}
+      <PlannerMentorshipBlock />
       {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
         {stats.map((s) => (
