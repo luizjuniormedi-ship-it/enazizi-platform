@@ -301,8 +301,23 @@ const MedicalChronicles = () => {
 
       // Award XP for completing a chronicle
       if (user && assistantSoFar && !xpAwarded) {
-        await addXp(XP_REWARDS.question_answered * 3); // 3x XP for reading a full chronicle
+        await addXp(XP_REWARDS.question_answered * 3);
         setXpAwarded(true);
+
+        // Save chronicle to medical_chronicles for OSCE conversion
+        try {
+          const { data: chrRec } = await supabase.from("medical_chronicles").insert({
+            user_id: user.id,
+            specialty: specialty,
+            topic: currentTopic || specialty,
+            subtopic: subtopic || null,
+            difficulty,
+            content: assistantSoFar,
+          }).select("id").single();
+          if (chrRec) setChronicleDbId(chrRec.id);
+        } catch (e) {
+          console.error("Failed to save chronicle:", e);
+        }
       }
 
       // Save to DB
