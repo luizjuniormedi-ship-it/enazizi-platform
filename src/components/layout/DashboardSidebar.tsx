@@ -44,7 +44,6 @@ const navGroups: NavGroup[] = [
     defaultOpen: false,
     items: [
       { to: "/dashboard/planner", icon: CalendarDays, label: "Plano Geral" },
-      { to: "/dashboard/banco-questoes", icon: Database, label: "Questões" },
       { to: "/dashboard/flashcards", icon: FlipVertical, label: "Flashcards" },
       { to: "/dashboard/simulados", icon: FileText, label: "Simulados" },
       { to: "/dashboard/resumos", icon: BookOpen, label: "Resumos" },
@@ -67,7 +66,6 @@ const navGroups: NavGroup[] = [
     title: "Mais Ferramentas",
     defaultOpen: false,
     items: [
-      { to: "/dashboard/questoes", icon: HelpCircle, label: "Gerador Questões" },
       { to: "/dashboard/gerar-flashcards", icon: FlipVertical, label: "Gerador Flashcards" },
       { to: "/dashboard/apostilas", icon: FileText, label: "Apostilas" },
       { to: "/dashboard/cronicas", icon: Scroll, label: "Crônicas Médicas" },
