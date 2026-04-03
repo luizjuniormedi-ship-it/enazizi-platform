@@ -143,6 +143,7 @@ const App = () => (
                 <Route path="sessao-estudo" element={<StudySession />} />
                 <Route path="image-quiz" element={<MedicalImageQuiz />} />
                 <Route path="rankings" element={<Rankings />} />
+                <Route path="prova-pratica" element={<PracticalExam />} />
               </Route>
               <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />
