@@ -239,6 +239,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     safe(() => supabase
       .from("mentor_theme_plan_targets")
       .select("plan_id")
+      .eq("target_id", userId)
       , "mentor_targets"),
     // Practical exam results for OSCE integration
     safe(() => supabase
