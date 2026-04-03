@@ -654,6 +654,17 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     });
   }
 
+  // ── Curriculum-based priority boost (strategic coverage) ────
+  const CURRICULUM_BOOST = 8;
+  for (const rec of recs) {
+    if (isInCurriculum(rec.topic, rec.specialty)) {
+      rec.priority = cap(rec.priority + CURRICULUM_BOOST);
+      if (!rec.reason.includes("📚")) {
+        rec.reason = `📚 ${rec.reason}`;
+      }
+    }
+  }
+
   // ── Mentor topic priority boost (dynamic by exam proximity) ────
   if (mentorTopics.length > 0) {
     // Dynamic boost: flat +10, +15 if ≤30 days, +20 if ≤14 days, +25 if ≤7 days
