@@ -462,6 +462,16 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
                 });
                 console.log(`[question-generator] Context filter: ${contextBefore} -> ${parsed.questions.length} questions`);
               }
+
+              // Global AI validation layer
+              {
+                const valCtx = generationContext ? { specialty: generationContext.specialty, topic: generationContext.topic } : {};
+                const { valid: validQs, rejected } = validateQuestionBatch(parsed.questions, valCtx);
+                if (rejected.length > 0) {
+                  console.log(`[question-generator] AI validation rejected ${rejected.length} questions: ${rejected.map(r => r.reason).join(", ")}`);
+                }
+                parsed.questions = validQs;
+              }
               // Fix consecutive repeated correct_index by swapping options
               for (let i = 1; i < parsed.questions.length; i++) {
                 const prev = parsed.questions[i - 1];
