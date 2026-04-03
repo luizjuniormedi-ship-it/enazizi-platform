@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { isMedicalContent } from "@/lib/medicalValidation";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
