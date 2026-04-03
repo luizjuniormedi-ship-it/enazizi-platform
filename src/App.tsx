@@ -112,8 +112,8 @@ const App = () => (
                 <Route path="simulados" element={<Simulados />} />
                 <Route path="uploads" element={<Uploads />} />
                 <Route path="agentes" element={<AgentsHub />} />
-                <Route path="questoes" element={<QuestionGenerator />} />
-                <Route path="banco-questoes" element={<QuestionsBank />} />
+                <Route path="questoes" element={<Navigate to="/dashboard/simulados" replace />} />
+                <Route path="banco-questoes" element={<Navigate to="/dashboard/simulados" replace />} />
                 <Route path="resumos" element={<ContentSummarizer />} />
                 <Route path="apostilas" element={<StudyGuides />} />
                 

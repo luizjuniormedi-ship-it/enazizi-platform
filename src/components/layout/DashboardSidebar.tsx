@@ -66,7 +66,6 @@ const navGroups: NavGroup[] = [
     title: "Mais Ferramentas",
     defaultOpen: false,
     items: [
-      { to: "/dashboard/questoes", icon: HelpCircle, label: "Gerador Questões" },
       { to: "/dashboard/gerar-flashcards", icon: FlipVertical, label: "Gerador Flashcards" },
       { to: "/dashboard/apostilas", icon: FileText, label: "Apostilas" },
       { to: "/dashboard/cronicas", icon: Scroll, label: "Crônicas Médicas" },
