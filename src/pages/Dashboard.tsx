@@ -165,8 +165,6 @@ const Dashboard = () => {
       </div>
 
       <SafeCard name="AchievementToast"><AchievementToast /></SafeCard>
-      <SafeCard name="VideoRoom"><ActiveVideoRoomBanner /></SafeCard>
-      <SafeCard name="ExamSetup"><ExamSetupReminder /></SafeCard>
 
       {/* ══════════════════════════════════════════
           BLOCO PRINCIPAL — HERO (40-50% da tela)
