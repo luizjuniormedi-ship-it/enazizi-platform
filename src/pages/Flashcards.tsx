@@ -45,6 +45,7 @@ const Flashcards = () => {
   const [phase, setPhase] = useState<Phase>("setup");
   const [mode, setMode] = useState<"due" | "all" | "sprint">("due");
   const [topicSearch, setTopicSearch] = useState(studyCtx?.topic || "");
+  const [generateQuantity, setGenerateQuantity] = useState(10);
   const [generatingFromBank, setGeneratingFromBank] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { user } = useAuth();
