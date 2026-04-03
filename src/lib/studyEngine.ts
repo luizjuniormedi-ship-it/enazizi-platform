@@ -100,7 +100,7 @@ function applyWeights(recs: StudyRecommendation[], weights: PlanWeights, maxTota
   const slotNew = weights.maxNewTopics;
 
   const buckets: Record<string, number> = {
-    review: 0, error_review: 0, practice: 0, clinical: 0, simulado: 0, new: 0,
+    review: 0, error_review: 0, practice: 0, clinical: 0, simulado: 0, new: 0, chronicle: 0,
   };
   const limits: Record<string, number> = {
     review: slotReview,
