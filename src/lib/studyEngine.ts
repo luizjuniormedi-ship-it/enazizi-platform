@@ -294,7 +294,12 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
   const clinicalSims = (clinicalSimData || []) as any[];
 
   const approvalScore = await computeApprovalScore(userId, practiceAttempts, exams, anamnesisResults, clinicalSims);
-  const weights = adjustPlanByApprovalScore(approvalScore);
+  const baseWeights = adjustPlanByApprovalScore(approvalScore);
+
+  // ── Apply exam profile modifiers ─────────────────────────────
+  const profile = profileData as any;
+  const examProfile = getExamProfile(profile?.target_exam);
+  const weights = applyExamModifiers(baseWeights, examProfile) as PlanWeights;
 
   // ── Content Lock — compute inline for engine use ─────────────
   const today = new Date().toISOString().split("T")[0];
