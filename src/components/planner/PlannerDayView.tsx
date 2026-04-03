@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Play, Clock, AlertTriangle, CheckCircle2, Brain } from "lucide-react";
 import type { StudyRecommendation } from "@/hooks/useStudyEngine";
+import { getHumanReadableReason } from "@/lib/humanizedReasons";
 import type { Revisao, TemaEstudado, TemaComputado } from "@/pages/CronogramaInteligente";
 
 interface Props {
