@@ -3,7 +3,7 @@
  * Estimates approval chance per target exam/banca based on real user data.
  */
 
-import { EXAM_PROFILES, type ExamProfile, getExamProfile } from "./examProfiles";
+import { EXAM_PROFILES, type ExamProfile, type ReadinessWeights, getExamProfile } from "./examProfiles";
 import { BASE_CURRICULUM, type CurriculumTopic } from "@/constants/baseCurriculum";
 
 export type ReadinessLabel = "muito_baixa" | "em_construcao" | "competitiva" | "alta";

@@ -3,6 +3,17 @@
  * Cada perfil ajusta o comportamento do Study Engine, Tutor IA e geração de conteúdo.
  */
 
+/** Pesos do cálculo de readiness por banca (devem somar ~1.0) */
+export interface ReadinessWeights {
+  specAccuracy: number;
+  approvalScore: number;
+  simulado: number;
+  coverage: number;
+  practical: number;
+  consistency: number;
+  reviewPenalty: number;
+}
+
 export interface ExamProfile {
   key: string;
   label: string;
@@ -18,13 +29,15 @@ export interface ExamProfile {
   style: string;
   /** Ajuste de pesos do Study Engine */
   engineModifiers: {
-    reviewWeightMod: number;   // +/- sobre o peso base
+    reviewWeightMod: number;
     questionsWeightMod: number;
     practicalWeightMod: number;
     theoryWeightMod: number;
   };
   /** Instruções extras para o Tutor IA */
   tutorGuidance: string;
+  /** Pesos específicos da banca para cálculo de readiness */
+  readinessWeights: ReadinessWeights;
 }
 
 export const EXAM_PROFILES: Record<string, ExamProfile> = {
