@@ -13,6 +13,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Props {
   onComplete: () => void;
@@ -44,7 +46,7 @@ export default function OnboardingV2Flow({ onComplete, onSkip }: Props) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [targetExam, setTargetExam] = useState("");
+  const [targetExams, setTargetExams] = useState<string[]>([]);
   const [examDate, setExamDate] = useState("");
   const [dailyHours, setDailyHours] = useState("4");
   const [saving, setSaving] = useState(false);
@@ -84,17 +86,21 @@ export default function OnboardingV2Flow({ onComplete, onSkip }: Props) {
         last_onboarding_step: TOTAL_STEPS,
         daily_study_hours: parseFloat(dailyHours) || 4,
       };
-      if (targetExam) updates.target_exam = targetExam;
+      if (targetExams.length > 0) {
+        updates.target_exams = targetExams;
+        updates.target_exam = targetExams[0]; // backward compat
+      }
       if (examDate) updates.exam_date = examDate;
 
       await supabase.from("profiles").update(updates as any).eq("user_id", user.id);
 
       // Trigger automatic study plan generation
-      if (targetExam) {
+      if (targetExams.length > 0) {
         try {
           await supabase.functions.invoke("generate-study-plan", {
             body: {
-              targetExam,
+              targetExam: targetExams[0],
+              targetExams,
               examDate: examDate || null,
               dailyHours: parseFloat(dailyHours) || 4,
             },
@@ -167,7 +173,7 @@ export default function OnboardingV2Flow({ onComplete, onSkip }: Props) {
               </div>
               <h2 className="text-xl font-bold">Qual prova você vai fazer?</h2>
               <p className="text-sm text-muted-foreground">
-                O sistema adapta todo o estudo à sua prova.
+                Selecione até 3 provas. O sistema adapta o estudo a todas elas.
               </p>
             </div>
 
@@ -175,20 +181,50 @@ export default function OnboardingV2Flow({ onComplete, onSkip }: Props) {
               <div className="space-y-2">
                 <Label className="flex items-center gap-1.5">
                   <Target className="h-3.5 w-3.5 text-muted-foreground" />
-                  Prova alvo
+                  Provas alvo
+                  <span className="text-xs text-muted-foreground ml-auto">{targetExams.length}/3</span>
                 </Label>
-                <Select value={targetExam} onValueChange={setTargetExam}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione sua prova" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EXAM_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
+                <div className="grid grid-cols-2 gap-2 max-h-52 overflow-y-auto pr-1">
+                  {EXAM_OPTIONS.map((opt) => {
+                    const checked = targetExams.includes(opt.value);
+                    const disabled = !checked && targetExams.length >= 3;
+                    return (
+                      <label
+                        key={opt.value}
+                        className={cn(
+                          "flex items-center gap-2 p-2.5 rounded-lg border text-sm cursor-pointer transition-colors",
+                          checked
+                            ? "border-primary bg-primary/10 text-primary font-medium"
+                            : disabled
+                              ? "border-border bg-muted text-muted-foreground cursor-not-allowed opacity-50"
+                              : "border-border hover:border-primary/50 hover:bg-accent"
+                        )}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          disabled={disabled}
+                          onCheckedChange={(v) => {
+                            if (v) {
+                              setTargetExams(prev => [...prev, opt.value].slice(0, 3));
+                            } else {
+                              setTargetExams(prev => prev.filter(e => e !== opt.value));
+                            }
+                          }}
+                        />
                         {opt.label}
-                      </SelectItem>
+                      </label>
+                    );
+                  })}
+                </div>
+                {targetExams.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {targetExams.map(e => (
+                      <Badge key={e} variant="secondary" className="text-xs">
+                        {EXAM_OPTIONS.find(o => o.value === e)?.label || e}
+                      </Badge>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -227,7 +263,7 @@ export default function OnboardingV2Flow({ onComplete, onSkip }: Props) {
             <Button
               onClick={nextStep}
               className="w-full gap-2"
-              disabled={!targetExam}
+              disabled={targetExams.length === 0}
             >
               Gerar meu plano <Sparkles className="h-4 w-4" />
             </Button>
@@ -260,11 +296,16 @@ export default function OnboardingV2Flow({ onComplete, onSkip }: Props) {
             <div className="rounded-xl border bg-card p-5 text-left space-y-4">
               <div className="space-y-3">
                 {targetExam && (
+                {targetExams.length > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Prova</span>
-                    <span className="text-sm font-semibold">
-                      {EXAM_OPTIONS.find(e => e.value === targetExam)?.label || targetExam}
-                    </span>
+                    <span className="text-sm text-muted-foreground">Provas</span>
+                    <div className="flex flex-wrap gap-1 justify-end">
+                      {targetExams.map(e => (
+                        <Badge key={e} variant="outline" className="text-xs">
+                          {EXAM_OPTIONS.find(o => o.value === e)?.label || e}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 )}
                 {examDate && (
