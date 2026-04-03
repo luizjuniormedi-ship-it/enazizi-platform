@@ -94,6 +94,22 @@ async function fetchDashboardData(userId: string) {
   const displayName = profileRes.data?.display_name || null;
   const hasCompletedDiagnostic = profileRes.data?.has_completed_diagnostic || false;
 
+  // Fetch target exams separately
+  let targetExams: string[] = [];
+  try {
+    const { data: examProfile } = await supabase
+      .from("profiles")
+      .select("target_exams, target_exam")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const ep = examProfile as any;
+    if (Array.isArray(ep?.target_exams) && ep.target_exams.length > 0) {
+      targetExams = ep.target_exams;
+    } else if (ep?.target_exam) {
+      targetExams = [ep.target_exam];
+    }
+  } catch {}
+
   // Calculate accuracy and questions today
   const practiceAttempts = practiceRes.data || [];
   const todayStr = new Date().toISOString().split("T")[0];
@@ -225,7 +241,7 @@ async function fetchDashboardData(userId: string) {
     hasStudyPlan,
   };
 
-  return { stats, metrics, displayName, hasCompletedDiagnostic };
+  return { stats, metrics, displayName, hasCompletedDiagnostic, targetExams };
  } catch (err: any) {
     console.warn("[Dashboard] fetchDashboardData falhou:", err?.message || err);
     // Return safe defaults so Dashboard never crashes
@@ -243,7 +259,7 @@ async function fetchDashboardData(userId: string) {
       clinicalSimulations: 0, anamnesisCompleted: 0, summariesCreated: 0,
       chroniclesCompleted: 0, imageQuizAttempts: 0, diagnosticCompleted: 0, chatConversations: 0,
     };
-    return { stats: emptyStats, metrics: emptyMetrics, displayName: null, hasCompletedDiagnostic: false };
+    return { stats: emptyStats, metrics: emptyMetrics, displayName: null, hasCompletedDiagnostic: false, targetExams: [] as string[] };
   }
 }
 
