@@ -106,13 +106,13 @@ export default function AdminCEO() {
         { data: questionAttempts },
       ] = await Promise.all([
         // Active today (profiles with recent session tracking)
-        supabase.from("session_tracking").select("*", { count: "exact", head: true })
+        supabase.from("session_tracking" as any).select("*", { count: "exact", head: true })
           .gte("started_at", todayStart),
         // Active this week
-        supabase.from("session_tracking").select("*", { count: "exact", head: true })
+        supabase.from("session_tracking" as any).select("*", { count: "exact", head: true })
           .gte("started_at", weekStart),
         // Session durations this week
-        supabase.from("session_tracking").select("duration_seconds")
+        supabase.from("session_tracking" as any).select("duration_seconds")
           .gte("started_at", weekStart).not("duration_seconds", "is", null),
         // Daily plans created (study starts)
         supabase.from("daily_plans").select("id, completed_count, total_blocks, user_id")
