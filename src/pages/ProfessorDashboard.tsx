@@ -751,25 +751,54 @@ const ProfessorDashboard = () => {
 
             <div className="space-y-3">
               <Label className="text-base font-semibold">Temas ({selectedTopics.length} selecionados)</Label>
-              <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-2" />
-              <div className="flex flex-wrap gap-1.5">
-                {getFilteredSpecialties(cycleFilter).map((topic) => (
-                  <button
-                    key={topic}
-                    onClick={() => {
-                      toggleTopic(topic);
-                      if (selectedTopics.includes(topic)) {
-                        setSubtopics((prev) => { const next = { ...prev }; delete next[topic]; return next; });
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Digite o tema (ex: Cardiologia, Pneumologia...)"
+                  value={newTopicInput}
+                  onChange={(e) => setNewTopicInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (newTopicInput.trim()) {
+                        const topic = newTopicInput.trim();
+                        if (!selectedTopics.includes(topic)) {
+                          setSelectedTopics((prev) => [...prev, topic]);
+                        }
+                        setNewTopicInput("");
                       }
+                    }
+                  }}
+                  className="flex-1"
+                />
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    if (newTopicInput.trim()) {
+                      const topic = newTopicInput.trim();
+                      if (!selectedTopics.includes(topic)) {
+                        setSelectedTopics((prev) => [...prev, topic]);
+                      }
+                      setNewTopicInput("");
+                    }
+                  }}
+                  disabled={!newTopicInput.trim()}
+                >
+                  Adicionar
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {selectedTopics.map((topic) => (
+                  <Badge
+                    key={topic}
+                    variant="secondary"
+                    className="gap-1 cursor-pointer"
+                    onClick={() => {
+                      setSelectedTopics((prev) => prev.filter((t) => t !== topic));
+                      setSubtopics((prev) => { const next = { ...prev }; delete next[topic]; return next; });
                     }}
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                      selectedTopics.includes(topic)
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-secondary border-border hover:border-primary/40"
-                    }`}
                   >
-                    {topic}
-                  </button>
+                    {topic} ✕
+                  </Badge>
                 ))}
               </div>
 
