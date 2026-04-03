@@ -108,6 +108,19 @@ export default function ExamReadinessCard() {
                   <p className="text-sm">{selectedExam.insight}</p>
                 </div>
 
+                {/* Coverage */}
+                <div className="rounded-lg border p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                    <h4 className="text-sm font-semibold">Cobertura do cronograma</h4>
+                    <span className="ml-auto text-sm font-bold text-primary">{selectedExam.coverageScore}%</span>
+                  </div>
+                  <Progress value={selectedExam.coverageScore} className="h-1.5" />
+                  <p className="text-[11px] text-muted-foreground">
+                    {selectedExam.topicsCovered} de {selectedExam.topicsTotal} temas relevantes para {selectedExam.examName} estudados
+                  </p>
+                </div>
+
                 {/* Áreas fortes */}
                 {selectedExam.strongAreas.length > 0 && (
                   <div>
