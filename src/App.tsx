@@ -58,6 +58,7 @@ const MedicalChronicles = lazy(() => import("./pages/MedicalChronicles"));
 const AIMentor = lazy(() => import("./pages/AIMentor"));
 const SmartPlanner = lazy(() => import("./pages/SmartPlanner"));
 const AdminMonitoring = lazy(() => import("./pages/AdminMonitoring"));
+const AdminCEO = lazy(() => import("./pages/AdminCEO"));
 const MissionMode = lazy(() => import("./pages/MissionMode"));
 const StudySession = lazy(() => import("./pages/StudySession"));
 const Rankings = lazy(() => import("./pages/Rankings"));
