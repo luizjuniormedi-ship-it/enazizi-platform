@@ -17,6 +17,7 @@ import ApprovalScoreCard from "@/components/dashboard/ApprovalScoreCard";
 import PendingReviewsCard from "@/components/dashboard/PendingReviewsCard";
 import WeakTopicsCard from "@/components/dashboard/WeakTopicsCard";
 import FreeStudyCard from "@/components/dashboard/FreeStudyCard";
+import RecentProgressCard from "@/components/dashboard/RecentProgressCard";
 import PracticalTrainingCard from "@/components/dashboard/PracticalTrainingCard";
 import DiagnosticSummaryCard from "@/components/dashboard/DiagnosticSummaryCard";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
