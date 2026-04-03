@@ -19,6 +19,7 @@ import ProfessorPlantao from "@/components/professor/ProfessorPlantao";
 import StudentTracker from "@/components/professor/StudentTracker";
 import VideoRoom from "@/components/professor/VideoRoom";
 import TeacherStudyAssignments from "@/components/professor/TeacherStudyAssignments";
+import MentorThemePlans from "@/components/professor/MentorThemePlans";
 import ProfessorBIPanel from "@/components/professor/ProfessorBIPanel";
 
 import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
