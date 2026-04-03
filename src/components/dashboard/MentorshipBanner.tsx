@@ -34,7 +34,7 @@ const MentorshipBanner = () => {
     const { data: targets } = await supabase
       .from("mentor_theme_plan_targets")
       .select("plan_id")
-      .eq("user_id", user.id);
+      .eq("user_id", user.id) as { data: { plan_id: string }[] | null };
 
     if (!targets || targets.length === 0) return;
 
