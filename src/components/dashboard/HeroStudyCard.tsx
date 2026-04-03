@@ -145,10 +145,10 @@ export default function HeroStudyCard() {
   // ─── All Caught Up ───
   if (tasks.length === 0) {
     return (
-      <Card className="border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 to-background shadow-[0_0_30px_hsl(142_76%_36%/0.06)]">
+      <Card className="border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 to-background">
         <CardContent className="p-5 text-center space-y-2">
           <CheckCircle2 className="h-10 w-10 text-emerald-500 mx-auto" />
-          <p className="font-bold text-foreground">Tudo em dia! 🎉</p>
+          <p className="font-bold">Tudo em dia! 🎉</p>
           <p className="text-xs text-muted-foreground">
             Nenhuma tarefa pendente. Que tal explorar um módulo no acesso livre?
           </p>
