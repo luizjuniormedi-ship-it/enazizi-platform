@@ -21,6 +21,7 @@ import VideoRoom from "@/components/professor/VideoRoom";
 import TeacherStudyAssignments from "@/components/professor/TeacherStudyAssignments";
 import MentorThemePlans from "@/components/professor/MentorThemePlans";
 import ProfessorBIPanel from "@/components/professor/ProfessorBIPanel";
+import ProfessorPracticalExams from "@/components/professor/ProfessorPracticalExams";
 
 import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
 import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
@@ -492,6 +493,7 @@ const ProfessorDashboard = () => {
           <TabsTrigger value="analytics">📊 Análise da Turma</TabsTrigger>
            <TabsTrigger value="bi">📈 BI</TabsTrigger>
            <TabsTrigger value="mentoria">📋 Mentoria</TabsTrigger>
+           <TabsTrigger value="osce">🩺 Prova Prática</TabsTrigger>
         </TabsList>
 
         <TabsContent value="simulados" className="space-y-4 mt-4">
@@ -1370,6 +1372,10 @@ const ProfessorDashboard = () => {
 
         <TabsContent value="mentoria" className="mt-4">
           <MentorThemePlans />
+        </TabsContent>
+
+        <TabsContent value="osce" className="mt-4">
+          <ProfessorPracticalExams />
         </TabsContent>
       </Tabs>
     </div>

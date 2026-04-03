@@ -170,6 +170,8 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     clinicalSimData,
     fsrsDueData,
     mentorTargets,
+    practicalExamData,
+    profileData,
   ] = await Promise.all([
     safe(() => supabase
       .from("revisoes")
@@ -235,6 +237,19 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       .from("mentor_theme_plan_targets")
       .select("plan_id")
       , "mentor_targets"),
+    // Practical exam results for OSCE integration
+    safe(() => supabase
+      .from("practical_exam_results")
+      .select("final_score, specialty, scores_json, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10), "practical_exams"),
+    // Profile for exam_date
+    safe(() => supabase
+      .from("profiles")
+      .select("exam_date")
+      .eq("user_id", userId)
+      .single(), "profile"),
   ]);
 
   // ── Load mentor topics if any active mentorships ───────────────
@@ -455,6 +470,61 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       targetPath: "/dashboard/anamnese",
       estimatedMinutes: 25,
       objective: "practice",
+    });
+  }
+
+  // ── 4b. OSCE Practical Exam — smart triggers ─────────────────
+  const practicalExams = (practicalExamData || []) as any[];
+  const profile = profileData as any;
+  const examDate = profile?.exam_date ? new Date(profile.exam_date) : null;
+  const daysUntilExam = examDate ? Math.ceil((examDate.getTime() - Date.now()) / 86400000) : null;
+
+  const recentPractical = practicalExams.slice(0, 5);
+  const hasLowPracticalScore = recentPractical.length > 0 &&
+    recentPractical.some((r: any) => (r.final_score || 0) < 5);
+  const hasConductError = recentPractical.some((r: any) => {
+    const scores = r.scores_json as any;
+    return scores && (scores.conduta < 5 || scores.priorizacao < 5);
+  });
+  const avgPracticalExamScore = recentPractical.length > 0
+    ? recentPractical.reduce((s: number, r: any) => s + (r.final_score || 0), 0) / recentPractical.length
+    : null;
+
+  const shouldRecommendOSCE = hasConductError || hasLowPracticalScore ||
+    (daysUntilExam !== null && daysUntilExam <= 30) ||
+    weights.phase === "competitivo" || weights.phase === "pronto";
+
+  if (shouldRecommendOSCE) {
+    let oscePriority = clinicalPriority;
+    let osceReason = "Pratique decisões clínicas sob pressão com a Prova Prática.";
+
+    if (hasConductError) {
+      oscePriority = cap(clinicalPriority + 15);
+      osceReason = "⚠️ Erro de conduta detectado — pratique decisões clínicas na Prova Prática.";
+    } else if (hasLowPracticalScore && avgPracticalExamScore !== null) {
+      oscePriority = cap(clinicalPriority + 10);
+      osceReason = `Nota prática ${avgPracticalExamScore.toFixed(1)}/10 — reforce com mais simulações OSCE.`;
+    } else if (daysUntilExam !== null && daysUntilExam <= 14) {
+      oscePriority = cap(clinicalPriority + 20);
+      osceReason = `Prova em ${daysUntilExam} dias! Treine decisões clínicas sob pressão.`;
+    } else if (daysUntilExam !== null && daysUntilExam <= 30) {
+      oscePriority = cap(clinicalPriority + 10);
+      osceReason = `Prova em ${daysUntilExam} dias — inclua provas práticas na rotina.`;
+    }
+
+    addRec({
+      id: "osce-practical",
+      type: "clinical",
+      topic: "Prova Prática (OSCE)",
+      specialty: "Prática Clínica",
+      priority: oscePriority,
+      reason: osceReason,
+      targetModule: "plantao",
+      targetPath: "/dashboard/prova-pratica",
+      estimatedMinutes: 25,
+      objective: "practice",
+      difficulty: weights.phase === "pronto" ? "difícil" : "intermediário",
+      _groupKey: "clinical:osce",
     });
   }
 
