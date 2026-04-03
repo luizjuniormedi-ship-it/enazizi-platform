@@ -110,26 +110,90 @@ const Flashcards = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const availableTopics = useMemo(() => {
-    const topics = new Set<string>();
-    allCards.forEach(c => { if (c.topic) topics.add(c.topic); });
-    return Array.from(topics).sort();
-  }, [allCards]);
-
-  const toggleTopic = (topic: string) => {
-    setSelectedTopics(prev => {
-      const next = new Set(prev);
-      if (next.has(topic)) next.delete(topic); else next.add(topic);
-      return next;
-    });
-  };
-
   const filteredCards = useMemo(() => {
     const base = mode === "due" ? dueCards : allCards;
-    let result = selectedTopics.size === 0 ? base : base.filter(c => c.topic && selectedTopics.has(c.topic));
+    const search = topicSearch.trim().toLowerCase();
+    let result = search
+      ? base.filter(c => c.topic?.toLowerCase().includes(search) || c.question?.toLowerCase().includes(search))
+      : base;
     if (mode === "sprint") result = result.slice(0, sprintConfig.cardCount);
     return result;
-  }, [mode, dueCards, allCards, selectedTopics, sprintConfig.cardCount]);
+  }, [mode, dueCards, allCards, topicSearch, sprintConfig.cardCount]);
+
+  const handleGenerateFromBank = async () => {
+    if (!user) return;
+    const search = topicSearch.trim();
+    if (!search) {
+      toast({ title: "Digite um tema", description: "Informe o tema para buscar questões no banco.", variant: "destructive" });
+      return;
+    }
+    setGeneratingFromBank(true);
+    try {
+      // Get existing flashcard statements to deduplicate
+      const { data: existing } = await supabase
+        .from("flashcards")
+        .select("question")
+        .eq("user_id", user.id);
+      const existingHashes = new Set((existing || []).map(f => f.question?.slice(0, 80).toLowerCase()));
+
+      // Search questions_bank
+      const { data: bankQ } = await supabase
+        .from("questions_bank")
+        .select("statement, explanation, options, correct_index, topic")
+        .or(`topic.ilike.%${search}%,statement.ilike.%${search}%`)
+        .eq("is_global", true)
+        .limit(30);
+
+      // Search real_exam_questions
+      const { data: realQ } = await supabase
+        .from("real_exam_questions")
+        .select("statement, explanation, options, correct_index, topic")
+        .or(`topic.ilike.%${search}%,statement.ilike.%${search}%`)
+        .eq("is_active", true)
+        .limit(30);
+
+      const allQuestions = [...(bankQ || []), ...(realQ || [])];
+
+      // Convert & deduplicate
+      const newCards: { user_id: string; question: string; answer: string; topic: string }[] = [];
+      for (const q of allQuestions) {
+        if (newCards.length >= 20) break;
+        const hash = q.statement?.slice(0, 80).toLowerCase();
+        if (!hash || existingHashes.has(hash)) continue;
+        existingHashes.add(hash);
+
+        const opts = Array.isArray(q.options) ? q.options as string[] : [];
+        const correctOpt = q.correct_index != null && opts[q.correct_index]
+          ? `✅ ${opts[q.correct_index]}`
+          : "";
+        const answer = [correctOpt, q.explanation ? `\n\n🧠 ${q.explanation}` : ""].join("").trim();
+        if (!answer) continue;
+
+        newCards.push({
+          user_id: user.id,
+          question: q.statement,
+          answer,
+          topic: q.topic || search,
+        });
+      }
+
+      if (newCards.length === 0) {
+        toast({ title: "Nenhuma questão encontrada", description: `Não encontramos questões novas para "${search}".` });
+        setGeneratingFromBank(false);
+        return;
+      }
+
+      const { error } = await supabase.from("flashcards").insert(newCards);
+      if (error) throw error;
+
+      toast({ title: `${newCards.length} flashcards gerados!`, description: `Criados a partir do banco de questões para "${search}".` });
+      await fetchData();
+    } catch (e: any) {
+      toast({ title: "Erro ao gerar", description: e.message, variant: "destructive" });
+    } finally {
+      setGeneratingFromBank(false);
+    }
+  };
 
   // Sprint timer
   useEffect(() => {
