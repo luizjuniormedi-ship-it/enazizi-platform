@@ -12,6 +12,7 @@ import EvolutionBadge from "@/components/dashboard/EvolutionBadge";
 export default function WeakTopicsCard() {
   const navigate = useNavigate();
   const { data: recommendations } = useStudyEngine();
+  const { data: evolutions } = useTopicEvolution();
 
   const weakTopics = (recommendations || []).filter(
     (r) => r.type === "practice" || r.type === "error_review"
