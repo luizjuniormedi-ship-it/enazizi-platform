@@ -21,7 +21,7 @@ import ReactMarkdown from "react-markdown";
 
 import StudyStyleSelector, { type StudyMode } from "@/components/tutor/StudyStyleSelector";
 
-type Phase = "start" | "style-select" | "performance" | "lesson" | "active-recall" | "questions" | "discussion" | "discursive" | "scoring";
+type Phase = "start" | "style-select" | "performance" | "lesson" | "active-recall" | "questions" | "discussion" | "discursive" | "scoring" | "reinforcement";
 type Msg = { role: "user" | "assistant"; content: string };
 
 interface SpecialtyScore {
@@ -50,6 +50,7 @@ const PHASE_META: Record<Phase, { label: string; icon: typeof BookOpen; shortLab
   discussion: { label: "🔬 Discussão", icon: MessageSquare, shortLabel: "Discussão" },
   discursive: { label: "🏥 Caso Discursivo", icon: Stethoscope, shortLabel: "Discursivo" },
   scoring: { label: "📈 Pontuação", icon: TrendingUp, shortLabel: "Score" },
+  reinforcement: { label: "💡 Reforço", icon: AlertTriangle, shortLabel: "Reforço" },
 };
 
 const FLOW_PHASES: Phase[] = ["performance", "lesson", "active-recall", "questions", "discussion", "discursive", "scoring"];
@@ -94,6 +95,8 @@ const StudySession = () => {
   const [performance, setPerformance] = useState<PerformanceData>(INITIAL_PERFORMANCE);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [professorContext, setProfessorContext] = useState<{ topics: string; materialUrl?: string; assignmentId?: string } | null>(null);
+  const [reinforcementCycles, setReinforcementCycles] = useState<Record<string, number>>({});
+  const [preReinforcementPhase, setPreReinforcementPhase] = useState<Phase>("questions");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Read professor query params
@@ -260,14 +263,100 @@ const StudySession = () => {
       await updateDomainMap(user.id, [{ topic, correct }]);
 
       if (!correct) {
+        const errorCategory = "conceito";
         await logErrorToBank({
           userId: user.id,
           tema: topic,
           tipoQuestao: "objetiva",
           conteudo: `Questão MCQ do Tutor IA sobre ${topic}`,
           motivoErro: "Erro em questão objetiva durante sessão de estudo",
-          categoriaErro: "conceito",
+          categoriaErro: errorCategory,
         });
+
+        // Trigger reinforcement loop if under max cycles
+        const currentCycles = reinforcementCycles[topic] || 0;
+        if (currentCycles < 2 && phase !== "reinforcement") {
+          const nextCycle = currentCycles + 1;
+          setReinforcementCycles(prev => ({ ...prev, [topic]: nextCycle }));
+          setPreReinforcementPhase(phase);
+
+          // Short delay so the user reads the correction first
+          setTimeout(async () => {
+            setPhase("reinforcement");
+            const reinforceMsg: Msg = {
+              role: "user",
+              content: `Errei a questão sobre ${topic}. Preciso de reforço rápido.`,
+            };
+            const newMsgs = [...messages, { role: "assistant" as const, content: assistantContent }, reinforceMsg];
+            setMessages(newMsgs);
+
+            // Pass reinforcement context in performanceData
+            const reinforcementPerf = {
+              ...performance,
+              reinforcement: {
+                topic,
+                categoriaErro: errorCategory,
+                content: assistantContent.slice(0, 500),
+                cycle: nextCycle,
+              },
+            };
+            setIsLoading(true);
+            const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/study-session`;
+            try {
+              const resp = await fetch(url, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+                },
+                body: JSON.stringify({
+                  messages: newMsgs,
+                  phase: "reinforcement",
+                  topic,
+                  performanceData: reinforcementPerf,
+                  studyMode,
+                }),
+              });
+              if (resp.ok) {
+                const reader = resp.body!.getReader();
+                const decoder = new TextDecoder();
+                let buf = "";
+                let content = "";
+                while (true) {
+                  const { done, value } = await reader.read();
+                  if (done) break;
+                  buf += decoder.decode(value, { stream: true });
+                  let idx2: number;
+                  while ((idx2 = buf.indexOf("\n")) !== -1) {
+                    let line = buf.slice(0, idx2);
+                    buf = buf.slice(idx2 + 1);
+                    if (line.endsWith("\r")) line = line.slice(0, -1);
+                    if (!line.startsWith("data: ")) continue;
+                    const json = line.slice(6).trim();
+                    if (json === "[DONE]") break;
+                    try {
+                      const parsed = JSON.parse(json);
+                      const delta = parsed.choices?.[0]?.delta?.content;
+                      if (delta) {
+                        content += delta;
+                        setMessages(prev => {
+                          const last = prev[prev.length - 1];
+                          if (last?.role === "assistant") {
+                            return prev.map((m, i) => i === prev.length - 1 ? { ...m, content } : m);
+                          }
+                          return [...prev, { role: "assistant", content }];
+                        });
+                      }
+                    } catch {}
+                  }
+                }
+              }
+            } catch (e) {
+              console.error("Reinforcement error:", e);
+            }
+            setIsLoading(false);
+          }, 1500);
+        }
       }
 
       // Update local performance
@@ -287,7 +376,7 @@ const StudySession = () => {
     } catch (err) {
       console.error("Error registering MCQ attempt:", err);
     }
-  }, [user, topic]);
+  }, [user, topic, reinforcementCycles, phase, messages, performance, studyMode]);
 
   const streamChat = async (msgs: Msg[], currentPhase: Phase, currentTopic: string) => {
     setIsLoading(true);
@@ -358,8 +447,24 @@ const StudySession = () => {
       }
       // After streaming completes, check if this was an MCQ answer
       const lastUserMsg = msgs[msgs.length - 1];
-      if (lastUserMsg?.role === "user" && assistantContent && (currentPhase === "questions" || currentPhase === "discussion")) {
-        detectAndRegisterMCQ(assistantContent, lastUserMsg.content);
+      if (lastUserMsg?.role === "user" && assistantContent) {
+        if (currentPhase === "reinforcement") {
+          // Check if reinforcement question was answered correctly
+          const answerMatch = lastUserMsg.content.trim().match(/^[A-Ea-e]$/);
+          if (answerMatch) {
+            const lower = assistantContent.toLowerCase();
+            const wasCorrect = (lower.includes("✅") || lower.includes("correta") || lower.includes("acertou")) && !(lower.includes("❌") || lower.includes("incorreta"));
+            if (wasCorrect) {
+              // Success! Return to previous phase after a beat
+              toast({ title: "✅ Conceito corrigido!", description: "Você fixou o ponto. Continuando..." });
+              setTimeout(() => setPhase(preReinforcementPhase), 2000);
+            }
+            // If wrong again and under limit, detectAndRegisterMCQ will trigger another cycle
+            detectAndRegisterMCQ(assistantContent, lastUserMsg.content);
+          }
+        } else if (currentPhase === "questions" || currentPhase === "discussion") {
+          detectAndRegisterMCQ(assistantContent, lastUserMsg.content);
+        }
       }
     } catch {
       toast({ title: "Erro de conexão", description: "Não foi possível conectar ao servidor.", variant: "destructive" });

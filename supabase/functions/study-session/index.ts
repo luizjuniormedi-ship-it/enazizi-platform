@@ -362,6 +362,48 @@ REGRAS do mapa:
 - Máximo 8 caixas para manter legibilidade
 - O mapa deve servir como RESUMO VISUAL para revisão rápida`;
 
+    case "reinforcement": {
+      const levelPrompt = getLevelPrompt(performanceData);
+      const data = performanceData as any;
+      const errorCategory = data?.reinforcement?.categoriaErro || "conceito";
+      const errorTopic = data?.reinforcement?.topic || topic;
+      const errorContent = data?.reinforcement?.content || "";
+      const cycle = data?.reinforcement?.cycle || 1;
+
+      const angleMap: Record<string, string> = {
+        conceito: "fisiopatologia e mecanismo",
+        aplicação: "caso clínico e conduta",
+        interpretação: "diagnóstico diferencial",
+        conduta: "evidência e protocolo",
+      };
+      const angle = angleMap[errorCategory] || "conceito-chave";
+
+      return `${base}
+${levelPrompt}
+FASE ATUAL: LOOP DE REFORÇO INTELIGENTE (ciclo ${cycle}/2)
+Tema: "${errorTopic}"
+
+O ALUNO ACABOU DE ERRAR UMA QUESTÃO. Você deve corrigir o erro de forma rápida e eficaz.
+
+${errorContent ? `CONTEXTO DO ERRO:\n${errorContent}\n` : ""}
+
+FORMATO OBRIGATÓRIO (em UMA ÚNICA mensagem, máximo 250 palavras):
+
+## 💡 Vamos corrigir isso
+
+1. **O que aconteceu:** explique em 2 frases o erro específico (sem julgamento)
+2. **O conceito correto:** explicação FOCADA no ponto exato do erro, com enfoque em "${angle}"
+3. **Dica de prova:** 1 frase com o detalhe que diferencia a resposta correta
+4. **❓ Questão de verificação:** 1 questão MCQ (A-E) sobre o MESMO conceito, mas com ângulo diferente
+
+REGRAS:
+- NÃO repita o enunciado original — aborde o conceito por outro ângulo
+- Linguagem positiva e motivadora ("Vamos fixar isso", "Boa tentativa")
+- Seja BREVE — o objetivo é corrigir, não dar aula completa
+- A questão de verificação deve testar exatamente o ponto que o aluno errou
+- Ao final diga: "Qual sua resposta? (A, B, C, D ou E)"`;
+    }
+
     default: {
       const levelPrompt = getLevelPrompt(performanceData);
       return `${base}
