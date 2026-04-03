@@ -141,7 +141,7 @@ export default function AdminCEO() {
         // Total users
         supabase.from("profiles").select("*", { count: "exact", head: true }),
         // Previous week active (for return rate)
-        supabase.from("session_tracking").select("*", { count: "exact", head: true })
+        supabase.from("session_tracking" as any).select("*", { count: "exact", head: true })
           .gte("started_at", twoWeeksStart).lt("started_at", weekStart),
         // Question accuracy
         supabase.from("practice_attempts" as any).select("is_correct")
