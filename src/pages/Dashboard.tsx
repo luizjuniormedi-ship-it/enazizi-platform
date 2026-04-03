@@ -9,6 +9,9 @@ const EXAM_LABELS: Record<string, string> = {
 };
 
 import { useEffect, useRef, lazy, Suspense, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import SafeCard from "@/components/layout/SafeCard";
 import { Loader2, Target, Calendar, Flame, ClipboardList } from "lucide-react";
 import XpWidget from "@/components/gamification/XpWidget";
