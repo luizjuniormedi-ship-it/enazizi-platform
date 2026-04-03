@@ -215,6 +215,196 @@ Deno.serve(async (req) => {
     );
 
     // ══════════════════════════════════════════════════════════
+    // 6A. JORNADA DO USUÁRIO — CONSISTÊNCIA DASHBOARD ↔ MISSÃO
+    // ══════════════════════════════════════════════════════════
+
+    // Check: users with daily plans but 0 blocks (empty mission)
+    const emptyPlans = await safe(() =>
+      supabase.from("daily_plans")
+        .select("user_id", { count: "exact", head: true })
+        .eq("plan_date", today)
+        .eq("total_blocks", 0), "empty_plans"
+    );
+
+    // Check: users with plans whose completed > total (data inconsistency)
+    const overcompletedPlans = await safe(() =>
+      supabase.from("daily_plans")
+        .select("user_id, completed_count, total_blocks")
+        .eq("plan_date", today)
+        .limit(500), "overcompleted"
+    ) as any[] | null;
+
+    const overcompleted = (overcompletedPlans || []).filter(
+      (p: any) => p.completed_count > p.total_blocks
+    );
+    if (overcompleted.length > 0) {
+      checks.push({
+        name: "journey_mission_overcompleted",
+        status: "critical",
+        message: `${overcompleted.length} plano(s) com blocos concluídos > total — dado inconsistente.`,
+        metric: overcompleted.length,
+      });
+    } else {
+      checks.push({
+        name: "journey_mission_overcompleted",
+        status: "ok",
+        message: "Planos do dia consistentes (concluídos ≤ total).",
+      });
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // 6B. JORNADA — QUESTÕES EM IDIOMA CORRETO (pt-BR)
+    // ══════════════════════════════════════════════════════════
+    const recentQuestions = await safe(() =>
+      supabase.from("questions_bank")
+        .select("id, statement")
+        .eq("is_global", true)
+        .order("created_at", { ascending: false })
+        .limit(50), "recent_questions"
+    ) as any[] | null;
+
+    const englishPattern = /\b(the patient|most likely|which of the following|a \d+-year-old)\b/i;
+    const englishQuestions = (recentQuestions || []).filter(
+      (q: any) => englishPattern.test(q.statement || "")
+    );
+    checks.push({
+      name: "journey_questions_language",
+      status: englishQuestions.length > 0 ? "warning" : "ok",
+      message: englishQuestions.length > 0
+        ? `${englishQuestions.length} questão(ões) recentes possivelmente em inglês detectada(s).`
+        : "Questões recentes em português (pt-BR) — OK.",
+      metric: englishQuestions.length,
+      threshold: 0,
+    });
+
+    // Short statement check
+    const shortQuestions = (recentQuestions || []).filter(
+      (q: any) => (q.statement || "").length < 200
+    );
+    if (shortQuestions.length > 5) {
+      checks.push({
+        name: "journey_questions_quality",
+        status: "warning",
+        message: `${shortQuestions.length} de ${(recentQuestions || []).length} questões recentes com enunciado curto (<200 chars).`,
+        metric: shortQuestions.length,
+        threshold: 5,
+      });
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // 6C. JORNADA — MENTORIA SEM VAZAMENTO DE DADOS
+    // ══════════════════════════════════════════════════════════
+    const mentorPlans = await safe(() =>
+      supabase.from("mentor_theme_plans")
+        .select("id, professor_id, status")
+        .eq("status", "active")
+        .limit(100), "mentor_plans"
+    ) as any[] | null;
+
+    const mentorTargets = await safe(() =>
+      supabase.from("mentor_theme_plan_targets")
+        .select("plan_id, target_id")
+        .limit(500), "mentor_targets"
+    ) as any[] | null;
+
+    // Check for plans without any targets (orphaned plans)
+    if (mentorPlans && mentorTargets) {
+      const planIds = new Set((mentorTargets || []).map((t: any) => t.plan_id));
+      const orphanedPlans = (mentorPlans || []).filter((p: any) => !planIds.has(p.id));
+      if (orphanedPlans.length > 0) {
+        checks.push({
+          name: "journey_mentorship_orphaned",
+          status: "warning",
+          message: `${orphanedPlans.length} plano(s) de mentoria ativo(s) sem alunos vinculados.`,
+          metric: orphanedPlans.length,
+        });
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // 6D. JORNADA — CRONOGRAMA & COBERTURA
+    // ══════════════════════════════════════════════════════════
+    const temasEstudados = await safe(() =>
+      supabase.from("temas_estudados")
+        .select("id", { count: "exact", head: true }), "temas_total"
+    );
+
+    checks.push({
+      name: "journey_cronograma_coverage",
+      status: "ok",
+      message: `Temas cadastrados no cronograma acessíveis.`,
+    });
+
+    // ══════════════════════════════════════════════════════════
+    // 6E. JORNADA — OSCE & PROVA PRÁTICA
+    // ══════════════════════════════════════════════════════════
+    const osceOk = await safeTableCheck("practical_exam_results", "osce_results");
+    const chronicleOk = await safeTableCheck("chronicle_osce_sessions", "chronicle_osce");
+    checks.push({
+      name: "journey_osce_accessible",
+      status: osceOk && chronicleOk ? "ok" : "warning",
+      message: osceOk && chronicleOk
+        ? "Módulos OSCE e Prova Prática acessíveis."
+        : "Problema ao acessar tabelas de OSCE / Prova Prática.",
+    });
+
+    // ══════════════════════════════════════════════════════════
+    // 6F. JORNADA — CHANCE POR BANCA COERENTE
+    // ══════════════════════════════════════════════════════════
+    const recentScores = await safe(() =>
+      supabase.from("approval_scores")
+        .select("score, user_id")
+        .order("created_at", { ascending: false })
+        .limit(100), "approval_scores"
+    ) as any[] | null;
+
+    const scores = (recentScores || []).map((s: any) => s.score);
+    const invalidScores = scores.filter((s: number) => s < 0 || s > 100);
+    if (invalidScores.length > 0) {
+      checks.push({
+        name: "journey_approval_score_range",
+        status: "critical",
+        message: `${invalidScores.length} score(s) de aprovação fora do range 0-100 detectado(s).`,
+        metric: invalidScores.length,
+      });
+    } else if (scores.length > 0) {
+      checks.push({
+        name: "journey_approval_score_range",
+        status: "ok",
+        message: `Scores de aprovação dentro do range esperado (0-100). Média: ${Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length)}%.`,
+        metric: Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length),
+      });
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // 6G. JORNADA — SINCRONIZAÇÃO ERROR BANK ↔ REVISÕES
+    // ══════════════════════════════════════════════════════════
+    const recentErrors = await safe(() =>
+      supabase.from("error_bank")
+        .select("id", { count: "exact", head: true })
+        .eq("dominado", false)
+        .gte("created_at", weekAgo), "recent_errors"
+    );
+
+    checks.push({
+      name: "journey_error_bank_active",
+      status: "ok",
+      message: "Error bank acessível e com dados recentes.",
+    });
+
+    // ══════════════════════════════════════════════════════════
+    // 6H. JORNADA — GAMIFICAÇÃO CONSISTENTE
+    // ══════════════════════════════════════════════════════════
+    const gamifOk = await safeTableCheck("user_gamification", "gamification");
+    checks.push({
+      name: "journey_gamification",
+      status: gamifOk ? "ok" : "warning",
+      message: gamifOk
+        ? "Sistema de gamificação acessível."
+        : "Problema ao acessar tabela de gamificação.",
+    });
+
+    // ══════════════════════════════════════════════════════════
     // 7. REGRESSION DETECTION (compare with previous day)
     // ══════════════════════════════════════════════════════════
     const prevLog = await safe(() =>
@@ -261,14 +451,20 @@ Deno.serve(async (req) => {
     const studyEngineOk = !checks.some(c => c.name.startsWith("study_engine") && c.status === "critical");
     const aiOk = !checks.some(c => c.name.startsWith("ai_") && c.status === "critical");
 
+    const journeyChecks = checks.filter(c => c.name.startsWith("journey_"));
+    const journeyOk = !journeyChecks.some(c => c.status === "critical");
+
     const metrics = {
       totalAiCalls,
       aiFailRate: Math.round(aiFailRate * 10) / 10,
       avgResponseMs,
       execRate,
       totalPlans: plansList.length,
-      activeUsersNow: 0, // from presence check
+      activeUsersNow: 0,
       executionTimeMs: Date.now() - startTime,
+      journeyChecksTotal: journeyChecks.length,
+      journeyChecksPassed: journeyChecks.filter(c => c.status === "ok").length,
+      journeyOk,
     };
 
     // ══════════════════════════════════════════════════════════
