@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FACULDADES } from "@/constants/faculdades";
 import { ALL_SPECIALTIES } from "@/constants/specialties";
-import { SUBTOPICS_MAP } from "@/constants/subtopics";
+import { SPECIALTY_SUBTOPICS } from "@/constants/subtopics";
 import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 
 interface MentorPlan {
