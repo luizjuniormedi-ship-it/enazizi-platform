@@ -305,6 +305,7 @@ const StudySession = () => {
           phase: currentPhase,
           topic: currentTopic,
           performanceData: performance,
+          studyMode,
         }),
       });
 
