@@ -218,6 +218,11 @@ const Dashboard = () => {
       </div>
 
       {/* ══════════════════════════════════════════
+          BLOCO 3.5 — PROGRESSO RECENTE POR TEMA
+         ══════════════════════════════════════════ */}
+      {!isNewUser && <SafeCard name="RecentProgress"><RecentProgressCard /></SafeCard>}
+
+      {/* ══════════════════════════════════════════
           BLOCO 4 — TREINO PRÁTICO
          ══════════════════════════════════════════ */}
       <SafeCard name="PracticalTraining"><PracticalTrainingCard /></SafeCard>
