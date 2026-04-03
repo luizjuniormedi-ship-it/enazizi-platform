@@ -9,6 +9,9 @@ const EXAM_LABELS: Record<string, string> = {
 };
 
 import { useEffect, useRef, lazy, Suspense, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import SafeCard from "@/components/layout/SafeCard";
 import { Loader2, Target, Calendar, Flame, ClipboardList } from "lucide-react";
 import XpWidget from "@/components/gamification/XpWidget";
@@ -73,6 +76,8 @@ type SectionKey = "desempenho" | "cronograma" | "streak" | "simulados" | null;
 
 const Dashboard = () => {
   useRevisionNotifier();
+const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { evaluateAndDeliver } = useMessageDelivery();
   const { data, isLoading } = useDashboardData();
   const prevLevelRef = useRef<number | null>(null);
@@ -80,7 +85,21 @@ const Dashboard = () => {
   const [openSection, setOpenSection] = useState<SectionKey>(null);
   const isMobile = useIsMobile();
 
-  // Celebrate level ups and streak milestones
+  // Invalidate dashboard cache on mount (returning from modules)
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+  }, [queryClient]);
+
+  // Realtime subscription for critical tables
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel('dashboard-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'practice_attempts', filter: `user_id=eq.${user.id}` }, () => queryClient.invalidateQueries({ queryKey: ["dashboard-data"] }))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews', filter: `user_id=eq.${user.id}` }, () => queryClient.invalidateQueries({ queryKey: ["dashboard-data"] }))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, queryClient]);
   useEffect(() => {
     if (!data) return;
     const { metrics, stats } = data;

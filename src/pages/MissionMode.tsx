@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useMissionMode } from "@/hooks/useMissionMode";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
@@ -36,8 +37,13 @@ const TYPE_ICONS: Record<string, string> = {
 
 export default function MissionMode() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { adaptive } = useStudyEngine();
+
+  const invalidateDashboard = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+  }, [queryClient]);
   const {
     state, currentTask, nextTask, progress,
     totalMinutes, completedMinutes,
@@ -104,7 +110,7 @@ export default function MissionMode() {
               </div>
             </div>
 
-            <Button className="w-full gap-2" size="lg" onClick={() => { endMission(); navigate("/dashboard"); }}>
+            <Button className="w-full gap-2" size="lg" onClick={() => { invalidateDashboard(); endMission(); navigate("/dashboard"); }}>
               <Sparkles className="h-4 w-4" />
               Voltar ao Dashboard
             </Button>
@@ -125,7 +131,7 @@ export default function MissionMode() {
         taskType={currentTask.type}
         estimatedMinutes={currentTask.estimatedMinutes}
         reason={focusReason}
-        onClose={() => { endMission(); navigate("/dashboard"); }}
+        onClose={() => { invalidateDashboard(); endMission(); navigate("/dashboard"); }}
         onComplete={() => { completeCurrentTask(); }}
       >
         <div className="space-y-4">
@@ -164,7 +170,7 @@ export default function MissionMode() {
           <Badge variant="secondary" className="text-xs">
             {state.completedIds.length}/{state.tasks.length}
           </Badge>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { endMission(); navigate("/dashboard"); }}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { invalidateDashboard(); endMission(); navigate("/dashboard"); }}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -195,7 +201,7 @@ export default function MissionMode() {
                 <Button className="flex-1 gap-1.5" onClick={resumeMission}>
                   <Play className="h-4 w-4" /> Retomar
                 </Button>
-                <Button variant="outline" onClick={() => { endMission(); navigate("/dashboard"); }}>
+                <Button variant="outline" onClick={() => { invalidateDashboard(); endMission(); navigate("/dashboard"); }}>
                   Encerrar
                 </Button>
               </div>
@@ -323,7 +329,7 @@ export default function MissionMode() {
                 variant="ghost"
                 className="flex-1"
                 size="sm"
-                onClick={() => { endMission(); navigate("/dashboard"); }}
+                onClick={() => { invalidateDashboard(); endMission(); navigate("/dashboard"); }}
               >
                 Modo Livre
               </Button>

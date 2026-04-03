@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { isMedicalContent } from "@/lib/medicalValidation";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
@@ -37,6 +38,7 @@ interface FsrsReviewState {
 
 const Flashcards = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const studyCtx = useStudyContext();
   const [allCards, setAllCards] = useState<FlashcardItem[]>([]);
   const [dueCards, setDueCards] = useState<FlashcardItem[]>([]);
@@ -341,7 +343,7 @@ const Flashcards = () => {
           )}
           <div className="flex gap-2 justify-center">
             <Button onClick={() => { setPhase("setup"); }}>Nova Sessão</Button>
-            <Button variant="outline" onClick={() => navigate("/dashboard")}>Voltar ao Dashboard</Button>
+            <Button variant="outline" onClick={() => { queryClient.invalidateQueries({ queryKey: ["dashboard-data"] }); navigate("/dashboard"); }}>Voltar ao Dashboard</Button>
           </div>
         </div>
       </div>
