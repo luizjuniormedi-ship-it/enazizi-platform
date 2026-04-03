@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Play, Clock, AlertTriangle, CheckCircle2, Brain } from "lucide-react";
 import type { StudyRecommendation } from "@/hooks/useStudyEngine";
+import { getHumanReadableReason } from "@/lib/humanizedReasons";
 import type { Revisao, TemaEstudado, TemaComputado } from "@/pages/CronogramaInteligente";
 
 interface Props {
@@ -83,7 +84,7 @@ export default function PlannerDayView({ revisoes, temas, temasComputados, engin
           >
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium truncate">{rec.topic}</p>
-              <p className="text-[10px] text-muted-foreground">{rec.reason}</p>
+              <p className="text-[10px] text-muted-foreground">💡 {getHumanReadableReason(rec)}</p>
             </div>
             <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 shrink-0">
               <Clock className="h-3 w-3" />

@@ -1,4 +1,6 @@
 import { useStudyContext, getSourceLabel, getObjectiveLabel } from "@/lib/studyContext";
+import { getHumanReadableReason } from "@/lib/humanizedReasons";
+import type { StudyRecommendation } from "@/lib/studyEngine";
 import { Badge } from "@/components/ui/badge";
 import { Target, ArrowLeft, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -22,7 +24,17 @@ export default function StudyContextBanner() {
 
   if (!ctx) return null;
 
-  const reasonText = ctx.reason || (ctx.objective && REASON_LABELS[ctx.objective]) || null;
+  // Build a lightweight task-like object for the humanized reason function
+  const pseudoTask = {
+    type: ctx.taskType || "review",
+    topic: ctx.topic || "",
+    specialty: ctx.specialty || "",
+    priority: ctx.priority || 50,
+    reason: ctx.reason || "",
+    objective: ctx.objective,
+  } as StudyRecommendation;
+
+  const reasonText = getHumanReadableReason(pseudoTask);
 
   return (
     <div className="space-y-1 mb-3">
@@ -48,12 +60,10 @@ export default function StudyContextBanner() {
           Voltar
         </Button>
       </div>
-      {reasonText && (
-        <div className="flex items-center gap-1.5 px-3 text-[10px] text-muted-foreground">
-          <Info className="h-3 w-3 shrink-0" />
-          <span>{reasonText}</span>
-        </div>
-      )}
+      <div className="flex items-center gap-1.5 px-3 text-[10px] text-muted-foreground">
+        <Info className="h-3 w-3 shrink-0" />
+        <span>💡 {reasonText}</span>
+      </div>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Play, Sparkles, Clock, CheckCircle2, List } from "lucide-react";
 import { useStudyEngine, type StudyRecommendation } from "@/hooks/useStudyEngine";
 import { buildStudyPath } from "@/lib/studyRouter";
+import { getHumanReadableReason } from "@/lib/humanizedReasons";
 
 const TYPE_LABELS: Record<string, string> = {
   review: "Revisão",
@@ -44,7 +45,9 @@ function TaskRow({ task, onStart }: { task: StudyRecommendation; onStart: () => 
           )}
         </div>
         <p className="font-medium text-sm truncate">{task.topic}</p>
-        <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{task.reason}</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+          💡 {getHumanReadableReason(task)}
+        </p>
       </div>
       <Play className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
     </div>
