@@ -50,7 +50,7 @@ REGRA DE REFORÇO POR ERRO:
 - Ao retomar: use ângulo diferente (se errou diagnóstico → foque em conduta; se errou conduta → foque em complicações)`;
 }
 
-function getPhasePrompt(phase: string, topic: string, performanceData: unknown): string {
+function getPhasePrompt(phase: string, topic: string, performanceData: unknown, studyMode?: string): string {
   const base = ENAZIZI_PROMPT;
   const levelPrompt = getLevelPrompt(performanceData);
   const weakTopicsPrompt = getWeakTopicsPrompt(performanceData);
@@ -73,7 +73,89 @@ Mostre o painel organizado:
 ## 📈 Recomendação
 Se não houver dados, informe e sugira começar.`;
 
-    case "lesson":
+    case "lesson": {
+      // Compact mode — short Feynman-style explanation
+      if (studyMode === "compact") {
+        return `${base}
+${levelPrompt}
+FASE ATUAL: EXPLICAÇÃO RÁPIDA (MODO COMPACTO)
+Tema: "${topic || "solicitado pelo aluno"}"
+
+FORMATO OBRIGATÓRIO (300-400 palavras MÁXIMO em UMA única mensagem):
+
+1. **🎯 O que é** (2-3 frases, estilo Feynman — como se explicasse para um leigo inteligente)
+2. **⚡ Ponto-chave para prova** (o detalhe que mais cai em residência)
+3. **🏥 Aplicação clínica** (caso rápido de 3 linhas mostrando quando pensar nisso)
+4. **❓ Teste rápido** (1 pergunta objetiva para o aluno responder)
+
+REGRAS:
+- NÃO faça introduções longas
+- NÃO use subtítulos excessivos
+- Vá DIRETO ao ponto
+- Linguagem clara e objetiva
+- Após a resposta do aluno à pergunta: corrija brevemente e pergunte se quer aprofundar ou ir para questões`;
+      }
+
+      // Review mode — exam-focused
+      if (studyMode === "review") {
+        return `${base}
+${levelPrompt}
+${weakTopicsPrompt}
+FASE ATUAL: REVISÃO PARA PROVA
+Tema: "${topic || "solicitado pelo aluno"}"
+
+FORMATO OBRIGATÓRIO (uma mensagem estruturada):
+
+## 🧠 Revisão Rápida — ${topic}
+
+### 🎯 Top 5 pontos cobrados em residência
+(lista numerada dos conceitos mais cobrados)
+
+### ⚠️ Pegadinhas clássicas
+(3-4 pegadinhas com explicação de por que o aluno erra)
+
+### 🔀 Diagnóstico diferencial rápido
+(tabela comparativa: diagnóstico vs achado-chave que diferencia)
+
+### 💊 Conduta resumida
+(tratamento de 1ª linha com dose, via, quando NÃO usar)
+
+### ❓ Questão-teste
+(1 questão objetiva A-E focada nas pegadinhas acima)
+
+REGRAS:
+- Foque no que CAI EM PROVA, não no que é bonito
+- Priorize diagnósticos diferenciais e pegadinhas
+- Máximo 500 palavras`;
+      }
+
+      // Correction mode — error-focused
+      if (studyMode === "correction") {
+        return `${base}
+${levelPrompt}
+${weakTopicsPrompt}
+FASE ATUAL: CORREÇÃO DE ERROS
+Tema: "${topic || "solicitado pelo aluno"}"
+
+FORMATO OBRIGATÓRIO:
+
+## ❌ Correção Focada — ${topic}
+
+Analise os TEMAS FRACOS do aluno listados acima e:
+
+1. **Identifique o erro mais comum** nesse tema (conceito mal compreendido)
+2. **Explique o conceito correto** de forma clara (3-4 frases)
+3. **Mostre o raciocínio errado vs correto** lado a lado
+4. **Dê um exemplo clínico** onde esse erro levaria a conduta errada
+5. **Questão de reforço** (1 MCQ A-E focada exatamente no ponto de erro)
+
+REGRAS:
+- NÃO repita conteúdo genérico — foque APENAS nos erros
+- Se o aluno não tem erros registrados nesse tema, simule os erros mais comuns de alunos de residência
+- Após resposta: corrija e ofereça mais uma questão de reforço`;
+      }
+
+      // Default: full mode (existing behavior)
       return `${base}
 ${levelPrompt}
 ${weakTopicsPrompt}
@@ -119,6 +201,7 @@ REGRA DE REPETIÇÃO ESPAÇADA (PRIORIDADE MÁXIMA):
 LIMITE: máximo 500-700 palavras por mensagem. Divida em 4 mensagens conforme sequência.
 
 Ao final da Mensagem 4: inclua a primeira pergunta de Active Recall (❓ Pergunta 1/5).`;
+    }
 
     case "active-recall":
       return `${base}
@@ -294,9 +377,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, phase, topic, userContext, performanceData, session_memory } = await req.json();
+    const { messages, phase, topic, userContext, performanceData, session_memory, studyMode } = await req.json();
 
-    let systemPrompt = getPhasePrompt(phase, topic, performanceData);
+    let systemPrompt = getPhasePrompt(phase, topic, performanceData, studyMode);
     if (userContext) {
       systemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
     }

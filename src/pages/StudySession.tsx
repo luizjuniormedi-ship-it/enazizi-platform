@@ -19,7 +19,9 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ReactMarkdown from "react-markdown";
 
-type Phase = "start" | "performance" | "lesson" | "active-recall" | "questions" | "discussion" | "discursive" | "scoring";
+import StudyStyleSelector, { type StudyMode } from "@/components/tutor/StudyStyleSelector";
+
+type Phase = "start" | "style-select" | "performance" | "lesson" | "active-recall" | "questions" | "discussion" | "discursive" | "scoring";
 type Msg = { role: "user" | "assistant"; content: string };
 
 interface SpecialtyScore {
@@ -40,6 +42,7 @@ interface PerformanceData {
 
 const PHASE_META: Record<Phase, { label: string; icon: typeof BookOpen; shortLabel: string }> = {
   start: { label: "Início", icon: Play, shortLabel: "Início" },
+  "style-select": { label: "Estilo", icon: Play, shortLabel: "Estilo" },
   performance: { label: "📊 Painel", icon: BarChart3, shortLabel: "Painel" },
   lesson: { label: "📚 Aula", icon: BookOpen, shortLabel: "Aula" },
   "active-recall": { label: "🧠 Recall", icon: Brain, shortLabel: "Recall" },
@@ -84,6 +87,7 @@ const StudySession = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [studyMode, setStudyMode] = useState<StudyMode>("full");
   const [phase, setPhase] = useState<Phase>("start");
   const [topic, setTopic] = useState("");
   const [topicInput, setTopicInput] = useState("");
@@ -301,6 +305,7 @@ const StudySession = () => {
           phase: currentPhase,
           topic: currentTopic,
           performanceData: performance,
+          studyMode,
         }),
       });
 
@@ -366,12 +371,38 @@ const StudySession = () => {
     if (!topicInput.trim()) return;
     const t = topicInput.trim();
     setTopic(t);
-    setPhase("lesson");
+    // Go to style selection instead of directly to lesson
+    setPhase("style-select");
+  };
+
+  const handleStyleSelect = async (mode: StudyMode) => {
+    setStudyMode(mode);
+    const t = topic;
+
+    // Map mode to initial phase
+    const phaseMap: Record<StudyMode, Phase> = {
+      compact: "lesson",
+      full: "lesson",
+      review: "lesson",
+      correction: "lesson",
+      practice: "questions",
+    };
+    const targetPhase = phaseMap[mode];
+    setPhase(targetPhase);
+
     const updated = { ...performance, studiedTopics: [...new Set([...performance.studiedTopics, t])] };
     savePerformance(updated);
 
-    // Build user message with professor context if available
-    let userContent = `Quero estudar: ${t}. Comece pela aula completa.`;
+    // Build user message based on mode
+    const modeMessages: Record<StudyMode, string> = {
+      compact: `Quero estudar: ${t}. Modo RÁPIDO: explicação curta e direta (300-400 palavras), estilo Feynman + aplicação + ponto-chave + pergunta.`,
+      full: `Quero estudar: ${t}. Comece pela aula completa.`,
+      review: `Quero estudar: ${t}. Modo REVISÃO PARA PROVA: foque em pegadinhas, pontos cobrados em residência e diagnósticos diferenciais.`,
+      correction: `Quero estudar: ${t}. Modo CORREÇÃO DE ERROS: foque nos meus erros anteriores nesse tema e reforce os conceitos que errei.`,
+      practice: `Quero estudar: ${t}. Modo QUESTÃO DIRETA: gere uma questão de caso clínico com 5 alternativas imediatamente.`,
+    };
+
+    let userContent = modeMessages[mode];
     if (professorContext) {
       userContent += `\n\n[CONTEXTO DO PROFESSOR - TÓPICOS OBRIGATÓRIOS]\n${professorContext.topics}`;
       if (professorContext.materialUrl) {
@@ -382,7 +413,6 @@ const StudySession = () => {
     const userMsg: Msg = { role: "user", content: userContent };
     setMessages([userMsg]);
 
-    // Update assignment status to "studying"
     if (professorContext?.assignmentId && user) {
       supabase
         .from("teacher_study_assignment_results")
@@ -392,7 +422,7 @@ const StudySession = () => {
         .then(() => {});
     }
 
-    await streamChat([userMsg], "lesson", t);
+    await streamChat([userMsg], targetPhase, t);
   };
 
   const goToPhase = async (targetPhase: Phase) => {
@@ -545,7 +575,7 @@ const StudySession = () => {
             <Button variant="outline" size="icon" onClick={() => setIsFullscreen(!isFullscreen)} className="h-8 w-8" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
               {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </Button>
-            {phase !== "start" && (
+            {phase !== "start" && phase !== "style-select" && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon" className="h-8 w-8">
@@ -566,7 +596,7 @@ const StudySession = () => {
         </div>
 
         {/* Phase Progress Bar */}
-        {phase !== "start" && (
+        {phase !== "start" && phase !== "style-select" && (
           <div className="px-4 py-1.5 border-b border-border">
             <Progress value={progressPercent} className="h-1.5" />
             <div className="flex gap-1 mt-1.5 overflow-x-auto pb-0.5">
@@ -663,8 +693,19 @@ const StudySession = () => {
           </div>
         )}
 
+        {/* Style Select Screen */}
+        {phase === "style-select" && (
+          <div className="flex-1 flex items-center justify-center p-6">
+            <StudyStyleSelector
+              topic={topic}
+              onSelect={handleStyleSelect}
+              hasErrors={performance.weakTopics.some(w => w.toLowerCase().includes(topic.toLowerCase()) || topic.toLowerCase().includes(w.toLowerCase()))}
+            />
+          </div>
+        )}
+
         {/* Chat */}
-        {phase !== "start" && (
+        {phase !== "start" && phase !== "style-select" && (
           <>
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
               {messages.map((m, i) => (
