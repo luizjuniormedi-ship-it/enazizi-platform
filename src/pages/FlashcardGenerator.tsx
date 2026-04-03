@@ -5,8 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCallback, useState, useRef } from "react";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
+import { Input } from "@/components/ui/input";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
 
