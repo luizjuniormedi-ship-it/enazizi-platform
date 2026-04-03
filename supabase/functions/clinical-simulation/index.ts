@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.3.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
+import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -315,7 +316,7 @@ serve(async (req) => {
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user) throw new Error("Não autenticado");
 
-    const { action, specialty, subtopic, difficulty, message, conversation_history, specialist_area, teacher_case_id, triage_color: requestedTriageColor, pediatric_age_range, deterioration_level, patient_status: requestedPatientStatus, learner_mode } = await req.json();
+    const { action, specialty, subtopic, difficulty, message, conversation_history, specialist_area, teacher_case_id, triage_color: requestedTriageColor, pediatric_age_range, deterioration_level, patient_status: requestedPatientStatus, learner_mode, target_exams, recent_errors, exam_proximity_days } = await req.json();
 
     let messages: Array<{ role: string; content: string }> = [
       { role: "system", content: SYSTEM_PROMPT },
@@ -367,9 +368,28 @@ serve(async (req) => {
         ? ` O paciente DEVE ser pediátrico (0-17 anos). Use sinais vitais adequados para a faixa etária. O responsável acompanha a criança.`
         : "";
 
+      // Build banca adaptation block
+      let bancaBlock = "";
+      if (target_exams && Array.isArray(target_exams) && target_exams.length > 0) {
+        const profiles = target_exams.map((k: string) => getBancaProfile(k));
+        bancaBlock = profiles.map((p: any) => buildBancaBlock(p)).join("\n");
+      }
+
+      let errorsBlock = "";
+      if (recent_errors && recent_errors.has_errors) {
+        const types = (recent_errors.error_types || []).join(", ");
+        const themes = (recent_errors.themes || []).join(", ");
+        errorsBlock = `\n## REFORÇO DE ERROS PRÉVIOS\nO aluno errou recentemente em: ${types || "vários tipos"}. Temas com erro: ${themes || "diversos"}. Inclua pistas que testem esse tipo de raciocínio para reforço pedagógico.`;
+      }
+
+      let proximityBlock = "";
+      if (exam_proximity_days && typeof exam_proximity_days === "number" && exam_proximity_days <= 90) {
+        proximityBlock = `\n## PROXIMIDADE DA PROVA\nA prova do aluno é em ${exam_proximity_days} dias. ${exam_proximity_days <= 30 ? "Aumente a complexidade e exija mais rigor nas condutas." : "Mantenha nível desafiador."}`;
+      }
+
       messages.push({
         role: "user",
-        content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}${subtopic ? ` — Subassunto/Tema específico: ${subtopic}. O caso DEVE ser sobre este subassunto.` : ""}. Dificuldade: ${difficulty || "intermediário"}. Classificação de risco obrigatória: ${triage.toUpperCase()}. O campo triage_color DEVE ser "${triage}". Os sinais vitais e a gravidade do caso DEVEM ser coerentes com a classificação ${triage.toUpperCase()}.${pediatricInstruction} Responda APENAS em JSON válido.`,
+        content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}${subtopic ? ` — Subassunto/Tema específico: ${subtopic}. O caso DEVE ser sobre este subassunto.` : ""}. Dificuldade: ${difficulty || "intermediário"}. Classificação de risco obrigatória: ${triage.toUpperCase()}. O campo triage_color DEVE ser "${triage}". Os sinais vitais e a gravidade do caso DEVEM ser coerentes com a classificação ${triage.toUpperCase()}.${pediatricInstruction}${bancaBlock}${errorsBlock}${proximityBlock} Responda APENAS em JSON válido.`,
       });
     } else if (action === "interact") {
       if (conversation_history && Array.isArray(conversation_history)) {
