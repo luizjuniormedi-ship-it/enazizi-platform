@@ -12,7 +12,7 @@ import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner"
 import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
 
 // Dashboard 2.0 — Strategic blocks
-import TodayStudyCard from "@/components/dashboard/TodayStudyCard";
+import HeroStudyCard from "@/components/dashboard/HeroStudyCard";
 import ApprovalScoreCard from "@/components/dashboard/ApprovalScoreCard";
 import PendingReviewsCard from "@/components/dashboard/PendingReviewsCard";
 import WeakTopicsCard from "@/components/dashboard/WeakTopicsCard";
