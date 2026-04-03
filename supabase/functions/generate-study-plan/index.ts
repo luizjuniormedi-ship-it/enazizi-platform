@@ -44,19 +44,24 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { examDate, hoursPerDay, daysPerWeek, editalText, currentPlanId, targetExam } = await req.json();
+    const { examDate, hoursPerDay, daysPerWeek, editalText, currentPlanId, targetExam, targetExams } = await req.json();
 
     // Load target_exam from profile if not passed directly
-    let bancaKey = targetExam || null;
-    if (!bancaKey) {
+    let bancaKeys: string[] = targetExams || (targetExam ? [targetExam] : []);
+    if (bancaKeys.length === 0) {
       const { data: prof } = await supabase
         .from("profiles")
-        .select("target_exam")
+        .select("target_exam, target_exams")
         .eq("user_id", userId)
         .single();
-      bancaKey = prof?.target_exam || null;
+      const p = prof as any;
+      if (Array.isArray(p?.target_exams) && p.target_exams.length > 0) {
+        bancaKeys = p.target_exams;
+      } else if (p?.target_exam) {
+        bancaKeys = [p.target_exam];
+      }
     }
-    const bancaProfile = getBancaProfile(bancaKey);
+    const bancaProfile = bancaKeys.length > 0 ? getBancaProfile(bancaKeys[0]) : getBancaProfile(null);
     const bancaBlock = buildBancaBlock(bancaProfile);
 
     if (!examDate || !hoursPerDay || !daysPerWeek) {

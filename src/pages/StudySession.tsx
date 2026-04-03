@@ -104,7 +104,14 @@ const StudySession = () => {
   useEffect(() => {
     if (!user) return;
     supabase.from("profiles").select("target_exam").eq("user_id", user.id).single()
-      .then(({ data }) => { if (data?.target_exam) setTargetExam(data.target_exam as string); });
+      .then(({ data }) => {
+        const d = data as any;
+        if (Array.isArray(d?.target_exams) && d.target_exams.length > 0) {
+          setTargetExam(d.target_exams[0]);
+        } else if (d?.target_exam) {
+          setTargetExam(d.target_exam as string);
+        }
+      });
   }, [user]);
 
   // Read professor query params

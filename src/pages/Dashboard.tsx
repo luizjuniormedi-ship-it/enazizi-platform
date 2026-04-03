@@ -1,3 +1,13 @@
+import { Badge } from "@/components/ui/badge";
+
+const EXAM_LABELS: Record<string, string> = {
+  enare: "ENARE", revalida: "Revalida", usp: "USP", unicamp: "UNICAMP",
+  unifesp: "UNIFESP", "sus-sp": "SUS-SP", "sus-rj": "SUS-RJ", amrigs: "AMRIGS",
+  "ses-df": "SES-DF", "psu-mg": "PSU-MG", hcpa: "HCPA",
+  "santa-casa-sp": "Santa Casa SP", einstein: "Einstein",
+  "sirio-libanes": "Sírio-Libanês", outra: "Outra",
+};
+
 import { useEffect, useRef, lazy, Suspense, useState } from "react";
 import SafeCard from "@/components/layout/SafeCard";
 import { Loader2, Target, Calendar, Flame, ClipboardList } from "lucide-react";
@@ -94,7 +104,7 @@ const Dashboard = () => {
     );
   }
 
-  const { stats, metrics, displayName, hasCompletedDiagnostic } = data;
+  const { stats, metrics, displayName, hasCompletedDiagnostic, targetExams } = data;
 
   if (!stats || !metrics) {
     return (
@@ -136,6 +146,15 @@ const Dashboard = () => {
           </p>
           {stats.streak > 0 && (
             <p className="text-sm sm:text-xs text-muted-foreground mt-0.5">🔥 {stats.streak} dias seguidos</p>
+          )}
+          {targetExams && targetExams.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {targetExams.map((e: string) => (
+                <Badge key={e} variant="outline" className="text-[10px] px-1.5 py-0">
+                  {EXAM_LABELS[e] || e}
+                </Badge>
+              ))}
+            </div>
           )}
         </div>
         <div className="flex items-center gap-2">

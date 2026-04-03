@@ -326,3 +326,60 @@ export function applyExamModifiers(
 export function buildBancaPromptBlock(profile: ExamProfile): string {
   return `\n\n## ESTILO DA BANCA: ${profile.label}\nDificuldade: ${profile.difficulty}/5\nEstilo: ${profile.style}\n${profile.tutorGuidance}\n`;
 }
+
+/** Merge multiple exam profiles into a balanced combined profile */
+export function getMergedExamProfile(examKeys: string[]): ExamProfile {
+  if (!examKeys || examKeys.length === 0) return EXAM_PROFILES.outra;
+  if (examKeys.length === 1) return getExamProfile(examKeys[0]);
+
+  const profiles = examKeys.map(k => getExamProfile(k)).filter(Boolean);
+  if (profiles.length === 0) return EXAM_PROFILES.outra;
+
+  const n = profiles.length;
+
+  // Average numeric values
+  const difficulty = Math.round(profiles.reduce((s, p) => s + p.difficulty, 0) / n);
+  const practicalFocus = profiles.reduce((s, p) => s + p.practicalFocus, 0) / n;
+  const osceEmphasis = profiles.some(p => p.osceEmphasis);
+
+  // Merge specialty weights (average)
+  const allSpecialties = new Set(profiles.flatMap(p => Object.keys(p.specialtyWeights)));
+  const specialtyWeights: Record<string, number> = {};
+  for (const spec of allSpecialties) {
+    const vals = profiles.map(p => p.specialtyWeights[spec]).filter(v => v != null);
+    specialtyWeights[spec] = Math.round(vals.reduce((s, v) => s + v, 0) / vals.length);
+  }
+
+  // Average engine modifiers
+  const engineModifiers = {
+    reviewWeightMod: profiles.reduce((s, p) => s + p.engineModifiers.reviewWeightMod, 0) / n,
+    questionsWeightMod: profiles.reduce((s, p) => s + p.engineModifiers.questionsWeightMod, 0) / n,
+    practicalWeightMod: profiles.reduce((s, p) => s + p.engineModifiers.practicalWeightMod, 0) / n,
+    theoryWeightMod: profiles.reduce((s, p) => s + p.engineModifiers.theoryWeightMod, 0) / n,
+  };
+
+  // Combine labels and styles
+  const labels = profiles.map(p => p.label);
+  const style = profiles.map(p => `[${p.label}] ${p.style}`).join("\n");
+  const tutorGuidance = `O aluno está se preparando para ${labels.length} provas simultaneamente: ${labels.join(", ")}.\n` +
+    profiles.map(p => `- ${p.label}: ${p.tutorGuidance}`).join("\n");
+
+  return {
+    key: examKeys.join("+"),
+    label: labels.join(" + "),
+    difficulty,
+    practicalFocus,
+    osceEmphasis,
+    specialtyWeights,
+    style,
+    engineModifiers,
+    tutorGuidance,
+  };
+}
+
+/** Build banca prompt block for multiple exams */
+export function buildMultiBancaPromptBlock(examKeys: string[]): string {
+  if (!examKeys || examKeys.length === 0) return "";
+  const merged = getMergedExamProfile(examKeys);
+  return buildBancaPromptBlock(merged);
+}
