@@ -45,6 +45,7 @@ function TaskRow({ task, onStart, evolution }: { task: StudyRecommendation; onSt
           {task.priority >= 80 && (
             <span className="text-[10px] text-destructive font-medium">Alta prioridade</span>
           )}
+          {evolution && <EvolutionBadge status={evolution.status} />}
         </div>
         <p className="font-medium text-sm truncate">{task.topic}</p>
         <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
