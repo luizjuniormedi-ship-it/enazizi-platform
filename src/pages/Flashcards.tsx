@@ -454,7 +454,7 @@ const Flashcards = () => {
       {/* Topic search + generate from bank */}
       <div className="glass-card p-4 space-y-3">
         <h3 className="text-sm font-semibold flex items-center gap-2">
-          <Search className="h-4 w-4" /> Filtrar por tema
+          <Search className="h-4 w-4" /> Gerar e Filtrar por Tema
         </h3>
         <div className="flex gap-2">
           <Input
@@ -469,10 +469,30 @@ const Flashcards = () => {
             </Button>
           )}
         </div>
+
+        {/* Quantity selector */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-muted-foreground">Quantidade de flashcards</label>
+          <div className="flex gap-2">
+            {[5, 10, 15, 20, 30].map(q => (
+              <button
+                key={q}
+                onClick={() => setGenerateQuantity(q)}
+                className={`flex-1 py-1.5 rounded-lg border text-sm font-medium transition-all ${
+                  generateQuantity === q
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-card hover:bg-secondary"
+                }`}
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <Button
-          variant="outline"
           className="w-full gap-2"
-          onClick={handleGenerateFromBank}
+          onClick={() => handleGenerateFromBank(true)}
           disabled={generatingFromBank || !topicSearch.trim()}
         >
           {generatingFromBank ? (
@@ -480,11 +500,11 @@ const Flashcards = () => {
           ) : (
             <DatabaseZap className="h-4 w-4" />
           )}
-          Gerar Flashcards do Banco de Questões
+          Gerar {generateQuantity} Flashcards e Iniciar
         </Button>
         {topicSearch.trim() && (
           <p className="text-xs text-muted-foreground">
-            {filteredCards.length} card(s) encontrado(s) para "{topicSearch}"
+            {filteredCards.length} card(s) existente(s) para "{topicSearch}"
           </p>
         )}
       </div>
