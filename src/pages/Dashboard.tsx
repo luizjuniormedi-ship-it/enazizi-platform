@@ -219,6 +219,7 @@ const Dashboard = () => {
           BLOCO 4 — TREINO PRÁTICO
          ══════════════════════════════════════════ */}
       <SafeCard name="PracticalTraining"><PracticalTrainingCard /></SafeCard>
+      <SafeCard name="PracticalPerformance"><PracticalPerformanceCard /></SafeCard>
 
       {/* ══════════════════════════════════════════
           BLOCO 5 — MÉTRICAS DRILL-DOWN
