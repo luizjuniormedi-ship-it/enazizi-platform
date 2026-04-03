@@ -25,6 +25,7 @@ import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import AdaptiveModeCard from "@/components/dashboard/AdaptiveModeCard";
 import ExamSetupReminder from "@/components/dashboard/ExamSetupReminder";
 import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
+import MentorshipBanner from "@/components/dashboard/MentorshipBanner";
 import DashboardSummaryCard from "@/components/dashboard/DashboardSummaryCard";
 import ApprovalTimeline from "@/components/dashboard/ApprovalTimeline";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
