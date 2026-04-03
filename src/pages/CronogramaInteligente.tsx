@@ -240,6 +240,7 @@ export function getPreparationLevel(pct: number): { label: string; color: string
 
 const CronogramaInteligente = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [temas, setTemas] = useState<TemaEstudado[]>([]);
   const [revisoes, setRevisoes] = useState<Revisao[]>([]);
   const [desempenhos, setDesempenhos] = useState<Desempenho[]>([]);
