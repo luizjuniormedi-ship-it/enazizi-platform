@@ -59,7 +59,7 @@ const GlobalSearch = () => {
     ]);
 
     const mapped: SearchResult[] = [
-      ...(questionsRes.data || []).map((q) => ({ id: q.id, type: "question" as const, title: q.statement?.slice(0, 100) || "", subtitle: q.topic || undefined, path: "/dashboard/banco-questoes" })),
+      ...(questionsRes.data || []).map((q) => ({ id: q.id, type: "question" as const, title: q.statement?.slice(0, 100) || "", subtitle: q.topic || undefined, path: "/dashboard/simulados" })),
       ...(flashcardsRes.data || []).map((f) => ({ id: f.id, type: "flashcard" as const, title: f.question?.slice(0, 100) || "", subtitle: f.topic || undefined, path: "/dashboard/flashcards" })),
       ...(errorsRes.data || []).map((e) => ({ id: e.id, type: "error" as const, title: e.conteudo?.slice(0, 100) || e.tema, subtitle: e.tema, path: "/dashboard/banco-erros" })),
       ...(summariesRes.data || []).map((s) => ({ id: s.id, type: "summary" as const, title: s.topic, subtitle: s.content?.slice(0, 80) || undefined, path: "/dashboard/resumos" })),

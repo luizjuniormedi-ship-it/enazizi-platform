@@ -91,7 +91,7 @@ const DailyGoalWidget = () => {
 
       {/* CTA */}
       {!isComplete && (
-        <Link to="/dashboard/banco-questoes" className="flex-shrink-0">
+        <Link to="/dashboard/simulados" className="flex-shrink-0">
           <Button size="sm" className="gap-1.5">
             <Zap className="h-4 w-4" />
             Praticar

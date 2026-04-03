@@ -21,14 +21,14 @@ const DashboardMetricsGrid = ({ stats, metrics }: Props) => {
     <>
       {/* Primary KPIs - Top 4 with visual emphasis */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link to="/dashboard/banco-questoes" className="glass-card p-5 hover:border-primary/30 transition-all group relative overflow-hidden">
+        <Link to="/dashboard/simulados" className="glass-card p-5 hover:border-primary/30 transition-all group relative overflow-hidden">
           <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
           <Target className="h-6 w-6 text-primary mb-3" />
           <div className="text-3xl font-bold">{metrics.questionsAnswered}</div>
           <div className="text-sm text-muted-foreground mt-1">Questões respondidas</div>
         </Link>
 
-        <Link to="/dashboard/banco-questoes" className="glass-card p-5 hover:border-primary/30 transition-all group relative overflow-hidden">
+        <Link to="/dashboard/simulados" className="glass-card p-5 hover:border-primary/30 transition-all group relative overflow-hidden">
           <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
           <CheckCircle2 className={cn("h-6 w-6 mb-3", metrics.accuracy >= 70 ? "text-green-500" : metrics.accuracy >= 50 ? "text-yellow-500" : "text-red-500")} />
           <div className="text-3xl font-bold">{metrics.accuracy}%</div>
@@ -66,7 +66,7 @@ const DashboardMetricsGrid = ({ stats, metrics }: Props) => {
               { to: "/dashboard/simulados", icon: Award, value: metrics.simuladosCompleted, label: "Simulados feitos" },
               { to: "/dashboard/banco-erros", icon: AlertTriangle, value: metrics.errorsCount, label: "Erros registrados", iconColor: metrics.errorsCount > 0 ? "text-red-500" : "text-green-500" },
               { to: "/dashboard/flashcards", icon: FlipVertical, value: stats.flashcards, label: "Flashcards" },
-              { to: "/dashboard/questoes", icon: PenTool, value: metrics.questionsCreated, label: "Questões criadas" },
+              { to: "/dashboard/simulados", icon: PenTool, value: metrics.questionsCreated, label: "Questões criadas" },
               { to: "/dashboard/plantao", icon: Activity, value: metrics.clinicalSimulations, label: "Simulações clínicas" },
               { to: "/dashboard/anamnese", icon: ClipboardList, value: metrics.anamnesisCompleted, label: "Anamneses" },
               { to: "/dashboard/planner", icon: CheckCircle2, value: `${stats.completedTasks}/${stats.totalTasks}`, label: "Tarefas concluídas" },
@@ -110,7 +110,7 @@ const DashboardMetricsGrid = ({ stats, metrics }: Props) => {
                 <div className="text-xs text-muted-foreground">Flashcards globais</div>
               </div>
             </Link>
-            <Link to="/dashboard/banco-questoes" className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary/80 transition-colors">
+            <Link to="/dashboard/simulados" className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary/80 transition-colors">
               <HelpCircle className="h-4 w-4 text-primary flex-shrink-0" />
               <div>
                 <div className="text-lg font-bold">{metrics.globalQuestions}</div>

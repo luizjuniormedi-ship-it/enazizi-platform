@@ -66,7 +66,7 @@ export default function OnboardingChecklist({ stats, metrics, hasCompletedDiagno
       title: "Responda 10 Questões",
       description: "Pratique com questões do banco global",
       xp: 30,
-      path: "/dashboard/banco-questoes",
+      path: "/dashboard/simulados",
       isComplete: metrics.questionsAnswered >= 10,
     },
     {

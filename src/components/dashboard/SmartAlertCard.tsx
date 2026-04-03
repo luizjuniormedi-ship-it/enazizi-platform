@@ -78,22 +78,22 @@ export default function SmartAlertCard() {
   if (metrics.errorsCount >= 5) {
     return (
       <Card className="border-orange-500/30 bg-orange-500/5">
-        <CardContent className="p-3 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-orange-500/10 shrink-0">
-            <AlertTriangle className="h-4 w-4 text-orange-500" />
+        <CardContent className="p-4 flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-orange-500/10 shrink-0">
+            <AlertTriangle className="h-5 w-5 text-orange-500" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium">
-              Tema crítico identificado — {metrics.errorsCount} erros acumulados
+            <p className="text-sm font-medium leading-snug">
+              {metrics.errorsCount} erros acumulados — revise para não repetir
             </p>
           </div>
           <Button
             size="sm"
             variant="outline"
-            className="shrink-0 text-xs gap-1 h-8"
+            className="shrink-0 text-xs gap-1 h-10 px-3 active:scale-[0.97] transition-transform"
             onClick={() => navigate("/dashboard/banco-erros")}
           >
-            Resolver <ArrowRight className="h-3 w-3" />
+            Resolver <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         </CardContent>
       </Card>

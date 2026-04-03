@@ -211,7 +211,7 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
                     <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => handleStudyWithTutor({ topic: area, statement: `Preciso revisar ${area} após resultado baixo na prova extrema`, options: [], correct: 0 })}>
                       <GraduationCap className="h-3 w-3" /> Tutor IA
                     </Button>
-                    <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => navigate(`/dashboard/banco-questoes?sc_topic=${encodeURIComponent(area)}&sc_objective=reforço`)}>
+                    <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => navigate(`/dashboard/simulados?sc_topic=${encodeURIComponent(area)}&sc_objective=reforço`)}>
                       <BarChart3 className="h-3 w-3" /> Questões
                     </Button>
                   </div>
