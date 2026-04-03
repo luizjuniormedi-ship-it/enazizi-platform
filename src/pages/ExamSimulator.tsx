@@ -187,7 +187,9 @@ const ExamSimulator = () => {
                 .filter((q) => q.options.length >= 2)
                 .filter(isMedicalQuestion);
 
-              examQuestions = [...examQuestions, ...extra];
+              // Apply global AI validation
+              const validatedExtra = filterValidQuestions(extra, { specialty: examConfig.areas[0] });
+              examQuestions = [...examQuestions, ...validatedExtra];
             }
           } catch {
             // ignore parse errors

@@ -121,7 +121,10 @@ async function generateBatch(
   if (toolCall?.function?.arguments) {
     try {
       const parsed = JSON.parse(toolCall.function.arguments);
-      if (Array.isArray(parsed.questions)) return mapQuestions(parsed.questions, topics);
+      if (Array.isArray(parsed.questions)) {
+        const validated = filterValidQuestions(parsed.questions, { specialty: topics[0] });
+        return mapQuestions(validated, topics);
+      }
     } catch { /* fall through */ }
   }
 

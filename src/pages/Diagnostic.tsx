@@ -242,6 +242,8 @@ NÃO inclua texto extra, APENAS o JSON.` }],
     else content = JSON.stringify(raw);
 
     const parsed = parseQuestions(content, area, difficulty).filter(q => isMedicalQuestion(q));
+    // Apply global AI validation
+    const validated = filterValidQuestions(parsed, { specialty: area, topic: area });
     // Post-parse: filter out duplicates against already accumulated questions
     const unique = parsed.filter(q => !isDuplicate(q, allQuestionsSoFar));
     return unique.slice(0, QUESTIONS_PER_AREA);
