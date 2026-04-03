@@ -8,7 +8,7 @@ export interface Achievement {
   title: string;
   description: string;
   icon: string;
-  category: "study" | "streak" | "social" | "milestone";
+  category: "study" | "streak" | "social" | "milestone" | "evolution";
   condition: (stats: GamificationStats) => boolean;
 }
 
