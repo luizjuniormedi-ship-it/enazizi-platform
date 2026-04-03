@@ -22,7 +22,6 @@ import PracticalTrainingCard from "@/components/dashboard/PracticalTrainingCard"
 import DiagnosticSummaryCard from "@/components/dashboard/DiagnosticSummaryCard";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 
-import MissionStartButton from "@/components/dashboard/MissionStartButton";
 import AdaptiveModeCard from "@/components/dashboard/AdaptiveModeCard";
 import ExamSetupReminder from "@/components/dashboard/ExamSetupReminder";
 import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
