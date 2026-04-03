@@ -2,6 +2,7 @@ import { Loader2, BookOpen, RotateCcw, CalendarDays, HelpCircle, XCircle, Target
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import type { TemaEstudado, Revisao, TemaComputado } from "@/pages/CronogramaInteligente";
+import PlannerMentorshipBlock from "@/components/planner/PlannerMentorshipBlock";
 
 interface Props {
   temas: TemaEstudado[];
