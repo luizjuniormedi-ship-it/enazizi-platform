@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { BookMarked, Plus, Loader2, Users, Trash2, Eye, Calendar, CheckCircle, AlertTriangle } from "lucide-react";
+import { BookMarked, Plus, Loader2, Users, Trash2, Eye, Calendar, CheckCircle, AlertTriangle, BarChart3 } from "lucide-react";
+import MentorshipReport from "@/components/professor/MentorshipReport";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
