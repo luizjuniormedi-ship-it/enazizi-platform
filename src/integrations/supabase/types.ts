@@ -1636,6 +1636,160 @@ export type Database = {
         }
         Relationships: []
       }
+      mentor_theme_plan_progress: {
+        Row: {
+          correct_answers: number
+          created_at: string
+          id: string
+          plan_id: string
+          questions_answered: number
+          status: string
+          study_time_minutes: number
+          topic_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          correct_answers?: number
+          created_at?: string
+          id?: string
+          plan_id: string
+          questions_answered?: number
+          status?: string
+          study_time_minutes?: number
+          topic_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          correct_answers?: number
+          created_at?: string
+          id?: string
+          plan_id?: string
+          questions_answered?: number
+          status?: string
+          study_time_minutes?: number
+          topic_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_theme_plan_progress_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "mentor_theme_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_theme_plan_progress_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "mentor_theme_plan_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentor_theme_plan_targets: {
+        Row: {
+          created_at: string
+          id: string
+          plan_id: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          plan_id: string
+          target_id: string
+          target_type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          plan_id?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_theme_plan_targets_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "mentor_theme_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentor_theme_plan_topics: {
+        Row: {
+          created_at: string
+          id: string
+          plan_id: string
+          priority: number
+          subtopic: string | null
+          topic: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          plan_id: string
+          priority?: number
+          subtopic?: string | null
+          topic: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          plan_id?: string
+          priority?: number
+          subtopic?: string | null
+          topic?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_theme_plan_topics_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "mentor_theme_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentor_theme_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          exam_date: string | null
+          id: string
+          name: string
+          professor_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          exam_date?: string | null
+          id?: string
+          name: string
+          professor_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          exam_date?: string | null
+          id?: string
+          name?: string
+          professor_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       module_sessions: {
         Row: {
           created_at: string
