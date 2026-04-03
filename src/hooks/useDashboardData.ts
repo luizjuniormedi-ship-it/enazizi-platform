@@ -71,7 +71,7 @@ async function fetchDashboardData(userId: string) {
     supabase.from("profiles").select("display_name, has_completed_diagnostic").eq("user_id", userId).maybeSingle(),
     supabase.from("practice_attempts").select("correct, created_at").eq("user_id", userId),
     supabase.from("error_bank").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    supabase.from("revisoes").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "pendente"),
+    supabase.from("revisoes").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "pendente").lte("data_revisao", new Date().toISOString().split("T")[0]),
     supabase.from("exam_sessions").select("id, total_questions, score", { count: "exact" }).eq("user_id", userId).eq("status", "finished"),
     supabase.from("discursive_attempts").select("id", { count: "exact", head: true }).eq("user_id", userId).not("finished_at", "is", null),
     supabase.from("user_gamification").select("current_streak, xp, level").eq("user_id", userId).maybeSingle(),
