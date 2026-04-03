@@ -109,6 +109,7 @@ function applyWeights(recs: StudyRecommendation[], weights: PlanWeights, maxTota
     clinical: slotClinical,
     simulado: slotClinical,
     new: slotNew,
+    chronicle: 1,
   };
 
   const result: StudyRecommendation[] = [];
