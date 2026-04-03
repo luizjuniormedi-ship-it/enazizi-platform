@@ -460,9 +460,6 @@ const ProfessorDashboard = () => {
     setManualQuestions((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const toggleTopic = (topic: string) => {
-    setSelectedTopics((prev) => prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]);
-  };
 
   const totalStudentsAssigned = simulados.reduce((s, sim) => s + (sim.results_summary?.total || 0), 0);
   const totalCompleted = simulados.reduce((s, sim) => s + (sim.results_summary?.completed || 0), 0);
