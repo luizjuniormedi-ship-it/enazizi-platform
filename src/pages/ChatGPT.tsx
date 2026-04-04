@@ -250,6 +250,7 @@ const ChatGPT = () => {
         },
         error_bank: errorBankData.length > 0 ? errorBankData : undefined,
         session_memory: sessionMemory.getMemoryPayload(),
+        mission_context: missionContext || undefined,
       },
       onChunk: (fullText) => {
         setMessages(prev => {
