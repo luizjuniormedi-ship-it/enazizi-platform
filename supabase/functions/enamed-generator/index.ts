@@ -40,6 +40,7 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
   // Try OpenAI first (gpt-4o) for higher quality
   if (OPENAI_API_KEY) {
     try {
+      const startMs = Date.now();
       const res = await fetch(OPENAI_API, {
         method: "POST",
         headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
@@ -47,10 +48,12 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
       });
       if (res.ok) {
         const data = await res.json();
+        logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "gpt-4o", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard" }).catch(() => {});
         return data.choices?.[0]?.message?.content || "";
       }
       const errText = await res.text();
       console.warn(`OpenAI ${res.status}: ${errText.slice(0, 200)}`);
+      logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "gpt-4o", success: false, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard", errorMessage: `status ${res.status}` }).catch(() => {});
       if (res.status !== 429 && res.status !== 402) {
         throw new Error(`OpenAI error ${res.status}`);
       }
