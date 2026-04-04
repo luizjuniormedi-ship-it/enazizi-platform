@@ -71,10 +71,10 @@ export default function RecoveryModeBanner() {
 
   // Standard recovery mode — simple banner
   return (
-    <Card className="border-amber-500/30 bg-amber-500/5">
+    <Card className="border-primary/30 bg-primary/5">
       <CardContent className="p-4 flex items-center gap-3">
-        <div className="p-2.5 rounded-xl bg-amber-500/10 shrink-0">
-          <Shield className="h-5 w-5 text-amber-500" />
+        <div className="p-2.5 rounded-xl bg-primary/10 shrink-0">
+          <Shield className="h-5 w-5 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium leading-snug">
