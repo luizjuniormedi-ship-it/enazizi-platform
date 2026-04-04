@@ -255,6 +255,8 @@ export type Database = {
       }
       ai_usage_logs: {
         Row: {
+          actor_key: string | null
+          actor_type: string
           cache_hit: boolean | null
           cost_estimate: number | null
           created_at: string
@@ -266,9 +268,11 @@ export type Database = {
           response_time_ms: number | null
           success: boolean
           tokens_used: number | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
+          actor_key?: string | null
+          actor_type?: string
           cache_hit?: boolean | null
           cost_estimate?: number | null
           created_at?: string
@@ -280,9 +284,11 @@ export type Database = {
           response_time_ms?: number | null
           success?: boolean
           tokens_used?: number | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
+          actor_key?: string | null
+          actor_type?: string
           cache_hit?: boolean | null
           cost_estimate?: number | null
           created_at?: string
@@ -294,7 +300,7 @@ export type Database = {
           response_time_ms?: number | null
           success?: boolean
           tokens_used?: number | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
