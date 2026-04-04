@@ -23,13 +23,13 @@ const CTASection = forwardRef<HTMLElement>((_, ref) => (
           Cada dia sem um plano estruturado é um dia que seus concorrentes avançam. O ENAZIZI começa a trabalhar por você hoje.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-          <Button size="lg" asChild className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 glow">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-2 sm:px-0">
+          <Button size="lg" asChild className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 glow">
             <Link to="/register">
               Criar conta grátis <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>
-          <Button size="lg" variant="outline" asChild className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6">
+          <Button size="lg" variant="outline" asChild className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6">
             <Link to="/login">Já tenho conta</Link>
           </Button>
         </div>

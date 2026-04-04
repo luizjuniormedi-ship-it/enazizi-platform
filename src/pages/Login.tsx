@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Brain, Mail, Lock, BookOpen, Trophy, Sparkles, GraduationCap, AlertTriangle, Calendar, Users, FlaskConical, Smartphone, Monitor, Globe, MessageCircle, Star, Quote } from "lucide-react";
+import enazizi from "@/assets/enazizi-mascot.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
@@ -122,15 +123,13 @@ const Login = () => {
     <div className="min-h-[100dvh] overflow-y-auto flex flex-col lg:flex-row bg-background">
       {/* Left panel - Hero */}
       <div className="lg:w-1/2 bg-gradient-to-br from-primary/20 via-primary/10 to-background p-4 sm:p-10 lg:p-14 flex flex-col justify-center">
-        <Link to="/" className="inline-flex items-center gap-2 mb-6 lg:mb-10">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center glow">
-            <Brain className="h-6 w-6 text-primary" />
-          </div>
+        <Link to="/" className="inline-flex items-center gap-2 mb-4 lg:mb-10">
+          <img src={enazizi} alt="ENAZIZI" className="h-10 w-10 rounded-xl object-cover" />
           <span className="text-xl font-bold">ENAZIZI</span>
         </Link>
 
-        <h2 className="text-2xl lg:text-3xl font-bold mb-2">Sua plataforma completa para residência médica</h2>
-        <p className="text-muted-foreground mb-6 lg:mb-8 text-sm lg:text-base">Estude com inteligência artificial, questões reais de provas e ferramentas que se adaptam ao seu ritmo.</p>
+        <h2 className="text-xl lg:text-3xl font-bold mb-1 lg:mb-2">Sua plataforma completa para residência médica</h2>
+        <p className="text-muted-foreground mb-4 lg:mb-8 text-sm lg:text-base">Estude com IA, questões reais e ferramentas que se adaptam ao seu ritmo.</p>
 
         {/* Checklist de valor */}
         <div className="hidden lg:flex flex-col gap-2 mb-6 text-sm">
@@ -147,22 +146,22 @@ const Login = () => {
         </div>
 
         {/* Stats grid */}
-        <div className="grid grid-cols-4 gap-3 mb-6 lg:mb-10">
+        <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-4 lg:mb-10">
           {stats.map((s) => (
             <div key={s.label} className="text-center">
-              <div className="flex justify-center mb-1">
-                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <s.icon className="h-4 w-4 text-primary" />
+              <div className="flex justify-center mb-0.5 lg:mb-1">
+                <div className="h-7 w-7 lg:h-9 lg:w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <s.icon className="h-3.5 w-3.5 lg:h-4 lg:w-4 text-primary" />
                 </div>
               </div>
-              <p className="text-lg lg:text-xl font-black">{s.value}</p>
+              <p className="text-base lg:text-xl font-black">{s.value}</p>
               <p className="text-[10px] lg:text-xs text-muted-foreground">{s.label}</p>
             </div>
           ))}
         </div>
 
         {/* Features list */}
-        <div className="hidden sm:grid sm:grid-cols-2 gap-2 lg:gap-3">
+        <div className="hidden lg:grid lg:grid-cols-2 gap-2 lg:gap-3">
           {features.map((f) => (
             <div key={f.label} className="flex items-center gap-2 text-sm">
               <f.icon className="h-4 w-4 text-primary shrink-0" />
@@ -173,7 +172,7 @@ const Login = () => {
 
         {/* Testimonials */}
         {testimonials.length > 0 && (
-          <div className="mt-6 lg:mt-8 space-y-3">
+          <div className="hidden lg:block mt-6 lg:mt-8 space-y-3">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Avaliações de alunos</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {testimonials.map((t, i) => (

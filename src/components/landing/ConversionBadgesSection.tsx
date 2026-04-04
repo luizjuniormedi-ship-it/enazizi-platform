@@ -18,11 +18,11 @@ const ConversionBadgesSection = () => (
           Pronto para mudar sua preparação?
         </h2>
 
-        <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-8 sm:mb-10">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap justify-center gap-2 sm:gap-4 mb-8 sm:mb-10">
           {badges.map((b) => (
             <div
               key={b.text}
-              className="inline-flex items-center gap-2 rounded-full border border-border/50 bg-card/60 px-4 py-2 text-sm"
+              className="inline-flex items-center gap-2 rounded-full border border-border/50 bg-card/60 px-3 sm:px-4 py-2 text-xs sm:text-sm"
             >
               <b.icon className="h-4 w-4 text-primary shrink-0" />
               <span className="text-foreground/90">{b.text}</span>
