@@ -62,7 +62,7 @@ export default function PendingReviewsCard() {
           </div>
         ))}
         {reviews.length > 4 && (
-          <Button variant="ghost" size="sm" className="w-full text-xs h-7 text-muted-foreground" onClick={() => navigate("/dashboard/plano-dia")}>
+          <Button variant="ghost" size="sm" className="w-full text-xs h-7 text-muted-foreground" onClick={() => navigate("/dashboard/plano-dia?autostart=reviews")}>
             Ver todas as revisões
           </Button>
         )}
