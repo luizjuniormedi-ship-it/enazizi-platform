@@ -118,12 +118,7 @@ const queryClient = useQueryClient();
       .on('postgres_changes', { event: '*', schema: 'public', table: 'practice_attempts', filter: `user_id=eq.${user.id}` }, onPractice)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'revisoes', filter: `user_id=eq.${user.id}` }, onRevisoes)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'fsrs_cards', filter: `user_id=eq.${user.id}` }, onLight)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_sessions', filter: `user_id=eq.${user.id}` }, onExam)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'error_bank', filter: `user_id=eq.${user.id}` }, onLight)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_gamification', filter: `user_id=eq.${user.id}` }, onLight)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'simulation_sessions', filter: `user_id=eq.${user.id}` }, onLight)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'anamnesis_results', filter: `user_id=eq.${user.id}` }, onLight)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chronicle_osce_sessions', filter: `user_id=eq.${user.id}` }, onLight)
       .subscribe();
     return () => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);

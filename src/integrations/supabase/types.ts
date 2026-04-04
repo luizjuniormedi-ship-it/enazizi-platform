@@ -792,6 +792,30 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_snapshots: {
+        Row: {
+          created_at: string
+          id: string
+          snapshot_json: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          snapshot_json?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          snapshot_json?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       desempenho_questoes: {
         Row: {
           created_at: string

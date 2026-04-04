@@ -31,7 +31,37 @@ interface AiFetchOptions {
   maxRetries?: number;
   timeoutMs?: number;
   maxTokens?: number;
+  /** Optional user ID for rate limiting (10 calls/min per user) */
+  userId?: string;
 }
+
+// ── In-memory rate limiter (per edge function instance) ────────
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 10;
+const rateLimitMap = new Map<string, number[]>();
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const timestamps = rateLimitMap.get(userId) || [];
+  const recent = timestamps.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
+  if (recent.length >= RATE_LIMIT_MAX) {
+    rateLimitMap.set(userId, recent);
+    return false; // rate limited
+  }
+  recent.push(now);
+  rateLimitMap.set(userId, recent);
+  return true; // allowed
+}
+
+// Cleanup stale entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, timestamps] of rateLimitMap.entries()) {
+    const recent = timestamps.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
+    if (recent.length === 0) rateLimitMap.delete(key);
+    else rateLimitMap.set(key, recent);
+  }
+}, 5 * 60_000);
 
 async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
   const controller = new AbortController();
@@ -85,6 +115,12 @@ async function fetchWithRetry(
 }
 
 export async function aiFetch(options: AiFetchOptions): Promise<Response> {
+  // Rate limit check
+  if (options.userId && !checkRateLimit(options.userId)) {
+    console.warn(`[aiFetch] Rate limited user ${options.userId}`);
+    throw new Error("AI_RATE_LIMITED");
+  }
+
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 

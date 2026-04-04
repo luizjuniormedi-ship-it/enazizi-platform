@@ -15,6 +15,12 @@ export function useDashboardInvalidation() {
     queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
     queryClient.invalidateQueries({ queryKey: ["weekly-goals"] });
     queryClient.invalidateQueries({ queryKey: ["mission-mode"] });
+    // Trigger async snapshot update (fire-and-forget)
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      supabase.functions.invoke("dashboard-snapshot", {
+        body: { action: "update" },
+      }).catch(() => {});
+    });
   }, [queryClient]);
 
   const invalidateDashboard = useCallback(() => {
