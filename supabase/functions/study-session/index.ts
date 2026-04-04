@@ -141,7 +141,7 @@ REGRAS:
 
       // Correction mode — error-focused
       if (studyMode === "correction") {
-        return `${base}
+        return `${getReinforcementPrompt()}
 ${levelPrompt}
 ${weakTopicsPrompt}
 FASE ATUAL: CORREÇÃO DE ERROS
