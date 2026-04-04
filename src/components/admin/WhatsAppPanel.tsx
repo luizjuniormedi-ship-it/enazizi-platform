@@ -682,7 +682,10 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
                 <Button variant="destructive" onClick={handleStopExecution} className="gap-1.5"><StopCircle className="h-4 w-4" /> Parar</Button>
               )}
               {activeExecution && (
-                <Button variant="outline" onClick={handleReprocessErrors} className="gap-1.5"><RotateCcw className="h-4 w-4" /> Reprocessar erros</Button>
+                <>
+                  <Button variant="outline" onClick={handleReprocessErrors} className="gap-1.5"><RotateCcw className="h-4 w-4" /> Reprocessar erros</Button>
+                  <Button variant="outline" onClick={handleResetQueue} className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10"><Trash2 className="h-4 w-4" /> Limpar fila</Button>
+                </>
               )}
             </div>
           </div>
