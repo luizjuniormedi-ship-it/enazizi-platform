@@ -337,11 +337,14 @@ Lembre-se: NUNCA repita pacientes anteriores. Varie todos os parâmetros demogr�
         { role: "user", content: `action="finish"\nAvalie o desempenho COMPLETO da anamnese E do raciocínio clínico do aluno. Seja rigoroso e educativo.${diagnosisContext}` },
       ];
 
+      const startMs3 = Date.now();
       const response = await aiFetch({
         model: "google/gemini-2.5-flash",
         messages: contextMessages,
         stream: false,
       });
+      const elapsed3 = Date.now() - startMs3;
+      logAnamnesis(response.ok, elapsed3, response.ok ? undefined : `status ${response.status}`);
 
       if (!response.ok) {
         const t = await response.text();
