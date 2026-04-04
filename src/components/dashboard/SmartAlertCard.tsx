@@ -37,9 +37,14 @@ export default function SmartAlertCard() {
             size="sm"
             variant="outline"
             className="shrink-0 text-xs gap-1 h-10 px-3 active:scale-[0.97] transition-transform"
-            onClick={() => navigate("/dashboard/cronograma")}
+            onClick={() => {
+              if (state.status === "idle" && hasTasks) {
+                startMission();
+              }
+              navigate("/dashboard/missao");
+            }}
           >
-            Resolver <ArrowRight className="h-3.5 w-3.5" />
+            <Play className="h-3.5 w-3.5" /> Revisar agora
           </Button>
         </CardContent>
       </Card>
