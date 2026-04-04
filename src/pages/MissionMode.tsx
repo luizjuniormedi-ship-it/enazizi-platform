@@ -6,6 +6,7 @@ import { useStudyEngine } from "@/hooks/useStudyEngine";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { buildStudyPath } from "@/lib/studyRouter";
+import { getHumanReadableReason } from "@/lib/humanizedReasons";
 import FocusHardMode from "@/components/study/FocusHardMode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -139,7 +140,7 @@ export default function MissionMode() {
             <span className="text-2xl">{TYPE_ICONS[currentTask.type] || "📋"}</span>
             <Badge variant="secondary">{TYPE_LABELS[currentTask.type]}</Badge>
           </div>
-          <p className="text-muted-foreground">{currentTask.reason}</p>
+          <p className="text-muted-foreground">{getHumanReadableReason(currentTask)}</p>
           <Button
             className="w-full gap-2 py-6"
             size="lg"
@@ -225,7 +226,7 @@ export default function MissionMode() {
 
                 <div>
                   <h2 className="text-xl font-bold">{currentTask.topic}</h2>
-                  <p className="text-sm text-muted-foreground mt-1">{currentTask.reason}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{getHumanReadableReason(currentTask)}</p>
                   {adaptive?.focusReason && (
                     <p className="text-[10px] text-muted-foreground/70 mt-1 flex items-center gap-1">
                       <Target className="h-3 w-3 shrink-0" />

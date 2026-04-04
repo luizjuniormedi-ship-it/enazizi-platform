@@ -12,6 +12,7 @@ import { useStudyEngine, type StudyRecommendation } from "@/hooks/useStudyEngine
 import { useSafeCta } from "@/hooks/useSafeCta";
 import { buildStudyPath } from "@/lib/studyRouter";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { getHumanReadableReason } from "@/lib/humanizedReasons";
 
 /* ── Dynamic Title Logic ── */
 function getDynamicTitle(
@@ -177,6 +178,9 @@ export default function HeroStudyCard() {
             <h3 className="font-bold text-xl leading-tight">{title}</h3>
             <p className="text-sm text-muted-foreground">
               {topTask.topic} · ~{totalStudyMinutes}min
+            </p>
+            <p className="text-xs text-muted-foreground/80 mt-0.5">
+              💡 {getHumanReadableReason(topTask)}
             </p>
           </div>
 
