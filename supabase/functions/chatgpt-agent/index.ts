@@ -13,9 +13,53 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, userContext, enazizi_progress, error_bank, session_memory } = await req.json();
+    const { messages, userContext, enazizi_progress, error_bank, session_memory, mission_context } = await req.json();
 
     let instructions = ENAZIZI_PROMPT;
+
+    // ── MISSION MODE: override system prompt for strategic, concise responses ──
+    if (mission_context && mission_context.mode === "mission") {
+      const mc = mission_context;
+      const phaseLabels: Record<string, string> = {
+        critico: "Crítico", atencao: "Atenção", competitivo: "Competitivo", pronto: "Pronto",
+      };
+      const phaseLabel = phaseLabels[mc.phase || ""] || mc.phase || "desconhecida";
+
+      instructions += `\n\n===== MODO MISSÃO ATIVO =====
+VOCÊ ESTÁ NO MODO MISSÃO. Seu comportamento muda:
+- Seja um MENTOR ESTRATÉGICO, não um professor
+- Respostas CURTAS e DIRETAS (máximo 300 palavras)
+- Foco total em CORREÇÃO DE ERROS e PERFORMANCE NA PROVA
+- NÃO dê aula completa — vá direto ao ponto
+- NÃO faça introduções longas
+- SEMPRE conecte com o que cai na prova
+
+CONTEXTO DO ALUNO:
+- Tema: ${mc.topic || "não definido"}
+- Erro principal: ${mc.error || "não identificado"}
+- Fase atual: ${phaseLabel}
+- Objetivo do dia: ${mc.objective || "evoluir"}
+- Revisões pendentes: ${mc.pendingReviews ?? "?"}
+- Acurácia: ${mc.accuracy ?? "?"}%
+- Banca alvo: ${mc.examFocus || "geral"}
+
+ESTRUTURA OBRIGATÓRIA DA RESPOSTA (nesta ordem):
+
+1. **🎯 Contexto do erro** (1-2 frases identificando o que o aluno está errando)
+2. **✅ Correção direta** (explicação objetiva do ponto crítico — máx 4 frases)
+3. **⚠️ Pegadinha de prova** (1 frase sobre o erro mais comum nesse tema)
+4. **💡 Regra de ouro** (1 frase-resumo que o aluno deve memorizar)
+5. **🏥 Aplicação rápida** (mini cenário clínico de 3 linhas OU pergunta direta)
+
+REGRAS DO MODO MISSÃO:
+${(mc.accuracy ?? 100) < 40 ? "- SIMPLIFIQUE a explicação (acurácia muito baixa)" : ""}
+${(mc.pendingReviews ?? 0) >= 20 ? "- Foque em PADRÃO DE PROVA (muitas revisões pendentes)" : ""}
+${mc.phase === "critico" ? "- REDUZA complexidade ao essencial" : ""}
+${mc.heavyRecovery ? "- RECUPERAÇÃO PESADA ativa — apenas o essencial" : ""}
+- Linguagem: mentor direto, sem enrolação
+- Tom: confiante, estratégico, focado em aprovação
+===== FIM DO MODO MISSÃO =====`;
+    }
 
     if (userContext) {
       instructions += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
@@ -84,8 +128,11 @@ ${session_memory.erros_consecutivos >= 3 ? "\n⚠️ ALERTA DE TRAVAMENTO: O alu
 --- FIM DA MEMÓRIA DE SESSÃO ---`;
     }
 
+    // In mission mode, use lighter model and fewer tokens for speed
+    const isMissionMode = mission_context?.mode === "mission";
+    const maxTokens = isMissionMode ? 4096 : 16384;
     const allMessages = [{ role: "system", content: instructions }, ...messages];
-    const body = JSON.stringify({ model: "gpt-4o", messages: allMessages, stream: true, max_tokens: 16384 });
+    const body = JSON.stringify({ model: "gpt-4o", messages: allMessages, stream: true, max_tokens: maxTokens });
 
     // 1) Try OpenAI first
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
