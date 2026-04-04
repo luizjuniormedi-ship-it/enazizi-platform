@@ -62,13 +62,12 @@ REGRA DE REFORÇO POR ERRO:
 }
 
 function getPhasePrompt(phase: string, topic: string, performanceData: unknown, studyMode?: string): string {
-  const base = ENAZIZI_PROMPT;
   const levelPrompt = getLevelPrompt(performanceData);
   const weakTopicsPrompt = getWeakTopicsPrompt(performanceData);
 
   switch (phase) {
     case "performance":
-      return `${base}
+      return `${getDiscussionPrompt()}
 FASE ATUAL: STATE 0 — PAINEL DE DESEMPENHO
 
 Dados do aluno:
