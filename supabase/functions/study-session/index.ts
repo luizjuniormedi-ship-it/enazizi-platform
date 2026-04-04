@@ -511,10 +511,18 @@ ${session_memory.erros_consecutivos >= 3 ? "⚠️ TRAVAMENTO DETECTADO: Simplif
       });
     }
 
-    return new Response(response.body, {
+    // Wrap body to decrement counter when stream ends
+    const origBody = response.body!;
+    const transform = new TransformStream({
+      flush() { activeStreams = Math.max(0, activeStreams - 1); },
+    });
+    origBody.pipeTo(transform.writable).catch(() => { activeStreams = Math.max(0, activeStreams - 1); });
+
+    return new Response(transform.readable, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
+    activeStreams = Math.max(0, activeStreams - 1);
     console.error("study-session error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
