@@ -1,6 +1,16 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const createWrapper = () => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>{children}</MemoryRouter>
+    </QueryClientProvider>
+  );
+};
 
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({
@@ -23,6 +33,7 @@ vi.mock("@/integrations/supabase/client", () => ({
               limit: () => Promise.resolve({ data: [] }),
             }),
           }),
+          single: () => Promise.resolve({ data: null, error: null }),
         }),
       }),
       insert: () => Promise.resolve({ data: null, error: null }),
@@ -31,17 +42,18 @@ vi.mock("@/integrations/supabase/client", () => ({
       getSession: () => Promise.resolve({ data: { session: null }, error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
     },
+    channel: () => ({
+      on: function() { return this; },
+      subscribe: () => ({ unsubscribe: vi.fn() }),
+    }),
+    removeChannel: vi.fn(),
   },
 }));
 
 describe("StudySession Page", () => {
   it("renders the start screen with topic input", async () => {
     const StudySession = (await import("@/pages/StudySession")).default;
-    render(
-      <MemoryRouter>
-        <StudySession />
-      </MemoryRouter>
-    );
+    render(<StudySession />, { wrapper: createWrapper() });
     expect(screen.getByText("Vamos estudar! 🎯")).toBeInTheDocument();
     expect(screen.getByText("ENAZIZI")).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Digite o tema/)).toBeInTheDocument();
@@ -49,11 +61,7 @@ describe("StudySession Page", () => {
 
   it("renders suggested topic buttons", async () => {
     const StudySession = (await import("@/pages/StudySession")).default;
-    render(
-      <MemoryRouter>
-        <StudySession />
-      </MemoryRouter>
-    );
+    render(<StudySession />, { wrapper: createWrapper() });
     expect(screen.getByText("Insuficiência Cardíaca")).toBeInTheDocument();
     expect(screen.getByText("TEP")).toBeInTheDocument();
     expect(screen.getByText("AVC")).toBeInTheDocument();
@@ -64,11 +72,7 @@ describe("StudySession Page", () => {
 
   it("updates topic input when suggestion is clicked", async () => {
     const StudySession = (await import("@/pages/StudySession")).default;
-    render(
-      <MemoryRouter>
-        <StudySession />
-      </MemoryRouter>
-    );
+    render(<StudySession />, { wrapper: createWrapper() });
     fireEvent.click(screen.getByText("TEP"));
     const input = screen.getByPlaceholderText(/Digite o tema/) as HTMLInputElement;
     expect(input.value).toBe("TEP");
@@ -76,22 +80,14 @@ describe("StudySession Page", () => {
 
   it("disables estudar button when no topic entered", async () => {
     const StudySession = (await import("@/pages/StudySession")).default;
-    render(
-      <MemoryRouter>
-        <StudySession />
-      </MemoryRouter>
-    );
+    render(<StudySession />, { wrapper: createWrapper() });
     const button = screen.getByText("Estudar").closest("button");
     expect(button).toBeDisabled();
   });
 
   it("enables estudar button when topic is entered", async () => {
     const StudySession = (await import("@/pages/StudySession")).default;
-    render(
-      <MemoryRouter>
-        <StudySession />
-      </MemoryRouter>
-    );
+    render(<StudySession />, { wrapper: createWrapper() });
     const input = screen.getByPlaceholderText(/Digite o tema/);
     fireEvent.change(input, { target: { value: "Asma" } });
     const button = screen.getByText("Estudar").closest("button");
@@ -100,11 +96,7 @@ describe("StudySession Page", () => {
 
   it("renders performance panel sidebar", async () => {
     const StudySession = (await import("@/pages/StudySession")).default;
-    render(
-      <MemoryRouter>
-        <StudySession />
-      </MemoryRouter>
-    );
+    render(<StudySession />, { wrapper: createWrapper() });
     expect(screen.getByText("Painel de Desempenho")).toBeInTheDocument();
     expect(screen.getByText("Domínio por Especialidade")).toBeInTheDocument();
     expect(screen.getByText("Temas Fracos")).toBeInTheDocument();
@@ -113,11 +105,7 @@ describe("StudySession Page", () => {
 
   it("shows all specialties in the performance panel", async () => {
     const StudySession = (await import("@/pages/StudySession")).default;
-    render(
-      <MemoryRouter>
-        <StudySession />
-      </MemoryRouter>
-    );
+    render(<StudySession />, { wrapper: createWrapper() });
     expect(screen.getByText("Cardiologia")).toBeInTheDocument();
     expect(screen.getByText("Pneumologia")).toBeInTheDocument();
     expect(screen.getByText("Neurologia")).toBeInTheDocument();
@@ -129,11 +117,7 @@ describe("StudySession Page", () => {
 
   it("shows protocol phases in the flow description", async () => {
     const StudySession = (await import("@/pages/StudySession")).default;
-    render(
-      <MemoryRouter>
-        <StudySession />
-      </MemoryRouter>
-    );
+    render(<StudySession />, { wrapper: createWrapper() });
     expect(screen.getByText("📊 Painel")).toBeInTheDocument();
     expect(screen.getByText("📚 Aula")).toBeInTheDocument();
     expect(screen.getByText("🧠 Recall")).toBeInTheDocument();
