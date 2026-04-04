@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useStudyContext } from "@/lib/studyContext";
 
 function getSourcePriority(source: string | null | undefined): number {
   if (!source) return 3;
@@ -210,6 +211,8 @@ const Simulados = () => {
   const { toast } = useToast();
   const { addXp } = useGamification();
   const queryClient = useQueryClient();
+  const studyCtx = useStudyContext();
+  const autoStartedRef = useRef(false);
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [questions, setQuestions] = useState<SimQuestion[]>([]);
@@ -422,6 +425,30 @@ const Simulados = () => {
       setPhase("setup");
     }
   };
+
+
+  // Auto-start quando vindo do daily-plan com contexto de prática
+  useEffect(() => {
+    if (
+      autoStartedRef.current ||
+      !studyCtx ||
+      !checked ||
+      pendingSession ||
+      phase !== "setup" ||
+      studyCtx.source !== "daily-plan" ||
+      studyCtx.taskType !== "practice"
+    ) return;
+    autoStartedRef.current = true;
+    handleStart({
+      topics: [studyCtx.specialty || "Clínica Médica"],
+      count: 20,
+      difficulty: "misto",
+      timePerQuestion: 3,
+      mode: "estudo",
+      specificTopic: studyCtx.topic,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studyCtx, checked, pendingSession, phase]);
 
   const handleFinish = useCallback(async (answers: Record<number, number>, flagged: number[]) => {
     setFinalAnswers(answers);
