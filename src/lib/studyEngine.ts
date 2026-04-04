@@ -780,23 +780,12 @@ export async function generateRecommendations({ userId, coreData }: EngineInput)
       });
     }
 
-    // ── 6b. Curriculum gap filler — from curriculum_matrix with banca weights ──
+    // ── 6b. Curriculum gap filler — using curriculum bridge (new tables with legacy fallback) ──
     const studiedTopicNames = new Set(temas.map((t: any) => (t.tema || "").toLowerCase()));
     const userBancas = Array.isArray(targetExams) && targetExams.length > 0 ? targetExams : ["ENARE"];
-    const bancaWeightCol = (b: string): string => {
-      const map: Record<string, string> = { "ENARE": "peso_banca_enare", "USP": "peso_banca_usp", "SUS-SP": "peso_banca_sus_sp", "UNICAMP": "peso_banca_unicamp", "UNIFESP": "peso_banca_unifesp" };
-      return map[b.toUpperCase()] || "peso_banca_enare";
-    };
-    const primaryBancaCol = bancaWeightCol(userBancas[0]);
+    const primaryBanca = userBancas[0];
 
-    const { data: matrixData } = await supabase
-      .from("curriculum_matrix")
-      .select("subtema, tema, especialidade, prioridade_base, incidencia_geral, tipo_cobranca, dificuldade_base, pre_requisitos, " + primaryBancaCol)
-      .eq("ativo", true)
-      .gte("prioridade_base", 6)
-      .order(primaryBancaCol, { ascending: false })
-      .order("prioridade_base", { ascending: false })
-      .limit(80);
+    const curriculumItems = await fetchCurriculumForEngine(primaryBanca, 6, 80);
 
     const curriculumGaps: { topic: string; specialty: string; subtema: string; bancaPeso: number; prioridade: number; incidencia: string }[] = [];
     for (const item of (matrixData || []) as any[]) {
