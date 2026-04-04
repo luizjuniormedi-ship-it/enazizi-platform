@@ -123,11 +123,15 @@ Se não encontrar questões, retorne {"questions": []}`
     );
 
     if (questions.length > 0) {
-      const rows = questions.map((q: any) => ({
-        user_id: userId, statement: String(q.statement).trim(), options: q.options.map(String),
-        correct_index: q.correct_index, explanation: String(q.explanation || "").trim(),
-        topic: String(q.topic || topic).trim(), source, is_global: true, review_status: "pending",
-      }));
+      const rows = questions.map((q: any) => {
+        const stmtLen = String(q.statement).trim().length;
+        return {
+          user_id: userId, statement: String(q.statement).trim(), options: q.options.map(String),
+          correct_index: q.correct_index, explanation: String(q.explanation || "").trim(),
+          topic: String(q.topic || topic).trim(), source, is_global: true, review_status: "pending",
+          quality_tier: stmtLen >= 400 ? "exam_standard" : (stmtLen >= 200 ? "basic" : "needs_upgrade"),
+        };
+      });
       const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
       if (!error) return rows.length;
       else { console.error("Insert error:", error); return 0; }
