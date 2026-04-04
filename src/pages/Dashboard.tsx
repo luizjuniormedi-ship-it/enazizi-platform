@@ -101,6 +101,7 @@ const queryClient = useQueryClient();
       queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
       queryClient.invalidateQueries({ queryKey: ["study-engine"] });
       queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
+      queryClient.invalidateQueries({ queryKey: ["preparation-index"] });
     };
     const invalidateDash = () => queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
     const channel = supabase
