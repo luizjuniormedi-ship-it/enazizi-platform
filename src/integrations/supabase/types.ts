@@ -3462,6 +3462,64 @@ export type Database = {
         }
         Relationships: []
       }
+      question_topic_map: {
+        Row: {
+          confidence: number
+          created_at: string
+          id: string
+          mapped_topic_text: string | null
+          mapping_source: string | null
+          question_id: string
+          subtopic_id: string | null
+          topic_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          id?: string
+          mapped_topic_text?: string | null
+          mapping_source?: string | null
+          question_id: string
+          subtopic_id?: string | null
+          topic_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          id?: string
+          mapped_topic_text?: string | null
+          mapping_source?: string | null
+          question_id?: string
+          subtopic_id?: string | null
+          topic_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_topic_map_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_topic_map_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_subtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_topic_map_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       question_usage_logs: {
         Row: {
           answered_correctly: boolean | null
