@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
+import { logAiUsage } from "../_shared/ai-cache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -164,15 +165,19 @@ REGRAS OBRIGATÓRIAS:
 - Se não houver edital, use temas padrão das 5 grandes áreas de residência médica
 - Cada tema deve ter pelo menos: 1 bloco de estudo teórico + 1 bloco de questões + 3 blocos de revisão (D1, D7, D30)`;
 
+    const startMs = Date.now();
     const aiResp = await aiFetch({
       messages: [{ role: "user", content: prompt }],
     });
+    const elapsed = Date.now() - startMs;
 
     if (!aiResp.ok) {
       const errText = await aiResp.text();
       console.error("AI error:", aiResp.status, errText);
+      logAiUsage({ userId, functionName: "generate-study-plan", modelUsed: "google/gemini-3-flash-preview", success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast", errorMessage: `status ${aiResp.status}` }).catch(() => {});
       return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), { status: aiResp.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    logAiUsage({ userId, functionName: "generate-study-plan", modelUsed: "google/gemini-3-flash-preview", success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast" }).catch(() => {});
 
     const aiData = await aiResp.json();
     const raw = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");

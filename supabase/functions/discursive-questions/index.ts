@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 import { validateAIOutput } from "../_shared/ai-validation.ts";
+import { logAiUsage } from "../_shared/ai-cache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,12 +76,17 @@ Retorne APENAS um JSON válido:
 
 REGRA: Gere SEMPRE entre 2 e 4 sub-perguntas separadas, cada uma focada em um aspecto diferente do caso.`;
 
+        const startMs = Date.now();
         const response = await aiFetch({
           messages: [{ role: "user", content: prompt }],
           model: "google/gemini-2.5-flash",
         });
+        const elapsed = Date.now() - startMs;
 
-        if (!response.ok) throw new Error("Erro ao gerar questão");
+        if (!response.ok) {
+          logAiUsage({ userId: user.id, functionName: "discursive-questions", modelUsed: "google/gemini-2.5-flash", success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast" }).catch(() => {});
+          throw new Error("Erro ao gerar questão");
+        }
 
         const aiData = await response.json();
         const rawContent = aiData.choices?.[0]?.message?.content || "";
@@ -90,6 +96,7 @@ REGRA: Gere SEMPRE entre 2 e 4 sub-perguntas separadas, cada uma focada em um as
         if (!jsonMatch) throw new Error("Erro ao processar questão gerada");
 
         const questionData = JSON.parse(jsonMatch[0]);
+        logAiUsage({ userId: user.id, functionName: "discursive-questions", modelUsed: "google/gemini-2.5-flash", success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast" }).catch(() => {});
 
         // Validate AI output
         const validation = validateAIOutput(questionData, { specialty }, "discursiva");

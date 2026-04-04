@@ -14,7 +14,10 @@ serve(async (req) => {
     const { topic, specialty } = await req.json();
     if (!topic) throw new Error("topic is required");
 
-    const cacheKey = buildCacheKey({ topic, specialty, extra: "micro-quiz" });
+    // Normalize topic for better cache hit rate
+    const normalizedTopic = topic.trim().toLowerCase().replace(/\s+/g, ' ');
+    const normalizedSpecialty = (specialty || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const cacheKey = buildCacheKey({ topic: normalizedTopic, specialty: normalizedSpecialty, extra: "micro-quiz" });
     const MODEL = "google/gemini-2.5-flash-lite";
 
     // 1. Try cache first

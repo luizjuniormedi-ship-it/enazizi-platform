@@ -14,6 +14,11 @@ interface HealthAlert {
   threshold?: number;
 }
 
+// ── In-memory cache for health check results (5 min TTL) ──
+let cachedFullResult: { data: any; ts: number } | null = null;
+let cachedDashResult: { data: any; ts: number } | null = null;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -30,6 +35,12 @@ Deno.serve(async (req) => {
 
     // ── DASHBOARD MODE: return comprehensive metrics ──
     if (mode === "dashboard") {
+      // Check cache first
+      if (cachedDashResult && Date.now() - cachedDashResult.ts < CACHE_TTL_MS) {
+        return new Response(JSON.stringify(cachedDashResult.data), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const now = new Date();
       const today = now.toISOString().split("T")[0];
       const yesterday = new Date(now.getTime() - 86400000).toISOString();
@@ -321,12 +332,19 @@ Deno.serve(async (req) => {
         timestamp: now.toISOString(),
       };
 
+      cachedDashResult = { data: dashboard, ts: Date.now() };
       return new Response(JSON.stringify(dashboard), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     // ── FULL MODE: original alerts logic ──
+    // Check cache first
+    if (cachedFullResult && Date.now() - cachedFullResult.ts < CACHE_TTL_MS) {
+      return new Response(JSON.stringify(cachedFullResult.data), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const alerts: HealthAlert[] = [];
 
     const SPECIALTIES = [
@@ -493,15 +511,18 @@ Deno.serve(async (req) => {
       total_info: totalInfo,
     });
 
+    const fullResult = {
+      success: true,
+      total_alerts: alerts.length,
+      critical: totalCritical,
+      warning: totalWarning,
+      info: totalInfo,
+      alerts,
+    };
+    cachedFullResult = { data: fullResult, ts: Date.now() };
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        total_alerts: alerts.length,
-        critical: totalCritical,
-        warning: totalWarning,
-        info: totalInfo,
-        alerts,
-      }),
+      JSON.stringify(fullResult),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

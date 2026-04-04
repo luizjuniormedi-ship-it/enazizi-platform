@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import ENAZIZI_PROMPT from "../_shared/enazizi-prompt.ts";
+import { logAiUsage } from "../_shared/ai-cache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -133,6 +134,7 @@ ${session_memory.erros_consecutivos >= 3 ? "\n⚠️ ALERTA DE TRAVAMENTO: O alu
     const maxTokens = isMissionMode ? 4096 : 16384;
     const allMessages = [{ role: "system", content: instructions }, ...messages];
     const body = JSON.stringify({ model: "gpt-4o", messages: allMessages, stream: true, max_tokens: maxTokens });
+    const startMs = Date.now();
 
     // 1) Try OpenAI first
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
@@ -144,6 +146,7 @@ ${session_memory.erros_consecutivos >= 3 ? "\n⚠️ ALERTA DE TRAVAMENTO: O alu
       });
 
       if (response.ok) {
+        logAiUsage({ userId: "stream", functionName: "chatgpt-agent", modelUsed: "gpt-4o", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard" }).catch(() => {});
         return new Response(response.body, {
           headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
         });
@@ -194,6 +197,7 @@ ${session_memory.erros_consecutivos >= 3 ? "\n⚠️ ALERTA DE TRAVAMENTO: O alu
       });
     }
 
+    logAiUsage({ userId: "stream", functionName: "chatgpt-agent", modelUsed: "google/gemini-2.5-pro", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "pro" }).catch(() => {});
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });

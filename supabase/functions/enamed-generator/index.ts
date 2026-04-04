@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logAiUsage } from "../_shared/ai-cache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,6 +40,7 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
   // Try OpenAI first (gpt-4o) for higher quality
   if (OPENAI_API_KEY) {
     try {
+      const startMs = Date.now();
       const res = await fetch(OPENAI_API, {
         method: "POST",
         headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
@@ -46,10 +48,12 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
       });
       if (res.ok) {
         const data = await res.json();
+        logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "gpt-4o", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard" }).catch(() => {});
         return data.choices?.[0]?.message?.content || "";
       }
       const errText = await res.text();
       console.warn(`OpenAI ${res.status}: ${errText.slice(0, 200)}`);
+      logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "gpt-4o", success: false, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard", errorMessage: `status ${res.status}` }).catch(() => {});
       if (res.status !== 429 && res.status !== 402) {
         throw new Error(`OpenAI error ${res.status}`);
       }
@@ -61,6 +65,7 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
 
   // Fallback: Lovable AI Gateway
   if (LOVABLE_API_KEY) {
+    const startMs = Date.now();
     const res = await fetch(LOVABLE_GATEWAY, {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -68,9 +73,11 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
     });
     if (res.ok) {
       const data = await res.json();
+      logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "google/gemini-2.5-flash", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "fast" }).catch(() => {});
       return data.choices?.[0]?.message?.content || "";
     }
     const errText = await res.text();
+    logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "google/gemini-2.5-flash", success: false, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "fast", errorMessage: `status ${res.status}` }).catch(() => {});
     throw new Error(`Lovable Gateway ${res.status}: ${errText.slice(0, 200)}`);
   }
 

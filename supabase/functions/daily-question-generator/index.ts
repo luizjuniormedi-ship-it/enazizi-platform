@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
+import { logAiUsage } from "../_shared/ai-cache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -183,6 +184,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
 }`;
 
   try {
+    const startMs = Date.now();
     const response = await aiFetch({
       model: "google/gemini-2.5-flash",
       messages: [
@@ -192,11 +194,14 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
       timeoutMs: 90000,
       maxRetries: 1,
     });
+    const elapsed = Date.now() - startMs;
 
     if (!response.ok) {
       console.error(`Exam-style AI error for ${specialty}:`, await response.text());
+      logAiUsage({ userId: "system", functionName: "daily-question-generator-exam", modelUsed: "google/gemini-2.5-flash", success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast" }).catch(() => {});
       return 0;
     }
+    logAiUsage({ userId: "system", functionName: "daily-question-generator-exam", modelUsed: "google/gemini-2.5-flash", success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast" }).catch(() => {});
 
     const data = await response.json();
     const rawContent = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
@@ -320,6 +325,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
 }`;
 
   try {
+    const startMs = Date.now();
     const response = await aiFetch({
       model: "google/gemini-2.5-flash",
       messages: [
@@ -329,11 +335,14 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
       timeoutMs: 90000,
       maxRetries: 1,
     });
+    const elapsed = Date.now() - startMs;
 
     if (!response.ok) {
       console.error(`AI error for ${specialty}:`, await response.text());
+      logAiUsage({ userId: "system", functionName: "daily-question-generator", modelUsed: "google/gemini-2.5-flash", success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast" }).catch(() => {});
       return 0;
     }
+    logAiUsage({ userId: "system", functionName: "daily-question-generator", modelUsed: "google/gemini-2.5-flash", success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast" }).catch(() => {});
 
     const data = await response.json();
     const rawContent = sanitizeAiContent(data.choices?.[0]?.message?.content || "");

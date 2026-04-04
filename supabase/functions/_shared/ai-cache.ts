@@ -115,8 +115,11 @@ export async function logAiUsage(params: {
     const rate = costPer1k[params.modelUsed] || 0.001;
     const costEstimate = ((params.tokensUsed || 0) / 1000) * rate;
 
+    // user_id is uuid — use null for system/anonymous callers
+    const isValidUuid = params.userId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.userId);
+
     await sb.from("ai_usage_logs").insert({
-      user_id: params.userId,
+      user_id: isValidUuid ? params.userId : null,
       function_name: params.functionName,
       model_used: params.modelUsed,
       success: params.success,
@@ -126,8 +129,10 @@ export async function logAiUsage(params: {
       model_tier: params.modelTier || "standard",
       cost_estimate: costEstimate,
       error_message: params.errorMessage,
+      actor_type: isValidUuid ? "user" : "system",
+      actor_key: isValidUuid ? null : (params.userId || "system"),
     });
-  } catch {
-    // Non-critical — don't fail the request
+  } catch (e) {
+    console.warn("[logAiUsage] insert failed:", e);
   }
 }
