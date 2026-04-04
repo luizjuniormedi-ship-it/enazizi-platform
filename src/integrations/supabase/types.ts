@@ -4472,6 +4472,72 @@ export type Database = {
           },
         ]
       }
+      system_flag_audit: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          flag_key: string
+          id: string
+          new_value: boolean
+          previous_value: boolean | null
+          reason: string | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          flag_key: string
+          id?: string
+          new_value: boolean
+          previous_value?: boolean | null
+          reason?: string | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          flag_key?: string
+          id?: string
+          new_value?: boolean
+          previous_value?: boolean | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      system_flags: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          enabled: boolean
+          flag_key: string
+          id: string
+          rollout_mode: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          flag_key: string
+          id?: string
+          rollout_mode?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          flag_key?: string
+          id?: string
+          rollout_mode?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       system_health_logs: {
         Row: {
           active_users: number | null

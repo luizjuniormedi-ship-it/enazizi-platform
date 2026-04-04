@@ -3,12 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Msg, Conversation } from "@/components/tutor/TutorConstants";
 import { FUNCTION_NAME } from "@/components/tutor/TutorConstants";
 import { dualWriteTutorSession, dualWriteTutorMessage } from "@/lib/tutorDualWrite";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
 export function useChatMessages(userId: string | undefined) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const { isEnabled } = useFeatureFlags();
+  const tutorDualWriteEnabled = isEnabled("new_tutor_flow_enabled");
 
   const loadConversations = useCallback(async () => {
     if (!userId) return;
@@ -45,8 +48,8 @@ export function useChatMessages(userId: string | undefined) {
       .single();
     if (newConv) {
       setActiveConversationId(newConv.id);
-      // Dual-write: create tutor_session
-      dualWriteTutorSession({ userId, conversationId: newConv.id });
+      // Dual-write: create tutor_session (flag-gated)
+      if (tutorDualWriteEnabled) dualWriteTutorSession({ userId, conversationId: newConv.id });
       return newConv.id;
     }
     return null;
@@ -58,8 +61,8 @@ export function useChatMessages(userId: string | undefined) {
       conversation_id: convId, user_id: userId, role, content,
     });
     await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
-    // Dual-write: mirror to tutor_messages
-    dualWriteTutorMessage({ userId, conversationId: convId, role, content });
+    // Dual-write: mirror to tutor_messages (flag-gated)
+    if (tutorDualWriteEnabled) dualWriteTutorMessage({ userId, conversationId: convId, role, content });
   }, [userId]);
 
   const deleteConversation = useCallback(async (convId: string) => {
