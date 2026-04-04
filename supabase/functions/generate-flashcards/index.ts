@@ -167,12 +167,24 @@ Usar emojis nos títulos de seção para facilitar identificação visual.`;
       }
     }
 
+    const startMs = Date.now();
     const response = await aiFetch({
       model: "google/gemini-3-flash-preview",
       messages: [{ role: "system", content: fullSystemPrompt }, ...messages],
       stream: true,
       maxTokens: 8192,
     });
+    const elapsed = Date.now() - startMs;
+
+    logAiUsage({
+      userId: "system-flashcards",
+      functionName: "generate-flashcards",
+      modelUsed: "google/gemini-3-flash-preview",
+      success: response.ok,
+      responseTimeMs: elapsed,
+      modelTier: "standard",
+      errorMessage: response.ok ? undefined : `status ${response.status}`,
+    }).catch(() => {});
 
     if (!response.ok) {
       const t = await response.text();
