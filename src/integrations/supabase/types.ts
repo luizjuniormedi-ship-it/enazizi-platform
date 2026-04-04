@@ -930,6 +930,201 @@ export type Database = {
         }
         Relationships: []
       }
+      curriculum_prerequisites: {
+        Row: {
+          created_at: string
+          id: string
+          prerequisite_subtopic_id: string
+          subtopic_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          prerequisite_subtopic_id: string
+          subtopic_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          prerequisite_subtopic_id?: string
+          subtopic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curriculum_prerequisites_prerequisite_subtopic_id_fkey"
+            columns: ["prerequisite_subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_subtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curriculum_prerequisites_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_subtopics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      curriculum_specialties: {
+        Row: {
+          ativo: boolean
+          ciclo: string
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+        }
+        Insert: {
+          ativo?: boolean
+          ciclo?: string
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+        }
+        Update: {
+          ativo?: boolean
+          ciclo?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
+        }
+        Relationships: []
+      }
+      curriculum_subtopics: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao_curta: string | null
+          dificuldade_base: number | null
+          gatilhos_clinicos: string[] | null
+          id: string
+          incidencia_geral: string | null
+          integra_com_osce: boolean | null
+          integra_com_pratica: boolean | null
+          integra_com_revisao_fsrs: boolean | null
+          nome: string
+          palavras_chave: string[] | null
+          prioridade_base: number | null
+          tipo_cobranca: string[] | null
+          topic_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao_curta?: string | null
+          dificuldade_base?: number | null
+          gatilhos_clinicos?: string[] | null
+          id?: string
+          incidencia_geral?: string | null
+          integra_com_osce?: boolean | null
+          integra_com_pratica?: boolean | null
+          integra_com_revisao_fsrs?: boolean | null
+          nome: string
+          palavras_chave?: string[] | null
+          prioridade_base?: number | null
+          tipo_cobranca?: string[] | null
+          topic_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao_curta?: string | null
+          dificuldade_base?: number | null
+          gatilhos_clinicos?: string[] | null
+          id?: string
+          incidencia_geral?: string | null
+          integra_com_osce?: boolean | null
+          integra_com_pratica?: boolean | null
+          integra_com_revisao_fsrs?: boolean | null
+          nome?: string
+          palavras_chave?: string[] | null
+          prioridade_base?: number | null
+          tipo_cobranca?: string[] | null
+          topic_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curriculum_subtopics_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      curriculum_topics: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+          specialty_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+          specialty_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          specialty_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curriculum_topics_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_specialties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      curriculum_weights: {
+        Row: {
+          banca: string
+          created_at: string
+          id: string
+          peso: number
+          subtopic_id: string
+        }
+        Insert: {
+          banca: string
+          created_at?: string
+          id?: string
+          peso?: number
+          subtopic_id: string
+        }
+        Update: {
+          banca?: string
+          created_at?: string
+          id?: string
+          peso?: number
+          subtopic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curriculum_weights_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_subtopics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_generation_log: {
         Row: {
           created_at: string
@@ -2461,6 +2656,51 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      performance_by_topic: {
+        Row: {
+          accuracy: number
+          average_response_time_ms: number | null
+          correct_questions: number
+          created_at: string
+          id: string
+          last_activity_at: string | null
+          specialty: string
+          subtopic: string | null
+          topic: string
+          total_questions: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number
+          average_response_time_ms?: number | null
+          correct_questions?: number
+          created_at?: string
+          id?: string
+          last_activity_at?: string | null
+          specialty: string
+          subtopic?: string | null
+          topic: string
+          total_questions?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accuracy?: number
+          average_response_time_ms?: number | null
+          correct_questions?: number
+          created_at?: string
+          id?: string
+          last_activity_at?: string | null
+          specialty?: string
+          subtopic?: string | null
+          topic?: string
+          total_questions?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
