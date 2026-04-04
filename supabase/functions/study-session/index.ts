@@ -289,7 +289,7 @@ Se errou: informar incorreto → corrigir → revisar.
 Perguntar: 1) continuar, 2) outra questão, 3) revisar conteúdo.`;
 
     case "discursive":
-      return `${base}
+      return `${getQuestionPrompt()}
 ${weakTopicsPrompt}
 FASE ATUAL: CASO CLÍNICO DISCURSIVO (STATE 9)
 Tema: "${topic}"
