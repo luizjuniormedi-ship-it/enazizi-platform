@@ -35,34 +35,24 @@ const MicroQuizDialog = ({ open, onOpenChange, topic, specialty, onPass }: Props
     setSelected(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke("question-generator", {
-        body: {
-          topic: `${topic} (${specialty})`,
-          count: 2,
-          difficulty: "medium",
-          format: "micro-quiz",
-          generationContext: {
-            specialty,
-            topic,
-            objective: "review",
-            difficulty: "medium",
-            language: "pt-BR",
-            source: "micro-quiz",
-          },
-        },
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 12000);
+
+      const { data, error } = await supabase.functions.invoke("micro-quiz", {
+        body: { topic, specialty },
       });
 
+      clearTimeout(timeout);
       if (error) throw error;
 
       const parsed: QuizQuestion[] = (data?.questions || []).slice(0, 2).map((q: any) => ({
-        question: q.statement || q.question || "",
+        question: q.question || "",
         options: (q.options || []).map((o: any) => typeof o === "string" ? o : o.text || ""),
-        correctIndex: q.correct_index ?? q.correctIndex ?? 0,
+        correctIndex: q.correctIndex ?? 0,
         explanation: q.explanation || "",
       }));
 
-      if (parsed.length === 0) {
-        // Fallback: just pass
+      if (parsed.length === 0 || !parsed[0].question) {
         onPass();
         onOpenChange(false);
         return;
@@ -71,7 +61,6 @@ const MicroQuizDialog = ({ open, onOpenChange, topic, specialty, onPass }: Props
       setQuestions(parsed);
       setPhase("quiz");
     } catch {
-      // On error, just let them pass
       onPass();
       onOpenChange(false);
     } finally {
@@ -79,7 +68,6 @@ const MicroQuizDialog = ({ open, onOpenChange, topic, specialty, onPass }: Props
     }
   };
 
-  // Generate when opened
   const handleOpenChange = (o: boolean) => {
     if (o && questions.length === 0) generateQuiz();
     onOpenChange(o);
