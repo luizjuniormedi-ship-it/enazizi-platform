@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import FaculdadeCombobox from "@/components/FaculdadeCombobox";
 import { isValidPhone, isValidName } from "@/lib/profileValidation";
+import { useDashboardInvalidation } from "@/hooks/useDashboardInvalidation";
 import { Switch } from "@/components/ui/switch";
 import { ALL_SPECIALTIES } from "@/constants/specialties";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ const EXAM_OPTIONS = [
 const Profile = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { invalidateAll } = useDashboardInvalidation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState("");
@@ -169,6 +171,7 @@ const Profile = () => {
         .eq("user_id", user.id);
       if (error) throw error;
       toast({ title: "Perfil atualizado!" });
+      invalidateAll();
       // Re-check activity assignments after profile update
       supabase.functions.invoke("auto-assign-simulados").catch(() => {});
     } catch (err: any) {
