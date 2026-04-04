@@ -15,7 +15,7 @@ serve(async (req) => {
 
     const response = await aiFetch({
       model: "google/gemini-2.5-flash-lite",
-      maxTokens: 1024,
+      maxTokens: 1500,
       timeoutMs: 12000,
       maxRetries: 1,
       messages: [
@@ -47,6 +47,12 @@ Regras:
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
+    if (!content || content.trim().length < 10) {
+      console.error("micro-quiz: empty or too short AI content:", content?.slice(0, 100));
+      return new Response(JSON.stringify({ questions: [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const parsed = parseAiJson(content);
 
     return new Response(JSON.stringify(parsed), {
