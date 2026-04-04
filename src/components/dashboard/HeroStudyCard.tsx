@@ -12,6 +12,7 @@ import { useStudyEngine, type StudyRecommendation } from "@/hooks/useStudyEngine
 import { useSafeCta } from "@/hooks/useSafeCta";
 import { buildStudyPath } from "@/lib/studyRouter";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { getHumanReadableReason } from "@/lib/humanizedReasons";
 
 /* ── Dynamic Title Logic ── */
 function getDynamicTitle(
