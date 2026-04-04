@@ -93,15 +93,26 @@ const queryClient = useQueryClient();
   }, [queryClient]);
 
   // Realtime subscription for critical tables
+  // Realtime subscription for ALL critical tables
   useEffect(() => {
     if (!user?.id) return;
+    const invalidateAll = () => {
+      queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+      queryClient.invalidateQueries({ queryKey: ["study-engine"] });
+      queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
+    };
+    const invalidateDash = () => queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
     const channel = supabase
       .channel('dashboard-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'practice_attempts', filter: `user_id=eq.${user.id}` }, () => { queryClient.invalidateQueries({ queryKey: ["dashboard-data"] }); queryClient.invalidateQueries({ queryKey: ["study-engine"] }); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews', filter: `user_id=eq.${user.id}` }, () => queryClient.invalidateQueries({ queryKey: ["dashboard-data"] }))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_sessions', filter: `user_id=eq.${user.id}` }, () => { queryClient.invalidateQueries({ queryKey: ["dashboard-data"] }); queryClient.invalidateQueries({ queryKey: ["exam-readiness"] }); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'error_bank', filter: `user_id=eq.${user.id}` }, () => queryClient.invalidateQueries({ queryKey: ["dashboard-data"] }))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_gamification', filter: `user_id=eq.${user.id}` }, () => queryClient.invalidateQueries({ queryKey: ["dashboard-data"] }))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'practice_attempts', filter: `user_id=eq.${user.id}` }, invalidateAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'revisoes', filter: `user_id=eq.${user.id}` }, invalidateAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fsrs_cards', filter: `user_id=eq.${user.id}` }, invalidateAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_sessions', filter: `user_id=eq.${user.id}` }, invalidateAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'error_bank', filter: `user_id=eq.${user.id}` }, invalidateDash)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_gamification', filter: `user_id=eq.${user.id}` }, invalidateDash)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'simulation_sessions', filter: `user_id=eq.${user.id}` }, invalidateDash)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'anamnesis_results', filter: `user_id=eq.${user.id}` }, invalidateDash)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chronicle_osce_sessions', filter: `user_id=eq.${user.id}` }, invalidateDash)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user?.id, queryClient]);
