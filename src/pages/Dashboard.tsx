@@ -23,6 +23,7 @@ import ExamReadinessCard from "@/components/dashboard/ExamReadinessCard";
 import MentorshipBanner from "@/components/dashboard/MentorshipBanner";
 import SmartAlertCard from "@/components/dashboard/SmartAlertCard";
 import WeeklyEvolutionBar from "@/components/dashboard/WeeklyEvolutionBar";
+import WeeklyGoalsCard from "@/components/dashboard/WeeklyGoalsCard";
 import FreeStudyCard from "@/components/dashboard/FreeStudyCard";
 import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner";
 import ExamSetupReminder from "@/components/dashboard/ExamSetupReminder";
@@ -240,6 +241,7 @@ const queryClient = useQueryClient();
           PROGRESSO SEMANAL — visual simples
          ══════════════════════════════════════════ */}
       {!isNewUser && <SafeCard name="WeeklyEvolution"><WeeklyEvolutionBar /></SafeCard>}
+      {!isNewUser && <SafeCard name="WeeklyGoals"><WeeklyGoalsCard /></SafeCard>}
 
       {/* ══════════════════════════════════════════
           CHANCE POR PROVA — readiness per exam
