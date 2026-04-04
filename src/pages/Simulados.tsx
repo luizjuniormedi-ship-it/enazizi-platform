@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
 import { NON_MEDICAL_CONTENT_REGEX } from "@/lib/medicalValidation";
@@ -208,6 +209,7 @@ const Simulados = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { addXp } = useGamification();
+  const queryClient = useQueryClient();
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [questions, setQuestions] = useState<SimQuestion[]>([]);
@@ -499,6 +501,9 @@ const Simulados = () => {
     }
 
     await completeSession();
+    queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+    queryClient.invalidateQueries({ queryKey: ["study-engine"] });
+    queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
     setPhase("finished");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questions, user, mode]);

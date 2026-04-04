@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useStudyContext } from "@/lib/studyContext";
@@ -316,6 +317,7 @@ const ClinicalSimulation = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { addXp } = useGamification();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const studyCtx = useStudyContext();
   const teacherCaseId = searchParams.get("teacher_case_id");
@@ -1081,6 +1083,9 @@ const ClinicalSimulation = () => {
       setPhase("result");
       await completePersistedSession();
       await addXp(XP_REWARDS.plantao_completed);
+      queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+      queryClient.invalidateQueries({ queryKey: ["study-engine"] });
+      queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
       await saveSimulationToHistory(res);
 
       if (user && res.final_score < 70) {

@@ -48,6 +48,8 @@ export default function MissionMode() {
 
   const invalidateDashboard = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+    queryClient.invalidateQueries({ queryKey: ["study-engine"] });
+    queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
   }, [queryClient]);
   const {
     state, currentTask, nextTask, progress,

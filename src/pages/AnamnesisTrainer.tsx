@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
@@ -231,6 +232,7 @@ const AnamnesisTrainer = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { addXp } = useGamification();
+  const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
   const studyCtx = useStudyContext();
@@ -545,6 +547,8 @@ const AnamnesisTrainer = () => {
       }
 
       await completeSession();
+      queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+      queryClient.invalidateQueries({ queryKey: ["study-engine"] });
       setPhase("result");
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });

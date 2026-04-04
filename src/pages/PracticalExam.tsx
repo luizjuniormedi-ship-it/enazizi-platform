@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -75,6 +76,7 @@ type Phase = "setup" | "loading" | "exam" | "evaluating" | "result";
 
 export default function PracticalExam() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [phase, setPhase] = useState<Phase>("setup");
   const [specialty, setSpecialty] = useState("Clínica Médica");
   const [difficulty, setDifficulty] = useState("intermediário");
@@ -161,6 +163,8 @@ export default function PracticalExam() {
       });
       if (res.error) throw res.error;
       setEvaluation(res.data);
+      queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+      queryClient.invalidateQueries({ queryKey: ["study-engine"] });
       setPhase("result");
     } catch (err) {
       console.error(err);
