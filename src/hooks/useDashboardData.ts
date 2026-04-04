@@ -61,6 +61,15 @@ export const useDashboardData = () => {
       const userId = user!.id;
       const cd = coreData!;
 
+      // Fast-path: try snapshot first
+      const snapshot = await loadDashboardSnapshot(userId);
+      if (snapshot) {
+        console.debug("[Dashboard] Using snapshot (fast-path)");
+        return snapshot;
+      }
+
+      console.debug("[Dashboard] Snapshot miss — full query");
+
       try {
         // Only queries NOT covered by coreData
         const [
