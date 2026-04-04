@@ -234,13 +234,18 @@ export const useDashboardData = () => {
           hasStudyPlan,
         };
 
-        return {
+        const result = {
           stats,
           metrics,
           displayName: cd.profile.display_name,
           hasCompletedDiagnostic: cd.profile.has_completed_diagnostic,
           targetExams: cd.profile.target_exams,
         };
+
+        // Write-through: persist snapshot for next fast-path
+        saveDashboardSnapshot(userId, result);
+
+        return result;
       } catch (err: any) {
         console.warn("[Dashboard] fetchDashboardData falhou:", err?.message || err);
         const emptyStats: DashboardStats = {
