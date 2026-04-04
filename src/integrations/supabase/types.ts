@@ -1324,25 +1324,46 @@ export type Database = {
       }
       dashboard_snapshots: {
         Row: {
+          approval_score: number | null
+          chance_score: number | null
           created_at: string
+          current_objective: string | null
           id: string
+          mission_id: string | null
+          pending_reviews: number | null
+          prep_index: number | null
           snapshot_json: Json
           updated_at: string
           user_id: string
+          weak_points_json: Json | null
         }
         Insert: {
+          approval_score?: number | null
+          chance_score?: number | null
           created_at?: string
+          current_objective?: string | null
           id?: string
+          mission_id?: string | null
+          pending_reviews?: number | null
+          prep_index?: number | null
           snapshot_json?: Json
           updated_at?: string
           user_id: string
+          weak_points_json?: Json | null
         }
         Update: {
+          approval_score?: number | null
+          chance_score?: number | null
           created_at?: string
+          current_objective?: string | null
           id?: string
+          mission_id?: string | null
+          pending_reviews?: number | null
+          prep_index?: number | null
           snapshot_json?: Json
           updated_at?: string
           user_id?: string
+          weak_points_json?: Json | null
         }
         Relationships: []
       }
@@ -3011,6 +3032,7 @@ export type Database = {
           created_at: string
           duration_ms: number | null
           event_id: string
+          finding_id: string | null
           id: string
           result_after: Json | null
           result_before: Json | null
@@ -3021,6 +3043,7 @@ export type Database = {
           created_at?: string
           duration_ms?: number | null
           event_id: string
+          finding_id?: string | null
           id?: string
           result_after?: Json | null
           result_before?: Json | null
@@ -3031,6 +3054,7 @@ export type Database = {
           created_at?: string
           duration_ms?: number | null
           event_id?: string
+          finding_id?: string | null
           id?: string
           result_after?: Json | null
           result_before?: Json | null
@@ -3044,6 +3068,13 @@ export type Database = {
             referencedRelation: "qa_events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "qa_auto_fixes_finding_id_fkey"
+            columns: ["finding_id"]
+            isOneToOne: false
+            referencedRelation: "qa_findings"
+            referencedColumns: ["id"]
+          },
         ]
       }
       qa_escalations: {
@@ -3051,31 +3082,37 @@ export type Database = {
           acknowledged: boolean
           created_at: string
           event_id: string
+          finding_id: string | null
           hypothesis_primary: string | null
           hypothesis_secondary: string | null
           id: string
           recommended_action: string | null
           report: string
+          status: string | null
         }
         Insert: {
           acknowledged?: boolean
           created_at?: string
           event_id: string
+          finding_id?: string | null
           hypothesis_primary?: string | null
           hypothesis_secondary?: string | null
           id?: string
           recommended_action?: string | null
           report: string
+          status?: string | null
         }
         Update: {
           acknowledged?: boolean
           created_at?: string
           event_id?: string
+          finding_id?: string | null
           hypothesis_primary?: string | null
           hypothesis_secondary?: string | null
           id?: string
           recommended_action?: string | null
           report?: string
+          status?: string | null
         }
         Relationships: [
           {
@@ -3083,6 +3120,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "qa_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qa_escalations_finding_id_fkey"
+            columns: ["finding_id"]
+            isOneToOne: false
+            referencedRelation: "qa_findings"
             referencedColumns: ["id"]
           },
         ]
@@ -3131,6 +3175,104 @@ export type Database = {
           status?: Database["public"]["Enums"]["qa_fix_status"]
         }
         Relationships: []
+      }
+      qa_findings: {
+        Row: {
+          affected_records: number | null
+          created_at: string
+          description: string | null
+          evidence_json: Json | null
+          finding_type: string
+          id: string
+          module: string
+          probable_cause: string | null
+          qa_run_id: string | null
+          severity: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          affected_records?: number | null
+          created_at?: string
+          description?: string | null
+          evidence_json?: Json | null
+          finding_type: string
+          id?: string
+          module: string
+          probable_cause?: string | null
+          qa_run_id?: string | null
+          severity?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          affected_records?: number | null
+          created_at?: string
+          description?: string | null
+          evidence_json?: Json | null
+          finding_type?: string
+          id?: string
+          module?: string
+          probable_cause?: string | null
+          qa_run_id?: string | null
+          severity?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qa_findings_qa_run_id_fkey"
+            columns: ["qa_run_id"]
+            isOneToOne: false
+            referencedRelation: "qa_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qa_revalidations: {
+        Row: {
+          created_at: string
+          details: string | null
+          finding_id: string
+          fix_id: string | null
+          id: string
+          passed: boolean
+          revalidated_at: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          finding_id: string
+          fix_id?: string | null
+          id?: string
+          passed?: boolean
+          revalidated_at?: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          finding_id?: string
+          fix_id?: string | null
+          id?: string
+          passed?: boolean
+          revalidated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qa_revalidations_finding_id_fkey"
+            columns: ["finding_id"]
+            isOneToOne: false
+            referencedRelation: "qa_findings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qa_revalidations_fix_id_fkey"
+            columns: ["fix_id"]
+            isOneToOne: false
+            referencedRelation: "qa_auto_fixes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       qa_runs: {
         Row: {
