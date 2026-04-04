@@ -231,7 +231,7 @@ export default function MissionMode() {
             )}
 
             {/* 9. Tutor IA Opcional */}
-            <MissionTutorHint task={currentTask} />
+            <MissionTutorHint task={currentTask} adaptive={adaptive} />
 
             {/* 6. Feedback em Tempo Real */}
             <MissionProgressFeedback
