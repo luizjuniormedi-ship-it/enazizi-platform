@@ -15,7 +15,7 @@ serve(async (req) => {
 
     const response = await aiFetch({
       model: "google/gemini-2.5-flash-lite",
-      maxTokens: 1024,
+      maxTokens: 1500,
       timeoutMs: 12000,
       maxRetries: 1,
       messages: [
