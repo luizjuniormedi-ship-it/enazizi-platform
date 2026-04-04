@@ -174,6 +174,19 @@ function ok(data: unknown) {
   });
 }
 
+function logAnamnesis(success: boolean, elapsed: number, errMsg?: string) {
+  logAiUsage({
+    userId: "system-anamnesis",
+    functionName: "anamnesis-trainer",
+    modelUsed: "google/gemini-2.5-flash",
+    success,
+    responseTimeMs: elapsed,
+    cacheHit: false,
+    modelTier: "standard",
+    errorMessage: errMsg,
+  }).catch(() => {});
+}
+
 function err(msg: string, status = 500) {
   return new Response(JSON.stringify({ error: msg }), {
     status,
