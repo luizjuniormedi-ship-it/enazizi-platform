@@ -26,6 +26,7 @@ import AdminBIPanel from "@/components/admin/AdminBIPanel";
 import AdminUploadsPanel from "@/components/admin/AdminUploadsPanel";
 import AdminHealthHistory from "@/components/admin/AdminHealthHistory";
 import AdminQAPanel from "@/components/admin/AdminQAPanel";
+import AdminFeatureFlags from "@/components/admin/AdminFeatureFlags";
 import type { AdminUser, Stats } from "@/components/admin/AdminTypes";
 
 const Admin = () => {
