@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CheckCircle2, XCircle, Loader2, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -19,59 +19,73 @@ interface Props {
   onPass: () => void;
 }
 
+const TIMEOUT_MS = 12000;
+
 const MicroQuizDialog = ({ open, onOpenChange, topic, specialty, onPass }: Props) => {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentQ, setCurrentQ] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [phase, setPhase] = useState<"loading" | "quiz" | "result">("loading");
+  const [phase, setPhase] = useState<"idle" | "loading" | "quiz" | "result">("idle");
+  const fetchingRef = useRef(false);
 
-  const generateQuiz = async () => {
-    setLoading(true);
-    setPhase("loading");
-    setCurrentQ(0);
-    setScore(0);
-    setSelected(null);
-
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 12000);
-
-      const { data, error } = await supabase.functions.invoke("micro-quiz", {
-        body: { topic, specialty },
-      });
-
-      clearTimeout(timeout);
-      if (error) throw error;
-
-      const parsed: QuizQuestion[] = (data?.questions || []).slice(0, 2).map((q: any) => ({
-        question: q.question || "",
-        options: (q.options || []).map((o: any) => typeof o === "string" ? o : o.text || ""),
-        correctIndex: q.correctIndex ?? 0,
-        explanation: q.explanation || "",
-      }));
-
-      if (parsed.length === 0 || !parsed[0].question) {
-        onPass();
-        onOpenChange(false);
-        return;
-      }
-
-      setQuestions(parsed);
-      setPhase("quiz");
-    } catch {
-      onPass();
-      onOpenChange(false);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (!open) {
+      // Reset on close
+      setQuestions([]);
+      setCurrentQ(0);
+      setSelected(null);
+      setScore(0);
+      setPhase("idle");
+      fetchingRef.current = false;
+      return;
     }
-  };
 
-  const handleOpenChange = (o: boolean) => {
-    if (o && questions.length === 0) generateQuiz();
-    onOpenChange(o);
-  };
+    if (fetchingRef.current || phase !== "idle") return;
+    fetchingRef.current = true;
+    setPhase("loading");
+
+    let cancelled = false;
+
+    const fetchQuiz = async () => {
+      try {
+        const result = await Promise.race([
+          supabase.functions.invoke("micro-quiz", { body: { topic, specialty } }),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), TIMEOUT_MS)),
+        ]);
+
+        if (cancelled) return;
+
+        const { data, error } = result as any;
+        if (error) throw error;
+
+        const parsed: QuizQuestion[] = (data?.questions || []).slice(0, 2).map((q: any) => ({
+          question: q.question || "",
+          options: (q.options || []).map((o: any) => typeof o === "string" ? o : o.text || ""),
+          correctIndex: q.correctIndex ?? 0,
+          explanation: q.explanation || "",
+        }));
+
+        if (parsed.length === 0 || !parsed[0].question) {
+          onPass();
+          onOpenChange(false);
+          return;
+        }
+
+        setQuestions(parsed);
+        setPhase("quiz");
+      } catch {
+        if (!cancelled) {
+          onPass();
+          onOpenChange(false);
+        }
+      }
+    };
+
+    fetchQuiz();
+
+    return () => { cancelled = true; };
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSelect = (idx: number) => {
     if (selected !== null) return;
@@ -93,14 +107,12 @@ const MicroQuizDialog = ({ open, onOpenChange, topic, specialty, onPass }: Props
   const handleFinish = () => {
     onPass();
     onOpenChange(false);
-    setQuestions([]);
-    setPhase("loading");
   };
 
   const q = questions[currentQ];
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
