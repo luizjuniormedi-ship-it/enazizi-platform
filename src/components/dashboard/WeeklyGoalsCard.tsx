@@ -16,7 +16,14 @@ function GoalRow({ goal }: { goal: WeeklyGoal }) {
       <span className="text-sm w-5 text-center">{goal.icon}</span>
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-baseline mb-0.5">
-          <span className="text-xs text-muted-foreground truncate">{goal.label}</span>
+          <span className="text-xs text-muted-foreground truncate">
+            {goal.label}
+            {goal.carryover > 0 && (
+              <span className="ml-1 text-[10px] text-amber-600 dark:text-amber-400">
+                (+{goal.carryover} pendente)
+              </span>
+            )}
+          </span>
           <span className="text-xs font-medium tabular-nums">
             {goal.current}/{goal.target}
           </span>

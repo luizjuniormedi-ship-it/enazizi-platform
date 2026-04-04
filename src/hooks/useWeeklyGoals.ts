@@ -11,6 +11,7 @@ export interface WeeklyGoal {
   target: number;
   current: number;
   percent: number;
+  carryover: number;
 }
 
 export interface WeeklyGoalsData {
@@ -20,14 +21,21 @@ export interface WeeklyGoalsData {
   weekLabel: string;
 }
 
-function getMonday(): Date {
+function getMonday(offset = 0): Date {
   const now = new Date();
   const day = now.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   const monday = new Date(now);
-  monday.setDate(now.getDate() + diff);
+  monday.setDate(now.getDate() + diff + offset * 7);
   monday.setHours(0, 0, 0, 0);
   return monday;
+}
+
+function getSunday(monday: Date): Date {
+  const sun = new Date(monday);
+  sun.setDate(monday.getDate() + 6);
+  sun.setHours(23, 59, 59, 999);
+  return sun;
 }
 
 function zoneMultiplier(zone: PreparationZone): number {
@@ -47,43 +55,40 @@ function generateMessage(percent: number, zone: PreparationZone): string {
   return "Comece agora para construir sua semana de estudos.";
 }
 
-async function fetchWeeklyProgress(userId: string) {
-  const monday = getMonday();
-  const mondayISO = monday.toISOString();
-
+async function fetchWeeklyProgress(userId: string, fromISO: string) {
   const [questionsRes, revisoesRes, temasRes, simRes, anamnesisRes, osceRes] = await Promise.all([
     supabase
       .from("practice_attempts")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .gte("created_at", mondayISO),
+      .gte("created_at", fromISO),
     supabase
       .from("revisoes")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
       .eq("status", "concluida")
-      .gte("updated_at", mondayISO),
+      .gte("updated_at", fromISO),
     supabase
       .from("temas_estudados")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .gte("created_at", mondayISO),
+      .gte("created_at", fromISO),
     supabase
       .from("simulation_sessions")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
       .eq("status", "finished")
-      .gte("created_at", mondayISO),
+      .gte("created_at", fromISO),
     supabase
       .from("anamnesis_results")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .gte("created_at", mondayISO),
+      .gte("created_at", fromISO),
     supabase
       .from("chronicle_osce_sessions")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .gte("created_at", mondayISO),
+      .gte("created_at", fromISO),
   ]);
 
   return {
@@ -103,7 +108,17 @@ export function useWeeklyGoals() {
     queryKey: ["weekly-goals", user?.id],
     queryFn: async () => {
       const userId = user!.id;
-      const progress = await fetchWeeklyProgress(userId);
+      const monday = getMonday();
+      const prevMonday = getMonday(-1);
+      const prevSunday = getSunday(prevMonday);
+
+      const [progress, prevProgress] = await Promise.all([
+        fetchWeeklyProgress(userId, monday.toISOString()),
+        fetchWeeklyProgress(userId, prevMonday.toISOString()),
+      ]);
+
+      // Filter prev progress to only count up to previous Sunday
+      // (fetchWeeklyProgress uses gte, so prevProgress already scoped from prevMonday)
 
       const zone = prepData?.zone || "em_construcao";
       const breakdown = prepData?.breakdown || { cronograma: 50, desempenho: 50, revisoes: 50, pratica: 50 };
@@ -112,69 +127,53 @@ export function useWeeklyGoals() {
       const mult = zoneMultiplier(zone);
       const examUrgency = daysUntilExam !== null && daysUntilExam < 30 ? 1.5 : 1;
 
-      // Questions target: base 30/day * 7 = 210, adapted by zone
-      const questionsTarget = Math.round(210 * mult);
+      // Base targets
+      const questionsBase = Math.round(210 * mult);
+      const revisoesBase = Math.max(Math.round((pendingRevisoes + 10) * examUrgency), 15);
+      let temasBase = 5;
+      if (breakdown.cronograma > 80) temasBase = 2;
+      else if (breakdown.cronograma > 60) temasBase = 3;
+      else if (breakdown.cronograma < 30) temasBase = 7;
+      let praticaBase = 2;
+      if (zone === "competitivo" || zone === "forte") praticaBase = 3;
+      if (zone === "base_fraca") praticaBase = 1;
+      if (daysUntilExam !== null && daysUntilExam < 30) praticaBase = Math.min(praticaBase + 1, 4);
 
-      // Revisões target: pending + buffer, adapted by exam proximity
-      const revisoesTarget = Math.max(
-        Math.round((pendingRevisoes + 10) * examUrgency),
-        15
-      );
+      // Carryover: 50% of previous week deficit, capped at 1.5x base
+      const calcCarryover = (base: number, prevActual: number) => {
+        const prevTarget = base; // approx same base
+        const deficit = Math.max(0, prevTarget - prevActual);
+        const carry = Math.round(deficit * 0.5);
+        return Math.min(carry, Math.round(base * 0.5)); // cap so total <= 1.5x
+      };
 
-      // Temas: 3-7 based on coverage
-      let temasTarget = 5;
-      if (breakdown.cronograma > 80) temasTarget = 2;
-      else if (breakdown.cronograma > 60) temasTarget = 3;
-      else if (breakdown.cronograma < 30) temasTarget = 7;
+      const qCarry = calcCarryover(questionsBase, prevProgress.questions);
+      const rCarry = calcCarryover(revisoesBase, prevProgress.revisoes);
+      const tCarry = calcCarryover(temasBase, prevProgress.temas);
+      const pCarry = calcCarryover(praticaBase, prevProgress.pratica);
 
-      // Prática clínica: 1-4 sessions
-      let praticaTarget = 2;
-      if (zone === "competitivo" || zone === "forte") praticaTarget = 3;
-      if (zone === "base_fraca") praticaTarget = 1;
-      if (daysUntilExam !== null && daysUntilExam < 30) praticaTarget = Math.min(praticaTarget + 1, 4);
+      const questionsTarget = questionsBase + qCarry;
+      const revisoesTarget = revisoesBase + rCarry;
+      const temasTarget = temasBase + tCarry;
+      const praticaTarget = praticaBase + pCarry;
+
+      const mkGoal = (key: string, label: string, icon: string, target: number, current: number, carryover: number): WeeklyGoal => ({
+        key, label, icon, target, current, carryover,
+        percent: target > 0 ? Math.min(Math.round((current / target) * 100), 100) : 0,
+      });
 
       const goals: WeeklyGoal[] = [
-        {
-          key: "questoes",
-          label: "Questões",
-          icon: "📝",
-          target: questionsTarget,
-          current: progress.questions,
-          percent: questionsTarget > 0 ? Math.min(Math.round((progress.questions / questionsTarget) * 100), 100) : 0,
-        },
-        {
-          key: "revisoes",
-          label: "Revisões",
-          icon: "🔄",
-          target: revisoesTarget,
-          current: progress.revisoes,
-          percent: revisoesTarget > 0 ? Math.min(Math.round((progress.revisoes / revisoesTarget) * 100), 100) : 0,
-        },
-        {
-          key: "temas",
-          label: "Temas novos",
-          icon: "📚",
-          target: temasTarget,
-          current: progress.temas,
-          percent: temasTarget > 0 ? Math.min(Math.round((progress.temas / temasTarget) * 100), 100) : 0,
-        },
-        {
-          key: "pratica",
-          label: "Prática clínica",
-          icon: "🏥",
-          target: praticaTarget,
-          current: progress.pratica,
-          percent: praticaTarget > 0 ? Math.min(Math.round((progress.pratica / praticaTarget) * 100), 100) : 0,
-        },
+        mkGoal("questoes", "Questões", "📝", questionsTarget, progress.questions, qCarry),
+        mkGoal("revisoes", "Revisões", "🔄", revisoesTarget, progress.revisoes, rCarry),
+        mkGoal("temas", "Temas novos", "📚", temasTarget, progress.temas, tCarry),
+        mkGoal("pratica", "Prática clínica", "🏥", praticaTarget, progress.pratica, pCarry),
       ];
 
       const overallPercent = Math.round(goals.reduce((sum, g) => sum + g.percent, 0) / goals.length);
 
-      const monday = getMonday();
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
       const fmt = (d: Date) => `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const weekLabel = `${fmt(monday)} – ${fmt(sunday)}`;
+      const weekSunday = getSunday(monday);
+      const weekLabel = `${fmt(monday)} – ${fmt(weekSunday)}`;
 
       return {
         goals,
