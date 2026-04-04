@@ -232,6 +232,7 @@ const AnamnesisTrainer = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { addXp } = useGamification();
+  const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
   const studyCtx = useStudyContext();
