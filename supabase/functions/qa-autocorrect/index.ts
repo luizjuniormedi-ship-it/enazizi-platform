@@ -233,10 +233,7 @@ async function autoFix(sb: any, event: QAEvent): Promise<FixResult | null> {
     case "DADOS_INCONSISTENTES": {
       if (event.module === "approval_scores") {
         // Clamp scores to 0-100
-        const { error } = await sb.rpc("clamp_approval_scores").catch(() => {
-          // If RPC doesn't exist, do direct update
-          return sb.from("approval_scores").update({ score: 100 }).gt("score", 100);
-        });
+        const { error } = await sb.from("approval_scores").update({ score: 100 }).gt("score", 100);
         return {
           action: "Scores acima de 100 limitados para 100",
           before: { invalid_scores: event.details?.count },
