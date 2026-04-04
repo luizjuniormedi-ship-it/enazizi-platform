@@ -15,6 +15,7 @@ import { useMissionMode } from "@/hooks/useMissionMode";
 export default function SmartAlertCard() {
   const navigate = useNavigate();
   const { data } = useDashboardData();
+  const { state, startMission, hasTasks } = useMissionMode();
 
   if (!data) return null;
   const { metrics, stats } = data;
