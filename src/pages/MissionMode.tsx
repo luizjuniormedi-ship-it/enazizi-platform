@@ -140,7 +140,7 @@ export default function MissionMode() {
             <span className="text-2xl">{TYPE_ICONS[currentTask.type] || "📋"}</span>
             <Badge variant="secondary">{TYPE_LABELS[currentTask.type]}</Badge>
           </div>
-          <p className="text-muted-foreground">{currentTask.reason}</p>
+          <p className="text-muted-foreground">{getHumanReadableReason(currentTask)}</p>
           <Button
             className="w-full gap-2 py-6"
             size="lg"
