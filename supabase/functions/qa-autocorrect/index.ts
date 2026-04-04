@@ -18,15 +18,15 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUB
 
 // ─── Error Taxonomy ─────────────────────────────────────────────
 type ErrorType =
-  | "IA_QUALIDADE" | "IA_JSON_INVALIDO" | "IA_RESPOSTA_EM_INGLES"
-  | "ENUNCIADO_CURTO" | "ALTERNATIVA_FRACA"
-  | "CACHE_VAZIO" | "CACHE_NAO_POPULADO"
-  | "AUTH_401" | "AUTH_TOKEN_AUSENTE"
-  | "EDGE_TIMEOUT" | "EDGE_FALHA_INTERNA"
-  | "DADOS_INCONSISTENTES" | "DADOS_ORFAOS"
-  | "RLS_NEGANDO_ACESSO" | "LOG_NAO_REGISTRADO"
-  | "MISSAO_INCOERENTE" | "TUTOR_GENERICO"
-  | "PROGRESSO_NAO_ATUALIZA" | "CTA_SEM_ACAO" | "PERFORMANCE_BAIXA";
+  | "QUESTAO_EM_INGLES" | "ENUNCIADO_CURTO" | "QUESTAO_SEM_ESTRUTURA"
+  | "APPROVAL_FORA_DA_FAIXA" | "CACHE_VAZIO" | "CACHE_NAO_POPULADO"
+  | "LOG_IA_AUSENTE" | "AUTH_401" | "AUTH_TOKEN_INVALIDO"
+  | "EDGE_TIMEOUT" | "EDGE_500" | "JSON_INVALIDO"
+  | "RESPOSTA_IA_EM_INGLES" | "TUTOR_GENERICO" | "MISSAO_INCOERENTE"
+  | "PROGRESSO_NAO_ATUALIZA" | "FSRS_SUBUTILIZADO" | "DADOS_ORFAOS"
+  | "RLS_NEGANDO_INDEVIDAMENTE" | "CTA_SEM_ACAO" | "REGRESSAO_DE_PERFORMANCE"
+  | "IA_QUALIDADE" | "IA_JSON_INVALIDO" | "ALTERNATIVA_FRACA"
+  | "PERFORMANCE_BAIXA";
 
 type Severity = "critico" | "alto" | "medio" | "baixo";
 type FixStatus = "detectado" | "corrigido_automaticamente" | "corrigido_com_retry" | "corrigido_parcialmente" | "falha_persistente" | "escalado";
@@ -53,7 +53,7 @@ interface FixResult {
 async function detectErrors(sb: any, level: number): Promise<QAEvent[]> {
   const events: QAEvent[] = [];
 
-  // 1. ENUNCIADO_CURTO - questions with short statements
+  // 1. ENUNCIADO_CURTO
   const { data: shortQuestions } = await sb.from("questions_bank")
     .select("id, statement, review_status")
     .eq("review_status", "approved")
@@ -67,43 +67,41 @@ async function detectErrors(sb: any, level: number): Promise<QAEvent[]> {
         module: "questions_bank",
         severity: short.length > 50 ? "alto" : "medio",
         causa_provavel: "Prompt de geração fraco ou pós-processamento cortando conteúdo",
-        impacto: `${short.length} questões aprovadas com enunciado < 200 chars — baixa qualidade pedagógica`,
-        details: { count: short.length, sample_ids: short.slice(0, 5).map((q: any) => q.id) },
+        impacto: `${short.length} questões aprovadas com enunciado < 200 chars`,
+        details: { count: short.length, sample_ids: short.slice(0, 10).map((q: any) => q.id) },
       });
     }
-  }
 
-  // 2. IA_RESPOSTA_EM_INGLES - questions in English
-  if (shortQuestions) {
+    // 2. QUESTAO_EM_INGLES
     const english = shortQuestions.filter((q: any) => {
       const s = (q.statement || "").toLowerCase();
       return /\bthe patient\b/.test(s) || /\bmost likely\b/.test(s) || /\bwhich of the following\b/.test(s) || /\bpresents with\b/.test(s);
     });
     if (english.length > 0) {
       events.push({
-        error_type: "IA_RESPOSTA_EM_INGLES",
+        error_type: "QUESTAO_EM_INGLES",
         module: "questions_bank",
         severity: "critico",
         causa_provavel: "Questões geradas ou ingeridas sem filtro de idioma",
         impacto: `${english.length} questões em inglês no banco aprovado`,
-        details: { count: english.length, sample_ids: english.slice(0, 5).map((q: any) => q.id) },
+        details: { count: english.length, sample_ids: english.slice(0, 10).map((q: any) => q.id) },
       });
     }
   }
 
-  // 3. DADOS_INCONSISTENTES - approval scores > 100
+  // 3. APPROVAL_FORA_DA_FAIXA
   const { data: badScores } = await sb.from("approval_scores")
     .select("id, score, user_id")
-    .gt("score", 100)
+    .or("score.gt.100,score.lt.0")
     .limit(100);
 
   if (badScores && badScores.length > 0) {
     events.push({
-      error_type: "DADOS_INCONSISTENTES",
+      error_type: "APPROVAL_FORA_DA_FAIXA",
       module: "approval_scores",
       severity: "alto",
       causa_provavel: "Função calculate-approval-score não aplica clamp 0-100",
-      impacto: `${badScores.length} scores acima de 100% — dados inverossímeis`,
+      impacto: `${badScores.length} scores fora da faixa válida`,
       details: { count: badScores.length, sample: badScores.slice(0, 3) },
     });
   }
@@ -121,23 +119,36 @@ async function detectErrors(sb: any, level: number): Promise<QAEvent[]> {
     });
   }
 
-  // 5. LOG_NAO_REGISTRADO - check if AI logs exist recently
+  // 5. LOG_IA_AUSENTE
   const { count: logCount } = await sb.from("ai_usage_logs")
     .select("*", { count: "exact", head: true })
     .gte("created_at", new Date(Date.now() - 86400000 * 7).toISOString());
 
   if ((logCount || 0) === 0) {
     events.push({
-      error_type: "LOG_NAO_REGISTRADO",
+      error_type: "LOG_IA_AUSENTE",
       module: "ai_usage_logs",
       severity: "medio",
       causa_provavel: "Edge functions não estão registrando chamadas no ai_usage_logs",
-      impacto: "Sem visibilidade de uso de IA — impossível monitorar custos e performance",
+      impacto: "Sem visibilidade de uso de IA",
       details: { logs_last_7d: 0 },
     });
   }
 
-  // 6. EDGE_TIMEOUT / EDGE_FALHA_INTERNA - test critical functions
+  // 6. FSRS_SUBUTILIZADO
+  const { count: fsrsCount } = await sb.from("fsrs_cards").select("*", { count: "exact", head: true });
+  if ((fsrsCount || 0) < 20) {
+    events.push({
+      error_type: "FSRS_SUBUTILIZADO",
+      module: "fsrs_cards",
+      severity: "medio",
+      causa_provavel: "Sistema FSRS quase inativo — cards não estão sendo criados automaticamente",
+      impacto: "Revisão espaçada não funciona para a maioria dos alunos",
+      details: { total_cards: fsrsCount },
+    });
+  }
+
+  // 7. EDGE_TIMEOUT / EDGE_500 - test critical functions (level >= 2)
   if (level >= 2) {
     const criticalFns = ["system-health-check", "calculate-approval-score"];
     for (const fn of criticalFns) {
@@ -151,18 +162,16 @@ async function detectErrors(sb: any, level: number): Promise<QAEvent[]> {
           signal: controller.signal,
         });
         clearTimeout(timer);
+        await resp.text();
         if (!resp.ok && resp.status !== 400 && resp.status !== 401) {
-          await resp.text();
           events.push({
-            error_type: "EDGE_FALHA_INTERNA",
+            error_type: "EDGE_500",
             module: fn,
             severity: "alto",
             causa_provavel: `Edge function ${fn} retornou status ${resp.status}`,
             impacto: "Funcionalidade indisponível para o usuário",
             details: { status: resp.status },
           });
-        } else {
-          await resp.text();
         }
       } catch (e) {
         events.push({
@@ -177,19 +186,6 @@ async function detectErrors(sb: any, level: number): Promise<QAEvent[]> {
     }
   }
 
-  // 7. DADOS_ORFAOS - fsrs_cards with no reviews
-  const { count: fsrsCount } = await sb.from("fsrs_cards").select("*", { count: "exact", head: true });
-  if ((fsrsCount || 0) < 5) {
-    events.push({
-      error_type: "DADOS_INCONSISTENTES",
-      module: "fsrs_cards",
-      severity: "medio",
-      causa_provavel: "Sistema FSRS quase inativo — cards não estão sendo criados automaticamente",
-      impacto: "Revisão espaçada não funciona para a maioria dos alunos",
-      details: { total_cards: fsrsCount },
-    });
-  }
-
   return events;
 }
 
@@ -199,7 +195,6 @@ async function autoFix(sb: any, event: QAEvent): Promise<FixResult | null> {
 
   switch (event.error_type) {
     case "ENUNCIADO_CURTO": {
-      // Move short questions to pending for review
       const ids = event.details?.sample_ids || [];
       if (ids.length === 0) return null;
       const { error } = await sb.from("questions_bank")
@@ -214,8 +209,7 @@ async function autoFix(sb: any, event: QAEvent): Promise<FixResult | null> {
       };
     }
 
-    case "IA_RESPOSTA_EM_INGLES": {
-      // Move English questions to pending
+    case "QUESTAO_EM_INGLES": {
       const ids = event.details?.sample_ids || [];
       if (ids.length === 0) return null;
       const { error } = await sb.from("questions_bank")
@@ -230,25 +224,16 @@ async function autoFix(sb: any, event: QAEvent): Promise<FixResult | null> {
       };
     }
 
-    case "DADOS_INCONSISTENTES": {
-      if (event.module === "approval_scores") {
-        // Clamp scores to 0-100
-        const { error } = await sb.from("approval_scores").update({ score: 100 }).gt("score", 100);
-        return {
-          action: "Scores acima de 100 limitados para 100",
-          before: { invalid_scores: event.details?.count },
-          after: { clamped: true },
-          success: !error,
-          duration_ms: Date.now() - start,
-        };
-      }
-      return null;
-    }
-
-    case "CACHE_VAZIO":
-    case "CACHE_NAO_POPULADO": {
-      // We can't auto-populate cache meaningfully here, but mark as detected
-      return null;
+    case "APPROVAL_FORA_DA_FAIXA": {
+      const { error: e1 } = await sb.from("approval_scores").update({ score: 100 }).gt("score", 100);
+      const { error: e2 } = await sb.from("approval_scores").update({ score: 0 }).lt("score", 0);
+      return {
+        action: "Scores fora da faixa clampados para 0-100",
+        before: { invalid_scores: event.details?.count },
+        after: { clamped: true },
+        success: !e1 && !e2,
+        duration_ms: Date.now() - start,
+      };
     }
 
     default:
@@ -257,7 +242,7 @@ async function autoFix(sb: any, event: QAEvent): Promise<FixResult | null> {
 }
 
 // ─── Escalation ─────────────────────────────────────────────────
-function generateEscalation(event: QAEvent): { report: string; hypothesis_primary: string; hypothesis_secondary: string; recommended_action: string } {
+function generateEscalation(event: QAEvent) {
   const templates: Record<string, any> = {
     EDGE_TIMEOUT: {
       report: `Edge function ${event.module} não respondeu dentro do tempo limite.`,
@@ -268,14 +253,26 @@ function generateEscalation(event: QAEvent): { report: string; hypothesis_primar
     AUTH_401: {
       report: `Autenticação falhou na função ${event.module}.`,
       hypothesis_primary: "Token ausente ou expirado na chamada",
-      hypothesis_secondary: "Função exige auth mas não deveria, ou validação incorreta",
+      hypothesis_secondary: "Função exige auth mas não deveria",
       recommended_action: "Revisar lógica de autenticação da edge function",
     },
-    PERFORMANCE_BAIXA: {
-      report: `Performance abaixo do aceitável no módulo ${event.module}.`,
-      hypothesis_primary: "Consultas não otimizadas ao banco ou modelo de IA lento",
-      hypothesis_secondary: "Ausência de cache ou índices faltando",
-      recommended_action: "Analisar queries e considerar cache por usuário",
+    CACHE_VAZIO: {
+      report: "Cache global de IA está vazio.",
+      hypothesis_primary: "Módulos de IA não integram com ai-cache.ts",
+      hypothesis_secondary: "Cache expirou e warmup não está rodando",
+      recommended_action: "Integrar getCachedContent/setCachedContent nos módulos de IA",
+    },
+    LOG_IA_AUSENTE: {
+      report: "Logs de uso de IA não estão sendo registrados.",
+      hypothesis_primary: "logAiUsage não está integrado nas edge functions",
+      hypothesis_secondary: "Falha silenciosa no insert do log",
+      recommended_action: "Integrar logAiUsage em todos os módulos de IA",
+    },
+    FSRS_SUBUTILIZADO: {
+      report: "Sistema FSRS com poucos cards criados.",
+      hypothesis_primary: "update-performance não cria cards automaticamente",
+      hypothesis_secondary: "Poucos usuários atingem condição de criação",
+      recommended_action: "Verificar lógica de criação de cards no update-performance",
     },
   };
 
@@ -293,121 +290,179 @@ serve(async (req) => {
 
   const sb = getAdmin();
   const body = await req.json().catch(() => ({}));
-  const level = body.level || 2; // 1=detect, 2=autofix, 3=debug
+  const level = body.level || 2;
+  const runType = body.run_type || "manual";
+  const maxLoops = body.max_loops || 3;
 
   try {
-    console.log(`[qa-autocorrect] Starting pipeline level=${level}`);
+    console.log(`[qa-bot] Starting pipeline level=${level} type=${runType} maxLoops=${maxLoops}`);
 
-    // Step 1: Detect errors
-    const events = await detectErrors(sb, level);
-    console.log(`[qa-autocorrect] Detected ${events.length} issues`);
+    // Create run record
+    const { data: runRow } = await sb.from("qa_runs").insert({
+      run_type: runType,
+      level,
+      status: "running",
+      started_at: new Date().toISOString(),
+    }).select("id").single();
+    const runId = runRow?.id;
 
-    const results: Array<{
-      event_id: string;
-      error_type: string;
-      module: string;
-      severity: string;
-      status: FixStatus;
-      fix?: FixResult;
-      escalation?: any;
-    }> = [];
+    // Get previous run for comparison
+    const { data: prevRun } = await sb.from("qa_runs")
+      .select("total_findings, total_corrected, total_escalated, auto_fix_rate_pct")
+      .neq("id", runId || "")
+      .eq("status", "completed")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    for (const event of events) {
-      // Step 2: Insert event
-      const { data: inserted, error: insertErr } = await sb.from("qa_events").insert({
-        error_type: event.error_type,
-        module: event.module,
-        severity: event.severity,
-        causa_provavel: event.causa_provavel,
-        impacto: event.impacto,
-        payload: event.payload,
-        details: event.details,
-      }).select("id").single();
+    let loopCount = 0;
+    let hasCritical = true;
+    const allResults: any[] = [];
+    const modulesChecked = new Set<string>();
 
-      if (insertErr || !inserted) {
-        console.error(`[qa-autocorrect] Failed to insert event:`, insertErr);
-        continue;
+    // ─── LOOP until stable or max loops ───
+    while (hasCritical && loopCount < maxLoops) {
+      loopCount++;
+      console.log(`[qa-bot] Loop ${loopCount}/${maxLoops}`);
+
+      const events = await detectErrors(sb, level);
+      console.log(`[qa-bot] Loop ${loopCount}: detected ${events.length} issues`);
+
+      if (events.length === 0) {
+        hasCritical = false;
+        break;
       }
 
-      const eventId = inserted.id;
-      let finalStatus: FixStatus = "detectado";
+      // Check if any critical/alto remain
+      const criticalEvents = events.filter(e => e.severity === "critico" || e.severity === "alto");
 
-      // Step 3: Attempt auto-fix (level >= 2)
-      if (level >= 2) {
-        const fix = await autoFix(sb, event);
-        if (fix) {
-          await sb.from("qa_auto_fixes").insert({
-            event_id: eventId,
-            action_taken: fix.action,
-            result_before: fix.before,
-            result_after: fix.after,
-            success: fix.success,
-            duration_ms: fix.duration_ms,
-          });
+      for (const event of events) {
+        modulesChecked.add(event.module);
 
-          finalStatus = fix.success ? "corrigido_automaticamente" : "corrigido_parcialmente";
+        // Insert event
+        const { data: inserted } = await sb.from("qa_events").insert({
+          error_type: event.error_type,
+          module: event.module,
+          severity: event.severity,
+          causa_provavel: event.causa_provavel,
+          impacto: event.impacto,
+          payload: event.payload,
+          details: event.details,
+        }).select("id").single();
 
-          // Step 4: Revalidate (simple check)
-          if (fix.success && event.error_type === "ENUNCIADO_CURTO") {
-            // Verify the questions were actually moved
-            const ids = event.details?.sample_ids || [];
-            if (ids.length > 0) {
-              const { data: check } = await sb.from("questions_bank")
-                .select("review_status")
-                .in("id", ids)
-                .limit(1)
-                .single();
-              if (check?.review_status !== "pending") {
-                finalStatus = "corrigido_parcialmente";
-              }
-            }
+        if (!inserted) continue;
+        const eventId = inserted.id;
+        let finalStatus: FixStatus = "detectado";
+
+        // Auto-fix (level >= 2)
+        if (level >= 2) {
+          const fix = await autoFix(sb, event);
+          if (fix) {
+            await sb.from("qa_auto_fixes").insert({
+              event_id: eventId,
+              action_taken: fix.action,
+              result_before: fix.before,
+              result_after: fix.after,
+              success: fix.success,
+              duration_ms: fix.duration_ms,
+            });
+            finalStatus = fix.success ? "corrigido_automaticamente" : "corrigido_parcialmente";
+            allResults.push({ event_id: eventId, error_type: event.error_type, module: event.module, severity: event.severity, status: finalStatus, fix, loop: loopCount });
+          } else {
+            finalStatus = "escalado";
+            const esc = generateEscalation(event);
+            await sb.from("qa_escalations").insert({ event_id: eventId, ...esc });
+            allResults.push({ event_id: eventId, error_type: event.error_type, module: event.module, severity: event.severity, status: finalStatus, escalation: esc, loop: loopCount });
           }
-
-          results.push({ event_id: eventId, error_type: event.error_type, module: event.module, severity: event.severity, status: finalStatus, fix });
         } else {
-          // Can't auto-fix → escalate
-          finalStatus = "escalado";
-          const esc = generateEscalation(event);
-          await sb.from("qa_escalations").insert({
-            event_id: eventId,
-            ...esc,
-          });
-          results.push({ event_id: eventId, error_type: event.error_type, module: event.module, severity: event.severity, status: finalStatus, escalation: esc });
+          allResults.push({ event_id: eventId, error_type: event.error_type, module: event.module, severity: event.severity, status: finalStatus, loop: loopCount });
         }
-      } else {
-        results.push({ event_id: eventId, error_type: event.error_type, module: event.module, severity: event.severity, status: finalStatus });
+
+        await sb.from("qa_events").update({
+          status: finalStatus,
+          resolved_at: finalStatus.startsWith("corrigido") ? new Date().toISOString() : null,
+        }).eq("id", eventId);
       }
 
-      // Update event status
-      await sb.from("qa_events").update({
-        status: finalStatus,
-        resolved_at: finalStatus.startsWith("corrigido") ? new Date().toISOString() : null,
-      }).eq("id", eventId);
+      // After fixes, check if critical issues remain (only if we can fix)
+      if (level < 2 || criticalEvents.length === 0) {
+        hasCritical = false;
+      } else {
+        // Re-check: did we fix the critical ones?
+        const fixedCritical = allResults.filter(r => r.loop === loopCount && (r.severity === "critico" || r.severity === "alto") && r.status === "corrigido_automaticamente");
+        if (fixedCritical.length === 0) {
+          // No critical was fixed this loop, stop to avoid infinite loop
+          hasCritical = false;
+        }
+      }
     }
 
     // Compute summary
-    const corrected = results.filter(r => r.status === "corrigido_automaticamente").length;
-    const partial = results.filter(r => r.status === "corrigido_parcialmente").length;
-    const escalated = results.filter(r => r.status === "escalado").length;
-    const detected = results.filter(r => r.status === "detectado").length;
-    const autoFixRate = results.length > 0 ? Math.round((corrected / results.length) * 100) : 0;
+    const corrected = allResults.filter(r => r.status === "corrigido_automaticamente").length;
+    const partial = allResults.filter(r => r.status === "corrigido_parcialmente").length;
+    const escalated = allResults.filter(r => r.status === "escalado").length;
+    const detected = allResults.filter(r => r.status === "detectado").length;
+    const totalFindings = allResults.length;
+    const autoFixRate = totalFindings > 0 ? Math.round((corrected / totalFindings) * 100) : 0;
+    const durationMs = Date.now() - new Date(runRow?.started_at || Date.now()).getTime();
 
-    console.log(`[qa-autocorrect] Done: ${corrected} corrigidos, ${partial} parciais, ${escalated} escalados, ${detected} detectados`);
+    // Comparison with previous run
+    const comparison = prevRun ? {
+      findings_delta: totalFindings - (prevRun.total_findings || 0),
+      corrected_delta: corrected - (prevRun.total_corrected || 0),
+      escalated_delta: escalated - (prevRun.total_escalated || 0),
+      fix_rate_delta: autoFixRate - (prevRun.auto_fix_rate_pct || 0),
+      trend: totalFindings < (prevRun.total_findings || 0) ? "melhorando" : totalFindings === (prevRun.total_findings || 0) ? "estável" : "piorando",
+    } : null;
+
+    // Determine final status
+    const finalRunStatus = allResults.some(r => r.status === "falha_persistente" || (r.status === "escalado" && (r.severity === "critico")))
+      ? "critical_open" : "completed";
+
+    // Update run record
+    if (runId) {
+      await sb.from("qa_runs").update({
+        status: finalRunStatus,
+        finished_at: new Date().toISOString(),
+        duration_ms: durationMs,
+        modules_checked: Array.from(modulesChecked),
+        total_findings: totalFindings,
+        total_corrected: corrected,
+        total_partial: partial,
+        total_escalated: escalated,
+        total_detected: detected,
+        auto_fix_rate_pct: autoFixRate,
+        summary_report: {
+          loops_executed: loopCount,
+          results: allResults.slice(0, 50),
+          comparison,
+        },
+        previous_comparison: comparison,
+      }).eq("id", runId);
+    }
+
+    console.log(`[qa-bot] Done: ${corrected} corrigidos, ${partial} parciais, ${escalated} escalados, ${detected} detectados (${loopCount} loops, ${durationMs}ms)`);
 
     return new Response(JSON.stringify({
-      total_issues: events.length,
+      run_id: runId,
+      total_issues: totalFindings,
       corrected,
       partial,
       escalated,
       detected,
       auto_fix_rate_pct: autoFixRate,
+      loops_executed: loopCount,
+      duration_ms: durationMs,
       level,
-      results,
+      run_type: runType,
+      status: finalRunStatus,
+      comparison,
+      results: allResults,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("[qa-autocorrect] Fatal error:", e);
+    console.error("[qa-bot] Fatal error:", e);
     return new Response(JSON.stringify({ error: (e as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
