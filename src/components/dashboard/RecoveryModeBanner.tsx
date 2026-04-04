@@ -29,7 +29,7 @@ export default function RecoveryModeBanner() {
   if (hr?.active) {
     const phaseColor = PHASE_COLORS[hr.phase] || PHASE_COLORS[1];
     return (
-      <Card className="border-amber-500/30 bg-amber-500/5">
+      <Card className="border-primary/30 bg-primary/5">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-3">
             <div className={`p-2.5 rounded-xl shrink-0 ${phaseColor}`}>
