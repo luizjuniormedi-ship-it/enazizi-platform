@@ -183,8 +183,8 @@ export function useWeeklyGoals() {
       };
     },
     enabled: !!user,
-    staleTime: 60 * 1000,
+    staleTime: 3 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
 }

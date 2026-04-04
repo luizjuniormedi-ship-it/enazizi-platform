@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 const STALE_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
 
 const JOURNEY_QUERY_KEYS = [
+  ["core-data"],
   ["dashboard-data"],
   ["study-engine"],
   ["exam-readiness"],
@@ -23,6 +24,7 @@ const JOURNEY_QUERY_KEYS = [
   ["daily-plan"],
   ["gamification"],
   ["mentorship"],
+  ["weekly-goals"],
 ];
 
 export function useJourneyRefresh() {

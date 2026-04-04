@@ -39,7 +39,7 @@ async function fetchCoreData(userId: string): Promise<CoreDataResult> {
       .order("created_at", { ascending: false })
       .limit(500),
     supabase.from("revisoes")
-      .select("id, status, data_revisao, updated_at")
+      .select("id, status, data_revisao, created_at")
       .eq("user_id", userId),
     supabase.from("exam_sessions")
       .select("score, total_questions, finished_at")
