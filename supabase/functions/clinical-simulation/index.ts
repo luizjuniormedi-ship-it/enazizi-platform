@@ -509,11 +509,32 @@ Responda APENAS em JSON válido.`,
 
     let parsed;
     try {
-      const jsonStr = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      parsed = JSON.parse(jsonStr);
+      parsed = safeParseAIJson(raw, action);
     } catch {
-      console.error("Failed to parse AI response:", raw);
-      throw new Error("Resposta da IA inválida");
+      console.error("Failed to parse AI response after sanitization:", raw.slice(0, 500));
+      // Fallback: return a minimal valid response so the session is never lost
+      if (action === "finish") {
+        parsed = {
+          final_score: 0,
+          grade: "Indisponível",
+          correct_diagnosis: "Não foi possível avaliar",
+          student_got_diagnosis: false,
+          evaluation: { resumo: "Erro ao processar avaliação da IA. Tente novamente." },
+          differential_diagnoses: [],
+          checklist: [],
+          recommendations: "A avaliação não pôde ser processada. Sua sessão foi salva.",
+          xp_earned: 5,
+          time_total_minutes: 0,
+        };
+      } else {
+        parsed = {
+          response: "Desculpe, houve um erro ao processar a resposta. Por favor, repita sua ação.",
+          response_type: "error_fallback",
+          patient_status: "estável",
+          vitals: {},
+          score_delta: 0,
+        };
+      }
     }
 
     // If this was a teacher case and action is "finish", save results
