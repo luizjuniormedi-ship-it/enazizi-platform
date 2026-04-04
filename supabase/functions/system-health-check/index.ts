@@ -17,7 +17,7 @@ interface HealthAlert {
 // ── In-memory cache for health check results (5 min TTL) ──
 let cachedFullResult: { data: any; ts: number } | null = null;
 let cachedDashResult: { data: any; ts: number } | null = null;
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
