@@ -10,6 +10,8 @@ export function useChatMessages(userId: string | undefined) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const { isEnabled } = useFeatureFlags();
+  const tutorDualWriteEnabled = isEnabled("new_tutor_flow_enabled");
 
   const loadConversations = useCallback(async () => {
     if (!userId) return;
