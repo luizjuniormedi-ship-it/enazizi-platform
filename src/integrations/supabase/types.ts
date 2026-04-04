@@ -3873,6 +3873,7 @@ export type Database = {
           id: string
           payload_json: Json | null
           recovery_run_id: string
+          user_id: string
         }
         Insert: {
           created_at?: string
@@ -3881,6 +3882,7 @@ export type Database = {
           id?: string
           payload_json?: Json | null
           recovery_run_id: string
+          user_id: string
         }
         Update: {
           created_at?: string
@@ -3889,6 +3891,7 @@ export type Database = {
           id?: string
           payload_json?: Json | null
           recovery_run_id?: string
+          user_id?: string
         }
         Relationships: [
           {
