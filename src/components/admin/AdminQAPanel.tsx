@@ -5,41 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   Shield, Play, CheckCircle2, AlertTriangle, XCircle, Clock,
-  ChevronDown, RefreshCw, Zap, Database, Brain, Bug,
-  Wrench, ArrowUpCircle, Activity, BarChart3, Eye
+  RefreshCw, Zap, Database, Brain, Bug,
+  Wrench, ArrowUpCircle, Activity, BarChart3, Eye,
+  Bot, TrendingUp, TrendingDown, Minus, History
 } from "lucide-react";
-
-type QARunRow = {
-  id: string;
-  run_type: string;
-  status: string;
-  total_tests: number;
-  passed_tests: number;
-  failed_tests: number;
-  warning_tests: number;
-  summary_json: any;
-  duration_ms: number;
-  started_at: string;
-  finished_at: string | null;
-};
-
-type QAResultRow = {
-  id: string;
-  run_id: string;
-  test_suite: string;
-  test_name: string;
-  status: string;
-  details_json: any;
-  duration_ms: number;
-  module_tested: string | null;
-  error_message: string | null;
-  suggestion: string | null;
-};
 
 type QAEvent = {
   id: string;
@@ -76,12 +49,23 @@ type QAEscalation = {
   created_at: string;
 };
 
-const statusConfig: Record<string, { icon: typeof CheckCircle2; color: string; label: string }> = {
-  passed: { icon: CheckCircle2, color: "text-green-500", label: "Aprovado" },
-  warning: { icon: AlertTriangle, color: "text-yellow-500", label: "Atenção" },
-  failed: { icon: XCircle, color: "text-red-500", label: "Falhou" },
-  running: { icon: RefreshCw, color: "text-blue-500 animate-spin", label: "Executando" },
-  skipped: { icon: Clock, color: "text-muted-foreground", label: "Pulado" },
+type QARun = {
+  id: string;
+  run_type: string;
+  level: number;
+  status: string;
+  started_at: string;
+  finished_at: string | null;
+  duration_ms: number | null;
+  modules_checked: any;
+  total_findings: number;
+  total_corrected: number;
+  total_partial: number;
+  total_escalated: number;
+  total_detected: number;
+  auto_fix_rate_pct: number;
+  summary_report: any;
+  previous_comparison: any;
 };
 
 const fixStatusConfig: Record<string, { color: string; label: string }> = {
@@ -100,59 +84,37 @@ const severityColors: Record<string, string> = {
   baixo: "bg-blue-500/10 text-blue-500 border-blue-500/20",
 };
 
-const suiteIcons: Record<string, typeof Brain> = {
-  edge_function_health: Zap,
-  ai_quality: Brain,
-  cache_optimization: Database,
-  database_integrity: Database,
-  performance: Clock,
-  error_handling: Bug,
-};
-
-const suiteLabels: Record<string, string> = {
-  edge_function_health: "Saúde das Edge Functions",
-  ai_quality: "Qualidade da IA",
-  cache_optimization: "Cache e Otimização",
-  database_integrity: "Integridade do Banco",
-  performance: "Performance",
-  error_handling: "Tratamento de Erros",
+const runStatusConfig: Record<string, { icon: typeof CheckCircle2; color: string; label: string }> = {
+  completed: { icon: CheckCircle2, color: "text-green-500", label: "Saudável" },
+  critical_open: { icon: XCircle, color: "text-red-500", label: "Crítico Aberto" },
+  running: { icon: RefreshCw, color: "text-blue-500 animate-spin", label: "Executando" },
 };
 
 export default function AdminQAPanel() {
   const queryClient = useQueryClient();
-  const [expandedRun, setExpandedRun] = useState<string | null>(null);
   const [autonomyLevel, setAutonomyLevel] = useState("2");
 
-  // QA Test Runs (legacy)
-  const { data: runs, isLoading } = useQuery({
-    queryKey: ["qa-runs"],
+  const invalidateAll = () => {
+    ["qa-events", "qa-fixes", "qa-escalations", "qa-bot-runs"].forEach(k =>
+      queryClient.invalidateQueries({ queryKey: [k] })
+    );
+  };
+
+  // QA Bot Runs
+  const { data: botRuns } = useQuery({
+    queryKey: ["qa-bot-runs"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("qa_test_runs" as any)
+        .from("qa_runs" as any)
         .select("*")
         .order("created_at", { ascending: false })
         .limit(20);
       if (error) throw error;
-      return (data || []) as unknown as QARunRow[];
+      return (data || []) as unknown as QARun[];
     },
   });
 
-  const { data: results } = useQuery({
-    queryKey: ["qa-results", expandedRun],
-    queryFn: async () => {
-      if (!expandedRun) return [];
-      const { data, error } = await supabase
-        .from("qa_test_results" as any)
-        .select("*")
-        .eq("run_id", expandedRun)
-        .order("test_suite", { ascending: true });
-      if (error) throw error;
-      return (data || []) as unknown as QAResultRow[];
-    },
-    enabled: !!expandedRun,
-  });
-
-  // QA Events (autocorrective)
+  // QA Events
   const { data: qaEvents } = useQuery({
     queryKey: ["qa-events"],
     queryFn: async () => {
@@ -194,89 +156,64 @@ export default function AdminQAPanel() {
     },
   });
 
-  // Run legacy QA tests
-  const runMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.functions.invoke("qa-agent", {
-        body: { run_type: "manual" },
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Testes QA iniciados!");
-      [5000, 15000, 30000, 60000].forEach(ms =>
-        setTimeout(() => queryClient.invalidateQueries({ queryKey: ["qa-runs"] }), ms)
-      );
-    },
-    onError: (e) => toast.error(`Erro: ${e.message}`),
-  });
-
-  // Run autocorrect pipeline
-  const autocorrectMutation = useMutation({
+  // Run bot
+  const botMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("qa-autocorrect", {
-        body: { level: parseInt(autonomyLevel) },
+        body: { level: parseInt(autonomyLevel), run_type: "manual", max_loops: 3 },
       });
       if (error) throw error;
       return data;
     },
     onSuccess: (data) => {
-      const msg = `Pipeline concluído: ${data.corrected} corrigidos, ${data.escalated} escalados de ${data.total_issues} problemas`;
+      const msg = `Bot QA concluído: ${data.corrected} corrigidos, ${data.escalated} escalados (${data.loops_executed} loops, ${Math.round(data.duration_ms / 1000)}s)`;
       toast.success(msg);
-      queryClient.invalidateQueries({ queryKey: ["qa-events"] });
-      queryClient.invalidateQueries({ queryKey: ["qa-fixes"] });
-      queryClient.invalidateQueries({ queryKey: ["qa-escalations"] });
+      invalidateAll();
     },
-    onError: (e) => toast.error(`Erro no autocorretor: ${e.message}`),
+    onError: (e) => toast.error(`Erro no Bot QA: ${e.message}`),
   });
 
-  const groupedResults = results?.reduce<Record<string, QAResultRow[]>>((acc, r) => {
-    (acc[r.test_suite] = acc[r.test_suite] || []).push(r);
-    return acc;
-  }, {}) || {};
+  const latestRun = botRuns?.[0];
+  const latestComparison = latestRun?.previous_comparison;
 
-  const latestRun = runs?.[0];
-
-  // Compute autocorrect stats
+  // Stats
   const totalEvents = qaEvents?.length || 0;
   const correctedAuto = qaEvents?.filter(e => e.status === "corrigido_automaticamente").length || 0;
   const escalatedCount = qaEvents?.filter(e => e.status === "escalado").length || 0;
   const pendingCount = qaEvents?.filter(e => e.status === "detectado" || e.status === "falha_persistente").length || 0;
   const autoFixRate = totalEvents > 0 ? Math.round((correctedAuto / totalEvents) * 100) : 0;
 
-  // Error frequency
   const errorFrequency = (qaEvents || []).reduce<Record<string, number>>((acc, e) => {
     acc[e.error_type] = (acc[e.error_type] || 0) + 1;
     return acc;
   }, {});
   const topErrors = Object.entries(errorFrequency).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
-  // Module instability
   const moduleFreq = (qaEvents || []).reduce<Record<string, number>>((acc, e) => {
     acc[e.module] = (acc[e.module] || 0) + 1;
     return acc;
   }, {});
   const unstableModules = Object.entries(moduleFreq).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
+  const TrendIcon = latestComparison?.trend === "melhorando" ? TrendingUp : latestComparison?.trend === "piorando" ? TrendingDown : Minus;
+  const trendColor = latestComparison?.trend === "melhorando" ? "text-green-500" : latestComparison?.trend === "piorando" ? "text-red-500" : "text-muted-foreground";
+
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold">QA Autocorretivo</h2>
+          <Bot className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-semibold">Bot QA Autônomo</h2>
+          {latestRun && (
+            <Badge variant="outline" className={`text-[10px] ${latestRun.status === "completed" ? "text-green-500 border-green-500/30" : latestRun.status === "running" ? "text-blue-500 border-blue-500/30" : "text-red-500 border-red-500/30"}`}>
+              {runStatusConfig[latestRun.status]?.label || latestRun.status}
+            </Badge>
+          )}
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button size="sm" variant="outline" onClick={() => {
-            queryClient.invalidateQueries({ queryKey: ["qa-runs"] });
-            queryClient.invalidateQueries({ queryKey: ["qa-events"] });
-            queryClient.invalidateQueries({ queryKey: ["qa-fixes"] });
-            queryClient.invalidateQueries({ queryKey: ["qa-escalations"] });
-          }}>
+          <Button size="sm" variant="outline" onClick={invalidateAll}>
             <RefreshCw className="h-4 w-4 mr-1" /> Atualizar
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => runMutation.mutate()} disabled={runMutation.isPending}>
-            <Play className="h-4 w-4 mr-1" /> {runMutation.isPending ? "..." : "Testes QA"}
           </Button>
           <div className="flex items-center gap-1">
             <Select value={autonomyLevel} onValueChange={setAutonomyLevel}>
@@ -289,17 +226,62 @@ export default function AdminQAPanel() {
                 <SelectItem value="3">Nível 3: Debug</SelectItem>
               </SelectContent>
             </Select>
-            <Button size="sm" onClick={() => autocorrectMutation.mutate()} disabled={autocorrectMutation.isPending}>
-              <Wrench className="h-4 w-4 mr-1" /> {autocorrectMutation.isPending ? "Corrigindo..." : "Autocorrigir"}
+            <Button size="sm" onClick={() => botMutation.mutate()} disabled={botMutation.isPending}>
+              <Play className="h-4 w-4 mr-1" /> {botMutation.isPending ? "Executando..." : "Executar Bot"}
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Autocorrect stats */}
+      {/* Bot Status Card */}
+      {latestRun && (
+        <Card className={`border ${latestRun.status === "completed" ? "border-green-500/20 bg-green-500/5" : latestRun.status === "critical_open" ? "border-red-500/20 bg-red-500/5" : "border-blue-500/20 bg-blue-500/5"}`}>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Última Execução</span>
+                <Badge variant="outline" className="text-[10px]">{latestRun.run_type}</Badge>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {new Date(latestRun.started_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                {latestRun.duration_ms && ` · ${Math.round(latestRun.duration_ms / 1000)}s`}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-center">
+              {[
+                { label: "Achados", value: latestRun.total_findings, color: "text-foreground" },
+                { label: "Corrigidos", value: latestRun.total_corrected, color: "text-green-500" },
+                { label: "Parciais", value: latestRun.total_partial, color: "text-yellow-500" },
+                { label: "Escalados", value: latestRun.total_escalated, color: "text-orange-500" },
+                { label: "Detectados", value: latestRun.total_detected, color: "text-blue-500" },
+                { label: "Taxa Fix", value: `${latestRun.auto_fix_rate_pct}%`, color: "text-primary" },
+              ].map(s => (
+                <div key={s.label}>
+                  <div className={`text-lg font-bold ${s.color}`}>{s.value}</div>
+                  <div className="text-[10px] text-muted-foreground">{s.label}</div>
+                </div>
+              ))}
+            </div>
+            {latestComparison && (
+              <div className="mt-2 flex items-center gap-2 text-xs border-t pt-2">
+                <TrendIcon className={`h-3.5 w-3.5 ${trendColor}`} />
+                <span className={trendColor}>
+                  {latestComparison.trend === "melhorando" ? "Sistema melhorando" : latestComparison.trend === "piorando" ? "Sistema piorando" : "Sistema estável"}
+                </span>
+                <span className="text-muted-foreground">
+                  vs anterior: {latestComparison.findings_delta > 0 ? "+" : ""}{latestComparison.findings_delta} achados
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
         {[
-          { label: "Eventos", value: totalEvents, icon: Eye, color: "text-foreground" },
+          { label: "Eventos Total", value: totalEvents, icon: Eye, color: "text-foreground" },
           { label: "Corrigidos Auto", value: correctedAuto, icon: CheckCircle2, color: "text-green-500" },
           { label: "Escalados", value: escalatedCount, icon: ArrowUpCircle, color: "text-orange-500" },
           { label: "Pendentes", value: pendingCount, icon: Clock, color: "text-yellow-500" },
@@ -318,17 +300,17 @@ export default function AdminQAPanel() {
         })}
       </div>
 
-      <Tabs defaultValue="events">
-        <TabsList className="w-full grid grid-cols-4">
+      <Tabs defaultValue="bot">
+        <TabsList className="w-full grid grid-cols-5">
+          <TabsTrigger value="bot" className="text-xs">Bot</TabsTrigger>
           <TabsTrigger value="events" className="text-xs">Eventos</TabsTrigger>
           <TabsTrigger value="fixes" className="text-xs">Correções</TabsTrigger>
           <TabsTrigger value="escalations" className="text-xs">Escalações</TabsTrigger>
-          <TabsTrigger value="tests" className="text-xs">Testes</TabsTrigger>
+          <TabsTrigger value="history" className="text-xs">Histórico</TabsTrigger>
         </TabsList>
 
-        {/* Events Tab */}
-        <TabsContent value="events" className="space-y-3">
-          {/* Top errors & unstable modules */}
+        {/* Bot Tab - Overview */}
+        <TabsContent value="bot" className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <Card className="p-3">
               <div className="flex items-center gap-1.5 mb-2">
@@ -338,8 +320,8 @@ export default function AdminQAPanel() {
               {topErrors.length === 0 && <p className="text-xs text-muted-foreground">Nenhum evento registrado</p>}
               {topErrors.map(([type, count]) => (
                 <div key={type} className="flex justify-between text-xs py-0.5">
-                  <span className="font-mono">{type}</span>
-                  <Badge variant="outline" className="text-[10px]">{count}</Badge>
+                  <span className="font-mono truncate">{type}</span>
+                  <Badge variant="outline" className="text-[10px] ml-1">{count}</Badge>
                 </div>
               ))}
             </Card>
@@ -351,18 +333,35 @@ export default function AdminQAPanel() {
               {unstableModules.length === 0 && <p className="text-xs text-muted-foreground">Nenhum módulo com erros</p>}
               {unstableModules.map(([mod, count]) => (
                 <div key={mod} className="flex justify-between text-xs py-0.5">
-                  <span>{mod}</span>
-                  <Badge variant="outline" className="text-[10px]">{count}</Badge>
+                  <span className="truncate">{mod}</span>
+                  <Badge variant="outline" className="text-[10px] ml-1">{count}</Badge>
                 </div>
               ))}
             </Card>
           </div>
 
-          {/* Events list */}
+          {/* Modules health */}
+          {latestRun?.modules_checked && Array.isArray(latestRun.modules_checked) && (
+            <Card className="p-3">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Database className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium">Módulos Verificados</span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {(latestRun.modules_checked as string[]).map(m => (
+                  <Badge key={m} variant="outline" className="text-[10px]">{m}</Badge>
+                ))}
+              </div>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Events Tab */}
+        <TabsContent value="events">
           <Card>
             <CardContent className="pt-4 space-y-1.5 max-h-[400px] overflow-y-auto">
               {(!qaEvents || qaEvents.length === 0) && (
-                <p className="text-sm text-muted-foreground text-center py-4">Nenhum evento. Execute o autocorretor.</p>
+                <p className="text-sm text-muted-foreground text-center py-4">Nenhum evento. Execute o bot.</p>
               )}
               {qaEvents?.map((event) => {
                 const fCfg = fixStatusConfig[event.status] || fixStatusConfig.detectado;
@@ -381,19 +380,9 @@ export default function AdminQAPanel() {
                         </span>
                       </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      <span className="font-medium">Módulo:</span> {event.module}
-                    </div>
-                    {event.causa_provavel && (
-                      <div className="text-xs text-muted-foreground">
-                        <span className="font-medium">Causa:</span> {event.causa_provavel}
-                      </div>
-                    )}
-                    {event.impacto && (
-                      <div className="text-xs text-muted-foreground">
-                        <span className="font-medium">Impacto:</span> {event.impacto}
-                      </div>
-                    )}
+                    <div className="text-xs text-muted-foreground"><span className="font-medium">Módulo:</span> {event.module}</div>
+                    {event.causa_provavel && <div className="text-xs text-muted-foreground"><span className="font-medium">Causa:</span> {event.causa_provavel}</div>}
+                    {event.impacto && <div className="text-xs text-muted-foreground"><span className="font-medium">Impacto:</span> {event.impacto}</div>}
                   </div>
                 );
               })}
@@ -412,11 +401,7 @@ export default function AdminQAPanel() {
                 <div key={fix.id} className="border rounded-lg p-2.5 space-y-1">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      {fix.success ? (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-                      ) : (
-                        <XCircle className="h-3.5 w-3.5 text-red-500" />
-                      )}
+                      {fix.success ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <XCircle className="h-3.5 w-3.5 text-red-500" />}
                       <span className="text-xs font-medium">{fix.action_taken}</span>
                     </div>
                     <span className="text-[10px] text-muted-foreground">{fix.duration_ms}ms</span>
@@ -454,132 +439,60 @@ export default function AdminQAPanel() {
                     {esc.acknowledged && <Badge variant="outline" className="text-[10px]">Reconhecida</Badge>}
                   </div>
                   <p className="text-xs">{esc.report}</p>
-                  {esc.hypothesis_primary && (
-                    <div className="text-[10px] text-muted-foreground">
-                      <span className="font-medium">Hipótese 1:</span> {esc.hypothesis_primary}
-                    </div>
-                  )}
-                  {esc.hypothesis_secondary && (
-                    <div className="text-[10px] text-muted-foreground">
-                      <span className="font-medium">Hipótese 2:</span> {esc.hypothesis_secondary}
-                    </div>
-                  )}
-                  {esc.recommended_action && (
-                    <div className="text-[10px] text-amber-500 font-medium">
-                      💡 {esc.recommended_action}
-                    </div>
-                  )}
+                  {esc.hypothesis_primary && <div className="text-[10px] text-muted-foreground"><span className="font-medium">Hipótese 1:</span> {esc.hypothesis_primary}</div>}
+                  {esc.hypothesis_secondary && <div className="text-[10px] text-muted-foreground"><span className="font-medium">Hipótese 2:</span> {esc.hypothesis_secondary}</div>}
+                  {esc.recommended_action && <div className="text-[10px] text-amber-500 font-medium">💡 {esc.recommended_action}</div>}
                 </div>
               ))}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Tests Tab (legacy) */}
-        <TabsContent value="tests" className="space-y-3">
-          {latestRun && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-              {[
-                { label: "Total", value: latestRun.total_tests, color: "text-foreground" },
-                { label: "Aprovados", value: latestRun.passed_tests, color: "text-green-500" },
-                { label: "Atenção", value: latestRun.warning_tests, color: "text-yellow-500" },
-                { label: "Falhas", value: latestRun.failed_tests, color: "text-red-500" },
-                { label: "Tempo", value: `${((latestRun.duration_ms || 0) / 1000).toFixed(0)}s`, color: "text-muted-foreground" },
-              ].map((stat) => (
-                <Card key={stat.label} className="p-3">
-                  <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
-                  <div className="text-xs text-muted-foreground">{stat.label}</div>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {latestRun?.summary_json?.critical_failures?.length > 0 && (
-            <Card className="border-red-500/30 bg-red-500/5">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2 text-red-500">
-                  <XCircle className="h-4 w-4" /> Falhas Críticas
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {latestRun.summary_json.critical_failures.map((f: any, i: number) => (
-                  <div key={i} className="text-sm">
-                    <span className="font-medium">{f.test}</span>
-                    <span className="text-muted-foreground"> — {f.module}</span>
-                    {f.suggestion && <p className="text-xs text-muted-foreground mt-0.5">💡 {f.suggestion}</p>}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-
+        {/* History Tab */}
+        <TabsContent value="history">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Histórico de Execuções</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <History className="h-4 w-4" /> Histórico de Execuções do Bot
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-1">
-              {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
-              {runs?.map((run) => {
-                const cfg = statusConfig[run.status] || statusConfig.running;
+            <CardContent className="space-y-1.5 max-h-[400px] overflow-y-auto">
+              {(!botRuns || botRuns.length === 0) && (
+                <p className="text-sm text-muted-foreground text-center py-4">Nenhuma execução registrada.</p>
+              )}
+              {botRuns?.map((run) => {
+                const cfg = runStatusConfig[run.status] || runStatusConfig.completed;
                 const Icon = cfg.icon;
-                const isExpanded = expandedRun === run.id;
                 return (
-                  <Collapsible key={run.id} open={isExpanded} onOpenChange={(open) => setExpandedRun(open ? run.id : null)}>
-                    <CollapsibleTrigger className="w-full">
-                      <div className="flex items-center justify-between p-2 rounded hover:bg-muted/50 transition-colors">
-                        <div className="flex items-center gap-2">
-                          <Icon className={`h-4 w-4 ${cfg.color}`} />
-                          <span className="text-sm font-medium">
-                            {new Date(run.started_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                          <Badge variant="outline" className="text-xs">{run.run_type}</Badge>
-                        </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span className="text-green-500">{run.passed_tests}✓</span>
-                          {run.warning_tests > 0 && <span className="text-yellow-500">{run.warning_tests}⚠</span>}
-                          {run.failed_tests > 0 && <span className="text-red-500">{run.failed_tests}✗</span>}
-                          <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-                        </div>
+                  <div key={run.id} className="border rounded-lg p-2.5 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Icon className={`h-3.5 w-3.5 ${cfg.color}`} />
+                        <span className="text-xs font-medium">
+                          {new Date(run.started_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                        <Badge variant="outline" className="text-[10px]">{run.run_type}</Badge>
+                        <Badge variant="outline" className="text-[10px]">Nível {run.level}</Badge>
                       </div>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <div className="pl-6 pb-3 space-y-3">
-                        {Object.entries(groupedResults).map(([suite, tests]) => {
-                          const SuiteIcon = suiteIcons[suite] || Shield;
-                          const suiteLabel = suiteLabels[suite] || suite;
-                          const suiteFailed = tests.some(t => t.status === "failed");
-                          return (
-                            <div key={suite} className="space-y-1">
-                              <div className="flex items-center gap-2 text-sm font-medium">
-                                <SuiteIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                                <span>{suiteLabel}</span>
-                                {suiteFailed ? <XCircle className="h-3 w-3 text-red-500" /> : <CheckCircle2 className="h-3 w-3 text-green-500" />}
-                              </div>
-                              {tests.map((t) => {
-                                const tCfg = statusConfig[t.status] || statusConfig.skipped;
-                                const TIcon = tCfg.icon;
-                                return (
-                                  <div key={t.id} className="flex items-start gap-2 pl-5 text-xs">
-                                    <TIcon className={`h-3 w-3 mt-0.5 shrink-0 ${tCfg.color}`} />
-                                    <div>
-                                      <span>{t.test_name}</span>
-                                      {t.error_message && <p className="text-red-400 mt-0.5">{t.error_message}</p>}
-                                      {t.suggestion && <p className="text-muted-foreground mt-0.5">💡 {t.suggestion}</p>}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          );
-                        })}
+                      <span className="text-[10px] text-muted-foreground">
+                        {run.duration_ms ? `${Math.round(run.duration_ms / 1000)}s` : "..."}
+                      </span>
+                    </div>
+                    <div className="flex gap-3 text-xs">
+                      <span className="text-foreground">{run.total_findings} achados</span>
+                      <span className="text-green-500">{run.total_corrected} corrigidos</span>
+                      {run.total_escalated > 0 && <span className="text-orange-500">{run.total_escalated} escalados</span>}
+                      <span className="text-primary">{run.auto_fix_rate_pct}% taxa</span>
+                    </div>
+                    {run.previous_comparison && (
+                      <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        {run.previous_comparison.trend === "melhorando" ? <TrendingUp className="h-3 w-3 text-green-500" /> : run.previous_comparison.trend === "piorando" ? <TrendingDown className="h-3 w-3 text-red-500" /> : <Minus className="h-3 w-3" />}
+                        <span>{run.previous_comparison.trend} vs anterior ({run.previous_comparison.findings_delta > 0 ? "+" : ""}{run.previous_comparison.findings_delta})</span>
                       </div>
-                    </CollapsibleContent>
-                  </Collapsible>
+                    )}
+                  </div>
                 );
               })}
-              {!isLoading && (!runs || runs.length === 0) && (
-                <p className="text-sm text-muted-foreground text-center py-4">Nenhuma execução ainda.</p>
-              )}
             </CardContent>
           </Card>
         </TabsContent>
