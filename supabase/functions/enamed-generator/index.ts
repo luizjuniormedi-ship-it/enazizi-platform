@@ -212,7 +212,7 @@ FORMATO JSON PURO (sem markdown):
     const questions = (parsed.questions || []).filter((q: any) =>
       q.statement && Array.isArray(q.options) && q.options.length >= 4 && q.options.length <= 5 &&
       typeof q.correct_index === "number" &&
-      String(q.statement).trim().length >= 200 && (q.difficulty || 3) >= 3 &&
+      String(q.statement).trim().length >= 400 && (q.difficulty || 3) >= 3 &&
       !ENGLISH_PATTERN.test(q.statement) && !IMAGE_REF_PATTERN.test(q.statement)
     );
     let qCount = 0;
