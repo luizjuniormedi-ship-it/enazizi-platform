@@ -30,6 +30,7 @@ import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 
 import DashboardSummaryCard from "@/components/dashboard/DashboardSummaryCard";
+import PreparationIndexCard from "@/components/dashboard/PreparationIndexCard";
 import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
 import DailyPlanWidget from "@/components/dashboard/DailyPlanWidget";
 import DailyGoalWidget from "@/components/dashboard/DailyGoalWidget";
