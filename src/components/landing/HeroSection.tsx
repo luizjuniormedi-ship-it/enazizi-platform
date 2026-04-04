@@ -46,7 +46,7 @@ const HeroSection = () => {
       </button>
 
       {/* Content */}
-      <div className="container relative z-10 text-center py-12 sm:py-20 px-4">
+      <div className="container relative z-10 text-center py-8 sm:py-20 px-4">
         <div
           className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-sm px-3 sm:px-4 py-1.5 mb-6 sm:mb-8 animate-fade-in"
         >
@@ -66,7 +66,7 @@ const HeroSection = () => {
         </h1>
 
         <p
-          className="max-w-2xl mx-auto text-base sm:text-lg md:text-xl text-white/85 mb-8 sm:mb-10 animate-fade-in drop-shadow leading-relaxed"
+          className="max-w-2xl mx-auto text-base sm:text-lg md:text-xl text-white/85 mb-6 sm:mb-10 animate-fade-in drop-shadow leading-relaxed"
           style={{ animationDelay: "0.2s" }}
         >
           O ENAZIZI cria um plano diário inteligente com base no seu desempenho,
@@ -86,6 +86,14 @@ const HeroSection = () => {
             size="lg"
             variant="outline"
             asChild
+            className="w-full sm:hidden text-base px-6 py-5 border-white/30 bg-background/40 text-white hover:bg-background/60"
+          >
+            <Link to="/login">Já tem conta? Entrar</Link>
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            asChild
             className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-white/30 text-white hover:bg-white/10"
           >
             <a href="#como-funciona">Ver como funciona</a>
@@ -93,19 +101,19 @@ const HeroSection = () => {
         </div>
 
         <div
-          className="mt-6 animate-fade-in"
+          className="mt-4 hidden sm:block animate-fade-in"
           style={{ animationDelay: "0.4s" }}
         >
           <Link
             to="/login"
-            className="inline-flex items-center gap-2 text-white font-semibold text-base sm:text-lg bg-white/15 hover:bg-white/25 backdrop-blur-sm px-6 py-3 rounded-full border border-white/30 transition-all"
+            className="inline-flex items-center gap-2 text-white font-semibold text-base sm:text-lg bg-background/40 hover:bg-background/60 backdrop-blur-sm px-6 py-3 rounded-full border border-white/30 transition-all"
           >
             Já tem conta? <span className="text-primary font-bold">Entrar</span>
           </Link>
         </div>
 
         {/* Scroll hint */}
-        <div className="mt-10 sm:mt-14 animate-bounce">
+        <div className="mt-6 sm:mt-14 hidden sm:block animate-bounce">
           <ChevronDown className="h-6 w-6 text-white/40 mx-auto" />
         </div>
       </div>
