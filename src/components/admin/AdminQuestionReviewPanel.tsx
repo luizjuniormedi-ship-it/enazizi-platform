@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CheckCircle2, XCircle, Eye, ChevronLeft, ChevronRight, Loader2, Filter } from "lucide-react";
+import { CheckCircle2, XCircle, Eye, ChevronLeft, ChevronRight, Loader2, Filter, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,10 +14,23 @@ interface ReviewQuestion {
   topic: string;
   source: string;
   review_status: string;
+  quality_tier: string;
   source_type: string;
   permission_type: string;
   created_at: string;
 }
+
+const QUALITY_COLORS: Record<string, string> = {
+  exam_standard: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30",
+  basic: "bg-amber-500/10 text-amber-700 border-amber-500/30",
+  needs_upgrade: "bg-red-500/10 text-red-700 border-red-500/30",
+};
+
+const QUALITY_LABELS: Record<string, string> = {
+  exam_standard: "Padrão Prova",
+  basic: "Básica",
+  needs_upgrade: "Precisa Enriquecer",
+};
 
 const AdminQuestionReviewPanel = () => {
   const { toast } = useToast();
@@ -26,19 +39,24 @@ const AdminQuestionReviewPanel = () => {
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState("pending");
+  const [qualityFilter, setQualityFilter] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
   const PAGE_SIZE = 20;
 
   const fetchQuestions = async () => {
     setLoading(true);
     let query = supabase.from("questions_bank")
-      .select("id, statement, options, correct_index, topic, subtopic, source, review_status, created_at", { count: "exact" })
+      .select("id, statement, options, correct_index, topic, subtopic, source, review_status, quality_tier, created_at", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
     if (statusFilter !== "all") {
       query = query.eq("review_status", statusFilter);
+    }
+    if (qualityFilter !== "all") {
+      query = query.eq("quality_tier", qualityFilter);
     }
 
     const { data, count, error } = await query;
@@ -46,6 +64,7 @@ const AdminQuestionReviewPanel = () => {
       setQuestions(data.map((q: any) => ({
         ...q,
         options: Array.isArray(q.options) ? q.options : [],
+        quality_tier: q.quality_tier || "basic",
         source_type: (q as any).source_type || "unknown",
         permission_type: (q as any).permission_type || "unknown",
       })));
@@ -54,7 +73,7 @@ const AdminQuestionReviewPanel = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchQuestions(); }, [page, statusFilter]);
+  useEffect(() => { fetchQuestions(); }, [page, statusFilter, qualityFilter]);
 
   const handleAction = async (id: string, action: "approved" | "rejected") => {
     setActionLoading(id);
@@ -86,9 +105,36 @@ const AdminQuestionReviewPanel = () => {
     setActionLoading(null);
   };
 
+  const handleUpgrade = async () => {
+    setUpgradeLoading(true);
+    try {
+      const needsUpgradeIds = questions
+        .filter(q => q.quality_tier === "needs_upgrade" || q.statement.length < 400)
+        .map(q => q.id)
+        .slice(0, 10);
+
+      if (needsUpgradeIds.length === 0) {
+        toast({ title: "Nenhuma questão para enriquecer nesta página" });
+        setUpgradeLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("upgrade-questions", {
+        body: { ids: needsUpgradeIds, batch_size: 10 },
+      });
+
+      if (error) throw error;
+      toast({ title: `${data?.upgraded || 0} questões enriquecidas` });
+      fetchQuestions();
+    } catch (e: any) {
+      toast({ title: "Erro ao enriquecer", description: e.message, variant: "destructive" });
+    }
+    setUpgradeLoading(false);
+  };
+
   return (
     <div className="glass-card p-4 sm:p-5 border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-transparent">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-amber-500/10 flex-shrink-0">
             <Eye className="h-5 w-5 text-amber-500" />
@@ -96,7 +142,7 @@ const AdminQuestionReviewPanel = () => {
           <h2 className="text-sm sm:text-base font-semibold">Revisão de Questões</h2>
           <Badge variant="secondary" className="text-xs">{total}</Badge>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}>
             <SelectTrigger className="h-7 text-xs w-28">
               <Filter className="h-3 w-3 mr-1" />
@@ -106,7 +152,19 @@ const AdminQuestionReviewPanel = () => {
               <SelectItem value="pending">Pendentes</SelectItem>
               <SelectItem value="approved">Aprovadas</SelectItem>
               <SelectItem value="rejected">Rejeitadas</SelectItem>
+              <SelectItem value="needs_upgrade">Enriquecer</SelectItem>
               <SelectItem value="all">Todas</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={qualityFilter} onValueChange={v => { setQualityFilter(v); setPage(0); }}>
+            <SelectTrigger className="h-7 text-xs w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Qualidade: Todas</SelectItem>
+              <SelectItem value="exam_standard">Padrão Prova</SelectItem>
+              <SelectItem value="basic">Básica</SelectItem>
+              <SelectItem value="needs_upgrade">Precisa Enriquecer</SelectItem>
             </SelectContent>
           </Select>
           {statusFilter === "pending" && questions.length > 0 && (
@@ -115,6 +173,11 @@ const AdminQuestionReviewPanel = () => {
               {actionLoading === "bulk" ? <Loader2 className="h-3 w-3 animate-spin" /> : "Aprovar Todas"}
             </Button>
           )}
+          <Button size="sm" variant="outline" className="text-xs h-7 border-purple-500/30 text-purple-600 hover:bg-purple-500/10"
+            disabled={upgradeLoading} onClick={handleUpgrade}>
+            {upgradeLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Sparkles className="h-3 w-3 mr-1" />}
+            Enriquecer
+          </Button>
         </div>
       </div>
 
@@ -133,10 +196,14 @@ const AdminQuestionReviewPanel = () => {
                     <Badge variant="secondary" className="text-[10px] h-4">{q.topic || "—"}</Badge>
                     {(q as any).subtopic && <Badge variant="outline" className="text-[10px] h-4 border-primary/30 text-primary">{(q as any).subtopic}</Badge>}
                     <Badge variant="outline" className="text-[10px] h-4">{q.source || "—"}</Badge>
+                    <Badge variant="outline" className={`text-[10px] h-4 ${QUALITY_COLORS[q.quality_tier] || ""}`}>
+                      {QUALITY_LABELS[q.quality_tier] || q.quality_tier}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground">{q.statement.length} chars</span>
                     <span className="text-[10px] text-muted-foreground">{q.options.length} alt</span>
                   </div>
                 </div>
-                {statusFilter === "pending" && (
+                {(statusFilter === "pending" || statusFilter === "needs_upgrade") && (
                   <div className="flex gap-1 flex-shrink-0">
                     <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-emerald-500 hover:text-emerald-600"
                       disabled={!!actionLoading} onClick={() => handleAction(q.id, "approved")}>

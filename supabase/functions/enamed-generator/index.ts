@@ -228,6 +228,7 @@ FORMATO JSON PURO (sem markdown):
         source,
         is_global: true,
         review_status: "pending",
+        quality_tier: String(q.statement).trim().length >= 400 ? "exam_standard" : "basic",
       }));
       const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
       if (!error) qCount = rows.length;
