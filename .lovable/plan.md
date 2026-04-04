@@ -1,29 +1,41 @@
 
 
-# Adaptar Sistema Automaticamente ao Mudar Banca/Data no Perfil
+# Corrigir Micro-Quiz Lento no Plano do Dia
 
 ## Problema
-Quando o aluno edita bancas alvo ou data da prova no perfil, o `handleSave` em `Profile.tsx` salva no banco mas **não invalida os caches** do Dashboard. Resultado: cronograma, metas semanais, chance por banca, Study Engine e missão continuam usando dados antigos até o próximo refresh manual.
+O `MicroQuizDialog` chama a edge function `question-generator`, que e projetada para gerar questoes complexas de Residencia Medica (400+ caracteres, 5 alternativas, casos clinicos completos, bibliografias). Para um micro-quiz de validacao rapida com 2 perguntas simples, isso causa:
 
-## Solução
-Após salvar o perfil com sucesso, chamar `invalidateAll()` do `useDashboardInvalidation` para forçar recálculo de todos os hooks dependentes (core-data, study-engine, exam-readiness, weekly-goals, mission-mode) e atualizar o snapshot do dashboard.
+1. **Prompt massivo** — o system prompt tem ~3000+ tokens so de instrucoes
+2. **Geracao pesada** — pede caso clinico completo com sinais vitais, exames, 5 alternativas
+3. **Timeout frequente** — a edge function pode levar 15-30s+ para gerar, frequentemente falhando
+4. **Formato incompativel** — o micro-quiz espera `question`/`options`/`correctIndex` mas o generator retorna `statement`/`options`/`correct_index`
 
-## Alteração
+## Solucao
 
-### `src/pages/Profile.tsx`
-1. Importar `useDashboardInvalidation`
-2. Chamar `invalidateAll()` logo após o `toast({ title: "Perfil atualizado!" })` no `handleSave`
+Substituir a chamada ao `question-generator` por uma chamada direta ao Lovable AI (via `ai-fetch`) em uma edge function dedicada e leve, ou gerar as questoes client-side usando o Lovable AI diretamente.
 
-Isso garante que:
-- `useCoreData` recarrega o perfil atualizado (target_exams, exam_date)
-- `useStudyEngine` recalcula recomendações com as novas bancas
-- `useExamReadiness` recalcula chance por banca
-- `useWeeklyGoals` recalcula metas com nova proximidade da prova
-- `useMissionMode` adapta a missão ao novo contexto
-- Dashboard snapshot é atualizado em background
+**Abordagem escolhida**: Criar uma edge function `micro-quiz` dedicada, com prompt minimo e rapido.
+
+### 1. Nova Edge Function `supabase/functions/micro-quiz/index.ts`
+- Prompt curto e direto: "Gere 2 questoes objetivas simples sobre {tema} ({especialidade}), 4 alternativas cada, em pt-BR"
+- Usar modelo rapido (flash) via `ai-fetch`
+- Resposta JSON compacta
+- Timeout de 15s max
+
+### 2. Atualizar `MicroQuizDialog.tsx`
+- Trocar chamada de `question-generator` para `micro-quiz`
+- Remover mapeamento de campos (a nova function ja retorna no formato correto)
+- Adicionar timeout de 12s no client — se nao responder, fallback para "passar direto"
+
+### 3. Deploy
+- Deploy da nova edge function
+
+## Arquivos
+- **Novo**: `supabase/functions/micro-quiz/index.ts`
+- **Editado**: `src/components/daily-plan/MicroQuizDialog.tsx`
 
 ## Impacto
-- 1 arquivo alterado, ~3 linhas adicionadas
-- Zero risco — mesma função já usada em outros fluxos
-- Sem alteração de regras de negócio
+- Tempo de resposta: ~15-30s → ~3-5s
+- Taxa de sucesso: ~50% → ~95%
+- Zero impacto em outras funcionalidades
 
