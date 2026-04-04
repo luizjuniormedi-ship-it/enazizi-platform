@@ -409,6 +409,19 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
     setExecutionItems([]);
   };
 
+  const handleResetQueue = async () => {
+    if (!window.confirm("Limpar toda a fila pendente? Mensagens já enviadas não serão afetadas.")) return;
+    try {
+      const data = await callQueue("reset_queue", { execution_id: activeExecution?.id });
+      toast({ title: "Fila limpa ✅", description: `${data?.cancelled || 0} mensagem(ns) cancelada(s).` });
+      setActiveExecution(null);
+      setExecutionItems([]);
+      setStudents([]);
+    } catch (e) {
+      toast({ title: "Erro ao limpar fila", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+    }
+  };
+
   const handleDeleteGenerated = async () => {
     if (!window.confirm("Excluir todas as mensagens pendentes do dia? Esta ação não pode ser desfeita.")) return;
     try {
@@ -682,7 +695,10 @@ const WhatsAppPanel = ({ session }: WhatsAppPanelProps) => {
                 <Button variant="destructive" onClick={handleStopExecution} className="gap-1.5"><StopCircle className="h-4 w-4" /> Parar</Button>
               )}
               {activeExecution && (
-                <Button variant="outline" onClick={handleReprocessErrors} className="gap-1.5"><RotateCcw className="h-4 w-4" /> Reprocessar erros</Button>
+                <>
+                  <Button variant="outline" onClick={handleReprocessErrors} className="gap-1.5"><RotateCcw className="h-4 w-4" /> Reprocessar erros</Button>
+                  <Button variant="outline" onClick={handleResetQueue} className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10"><Trash2 className="h-4 w-4" /> Limpar fila</Button>
+                </>
               )}
             </div>
           </div>
