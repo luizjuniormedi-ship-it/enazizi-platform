@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useDashboardInvalidation } from "@/hooks/useDashboardInvalidation";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Brain, Clock, BookOpen, RefreshCw, CheckCircle2, Loader2, Zap,
@@ -39,6 +40,7 @@ const DailyPlan = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { invalidateAll } = useDashboardInvalidation();
   const autoReviewStartedRef = useRef(false);
   const autoStartReviews = new URLSearchParams(location.search).get("autostart") === "reviews";
 
@@ -251,6 +253,8 @@ const DailyPlan = () => {
       }
     }
     setCompletedReviews(next);
+    // Invalidate dashboard caches so counters update in real-time
+    invalidateAll();
   };
 
   // ── Topic completion with self-assessment ──

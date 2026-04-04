@@ -46,7 +46,7 @@ export default function PendingReviewsCard() {
           <div
             key={rev.id}
             className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors group"
-            onClick={() => navigate(buildStudyPath(rev, "pending-reviews"))}
+            onClick={() => navigate("/dashboard/plano-dia?autostart=reviews")}
           >
             {rev.priority >= 85 && (
               <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
@@ -62,7 +62,7 @@ export default function PendingReviewsCard() {
           </div>
         ))}
         {reviews.length > 4 && (
-          <Button variant="ghost" size="sm" className="w-full text-xs h-7 text-muted-foreground" onClick={() => navigate("/dashboard/plano-dia")}>
+          <Button variant="ghost" size="sm" className="w-full text-xs h-7 text-muted-foreground" onClick={() => navigate("/dashboard/plano-dia?autostart=reviews")}>
             Ver todas as revisões
           </Button>
         )}
