@@ -426,9 +426,23 @@ REGRA: NUNCA comece com questões. Sempre ensine primeiro. Nunca pule estados.`;
   }
 }
 
+// ── Concurrency semaphore for SSE streaming ──
+const MAX_CONCURRENT_STREAMS = 15;
+let activeStreams = 0;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Check concurrency before processing
+  if (activeStreams >= MAX_CONCURRENT_STREAMS) {
+    console.warn(`study-session: rejected — ${activeStreams}/${MAX_CONCURRENT_STREAMS} streams active`);
+    return new Response(
+      JSON.stringify({ error: "Servidor ocupado. Tente novamente em alguns segundos.", retry: true }),
+      { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "3" } },
+    );
+  }
+
+  activeStreams++;
   try {
     const { messages, phase, topic, userContext, performanceData, session_memory, studyMode, targetExam } = await req.json();
 
