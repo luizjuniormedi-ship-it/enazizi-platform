@@ -136,6 +136,13 @@ export function useTutorPerformance(userId: string | undefined) {
           sessionAccuracy: sessionQuestions > 0 ? Math.round((sessionCorrect / sessionQuestions) * 100) : 0,
         });
       }
+
+      // Dual-write tutor context snapshot
+      dualWriteTutorContextSnapshot({
+        userId: userId!,
+        currentGoal: currentTopic,
+        accuracy: sessionQuestions > 0 ? Math.round((sessionCorrect / sessionQuestions) * 100) : undefined,
+      });
     }
 
     // Smart XP calculation
