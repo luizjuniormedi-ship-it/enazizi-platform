@@ -39,6 +39,10 @@ export interface AdaptiveState {
   memoryPressure: number;
   /** Overdue review count */
   overdueCount: number;
+  /** Recovery mode active — reduces load and prioritizes critical items */
+  recoveryMode: boolean;
+  /** Human-readable reason for recovery mode */
+  recoveryReason: string;
 }
 
 export interface EngineResult {
@@ -340,9 +344,27 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     100
   );
 
+  // ── Recovery mode detection ──────────────────────────────────
+  const recoveryMode = overdueCount >= 15 || memoryPressure >= 70 ||
+    (approvalScore < 35 && overdueCount >= 8);
+  let recoveryReason = "";
+  if (recoveryMode) {
+    if (overdueCount >= 15) {
+      recoveryReason = `Você tem ${overdueCount} revisões atrasadas. Priorizando o essencial para retomar o ritmo.`;
+    } else if (memoryPressure >= 70) {
+      recoveryReason = "Alta pressão de memória detectada. Reduzindo carga e focando em revisões críticas.";
+    } else {
+      recoveryReason = "Seu índice precisa de atenção. Vamos focar no que mais importa agora.";
+    }
+    // In recovery mode: reduce new topics to 0
+    weights.maxNewTopics = 0;
+  }
+
   // ── Build adaptive state ─────────────────────────────────────
   const mode = getAdaptiveMode(weights.phase);
-  const focusReason = buildFocusReason(weights, overdueCount, lockStatus);
+  const focusReason = recoveryMode
+    ? recoveryReason
+    : buildFocusReason(weights, overdueCount, lockStatus);
   const adaptive: AdaptiveState = {
     approvalScore,
     weights,
@@ -352,6 +374,8 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     focusReason,
     memoryPressure,
     overdueCount,
+    recoveryMode,
+    recoveryReason,
   };
 
   // ── 1. Overdue / pending reviews ─────────────────────────────
@@ -751,7 +775,8 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
 
   // ── Sort by priority then apply weight-based slot limits ─────
   recs.sort((a, b) => b.priority - a.priority);
-  const result = applyWeights(recs, weights, 8);
+  const maxTotal = recoveryMode ? 5 : 8;
+  const result = applyWeights(recs, weights, maxTotal);
 
   // ── FALLBACK: guarantee at least 1 task for any user ─────────
   if (result.length === 0) {
@@ -795,6 +820,8 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       focusReason: "Vamos começar seus estudos!",
       memoryPressure: 0,
       overdueCount: 0,
+      recoveryMode: false,
+      recoveryReason: "",
     },
   };
  }

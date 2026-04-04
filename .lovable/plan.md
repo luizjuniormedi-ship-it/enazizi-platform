@@ -1,43 +1,33 @@
+# Continuidade de Estudo com Modo Recuperação
 
+## O que JÁ existe
+- Carryover semanal no `useWeeklyGoals.ts` (50% do deficit, cap 1.5x)
+- Study Engine já prioriza revisões atrasadas, erros e FSRS
+- Content Lock (blocked/limited) já reduz conteúdo novo
+- Memory pressure e adaptive mode funcionam
+- Dashboard sync via `useJourneyRefresh`
 
-# Metas Semanais com Carryover de Pendências
+## O que falta (cirúrgico)
 
-## Problema Atual
-O `useWeeklyGoals` recalcula metas do zero toda segunda-feira. Se o usuário não cumpriu metas na semana anterior, elas desaparecem sem impacto — exceto revisões FSRS que naturalmente persistem no banco.
+### 1. Modo Recuperação explícito no `AdaptiveState`
+**`src/lib/studyEngine.ts`**: Adicionar `recoveryMode: boolean` e `recoveryReason: string` ao `AdaptiveState`. Ativar quando:
+- `overdueCount >= 15` OU
+- `memoryPressure >= 70` OU
+- `approvalScore < 35 && overdueCount >= 8`
 
-## Solução
-Adicionar lógica de carryover proporcional: ao calcular as metas da nova semana, verificar o progresso da semana anterior e incorporar uma fração do que não foi cumprido.
+Quando ativo: reduzir `maxTotal` de 8→5 tarefas, zerar `maxNewTopics`, boost +15 em revisões/erros.
 
-## Lógica de Carryover
+### 2. Banner de Recuperação no Dashboard
+**Novo: `src/components/dashboard/RecoveryModeBanner.tsx`**: Banner motivador quando `adaptive.recoveryMode === true`, com mensagem tipo "Vamos reorganizar seu plano para você retomar o ritmo."
 
-1. Ao calcular metas da semana atual, buscar também o progresso da **semana anterior** (segunda anterior - domingo anterior)
-2. Para cada meta não cumprida 100%, adicionar **50% do deficit** à meta da nova semana (para não sobrecarregar)
-3. Cap máximo: meta nunca excede 1.5x o valor base calculado
+### 3. HeroStudyCard adapta título
+**`src/components/dashboard/HeroStudyCard.tsx`**: Quando em recovery mode, título muda para "Modo recuperação ativo" com subtitle motivador.
 
-Exemplo:
-- Semana passada: meta 210 questões, fez 140 → deficit 70 → carryover +35
-- Semana atual: meta base 210 → meta final 245
-
-## Mudanças Técnicas
-
-| Arquivo | Ação |
-|---------|------|
-| `src/hooks/useWeeklyGoals.ts` | Adicionar `fetchPreviousWeekProgress()`, calcular deficit e somar carryover proporcional às metas |
-
-### Detalhes da implementação
-
-No `useWeeklyGoals.ts`:
-- Criar função `getPreviousMonday()` que retorna a segunda-feira da semana anterior
-- Reutilizar `fetchWeeklyProgress()` com a data da semana anterior
-- Calcular `carryover = Math.round(Math.max(0, target - actual) * 0.5)` para cada meta
-- Aplicar cap: `Math.min(baseTarget + carryover, Math.round(baseTarget * 1.5))`
-- Exibir indicador visual no card quando houver carryover (ex: "+35 da semana anterior")
-
-### No `WeeklyGoalsCard.tsx`:
-- Se houver carryover > 0, mostrar badge discreto: "inclui pendência anterior"
+### 4. WhatsApp recovery message
+**`src/lib/messageLibrary.ts`**: Adicionar template de mensagem para modo recuperação (já tem sistema de mensagens humanizadas).
 
 ## O que NÃO muda
-- Study Engine, FSRS, missão, cronograma
+- Study Engine core, FSRS, cronograma, missão
+- Carryover semanal (já implementado)
 - Nenhuma tabela nova
-- Lógica de zonas e adaptação por prova mantida
-
+- Nenhum dado mockado

@@ -67,7 +67,7 @@ export default function HeroStudyCard() {
     state, progress, totalMinutes, completedMinutes,
     engineLoading, hasTasks, startMission, resumeMission,
   } = useMissionMode();
-  const { data: recommendations, isLoading: recLoading } = useStudyEngine();
+  const { data: recommendations, isLoading: recLoading, adaptive } = useStudyEngine();
   const { data: dashData } = useDashboardData();
   const [expanded, setExpanded] = useState(false);
 
@@ -80,9 +80,11 @@ export default function HeroStudyCard() {
     ? (dashData.metrics.questionsAnswered === 0 && dashData.stats.flashcards === 0)
     : false;
 
-  const { title, subtitle } = getDynamicTitle(
-    isMissionActive, isMissionPaused, isNewUser, tasks.length,
-  );
+  const isRecovery = adaptive?.recoveryMode === true;
+
+  const { title, subtitle } = isRecovery && !isMissionActive && !isMissionPaused
+    ? { title: "Modo recuperação ativo", subtitle: "Priorizando o essencial para você retomar o ritmo" }
+    : getDynamicTitle(isMissionActive, isMissionPaused, isNewUser, tasks.length);
 
   // ─── Mission Active/Paused ───
   if (isMissionActive || isMissionPaused) {
