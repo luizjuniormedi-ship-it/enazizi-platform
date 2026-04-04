@@ -465,6 +465,7 @@ ${session_memory.erros_consecutivos >= 3 ? "⚠️ TRAVAMENTO DETECTADO: Simplif
     const maxTokens = isLightPhase ? 4096 : isMediumPhase ? 8192 : 16384;
 
     // Trim message history: keep only last 10 messages to reduce token usage
+    const trimmedMessages = messages.slice(-10);
     const startMs = Date.now();
     const usedModel = getModelForTier(modelTier);
 
