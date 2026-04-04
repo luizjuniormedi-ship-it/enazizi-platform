@@ -176,7 +176,7 @@ Deno.serve(async (req) => {
 
     const score = Math.max(0, Math.min(100, Math.round(rawScore)));
 
-    // ── Persist ──────────────────────────────────────────────
+    // ── Persist approval score ───────────────────────────────
     const { error: insertError } = await adminClient
       .from("approval_scores")
       .insert({
@@ -204,6 +204,90 @@ Deno.serve(async (req) => {
       console.error("Insert error:", insertError);
     }
 
+    // ── Chance by Exam ───────────────────────────────────────
+    // Fetch user target exams
+    const { data: profileData } = await adminClient
+      .from("profiles")
+      .select("target_exams")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const targetExams: string[] = profileData?.target_exams || [];
+    // Ensure minimum set of bancas
+    const MINIMUM_BANCAS = ["enare", "usp", "sus-sp", "unifesp", "unicamp"];
+    const bancasToCalc = [...new Set([...targetExams, ...MINIMUM_BANCAS])];
+
+    // Per-banca weight profiles (how much each factor matters for this banca)
+    const BANCA_WEIGHTS: Record<string, { acc: number; domain: number; sim: number; review: number; consistency: number; osce: number; errorPen: number }> = {
+      enare:    { acc: 0.30, domain: 0.20, sim: 0.15, review: 0.10, consistency: 0.10, osce: 0.05, errorPen: 0.10 },
+      usp:     { acc: 0.25, domain: 0.15, sim: 0.20, review: 0.10, consistency: 0.10, osce: 0.10, errorPen: 0.10 },
+      unicamp: { acc: 0.25, domain: 0.15, sim: 0.15, review: 0.10, consistency: 0.10, osce: 0.15, errorPen: 0.10 },
+      unifesp: { acc: 0.25, domain: 0.20, sim: 0.20, review: 0.10, consistency: 0.10, osce: 0.05, errorPen: 0.10 },
+      "sus-sp": { acc: 0.30, domain: 0.25, sim: 0.10, review: 0.15, consistency: 0.10, osce: 0.00, errorPen: 0.10 },
+    };
+    const DEFAULT_W = { acc: 0.25, domain: 0.20, sim: 0.15, review: 0.15, consistency: 0.10, osce: 0.05, errorPen: 0.10 };
+
+    // OSCE score: use clinical simulation avg or 0
+    const osceScore = clinicalScores.length > 0
+      ? clinicalScores.reduce((a: number, b: number) => a + b, 0) / clinicalScores.length
+      : 0;
+
+    const chanceResults: { banca: string; chance_score: number; factors: any }[] = [];
+
+    for (const banca of bancasToCalc) {
+      const w = BANCA_WEIGHTS[banca] || DEFAULT_W;
+      const raw =
+        accuracy * w.acc +
+        domainScore * w.domain +
+        simulationScore * w.sim +
+        reviewScore * w.review +
+        consistencyScore * w.consistency +
+        osceScore * w.osce +
+        errorComponent * w.errorPen;
+
+      const chanceScore = Math.max(0, Math.min(100, Math.round(raw)));
+
+      const factors = {
+        accuracy: Math.round(accuracy * 100) / 100,
+        domainScore: Math.round(domainScore * 100) / 100,
+        simulationScore: Math.round(simulationScore * 100) / 100,
+        reviewScore: Math.round(reviewScore * 100) / 100,
+        consistencyScore: Math.round(consistencyScore * 100) / 100,
+        osceScore: Math.round(osceScore * 100) / 100,
+        errorComponent: Math.round(errorComponent * 100) / 100,
+        weights: w,
+        dataPoints: {
+          totalAttempts,
+          domainsCount: domains.length,
+          examsCount: exams.length,
+          clinicalCount: clinicals.length,
+          reviewsTotal: totalReviews,
+          currentStreak,
+        },
+      };
+
+      chanceResults.push({ banca, chance_score: chanceScore, factors });
+
+      // Upsert into chance_by_exam (unique on user_id + banca)
+      await adminClient
+        .from("chance_by_exam")
+        .upsert(
+          {
+            user_id: userId,
+            banca,
+            chance_score: chanceScore,
+            factors_json: factors,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id,banca" }
+        );
+    }
+
+    const phase =
+      score < 50 ? "critico" :
+      score < 70 ? "atencao" :
+      score < 85 ? "competitivo" : "pronto";
+
     return new Response(
       JSON.stringify({
         score,
@@ -213,14 +297,8 @@ Deno.serve(async (req) => {
         consistency_score: Math.round(consistencyScore * 100) / 100,
         simulation_score: Math.round(simulationScore * 100) / 100,
         error_penalty: Math.round(rawPenalty * 100) / 100,
-        phase:
-          score < 50
-            ? "critico"
-            : score < 70
-            ? "atencao"
-            : score < 85
-            ? "competitivo"
-            : "pronto",
+        phase,
+        chance_by_exam: chanceResults,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
