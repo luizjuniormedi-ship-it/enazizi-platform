@@ -13,7 +13,6 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 export default function SmartAlertCard() {
   const navigate = useNavigate();
   const { data } = useDashboardData();
-  const { state, startMission, hasTasks } = useMissionMode();
 
   if (!data) return null;
   const { metrics, stats } = data;
