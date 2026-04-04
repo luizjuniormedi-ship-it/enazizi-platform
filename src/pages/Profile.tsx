@@ -171,6 +171,7 @@ const Profile = () => {
         .eq("user_id", user.id);
       if (error) throw error;
       toast({ title: "Perfil atualizado!" });
+      invalidateAll();
       // Re-check activity assignments after profile update
       supabase.functions.invoke("auto-assign-simulados").catch(() => {});
     } catch (err: any) {
