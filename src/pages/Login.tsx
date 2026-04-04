@@ -123,15 +123,13 @@ const Login = () => {
     <div className="min-h-[100dvh] overflow-y-auto flex flex-col lg:flex-row bg-background">
       {/* Left panel - Hero */}
       <div className="lg:w-1/2 bg-gradient-to-br from-primary/20 via-primary/10 to-background p-4 sm:p-10 lg:p-14 flex flex-col justify-center">
-        <Link to="/" className="inline-flex items-center gap-2 mb-6 lg:mb-10">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center glow">
-            <Brain className="h-6 w-6 text-primary" />
-          </div>
+        <Link to="/" className="inline-flex items-center gap-2 mb-4 lg:mb-10">
+          <img src={enazizi} alt="ENAZIZI" className="h-10 w-10 rounded-xl object-cover" />
           <span className="text-xl font-bold">ENAZIZI</span>
         </Link>
 
-        <h2 className="text-2xl lg:text-3xl font-bold mb-2">Sua plataforma completa para residência médica</h2>
-        <p className="text-muted-foreground mb-6 lg:mb-8 text-sm lg:text-base">Estude com inteligência artificial, questões reais de provas e ferramentas que se adaptam ao seu ritmo.</p>
+        <h2 className="text-xl lg:text-3xl font-bold mb-1 lg:mb-2">Sua plataforma completa para residência médica</h2>
+        <p className="text-muted-foreground mb-4 lg:mb-8 text-sm lg:text-base">Estude com IA, questões reais e ferramentas que se adaptam ao seu ritmo.</p>
 
         {/* Checklist de valor */}
         <div className="hidden lg:flex flex-col gap-2 mb-6 text-sm">
