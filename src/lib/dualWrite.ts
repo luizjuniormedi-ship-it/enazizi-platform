@@ -123,6 +123,9 @@ export function dualWriteUserTopicProfile(params: {
             review_interval_days: 1,
             last_practiced_at: new Date().toISOString(),
           });
+
+        // Auto-create FSRS card for new topic profile
+        ensureFsrsCard(userId, "tema", topic);
       }
     } catch (e) {
       console.warn("[DualWrite] user_topic_profiles:", e);
