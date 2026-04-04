@@ -1,78 +1,89 @@
 
-## MAPA DE DEPENDÊNCIAS ATUAL
 
-### Tabelas ativamente usadas pelo Frontend (reads + writes):
+# Plano: Elevar Padrão das Questões para Nível de Prova Real
 
-| Módulo | Tabelas | Hooks/Arquivos |
-|--------|---------|----------------|
-| **Dashboard Core** | profiles, practice_attempts, revisoes, exam_sessions, anamnesis_results, temas_estudados, simulation_sessions, chronicle_osce_sessions, user_gamification, error_bank, approval_scores, medical_domain_map | useCoreData, useDashboardData |
-| **Dashboard Cards** | flashcards, uploads, study_tasks, study_plans, reviews, discursive_attempts, questions_bank, summaries, chat_conversations, medical_image_attempts, diagnostic_results, teacher_simulado_results | useDashboardData |
-| **Weekly/Streak** | practice_attempts, reviews, error_bank, exam_sessions, simulation_history, user_gamification, medical_domain_map | WeeklyProgressCard, StreakCalendar |
-| **Study Engine** | medical_domain_map, fsrs_cards, revisoes, curriculum_matrix, daily_plans | studyEngine.ts |
-| **Missão/DailyPlan** | daily_plans, daily_plan_tasks, revisoes, temas_estudados | DailyPlan.tsx |
-| **Tutor** | chat_conversations, chat_messages, study_performance, medical_domain_map, enazizi_progress | useChatMessages, useTutorPerformance, useChatProgress |
-| **FSRS** | fsrs_cards, fsrs_review_log | useFsrs |
-| **Cronograma** | temas_estudados, revisoes, desempenho_questoes, cronograma_config, study_plans, study_tasks, uploads | SmartPlanner, StudyPlanContent |
-| **Simulados** | exam_sessions (via edge functions) | ExamSimulator |
-| **Error Bank** | error_bank | errorBankLogger |
-| **Domain Map** | medical_domain_map | updateDomainMap |
-| **Performance** | study_performance, performance_report | PerformanceReport |
-| **Auth/Roles** | user_roles, profiles | useUserRoles, useAuth |
+## Diagnóstico Atual
 
-### Tabelas NOVAS (criadas nas 4 sprints) que já existem mas NÃO são lidas pelo frontend:
-- curriculum_topics, curriculum_subtopics, curriculum_weights, curriculum_prerequisites
-- question_topic_map
-- tutor_sessions, tutor_messages, tutor_context_snapshots
-- study_engine_snapshots
-- qa_runs, qa_findings, qa_auto_fixes, qa_escalations, qa_revalidations, qa_events, qa_test_runs, qa_test_results
-- queue_jobs, queue_results, worker_runs
-- recovery_events, recovery_runs
-- user_topic_profiles, performance_by_topic
-- user_settings
+| Métrica | Quantidade | % |
+|---|---|---|
+| Aprovadas total | 12.434 | 100% |
+| Enunciado < 200 chars (muito curtas) | 3.526 | 28% |
+| Enunciado < 400 chars (sem caso clínico) | 7.423 | 60% |
+| Padrão prova (≥ 400 chars) | 5.011 | 40% |
+
+Exemplos problemáticos encontrados:
+- "Qual a principal diferença entre desfibrilação e cardioversão elétrica?" (71 chars)
+- "Paciente de 65 anos relata dor no ombro..." (133 chars)
+
+Questões de prova real (ENARE, REVALIDA) têm 400-800+ caracteres com caso clínico completo.
 
 ---
 
-## DIAGNÓSTICO
+## Estratégia em 3 Frentes
 
-A boa notícia: **a estrutura nova já existe em paralelo**. A migração NÃO precisa criar tabelas — precisa apenas:
+### Frente 1 — Rebaixar questões fora do padrão (migration)
+- Mover todas as aprovadas com `length(statement) < 200` de volta para `review_status = 'needs_upgrade'`
+- Isso as **remove dos fluxos do aluno** sem deletar
+- Questões entre 200-399 chars ficam com flag `quality_tier = 'basic'` para uso secundário
 
-1. **Conectar o frontend às novas tabelas** (leitura)
-2. **Adicionar escrita nas novas tabelas** (dual-write)
-3. **Enriquecer dados existentes** com FK para currículo
-4. **Manter fallback legado** até validação completa
+### Frente 2 — Reforçar validação nos geradores (edge functions)
+- **enamed-generator**: Já tem regras boas, mas adicionar validação pós-geração que rejeita questões < 400 chars antes de gravar
+- **populate-questions**: Adicionar as mesmas regras de caso clínico obrigatório no prompt
+- **search-real-questions**: Manter como está (questões reais preservam fidelidade)
+- Criar função de validação comum `validateQuestionQuality()` reutilizada por todos os geradores
 
----
-
-## PLANO DE EXECUÇÃO (5 blocos)
-
-### Bloco A — Compatibilidade Curricular (baixo risco)
-- Fazer o Study Engine consultar `curriculum_topics/subtopics/weights` ao invés de `curriculum_matrix` estático
-- Manter `curriculum_matrix` como fallback
-
-### Bloco B — Dual-write Performance (médio risco)
-- `useTutorPerformance` → gravar também em `performance_by_topic` e `user_topic_profiles`
-- `updateDomainMap` → gravar também em `performance_by_topic`
-- Manter `medical_domain_map` e `study_performance` intactos
-
-### Bloco C — Study Engine Snapshots (baixo risco)
-- Após cada execução do Study Engine, salvar snapshot em `study_engine_snapshots`
-- Dashboard snapshot → `dashboard_snapshots` (já existe)
-
-### Bloco D — Tutor Contextual (médio risco)
-- Criar `tutor_sessions` ao iniciar conversa no tutor
-- Gravar `tutor_messages` em paralelo com `chat_messages`
-- Popular `tutor_context_snapshots` com contexto da sessão
-
-### Bloco E — QA + Fila (baixo risco, backend only)
-- Edge function `qa-autocorrect` já usa as novas tabelas
-- Nenhuma mudança de frontend necessária
+### Frente 3 — Enriquecimento automático das questões curtas (edge function nova)
+- Criar edge function `upgrade-questions` que pega questões `needs_upgrade` em lotes
+- Usa IA para expandir cada enunciado curto em caso clínico completo padrão ENAMED
+- Preserva o tema, alternativas e gabarito original
+- Grava como nova versão com `source = 'ai-upgraded'`
+- Admin revisa antes de aprovar
 
 ---
 
-### O que NÃO muda nesta etapa:
-- Nenhuma tabela existente é removida
-- Nenhuma coluna existente é alterada
-- Nenhum fluxo de UI é quebrado
-- Dados existentes são preservados intactos
+## Detalhamento Técnico
 
-Devo prosseguir com a implementação do **Bloco A** (Study Engine usando currículo normalizado)?
+### Migration SQL
+- Adicionar coluna `quality_tier` (text: 'exam_standard', 'basic', 'needs_upgrade')
+- UPDATE em massa baseado em `length(statement)`
+- Índice em `quality_tier` para queries eficientes
+
+### Validação centralizada (novo arquivo)
+```
+validateQuestionQuality(statement, options):
+  - statement >= 400 chars
+  - 5 alternativas
+  - contém dados clínicos (idade, sexo, sinais vitais)
+  - não referencia imagens/figuras
+  - idioma pt-BR
+```
+
+### Edge function `upgrade-questions`
+- Recebe batch de IDs
+- Para cada questão curta, gera prompt pedindo expansão em caso clínico completo
+- Preserva gabarito e tema
+- Grava com `review_status = 'pending'`
+
+### Filtros nos fluxos do aluno
+- Simulados, missões e tutor passam a filtrar `quality_tier IN ('exam_standard')` ou `length(statement) >= 400`
+
+---
+
+## Arquivos a Alterar/Criar
+
+1. **Migration SQL** — coluna `quality_tier`, UPDATE em massa, índice
+2. **`supabase/functions/upgrade-questions/index.ts`** — nova edge function de enriquecimento
+3. **`supabase/functions/enamed-generator/index.ts`** — validação pós-geração
+4. **`supabase/functions/populate-questions/index.ts`** — prompt reforçado + validação
+5. **`src/components/admin/AdminQuestionReviewPanel.tsx`** — filtro por quality_tier, botão "Enriquecer"
+6. **Hooks de simulado/missão** — filtrar por qualidade mínima
+
+---
+
+## Resultado Esperado
+
+- 0 questões curtas chegam ao aluno
+- Novos geradores produzem apenas padrão prova
+- Questões antigas podem ser enriquecidas sob demanda pelo admin
+- Qualidade auditável via `quality_tier`
+
