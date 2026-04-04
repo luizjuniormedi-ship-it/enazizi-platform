@@ -332,12 +332,19 @@ Deno.serve(async (req) => {
         timestamp: now.toISOString(),
       };
 
+      cachedDashResult = { data: dashboard, ts: Date.now() };
       return new Response(JSON.stringify(dashboard), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     // ── FULL MODE: original alerts logic ──
+    // Check cache first
+    if (cachedFullResult && Date.now() - cachedFullResult.ts < CACHE_TTL_MS) {
+      return new Response(JSON.stringify(cachedFullResult.data), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const alerts: HealthAlert[] = [];
 
     const SPECIALTIES = [
