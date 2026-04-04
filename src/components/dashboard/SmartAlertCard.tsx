@@ -1,8 +1,10 @@
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Clock, ArrowRight } from "lucide-react";
+import { AlertTriangle, Clock, ArrowRight, Play } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useMissionMode } from "@/hooks/useMissionMode";
 
 /**
  * Shows at most 1 smart alert based on priority:
@@ -13,6 +15,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 export default function SmartAlertCard() {
   const navigate = useNavigate();
   const { data } = useDashboardData();
+  const { state, startMission, hasTasks } = useMissionMode();
 
   if (!data) return null;
   const { metrics, stats } = data;
@@ -34,9 +37,14 @@ export default function SmartAlertCard() {
             size="sm"
             variant="outline"
             className="shrink-0 text-xs gap-1 h-10 px-3 active:scale-[0.97] transition-transform"
-            onClick={() => navigate("/dashboard/cronograma")}
+            onClick={() => {
+              if (state.status === "idle" && hasTasks) {
+                startMission();
+              }
+              navigate("/dashboard/missao");
+            }}
           >
-            Resolver <ArrowRight className="h-3.5 w-3.5" />
+            <Play className="h-3.5 w-3.5" /> Revisar agora
           </Button>
         </CardContent>
       </Card>
