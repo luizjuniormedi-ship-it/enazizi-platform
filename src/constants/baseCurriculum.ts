@@ -178,6 +178,8 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 24, topic: "Diarreia Aguda", specialty: "Pediatria" },
   { week: 24, topic: "Perioperatório - Controle Glicêmico", specialty: "Cirurgia" },
   { week: 24, topic: "Taquiarritmias", specialty: "Cardiologia" },
+  { week: 24, topic: "Princípios de Oncologia e Estadiamento TNM", specialty: "Oncologia" },
+  { week: 24, topic: "Dor Crônica e Cuidados Paliativos", specialty: "Clínica Médica" },
   // Semana 25
   { week: 25, topic: "DRGE em Pediatria", specialty: "Pediatria" },
   { week: 25, topic: "Cirurgia Infantil - Parte I", specialty: "Cirurgia" },
