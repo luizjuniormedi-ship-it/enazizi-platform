@@ -224,6 +224,7 @@ const queryClient = useQueryClient();
       {/* ══════════════════════════════════════════
           ALERTA INTELIGENTE — máximo 1
          ══════════════════════════════════════════ */}
+      <SafeCard name="RecoveryMode"><RecoveryModeBanner /></SafeCard>
       <SafeCard name="SmartAlert"><SmartAlertCard /></SafeCard>
 
       {/* ══════════════════════════════════════════
