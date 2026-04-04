@@ -139,6 +139,99 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_generated_assets: {
+        Row: {
+          asset_type: string
+          banca: string | null
+          content_json: Json
+          created_at: string
+          difficulty: number | null
+          id: string
+          module: string
+          quality_score: number | null
+          review_status: string | null
+          source_generation_mode: string | null
+          specialty: string | null
+          subtopic: string | null
+          topic: string | null
+          updated_at: string
+        }
+        Insert: {
+          asset_type?: string
+          banca?: string | null
+          content_json?: Json
+          created_at?: string
+          difficulty?: number | null
+          id?: string
+          module: string
+          quality_score?: number | null
+          review_status?: string | null
+          source_generation_mode?: string | null
+          specialty?: string | null
+          subtopic?: string | null
+          topic?: string | null
+          updated_at?: string
+        }
+        Update: {
+          asset_type?: string
+          banca?: string | null
+          content_json?: Json
+          created_at?: string
+          difficulty?: number | null
+          id?: string
+          module?: string
+          quality_score?: number | null
+          review_status?: string | null
+          source_generation_mode?: string | null
+          specialty?: string | null
+          subtopic?: string | null
+          topic?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_routing_decisions: {
+        Row: {
+          chosen_model: string | null
+          chosen_strategy: string | null
+          complexity_score: number | null
+          created_at: string
+          id: string
+          latency_ms: number | null
+          module: string
+          sent_to_queue: boolean | null
+          task_type: string | null
+          used_cache: boolean | null
+          user_id: string
+        }
+        Insert: {
+          chosen_model?: string | null
+          chosen_strategy?: string | null
+          complexity_score?: number | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          module: string
+          sent_to_queue?: boolean | null
+          task_type?: string | null
+          used_cache?: boolean | null
+          user_id: string
+        }
+        Update: {
+          chosen_model?: string | null
+          chosen_strategy?: string | null
+          complexity_score?: number | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          module?: string
+          sent_to_queue?: boolean | null
+          task_type?: string | null
+          used_cache?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_usage_logs: {
         Row: {
           cache_hit: boolean | null
@@ -364,6 +457,36 @@ export type Database = {
           review_score?: number
           score?: number
           simulation_score?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chance_by_exam: {
+        Row: {
+          banca: string
+          chance_score: number
+          created_at: string
+          factors_json: Json | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          banca: string
+          chance_score?: number
+          created_at?: string
+          factors_json?: Json | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          banca?: string
+          chance_score?: number
+          created_at?: string
+          factors_json?: Json | null
+          id?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -834,36 +957,125 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_plan_tasks: {
+        Row: {
+          action_type: string | null
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          daily_plan_id: string
+          description: string | null
+          estimated_minutes: number | null
+          id: string
+          ordem: number
+          priority: string | null
+          quantity: number | null
+          specialty: string | null
+          subtopic: string | null
+          task_type: string
+          title: string
+          topic: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_type?: string | null
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          daily_plan_id: string
+          description?: string | null
+          estimated_minutes?: number | null
+          id?: string
+          ordem?: number
+          priority?: string | null
+          quantity?: number | null
+          specialty?: string | null
+          subtopic?: string | null
+          task_type?: string
+          title: string
+          topic?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string | null
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          daily_plan_id?: string
+          description?: string | null
+          estimated_minutes?: number | null
+          id?: string
+          ordem?: number
+          priority?: string | null
+          quantity?: number | null
+          specialty?: string | null
+          subtopic?: string | null
+          task_type?: string
+          title?: string
+          topic?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_plan_tasks_daily_plan_id_fkey"
+            columns: ["daily_plan_id"]
+            isOneToOne: false
+            referencedRelation: "daily_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_plans: {
         Row: {
+          approval_score: number | null
+          chance_score: number | null
           completed_blocks: Json
           completed_count: number
           created_at: string | null
           id: string
+          objective: string | null
+          phase: string | null
           plan_date: string
           plan_json: Json
+          prep_index: number | null
+          recovery_mode: boolean | null
           total_blocks: number
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          approval_score?: number | null
+          chance_score?: number | null
           completed_blocks?: Json
           completed_count?: number
           created_at?: string | null
           id?: string
+          objective?: string | null
+          phase?: string | null
           plan_date?: string
           plan_json?: Json
+          prep_index?: number | null
+          recovery_mode?: boolean | null
           total_blocks?: number
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          approval_score?: number | null
+          chance_score?: number | null
           completed_blocks?: Json
           completed_count?: number
           created_at?: string | null
           id?: string
+          objective?: string | null
+          phase?: string | null
           plan_date?: string
           plan_json?: Json
+          prep_index?: number | null
+          recovery_mode?: boolean | null
           total_blocks?: number
           updated_at?: string | null
           user_id?: string
@@ -1657,6 +1869,190 @@ export type Database = {
         }
         Relationships: []
       }
+      lesson_doubts: {
+        Row: {
+          created_at: string
+          doubt_text: string
+          id: string
+          lesson_id: string
+          resolved: boolean
+          segment_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          doubt_text: string
+          id?: string
+          lesson_id: string
+          resolved?: boolean
+          segment_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          doubt_text?: string
+          id?: string
+          lesson_id?: string
+          resolved?: boolean
+          segment_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_doubts_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_doubts_segment_id_fkey"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_segments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_progress: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          current_second: number | null
+          id: string
+          lesson_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          current_second?: number | null
+          id?: string
+          lesson_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          current_second?: number | null
+          id?: string
+          lesson_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_segments: {
+        Row: {
+          created_at: string
+          end_second: number | null
+          id: string
+          lesson_id: string
+          ordem: number
+          start_second: number | null
+          title: string | null
+          transcript_segment: string | null
+        }
+        Insert: {
+          created_at?: string
+          end_second?: number | null
+          id?: string
+          lesson_id: string
+          ordem?: number
+          start_second?: number | null
+          title?: string | null
+          transcript_segment?: string | null
+        }
+        Update: {
+          created_at?: string
+          end_second?: number | null
+          id?: string
+          lesson_id?: string
+          ordem?: number
+          start_second?: number | null
+          title?: string | null
+          transcript_segment?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_segments_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lessons: {
+        Row: {
+          audio_url: string | null
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          is_active: boolean
+          lesson_type: string
+          professor_name: string | null
+          specialty: string
+          subtopic: string | null
+          summary_long: string | null
+          summary_medium: string | null
+          summary_short: string | null
+          title: string
+          topic: string | null
+          transcript: string | null
+          updated_at: string
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          is_active?: boolean
+          lesson_type?: string
+          professor_name?: string | null
+          specialty: string
+          subtopic?: string | null
+          summary_long?: string | null
+          summary_medium?: string | null
+          summary_short?: string | null
+          title: string
+          topic?: string | null
+          transcript?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          is_active?: boolean
+          lesson_type?: string
+          professor_name?: string | null
+          specialty?: string
+          subtopic?: string | null
+          summary_long?: string | null
+          summary_medium?: string | null
+          summary_short?: string | null
+          title?: string
+          topic?: string | null
+          transcript?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       medical_chronicles: {
         Row: {
           content: string
@@ -2244,6 +2640,7 @@ export type Database = {
           periodo: number | null
           phone: string | null
           status: string
+          study_mode: string | null
           target_exam: string | null
           target_exams: string[] | null
           target_specialty: string | null
@@ -2273,6 +2670,7 @@ export type Database = {
           periodo?: number | null
           phone?: string | null
           status?: string
+          study_mode?: string | null
           target_exam?: string | null
           target_exams?: string[] | null
           target_specialty?: string | null
@@ -2302,6 +2700,7 @@ export type Database = {
           periodo?: number | null
           phone?: string | null
           status?: string
+          study_mode?: string | null
           target_exam?: string | null
           target_exams?: string[] | null
           target_specialty?: string | null
@@ -2603,6 +3002,75 @@ export type Database = {
         }
         Relationships: []
       }
+      question_quality_flags: {
+        Row: {
+          created_at: string
+          detected_by: string
+          flag_reason: string | null
+          flag_type: string
+          id: string
+          question_id: string
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          detected_by?: string
+          flag_reason?: string | null
+          flag_type?: string
+          id?: string
+          question_id: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          detected_by?: string
+          flag_reason?: string | null
+          flag_type?: string
+          id?: string
+          question_id?: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      question_usage_logs: {
+        Row: {
+          answered_correctly: boolean | null
+          created_at: string
+          id: string
+          question_id: string
+          response_time_ms: number | null
+          selected_answer: number | null
+          session_id: string | null
+          source_mode: string | null
+          user_id: string
+        }
+        Insert: {
+          answered_correctly?: boolean | null
+          created_at?: string
+          id?: string
+          question_id: string
+          response_time_ms?: number | null
+          selected_answer?: number | null
+          session_id?: string | null
+          source_mode?: string | null
+          user_id: string
+        }
+        Update: {
+          answered_correctly?: boolean | null
+          created_at?: string
+          id?: string
+          question_id?: string
+          response_time_ms?: number | null
+          selected_answer?: number | null
+          session_id?: string | null
+          source_mode?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       questions_bank: {
         Row: {
           correct_index: number | null
@@ -2613,6 +3081,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_global: boolean | null
+          language: string | null
           options: Json | null
           organization_id: string | null
           original_question_id: string | null
@@ -2636,6 +3105,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_global?: boolean | null
+          language?: string | null
           options?: Json | null
           organization_id?: string | null
           original_question_id?: string | null
@@ -2659,6 +3129,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_global?: boolean | null
+          language?: string | null
           options?: Json | null
           organization_id?: string | null
           original_question_id?: string | null
@@ -2696,6 +3167,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      queue_jobs: {
+        Row: {
+          attempts: number
+          created_at: string
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          job_type: string
+          max_attempts: number
+          payload_json: Json
+          priority: number
+          result_json: Json | null
+          scheduled_for: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          job_type: string
+          max_attempts?: number
+          payload_json?: Json
+          priority?: number
+          result_json?: Json | null
+          scheduled_for?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          job_type?: string
+          max_attempts?: number
+          payload_json?: Json
+          priority?: number
+          result_json?: Json | null
+          scheduled_for?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       ranking_snapshots: {
         Row: {
@@ -2817,6 +3342,80 @@ export type Database = {
           subtopic?: string | null
           topic?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      recovery_events: {
+        Row: {
+          created_at: string
+          description: string | null
+          event_type: string
+          id: string
+          payload_json: Json | null
+          recovery_run_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          event_type: string
+          id?: string
+          payload_json?: Json | null
+          recovery_run_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          event_type?: string
+          id?: string
+          payload_json?: Json | null
+          recovery_run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recovery_events_recovery_run_id_fkey"
+            columns: ["recovery_run_id"]
+            isOneToOne: false
+            referencedRelation: "recovery_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recovery_runs: {
+        Row: {
+          active: boolean
+          created_at: string
+          ended_at: string | null
+          id: string
+          mode: string
+          phase: number
+          reason: string | null
+          started_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          mode?: string
+          phase?: number
+          reason?: string | null
+          started_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          mode?: string
+          phase?: number
+          reason?: string | null
+          started_at?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -3077,6 +3676,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      study_engine_snapshots: {
+        Row: {
+          approval_score: number | null
+          chance_score: number | null
+          content_lock: boolean | null
+          created_at: string
+          heavy_recovery_active: boolean | null
+          heavy_recovery_phase: number | null
+          id: string
+          memory_pressure: number | null
+          overdue_reviews: number | null
+          pending_reviews: number | null
+          phase: string | null
+          prep_index: number | null
+          recovery_mode: boolean | null
+          strong_topics: Json | null
+          user_id: string
+          weak_topics: Json | null
+        }
+        Insert: {
+          approval_score?: number | null
+          chance_score?: number | null
+          content_lock?: boolean | null
+          created_at?: string
+          heavy_recovery_active?: boolean | null
+          heavy_recovery_phase?: number | null
+          id?: string
+          memory_pressure?: number | null
+          overdue_reviews?: number | null
+          pending_reviews?: number | null
+          phase?: string | null
+          prep_index?: number | null
+          recovery_mode?: boolean | null
+          strong_topics?: Json | null
+          user_id: string
+          weak_topics?: Json | null
+        }
+        Update: {
+          approval_score?: number | null
+          chance_score?: number | null
+          content_lock?: boolean | null
+          created_at?: string
+          heavy_recovery_active?: boolean | null
+          heavy_recovery_phase?: number | null
+          id?: string
+          memory_pressure?: number | null
+          overdue_reviews?: number | null
+          pending_reviews?: number | null
+          phase?: string | null
+          prep_index?: number | null
+          recovery_mode?: boolean | null
+          strong_topics?: Json | null
+          user_id?: string
+          weak_topics?: Json | null
+        }
+        Relationships: []
       }
       study_performance: {
         Row: {
@@ -3727,6 +4383,145 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_context_snapshots: {
+        Row: {
+          accuracy: number | null
+          context_json: Json | null
+          created_at: string
+          current_goal: string | null
+          exam_focus: string | null
+          id: string
+          main_error: string | null
+          mission_id: string | null
+          pending_reviews: number | null
+          phase: string | null
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          context_json?: Json | null
+          created_at?: string
+          current_goal?: string | null
+          exam_focus?: string | null
+          id?: string
+          main_error?: string | null
+          mission_id?: string | null
+          pending_reviews?: number | null
+          phase?: string | null
+          user_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          context_json?: Json | null
+          created_at?: string
+          current_goal?: string | null
+          exam_focus?: string | null
+          id?: string
+          main_error?: string | null
+          mission_id?: string | null
+          pending_reviews?: number | null
+          phase?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tutor_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          input_context_json: Json | null
+          model_used: string | null
+          role: string
+          tokens_used: number | null
+          tutor_session_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          input_context_json?: Json | null
+          model_used?: string | null
+          role?: string
+          tokens_used?: number | null
+          tutor_session_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          input_context_json?: Json | null
+          model_used?: string | null
+          role?: string
+          tokens_used?: number | null
+          tutor_session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_messages_tutor_session_id_fkey"
+            columns: ["tutor_session_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_sessions: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          current_phase: string | null
+          id: string
+          mission_id: string | null
+          mode: string
+          source_context: string | null
+          specialty: string | null
+          subtopic: string | null
+          topic: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          current_phase?: string | null
+          id?: string
+          mission_id?: string | null
+          mode?: string
+          source_context?: string | null
+          specialty?: string | null
+          subtopic?: string | null
+          topic?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          current_phase?: string | null
+          id?: string
+          mission_id?: string | null
+          mode?: string
+          source_context?: string | null
+          specialty?: string | null
+          subtopic?: string | null
+          topic?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_sessions_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       uploads: {
         Row: {
           category: string | null
@@ -3968,6 +4763,45 @@ export type Database = {
         Update: {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          audio_mode_enabled: boolean
+          created_at: string
+          daily_goal_minutes: number
+          id: string
+          notifications_enabled: boolean
+          study_mode: string
+          theme_preferences: Json
+          tutor_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          audio_mode_enabled?: boolean
+          created_at?: string
+          daily_goal_minutes?: number
+          id?: string
+          notifications_enabled?: boolean
+          study_mode?: string
+          theme_preferences?: Json
+          tutor_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          audio_mode_enabled?: boolean
+          created_at?: string
+          daily_goal_minutes?: number
+          id?: string
+          notifications_enabled?: boolean
+          study_mode?: string
+          theme_preferences?: Json
+          tutor_enabled?: boolean
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -4219,6 +5053,47 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      worker_runs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          job_id: string | null
+          metadata_json: Json | null
+          status: string
+          worker_name: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          job_id?: string | null
+          metadata_json?: Json | null
+          status?: string
+          worker_name: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          job_id?: string | null
+          metadata_json?: Json | null
+          status?: string
+          worker_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worker_runs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "queue_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
