@@ -53,7 +53,7 @@ export async function logErrorToBank(params: LogErrorParams): Promise<void> {
         })
         .eq("id", existing.id);
     } else {
-      await supabase.from("error_bank").insert({
+      const { data: inserted } = await supabase.from("error_bank").insert({
         user_id: userId,
         tema,
         subtema: subtema || null,
@@ -63,7 +63,12 @@ export async function logErrorToBank(params: LogErrorParams): Promise<void> {
         categoria_erro: categoriaErro || null,
         dificuldade: dificuldade || 3,
         vezes_errado: 1,
-      });
+      }).select("id").single();
+
+      // Auto-create FSRS card for new errors
+      if (inserted) {
+        ensureFsrsCard(userId, "erro", inserted.id);
+      }
     }
   } catch (err) {
     console.error("Error logging to error_bank:", err);
