@@ -347,6 +347,7 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 44, topic: "Transtornos Psicóticos", specialty: "Psiquiatria" },
   { week: 44, topic: "Hepatites Virais", specialty: "Gastroenterologia" },
   { week: 44, topic: "Câncer de Pele", specialty: "Dermatologia" },
+  { week: 44, topic: "Patologia — Neoplasias (Biologia Tumoral)", specialty: "Patologia" },
   // Semana 45
   { week: 45, topic: "Distúrbios do Sono", specialty: "Psiquiatria" },
   { week: 45, topic: "Doenças do Osso e da Cartilagem", specialty: "Ortopedia" },
@@ -356,6 +357,7 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 45, topic: "Síndromes Compressivas", specialty: "Ortopedia" },
   { week: 45, topic: "IVAS - Parte III", specialty: "Otorrinolaringologia" },
   { week: 45, topic: "Síndrome do Olho Vermelho", specialty: "Oftalmologia" },
+  { week: 45, topic: "Anatomia Cirúrgica do Abdome", specialty: "Anatomia" },
   // Semana 46
   { week: 46, topic: "Incontinência Urinária", specialty: "Ginecologia e Obstetrícia" },
   { week: 46, topic: "Hemorragia Digestiva Baixa", specialty: "Gastroenterologia" },
@@ -367,6 +369,7 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 46, topic: "Osteomielite", specialty: "Ortopedia" },
   { week: 46, topic: "Otoneurologia e Vertigens", specialty: "Otorrinolaringologia" },
   { week: 46, topic: "Córnea e Cristalino", specialty: "Oftalmologia" },
+  { week: 46, topic: "Anatomia — Cabeça e Pescoço", specialty: "Anatomia" },
   // Semana 47
   { week: 47, topic: "Prolapso de Órgãos Pélvicos", specialty: "Ginecologia e Obstetrícia" },
   { week: 47, topic: "Infecções Congênitas na Gestação", specialty: "Ginecologia e Obstetrícia" },
@@ -376,6 +379,7 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 47, topic: "Dermatoses Papuloescamosas", specialty: "Dermatologia" },
   { week: 47, topic: "Quadril Pediátrico", specialty: "Ortopedia" },
   { week: 47, topic: "Cirurgia de Cabeça e Pescoço", specialty: "Otorrinolaringologia" },
+  { week: 47, topic: "Fisiologia Renal e Ácido-Básica", specialty: "Fisiologia" },
   // Semana 48
   { week: 48, topic: "Polipose e Câncer Colorretal", specialty: "Gastroenterologia" },
   { week: 48, topic: "Medicina Transfusional", specialty: "Hematologia" },
