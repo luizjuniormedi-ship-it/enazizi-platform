@@ -1,68 +1,63 @@
 
 
-# Refinamento Completo do ENAZIZI — UX, Consistência e Integração
+# Metas Semanais Inteligentes — Plano de Implementação
 
-## Diagnóstico
+## Abordagem
 
-Após auditoria do Dashboard, MissionMode, StudyEngine, SmartAlertCard, HeroStudyCard e módulos relacionados, o sistema já está bem estruturado. Os refinamentos identificados são cirúrgicos.
+Criar um hook `useWeeklyGoals` que calcula metas personalizadas a partir dos mesmos dados já disponíveis (`usePreparationIndex`, `useDashboardData`) e um card `WeeklyGoalsCard` no Dashboard. Sem tabelas novas — as metas são calculadas dinamicamente a cada semana com base no estado real.
 
-## Inconsistências Encontradas
+## Lógica de Cálculo das Metas
 
-| # | Problema | Severidade | Arquivo |
-|---|----------|-----------|---------|
-| 1 | MissionMode exibe `currentTask.reason` bruto do engine (ex: "Acerto de 45% em Cardiologia") em vez de usar `getHumanReadableReason()` | Média | `MissionMode.tsx` |
-| 2 | HeroStudyCard não mostra motivo da tarefa principal — só tema e tempo | Média | `HeroStudyCard.tsx` |
-| 3 | FreeStudyCard mostra "Acesso livre" sem indicar o que é prioridade — pode distrair | Baixa | `FreeStudyCard.tsx` |
-| 4 | SmartAlertCard não mostra o tema específico do erro quando há erros acumulados | Média | `SmartAlertCard.tsx` |
-| 5 | RecentProgressCard pode não aparecer (depende de evolutions) sem fallback | Baixa | Dashboard.tsx |
-| 6 | DashboardSummaryCard "Streak" repete 🔥 do greeting (informação duplicada) | Baixa | `Dashboard.tsx` |
+O hook determina 4 metas semanais baseadas no perfil:
 
-## Plano de Correções
+| Meta | Base de cálculo | Adaptação |
+|------|-----------------|-----------|
+| **Questões** | `meta_questoes_dia × 7` do `cronograma_config`, ou 30×7=210 default | zona forte: +20%, base fraca: -30% |
+| **Revisões** | `pendingRevisoes` atual + buffer proporcional | prova próxima (<30d): +50% |
+| **Temas novos** | 3-7 baseado em coverage do cronograma | coverage >80%: reduz para 2 |
+| **Prática clínica** | 1-4 sessões (plantão/OSCE/anamnese) | zona competitiva+: aumenta |
 
-### 1. MissionMode — Humanizar motivos das tarefas
-**Arquivo**: `src/pages/MissionMode.tsx`
-- Importar `getHumanReadableReason` de `@/lib/humanizedReasons`
-- Substituir `{currentTask.reason}` por `{getHumanReadableReason(currentTask)}` na tela de tarefa ativa (linha ~228)
-- Fazer o mesmo no FocusHardMode (linha ~142)
+Progresso calculado a partir de dados da semana atual (segunda a domingo):
+- `practice_attempts` com `created_at >= segunda`
+- `revisoes` concluídas na semana
+- `temas_estudados` na semana
+- `simulation_sessions` + `anamnesis_results` + `chronicle_osce_sessions` na semana
 
-### 2. HeroStudyCard — Adicionar motivo da primeira tarefa
-**Arquivo**: `src/components/dashboard/HeroStudyCard.tsx`
-- Importar `getHumanReadableReason`
-- Abaixo do subtítulo "topTask.topic · ~Xmin", adicionar uma linha com o motivo humanizado em texto menor
-- Manter compacto: 1 linha, `text-xs text-muted-foreground`
-
-### 3. SmartAlertCard — Enriquecer alerta de erros com tema
-**Arquivo**: `src/components/dashboard/SmartAlertCard.tsx`
-- Na Priority 3 (erros), buscar o tema com mais erros do `useDashboardData` (já disponível via `data`)
-- Trocar mensagem genérica por: "X erros acumulados em [tema principal] — revise para não repetir"
-- Se não houver tema específico, manter fallback genérico
-
-### 4. Dashboard — Remover streak duplicado do grid
-**Arquivo**: `src/pages/Dashboard.tsx`
-- O greeting já mostra "🔥 X dias seguidos"
-- No grid de métricas, trocar o card "Streak" por "Evolução" mostrando a accuracy geral e delta semanal, que é mais útil
-
-### 5. FreeStudyCard — Adicionar label de contexto
-**Arquivo**: `src/components/dashboard/FreeStudyCard.tsx`
-- Trocar título "Acesso livre" por "Explorar módulos"
-- Adicionar subtítulo discreto: "Estude fora da missão"
-
-## Arquivos Afetados
+## Arquivos
 
 | Arquivo | Ação |
 |---------|------|
-| `src/pages/MissionMode.tsx` | Usar `getHumanReadableReason()` nos motivos |
-| `src/components/dashboard/HeroStudyCard.tsx` | Adicionar motivo humanizado da tarefa principal |
-| `src/components/dashboard/SmartAlertCard.tsx` | Enriquecer alerta de erros com tema específico |
-| `src/pages/Dashboard.tsx` | Trocar card Streak duplicado por Evolução |
-| `src/components/dashboard/FreeStudyCard.tsx` | Renomear para "Explorar módulos" |
+| `src/hooks/useWeeklyGoals.ts` | **Criar** — hook com cálculo adaptativo das 4 metas + progresso |
+| `src/components/dashboard/WeeklyGoalsCard.tsx` | **Criar** — card com lista de metas, barra de progresso cada, mensagem motivacional |
+| `src/pages/Dashboard.tsx` | **Editar** — adicionar `WeeklyGoalsCard` abaixo do `WeeklyEvolutionBar` |
+
+## Hook `useWeeklyGoals`
+
+- Consome `usePreparationIndex` (zona, breakdown) e `useDashboardData` (metrics, stats)
+- Faz 4 queries para progresso da semana atual (paralelo)
+- Calcula metas com base na zona + proximidade da prova + breakdown
+- Gera mensagem motivacional dinâmica
+- `staleTime: 60s`, `refetchOnWindowFocus: true`
+
+## Card `WeeklyGoalsCard`
+
+- Título: "🎯 Meta da semana"
+- 4 linhas: ícone + label + barra de progresso + "X/Y"
+- Progresso geral (%) no topo
+- Mensagem motivacional abaixo
+- Cores: verde (≥100%), amarelo (50-99%), vermelho (<50%)
+- Compacto, sem ocupar mais de ~200px de altura
+
+## Integração com Índice de Preparação
+
+O `usePreparationIndex` já considera volume de questões, revisões e prática. As metas semanais são calculadas para guiar o usuário a melhorar esses sub-scores, mas não alteram diretamente o cálculo do índice — o índice reflete resultados reais, as metas são orientação.
+
+## Reset Semanal
+
+Automático — o hook calcula a segunda-feira da semana atual e busca dados apenas daquela janela. Nova semana = metas recalculadas automaticamente.
 
 ## O que NÃO muda
-- Study Engine, FSRS, cronograma, mentoria, OSCE, readiness por banca
-- Estrutura do Dashboard (HeroStudyCard, ExamReadinessCard, etc.)
-- Lógica de missão, persistência, cache invalidation
-- Nenhuma funcionalidade removida
-
-## Resultado
-Dashboard e Missão passam a usar linguagem 100% humanizada, sem métricas técnicas expostas. Alertas ficam mais específicos. Informação duplicada eliminada. Experiência mais clara e orientada à ação.
+- Study Engine, FSRS, cronograma, missão
+- Nenhuma tabela nova necessária
+- Nenhum dado mockado — tudo vem de queries reais
 
