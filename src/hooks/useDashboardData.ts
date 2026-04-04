@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useCoreData } from "./useCoreData";
+import { saveDashboardSnapshot, loadDashboardSnapshot } from "@/lib/dashboardSnapshot";
 
 export interface DashboardStats {
   flashcards: number;
@@ -59,6 +60,15 @@ export const useDashboardData = () => {
     queryFn: async () => {
       const userId = user!.id;
       const cd = coreData!;
+
+      // Fast-path: try snapshot first
+      const snapshot = await loadDashboardSnapshot(userId);
+      if (snapshot) {
+        console.debug("[Dashboard] Using snapshot (fast-path)");
+        return snapshot;
+      }
+
+      console.debug("[Dashboard] Snapshot miss — full query");
 
       try {
         // Only queries NOT covered by coreData
@@ -224,13 +234,18 @@ export const useDashboardData = () => {
           hasStudyPlan,
         };
 
-        return {
+        const result = {
           stats,
           metrics,
           displayName: cd.profile.display_name,
           hasCompletedDiagnostic: cd.profile.has_completed_diagnostic,
           targetExams: cd.profile.target_exams,
         };
+
+        // Write-through: persist snapshot for next fast-path
+        saveDashboardSnapshot(userId, result);
+
+        return result;
       } catch (err: any) {
         console.warn("[Dashboard] fetchDashboardData falhou:", err?.message || err);
         const emptyStats: DashboardStats = {
