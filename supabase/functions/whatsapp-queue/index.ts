@@ -431,6 +431,55 @@ Deno.serve(async (req) => {
       return respond({ ok: true, status: newStatus });
     }
 
+    if (action === "reset_queue") {
+      const executionId = body.execution_id;
+      const today = new Date().toISOString().slice(0, 10);
+
+      let cancelledCount = 0;
+
+      if (executionId) {
+        // Cancel pending/processing items for this specific execution
+        const { data: cancelled } = await supabaseAdmin
+          .from("whatsapp_message_log")
+          .update({ delivery_status: "cancelled", updated_at: new Date().toISOString() })
+          .eq("execution_id", executionId)
+          .in("delivery_status", ["pending", "processing"])
+          .select("id");
+        cancelledCount = cancelled?.length || 0;
+
+        // Stop the execution
+        await supabaseAdmin
+          .from("whatsapp_send_executions")
+          .update({ status: "stopped", finished_at: new Date().toISOString() })
+          .eq("id", executionId);
+
+        await supabaseAdmin.from("whatsapp_execution_logs").insert({
+          execution_id: executionId,
+          action: "execution_reset",
+          status: "success",
+          message: `Reset manual: ${cancelledCount} itens cancelados`,
+        });
+      } else {
+        // Cancel ALL orphan pending messages from today (no execution linked)
+        const { data: cancelled } = await supabaseAdmin
+          .from("whatsapp_message_log")
+          .update({ delivery_status: "cancelled", updated_at: new Date().toISOString() })
+          .in("delivery_status", ["pending", "processing"])
+          .gte("created_at", `${today}T00:00:00Z`)
+          .select("id");
+        cancelledCount = cancelled?.length || 0;
+
+        // Stop any active executions from today
+        await supabaseAdmin
+          .from("whatsapp_send_executions")
+          .update({ status: "stopped", finished_at: new Date().toISOString() })
+          .in("status", ["running", "paused"])
+          .eq("execution_date", today);
+      }
+
+      return respond({ ok: true, cancelled: cancelledCount });
+    }
+
     if (action === "reprocess_errors") {
       const executionId = body.execution_id;
       if (!executionId) return respond({ error: "execution_id required" }, 400);
