@@ -1,5 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import ENAZIZI_PROMPT from "../_shared/enazizi-prompt.ts";
+import {
+  getLessonPrompt,
+  getCompactLessonPrompt,
+  getRecallPrompt,
+  getQuestionPrompt,
+  getDiscussionPrompt,
+  getScoringPrompt,
+  getReinforcementPrompt,
+  getFeynmanPrompt,
+  getSessionMemoryBlock,
+} from "../_shared/enazizi-prompt.ts";
 import { aiFetch, getModelForTier } from "../_shared/ai-fetch.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
 
@@ -52,13 +62,12 @@ REGRA DE REFORÇO POR ERRO:
 }
 
 function getPhasePrompt(phase: string, topic: string, performanceData: unknown, studyMode?: string): string {
-  const base = ENAZIZI_PROMPT;
   const levelPrompt = getLevelPrompt(performanceData);
   const weakTopicsPrompt = getWeakTopicsPrompt(performanceData);
 
   switch (phase) {
     case "performance":
-      return `${base}
+      return `${getDiscussionPrompt()}
 FASE ATUAL: STATE 0 — PAINEL DE DESEMPENHO
 
 Dados do aluno:
@@ -77,7 +86,7 @@ Se não houver dados, informe e sugira começar.`;
     case "lesson": {
       // Compact mode — short Feynman-style explanation
       if (studyMode === "compact") {
-        return `${base}
+        return `${getCompactLessonPrompt()}
 ${levelPrompt}
 FASE ATUAL: EXPLICAÇÃO RÁPIDA (MODO COMPACTO)
 Tema: "${topic || "solicitado pelo aluno"}"
@@ -99,7 +108,7 @@ REGRAS:
 
       // Review mode — exam-focused
       if (studyMode === "review") {
-        return `${base}
+        return `${getRecallPrompt()}
 ${levelPrompt}
 ${weakTopicsPrompt}
 FASE ATUAL: REVISÃO PARA PROVA
@@ -132,7 +141,7 @@ REGRAS:
 
       // Correction mode — error-focused
       if (studyMode === "correction") {
-        return `${base}
+        return `${getReinforcementPrompt()}
 ${levelPrompt}
 ${weakTopicsPrompt}
 FASE ATUAL: CORREÇÃO DE ERROS
@@ -157,7 +166,7 @@ REGRAS:
       }
 
       // Default: full mode (existing behavior)
-      return `${base}
+      return `${getLessonPrompt()}
 ${levelPrompt}
 ${weakTopicsPrompt}
 FASE ATUAL: BLOCOS TÉCNICOS (STATES 2-6)
@@ -205,7 +214,7 @@ Ao final da Mensagem 4: inclua a primeira pergunta de Active Recall (❓ Pergunt
     }
 
     case "active-recall":
-      return `${base}
+      return `${getRecallPrompt()}
 ${weakTopicsPrompt}
 FASE ATUAL: ACTIVE RECALL (STATES 3/5)
 Tema: "${topic}"
@@ -242,7 +251,7 @@ Distribuição: fisiopatologia, diagnóstico, tratamento, complicações, semiol
 Varie os enfoques: NUNCA duas perguntas consecutivas do mesmo conceito.`;
 
     case "questions":
-      return `${base}
+      return `${getQuestionPrompt()}
 ${weakTopicsPrompt}
 FASE ATUAL: QUESTÃO OBJETIVA (STATE 7)
 Tema: "${topic}"
@@ -270,7 +279,7 @@ ANAMNESE ÚNICA (REGRA ABSOLUTA):
 Diga: "Qual sua resposta? (A, B, C, D ou E)"`;
 
     case "discussion":
-      return `${base}
+      return `${getDiscussionPrompt()}
 FASE ATUAL: DISCUSSÃO DA QUESTÃO (STATE 8)
 Tema: "${topic}"
 
@@ -280,7 +289,7 @@ Se errou: informar incorreto → corrigir → revisar.
 Perguntar: 1) continuar, 2) outra questão, 3) revisar conteúdo.`;
 
     case "discursive":
-      return `${base}
+      return `${getQuestionPrompt()}
 ${weakTopicsPrompt}
 FASE ATUAL: CASO CLÍNICO DISCURSIVO (STATE 9)
 Tema: "${topic}"
@@ -316,7 +325,7 @@ Pergunte:
 Aguarde a resposta. Depois corrija com nota 0-5 por critério.`;
 
     case "scoring":
-      return `${base}
+      return `${getScoringPrompt()}
 FASE ATUAL: CORREÇÃO DISCURSIVA + ATUALIZAÇÃO (STATES 10-11)
 Tema: "${topic}"
 
@@ -379,7 +388,7 @@ REGRAS do mapa:
       };
       const angle = angleMap[errorCategory] || "conceito-chave";
 
-      return `${base}
+      return `${getReinforcementPrompt()}
 ${levelPrompt}
 FASE ATUAL: LOOP DE REFORÇO INTELIGENTE (ciclo ${cycle}/2)
 Tema: "${errorTopic}"
@@ -407,7 +416,7 @@ REGRAS:
 
     default: {
       const levelPrompt = getLevelPrompt(performanceData);
-      return `${base}
+      return `${getLessonPrompt()}
 ${levelPrompt}
 ${getWeakTopicsPrompt(performanceData)}
 Siga o fluxo pedagógico dos STATES 0-12.
@@ -433,23 +442,29 @@ serve(async (req) => {
     }
 
     if (session_memory) {
-      systemPrompt += `\n\n--- MEMÓRIA DE SESSÃO ---
+      systemPrompt += `\n\n${getSessionMemoryBlock()}
+--- DADOS DA SESSÃO ---
 Último tema: ${session_memory.ultimo_tema || "nenhum"}
 Erros consecutivos: ${session_memory.erros_consecutivos || 0}
 Profundidade: ${session_memory.profundidade_resposta || "aprofundado"}
 ${session_memory.erros_consecutivos >= 3 ? "⚠️ TRAVAMENTO DETECTADO: Simplifique a explicação." : ""}
---- FIM DA MEMÓRIA DE SESSÃO ---`;
+--- FIM ---`;
     }
 
-    // Use lighter model for performance/recall phases, pro for teaching
-    const isLightPhase = ["performance", "recall", "recall_result"].includes(phase);
+    // Phase-based model tier and token limits
+    const isLightPhase = ["performance", "recall", "recall_result", "active-recall", "reinforcement"].includes(phase);
+    const isMediumPhase = ["questions", "discussion", "discursive"].includes(phase);
     const modelTier = isLightPhase ? "standard" : "pro";
+    const maxTokens = isLightPhase ? 4096 : isMediumPhase ? 8192 : 16384;
+
+    // Trim message history: keep only last 10 messages to reduce token usage
+    const trimmedMessages = messages.length > 10 ? messages.slice(-10) : messages;
 
     const response = await aiFetch({
       model: getModelForTier(modelTier),
-      messages: [{ role: "system", content: systemPrompt }, ...messages],
+      messages: [{ role: "system", content: systemPrompt }, ...trimmedMessages],
       stream: true,
-      maxTokens: isLightPhase ? 8192 : 16384,
+      maxTokens,
     });
 
     if (!response.ok) {
