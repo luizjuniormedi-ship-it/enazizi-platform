@@ -433,12 +433,13 @@ const SmartPlanner = () => {
 
       {/* Tabs — 4 seções */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-4 h-auto">
-          <TabsTrigger value="estrategia" className="text-xs py-2 flex flex-col gap-0.5 items-center">
-            <Target className="h-4 w-4" />
-            <span className="hidden sm:inline">Estratégia</span>
-            <span className="sm:hidden">Estratégia</span>
-          </TabsTrigger>
+        <TabsList className={cn("w-full h-auto", plannerV2 ? "grid grid-cols-4" : "grid grid-cols-3")}>
+          {plannerV2 && (
+            <TabsTrigger value="estrategia" className="text-xs py-2 flex flex-col gap-0.5 items-center">
+              <Target className="h-4 w-4" />
+              <span>Estratégia</span>
+            </TabsTrigger>
+          )}
           <TabsTrigger value="conteudo" className="text-xs py-2 flex flex-col gap-0.5 items-center">
             <BookOpen className="h-4 w-4" />
             <span className="hidden sm:inline">Conteúdo</span>
