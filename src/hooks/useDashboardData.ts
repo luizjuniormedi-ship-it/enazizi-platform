@@ -55,6 +55,8 @@ interface PlanJson {
 export const useDashboardData = () => {
   const { user } = useAuth();
   const { data: coreData } = useCoreData();
+  const { isEnabled } = useFeatureFlags();
+  const snapshotEnabled = isEnabled("new_dashboard_snapshot_enabled");
 
   return useQuery({
     queryKey: ["dashboard-data", user?.id, !!coreData],
@@ -62,14 +64,16 @@ export const useDashboardData = () => {
       const userId = user!.id;
       const cd = coreData!;
 
-      // Fast-path: try snapshot first
-      const snapshot = await loadDashboardSnapshot(userId);
-      if (snapshot) {
-        console.debug("[Dashboard] Using snapshot (fast-path)");
-        return snapshot;
+      // Fast-path: try snapshot first (only if flag enabled)
+      if (snapshotEnabled) {
+        const snapshot = await loadDashboardSnapshot(userId);
+        if (snapshot) {
+          console.debug("[Dashboard] Using snapshot (fast-path)");
+          return snapshot;
+        }
       }
 
-      console.debug("[Dashboard] Snapshot miss — full query");
+      console.debug("[Dashboard] Full query path");
 
       try {
         // Only queries NOT covered by coreData
