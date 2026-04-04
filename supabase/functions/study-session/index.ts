@@ -251,7 +251,7 @@ Distribuição: fisiopatologia, diagnóstico, tratamento, complicações, semiol
 Varie os enfoques: NUNCA duas perguntas consecutivas do mesmo conceito.`;
 
     case "questions":
-      return `${base}
+      return `${getQuestionPrompt()}
 ${weakTopicsPrompt}
 FASE ATUAL: QUESTÃO OBJETIVA (STATE 7)
 Tema: "${topic}"
