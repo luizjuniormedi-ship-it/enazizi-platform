@@ -424,8 +424,17 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
         status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const elapsed = Date.now() - startMs;
+    logAiUsage({
+      userId: "system-question-gen",
+      functionName: "question-generator",
+      modelUsed: "google/gemini-3-flash-preview",
+      success: response.ok,
+      responseTimeMs: elapsed,
+      modelTier: "standard",
+      errorMessage: response.ok ? undefined : `status ${response.status}`,
+    }).catch(() => {});
 
-    if (!response.ok) {
       const t = await response.text();
       console.error("AI response error:", response.status, t.slice(0, 300));
       
