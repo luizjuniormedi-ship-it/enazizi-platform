@@ -7,6 +7,10 @@ import type { StudyTaskType, StudyObjective } from "./studyContext";
 import { getExamProfile, getMergedExamProfile, applyExamModifiers, type ExamProfile } from "./examProfiles";
 import { fetchCurriculumForEngine, fetchAllCurriculumTopics } from "./curriculumBridge";
 import { saveStudyEngineSnapshot } from "./dualWrite";
+import {
+  loadActiveRecoveryRun, startRecoveryRun, endRecoveryRun,
+  updateRecoveryPhase, logRecoveryEvent, type ActiveRecoveryRun,
+} from "./recoveryPersistence";
 
 export type RecommendationType = "review" | "practice" | "clinical" | "new" | "error_review" | "simulado" | "chronicle";
 export type TargetModule = "tutor" | "questoes" | "flashcards" | "plantao" | "anamnese" | "simulado" | "cronograma" | "banco-erros" | "cronicas";
@@ -63,20 +67,13 @@ function getHeavyRecoveryPhase(day: number): HeavyRecoveryPhase {
 
 const HEAVY_RECOVERY_STORAGE_KEY = "enazizi-heavy-recovery";
 
-function loadHeavyRecoveryState(): { startedAt: string } | null {
+// Legacy localStorage helpers — kept only for migration bridge read
+function loadHeavyRecoveryStateLegacy(): { startedAt: string } | null {
   try {
     const raw = localStorage.getItem(HEAVY_RECOVERY_STORAGE_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
   } catch { return null; }
-}
-
-function persistHeavyRecovery(startedAt: string) {
-  localStorage.setItem(HEAVY_RECOVERY_STORAGE_KEY, JSON.stringify({ startedAt }));
-}
-
-function clearHeavyRecovery() {
-  localStorage.removeItem(HEAVY_RECOVERY_STORAGE_KEY);
 }
 
 function buildHeavyRecoveryState(startedAt: string | null, active: boolean): HeavyRecoveryState {
@@ -441,29 +438,69 @@ export async function generateRecommendations({ userId, coreData }: EngineInput)
     } else {
       recoveryReason = "Seu índice precisa de atenção. Vamos focar no que mais importa agora.";
     }
-    // In recovery mode: reduce new topics to 0
     weights.maxNewTopics = 0;
   }
 
-  // ── Heavy Recovery mode detection (30-day progressive plan) ──
+  // ── Heavy Recovery mode — DB-persisted (30-day progressive plan) ──
   const heavyRecoveryThreshold =
     overdueCount >= 25 && memoryPressure >= 80 && approvalScore < 40;
-  const persistedHR = loadHeavyRecoveryState();
-  let heavyRecoveryStartedAt: string | null = persistedHR?.startedAt || null;
 
-  if (heavyRecoveryThreshold && !heavyRecoveryStartedAt) {
-    // Activate heavy recovery
-    heavyRecoveryStartedAt = new Date().toISOString();
-    persistHeavyRecovery(heavyRecoveryStartedAt);
+  // Load from DB (includes localStorage migration bridge)
+  let activeRun: ActiveRecoveryRun | null = await loadActiveRecoveryRun(userId);
+  let heavyRecoveryStartedAt: string | null = activeRun?.mode === "heavy" ? activeRun.started_at : null;
+
+  // Handle recovery normal persistence (fire-and-forget)
+  if (recoveryMode && !activeRun) {
+    const reason = recoveryReason;
+    if (heavyRecoveryThreshold) {
+      activeRun = await startRecoveryRun(userId, "heavy", reason);
+      if (activeRun) {
+        heavyRecoveryStartedAt = activeRun.started_at;
+        logRecoveryEvent(activeRun.id, userId, "entered_heavy_recovery", reason, {
+          overdueCount, memoryPressure, approvalScore,
+        });
+      }
+    } else {
+      activeRun = await startRecoveryRun(userId, "normal", reason);
+      if (activeRun) {
+        logRecoveryEvent(activeRun.id, userId, "entered_recovery", reason, {
+          overdueCount, memoryPressure, approvalScore,
+        });
+      }
+    }
+  } else if (heavyRecoveryThreshold && activeRun?.mode === "normal") {
+    // Upgrade normal → heavy
+    await endRecoveryRun(activeRun.id, userId, "normal");
+    activeRun = await startRecoveryRun(userId, "heavy", "Escalado para recuperação pesada");
+    if (activeRun) {
+      heavyRecoveryStartedAt = activeRun.started_at;
+      logRecoveryEvent(activeRun.id, userId, "entered_heavy_recovery", "Escalado de normal para pesada", {
+        overdueCount, memoryPressure, approvalScore,
+      });
+    }
   }
 
   // Check if heavy recovery should exit (day > 30 AND conditions improved)
-  if (heavyRecoveryStartedAt) {
+  if (heavyRecoveryStartedAt && activeRun?.mode === "heavy") {
     const dayInHR = Math.ceil((Date.now() - new Date(heavyRecoveryStartedAt).getTime()) / 86400000);
-    if (dayInHR > 30 && overdueCount < 10 && memoryPressure < 50 && approvalScore >= 40) {
-      clearHeavyRecovery();
-      heavyRecoveryStartedAt = null;
+    const currentPhase = getHeavyRecoveryPhase(Math.min(dayInHR, 30));
+
+    // Update phase in DB if changed
+    if (activeRun.phase !== currentPhase) {
+      updateRecoveryPhase(activeRun.id, userId, currentPhase);
     }
+
+    if (dayInHR > 30 && overdueCount < 10 && memoryPressure < 50 && approvalScore >= 40) {
+      await endRecoveryRun(activeRun.id, userId, "heavy");
+      heavyRecoveryStartedAt = null;
+      activeRun = null;
+    }
+  }
+
+  // Exit normal recovery if conditions improved
+  if (activeRun?.mode === "normal" && !recoveryMode) {
+    await endRecoveryRun(activeRun.id, userId, "normal");
+    activeRun = null;
   }
 
   const heavyRecovery = buildHeavyRecoveryState(heavyRecoveryStartedAt, !!heavyRecoveryStartedAt);
