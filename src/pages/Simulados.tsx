@@ -209,6 +209,7 @@ const Simulados = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { addXp } = useGamification();
+  const queryClient = useQueryClient();
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [questions, setQuestions] = useState<SimQuestion[]>([]);
