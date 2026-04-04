@@ -928,6 +928,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       overdueCount: 0,
       recoveryMode: false,
       recoveryReason: "",
+      heavyRecovery: buildHeavyRecoveryState(null, false),
     },
   };
  }
