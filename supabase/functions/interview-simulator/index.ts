@@ -121,10 +121,23 @@ Regras:
       systemPrompt += `\n\n--- CURRÍCULO/CONTEXTO DO CANDIDATO ---\n${userContext}\n--- FIM DO CONTEXTO ---`;
     }
 
+    const startMs = Date.now();
     const response = await aiFetch({
       messages: [{ role: "system", content: systemPrompt }, ...messages],
       stream: true,
     });
+    const elapsed = Date.now() - startMs;
+
+    logAiUsage({
+      userId: "system-interview",
+      functionName: "interview-simulator",
+      modelUsed: "google/gemini-3-flash-preview",
+      success: response.ok,
+      responseTimeMs: elapsed,
+      cacheHit: false,
+      modelTier: "standard",
+      errorMessage: response.ok ? undefined : `status ${response.status}`,
+    }).catch(() => {});
 
     if (!response.ok) {
       const t = await response.text();
