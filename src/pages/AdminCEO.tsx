@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,37 +10,29 @@ import {
   CheckCircle, XCircle, Stethoscope, Brain, FlipVertical,
   ArrowUpRight, ArrowDownRight, Minus
 } from "lucide-react";
-import { format, subDays, startOfDay } from "date-fns";
+import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface CEOMetrics {
-  // Uso do sistema
   activeToday: number;
   activeWeek: number;
   avgSessionMinutes: number;
-  // Início de estudo
   studyStarts: number;
   startRate: number;
-  // Missão
   missionsStarted: number;
   missionsCompleted: number;
   missionCompletionRate: number;
-  // Erros do sistema
   criticalErrors: number;
-  mediumErrors: number;
   topFailures: string[];
-  // Qualidade
   avgAccuracy: number;
   reviewsDone: number;
-  avgEvolution: number;
-  // Módulos
   tutorSessions: number;
   questionsSessions: number;
   plantaoSessions: number;
   osceSessions: number;
-  // Engajamento
   returnRate: number;
   dropoffRate: number;
+  totalUsers: number;
 }
 
 function MetricBox({ icon: Icon, label, value, trend, color = "text-primary" }: {
@@ -78,21 +70,19 @@ function SectionTitle({ children, icon: Icon }: { children: string; icon: any })
 
 export default function AdminCEO() {
   const { session } = useAuth();
-  const today = format(new Date(), "yyyy-MM-dd");
-  const weekAgo = format(subDays(new Date(), 7), "yyyy-MM-dd");
 
   const { data: m, isLoading, refetch, isFetching } = useQuery<CEOMetrics>({
     queryKey: ["admin-ceo-dashboard"],
     queryFn: async () => {
-      const todayStart = startOfDay(new Date()).toISOString();
-      const weekStart = subDays(new Date(), 7).toISOString();
-      const twoWeeksStart = subDays(new Date(), 14).toISOString();
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const weekStart = subDays(now, 7).toISOString();
+      const twoWeeksStart = subDays(now, 14).toISOString();
 
-      // Parallel queries
       const [
         { count: activeToday },
         { count: activeWeek },
-        { data: sessions },
+        { data: moduleSessions },
         { data: dailyPlans },
         { data: completedPlans },
         { data: reviews },
@@ -103,33 +93,32 @@ export default function AdminCEO() {
         { data: aiLogs },
         { count: totalUsers },
         { count: prevWeekActive },
-        { data: questionAttempts },
       ] = await Promise.all([
-        // Active today (profiles with recent session tracking)
-        supabase.from("session_tracking" as any).select("*", { count: "exact", head: true })
-          .gte("started_at", todayStart),
+        // Active today — unique users with module_sessions today
+        supabase.from("module_sessions" as any).select("*", { count: "exact", head: true })
+          .gte("created_at", todayStart),
         // Active this week
-        supabase.from("session_tracking" as any).select("*", { count: "exact", head: true })
-          .gte("started_at", weekStart),
-        // Session durations this week
-        supabase.from("session_tracking" as any).select("duration_seconds")
-          .gte("started_at", weekStart).not("duration_seconds", "is", null),
+        supabase.from("module_sessions" as any).select("*", { count: "exact", head: true })
+          .gte("created_at", weekStart),
+        // Module sessions this week (for avg duration — no duration col, count as proxy)
+        supabase.from("module_sessions" as any).select("user_id, created_at")
+          .gte("created_at", weekStart).limit(500),
         // Daily plans created (study starts)
         supabase.from("daily_plans").select("id, completed_count, total_blocks, user_id")
           .gte("created_at", weekStart),
-        // Completed missions
+        // Completed missions (at least 1 block done)
         supabase.from("daily_plans").select("id")
           .gte("created_at", weekStart).gt("completed_count", 0),
         // Reviews done
         supabase.from("revisoes" as any).select("id")
           .gte("created_at", weekStart).eq("status", "concluida"),
-        // Practice attempts (questions answered)
+        // Practice attempts
         supabase.from("practice_attempts" as any).select("is_correct")
-          .gte("created_at", weekStart),
+          .gte("created_at", weekStart).limit(1000),
         // Tutor sessions
         supabase.from("chat_conversations").select("id")
           .gte("created_at", weekStart).eq("agent_type", "tutor"),
-        // Plantão sessions
+        // Plantão (clinical cases)
         supabase.from("clinical_cases").select("id")
           .gte("created_at", weekStart),
         // OSCE sessions
@@ -140,19 +129,17 @@ export default function AdminCEO() {
           .gte("created_at", weekStart).eq("success", false),
         // Total users
         supabase.from("profiles").select("*", { count: "exact", head: true }),
-        // Previous week active (for return rate)
-        supabase.from("session_tracking" as any).select("*", { count: "exact", head: true })
-          .gte("started_at", twoWeeksStart).lt("started_at", weekStart),
-        // Question accuracy
-        supabase.from("practice_attempts" as any).select("is_correct")
-          .gte("created_at", weekStart),
+        // Previous week active
+        supabase.from("module_sessions" as any).select("*", { count: "exact", head: true })
+          .gte("created_at", twoWeeksStart).lt("created_at", weekStart),
       ]);
 
-      // Calculate metrics
-      const sessionDurations = (sessions || []).map((s: any) => s.duration_seconds || 0);
-      const avgSessionMinutes = sessionDurations.length > 0
-        ? Math.round(sessionDurations.reduce((a: number, b: number) => a + b, 0) / sessionDurations.length / 60)
-        : 0;
+      // Unique users from module_sessions as proxy for active users
+      const uniqueUsersToday = new Set((moduleSessions || [])
+        .filter((s: any) => s.created_at >= todayStart)
+        .map((s: any) => s.user_id)).size;
+
+      const uniqueUsersWeek = new Set((moduleSessions || []).map((s: any) => s.user_id)).size;
 
       const missionsStarted = (dailyPlans || []).length;
       const missionsCompleted = (completedPlans || []).length;
@@ -173,8 +160,8 @@ export default function AdminCEO() {
         .slice(0, 5)
         .map(([fn, count]) => `${fn}: ${count}`);
 
-      // Return rate
-      const currentActive = activeWeek || 0;
+      // Engagement
+      const currentActive = uniqueUsersWeek || (activeWeek || 0);
       const prevActive = prevWeekActive || 0;
       const returnRate = prevActive > 0 ? Math.round((Math.min(currentActive, prevActive) / prevActive) * 100) : 0;
       const total = totalUsers || 1;
@@ -185,26 +172,25 @@ export default function AdminCEO() {
       const startRate = currentActive > 0 ? Math.round((uniqueStarters / currentActive) * 100) : 0;
 
       return {
-        activeToday: activeToday || 0,
-        activeWeek: activeWeek || 0,
-        avgSessionMinutes,
+        activeToday: uniqueUsersToday || (activeToday || 0),
+        activeWeek: uniqueUsersWeek || (activeWeek || 0),
+        avgSessionMinutes: 0, // no duration column available
         studyStarts: uniqueStarters,
         startRate,
         missionsStarted,
         missionsCompleted,
         missionCompletionRate: missionsStarted > 0 ? Math.round((missionsCompleted / missionsStarted) * 100) : 0,
         criticalErrors: errors.length,
-        mediumErrors: 0,
         topFailures,
         avgAccuracy,
         reviewsDone: (reviews || []).length,
-        avgEvolution: 0,
         tutorSessions: (chatConvos || []).length,
         questionsSessions: attempts.length,
         plantaoSessions: (clinicalSessions || []).length,
         osceSessions: (osceSessions || []).length,
         returnRate,
         dropoffRate,
+        totalUsers: totalUsers || 0,
       };
     },
     enabled: !!session,
@@ -223,7 +209,6 @@ export default function AdminCEO() {
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 animate-fade-in max-w-[1200px] mx-auto">
-      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
@@ -231,7 +216,7 @@ export default function AdminCEO() {
             Painel CEO
           </h1>
           <p className="text-xs text-muted-foreground">
-            {format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}
+            {format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })} • {m?.totalUsers ?? "—"} usuários
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -250,22 +235,19 @@ export default function AdminCEO() {
         </div>
       ) : m ? (
         <>
-          {/* 1. Uso do Sistema */}
           <SectionTitle icon={Users}>Uso do Sistema</SectionTitle>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <MetricBox icon={Users} label="Ativos hoje" value={m.activeToday} trend={m.activeToday > 0 ? "up" : "neutral"} />
             <MetricBox icon={Activity} label="Ativos na semana" value={m.activeWeek} trend={m.activeWeek > 5 ? "up" : "neutral"} />
-            <MetricBox icon={Clock} label="Tempo médio (min)" value={m.avgSessionMinutes} trend={m.avgSessionMinutes > 15 ? "up" : "down"} />
+            <MetricBox icon={Users} label="Total cadastrados" value={m.totalUsers} />
           </div>
 
-          {/* 2. Início de Estudo */}
           <SectionTitle icon={Zap}>Início de Estudo</SectionTitle>
           <div className="grid grid-cols-2 gap-3">
             <MetricBox icon={Zap} label="Clicaram 'Começar'" value={m.studyStarts} />
             <MetricBox icon={TrendingUp} label="Taxa de início" value={`${m.startRate}%`} trend={m.startRate > 50 ? "up" : "down"} />
           </div>
 
-          {/* 3. Missão */}
           <SectionTitle icon={Target}>Missão</SectionTitle>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <MetricBox icon={Target} label="Missões iniciadas" value={m.missionsStarted} />
@@ -273,7 +255,6 @@ export default function AdminCEO() {
             <MetricBox icon={TrendingUp} label="Taxa de conclusão" value={`${m.missionCompletionRate}%`} trend={m.missionCompletionRate > 50 ? "up" : "down"} />
           </div>
 
-          {/* 4. Erros do Sistema */}
           <SectionTitle icon={AlertTriangle}>Erros do Sistema</SectionTitle>
           <div className="grid grid-cols-2 gap-3">
             <MetricBox icon={XCircle} label="Erros de IA (semana)" value={m.criticalErrors} color="text-destructive" trend={m.criticalErrors > 5 ? "down" : "up"} />
@@ -293,7 +274,6 @@ export default function AdminCEO() {
             </Card>
           </div>
 
-          {/* 5. Qualidade do Estudo */}
           <SectionTitle icon={BookOpen}>Qualidade do Estudo</SectionTitle>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <MetricBox icon={CheckCircle} label="Taxa de acerto" value={`${m.avgAccuracy}%`} trend={m.avgAccuracy >= 60 ? "up" : "down"} color="text-emerald-500" />
@@ -301,7 +281,6 @@ export default function AdminCEO() {
             <MetricBox icon={TrendingUp} label="Questões respondidas" value={m.questionsSessions} />
           </div>
 
-          {/* 6. Uso dos Módulos */}
           <SectionTitle icon={Brain}>Uso dos Módulos</SectionTitle>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <MetricBox icon={Brain} label="Tutor IA" value={m.tutorSessions} />
@@ -310,7 +289,6 @@ export default function AdminCEO() {
             <MetricBox icon={Activity} label="OSCE" value={m.osceSessions} />
           </div>
 
-          {/* 7. Engajamento */}
           <SectionTitle icon={TrendingUp}>Engajamento</SectionTitle>
           <div className="grid grid-cols-2 gap-3">
             <MetricBox icon={ArrowUpRight} label="Taxa de retorno" value={`${m.returnRate}%`} trend={m.returnRate > 50 ? "up" : "down"} color="text-emerald-500" />
