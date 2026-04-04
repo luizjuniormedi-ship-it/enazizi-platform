@@ -850,14 +850,10 @@ export async function generateRecommendations({ userId, coreData }: EngineInput)
     });
   }
 
-  // ── Curriculum-based priority boost (from curriculum_matrix) ────
-  const { data: matrixTopics } = await supabase
-    .from("curriculum_matrix")
-    .select("subtema, tema, especialidade")
-    .eq("ativo", true)
-    .limit(300);
-  const matrixSet = new Set((matrixTopics || []).map((m: any) => (m.subtema || "").toLowerCase()));
-  const matrixTemaSet = new Set((matrixTopics || []).map((m: any) => (m.tema || "").toLowerCase()));
+  // ── Curriculum-based priority boost (using curriculum bridge) ────
+  const allCurriculumTopics = await fetchAllCurriculumTopics();
+  const matrixSet = new Set(allCurriculumTopics.map(m => (m.subtema || "").toLowerCase()));
+  const matrixTemaSet = new Set(allCurriculumTopics.map(m => (m.tema || "").toLowerCase()));
   const CURRICULUM_BOOST = 8;
   for (const rec of recs) {
     const topicLower = (rec.topic || "").toLowerCase();
