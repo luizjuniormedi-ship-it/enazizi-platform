@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { useCoreData } from "./useCoreData";
 
 export interface DashboardStats {
   flashcards: number;
@@ -49,228 +50,208 @@ interface PlanJson {
   config?: { examDate: string; hoursPerDay: number; daysPerWeek: number };
 }
 
-async function fetchDashboardData(userId: string) {
- try {
-  const safeCount = async (fn: () => PromiseLike<{ count: number | null; error: any }>, label: string) => {
-    try { const { count, error } = await fn(); if (error) console.warn(`[Dashboard] ${label}:`, error.message); return count || 0; }
-    catch { return 0; }
-  };
-
-  const [
-    flashcardsRes, uploadsRes, tasksRes, plansRes, reviewsRes, profileRes,
-    practiceRes, errorBankRes, pendingRevisoesRes, simuladosRes, discursivasRes,
-    gamificationRes, globalFlashRes, globalQuestRes,
-    questionsCreatedRes, clinicalSimRes, anamnesisRes, summariesRes,
-    chroniclesRes, imageQuizRes, diagnosticRes,
-  ] = await Promise.all([
-    supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    supabase.from("study_tasks").select("completed, created_at, task_json").eq("user_id", userId),
-    supabase.from("study_plans").select("plan_json").eq("user_id", userId).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
-    supabase.from("reviews").select("next_review, flashcard_id, flashcards(topic)").eq("user_id", userId).gte("next_review", new Date().toISOString()).order("next_review", { ascending: true }).limit(5),
-    supabase.from("profiles").select("display_name, has_completed_diagnostic").eq("user_id", userId).maybeSingle(),
-    supabase.from("practice_attempts").select("correct, created_at").eq("user_id", userId),
-    supabase.from("error_bank").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    supabase.from("revisoes").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "pendente").lte("data_revisao", new Date().toISOString().split("T")[0]),
-    supabase.from("exam_sessions").select("id, total_questions, score", { count: "exact" }).eq("user_id", userId).eq("status", "finished"),
-    supabase.from("discursive_attempts").select("id", { count: "exact", head: true }).eq("user_id", userId).not("finished_at", "is", null),
-    supabase.from("user_gamification").select("current_streak, xp, level").eq("user_id", userId).maybeSingle(),
-    supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("is_global", true),
-    supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("is_global", true).eq("review_status", "approved"),
-    supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    supabase.from("simulation_sessions").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "finished"),
-    supabase.from("anamnesis_results").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    supabase.from("summaries").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    supabase.from("chat_conversations").select("id, agent_type", { count: "exact" }).eq("user_id", userId),
-    supabase.from("medical_image_attempts").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    supabase.from("diagnostic_results").select("id", { count: "exact", head: true }).eq("user_id", userId),
-  ]);
-
-  const [teacherSimuladoRes, teacherClinicalRes] = await Promise.all([
-    supabase.from("teacher_simulado_results").select("total_questions, score").eq("student_id", userId),
-    supabase.from("teacher_clinical_case_results").select("id", { count: "exact", head: true }).eq("student_id", userId),
-  ]);
-
-  const displayName = profileRes.data?.display_name || null;
-  const hasCompletedDiagnostic = profileRes.data?.has_completed_diagnostic || false;
-
-  // Fetch target exams separately
-  let targetExams: string[] = [];
-  try {
-    const { data: examProfile } = await supabase
-      .from("profiles")
-      .select("target_exams, target_exam")
-      .eq("user_id", userId)
-      .maybeSingle();
-    const ep = examProfile as any;
-    if (Array.isArray(ep?.target_exams) && ep.target_exams.length > 0) {
-      targetExams = ep.target_exams;
-    } else if (ep?.target_exam) {
-      targetExams = [ep.target_exam];
-    }
-  } catch {}
-
-  // Calculate accuracy and questions today
-  const practiceAttempts = practiceRes.data || [];
-  const todayStr = new Date().toISOString().split("T")[0];
-  const questionsToday = practiceAttempts.filter((a: any) => a.created_at?.startsWith(todayStr)).length;
-  const practiceCorrect = practiceAttempts.filter((a: any) => a.correct).length;
-  const practiceTotal = practiceAttempts.length;
-
-  const examData = simuladosRes.data || [];
-  const examQuestionsTotal = examData.reduce((sum: number, e: any) => sum + (e.total_questions || 0), 0);
-  const examCorrectTotal = examData.reduce((sum: number, e: any) => {
-    const total = e.total_questions || 0;
-    return sum + Math.round(((e.score || 0) / 100) * total);
-  }, 0);
-
-  const teacherSimData = teacherSimuladoRes.data || [];
-  const teacherQuestionsTotal = teacherSimData.reduce((sum: number, e: any) => sum + (e.total_questions || 0), 0);
-  const teacherCorrectTotal = teacherSimData.reduce((sum: number, e: any) => {
-    const total = e.total_questions || 0;
-    return sum + Math.round(((e.score || 0) / 100) * total);
-  }, 0);
-
-  const teacherClinicalCount = teacherClinicalRes.count || 0;
-  const questionsAnswered = practiceTotal + examQuestionsTotal + teacherQuestionsTotal;
-  const totalCorrect = practiceCorrect + examCorrectTotal + teacherCorrectTotal;
-  const accuracy = questionsAnswered > 0 ? Math.min(Math.round((totalCorrect / questionsAnswered) * 100), 100) : 0;
-
-  const totalSimulados = (simuladosRes.count || 0) + teacherSimData.length;
-  const totalClinical = (clinicalSimRes.count || 0) + teacherClinicalCount;
-  const gamData = gamificationRes.data;
-
-  const metrics: DashboardMetrics = {
-    questionsAnswered,
-    accuracy,
-    errorsCount: errorBankRes.count || 0,
-    pendingRevisoes: pendingRevisoesRes.count || 0,
-    simuladosCompleted: totalSimulados,
-    discursivasCompleted: discursivasRes.count || 0,
-    gamificationStreak: gamData?.current_streak || 0,
-    gamificationXp: gamData?.xp || 0,
-    gamificationLevel: gamData?.level || 1,
-    globalFlashcards: globalFlashRes.count || 0,
-    globalQuestions: globalQuestRes.count || 0,
-    questionsCreated: questionsCreatedRes.count || 0,
-    clinicalSimulations: totalClinical,
-    anamnesisCompleted: anamnesisRes.count || 0,
-    summariesCreated: summariesRes.count || 0,
-    chroniclesCompleted: (chroniclesRes.data || []).filter((c: any) => c.agent_type === "medical-chronicle").length,
-    imageQuizAttempts: imageQuizRes.count || 0,
-    diagnosticCompleted: diagnosticRes.count || 0,
-    chatConversations: chroniclesRes.count || 0,
-  };
-
-  // Build stats
-  const tasks = tasksRes.data || [];
-  const completedTasks = tasks.filter((t: any) => t.completed).length;
-
-  const weekMap: Record<string, { hours: number; timestamp: number }> = {};
-  for (const task of tasks) {
-    if (!(task as any).completed) continue;
-    const date = new Date((task as any).created_at);
-    const weekStart = new Date(date);
-    weekStart.setDate(date.getDate() - date.getDay());
-    weekStart.setHours(0, 0, 0, 0);
-    const key = `${String(weekStart.getDate()).padStart(2, "0")}/${String(weekStart.getMonth() + 1).padStart(2, "0")}`;
-    const taskJson = (task as any).task_json as any;
-    const durationMatch = taskJson?.duration?.match?.(/(\d+(?:\.\d+)?)/);
-    const hours = durationMatch ? parseFloat(durationMatch[1]) : 1;
-    if (!weekMap[key]) weekMap[key] = { hours: 0, timestamp: weekStart.getTime() };
-    weekMap[key].hours += hours;
-  }
-  const weeklyChart = Object.entries(weekMap)
-    .sort((a, b) => a[1].timestamp - b[1].timestamp)
-    .map(([week, { hours, timestamp }]) => ({ week, hours: Math.round(hours * 10) / 10, timestamp }));
-
-  const plan = plansRes.data?.plan_json as PlanJson | null;
-  const hasStudyPlan = plan !== null && !!plan?.weeklySchedule;
-  const subjects = plan?.subjects || [];
-  const subjectHours: Record<string, number> = {};
-  let totalStudyHours = 0;
-
-  if (plan?.weeklySchedule) {
-    for (const day of plan.weeklySchedule) {
-      for (const task of day.tasks) {
-        const match = task.duration.match(/(\d+(?:\.\d+)?)/);
-        const hours = match ? parseFloat(match[1]) : 1;
-        subjectHours[task.subject] = (subjectHours[task.subject] || 0) + hours;
-        totalStudyHours += hours;
-      }
-    }
-  }
-
-  let daysUntilExam: number | null = null;
-  if (plan?.config?.examDate) {
-    const diff = new Date(plan.config.examDate).getTime() - Date.now();
-    if (diff > 0) daysUntilExam = Math.ceil(diff / (1000 * 60 * 60 * 24));
-  }
-
-  const upcomingReviews = (reviewsRes.data || []).map((r: any) => ({
-    topic: r.flashcards?.topic || "Sem tópico",
-    next: r.next_review,
-  }));
-
-  const DAY_MAP: Record<string, number> = { Dom: 0, Seg: 1, Ter: 2, Qua: 3, Qui: 4, Sex: 5, "Sáb": 6, Sab: 6 };
-  const todayDow = new Date().getDay();
-  const todaySchedule = plan?.weeklySchedule?.find((d) => DAY_MAP[d.day] === todayDow);
-  const todayTotal = todaySchedule?.tasks.length || 0;
-  const completedToday = tasks.filter((t: any) => {
-    if (!t.completed) return false;
-    const d = new Date(t.created_at);
-    const now = new Date();
-    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
-  });
-
-  const stats: DashboardStats = {
-    flashcards: flashcardsRes.count || 0,
-    uploads: uploadsRes.count || 0,
-    completedTasks,
-    totalTasks: tasks.length,
-    totalStudyHours,
-    subjects,
-    subjectHours,
-    upcomingReviews,
-    daysUntilExam,
-    weeklyChart,
-    streak: gamData?.current_streak || 0,
-    todayCompleted: completedToday.length,
-    todayTotal,
-    questionsToday,
-    hasStudyPlan,
-  };
-
-  return { stats, metrics, displayName, hasCompletedDiagnostic, targetExams };
- } catch (err: any) {
-    console.warn("[Dashboard] fetchDashboardData falhou:", err?.message || err);
-    // Return safe defaults so Dashboard never crashes
-    const emptyStats: DashboardStats = {
-      flashcards: 0, uploads: 0, completedTasks: 0, totalTasks: 0,
-      totalStudyHours: 0, subjects: [], subjectHours: {},
-      upcomingReviews: [], daysUntilExam: null, weeklyChart: [],
-      streak: 0, todayCompleted: 0, todayTotal: 0, questionsToday: 0, hasStudyPlan: false,
-    };
-    const emptyMetrics: DashboardMetrics = {
-      questionsAnswered: 0, accuracy: 0, errorsCount: 0, pendingRevisoes: 0,
-      simuladosCompleted: 0, discursivasCompleted: 0,
-      gamificationStreak: 0, gamificationXp: 0, gamificationLevel: 1,
-      globalFlashcards: 0, globalQuestions: 0, questionsCreated: 0,
-      clinicalSimulations: 0, anamnesisCompleted: 0, summariesCreated: 0,
-      chroniclesCompleted: 0, imageQuizAttempts: 0, diagnosticCompleted: 0, chatConversations: 0,
-    };
-    return { stats: emptyStats, metrics: emptyMetrics, displayName: null, hasCompletedDiagnostic: false, targetExams: [] as string[] };
-  }
-}
-
 export const useDashboardData = () => {
   const { user } = useAuth();
+  const { data: coreData } = useCoreData();
 
   return useQuery({
-    queryKey: ["dashboard-data", user?.id],
-    queryFn: () => fetchDashboardData(user!.id),
-    enabled: !!user,
-    staleTime: 30 * 1000, // 30s - refresh quickly after module activities
+    queryKey: ["dashboard-data", user?.id, !!coreData],
+    queryFn: async () => {
+      const userId = user!.id;
+      const cd = coreData!;
+
+      try {
+        // Only queries NOT covered by coreData
+        const [
+          flashcardsRes, uploadsRes, tasksRes, plansRes, reviewsRes,
+          discursivasRes, globalFlashRes, globalQuestRes,
+          questionsCreatedRes, summariesRes, chroniclesRes,
+          imageQuizRes, diagnosticRes,
+        ] = await Promise.all([
+          supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", userId),
+          supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", userId),
+          supabase.from("study_tasks").select("completed, created_at, task_json").eq("user_id", userId),
+          supabase.from("study_plans").select("plan_json").eq("user_id", userId).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+          supabase.from("reviews").select("next_review, flashcard_id, flashcards(topic)").eq("user_id", userId).gte("next_review", new Date().toISOString()).order("next_review", { ascending: true }).limit(5),
+          supabase.from("discursive_attempts").select("id", { count: "exact", head: true }).eq("user_id", userId).not("finished_at", "is", null),
+          supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("is_global", true),
+          supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("is_global", true).eq("review_status", "approved"),
+          supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("user_id", userId),
+          supabase.from("summaries").select("id", { count: "exact", head: true }).eq("user_id", userId),
+          supabase.from("chat_conversations").select("id, agent_type", { count: "exact" }).eq("user_id", userId),
+          supabase.from("medical_image_attempts").select("id", { count: "exact", head: true }).eq("user_id", userId),
+          supabase.from("diagnostic_results").select("id", { count: "exact", head: true }).eq("user_id", userId),
+        ]);
+
+        const [teacherSimuladoRes, teacherClinicalRes] = await Promise.all([
+          supabase.from("teacher_simulado_results").select("total_questions, score").eq("student_id", userId),
+          supabase.from("teacher_clinical_case_results").select("id", { count: "exact", head: true }).eq("student_id", userId),
+        ]);
+
+        // Use coreData for shared data
+        const practiceAttempts = cd.practiceAttempts;
+        const todayStr = new Date().toISOString().split("T")[0];
+        const questionsToday = practiceAttempts.filter(a => a.created_at?.startsWith(todayStr)).length;
+        const practiceCorrect = practiceAttempts.filter(a => a.correct).length;
+        const practiceTotal = practiceAttempts.length;
+
+        const examData = cd.examSessions;
+        const examQuestionsTotal = examData.reduce((sum, e) => sum + (e.total_questions || 0), 0);
+        const examCorrectTotal = examData.reduce((sum, e) => {
+          const total = e.total_questions || 0;
+          return sum + Math.round(((e.score || 0) / 100) * total);
+        }, 0);
+
+        const teacherSimData = teacherSimuladoRes.data || [];
+        const teacherQuestionsTotal = teacherSimData.reduce((sum: number, e: any) => sum + (e.total_questions || 0), 0);
+        const teacherCorrectTotal = teacherSimData.reduce((sum: number, e: any) => {
+          const total = e.total_questions || 0;
+          return sum + Math.round(((e.score || 0) / 100) * total);
+        }, 0);
+
+        const teacherClinicalCount = teacherClinicalRes.count || 0;
+        const questionsAnswered = practiceTotal + examQuestionsTotal + teacherQuestionsTotal;
+        const totalCorrect = practiceCorrect + examCorrectTotal + teacherCorrectTotal;
+        const accuracy = questionsAnswered > 0 ? Math.min(Math.round((totalCorrect / questionsAnswered) * 100), 100) : 0;
+
+        const pendingRevisoes = cd.revisoes.filter(r => {
+          if (r.status !== "pendente") return false;
+          return r.data_revisao <= todayStr;
+        }).length;
+
+        const totalSimulados = examData.length + teacherSimData.length;
+        const totalClinical = cd.simulationSessionsCount + teacherClinicalCount;
+        const gamData = cd.gamification;
+
+        const metrics: DashboardMetrics = {
+          questionsAnswered,
+          accuracy,
+          errorsCount: cd.errorBankCount,
+          pendingRevisoes,
+          simuladosCompleted: totalSimulados,
+          discursivasCompleted: discursivasRes.count || 0,
+          gamificationStreak: gamData?.current_streak || 0,
+          gamificationXp: gamData?.xp || 0,
+          gamificationLevel: gamData?.level || 1,
+          globalFlashcards: globalFlashRes.count || 0,
+          globalQuestions: globalQuestRes.count || 0,
+          questionsCreated: questionsCreatedRes.count || 0,
+          clinicalSimulations: totalClinical,
+          anamnesisCompleted: cd.anamnesisResults.length,
+          summariesCreated: summariesRes.count || 0,
+          chroniclesCompleted: (chroniclesRes.data || []).filter((c: any) => c.agent_type === "medical-chronicle").length,
+          imageQuizAttempts: imageQuizRes.count || 0,
+          diagnosticCompleted: diagnosticRes.count || 0,
+          chatConversations: chroniclesRes.count || 0,
+        };
+
+        // Build stats
+        const tasks = tasksRes.data || [];
+        const completedTasks = tasks.filter((t: any) => t.completed).length;
+
+        const weekMap: Record<string, { hours: number; timestamp: number }> = {};
+        for (const task of tasks) {
+          if (!(task as any).completed) continue;
+          const date = new Date((task as any).created_at);
+          const weekStart = new Date(date);
+          weekStart.setDate(date.getDate() - date.getDay());
+          weekStart.setHours(0, 0, 0, 0);
+          const key = `${String(weekStart.getDate()).padStart(2, "0")}/${String(weekStart.getMonth() + 1).padStart(2, "0")}`;
+          const taskJson = (task as any).task_json as any;
+          const durationMatch = taskJson?.duration?.match?.(/(\d+(?:\.\d+)?)/);
+          const hours = durationMatch ? parseFloat(durationMatch[1]) : 1;
+          if (!weekMap[key]) weekMap[key] = { hours: 0, timestamp: weekStart.getTime() };
+          weekMap[key].hours += hours;
+        }
+        const weeklyChart = Object.entries(weekMap)
+          .sort((a, b) => a[1].timestamp - b[1].timestamp)
+          .map(([week, { hours, timestamp }]) => ({ week, hours: Math.round(hours * 10) / 10, timestamp }));
+
+        const plan = plansRes.data?.plan_json as PlanJson | null;
+        const hasStudyPlan = plan !== null && !!plan?.weeklySchedule;
+        const subjects = plan?.subjects || [];
+        const subjectHours: Record<string, number> = {};
+        let totalStudyHours = 0;
+
+        if (plan?.weeklySchedule) {
+          for (const day of plan.weeklySchedule) {
+            for (const task of day.tasks) {
+              const match = task.duration.match(/(\d+(?:\.\d+)?)/);
+              const hours = match ? parseFloat(match[1]) : 1;
+              subjectHours[task.subject] = (subjectHours[task.subject] || 0) + hours;
+              totalStudyHours += hours;
+            }
+          }
+        }
+
+        let daysUntilExam: number | null = null;
+        if (plan?.config?.examDate) {
+          const diff = new Date(plan.config.examDate).getTime() - Date.now();
+          if (diff > 0) daysUntilExam = Math.ceil(diff / (1000 * 60 * 60 * 24));
+        }
+
+        const upcomingReviews = (reviewsRes.data || []).map((r: any) => ({
+          topic: r.flashcards?.topic || "Sem tópico",
+          next: r.next_review,
+        }));
+
+        const DAY_MAP: Record<string, number> = { Dom: 0, Seg: 1, Ter: 2, Qua: 3, Qui: 4, Sex: 5, "Sáb": 6, Sab: 6 };
+        const todayDow = new Date().getDay();
+        const todaySchedule = plan?.weeklySchedule?.find((d) => DAY_MAP[d.day] === todayDow);
+        const todayTotal = todaySchedule?.tasks.length || 0;
+        const completedToday = tasks.filter((t: any) => {
+          if (!t.completed) return false;
+          const d = new Date(t.created_at);
+          const now = new Date();
+          return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+        });
+
+        const stats: DashboardStats = {
+          flashcards: flashcardsRes.count || 0,
+          uploads: uploadsRes.count || 0,
+          completedTasks,
+          totalTasks: tasks.length,
+          totalStudyHours,
+          subjects,
+          subjectHours,
+          upcomingReviews,
+          daysUntilExam,
+          weeklyChart,
+          streak: gamData?.current_streak || 0,
+          todayCompleted: completedToday.length,
+          todayTotal,
+          questionsToday,
+          hasStudyPlan,
+        };
+
+        return {
+          stats,
+          metrics,
+          displayName: cd.profile.display_name,
+          hasCompletedDiagnostic: cd.profile.has_completed_diagnostic,
+          targetExams: cd.profile.target_exams,
+        };
+      } catch (err: any) {
+        console.warn("[Dashboard] fetchDashboardData falhou:", err?.message || err);
+        const emptyStats: DashboardStats = {
+          flashcards: 0, uploads: 0, completedTasks: 0, totalTasks: 0,
+          totalStudyHours: 0, subjects: [], subjectHours: {},
+          upcomingReviews: [], daysUntilExam: null, weeklyChart: [],
+          streak: 0, todayCompleted: 0, todayTotal: 0, questionsToday: 0, hasStudyPlan: false,
+        };
+        const emptyMetrics: DashboardMetrics = {
+          questionsAnswered: 0, accuracy: 0, errorsCount: 0, pendingRevisoes: 0,
+          simuladosCompleted: 0, discursivasCompleted: 0,
+          gamificationStreak: 0, gamificationXp: 0, gamificationLevel: 1,
+          globalFlashcards: 0, globalQuestions: 0, questionsCreated: 0,
+          clinicalSimulations: 0, anamnesisCompleted: 0, summariesCreated: 0,
+          chroniclesCompleted: 0, imageQuizAttempts: 0, diagnosticCompleted: 0, chatConversations: 0,
+        };
+        return { stats: emptyStats, metrics: emptyMetrics, displayName: null, hasCompletedDiagnostic: false, targetExams: [] as string[] };
+      }
+    },
+    enabled: !!user && !!coreData,
+    staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: true,
   });

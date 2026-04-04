@@ -9,10 +9,10 @@ export function useDashboardInvalidation() {
   const queryClient = useQueryClient();
 
   const invalidateAll = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["core-data"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
     queryClient.invalidateQueries({ queryKey: ["study-engine"] });
     queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
-    queryClient.invalidateQueries({ queryKey: ["preparation-index"] });
     queryClient.invalidateQueries({ queryKey: ["weekly-goals"] });
     queryClient.invalidateQueries({ queryKey: ["mission-mode"] });
   }, [queryClient]);

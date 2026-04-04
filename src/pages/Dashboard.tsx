@@ -40,6 +40,7 @@ import DailyGoalWidget from "@/components/dashboard/DailyGoalWidget";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useMessageDelivery } from "@/hooks/useMessageDelivery";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useCoreData } from "@/hooks/useCoreData";
 import { fireCelebration } from "@/lib/celebrations";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -82,6 +83,7 @@ const Dashboard = () => {
 const queryClient = useQueryClient();
   const { user } = useAuth();
   const { evaluateAndDeliver } = useMessageDelivery();
+  useCoreData(); // preload shared data layer
   const { data, isLoading } = useDashboardData();
   const prevLevelRef = useRef<number | null>(null);
   const prevStreakRef = useRef<number | null>(null);
@@ -90,6 +92,7 @@ const queryClient = useQueryClient();
 
   // Invalidate all dashboard-related caches on mount (returning from modules)
   useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["core-data"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
     queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
     queryClient.invalidateQueries({ queryKey: ["study-engine"] });
@@ -100,12 +103,15 @@ const queryClient = useQueryClient();
   useEffect(() => {
     if (!user?.id) return;
     const invalidateAll = () => {
+      queryClient.invalidateQueries({ queryKey: ["core-data"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
       queryClient.invalidateQueries({ queryKey: ["study-engine"] });
       queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
-      queryClient.invalidateQueries({ queryKey: ["preparation-index"] });
     };
-    const invalidateDash = () => queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+    const invalidateDash = () => {
+      queryClient.invalidateQueries({ queryKey: ["core-data"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+    };
     const channel = supabase
       .channel('dashboard-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'practice_attempts', filter: `user_id=eq.${user.id}` }, invalidateAll)
