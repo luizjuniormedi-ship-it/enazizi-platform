@@ -93,12 +93,15 @@ const HeroSection = () => {
         </div>
 
         <div
-          className="mt-4 animate-fade-in"
+          className="mt-6 animate-fade-in"
           style={{ animationDelay: "0.4s" }}
         >
-          <Button variant="link" asChild className="text-white/80 hover:text-white text-sm sm:text-base underline underline-offset-4">
-            <Link to="/login">Já tem conta? Entrar</Link>
-          </Button>
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-2 text-white font-semibold text-base sm:text-lg bg-white/15 hover:bg-white/25 backdrop-blur-sm px-6 py-3 rounded-full border border-white/30 transition-all"
+          >
+            Já tem conta? <span className="text-primary font-bold">Entrar</span>
+          </Link>
         </div>
 
         {/* Scroll hint */}
