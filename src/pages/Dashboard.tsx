@@ -40,6 +40,7 @@ import DailyGoalWidget from "@/components/dashboard/DailyGoalWidget";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useMessageDelivery } from "@/hooks/useMessageDelivery";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useCoreData } from "@/hooks/useCoreData";
 import { fireCelebration } from "@/lib/celebrations";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
