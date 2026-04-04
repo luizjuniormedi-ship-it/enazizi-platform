@@ -7,6 +7,10 @@ import type { StudyTaskType, StudyObjective } from "./studyContext";
 import { getExamProfile, getMergedExamProfile, applyExamModifiers, type ExamProfile } from "./examProfiles";
 import { fetchCurriculumForEngine, fetchAllCurriculumTopics } from "./curriculumBridge";
 import { saveStudyEngineSnapshot } from "./dualWrite";
+import {
+  loadActiveRecoveryRun, startRecoveryRun, endRecoveryRun,
+  updateRecoveryPhase, logRecoveryEvent, type ActiveRecoveryRun,
+} from "./recoveryPersistence";
 
 export type RecommendationType = "review" | "practice" | "clinical" | "new" | "error_review" | "simulado" | "chronicle";
 export type TargetModule = "tutor" | "questoes" | "flashcards" | "plantao" | "anamnese" | "simulado" | "cronograma" | "banco-erros" | "cronicas";
