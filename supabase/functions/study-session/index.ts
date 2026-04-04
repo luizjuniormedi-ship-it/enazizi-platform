@@ -388,7 +388,7 @@ REGRAS do mapa:
       };
       const angle = angleMap[errorCategory] || "conceito-chave";
 
-      return `${base}
+      return `${getReinforcementPrompt()}
 ${levelPrompt}
 FASE ATUAL: LOOP DE REFORÇO INTELIGENTE (ciclo ${cycle}/2)
 Tema: "${errorTopic}"
