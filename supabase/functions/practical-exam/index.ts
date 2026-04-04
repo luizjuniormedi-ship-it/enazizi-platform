@@ -120,6 +120,7 @@ serve(async (req) => {
     const { action, specialty, difficulty, steps, answers, times, case_summary } = body;
 
     if (action === "generate_case") {
+      const startMs = Date.now();
       const response = await aiFetch({
         model: "google/gemini-2.5-flash",
         messages: [
@@ -132,10 +133,12 @@ serve(async (req) => {
         maxTokens: 4096,
         timeoutMs: 30000,
       });
+      const elapsed = Date.now() - startMs;
 
       if (!response.ok) {
         const errText = await response.text();
         console.error("AI error:", errText.slice(0, 300));
+        logAiUsage({ userId: user.id, functionName: "practical-exam", modelUsed: "google/gemini-2.5-flash", success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast", errorMessage: `status ${response.status}` }).catch(() => {});
         return new Response(JSON.stringify({ error: "Erro ao gerar caso clínico" }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -144,6 +147,7 @@ serve(async (req) => {
       const aiData = await response.json();
       const content = aiData.choices?.[0]?.message?.content || "";
       const parsed = parseAiJson(content);
+      logAiUsage({ userId: user.id, functionName: "practical-exam", modelUsed: "google/gemini-2.5-flash", success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast" }).catch(() => {});
 
       return new Response(JSON.stringify(parsed), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

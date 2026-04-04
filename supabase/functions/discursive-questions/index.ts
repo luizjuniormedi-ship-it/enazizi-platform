@@ -96,6 +96,7 @@ REGRA: Gere SEMPRE entre 2 e 4 sub-perguntas separadas, cada uma focada em um as
         if (!jsonMatch) throw new Error("Erro ao processar questão gerada");
 
         const questionData = JSON.parse(jsonMatch[0]);
+        logAiUsage({ userId: user.id, functionName: "discursive-questions", modelUsed: "google/gemini-2.5-flash", success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast" }).catch(() => {});
 
         // Validate AI output
         const validation = validateAIOutput(questionData, { specialty }, "discursiva");
