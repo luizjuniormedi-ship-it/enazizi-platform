@@ -757,8 +757,8 @@ export async function generateRecommendations({ userId, coreData }: EngineInput)
     const temas = (temasData || []) as any[];
     const studiedSpecialties = new Set(temas.map((t: any) => t.especialidade));
     const CORE_SPECIALTIES = [
-      "Clínica Médica", "Cirurgia", "Pediatria", "Ginecologia e Obstetrícia",
-      "Saúde Coletiva", "Medicina de Emergência",
+      "Clínica Médica", "Cirurgia Geral", "Pediatria", "Ginecologia e Obstetrícia",
+      "Medicina Preventiva", "Urgência e Emergência", "Saúde Mental",
     ];
     const unexplored = CORE_SPECIALTIES.filter((s) => !studiedSpecialties.has(s));
 
@@ -779,29 +779,58 @@ export async function generateRecommendations({ userId, coreData }: EngineInput)
       });
     }
 
-    // ── 6b. Curriculum gap filler — suggest unstudied curriculum topics ──
-    const { getCurriculumBySpecialty } = await import("@/constants/baseCurriculum");
-    const curriculumBySpec = getCurriculumBySpecialty();
+    // ── 6b. Curriculum gap filler — from curriculum_matrix with banca weights ──
     const studiedTopicNames = new Set(temas.map((t: any) => (t.tema || "").toLowerCase()));
-    const curriculumGaps: { topic: string; specialty: string }[] = [];
-    for (const [spec, topics] of Object.entries(curriculumBySpec)) {
-      for (const topic of topics) {
-        if (!studiedTopicNames.has(topic.toLowerCase()) &&
-            ![...studiedTopicNames].some(st => st.includes(topic.toLowerCase().slice(0, 10)))) {
-          curriculumGaps.push({ topic, specialty: spec });
-        }
+    const userBancas = Array.isArray(targetExams) && targetExams.length > 0 ? targetExams : ["ENARE"];
+    const bancaWeightCol = (b: string): string => {
+      const map: Record<string, string> = { "ENARE": "peso_banca_enare", "USP": "peso_banca_usp", "SUS-SP": "peso_banca_sus_sp", "UNICAMP": "peso_banca_unicamp", "UNIFESP": "peso_banca_unifesp" };
+      return map[b.toUpperCase()] || "peso_banca_enare";
+    };
+    const primaryBancaCol = bancaWeightCol(userBancas[0]);
+
+    const { data: matrixData } = await supabase
+      .from("curriculum_matrix")
+      .select("subtema, tema, especialidade, prioridade_base, incidencia_geral, tipo_cobranca, dificuldade_base, pre_requisitos, " + primaryBancaCol)
+      .eq("ativo", true)
+      .gte("prioridade_base", 6)
+      .order(primaryBancaCol, { ascending: false })
+      .order("prioridade_base", { ascending: false })
+      .limit(80);
+
+    const curriculumGaps: { topic: string; specialty: string; subtema: string; bancaPeso: number; prioridade: number; incidencia: string }[] = [];
+    for (const item of (matrixData || []) as any[]) {
+      const subLower = (item.subtema || "").toLowerCase();
+      const temaLower = (item.tema || "").toLowerCase();
+      const alreadyStudied = studiedTopicNames.has(subLower) ||
+        studiedTopicNames.has(temaLower) ||
+        [...studiedTopicNames].some(st => st.includes(subLower.slice(0, 12)) || subLower.includes(st.slice(0, 12)));
+      if (!alreadyStudied) {
+        curriculumGaps.push({
+          topic: item.subtema,
+          specialty: item.especialidade,
+          subtema: item.tema,
+          bancaPeso: item[primaryBancaCol] || 5,
+          prioridade: item.prioridade_base,
+          incidencia: item.incidencia_geral,
+        });
       }
     }
-    // Add up to 2 curriculum gap recs (lower priority than errors/reviews)
-    for (let i = 0; i < Math.min(curriculumGaps.length, 2); i++) {
+    // Sort by banca weight desc, then priority desc
+    curriculumGaps.sort((a, b) => (b.bancaPeso - a.bancaPeso) || (b.prioridade - a.prioridade));
+
+    // Add up to 3 curriculum gap recs with banca-aware priority
+    for (let i = 0; i < Math.min(curriculumGaps.length, 3); i++) {
       const gap = curriculumGaps[i];
+      const bancaBoost = gap.bancaPeso >= 9 ? 10 : gap.bancaPeso >= 7 ? 5 : 0;
+      const incidenciaBoost = gap.incidencia === "altissima" ? 8 : gap.incidencia === "alta" ? 4 : 0;
       addRec({
         id: id("curriculum", i),
         type: "new",
         topic: gap.topic,
         specialty: gap.specialty,
-        priority: cap(40 - i * 5),
-        reason: `📚 Tema do cronograma base: "${gap.topic}" (${gap.specialty}). Garanta cobertura completa.`,
+        subtopic: gap.subtema,
+        priority: cap(42 + bancaBoost + incidenciaBoost - i * 3),
+        reason: `📚 ${gap.topic} (${gap.specialty} → ${gap.subtema}) — peso ${gap.bancaPeso}/10 na ${userBancas[0]}. Cobertura obrigatória.`,
         targetModule: "tutor",
         targetPath: "/dashboard/chatgpt",
         estimatedMinutes: 25,
