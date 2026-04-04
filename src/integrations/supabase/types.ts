@@ -3577,6 +3577,7 @@ export type Database = {
           organization_id: string | null
           original_question_id: string | null
           permission_type: string | null
+          quality_tier: string
           question_order: number | null
           review_status: string | null
           source: string | null
@@ -3601,6 +3602,7 @@ export type Database = {
           organization_id?: string | null
           original_question_id?: string | null
           permission_type?: string | null
+          quality_tier?: string
           question_order?: number | null
           review_status?: string | null
           source?: string | null
@@ -3625,6 +3627,7 @@ export type Database = {
           organization_id?: string | null
           original_question_id?: string | null
           permission_type?: string | null
+          quality_tier?: string
           question_order?: number | null
           review_status?: string | null
           source?: string | null
