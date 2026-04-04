@@ -35,6 +35,12 @@ Deno.serve(async (req) => {
 
     // ── DASHBOARD MODE: return comprehensive metrics ──
     if (mode === "dashboard") {
+      // Check cache first
+      if (cachedDashResult && Date.now() - cachedDashResult.ts < CACHE_TTL_MS) {
+        return new Response(JSON.stringify(cachedDashResult.data), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const now = new Date();
       const today = now.toISOString().split("T")[0];
       const yesterday = new Date(now.getTime() - 86400000).toISOString();
