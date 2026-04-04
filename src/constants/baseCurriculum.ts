@@ -107,6 +107,7 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   // Semana 14
   { week: 14, topic: "Síndromes Genéticas e Erros Inatos", specialty: "Pediatria" },
   { week: 14, topic: "Abdome Agudo Vascular", specialty: "Cirurgia" },
+  { week: 14, topic: "Avaliação Pré-Operatória Clínica", specialty: "Clínica Médica" },
   // Semana 15
   { week: 15, topic: "Pneumonias na Infância", specialty: "Pediatria" },
   { week: 15, topic: "Abdome Agudo Hemorrágico", specialty: "Cirurgia" },
@@ -177,9 +178,13 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 24, topic: "Diarreia Aguda", specialty: "Pediatria" },
   { week: 24, topic: "Perioperatório - Controle Glicêmico", specialty: "Cirurgia" },
   { week: 24, topic: "Taquiarritmias", specialty: "Cardiologia" },
+  { week: 24, topic: "Princípios de Oncologia e Estadiamento TNM", specialty: "Oncologia" },
+  { week: 24, topic: "Dor Crônica e Cuidados Paliativos", specialty: "Clínica Médica" },
   // Semana 25
   { week: 25, topic: "DRGE em Pediatria", specialty: "Pediatria" },
   { week: 25, topic: "Cirurgia Infantil - Parte I", specialty: "Cirurgia" },
+  { week: 25, topic: "Hiperplasia Prostática Benigna", specialty: "Urologia" },
+  { week: 25, topic: "Farmacologia — Antimicrobianos", specialty: "Farmacologia" },
   // Semana 26
   { week: 26, topic: "ITU em Pediatria", specialty: "Pediatria" },
   { week: 26, topic: "Cirurgia Infantil - Parte II", specialty: "Cirurgia" },
@@ -187,6 +192,8 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 26, topic: "Micoses Invasivas", specialty: "Infectologia" },
   { week: 26, topic: "Hipocalcemia", specialty: "Endocrinologia" },
   { week: 26, topic: "Síndrome do Intestino Irritável", specialty: "Gastroenterologia" },
+  { week: 26, topic: "Rastreamento Oncológico", specialty: "Oncologia" },
+  { week: 26, topic: "Farmacologia — Anti-Hipertensivos", specialty: "Farmacologia" },
   // Semana 27
   { week: 27, topic: "Doença de Kawasaki", specialty: "Pediatria" },
   { week: 27, topic: "Cirurgia Infantil - Parte III", specialty: "Cirurgia" },
@@ -194,14 +201,19 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 27, topic: "Cervicites", specialty: "Ginecologia e Obstetrícia" },
   { week: 27, topic: "Rotura Prematura de Membranas", specialty: "Ginecologia e Obstetrícia" },
   { week: 27, topic: "Bradiarritmias", specialty: "Cardiologia" },
+  { week: 27, topic: "Litíase Urinária", specialty: "Urologia" },
   // Semana 28
   { week: 28, topic: "Febre Reumática", specialty: "Pediatria" },
   { week: 28, topic: "Cirurgia Vascular", specialty: "Cirurgia" },
   { week: 28, topic: "Meningites", specialty: "Infectologia" },
   { week: 28, topic: "Osteoporose", specialty: "Endocrinologia" },
+  { week: 28, topic: "Doença Arterial Periférica", specialty: "Angiologia" },
+  { week: 28, topic: "Câncer de Próstata", specialty: "Oncologia" },
   // Semana 29
   { week: 29, topic: "Doenças Glomerulares", specialty: "Nefrologia" },
   { week: 29, topic: "AVC", specialty: "Neurologia" },
+  { week: 29, topic: "Ventilação Mecânica", specialty: "Terapia Intensiva" },
+  { week: 29, topic: "Farmacologia — Analgésicos e Anti-inflamatórios", specialty: "Farmacologia" },
   // Semana 30
   { week: 30, topic: "Emergências Pediátricas", specialty: "Pediatria" },
   { week: 30, topic: "Urologia", specialty: "Cirurgia" },
@@ -216,6 +228,8 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 31, topic: "Insuficiência Adrenal", specialty: "Endocrinologia" },
   { week: 31, topic: "Distúrbios Disabsortivos", specialty: "Gastroenterologia" },
   { week: 31, topic: "Pneumologia Intensiva", specialty: "Pneumologia" },
+  { week: 31, topic: "Sepse e Choque Séptico", specialty: "Terapia Intensiva" },
+  { week: 31, topic: "Trombose Venosa Profunda e TEP", specialty: "Angiologia" },
   // Semana 32
   { week: 32, topic: "Convulsão Febril", specialty: "Pediatria" },
   { week: 32, topic: "Cirurgia Torácica", specialty: "Cirurgia" },
@@ -223,6 +237,8 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 32, topic: "Úlceras Genitais", specialty: "Ginecologia e Obstetrícia" },
   { week: 32, topic: "Gestação Múltipla", specialty: "Ginecologia e Obstetrícia" },
   { week: 32, topic: "Síncope", specialty: "Cardiologia" },
+  { week: 32, topic: "Câncer Gástrico", specialty: "Oncologia" },
+  { week: 32, topic: "Infecções Urológicas", specialty: "Urologia" },
   // Semana 33
   { week: 33, topic: "Anafilaxia e Urticária", specialty: "Medicina de Emergência" },
   { week: 33, topic: "Temas Gerais em Cirurgia", specialty: "Cirurgia" },
@@ -230,6 +246,8 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 33, topic: "Influenza", specialty: "Infectologia" },
   { week: 33, topic: "Síndrome de Cushing", specialty: "Endocrinologia" },
   { week: 33, topic: "Nefrolitíase", specialty: "Nefrologia" },
+  { week: 33, topic: "Sedação e Analgesia em UTI", specialty: "Terapia Intensiva" },
+  { week: 33, topic: "Patologia Geral — Inflamação e Reparo", specialty: "Patologia" },
   // Semana 34
   { week: 34, topic: "Hiperplasia Adrenal Congênita", specialty: "Pediatria" },
   { week: 34, topic: "Sistemas de Informação em Saúde", specialty: "Medicina Preventiva" },
@@ -257,6 +275,8 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 36, topic: "Hiperprolactinemia", specialty: "Endocrinologia" },
   { week: 36, topic: "Distúrbios do Potássio", specialty: "Nefrologia" },
   { week: 36, topic: "Anemias Microcíticas", specialty: "Hematologia" },
+  { week: 36, topic: "Câncer de Pulmão", specialty: "Oncologia" },
+  { week: 36, topic: "Monitorização Hemodinâmica", specialty: "Terapia Intensiva" },
   // Semana 37
   { week: 37, topic: "Desnutrição na Infância", specialty: "Pediatria" },
   { week: 37, topic: "Testes Diagnósticos", specialty: "Medicina Preventiva" },
@@ -271,6 +291,9 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 38, topic: "Hemorragia Digestiva Alta Varicosa", specialty: "Gastroenterologia" },
   { week: 38, topic: "Artrites Microcristalinas", specialty: "Reumatologia" },
   { week: 38, topic: "Anemias Macrocíticas", specialty: "Hematologia" },
+  { week: 38, topic: "Neutropenia Febril em Oncologia", specialty: "Oncologia" },
+  { week: 38, topic: "Insuficiência Venosa Crônica", specialty: "Angiologia" },
+  { week: 38, topic: "Emergências Metabólicas", specialty: "Clínica Médica" },
   // Semana 39
   { week: 39, topic: "Púrpura de Henoch-Schönlein", specialty: "Pediatria" },
   { week: 39, topic: "Estatística Médica", specialty: "Medicina Preventiva" },
@@ -278,9 +301,17 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 39, topic: "Ultrassom em Obstetrícia", specialty: "Ginecologia e Obstetrícia" },
   { week: 39, topic: "Cardiomiopatias", specialty: "Cardiologia" },
   { week: 39, topic: "Dependência Química", specialty: "Psiquiatria" },
+  { week: 39, topic: "Câncer de Bexiga e Rim", specialty: "Urologia" },
+  { week: 39, topic: "Nutrição em Terapia Intensiva", specialty: "Terapia Intensiva" },
   // Semana 40
   { week: 40, topic: "Artrite Idiopática Juvenil", specialty: "Pediatria" },
   { week: 40, topic: "Raiva e Tétano", specialty: "Infectologia" },
+  { week: 40, topic: "Distúrbios do Sódio", specialty: "Nefrologia" },
+  { week: 40, topic: "Neoplasias Pulmonares", specialty: "Pneumologia" },
+  { week: 40, topic: "Artropatias Infecciosas", specialty: "Reumatologia" },
+  { week: 40, topic: "Anemias Hemolíticas", specialty: "Hematologia" },
+  { week: 40, topic: "Síndromes Paraneoplásicas", specialty: "Oncologia" },
+  { week: 40, topic: "Polifarmácia e Interações Medicamentosas", specialty: "Clínica Médica" },
   { week: 40, topic: "Distúrbios do Sódio", specialty: "Nefrologia" },
   { week: 40, topic: "Neoplasias Pulmonares", specialty: "Pneumologia" },
   { week: 40, topic: "Artropatias Infecciosas", specialty: "Reumatologia" },
@@ -316,6 +347,7 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 44, topic: "Transtornos Psicóticos", specialty: "Psiquiatria" },
   { week: 44, topic: "Hepatites Virais", specialty: "Gastroenterologia" },
   { week: 44, topic: "Câncer de Pele", specialty: "Dermatologia" },
+  { week: 44, topic: "Patologia — Neoplasias (Biologia Tumoral)", specialty: "Patologia" },
   // Semana 45
   { week: 45, topic: "Distúrbios do Sono", specialty: "Psiquiatria" },
   { week: 45, topic: "Doenças do Osso e da Cartilagem", specialty: "Ortopedia" },
@@ -325,6 +357,7 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 45, topic: "Síndromes Compressivas", specialty: "Ortopedia" },
   { week: 45, topic: "IVAS - Parte III", specialty: "Otorrinolaringologia" },
   { week: 45, topic: "Síndrome do Olho Vermelho", specialty: "Oftalmologia" },
+  { week: 45, topic: "Anatomia Cirúrgica do Abdome", specialty: "Anatomia" },
   // Semana 46
   { week: 46, topic: "Incontinência Urinária", specialty: "Ginecologia e Obstetrícia" },
   { week: 46, topic: "Hemorragia Digestiva Baixa", specialty: "Gastroenterologia" },
@@ -336,6 +369,7 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 46, topic: "Osteomielite", specialty: "Ortopedia" },
   { week: 46, topic: "Otoneurologia e Vertigens", specialty: "Otorrinolaringologia" },
   { week: 46, topic: "Córnea e Cristalino", specialty: "Oftalmologia" },
+  { week: 46, topic: "Anatomia — Cabeça e Pescoço", specialty: "Anatomia" },
   // Semana 47
   { week: 47, topic: "Prolapso de Órgãos Pélvicos", specialty: "Ginecologia e Obstetrícia" },
   { week: 47, topic: "Infecções Congênitas na Gestação", specialty: "Ginecologia e Obstetrícia" },
@@ -345,6 +379,7 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 47, topic: "Dermatoses Papuloescamosas", specialty: "Dermatologia" },
   { week: 47, topic: "Quadril Pediátrico", specialty: "Ortopedia" },
   { week: 47, topic: "Cirurgia de Cabeça e Pescoço", specialty: "Otorrinolaringologia" },
+  { week: 47, topic: "Fisiologia Renal e Ácido-Básica", specialty: "Fisiologia" },
   // Semana 48
   { week: 48, topic: "Polipose e Câncer Colorretal", specialty: "Gastroenterologia" },
   { week: 48, topic: "Medicina Transfusional", specialty: "Hematologia" },
