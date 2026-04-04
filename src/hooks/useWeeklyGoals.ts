@@ -55,43 +55,40 @@ function generateMessage(percent: number, zone: PreparationZone): string {
   return "Comece agora para construir sua semana de estudos.";
 }
 
-async function fetchWeeklyProgress(userId: string) {
-  const monday = getMonday();
-  const mondayISO = monday.toISOString();
-
+async function fetchWeeklyProgress(userId: string, fromISO: string) {
   const [questionsRes, revisoesRes, temasRes, simRes, anamnesisRes, osceRes] = await Promise.all([
     supabase
       .from("practice_attempts")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .gte("created_at", mondayISO),
+      .gte("created_at", fromISO),
     supabase
       .from("revisoes")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
       .eq("status", "concluida")
-      .gte("updated_at", mondayISO),
+      .gte("updated_at", fromISO),
     supabase
       .from("temas_estudados")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .gte("created_at", mondayISO),
+      .gte("created_at", fromISO),
     supabase
       .from("simulation_sessions")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
       .eq("status", "finished")
-      .gte("created_at", mondayISO),
+      .gte("created_at", fromISO),
     supabase
       .from("anamnesis_results")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .gte("created_at", mondayISO),
+      .gte("created_at", fromISO),
     supabase
       .from("chronicle_osce_sessions")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .gte("created_at", mondayISO),
+      .gte("created_at", fromISO),
   ]);
 
   return {
