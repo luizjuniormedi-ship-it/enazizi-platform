@@ -416,7 +416,7 @@ REGRAS:
 
     default: {
       const levelPrompt = getLevelPrompt(performanceData);
-      return `${base}
+      return `${getLessonPrompt()}
 ${levelPrompt}
 ${getWeakTopicsPrompt(performanceData)}
 Siga o fluxo pedagógico dos STATES 0-12.
