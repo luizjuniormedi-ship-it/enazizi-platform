@@ -86,7 +86,7 @@ Se não houver dados, informe e sugira começar.`;
     case "lesson": {
       // Compact mode — short Feynman-style explanation
       if (studyMode === "compact") {
-        return `${base}
+        return `${getCompactLessonPrompt()}
 ${levelPrompt}
 FASE ATUAL: EXPLICAÇÃO RÁPIDA (MODO COMPACTO)
 Tema: "${topic || "solicitado pelo aluno"}"
