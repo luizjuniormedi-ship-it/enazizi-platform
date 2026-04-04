@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
+import { logAiUsage } from "../_shared/ai-cache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,7 +11,15 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, userContext } = await req.json();
+    const body = await req.json();
+    const messages = body?.messages;
+    const userContext = body?.userContext;
+
+    if (!Array.isArray(messages)) {
+      return new Response(JSON.stringify({ error: "Campo 'messages' é obrigatório e deve ser um array." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const systemPrompt = `Você é o GERADOR OFICIAL DE FLASHCARDS CLÍNICOS do sistema ENAZIZI.
 
@@ -158,12 +167,24 @@ Usar emojis nos títulos de seção para facilitar identificação visual.`;
       }
     }
 
+    const startMs = Date.now();
     const response = await aiFetch({
       model: "google/gemini-3-flash-preview",
       messages: [{ role: "system", content: fullSystemPrompt }, ...messages],
       stream: true,
       maxTokens: 8192,
     });
+    const elapsed = Date.now() - startMs;
+
+    logAiUsage({
+      userId: "system-flashcards",
+      functionName: "generate-flashcards",
+      modelUsed: "google/gemini-3-flash-preview",
+      success: response.ok,
+      responseTimeMs: elapsed,
+      modelTier: "standard",
+      errorMessage: response.ok ? undefined : `status ${response.status}`,
+    }).catch(() => {});
 
     if (!response.ok) {
       const t = await response.text();

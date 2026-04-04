@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import ENAZIZI_PROMPT from "../_shared/enazizi-prompt.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
+import { logAiUsage } from "../_shared/ai-cache.ts";
 import { searchPubMed, formatPubMedForPrompt, extractSearchTopic } from "../_shared/pubmed-search.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
 
@@ -13,7 +14,14 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, userContext, session_memory, targetExam } = await req.json();
+    const body = await req.json();
+    const { messages, userContext, session_memory, targetExam } = body;
+
+    if (!Array.isArray(messages)) {
+      return new Response(JSON.stringify({ error: "Campo 'messages' é obrigatório e deve ser um array." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     let systemPrompt = ENAZIZI_PROMPT;
 
@@ -57,10 +65,22 @@ Profundidade: ${session_memory.profundidade_resposta || "aprofundado"}
 --- FIM DA MEMÓRIA DE SESSÃO ---`;
     }
 
+    const startMs = Date.now();
     const response = await aiFetch({
       messages: [{ role: "system", content: systemPrompt }, ...messages],
       stream: true,
     });
+    const elapsed = Date.now() - startMs;
+
+    logAiUsage({
+      userId: "system-mentor",
+      functionName: "mentor-chat",
+      modelUsed: "google/gemini-3-flash-preview",
+      success: response.ok,
+      responseTimeMs: elapsed,
+      modelTier: "standard",
+      errorMessage: response.ok ? undefined : `status ${response.status}`,
+    }).catch(() => {});
 
     if (!response.ok) {
       const t = await response.text();

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
+import { logAiUsage } from "../_shared/ai-cache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,7 +11,15 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, userContext } = await req.json();
+    const body = await req.json();
+    const messages = body?.messages;
+    const userContext = body?.userContext;
+
+    if (!Array.isArray(messages)) {
+      return new Response(JSON.stringify({ error: "Campo 'messages' é obrigatório e deve ser um array." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     let systemPrompt = `IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês como idioma principal.
 
@@ -75,10 +84,21 @@ REGRAS DE ESPAÇAMENTO:
       systemPrompt += `\n\n--- CONTEXTO DO ALUNO (materiais de estudo) ---\n${userContext}\n--- FIM DO CONTEXTO ---`;
     }
 
+    const startMs = Date.now();
     const response = await aiFetch({
       messages: [{ role: "system", content: systemPrompt }, ...messages],
       stream: true,
     });
+    const elapsed = Date.now() - startMs;
+
+    logAiUsage({
+      userId: "system-coach",
+      functionName: "motivational-coach",
+      modelUsed: "google/gemini-3-flash-preview",
+      success: response.ok,
+      responseTimeMs: elapsed,
+      modelTier: "standard",
+    }).catch(() => {});
 
     if (!response.ok) {
       const t = await response.text();

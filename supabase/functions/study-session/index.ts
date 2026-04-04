@@ -11,6 +11,7 @@ import {
   getSessionMemoryBlock,
 } from "../_shared/enazizi-prompt.ts";
 import { aiFetch, getModelForTier } from "../_shared/ai-fetch.ts";
+import { logAiUsage } from "../_shared/ai-cache.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
 
 const corsHeaders = {
@@ -431,6 +432,12 @@ serve(async (req) => {
   try {
     const { messages, phase, topic, userContext, performanceData, session_memory, studyMode, targetExam } = await req.json();
 
+    if (!Array.isArray(messages)) {
+      return new Response(JSON.stringify({ error: "Campo 'messages' é obrigatório e deve ser um array." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     let systemPrompt = getPhasePrompt(phase, topic, performanceData, studyMode);
 
     // Inject banca-specific adaptation
@@ -458,14 +465,28 @@ ${session_memory.erros_consecutivos >= 3 ? "⚠️ TRAVAMENTO DETECTADO: Simplif
     const maxTokens = isLightPhase ? 4096 : isMediumPhase ? 8192 : 16384;
 
     // Trim message history: keep only last 10 messages to reduce token usage
-    const trimmedMessages = messages.length > 10 ? messages.slice(-10) : messages;
+    const startMs = Date.now();
+    const usedModel = getModelForTier(modelTier);
 
     const response = await aiFetch({
-      model: getModelForTier(modelTier),
+      model: usedModel,
       messages: [{ role: "system", content: systemPrompt }, ...trimmedMessages],
       stream: true,
       maxTokens,
     });
+
+    const elapsed = Date.now() - startMs;
+
+    // Log AI usage (fire-and-forget)
+    logAiUsage({
+      userId: "system-study-session",
+      functionName: "study-session",
+      modelUsed: usedModel,
+      success: response.ok,
+      responseTimeMs: elapsed,
+      modelTier,
+      errorMessage: response.ok ? undefined : `status ${response.status}`,
+    }).catch(() => {});
 
     if (!response.ok) {
       const t = await response.text();

@@ -102,6 +102,42 @@ Deno.serve(async (req) => {
       await adminClient.from("user_topic_profiles").insert(profileData);
     }
 
+    // Auto-create FSRS card for this topic if not exists
+    try {
+      const cardRefId = `topic::${topic.toLowerCase().replace(/\s+/g, "-")}`;
+      const { data: existingCard } = await adminClient
+        .from("fsrs_cards")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("card_ref_id", cardRefId)
+        .maybeSingle();
+
+      if (!existingCard) {
+        // New FSRS card: difficulty based on accuracy (lower accuracy = harder)
+        const fsrsDifficulty = Math.max(1, Math.min(10, Math.round(10 - (newAccuracy / 10))));
+        const initialStability = newAccuracy >= 70 ? 4 : newAccuracy >= 50 ? 2 : 1;
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + (newAccuracy >= 70 ? 3 : 1));
+
+        await adminClient.from("fsrs_cards").insert({
+          user_id: userId,
+          card_ref_id: cardRefId,
+          card_type: "topic",
+          difficulty: fsrsDifficulty,
+          stability: initialStability,
+          due: dueDate.toISOString(),
+          state: 0,
+          reps: 0,
+          lapses: 0,
+          elapsed_days: 0,
+          scheduled_days: newAccuracy >= 70 ? 3 : 1,
+        });
+        console.log(`[update-performance] Created FSRS card for user=${userId} topic=${topic}`);
+      }
+    } catch (fsrsErr) {
+      console.warn("[update-performance] FSRS card creation failed (non-critical):", fsrsErr);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

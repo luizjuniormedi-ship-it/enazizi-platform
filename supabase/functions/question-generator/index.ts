@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
+import { logAiUsage } from "../_shared/ai-cache.ts";
 import { isValidQuestion, hasMinimumContext, validateQuestionContext, logGenerationRejection } from "../_shared/question-filters.ts";
 import { validateQuestionBatch } from "../_shared/ai-validation.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
@@ -15,6 +16,13 @@ serve(async (req) => {
   try {
     const body = await req.json();
     const { messages, userContext, stream: clientStream, difficulty, maxRetries, timeoutMs, outputFormat, avoidStatements, generationContext, targetExam } = body;
+
+    // Input validation: messages must be an array
+    if (!Array.isArray(messages)) {
+      return new Response(JSON.stringify({ error: "Campo 'messages' é obrigatório e deve ser um array." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Default to streaming unless client explicitly sets stream=false
     const useStream = clientStream !== false;
@@ -406,6 +414,7 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
     }
 
     let response: Response;
+    const startMs = Date.now();
     try {
       response = await aiFetch(aiFetchOptions);
     } catch (aiErr) {
@@ -415,6 +424,16 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
         status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const elapsed = Date.now() - startMs;
+    logAiUsage({
+      userId: "system-question-gen",
+      functionName: "question-generator",
+      modelUsed: "google/gemini-3-flash-preview",
+      success: response.ok,
+      responseTimeMs: elapsed,
+      modelTier: "standard",
+      errorMessage: response.ok ? undefined : `status ${response.status}`,
+    }).catch(() => {});
 
     if (!response.ok) {
       const t = await response.text();
