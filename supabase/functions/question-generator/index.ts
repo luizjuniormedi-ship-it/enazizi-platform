@@ -435,6 +435,7 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
       errorMessage: response.ok ? undefined : `status ${response.status}`,
     }).catch(() => {});
 
+    if (!response.ok) {
       const t = await response.text();
       console.error("AI response error:", response.status, t.slice(0, 300));
       
