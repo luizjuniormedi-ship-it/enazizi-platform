@@ -214,7 +214,7 @@ Ao final da Mensagem 4: inclua a primeira pergunta de Active Recall (❓ Pergunt
     }
 
     case "active-recall":
-      return `${base}
+      return `${getRecallPrompt()}
 ${weakTopicsPrompt}
 FASE ATUAL: ACTIVE RECALL (STATES 3/5)
 Tema: "${topic}"
