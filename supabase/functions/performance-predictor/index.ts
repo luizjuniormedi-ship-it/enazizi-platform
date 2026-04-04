@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
+import { buildCacheKey, getCachedContent, setCachedContent, logAiUsage } from "../_shared/ai-cache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,7 +12,21 @@ serve(async (req) => {
 
   try {
     const { totalQuestions, correctAnswers, areaBreakdown, studyHoursPerWeek, daysUntilExam, diagnosticScore, streakDays, flashcardsReviewed, simuladoScores } = await req.json();
-    
+
+    const MODEL = "google/gemini-3-flash-preview";
+    const accuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+    const cacheKey = buildCacheKey({ extra: `perf-pred-q${totalQuestions}-a${accuracy}-h${studyHoursPerWeek}-d${daysUntilExam}` });
+
+    // Try cache (predictions with same inputs are stable)
+    try {
+      const cached = await getCachedContent(cacheKey, "performance-prediction");
+      if (cached) {
+        logAiUsage({ userId: "system", functionName: "performance-predictor", modelUsed: MODEL, success: true, responseTimeMs: 0, cacheHit: true, modelTier: "standard" }).catch(() => {});
+        return new Response(JSON.stringify(cached), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } catch { /* proceed */ }
 
     const systemPrompt = `IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês.
 
@@ -19,7 +34,7 @@ Você é o Performance Predictor Agent, especializado em prever o desempenho de 
 
 DADOS DO CANDIDATO:
 - Questões respondidas: ${totalQuestions || 0}
-- Acertos: ${correctAnswers || 0} (${totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0}%)
+- Acertos: ${correctAnswers || 0} (${accuracy}%)
 - Desempenho por área: ${JSON.stringify(areaBreakdown || {})}
 - Horas de estudo/semana: ${studyHoursPerWeek || 0}
 - Dias até a prova: ${daysUntilExam || "Não definido"}
@@ -50,16 +65,19 @@ Regras:
 - Sempre em português brasileiro
 - RETORNE APENAS O JSON`;
 
+    const startMs = Date.now();
     const response = await aiFetch({
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: "Calcule minha previsão de desempenho para a prova de residência." },
       ],
     });
+    const elapsed = Date.now() - startMs;
 
     if (!response.ok) {
       const t = await response.text();
       console.error("AI error:", response.status, t);
+      logAiUsage({ userId: "system", functionName: "performance-predictor", modelUsed: MODEL, success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "standard", errorMessage: `status ${response.status}` }).catch(() => {});
       return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), {
         status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -75,6 +93,10 @@ Regras:
     } catch {
       prediction = { raw: content };
     }
+
+    // Log + cache
+    logAiUsage({ userId: "system", functionName: "performance-predictor", modelUsed: MODEL, success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "standard" }).catch(() => {});
+    setCachedContent(cacheKey, "performance-prediction", prediction, MODEL, 7).catch(() => {});
 
     return new Response(JSON.stringify(prediction), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

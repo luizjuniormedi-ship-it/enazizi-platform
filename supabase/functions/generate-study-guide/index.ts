@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
+import { buildCacheKey, getCachedContent, setCachedContent, logAiUsage } from "../_shared/ai-cache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,6 +18,20 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const MODEL = "google/gemini-2.5-flash";
+    const cacheKey = buildCacheKey({ specialty, topic, extra: `study-guide-${depth || "completo"}` });
+
+    // 1. Try cache
+    try {
+      const cached = await getCachedContent(cacheKey, "study-guide");
+      if (cached) {
+        logAiUsage({ userId: "system", functionName: "generate-study-guide", modelUsed: MODEL, success: true, responseTimeMs: 0, cacheHit: true, modelTier: "standard" }).catch(() => {});
+        return new Response(JSON.stringify(cached), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } catch { /* proceed */ }
 
     const depthInstructions: Record<string, string> = {
       resumo: "Crie um RESUMO CONCISO (2-3 páginas) focado nos pontos mais cobrados em prova. Use bullet points e tabelas comparativas.",
@@ -53,17 +68,20 @@ REGRAS:
 - Foco em conteúdo cobrado em provas ENARE/USP/UNIFESP/Revalida
 - NÃO inclua conteúdo sobre conflitos de interesse ou declarações financeiras`;
 
+    const startMs = Date.now();
     const response = await aiFetch({
-      model: "google/gemini-2.5-flash",
+      model: MODEL,
       messages: [
         { role: "system", content: "Você é um professor de medicina especialista em criar material didático de alta qualidade para residência médica. Responda sempre em Markdown bem formatado." },
         { role: "user", content: prompt },
       ],
     });
+    const elapsed = Date.now() - startMs;
 
     if (!response.ok) {
       const t = await response.text();
       console.error("AI error:", response.status, t);
+      logAiUsage({ userId: "system", functionName: "generate-study-guide", modelUsed: MODEL, success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "standard", errorMessage: `status ${response.status}` }).catch(() => {});
       return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), {
         status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -71,8 +89,13 @@ REGRAS:
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
+    const result = { content, specialty, topic };
 
-    return new Response(JSON.stringify({ content, specialty, topic }), {
+    // Log + cache
+    logAiUsage({ userId: "system", functionName: "generate-study-guide", modelUsed: MODEL, success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "standard" }).catch(() => {});
+    setCachedContent(cacheKey, "study-guide", result, MODEL, 30).catch(() => {});
+
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch, parseAiJson } from "../_shared/ai-fetch.ts";
+import { buildCacheKey, getCachedContent, setCachedContent, logAiUsage } from "../_shared/ai-cache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,8 +14,31 @@ serve(async (req) => {
     const { topic, specialty } = await req.json();
     if (!topic) throw new Error("topic is required");
 
+    const cacheKey = buildCacheKey({ topic, specialty, extra: "micro-quiz" });
+    const MODEL = "google/gemini-2.5-flash-lite";
+
+    // 1. Try cache first
+    try {
+      const cached = await getCachedContent(cacheKey, "micro-quiz");
+      if (cached) {
+        logAiUsage({
+          userId: "system",
+          functionName: "micro-quiz",
+          modelUsed: MODEL,
+          success: true,
+          responseTimeMs: 0,
+          cacheHit: true,
+          modelTier: "lite",
+        }).catch(() => {});
+        return new Response(JSON.stringify(cached), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } catch { /* cache miss — proceed to AI */ }
+
+    const startMs = Date.now();
     const response = await aiFetch({
-      model: "google/gemini-2.5-flash-lite",
+      model: MODEL,
       maxTokens: 1500,
       timeoutMs: 12000,
       maxRetries: 1,
@@ -38,10 +62,12 @@ Regras:
         },
       ],
     });
+    const elapsed = Date.now() - startMs;
 
     if (!response.ok) {
       const err = await response.text();
       console.error("AI error:", response.status, err.slice(0, 200));
+      logAiUsage({ userId: "system", functionName: "micro-quiz", modelUsed: MODEL, success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "lite", errorMessage: `status ${response.status}` }).catch(() => {});
       throw new Error("AI_ERROR");
     }
 
@@ -49,11 +75,16 @@ Regras:
     const content = data.choices?.[0]?.message?.content || "";
     if (!content || content.trim().length < 10) {
       console.error("micro-quiz: empty or too short AI content:", content?.slice(0, 100));
+      logAiUsage({ userId: "system", functionName: "micro-quiz", modelUsed: MODEL, success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "lite", errorMessage: "empty_content" }).catch(() => {});
       return new Response(JSON.stringify({ questions: [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     const parsed = parseAiJson(content);
+
+    // Log success + save to cache
+    logAiUsage({ userId: "system", functionName: "micro-quiz", modelUsed: MODEL, success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "lite" }).catch(() => {});
+    setCachedContent(cacheKey, "micro-quiz", parsed, MODEL, 14).catch(() => {});
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
