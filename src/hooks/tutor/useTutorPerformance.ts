@@ -4,6 +4,7 @@ import { mapTopicToSpecialty } from "@/lib/mapTopicToSpecialty";
 import { useGamification, XP_REWARDS, getSmartXpMultiplier } from "@/hooks/useGamification";
 import { showEvolutionFeedback } from "@/lib/evolutionFeedback";
 import { useToast } from "@/hooks/use-toast";
+import { dualWritePerformanceByTopic, dualWriteUserTopicProfile } from "@/lib/dualWrite";
 import type { StudyPerformance } from "@/components/tutor/TutorConstants";
 
 const DEFAULT_PERFORMANCE: StudyPerformance = {
