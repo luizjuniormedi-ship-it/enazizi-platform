@@ -115,6 +115,12 @@ async function fetchWithRetry(
 }
 
 export async function aiFetch(options: AiFetchOptions): Promise<Response> {
+  // Rate limit check
+  if (options.userId && !checkRateLimit(options.userId)) {
+    console.warn(`[aiFetch] Rate limited user ${options.userId}`);
+    throw new Error("AI_RATE_LIMITED");
+  }
+
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
