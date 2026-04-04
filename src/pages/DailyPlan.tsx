@@ -40,6 +40,7 @@ const DailyPlan = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { invalidateAll } = useDashboardInvalidation();
   const autoReviewStartedRef = useRef(false);
   const autoStartReviews = new URLSearchParams(location.search).get("autostart") === "reviews";
 
