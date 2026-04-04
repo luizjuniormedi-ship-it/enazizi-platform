@@ -128,14 +128,20 @@ const Login = () => {
           <span className="text-xl font-bold">ENAZIZI</span>
         </Link>
 
-        <h2 className="text-xl lg:text-3xl font-bold mb-1 lg:mb-2">Sua plataforma completa para residência médica</h2>
-        <p className="text-muted-foreground mb-4 lg:mb-8 text-sm lg:text-base">Estude com IA, questões reais e ferramentas que se adaptam ao seu ritmo.</p>
+        <h2 className="text-xl lg:text-3xl font-bold mb-1 lg:mb-2">
+          Você não precisa estudar mais.
+          <br />
+          <span className="text-primary">Precisa estudar certo.</span>
+        </h2>
+        <p className="text-muted-foreground mb-4 lg:mb-8 text-sm lg:text-base">
+          O ENAZIZI cria seu plano diário com base nos seus erros e na sua prova.
+        </p>
 
         {/* Checklist de valor */}
         <div className="hidden lg:flex flex-col gap-2 mb-6 text-sm">
           {[
             "Missão diária pronta ao abrir o app",
-            "Revisões automáticas no momento certo",
+            "Correção inteligente dos seus erros",
             "Evolução real medida por IA",
           ].map((item) => (
             <div key={item} className="flex items-center gap-2 text-muted-foreground">
