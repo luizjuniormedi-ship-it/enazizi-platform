@@ -1,139 +1,72 @@
 
 
-# useCoreData — Camada Centralizada de Dados
+# Otimização de Performance do Dashboard — Plano de Correção
 
-## Problema Atual
+## Estado Atual
 
-Quando o Dashboard carrega, **5 hooks independentes** fazem queries às mesmas tabelas simultaneamente:
+O `useCoreData` já foi criado e os hooks `usePreparationIndex`, `useExamReadiness` e `useDashboardData` já o consomem. Porém, restam **4 gargalos estruturais** que mantêm o sistema fazendo queries desnecessárias:
 
-```text
-Tabela                 | Dashboard | PrepIndex | ExamReady | WeeklyGoals | StudyEngine
------------------------|-----------|-----------|-----------|-------------|------------
-practice_attempts      |     ✓     |     ✓     |     ✓     |      ✓      |      ✓
-revisoes               |     ✓     |     ✓     |     ✓      |      ✓      |      ✓
-exam_sessions          |     ✓     |     ✓     |     ✓     |             |      ✓
-anamnesis_results      |     ✓     |     ✓     |     ✓     |      ✓      |      ✓
-profiles               |     ✓     |           |     ✓     |             |      ✓
-temas_estudados        |           |     ✓     |     ✓     |      ✓      |      ✓
-simulation_sessions    |     ✓     |     ✓     |           |      ✓      |
-user_gamification      |     ✓     |           |     ✓     |             |
-error_bank             |     ✓     |           |           |             |      ✓
-```
+### Gargalo 1 — Invalidação agressiva no mount do Dashboard
+`Dashboard.tsx` (linhas 94-99) invalida `core-data`, `dashboard-data`, `exam-readiness` e `study-engine` **toda vez que o componente monta**. Com `staleTime: 30s` no dashboard-data, qualquer navegação interna causa refetch total.
 
-**Resultado**: ~40-50 queries por carregamento de Dashboard por usuário. Com 100 usuários = ~4000-5000 queries simultâneas.
+### Gargalo 2 — Realtime sem debounce
+O canal `dashboard-live` (linhas 103-128) chama `invalidateAll` ou `invalidateDash` imediatamente a cada evento PostgreSQL. Um batch de 5 questões respondidas gera 5 cascatas de invalidação em sequência.
 
-## Solução
+### Gargalo 3 — `useJourneyRefresh` não invalida `core-data`
+O hook de refresh ao login/visibilidade invalida 7 chaves mas **não inclui `core-data`**, causando dados stale após retorno de inatividade.
 
-Criar `useCoreData` que busca **uma única vez** os dados compartilhados, e fazer os hooks consumidores lerem do cache do React Query ao invés de queries próprias.
+### Gargalo 4 — staleTime/refetchOnWindowFocus inconsistentes
+- `useDashboardData`: staleTime 30s, refetchOnWindowFocus: true → refetch a cada tab switch
+- `useWeeklyGoals`: staleTime 60s, refetchOnWindowFocus: true → idem
+- `useStudyEngine`: refetchOnWindowFocus: true → idem
+- `useCoreData`: staleTime 3min, refetchOnWindowFocus: false ✓ (correto)
 
-## Arquitetura
+## Correções
 
-```text
-useCoreData (1 query composta, staleTime: 3min)
-    ├── useDashboardData   → consome coreData + queries exclusivas (flashcards, uploads, etc)
-    ├── usePreparationIndex → calcula score a partir de coreData (zero queries próprias)
-    ├── useExamReadiness    → calcula readiness a partir de coreData + domain_map
-    ├── useWeeklyGoals      → busca apenas contagens da semana (queries com filtro de data)
-    └── studyEngine         → continua com queries próprias (roda server-side via React Query)
-```
+### 1. Dashboard.tsx — Remover invalidação no mount
+Remover o `useEffect` das linhas 94-99. O Realtime e o `useJourneyRefresh` já cuidam de atualizar quando necessário. A invalidação no mount causa refetch desnecessário quando o usuário apenas navega entre páginas.
 
-### Decisão importante: StudyEngine
+### 2. Dashboard.tsx — Adicionar debounce no Realtime
+Substituir as chamadas diretas `invalidateAll`/`invalidateDash` por uma versão com debounce de 1.5 segundos. Assim, múltiplos eventos em sequência geram apenas 1 invalidação.
 
-O `studyEngine.ts` é uma função pura (não um hook React), executada dentro de `useStudyEngine`. Ele busca dados com filtros diferentes (`.limit(20)`, `status=pendente`, joins específicos). **Não será refatorado para usar useCoreData** — mantém suas queries otimizadas. Isso evita risco de quebrar a lógica de decisão.
+### 3. useJourneyRefresh.ts — Adicionar `core-data` às chaves
+Incluir `["core-data"]` no array `JOURNEY_QUERY_KEYS` para que login, token refresh e retorno de inatividade também atualizem a camada central.
 
-## Implementação
+### 4. Alinhar staleTime e refetchOnWindowFocus
+- `useDashboardData`: staleTime → 2min, refetchOnWindowFocus → false
+- `useWeeklyGoals`: staleTime → 3min, refetchOnWindowFocus → false
+- `useStudyEngine`: refetchOnWindowFocus → false
 
-### 1. Criar `src/hooks/useCoreData.ts`
+Todos dependem de invalidação manual (Realtime + JourneyRefresh), não de polling por tab switch.
 
-Hook que consolida ~15 queries em uma única função:
+### 5. Realtime — Invalidação seletiva por tabela
+Em vez de `invalidateAll` para tudo, usar invalidação por escopo:
+- `practice_attempts` → core-data, dashboard-data, weekly-goals
+- `revisoes` → core-data, dashboard-data, weekly-goals
+- `exam_sessions` → core-data, dashboard-data, exam-readiness
+- `error_bank` → core-data, dashboard-data
+- `user_gamification` → core-data, dashboard-data
+- `simulation_sessions`, `anamnesis_results`, `chronicle_osce_sessions` → core-data, dashboard-data
 
-- `profiles` (display_name, has_completed_diagnostic, target_exams, target_exam, exam_date)
-- `practice_attempts` (correct, created_at) — últimos 500
-- `revisoes` (status, data_revisao, updated_at)
-- `exam_sessions` (score, total_questions, finished_at) — status=finished
-- `anamnesis_results` (final_score, created_at)
-- `temas_estudados` (id, tema, especialidade, created_at) — count + temas list
-- `simulation_sessions` (count, status=finished)
-- `chronicle_osce_sessions` (score)
-- `user_gamification` (current_streak, xp, level)
-- `error_bank` (count)
-- `approval_scores` (score, created_at) — últimos 10
-- `medical_domain_map` (specialty, domain_score, questions_answered, correct_answers)
-
-Configuração React Query:
-- `queryKey: ["core-data", userId]`
-- `staleTime: 3 * 60 * 1000` (3 min)
-- `gcTime: 10 * 60 * 1000`
-- `refetchOnWindowFocus: false` (invalidação manual)
-
-### 2. Refatorar `useDashboardData`
-
-- Receber `coreData` como dependência
-- Remover queries duplicadas (practice_attempts, revisoes, exam_sessions, anamnesis, profiles, gamification, simulation_sessions, error_bank)
-- Manter apenas queries exclusivas: flashcards, uploads, study_tasks, study_plans, reviews, discursive_attempts, global counts, summaries, chat_conversations, medical_image_attempts, diagnostic_results, teacher results
-- `enabled: !!user && !!coreData`
-
-**Redução**: de ~24 queries para ~14 queries exclusivas.
-
-### 3. Refatorar `usePreparationIndex`
-
-- Receber `coreData` como dependência
-- **Eliminar todas as 8 queries próprias** — usar dados do coreData
-- Manter apenas lógica de cálculo (cronograma, desempenho, revisões, prática)
-- `enabled: !!user && !!coreData`
-
-**Redução**: de 8 queries para 0.
-
-### 4. Refatorar `useExamReadiness`
-
-- Receber `coreData` como dependência
-- Manter apenas query exclusiva: `practical_exam_results`
-- Usar practice_attempts, domain_map, exam_sessions, anamnesis, revisoes, gamification, temas do coreData
-- `enabled: !!user && !!coreData`
-
-**Redução**: de 9 queries para 1.
-
-### 5. Refatorar `useWeeklyGoals`
-
-- Manter queries com filtro de data (`.gte("created_at", mondayISO)`) — essas são exclusivas
-- Usar `usePreparationIndex` e `useDashboardData` como já faz (agora mais rápidos)
-- Sem mudança estrutural grande, apenas garante que os hooks pai já carregaram via coreData
-
-### 6. Atualizar `useDashboardInvalidation`
-
-- Adicionar invalidação de `["core-data"]` no `invalidateAll()`
-- Todos os hooks dependentes recarregam automaticamente
-
-### 7. Atualizar `Dashboard.tsx`
-
-- Adicionar `useCoreData()` no topo
-- Passar `coreData` para os hooks refatorados via parâmetro ou context
-
-## Estimativa de Redução
+## Estimativa de Impacto
 
 ```text
-Antes:  ~45 queries por carregamento de Dashboard
-Depois: ~25 queries por carregamento de Dashboard
-Redução: ~44%
+Antes:  refetch total em tab switch + refetch total em mount + refetch por evento RT sem debounce
+Depois: zero refetch em mount, zero refetch em tab switch, 1 refetch debounced por batch RT
 ```
 
-Com 100 usuários simultâneos: de ~4500 para ~2500 queries.
+Redução estimada: ~60-70% menos invalidações por sessão de uso.
+
+## Arquivos alterados
+1. `src/pages/Dashboard.tsx` — remove mount invalidation, adiciona debounce no RT, invalidação seletiva
+2. `src/hooks/useJourneyRefresh.ts` — adiciona `core-data` às chaves
+3. `src/hooks/useDashboardData.ts` — staleTime 2min, refetchOnWindowFocus false
+4. `src/hooks/useWeeklyGoals.ts` — staleTime 3min, refetchOnWindowFocus false
+5. `src/hooks/useStudyEngine.ts` — refetchOnWindowFocus false
 
 ## O que NÃO muda
-
-- StudyEngine — mantém queries próprias e lógica intacta
-- FSRS, cronograma, missão — não afetados
-- Realtime — mantido, apenas invalidação de `core-data` adicionada
-- Regras de negócio — zero alteração
-- Nenhuma tabela nova ou migração necessária
-
-## Ordem de execução
-
-1. Criar `useCoreData.ts`
-2. Refatorar `usePreparationIndex` (elimina 8 queries)
-3. Refatorar `useExamReadiness` (elimina 8 queries)
-4. Refatorar `useDashboardData` (elimina ~10 queries)
-5. Atualizar `useDashboardInvalidation`
-6. Atualizar `Dashboard.tsx` para usar `useCoreData`
-7. Verificar que `useWeeklyGoals` funciona com hooks refatorados
+- Regras de negócio (Study Engine, FSRS, missão, metas)
+- Estrutura do `useCoreData` (já correto)
+- Realtime continua ativo (apenas com debounce)
+- Experiência do usuário (dados atualizam via RT debounced)
 
