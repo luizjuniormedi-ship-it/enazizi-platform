@@ -2,15 +2,85 @@
  * Tutor dual-write: fire-and-forget writes to new tutor tables
  * (tutor_sessions, tutor_messages, tutor_context_snapshots)
  * while legacy chat_conversations/chat_messages remain the primary source.
+ *
+ * Uses persistent DB lookups + unique constraint for dedup safety.
  */
 import { supabase } from "@/integrations/supabase/client";
 
-/** Map from legacy conversation_id to tutor_session_id (in-memory cache) */
-const sessionMap = new Map<string, string>();
+/** In-memory cache to avoid repeated DB lookups within the same page session */
+const sessionCache = new Map<string, string>();
+
+/**
+ * Resolve or create a tutor_session for a conversation.
+ * Uses unique constraint on conversation_id for dedup.
+ */
+async function resolveSessionId(
+  userId: string,
+  conversationId: string,
+  extra?: { mode?: string; topic?: string; specialty?: string; missionId?: string; phase?: string }
+): Promise<string | null> {
+  // 1. In-memory cache
+  const cached = sessionCache.get(conversationId);
+  if (cached) return cached;
+
+  try {
+    // 2. DB lookup
+    const { data: existing } = await supabase
+      .from("tutor_sessions" as any)
+      .select("id")
+      .eq("conversation_id", conversationId)
+      .maybeSingle();
+
+    if (existing) {
+      const id = (existing as any).id;
+      sessionCache.set(conversationId, id);
+      return id;
+    }
+
+    // 3. Insert (unique constraint prevents dupes from concurrent calls)
+    const { data: created, error } = await supabase
+      .from("tutor_sessions" as any)
+      .insert({
+        user_id: userId,
+        conversation_id: conversationId,
+        mode: extra?.mode || "free",
+        topic: extra?.topic || null,
+        specialty: extra?.specialty || null,
+        mission_id: extra?.missionId || null,
+        current_phase: extra?.phase || null,
+        source_context: "dual-write",
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      // Likely unique constraint violation — re-fetch
+      const { data: retry } = await supabase
+        .from("tutor_sessions" as any)
+        .select("id")
+        .eq("conversation_id", conversationId)
+        .maybeSingle();
+      if (retry) {
+        const id = (retry as any).id;
+        sessionCache.set(conversationId, id);
+        return id;
+      }
+      return null;
+    }
+
+    if (created) {
+      const id = (created as any).id;
+      sessionCache.set(conversationId, id);
+      return id;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Create a tutor_session mirroring a chat_conversation.
- * Returns the new session id or null on failure.
  */
 export function dualWriteTutorSession(params: {
   userId: string;
@@ -21,42 +91,9 @@ export function dualWriteTutorSession(params: {
   missionId?: string;
   phase?: string;
 }): void {
-  const { userId, conversationId, mode, topic, specialty, missionId, phase } = params;
-
-  (async () => {
-    try {
-      // Skip if already mapped
-      if (sessionMap.has(conversationId)) return;
-
-      const { data, error } = await supabase
-        .from("tutor_sessions" as any)
-        .insert({
-          user_id: userId,
-          conversation_id: conversationId,
-          mode: mode || "free",
-          topic: topic || null,
-          specialty: specialty || null,
-          mission_id: missionId || null,
-          current_phase: phase || null,
-          source_context: "dual-write",
-        })
-        .select("id")
-        .single();
-
-      if (data && !error) {
-        sessionMap.set(conversationId, (data as any).id);
-      }
-    } catch {
-      // Silent — legacy flow continues
-    }
-  })();
-}
-
-/**
- * Get the tutor_session_id for a conversation, or null if not yet mapped.
- */
-function getSessionId(conversationId: string): string | null {
-  return sessionMap.get(conversationId) || null;
+  const { userId, conversationId, ...extra } = params;
+  // Fire-and-forget — resolveSessionId handles dedup
+  resolveSessionId(userId, conversationId, extra);
 }
 
 /**
@@ -74,39 +111,7 @@ export function dualWriteTutorMessage(params: {
 
   (async () => {
     try {
-      let sessionId = getSessionId(conversationId);
-
-      // If no session yet, try to find or create one
-      if (!sessionId) {
-        const { data: existing } = await supabase
-          .from("tutor_sessions" as any)
-          .select("id")
-          .eq("conversation_id", conversationId)
-          .maybeSingle();
-
-        if (existing) {
-          sessionId = (existing as any).id;
-          sessionMap.set(conversationId, sessionId!);
-        } else {
-          // Create session on-the-fly
-          const { data: newSession } = await supabase
-            .from("tutor_sessions" as any)
-            .insert({
-              user_id: userId,
-              conversation_id: conversationId,
-              mode: "free",
-              source_context: "dual-write-auto",
-            })
-            .select("id")
-            .single();
-
-          if (newSession) {
-            sessionId = (newSession as any).id;
-            sessionMap.set(conversationId, sessionId!);
-          }
-        }
-      }
-
+      const sessionId = await resolveSessionId(userId, conversationId);
       if (!sessionId) return;
 
       await supabase.from("tutor_messages" as any).insert({
@@ -124,10 +129,11 @@ export function dualWriteTutorMessage(params: {
 }
 
 /**
- * Save a context snapshot for the current tutor interaction.
+ * Save a context snapshot linked to a tutor session.
  */
 export function dualWriteTutorContextSnapshot(params: {
   userId: string;
+  conversationId?: string;
   missionId?: string;
   mainError?: string;
   currentGoal?: string;
@@ -138,14 +144,20 @@ export function dualWriteTutorContextSnapshot(params: {
   extraContext?: Record<string, unknown>;
 }): void {
   const {
-    userId, missionId, mainError, currentGoal,
+    userId, conversationId, missionId, mainError, currentGoal,
     pendingReviews, accuracy, phase, examFocus, extraContext,
   } = params;
 
   (async () => {
     try {
+      let sessionId: string | null = null;
+      if (conversationId) {
+        sessionId = await resolveSessionId(userId, conversationId);
+      }
+
       await supabase.from("tutor_context_snapshots" as any).insert({
         user_id: userId,
+        tutor_session_id: sessionId,
         mission_id: missionId || null,
         main_error: mainError || null,
         current_goal: currentGoal || null,
