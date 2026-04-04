@@ -2448,6 +2448,66 @@ export type Database = {
         }
         Relationships: []
       }
+      qa_runs: {
+        Row: {
+          auto_fix_rate_pct: number | null
+          created_at: string
+          duration_ms: number | null
+          finished_at: string | null
+          id: string
+          level: number
+          modules_checked: Json | null
+          previous_comparison: Json | null
+          run_type: string
+          started_at: string
+          status: string
+          summary_report: Json | null
+          total_corrected: number | null
+          total_detected: number | null
+          total_escalated: number | null
+          total_findings: number | null
+          total_partial: number | null
+        }
+        Insert: {
+          auto_fix_rate_pct?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          finished_at?: string | null
+          id?: string
+          level?: number
+          modules_checked?: Json | null
+          previous_comparison?: Json | null
+          run_type?: string
+          started_at?: string
+          status?: string
+          summary_report?: Json | null
+          total_corrected?: number | null
+          total_detected?: number | null
+          total_escalated?: number | null
+          total_findings?: number | null
+          total_partial?: number | null
+        }
+        Update: {
+          auto_fix_rate_pct?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          finished_at?: string | null
+          id?: string
+          level?: number
+          modules_checked?: Json | null
+          previous_comparison?: Json | null
+          run_type?: string
+          started_at?: string
+          status?: string
+          summary_report?: Json | null
+          total_corrected?: number | null
+          total_detected?: number | null
+          total_escalated?: number | null
+          total_findings?: number | null
+          total_partial?: number | null
+        }
+        Relationships: []
+      }
       qa_test_results: {
         Row: {
           created_at: string
