@@ -121,6 +121,20 @@ export function useTutorPerformance(userId: string | undefined) {
           }
         } catch (e) { console.error("Error updating domain map:", e); }
       }
+
+      // Dual-write to new normalized tables
+      if (currentTopic) {
+        const spec = mapTopicToSpecialty(currentTopic) || "Clínica Médica";
+        dualWritePerformanceByTopic({
+          userId: userId!, specialty: spec, topic: currentTopic,
+          questionsAnswered: sessionQuestions, correctAnswers: sessionCorrect,
+        });
+        dualWriteUserTopicProfile({
+          userId: userId!, topic: currentTopic, specialty: spec,
+          questionsAnswered: sessionQuestions, correctAnswers: sessionCorrect,
+          sessionAccuracy: sessionQuestions > 0 ? Math.round((sessionCorrect / sessionQuestions) * 100) : 0,
+        });
+      }
     }
 
     // Smart XP calculation
