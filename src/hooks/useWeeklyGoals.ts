@@ -11,6 +11,7 @@ export interface WeeklyGoal {
   target: number;
   current: number;
   percent: number;
+  carryover: number;
 }
 
 export interface WeeklyGoalsData {
