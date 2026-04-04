@@ -107,6 +107,7 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   // Semana 14
   { week: 14, topic: "Síndromes Genéticas e Erros Inatos", specialty: "Pediatria" },
   { week: 14, topic: "Abdome Agudo Vascular", specialty: "Cirurgia" },
+  { week: 14, topic: "Avaliação Pré-Operatória Clínica", specialty: "Clínica Médica" },
   // Semana 15
   { week: 15, topic: "Pneumonias na Infância", specialty: "Pediatria" },
   { week: 15, topic: "Abdome Agudo Hemorrágico", specialty: "Cirurgia" },
