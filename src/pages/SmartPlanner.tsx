@@ -44,6 +44,7 @@ import {
 // Study Engine
 import { useStudyEngine } from "@/hooks/useStudyEngine";
 import { useExamReadiness } from "@/hooks/useExamReadiness";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
 const DEFAULT_PESOS: PesosAlgoritmo = { erro: 0.3, tempo: 0.2, atraso: 0.2, dificuldade: 0.15, confianca: 0.15 };
 
