@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useCoreData } from "./useCoreData";
+import { saveDashboardSnapshot, loadDashboardSnapshot } from "@/lib/dashboardSnapshot";
 
 export interface DashboardStats {
   flashcards: number;
