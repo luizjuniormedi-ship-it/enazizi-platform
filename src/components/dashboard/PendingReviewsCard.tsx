@@ -46,7 +46,7 @@ export default function PendingReviewsCard() {
           <div
             key={rev.id}
             className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors group"
-            onClick={() => navigate("/dashboard/plano-dia?autostart=reviews")}
+            onClick={() => navigate(buildStudyPath(rev))}
           >
             {rev.priority >= 85 && (
               <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
