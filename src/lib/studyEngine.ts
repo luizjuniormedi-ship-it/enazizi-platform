@@ -775,7 +775,8 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
 
   // ── Sort by priority then apply weight-based slot limits ─────
   recs.sort((a, b) => b.priority - a.priority);
-  const result = applyWeights(recs, weights, 8);
+  const maxTotal = recoveryMode ? 5 : 8;
+  const result = applyWeights(recs, weights, maxTotal);
 
   // ── FALLBACK: guarantee at least 1 task for any user ─────────
   if (result.length === 0) {
