@@ -253,6 +253,8 @@ const DailyPlan = () => {
       }
     }
     setCompletedReviews(next);
+    // Invalidate dashboard caches so counters update in real-time
+    invalidateAll();
   };
 
   // ── Topic completion with self-assessment ──
