@@ -42,7 +42,7 @@ const DashboardMetricsGrid = ({ stats, metrics }: Props) => {
           <div className="text-sm text-muted-foreground mt-1">Dias de streak</div>
         </Link>
 
-        <Link to="/dashboard/sessao?specialty=revisao" className="glass-card p-5 hover:border-primary/30 transition-all group relative overflow-hidden">
+        <Link to="/dashboard/sessao-estudo?focus=reviews" className="glass-card p-5 hover:border-primary/30 transition-all group relative overflow-hidden">
           <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
           <CalendarDays className={cn("h-6 w-6 mb-3", metrics.pendingRevisoes > 0 ? "text-yellow-500" : "text-green-500")} />
           <div className="text-3xl font-bold">{metrics.pendingRevisoes}</div>
