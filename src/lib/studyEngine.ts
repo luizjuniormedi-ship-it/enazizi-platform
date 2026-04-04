@@ -383,7 +383,7 @@ export async function generateRecommendations({ userId, coreData }: EngineInput)
   const anamnesisResults = (anamnesisData || []) as any[];
   const clinicalSims = (clinicalSimData || []) as any[];
 
-  const approvalScore = await computeApprovalScore(userId, practiceAttempts, exams, anamnesisResults, clinicalSims);
+  const approvalScore = await computeApprovalScore(userId, practiceAttempts, exams, anamnesisResults, clinicalSims, cd?.domainMap);
   const baseWeights = adjustPlanByApprovalScore(approvalScore);
 
   // ── Apply exam profile modifiers ─────────────────────────────
