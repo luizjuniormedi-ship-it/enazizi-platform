@@ -4,6 +4,7 @@
  * All operations are fire-and-forget to avoid blocking the UI.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { ensureFsrsCard } from "@/lib/fsrsAutoCreate";
 
 /**
  * Dual-write performance data to performance_by_topic table.
