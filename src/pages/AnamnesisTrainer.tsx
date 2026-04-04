@@ -547,6 +547,8 @@ const AnamnesisTrainer = () => {
       }
 
       await completeSession();
+      queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+      queryClient.invalidateQueries({ queryKey: ["study-engine"] });
       setPhase("result");
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });

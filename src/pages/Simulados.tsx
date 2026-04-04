@@ -501,6 +501,9 @@ const Simulados = () => {
     }
 
     await completeSession();
+    queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+    queryClient.invalidateQueries({ queryKey: ["study-engine"] });
+    queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
     setPhase("finished");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questions, user, mode]);
