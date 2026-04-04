@@ -210,6 +210,15 @@ const queryClient = useQueryClient();
       </SafeCard>
 
       {/* ══════════════════════════════════════════
+          ÍNDICE DE PREPARAÇÃO — indicador central
+         ══════════════════════════════════════════ */}
+      {!isNewUser && (
+        <SafeCard name="PreparationIndex">
+          <PreparationIndexCard />
+        </SafeCard>
+      )}
+
+      {/* ══════════════════════════════════════════
           ALERTA INTELIGENTE — máximo 1
          ══════════════════════════════════════════ */}
       <SafeCard name="SmartAlert"><SmartAlertCard /></SafeCard>
