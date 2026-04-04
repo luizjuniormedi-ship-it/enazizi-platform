@@ -944,6 +944,24 @@ export async function generateRecommendations({ userId, coreData }: EngineInput)
     };
   }
 
+  // ── Save snapshot (fire-and-forget) ──
+  const weakErrors = (errorBankData || []).slice(0, 5).map((e: any) => e.tema);
+  const strongDomains = (cd?.domainMap || []).filter((d: any) => d.domain_score >= 70).map((d: any) => d.specialty);
+  saveStudyEngineSnapshot({
+    userId,
+    approvalScore: adaptive.approvalScore,
+    phase: adaptive.weights.phase,
+    memoryPressure: adaptive.memoryPressure,
+    pendingReviews: pendingReviews.length,
+    overdueReviews: adaptive.overdueCount,
+    contentLock: adaptive.lockStatus !== "allowed",
+    recoveryMode: adaptive.recoveryMode,
+    heavyRecoveryActive: adaptive.heavyRecovery.active,
+    heavyRecoveryPhase: adaptive.heavyRecovery.phase,
+    weakTopics: weakErrors,
+    strongTopics: strongDomains,
+  });
+
   return { recommendations: result, adaptive };
  } catch (err) {
   console.error("[StudyEngine] Error generating recommendations:", err);
