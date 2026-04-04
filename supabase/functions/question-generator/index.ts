@@ -414,6 +414,7 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
     }
 
     let response: Response;
+    const startMs = Date.now();
     try {
       response = await aiFetch(aiFetchOptions);
     } catch (aiErr) {
