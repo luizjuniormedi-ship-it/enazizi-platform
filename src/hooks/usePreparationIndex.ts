@@ -57,7 +57,7 @@ function calculateFromCoreData(cd: CoreDataResult): PreparationIndexData {
   const weekAgoStr = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
 
   // ═══ CRONOGRAMA (40%) ═══
-  const TOTAL_CURRICULUM = 250;
+  const TOTAL_CURRICULUM = 338; // matches curriculum_matrix total
   const cronograma = Math.min(Math.round((cd.temasCount / TOTAL_CURRICULUM) * 100), 100);
 
   // ═══ DESEMPENHO (35%) ═══
