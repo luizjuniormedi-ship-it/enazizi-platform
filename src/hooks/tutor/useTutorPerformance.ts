@@ -5,6 +5,7 @@ import { useGamification, XP_REWARDS, getSmartXpMultiplier } from "@/hooks/useGa
 import { showEvolutionFeedback } from "@/lib/evolutionFeedback";
 import { useToast } from "@/hooks/use-toast";
 import { dualWritePerformanceByTopic, dualWriteUserTopicProfile } from "@/lib/dualWrite";
+import { dualWriteTutorContextSnapshot } from "@/lib/tutorDualWrite";
 import type { StudyPerformance } from "@/components/tutor/TutorConstants";
 
 const DEFAULT_PERFORMANCE: StudyPerformance = {
