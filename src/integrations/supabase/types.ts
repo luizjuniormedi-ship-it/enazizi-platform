@@ -422,41 +422,53 @@ export type Database = {
       approval_scores: {
         Row: {
           accuracy: number
+          chance_score: number | null
           consistency_score: number
           created_at: string
           details_json: Json | null
           domain_score: number
           error_penalty: number
           id: string
+          phase: string | null
+          prep_index: number | null
           review_score: number
           score: number
           simulation_score: number
+          updated_at: string
           user_id: string
         }
         Insert: {
           accuracy?: number
+          chance_score?: number | null
           consistency_score?: number
           created_at?: string
           details_json?: Json | null
           domain_score?: number
           error_penalty?: number
           id?: string
+          phase?: string | null
+          prep_index?: number | null
           review_score?: number
           score?: number
           simulation_score?: number
+          updated_at?: string
           user_id: string
         }
         Update: {
           accuracy?: number
+          chance_score?: number | null
           consistency_score?: number
           created_at?: string
           details_json?: Json | null
           domain_score?: number
           error_penalty?: number
           id?: string
+          phase?: string | null
+          prep_index?: number | null
           review_score?: number
           score?: number
           simulation_score?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -1229,7 +1241,11 @@ export type Database = {
           chance_score: number | null
           completed_blocks: Json
           completed_count: number
+          content_lock: boolean | null
           created_at: string | null
+          diagnosis_summary: string | null
+          heavy_recovery_active: boolean | null
+          heavy_recovery_phase: number | null
           id: string
           objective: string | null
           phase: string | null
@@ -1246,7 +1262,11 @@ export type Database = {
           chance_score?: number | null
           completed_blocks?: Json
           completed_count?: number
+          content_lock?: boolean | null
           created_at?: string | null
+          diagnosis_summary?: string | null
+          heavy_recovery_active?: boolean | null
+          heavy_recovery_phase?: number | null
           id?: string
           objective?: string | null
           phase?: string | null
@@ -1263,7 +1283,11 @@ export type Database = {
           chance_score?: number | null
           completed_blocks?: Json
           completed_count?: number
+          content_lock?: boolean | null
           created_at?: string | null
+          diagnosis_summary?: string | null
+          heavy_recovery_active?: boolean | null
+          heavy_recovery_phase?: number | null
           id?: string
           objective?: string | null
           phase?: string | null
@@ -3699,39 +3723,52 @@ export type Database = {
           concluida_em: string | null
           created_at: string
           data_revisao: string
+          fsrs_card_id: string | null
           id: string
           prioridade: number | null
           risco_esquecimento: string | null
           status: string
           tema_id: string
           tipo_revisao: string
+          updated_at: string
           user_id: string
         }
         Insert: {
           concluida_em?: string | null
           created_at?: string
           data_revisao: string
+          fsrs_card_id?: string | null
           id?: string
           prioridade?: number | null
           risco_esquecimento?: string | null
           status?: string
           tema_id: string
           tipo_revisao: string
+          updated_at?: string
           user_id: string
         }
         Update: {
           concluida_em?: string | null
           created_at?: string
           data_revisao?: string
+          fsrs_card_id?: string | null
           id?: string
           prioridade?: number | null
           risco_esquecimento?: string | null
           status?: string
           tema_id?: string
           tipo_revisao?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "revisoes_fsrs_card_id_fkey"
+            columns: ["fsrs_card_id"]
+            isOneToOne: false
+            referencedRelation: "fsrs_cards"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "revisoes_tema_id_fkey"
             columns: ["tema_id"]
