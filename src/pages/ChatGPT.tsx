@@ -61,7 +61,6 @@ const ChatGPT = () => {
     examFocus: searchParams.get("examFocus") || undefined,
     heavyRecovery: searchParams.get("heavyRecovery") === "true",
   } : null;
-  const [newTopic, setNewTopic] = useState("");
 
   // Speech to text
   const { isListening, hasSpeechRecognition, toggleListening } = useSpeechToText(
