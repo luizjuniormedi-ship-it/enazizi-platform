@@ -39,6 +39,10 @@ export interface AdaptiveState {
   memoryPressure: number;
   /** Overdue review count */
   overdueCount: number;
+  /** Recovery mode active — reduces load and prioritizes critical items */
+  recoveryMode: boolean;
+  /** Human-readable reason for recovery mode */
+  recoveryReason: string;
 }
 
 export interface EngineResult {
