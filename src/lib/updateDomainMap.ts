@@ -56,6 +56,12 @@ export async function updateDomainMap(userId: string, entries: DomainEntry[]): P
           domain_score: Math.round((correct / total) * 100),
           last_studied_at: new Date().toISOString(),
         });
+
+        // Dual-write to new performance_by_topic table
+        dualWritePerformanceByTopic({
+          userId, specialty, topic: specialty,
+          questionsAnswered: total, correctAnswers: correct,
+        });
       }
     } catch (err) {
       console.error("Error updating domain map:", err);
