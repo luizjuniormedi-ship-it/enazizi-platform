@@ -228,6 +228,8 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 31, topic: "Insuficiência Adrenal", specialty: "Endocrinologia" },
   { week: 31, topic: "Distúrbios Disabsortivos", specialty: "Gastroenterologia" },
   { week: 31, topic: "Pneumologia Intensiva", specialty: "Pneumologia" },
+  { week: 31, topic: "Sepse e Choque Séptico", specialty: "Terapia Intensiva" },
+  { week: 31, topic: "Trombose Venosa Profunda e TEP", specialty: "Angiologia" },
   // Semana 32
   { week: 32, topic: "Convulsão Febril", specialty: "Pediatria" },
   { week: 32, topic: "Cirurgia Torácica", specialty: "Cirurgia" },
@@ -235,6 +237,8 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 32, topic: "Úlceras Genitais", specialty: "Ginecologia e Obstetrícia" },
   { week: 32, topic: "Gestação Múltipla", specialty: "Ginecologia e Obstetrícia" },
   { week: 32, topic: "Síncope", specialty: "Cardiologia" },
+  { week: 32, topic: "Câncer Gástrico", specialty: "Oncologia" },
+  { week: 32, topic: "Infecções Urológicas", specialty: "Urologia" },
   // Semana 33
   { week: 33, topic: "Anafilaxia e Urticária", specialty: "Medicina de Emergência" },
   { week: 33, topic: "Temas Gerais em Cirurgia", specialty: "Cirurgia" },
@@ -242,6 +246,8 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 33, topic: "Influenza", specialty: "Infectologia" },
   { week: 33, topic: "Síndrome de Cushing", specialty: "Endocrinologia" },
   { week: 33, topic: "Nefrolitíase", specialty: "Nefrologia" },
+  { week: 33, topic: "Sedação e Analgesia em UTI", specialty: "Terapia Intensiva" },
+  { week: 33, topic: "Patologia Geral — Inflamação e Reparo", specialty: "Patologia" },
   // Semana 34
   { week: 34, topic: "Hiperplasia Adrenal Congênita", specialty: "Pediatria" },
   { week: 34, topic: "Sistemas de Informação em Saúde", specialty: "Medicina Preventiva" },
