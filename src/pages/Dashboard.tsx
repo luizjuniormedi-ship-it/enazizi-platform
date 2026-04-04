@@ -83,6 +83,7 @@ const Dashboard = () => {
 const queryClient = useQueryClient();
   const { user } = useAuth();
   const { evaluateAndDeliver } = useMessageDelivery();
+  useCoreData(); // preload shared data layer
   const { data, isLoading } = useDashboardData();
   const prevLevelRef = useRef<number | null>(null);
   const prevStreakRef = useRef<number | null>(null);
