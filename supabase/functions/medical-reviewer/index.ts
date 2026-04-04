@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
+import { logAiUsage } from "../_shared/ai-cache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -95,10 +96,23 @@ Regras:
       systemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
     }
 
+    const startMs = Date.now();
     const response = await aiFetch({
       messages: [{ role: "system", content: systemPrompt }, ...messages],
       stream: true,
     });
+    const elapsed = Date.now() - startMs;
+
+    logAiUsage({
+      userId: "system-reviewer",
+      functionName: "medical-reviewer",
+      modelUsed: "google/gemini-3-flash-preview",
+      success: response.ok,
+      responseTimeMs: elapsed,
+      cacheHit: false,
+      modelTier: "standard",
+      errorMessage: response.ok ? undefined : `status ${response.status}`,
+    }).catch(() => {});
 
     if (!response.ok) {
       const t = await response.text();

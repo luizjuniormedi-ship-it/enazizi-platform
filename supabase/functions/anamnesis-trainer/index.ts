@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.3.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
+import { logAiUsage } from "../_shared/ai-cache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -173,6 +174,19 @@ function ok(data: unknown) {
   });
 }
 
+function logAnamnesis(success: boolean, elapsed: number, errMsg?: string) {
+  logAiUsage({
+    userId: "system-anamnesis",
+    functionName: "anamnesis-trainer",
+    modelUsed: "google/gemini-2.5-flash",
+    success,
+    responseTimeMs: elapsed,
+    cacheHit: false,
+    modelTier: "standard",
+    errorMessage: errMsg,
+  }).catch(() => {});
+}
+
 function err(msg: string, status = 500) {
   return new Response(JSON.stringify({ error: msg }), {
     status,
@@ -224,6 +238,7 @@ Dificuldade: ${difficulty || "intermediário"}${ageInstruction}${subtopicInstruc
 Gere um paciente realista para treino de anamnese. Queixa vaga e coloquial. Dados ocultos completos.
 Lembre-se: NUNCA repita pacientes anteriores. Varie todos os parâmetros demográficos e clínicos.`;
 
+      const startMs = Date.now();
       const response = await aiFetch({
         model: "google/gemini-2.5-flash",
         messages: [
@@ -232,6 +247,8 @@ Lembre-se: NUNCA repita pacientes anteriores. Varie todos os parâmetros demogr�
         ],
         stream: false,
       });
+      const elapsed = Date.now() - startMs;
+      logAnamnesis(response.ok, elapsed, response.ok ? undefined : `status ${response.status}`);
 
       if (!response.ok) {
         const t = await response.text();
@@ -269,11 +286,14 @@ Lembre-se: NUNCA repita pacientes anteriores. Varie todos os parâmetros demogr�
         { role: "user", content: `action="interact"\nPergunta do aluno: ${userMessage}` },
       ];
 
+      const startMs2 = Date.now();
       const response = await aiFetch({
         model: "google/gemini-2.5-flash",
         messages: contextMessages,
         stream: false,
       });
+      const elapsed2 = Date.now() - startMs2;
+      logAnamnesis(response.ok, elapsed2, response.ok ? undefined : `status ${response.status}`);
 
       if (!response.ok) {
         const t = await response.text();
@@ -317,11 +337,14 @@ Lembre-se: NUNCA repita pacientes anteriores. Varie todos os parâmetros demogr�
         { role: "user", content: `action="finish"\nAvalie o desempenho COMPLETO da anamnese E do raciocínio clínico do aluno. Seja rigoroso e educativo.${diagnosisContext}` },
       ];
 
+      const startMs3 = Date.now();
       const response = await aiFetch({
         model: "google/gemini-2.5-flash",
         messages: contextMessages,
         stream: false,
       });
+      const elapsed3 = Date.now() - startMs3;
+      logAnamnesis(response.ok, elapsed3, response.ok ? undefined : `status ${response.status}`);
 
       if (!response.ok) {
         const t = await response.text();

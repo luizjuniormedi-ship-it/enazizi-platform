@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
+import { logAiUsage } from "../_shared/ai-cache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -229,12 +230,25 @@ Siga RIGOROSAMENTE a estrutura completa de 18 seções. Inclua:
     }
 
     // Use aiFetch with model tiering — chronicles use standard model (flash)
+    const startMs = Date.now();
     const response = await aiFetch({
       model: "google/gemini-2.5-flash",
       messages: aiMessages,
       stream: true,
       maxTokens: 32768,
     });
+    const elapsed = Date.now() - startMs;
+
+    logAiUsage({
+      userId: "system-chronicle",
+      functionName: "medical-chronicle",
+      modelUsed: "google/gemini-2.5-flash",
+      success: response.ok,
+      responseTimeMs: elapsed,
+      cacheHit: false,
+      modelTier: "standard",
+      errorMessage: response.ok ? undefined : `status ${response.status}`,
+    }).catch(() => {});
 
     if (!response.ok) {
       const t = await response.text();

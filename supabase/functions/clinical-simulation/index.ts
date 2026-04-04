@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.3.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
+import { logAiUsage } from "../_shared/ai-cache.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
 
 const corsHeaders = {
@@ -530,11 +531,24 @@ Responda APENAS em JSON válido.`,
     }
 
     // Call AI
+    const startMs = Date.now();
     const aiResp = await aiFetch({
       model: "google/gemini-2.5-flash",
       messages,
       timeoutMs: 60000,
     });
+    const elapsed = Date.now() - startMs;
+
+    logAiUsage({
+      userId: user.id,
+      functionName: "clinical-simulation",
+      modelUsed: "google/gemini-2.5-flash",
+      success: aiResp.ok,
+      responseTimeMs: elapsed,
+      cacheHit: false,
+      modelTier: "standard",
+      errorMessage: aiResp.ok ? undefined : `status ${aiResp.status}`,
+    }).catch(() => {});
 
     if (!aiResp.ok) {
       const errText = await aiResp.text();
