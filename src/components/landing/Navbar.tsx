@@ -8,7 +8,7 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/95 md:bg-background/80 backdrop-blur-xl">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/95 md:bg-background/80 backdrop-blur-xl" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="container flex h-14 sm:h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
           <img src={enazizi} alt="ENAZIZI" className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg object-cover" />
