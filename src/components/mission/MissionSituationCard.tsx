@@ -55,7 +55,7 @@ export default function MissionSituationCard({ examReadiness, prepIndex, adaptiv
           <div className="rounded-lg bg-secondary/50 p-2.5 text-center">
             <BarChart3 className="h-4 w-4 mx-auto text-primary mb-1" />
             <div className="text-lg font-bold">
-              {topExam ? `${Math.round(topExam.overallChance)}%` : "—"}
+              {topExam ? `${Math.round(topExam.readinessScore)}%` : "—"}
             </div>
             <div className="text-[10px] text-muted-foreground truncate">
               {topExam?.examName || "Chance"}

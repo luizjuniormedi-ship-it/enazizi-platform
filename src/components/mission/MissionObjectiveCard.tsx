@@ -23,14 +23,14 @@ function generateObjective(adaptive?: AdaptiveState): string {
     return "Corrigir seus maiores erros e reduzir o backlog de revisões.";
   }
 
-  if (adaptive.lockStatus?.locked) {
+  if (adaptive.lockStatus === "blocked") {
     return "Consolidar o conteúdo atual antes de avançar.";
   }
 
-  if (phase === "critical") return "Fortalecer sua base com foco em temas essenciais.";
-  if (phase === "attention") return "Equilibrar revisões e conteúdo novo para subir de fase.";
-  if (phase === "competitive") return "Refinar pontos fracos e praticar com simulados.";
-  if (phase === "ready") return "Manter a consistência e revisar temas estratégicos.";
+  if (phase === "critico") return "Fortalecer sua base com foco em temas essenciais.";
+  if (phase === "atencao") return "Equilibrar revisões e conteúdo novo para subir de fase.";
+  if (phase === "competitivo") return "Refinar pontos fracos e praticar com simulados.";
+  if (phase === "pronto") return "Manter a consistência e revisar temas estratégicos.";
 
   return "Avançar no plano de estudos com foco nos temas prioritários.";
 }

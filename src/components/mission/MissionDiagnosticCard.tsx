@@ -47,7 +47,7 @@ function buildFactors(adaptive?: AdaptiveState, streak?: number): DiagnosticFact
     });
   }
 
-  if (adaptive.lockStatus?.locked) {
+  if (adaptive.lockStatus === "blocked") {
     factors.push({
       icon: <Lock className="h-4 w-4" />,
       label: "Conteúdo bloqueado até consolidar a base",

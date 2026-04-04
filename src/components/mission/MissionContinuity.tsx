@@ -15,9 +15,9 @@ function getTomorrowHint(adaptive?: AdaptiveState): string {
     return "Amanhã continuaremos a recuperação com carga controlada.";
   }
   if (adaptive.recoveryMode) return "Amanhã o foco será reduzir mais o backlog.";
-  if (phase === "critical") return "Amanhã vamos fortalecer mais a base.";
-  if (phase === "attention") return "Amanhã teremos mais revisões e conteúdo novo.";
-  if (phase === "competitive") return "Amanhã o foco será simulados e prática.";
+  if (phase === "critico") return "Amanhã vamos fortalecer mais a base.";
+  if (phase === "atencao") return "Amanhã teremos mais revisões e conteúdo novo.";
+  if (phase === "competitivo") return "Amanhã o foco será simulados e prática.";
   return "Amanhã manteremos a consistência com revisões leves.";
 }
 

@@ -42,7 +42,7 @@ export default function MissionAlerts({ adaptive, streak }: Props) {
     );
   }
 
-  if (adaptive.lockStatus?.locked) {
+  if (adaptive.lockStatus === "blocked") {
     alerts.push(
       <div key="lock" className="rounded-lg bg-secondary/60 border border-border p-3 flex items-center gap-2">
         <Lock className="h-4 w-4 text-muted-foreground" />
