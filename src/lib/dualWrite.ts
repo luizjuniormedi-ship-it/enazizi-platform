@@ -124,8 +124,16 @@ export function dualWriteUserTopicProfile(params: {
             last_practiced_at: new Date().toISOString(),
           });
 
-        // Auto-create FSRS card for new topic profile
-        ensureFsrsCard(userId, "tema", topic);
+        // Auto-create FSRS card using temas_estudados UUID (stable ref)
+        const { data: temaRow } = await supabase
+          .from("temas_estudados")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("tema", topic)
+          .maybeSingle();
+        if (temaRow) {
+          ensureFsrsCard(userId, "tema", temaRow.id);
+        }
       }
     } catch (e) {
       console.warn("[DualWrite] user_topic_profiles:", e);
