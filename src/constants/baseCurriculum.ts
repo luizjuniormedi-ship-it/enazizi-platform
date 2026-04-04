@@ -183,6 +183,8 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   // Semana 25
   { week: 25, topic: "DRGE em Pediatria", specialty: "Pediatria" },
   { week: 25, topic: "Cirurgia Infantil - Parte I", specialty: "Cirurgia" },
+  { week: 25, topic: "Hiperplasia Prostática Benigna", specialty: "Urologia" },
+  { week: 25, topic: "Farmacologia — Antimicrobianos", specialty: "Farmacologia" },
   // Semana 26
   { week: 26, topic: "ITU em Pediatria", specialty: "Pediatria" },
   { week: 26, topic: "Cirurgia Infantil - Parte II", specialty: "Cirurgia" },
@@ -190,6 +192,8 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 26, topic: "Micoses Invasivas", specialty: "Infectologia" },
   { week: 26, topic: "Hipocalcemia", specialty: "Endocrinologia" },
   { week: 26, topic: "Síndrome do Intestino Irritável", specialty: "Gastroenterologia" },
+  { week: 26, topic: "Rastreamento Oncológico", specialty: "Oncologia" },
+  { week: 26, topic: "Farmacologia — Anti-Hipertensivos", specialty: "Farmacologia" },
   // Semana 27
   { week: 27, topic: "Doença de Kawasaki", specialty: "Pediatria" },
   { week: 27, topic: "Cirurgia Infantil - Parte III", specialty: "Cirurgia" },
@@ -197,14 +201,19 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 27, topic: "Cervicites", specialty: "Ginecologia e Obstetrícia" },
   { week: 27, topic: "Rotura Prematura de Membranas", specialty: "Ginecologia e Obstetrícia" },
   { week: 27, topic: "Bradiarritmias", specialty: "Cardiologia" },
+  { week: 27, topic: "Litíase Urinária", specialty: "Urologia" },
   // Semana 28
   { week: 28, topic: "Febre Reumática", specialty: "Pediatria" },
   { week: 28, topic: "Cirurgia Vascular", specialty: "Cirurgia" },
   { week: 28, topic: "Meningites", specialty: "Infectologia" },
   { week: 28, topic: "Osteoporose", specialty: "Endocrinologia" },
+  { week: 28, topic: "Doença Arterial Periférica", specialty: "Angiologia" },
+  { week: 28, topic: "Câncer de Próstata", specialty: "Oncologia" },
   // Semana 29
   { week: 29, topic: "Doenças Glomerulares", specialty: "Nefrologia" },
   { week: 29, topic: "AVC", specialty: "Neurologia" },
+  { week: 29, topic: "Ventilação Mecânica", specialty: "Terapia Intensiva" },
+  { week: 29, topic: "Farmacologia — Analgésicos e Anti-inflamatórios", specialty: "Farmacologia" },
   // Semana 30
   { week: 30, topic: "Emergências Pediátricas", specialty: "Pediatria" },
   { week: 30, topic: "Urologia", specialty: "Cirurgia" },
