@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Brain, Clock, BookOpen, RefreshCw, CheckCircle2, Loader2, Zap,
@@ -37,6 +38,9 @@ const DailyPlan = () => {
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const autoReviewStartedRef = useRef(false);
+  const autoStartReviews = new URLSearchParams(location.search).get("autostart") === "reviews";
 
   const [loading, setLoading] = useState(true);
   const [scheduledReviews, setScheduledReviews] = useState<ScheduledReview[]>([]);
