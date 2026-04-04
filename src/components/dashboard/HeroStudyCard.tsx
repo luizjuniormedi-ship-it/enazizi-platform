@@ -153,10 +153,10 @@ export default function HeroStudyCard() {
   }
 
   // ─── Main: Idle with tasks ───
-  const handleStart = () => {
+  const handleStart = (focusTotal = false) => {
     safeCta({
       action: () => { startMission(); },
-      nextStep: "/dashboard/missao",
+      nextStep: focusTotal ? "/dashboard/missao?focus=total" : "/dashboard/missao",
       errorMessage: "Não foi possível iniciar. Tente novamente.",
     });
   };
@@ -189,10 +189,20 @@ export default function HeroStudyCard() {
             className="w-full gap-2.5 font-bold text-lg h-14 shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform"
             size="lg"
             disabled={isLoading}
-            onClick={handleStart}
+            onClick={() => handleStart(false)}
           >
             <Play className="h-5 w-5" />
             COMEÇAR ESTUDO
+          </Button>
+
+          {/* ── Secondary CTA — Focus Total ── */}
+          <Button
+            variant="outline"
+            className="w-full gap-2 text-sm h-11 border-destructive/30 text-destructive hover:bg-destructive/10 active:scale-[0.98] transition-transform"
+            disabled={isLoading}
+            onClick={() => handleStart(true)}
+          >
+            🔥 Ativar Modo Foco Total
           </Button>
         </div>
 

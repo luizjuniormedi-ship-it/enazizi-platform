@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useMissionMode } from "@/hooks/useMissionMode";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,9 +38,13 @@ const TYPE_ICONS: Record<string, string> = {
 
 export default function MissionMode() {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { adaptive } = useStudyEngine();
+
+  // Check if user manually activated Focus Total via ?focus=total
+  const manualFocusTotal = new URLSearchParams(location.search).get("focus") === "total";
 
   const invalidateDashboard = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
@@ -54,8 +58,12 @@ export default function MissionMode() {
   const [taskListOpen, setTaskListOpen] = useState(false);
   const [useFocusHard, setUseFocusHard] = useState(false);
 
-  // Check if Focus Hard Mode should activate
+  // Check if Focus Hard Mode should activate (auto or manual)
   useEffect(() => {
+    if (manualFocusTotal) {
+      setUseFocusHard(true);
+      return;
+    }
     if (!user || !adaptive) return;
     const checkFocusHard = async () => {
       try {
@@ -69,7 +77,7 @@ export default function MissionMode() {
       }
     };
     checkFocusHard();
-  }, [user, adaptive]);
+  }, [user, adaptive, manualFocusTotal]);
 
   // Redirect if no active mission
   useEffect(() => {
