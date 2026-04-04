@@ -3,37 +3,35 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useMissionMode } from "@/hooks/useMissionMode";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
+import { useExamReadiness } from "@/hooks/useExamReadiness";
+import { usePreparationIndex } from "@/hooks/usePreparationIndex";
+import { useCoreData } from "@/hooks/useCoreData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { buildStudyPath } from "@/lib/studyRouter";
 import { getHumanReadableReason } from "@/lib/humanizedReasons";
 import FocusHardMode from "@/components/study/FocusHardMode";
+import MissionSituationCard from "@/components/mission/MissionSituationCard";
+import MissionDiagnosticCard from "@/components/mission/MissionDiagnosticCard";
+import MissionObjectiveCard from "@/components/mission/MissionObjectiveCard";
+import MissionTaskList from "@/components/mission/MissionTaskList";
+import MissionTaskActions from "@/components/mission/MissionTaskActions";
+import MissionProgressFeedback from "@/components/mission/MissionProgressFeedback";
+import MissionImpactProjection from "@/components/mission/MissionImpactProjection";
+import MissionAlerts from "@/components/mission/MissionAlerts";
+import MissionTutorHint from "@/components/mission/MissionTutorHint";
+import MissionContinuity from "@/components/mission/MissionContinuity";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
-  Play, Pause, SkipForward, CheckCircle2, Trophy,
-  ArrowRight, X, Clock, Sparkles, Rocket, Target, ChevronDown,
+  Play, Pause, Trophy, X, Clock, Sparkles, Rocket,
 } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-
-const TYPE_LABELS: Record<string, string> = {
-  review: "Revisão",
-  error_review: "Correção de Erros",
-  practice: "Prática de Questões",
-  clinical: "Treino Clínico",
-  new: "Novo Conteúdo",
-  simulado: "Simulado",
-};
 
 const TYPE_ICONS: Record<string, string> = {
-  review: "🔄",
-  error_review: "🔴",
-  practice: "📝",
-  clinical: "🏥",
-  new: "📚",
-  simulado: "🎯",
+  review: "🔄", error_review: "🔴", practice: "📝",
+  clinical: "🏥", new: "📚", simulado: "🎯",
 };
 
 export default function MissionMode() {
@@ -42,8 +40,10 @@ export default function MissionMode() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { adaptive } = useStudyEngine();
+  const { data: examReadiness } = useExamReadiness();
+  const { data: prepIndex } = usePreparationIndex();
+  const { data: coreData } = useCoreData();
 
-  // Check if user manually activated Focus Total via ?focus=total
   const manualFocusTotal = new URLSearchParams(location.search).get("focus") === "total";
 
   const invalidateDashboard = useCallback(() => {
@@ -51,46 +51,39 @@ export default function MissionMode() {
     queryClient.invalidateQueries({ queryKey: ["study-engine"] });
     queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
   }, [queryClient]);
+
   const {
     state, currentTask, nextTask, progress,
     totalMinutes, completedMinutes,
     completeCurrentTask, skipCurrentTask,
     pauseMission, resumeMission, endMission,
   } = useMissionMode();
-  const [taskListOpen, setTaskListOpen] = useState(false);
-  const [useFocusHard, setUseFocusHard] = useState(false);
 
-  // Check if Focus Hard Mode should activate (auto or manual)
+  const [useFocusHard, setUseFocusHard] = useState(false);
+  const streak = coreData?.gamification?.current_streak ?? undefined;
+
   useEffect(() => {
-    if (manualFocusTotal) {
-      setUseFocusHard(true);
-      return;
-    }
+    if (manualFocusTotal) { setUseFocusHard(true); return; }
     if (!user || !adaptive) return;
-    const checkFocusHard = async () => {
+    const check = async () => {
       try {
         const { data: profile } = await supabase.from("profiles").select("exam_date").eq("user_id", user.id).maybeSingle();
-        const examDate = profile?.exam_date;
-        const daysToExam = examDate ? Math.ceil((new Date(examDate).getTime() - Date.now()) / 86400000) : 999;
+        const daysToExam = profile?.exam_date ? Math.ceil((new Date(profile.exam_date).getTime() - Date.now()) / 86400000) : 999;
         setUseFocusHard(daysToExam <= 15 || (adaptive.approvalScore < 40 && adaptive.approvalScore > 0));
-      } catch (e) {
-        console.warn("[MissionMode] Erro ao verificar Focus Hard:", e);
-        setUseFocusHard(false);
-      }
+      } catch { setUseFocusHard(false); }
     };
-    checkFocusHard();
+    check();
   }, [user, adaptive, manualFocusTotal]);
 
-  // Redirect if no active mission
   useEffect(() => {
-    if (state.status === "idle") {
-      navigate("/dashboard", { replace: true });
-    }
+    if (state.status === "idle") navigate("/dashboard", { replace: true });
   }, [state.status, navigate]);
 
   if (state.status === "idle") return null;
 
-  // ── Mission Complete Screen ──
+  const handleEnd = () => { invalidateDashboard(); endMission(); navigate("/dashboard"); };
+
+  // ── Mission Complete ──
   if (state.status === "completed") {
     return (
       <div className="fixed inset-0 z-50 bg-background flex items-center justify-center p-4">
@@ -105,14 +98,13 @@ export default function MissionMode() {
                 Você completou {state.completedIds.length} de {state.tasks.length} tarefas
               </p>
             </div>
-
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-xl bg-secondary/50 p-3 text-center">
                 <div className="text-xl font-bold text-primary">{state.completedIds.length}</div>
                 <div className="text-[10px] text-muted-foreground">Concluídas</div>
               </div>
               <div className="rounded-xl bg-secondary/50 p-3 text-center">
-                <div className="text-xl font-bold text-foreground">{completedMinutes}min</div>
+                <div className="text-xl font-bold">{completedMinutes}min</div>
                 <div className="text-[10px] text-muted-foreground">Estudados</div>
               </div>
               <div className="rounded-xl bg-secondary/50 p-3 text-center">
@@ -120,8 +112,7 @@ export default function MissionMode() {
                 <div className="text-[10px] text-muted-foreground">Progresso</div>
               </div>
             </div>
-
-            <Button className="w-full gap-2" size="lg" onClick={() => { invalidateDashboard(); endMission(); navigate("/dashboard"); }}>
+            <Button className="w-full gap-2" size="lg" onClick={handleEnd}>
               <Sparkles className="h-4 w-4" />
               Voltar ao Dashboard
             </Button>
@@ -131,7 +122,7 @@ export default function MissionMode() {
     );
   }
 
-  // ── Focus Hard Mode (auto-activated) ──
+  // ── Focus Hard Mode ──
   if (useFocusHard && state.status === "active" && currentTask) {
     const focusReason = adaptive?.approvalScore && adaptive.approvalScore < 40
       ? "Score baixo — foco total necessário"
@@ -142,13 +133,13 @@ export default function MissionMode() {
         taskType={currentTask.type}
         estimatedMinutes={currentTask.estimatedMinutes}
         reason={focusReason}
-        onClose={() => { invalidateDashboard(); endMission(); navigate("/dashboard"); }}
-        onComplete={() => { completeCurrentTask(); }}
+        onClose={handleEnd}
+        onComplete={completeCurrentTask}
       >
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <span className="text-2xl">{TYPE_ICONS[currentTask.type] || "📋"}</span>
-            <Badge variant="secondary">{TYPE_LABELS[currentTask.type]}</Badge>
+            <Badge variant="secondary">{currentTask.type}</Badge>
           </div>
           <p className="text-muted-foreground">{getHumanReadableReason(currentTask)}</p>
           <Button
@@ -164,7 +155,9 @@ export default function MissionMode() {
     );
   }
 
-  // ── Active / Paused Mission ──
+  const isAlmostDone = state.tasks.length > 0 && state.completedIds.length >= state.tasks.length - 1;
+
+  // ── Active / Paused ──
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
       {/* Top Bar */}
@@ -181,7 +174,7 @@ export default function MissionMode() {
           <Badge variant="secondary" className="text-xs">
             {state.completedIds.length}/{state.tasks.length}
           </Badge>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { invalidateDashboard(); endMission(); navigate("/dashboard"); }}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleEnd}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -190,163 +183,97 @@ export default function MissionMode() {
       {/* Progress */}
       <div className="px-4 py-2 bg-card/50">
         <Progress value={progress} className="h-2" />
-        <div className="flex justify-between mt-1">
-          <span className="text-[10px] text-muted-foreground">{progress}% concluído</span>
-          <span className="text-[10px] text-muted-foreground">
-            Tarefa {Math.min(state.currentIndex + 1, state.tasks.length)} de {state.tasks.length}
-          </span>
-        </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto">
         {state.status === "paused" ? (
-          <Card className="max-w-sm w-full">
-            <CardContent className="p-6 text-center space-y-4">
-              <Pause className="h-12 w-12 text-muted-foreground mx-auto" />
-              <h2 className="text-lg font-bold">Missão Pausada</h2>
-              <p className="text-sm text-muted-foreground">
-                Você pode retomar a qualquer momento.
-              </p>
-              <div className="flex gap-2">
-                <Button className="flex-1 gap-1.5" onClick={resumeMission}>
-                  <Play className="h-4 w-4" /> Retomar
-                </Button>
-                <Button variant="outline" onClick={() => { invalidateDashboard(); endMission(); navigate("/dashboard"); }}>
-                  Encerrar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : currentTask ? (
-          <div className="max-w-md w-full space-y-4">
-            {/* Current Task Card */}
-            <Card className="border-primary/30 shadow-lg">
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{TYPE_ICONS[currentTask.type] || "📋"}</span>
-                  <Badge variant="secondary" className="text-xs">
-                    {TYPE_LABELS[currentTask.type] || currentTask.type}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground ml-auto flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    ~{currentTask.estimatedMinutes}min
-                  </span>
-                </div>
-
-                <div>
-                  <h2 className="text-xl font-bold">{currentTask.topic}</h2>
-                  <p className="text-sm text-muted-foreground mt-1">{getHumanReadableReason(currentTask)}</p>
-                  {adaptive?.focusReason && (
-                    <p className="text-[10px] text-muted-foreground/70 mt-1 flex items-center gap-1">
-                      <Target className="h-3 w-3 shrink-0" />
-                      {adaptive.focusReason}
-                    </p>
-                  )}
-                </div>
-
-                <Button
-                  className="w-full gap-2 text-base py-6"
-                  size="lg"
-                  onClick={() => navigate(buildStudyPath(currentTask, "mission"))}
-                >
-                  <Play className="h-5 w-5" />
-                  Iniciar Atividade
-                </Button>
-
+          <div className="flex items-center justify-center h-full p-4">
+            <Card className="max-w-sm w-full">
+              <CardContent className="p-6 text-center space-y-4">
+                <Pause className="h-12 w-12 text-muted-foreground mx-auto" />
+                <h2 className="text-lg font-bold">Missão Pausada</h2>
+                <p className="text-sm text-muted-foreground">Você pode retomar a qualquer momento.</p>
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1 gap-1.5"
-                    size="sm"
-                    onClick={completeCurrentTask}
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    Já concluí
+                  <Button className="flex-1 gap-1.5" onClick={resumeMission}>
+                    <Play className="h-4 w-4" /> Retomar
                   </Button>
-                  <Button
-                    variant="ghost"
-                    className="gap-1.5"
-                    size="sm"
-                    onClick={skipCurrentTask}
-                  >
-                    <SkipForward className="h-3.5 w-3.5" />
-                    Pular
-                  </Button>
+                  <Button variant="outline" onClick={handleEnd}>Encerrar</Button>
                 </div>
               </CardContent>
             </Card>
+          </div>
+        ) : (
+          <div className="max-w-lg mx-auto p-4 space-y-3 pb-8">
+            {/* 1. Situação Atual */}
+            <MissionSituationCard
+              examReadiness={examReadiness || undefined}
+              prepIndex={prepIndex}
+              adaptive={adaptive}
+            />
 
-            {/* Next Up Preview */}
-            {nextTask && (
-              <Card className="border-border/50 bg-card/50">
-                <CardContent className="p-3 flex items-center gap-3">
-                  <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Próximo</p>
-                    <p className="text-sm font-medium truncate">{nextTask.topic}</p>
-                  </div>
-                  <span className="text-2xl">{TYPE_ICONS[nextTask.type] || "📋"}</span>
-                </CardContent>
-              </Card>
+            {/* 2. Diagnóstico Inteligente */}
+            <MissionDiagnosticCard adaptive={adaptive} streak={streak} />
+
+            {/* 3. Objetivo do Dia */}
+            <MissionObjectiveCard adaptive={adaptive} />
+
+            {/* 8. Alertas Inteligentes */}
+            <MissionAlerts adaptive={adaptive} streak={streak} />
+
+            {/* 5. Execução Interativa (tarefa atual) */}
+            {currentTask && (
+              <MissionTaskActions
+                task={currentTask}
+                onComplete={completeCurrentTask}
+                onSkip={skipCurrentTask}
+              />
             )}
 
-            {/* Task List — collapsible by default */}
-            <Collapsible open={taskListOpen} onOpenChange={setTaskListOpen}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground text-xs">
-                  <span>Ver todas as tarefas ({state.tasks.length})</span>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${taskListOpen ? "rotate-180" : ""}`} />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-1.5 mt-1">
-                {state.tasks.map((task, idx) => {
-                  const isCompleted = state.completedIds.includes(task.id);
-                  const isCurrent = idx === state.currentIndex;
-                  return (
-                    <div
-                      key={task.id}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors ${
-                        isCurrent
-                          ? "bg-primary/10 border border-primary/30"
-                          : isCompleted
-                          ? "bg-muted/50 text-muted-foreground"
-                          : "bg-card/30"
-                      }`}
-                    >
-                      {isCompleted ? (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                      ) : isCurrent ? (
-                        <Target className="h-3.5 w-3.5 text-primary shrink-0" />
-                      ) : (
-                        <div className="h-3.5 w-3.5 rounded-full border border-border shrink-0" />
-                      )}
-                      <span className={`truncate ${isCompleted ? "line-through" : ""}`}>
-                        {task.topic}
-                      </span>
-                      <span className="ml-auto text-muted-foreground">{TYPE_ICONS[task.type]}</span>
-                    </div>
-                  );
-                })}
-              </CollapsibleContent>
-            </Collapsible>
+            {/* 9. Tutor IA Opcional */}
+            <MissionTutorHint task={currentTask} />
 
-            {/* Pause / Free mode */}
+            {/* 6. Feedback em Tempo Real */}
+            <MissionProgressFeedback
+              tasks={state.tasks}
+              completedIds={state.completedIds}
+              progress={progress}
+              completedMinutes={completedMinutes}
+              totalMinutes={totalMinutes}
+            />
+
+            {/* 7. Projeção de Impacto */}
+            <MissionImpactProjection
+              tasks={state.tasks}
+              completedIds={state.completedIds}
+              adaptive={adaptive}
+            />
+
+            {/* 4. Lista de Tarefas */}
+            <MissionTaskList
+              tasks={state.tasks}
+              currentIndex={state.currentIndex}
+              completedIds={state.completedIds}
+            />
+
+            {/* 10. Continuidade */}
+            <MissionContinuity
+              nextTask={nextTask}
+              adaptive={adaptive}
+              isAlmostDone={isAlmostDone}
+            />
+
+            {/* Pausar / Modo Livre */}
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1 gap-1.5" size="sm" onClick={pauseMission}>
                 <Pause className="h-3.5 w-3.5" /> Pausar
               </Button>
-              <Button
-                variant="ghost"
-                className="flex-1"
-                size="sm"
-                onClick={() => { invalidateDashboard(); endMission(); navigate("/dashboard"); }}
-              >
+              <Button variant="ghost" className="flex-1" size="sm" onClick={handleEnd}>
                 Modo Livre
               </Button>
             </div>
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );
