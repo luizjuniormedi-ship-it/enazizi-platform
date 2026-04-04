@@ -65,6 +65,7 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
 
   // Fallback: Lovable AI Gateway
   if (LOVABLE_API_KEY) {
+    const startMs = Date.now();
     const res = await fetch(LOVABLE_GATEWAY, {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -72,9 +73,11 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
     });
     if (res.ok) {
       const data = await res.json();
+      logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "google/gemini-2.5-flash", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "fast" }).catch(() => {});
       return data.choices?.[0]?.message?.content || "";
     }
     const errText = await res.text();
+    logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "google/gemini-2.5-flash", success: false, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "fast", errorMessage: `status ${res.status}` }).catch(() => {});
     throw new Error(`Lovable Gateway ${res.status}: ${errText.slice(0, 200)}`);
   }
 
