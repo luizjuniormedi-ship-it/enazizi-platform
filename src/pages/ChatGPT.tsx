@@ -47,6 +47,22 @@ const ChatGPT = () => {
   const [changingTopic, setChangingTopic] = useState(false);
   const [newTopic, setNewTopic] = useState("");
 
+  // Mission mode detection from URL params
+  const [searchParams] = useSearchParams();
+  const tutorMode = searchParams.get("tutor_mode") as "free" | "mission" | null;
+  const missionContext = tutorMode === "mission" ? {
+    mode: "mission" as const,
+    topic: searchParams.get("topic") || undefined,
+    error: searchParams.get("error") || undefined,
+    phase: searchParams.get("phase") || undefined,
+    objective: searchParams.get("objective") || undefined,
+    pendingReviews: searchParams.get("pendingReviews") ? Number(searchParams.get("pendingReviews")) : undefined,
+    accuracy: searchParams.get("accuracy") ? Number(searchParams.get("accuracy")) : undefined,
+    examFocus: searchParams.get("examFocus") || undefined,
+    heavyRecovery: searchParams.get("heavyRecovery") === "true",
+  } : null;
+  const [newTopic, setNewTopic] = useState("");
+
   // Speech to text
   const { isListening, hasSpeechRecognition, toggleListening } = useSpeechToText(
     (text) => setInput((prev) => prev ? prev + " " + text : text)
