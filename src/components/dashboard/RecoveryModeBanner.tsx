@@ -5,10 +5,10 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 
 const PHASE_COLORS: Record<number, string> = {
-  1: "text-red-500 bg-red-500/10",
-  2: "text-orange-500 bg-orange-500/10",
-  3: "text-yellow-500 bg-yellow-500/10",
-  4: "text-emerald-500 bg-emerald-500/10",
+  1: "text-destructive bg-destructive/10",
+  2: "text-primary bg-primary/10",
+  3: "text-accent-foreground bg-accent/50",
+  4: "text-primary bg-primary/10",
 };
 
 const PHASE_MESSAGES: Record<number, string> = {
