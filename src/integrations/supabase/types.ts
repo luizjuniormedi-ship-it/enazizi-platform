@@ -4928,6 +4928,7 @@ export type Database = {
           mission_id: string | null
           pending_reviews: number | null
           phase: string | null
+          tutor_session_id: string | null
           user_id: string
         }
         Insert: {
@@ -4941,6 +4942,7 @@ export type Database = {
           mission_id?: string | null
           pending_reviews?: number | null
           phase?: string | null
+          tutor_session_id?: string | null
           user_id: string
         }
         Update: {
@@ -4954,9 +4956,18 @@ export type Database = {
           mission_id?: string | null
           pending_reviews?: number | null
           phase?: string | null
+          tutor_session_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tutor_context_snapshots_tutor_session_id_fkey"
+            columns: ["tutor_session_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tutor_messages: {
         Row: {
@@ -5049,7 +5060,7 @@ export type Database = {
           {
             foreignKeyName: "tutor_sessions_conversation_id_fkey"
             columns: ["conversation_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "chat_conversations"
             referencedColumns: ["id"]
           },
