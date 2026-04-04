@@ -26,6 +26,72 @@ export interface StudyRecommendation {
   _groupKey?: string;
 }
 
+/** Heavy recovery phase (30-day progressive plan) */
+export type HeavyRecoveryPhase = 1 | 2 | 3 | 4;
+
+export interface HeavyRecoveryState {
+  active: boolean;
+  phase: HeavyRecoveryPhase;
+  dayInRecovery: number;
+  startedAt: string | null;
+  /** Phase labels for UI */
+  phaseLabel: string;
+  phaseDescription: string;
+  /** Max daily tasks per phase */
+  maxTasks: number;
+  /** Max new topics allowed */
+  maxNewTopics: number;
+  /** Progress % through 30-day plan */
+  progressPercent: number;
+}
+
+const HEAVY_RECOVERY_PHASES: Record<HeavyRecoveryPhase, { label: string; description: string; maxTasks: number; maxNew: number }> = {
+  1: { label: "Estabilização", description: "Parando o colapso — foco apenas em revisões críticas e erros recorrentes.", maxTasks: 4, maxNew: 0 },
+  2: { label: "Limpeza Controlada", description: "Reduzindo pendências — revisões + questões leves.", maxTasks: 5, maxNew: 0 },
+  3: { label: "Reativação", description: "Retomando o fluxo — liberação gradual de conteúdo.", maxTasks: 6, maxNew: 1 },
+  4: { label: "Reintegração", description: "Voltando ao normal — remoção progressiva de restrições.", maxTasks: 7, maxNew: 2 },
+};
+
+function getHeavyRecoveryPhase(day: number): HeavyRecoveryPhase {
+  if (day <= 7) return 1;
+  if (day <= 15) return 2;
+  if (day <= 23) return 3;
+  return 4;
+}
+
+const HEAVY_RECOVERY_STORAGE_KEY = "enazizi-heavy-recovery";
+
+function loadHeavyRecoveryState(): { startedAt: string } | null {
+  try {
+    const raw = localStorage.getItem(HEAVY_RECOVERY_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
+function persistHeavyRecovery(startedAt: string) {
+  localStorage.setItem(HEAVY_RECOVERY_STORAGE_KEY, JSON.stringify({ startedAt }));
+}
+
+function clearHeavyRecovery() {
+  localStorage.removeItem(HEAVY_RECOVERY_STORAGE_KEY);
+}
+
+function buildHeavyRecoveryState(startedAt: string | null, active: boolean): HeavyRecoveryState {
+  if (!active || !startedAt) {
+    return { active: false, phase: 1, dayInRecovery: 0, startedAt: null, phaseLabel: "", phaseDescription: "", maxTasks: 8, maxNewTopics: 3, progressPercent: 0 };
+  }
+  const day = Math.max(1, Math.ceil((Date.now() - new Date(startedAt).getTime()) / 86400000));
+  const phase = getHeavyRecoveryPhase(Math.min(day, 30));
+  const config = HEAVY_RECOVERY_PHASES[phase];
+  return {
+    active: true, phase, dayInRecovery: day, startedAt,
+    phaseLabel: config.label, phaseDescription: config.description,
+    maxTasks: config.maxTasks, maxNewTopics: config.maxNew,
+    progressPercent: Math.min(Math.round((day / 30) * 100), 100),
+  };
+}
+
 /** Adaptive state exposed to Dashboard/Mission/Mentor */
 export interface AdaptiveState {
   approvalScore: number;
@@ -43,6 +109,8 @@ export interface AdaptiveState {
   recoveryMode: boolean;
   /** Human-readable reason for recovery mode */
   recoveryReason: string;
+  /** Heavy recovery mode — 30-day progressive recovery plan */
+  heavyRecovery: HeavyRecoveryState;
 }
 
 export interface EngineResult {
