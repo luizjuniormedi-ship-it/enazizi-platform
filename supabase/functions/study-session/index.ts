@@ -166,7 +166,7 @@ REGRAS:
       }
 
       // Default: full mode (existing behavior)
-      return `${base}
+      return `${getLessonPrompt()}
 ${levelPrompt}
 ${weakTopicsPrompt}
 FASE ATUAL: BLOCOS TÉCNICOS (STATES 2-6)
