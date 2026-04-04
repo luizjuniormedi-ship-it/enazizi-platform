@@ -11,7 +11,7 @@ export interface CoreDataResult {
     exam_date: string | null;
   };
   practiceAttempts: { correct: boolean; created_at: string }[];
-  revisoes: { id: string; status: string; data_revisao: string; updated_at: string }[];
+  revisoes: { id: string; status: string; data_revisao: string; created_at: string }[];
   examSessions: { score: number; total_questions: number; finished_at: string }[];
   anamnesisResults: { final_score: number; created_at: string }[];
   temasEstudados: { id: string; tema: string; especialidade: string | null; created_at: string }[];
@@ -39,7 +39,7 @@ async function fetchCoreData(userId: string): Promise<CoreDataResult> {
       .order("created_at", { ascending: false })
       .limit(500),
     supabase.from("revisoes")
-      .select("id, status, data_revisao, updated_at")
+      .select("id, status, data_revisao, created_at")
       .eq("user_id", userId),
     supabase.from("exam_sessions")
       .select("score, total_questions, finished_at")

@@ -90,41 +90,40 @@ const queryClient = useQueryClient();
   const [openSection, setOpenSection] = useState<SectionKey>(null);
   const isMobile = useIsMobile();
 
-  // Invalidate all dashboard-related caches on mount (returning from modules)
-  useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: ["core-data"] });
-    queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
-    queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
-    queryClient.invalidateQueries({ queryKey: ["study-engine"] });
-  }, [queryClient]);
+  // Realtime subscription with debounce for critical tables
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Realtime subscription for critical tables
-  // Realtime subscription for ALL critical tables
   useEffect(() => {
     if (!user?.id) return;
-    const invalidateAll = () => {
-      queryClient.invalidateQueries({ queryKey: ["core-data"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
-      queryClient.invalidateQueries({ queryKey: ["study-engine"] });
-      queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
+
+    const debouncedInvalidate = (keys: string[][]) => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = setTimeout(() => {
+        keys.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
+      }, 1500);
     };
-    const invalidateDash = () => {
-      queryClient.invalidateQueries({ queryKey: ["core-data"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
-    };
+
+    const onPractice = () => debouncedInvalidate([["core-data"], ["dashboard-data"], ["weekly-goals"]]);
+    const onRevisoes = () => debouncedInvalidate([["core-data"], ["dashboard-data"], ["weekly-goals"]]);
+    const onExam = () => debouncedInvalidate([["core-data"], ["dashboard-data"], ["exam-readiness"]]);
+    const onLight = () => debouncedInvalidate([["core-data"], ["dashboard-data"]]);
+
     const channel = supabase
       .channel('dashboard-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'practice_attempts', filter: `user_id=eq.${user.id}` }, invalidateAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'revisoes', filter: `user_id=eq.${user.id}` }, invalidateAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'fsrs_cards', filter: `user_id=eq.${user.id}` }, invalidateAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_sessions', filter: `user_id=eq.${user.id}` }, invalidateAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'error_bank', filter: `user_id=eq.${user.id}` }, invalidateDash)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_gamification', filter: `user_id=eq.${user.id}` }, invalidateDash)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'simulation_sessions', filter: `user_id=eq.${user.id}` }, invalidateDash)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'anamnesis_results', filter: `user_id=eq.${user.id}` }, invalidateDash)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chronicle_osce_sessions', filter: `user_id=eq.${user.id}` }, invalidateDash)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'practice_attempts', filter: `user_id=eq.${user.id}` }, onPractice)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'revisoes', filter: `user_id=eq.${user.id}` }, onRevisoes)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fsrs_cards', filter: `user_id=eq.${user.id}` }, onLight)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_sessions', filter: `user_id=eq.${user.id}` }, onExam)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'error_bank', filter: `user_id=eq.${user.id}` }, onLight)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_gamification', filter: `user_id=eq.${user.id}` }, onLight)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'simulation_sessions', filter: `user_id=eq.${user.id}` }, onLight)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'anamnesis_results', filter: `user_id=eq.${user.id}` }, onLight)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chronicle_osce_sessions', filter: `user_id=eq.${user.id}` }, onLight)
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      supabase.removeChannel(channel);
+    };
   }, [user?.id, queryClient]);
   useEffect(() => {
     if (!data) return;
