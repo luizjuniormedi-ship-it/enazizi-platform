@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
     // 1. Buscar usuários que optaram pelo BI diário
     const { data: users, error: usersErr } = await supabase
       .from("profiles")
-      .select("user_id, display_name, phone")
+      .select("user_id, display_name, phone, target_exams, target_exam, exam_date, daily_study_hours, recovery_mode")
       .eq("whatsapp_opt_out", false)
       .not("phone", "is", null)
       .neq("phone", "");
@@ -45,6 +45,28 @@ Deno.serve(async (req) => {
       .limit(1)
       .single();
     const adminId = adminRole?.user_id || users[0].user_id;
+
+    // Buscar snapshots e approval scores em lote
+    const userIds = users.map((u: any) => u.user_id);
+
+    const [{ data: allSnapshots }, { data: allApproval }, { data: allWeeklyGoals }] = await Promise.all([
+      supabase.from("dashboard_snapshots").select("user_id, snapshot_json").in("user_id", userIds),
+      supabase.from("approval_scores").select("user_id, score, created_at").in("user_id", userIds).order("created_at", { ascending: false }),
+      supabase.from("weekly_goals").select("user_id, questions_target, questions_done, reviews_target, reviews_done, week_start").in("user_id", userIds).gte("week_start", new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0]),
+    ]);
+
+    const snapshotByUser: Record<string, any> = {};
+    (allSnapshots || []).forEach((s: any) => { snapshotByUser[s.user_id] = s.snapshot_json; });
+
+    const approvalByUser: Record<string, number> = {};
+    (allApproval || []).forEach((a: any) => {
+      if (!approvalByUser[a.user_id]) approvalByUser[a.user_id] = Math.min(100, Math.round(a.score));
+    });
+
+    const weeklyByUser: Record<string, any> = {};
+    (allWeeklyGoals || []).forEach((w: any) => {
+      if (!weeklyByUser[w.user_id]) weeklyByUser[w.user_id] = w;
+    });
 
     for (const user of users) {
       try {
@@ -77,12 +99,12 @@ Deno.serve(async (req) => {
         // Gamification (XP, streak)
         const { data: gamif } = await supabase
           .from("user_gamification")
-          .select("xp, streak_days")
+          .select("xp, streak_days, current_streak")
           .eq("user_id", user.user_id)
           .single();
 
         const xp = gamif?.xp || 0;
-        const streak = gamif?.streak_days || 0;
+        const streak = gamif?.current_streak || gamif?.streak_days || 0;
 
         // Temas estudados hoje
         const { data: temas } = await supabase
@@ -173,15 +195,56 @@ Deno.serve(async (req) => {
           proficienciaInfo = `\nATIVIDADES DO PROFESSOR:\n${parts.join("\n")}`;
         }
 
+        // === NOVOS DADOS DO SISTEMA ===
+
+        // Bancas alvo
+        const targetExams = (user as any).target_exams;
+        const bancasAlvo = Array.isArray(targetExams) && targetExams.length > 0
+          ? targetExams.join(", ").toUpperCase()
+          : ((user as any).target_exam || "não definida").toUpperCase();
+
+        // Data da prova e contagem regressiva
+        const examDate = (user as any).exam_date;
+        let contagemRegressiva = "";
+        if (examDate) {
+          const diasRestantes = Math.ceil((new Date(examDate).getTime() - Date.now()) / 86400000);
+          if (diasRestantes > 0) {
+            contagemRegressiva = `${diasRestantes} dias para a prova`;
+          } else if (diasRestantes === 0) {
+            contagemRegressiva = "A PROVA É HOJE!";
+          }
+        }
+
+        // Modo Recuperação Pesada
+        const isRecoveryMode = (user as any).recovery_mode === true;
+
+        // Índice de preparação (approval score)
+        const approvalScore = approvalByUser[user.user_id];
+        const approvalText = approvalScore !== undefined ? `${approvalScore}%` : "ainda não calculado";
+
+        // Metas semanais
+        const weekly = weeklyByUser[user.user_id];
+        let metasText = "";
+        if (weekly) {
+          const qPct = weekly.questions_target > 0
+            ? Math.min(100, Math.round((weekly.questions_done / weekly.questions_target) * 100))
+            : 0;
+          const rPct = weekly.reviews_target > 0
+            ? Math.min(100, Math.round((weekly.reviews_done / weekly.reviews_target) * 100))
+            : 0;
+          metasText = `Questões: ${weekly.questions_done}/${weekly.questions_target} (${qPct}%) | Revisões: ${weekly.reviews_done}/${weekly.reviews_target} (${rPct}%)`;
+        }
+
         // 4. Gerar mensagem via IA
         const nome = user.display_name?.split(" ")[0] || "Aluno";
 
-        const prompt = `Gere uma mensagem WhatsApp curta e motivacional (máx 600 chars) em português brasileiro para o aluno ${nome} com este resumo do dia e programação de amanhã. Use emojis. Inclua TODOS os dados abaixo. Não invente dados.
+        const prompt = `Gere uma mensagem WhatsApp curta e motivacional (máx 700 chars) em português brasileiro para o aluno ${nome} com este resumo do dia e programação de amanhã. Use emojis. Inclua TODOS os dados abaixo. Não invente dados. SEM markdown. SEM asteriscos.
 
 REGRAS IMPORTANTES:
 - NUNCA mostre percentuais acima de 100%. Valores são de 0% a 100%.
 - NÃO invente dados ou métricas que não foram fornecidos.
 - NÃO calcule "probabilidade de aprovação" — apenas relate os dados fornecidos.
+- Se o aluno está em MODO RECUPERAÇÃO, incentive sem pressionar. Tom: acolhedor.
 
 RESUMO DE HOJE:
 - Questões respondidas: ${totalQ}
@@ -191,12 +254,24 @@ RESUMO DE HOJE:
 - Temas estudados: ${temasHoje}
 ${proficienciaInfo}
 
+BANCAS ALVO: ${bancasAlvo}
+${contagemRegressiva ? `CONTAGEM REGRESSIVA: ${contagemRegressiva}` : ""}
+ÍNDICE DE PREPARAÇÃO: ${approvalText}
+${metasText ? `METAS DA SEMANA: ${metasText}` : ""}
+${isRecoveryMode ? "⚠️ MODO RECUPERAÇÃO PESADA ATIVO — o aluno está em recuperação progressiva. Não pressione, incentive cada pequeno avanço." : ""}
+
 AMANHÃ:
 - Revisões: ${temasAmanha}
 - Áreas para focar: ${temasFracos}
 
-No final, adicione: "Responda SAIR para não receber mais."
-Link do app: https://enazizi.com`;
+A mensagem DEVE:
+1. Mencionar a(s) banca(s) alvo pelo nome
+2. Se houver contagem regressiva, mencionar os dias restantes
+3. Mencionar o índice de preparação
+4. Se houver metas semanais, dar feedback do progresso
+5. Se modo recuperação ativo, tom acolhedor e celebrar qualquer progresso
+6. No final, adicionar: "Responda SAIR para não receber mais."
+7. Link do app: https://enazizi.com`;
 
         let messageText: string;
         const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -211,7 +286,10 @@ Link do app: https://enazizi.com`;
               },
               body: JSON.stringify({
                 model: "google/gemini-2.5-flash-lite",
-                messages: [{ role: "user", content: prompt }],
+                messages: [
+                  { role: "system", content: "Você gera mensagens WhatsApp motivacionais e informativas para alunos de medicina em preparação para residência. Tom: direto, encorajador, com emojis. Sem markdown. Sem asteriscos. Sempre mencione as bancas alvo e o progresso real do aluno." },
+                  { role: "user", content: prompt },
+                ],
                 max_tokens: 1024,
               }),
             });
@@ -219,17 +297,17 @@ Link do app: https://enazizi.com`;
             if (aiResp.ok) {
               const aiData = await aiResp.json();
               messageText = aiData?.choices?.[0]?.message?.content ||
-                buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos, proficienciaInfo);
+                buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos, proficienciaInfo, bancasAlvo, contagemRegressiva, approvalText, metasText, isRecoveryMode);
             } else {
               console.warn(`AI returned ${aiResp.status}, using fallback`);
-              messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos, proficienciaInfo);
+              messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos, proficienciaInfo, bancasAlvo, contagemRegressiva, approvalText, metasText, isRecoveryMode);
             }
           } catch (aiErr) {
             console.error("AI fetch error:", aiErr);
-            messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos, proficienciaInfo);
+            messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos, proficienciaInfo, bancasAlvo, contagemRegressiva, approvalText, metasText, isRecoveryMode);
           }
         } else {
-          messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos, proficienciaInfo);
+          messageText = buildFallbackMessage(nome, totalQ, accuracy, streak, temasAmanha, temasFracos, proficienciaInfo, bancasAlvo, contagemRegressiva, approvalText, metasText, isRecoveryMode);
         }
 
         // Fix AI sometimes splitting "enazizi" into "e nazizi"
@@ -253,7 +331,6 @@ Link do app: https://enazizi.com`;
     // 6. Criar execução ativa para o agente local detectar
     if (queued > 0) {
       try {
-        // Check for existing active execution today — reuse if found
         const { data: activeExecs } = await supabase
           .from("whatsapp_send_executions")
           .select("*")
@@ -294,7 +371,6 @@ Link do app: https://enazizi.com`;
         }
 
         if (exec) {
-          // Link pending orphan items from today to this execution
           const { error: linkErr } = await supabase
             .from("whatsapp_message_log")
             .update({ execution_id: exec.id })
@@ -306,7 +382,6 @@ Link do app: https://enazizi.com`;
             console.error("Failed to link items to execution:", linkErr);
           }
 
-          // Update total_items count
           const { count } = await supabase
             .from("whatsapp_message_log")
             .select("id", { count: "exact", head: true })
@@ -317,7 +392,6 @@ Link do app: https://enazizi.com`;
             .update({ total_items: count || queued })
             .eq("id", exec.id);
 
-          // Log
           await supabase.from("whatsapp_execution_logs").insert({
             execution_id: exec.id,
             action: reused ? "execution_reused" : "execution_started",
@@ -327,7 +401,6 @@ Link do app: https://enazizi.com`;
               : `BI diário: execução criada com ${queued} itens`,
           });
 
-          // Audit log
           await supabase.from("admin_audit_log").insert({
             admin_user_id: adminId,
             action: "whatsapp_daily_bi_execution",
@@ -354,8 +427,33 @@ Link do app: https://enazizi.com`;
 
 function buildFallbackMessage(
   nome: string, totalQ: number, accuracy: number, streak: number,
-  temasAmanha: string, temasFracos: string, proficienciaInfo: string = ""
+  temasAmanha: string, temasFracos: string, proficienciaInfo: string,
+  bancasAlvo: string, contagemRegressiva: string, approvalText: string,
+  metasText: string, isRecoveryMode: boolean
 ): string {
   const profBlock = proficienciaInfo ? `\n📋 Proficiência:${proficienciaInfo}\n` : "";
-  return `📊 Resumo de hoje, ${nome}:\n${totalQ} questões | ${accuracy}% acurácia | 🔥 ${streak} dias\n${profBlock}\n📋 Amanhã:\nRevisão: ${temasAmanha}\nFoco: ${temasFracos}\n\nhttps://enazizi.com\nResponda SAIR para não receber mais.`;
+  const bancaLine = `🎯 Bancas: ${bancasAlvo}`;
+  const countdownLine = contagemRegressiva ? `⏳ ${contagemRegressiva}` : "";
+  const approvalLine = `📊 Índice: ${approvalText}`;
+  const metasLine = metasText ? `📈 Metas: ${metasText}` : "";
+  const recoveryLine = isRecoveryMode ? "🔄 Modo Recuperação ativo — cada passo conta!" : "";
+
+  const lines = [
+    `📊 Resumo de hoje, ${nome}:`,
+    `${totalQ} questões | ${accuracy}% acurácia | 🔥 ${streak} dias`,
+    bancaLine,
+    countdownLine,
+    approvalLine,
+    metasLine,
+    recoveryLine,
+    profBlock,
+    `📋 Amanhã:`,
+    `Revisão: ${temasAmanha}`,
+    `Foco: ${temasFracos}`,
+    "",
+    "https://enazizi.com",
+    "Responda SAIR para não receber mais.",
+  ].filter(Boolean);
+
+  return lines.join("\n");
 }
