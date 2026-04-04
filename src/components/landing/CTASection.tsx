@@ -17,16 +17,16 @@ const CTASection = forwardRef<HTMLElement>((_, ref) => (
         </div>
 
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-black mb-3 sm:mb-4">
-          Não espere a véspera para começar
+          Comece hoje a estudar com estratégia
         </h2>
         <p className="text-muted-foreground text-base sm:text-lg mb-6 sm:mb-8 max-w-xl mx-auto">
-          Cada dia sem um plano estruturado é um dia que seus concorrentes avançam. O ENAZIZI começa a trabalhar por você hoje.
+          Cada dia sem direção é um dia que seus concorrentes avançam. O ENAZIZI começa a trabalhar por você agora.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-2 sm:px-0">
           <Button size="lg" asChild className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 glow">
             <Link to="/register">
-              Criar conta grátis <ArrowRight className="ml-2 h-5 w-5" />
+              Criar conta gratuita <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>
           <Button size="lg" variant="outline" asChild className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6">

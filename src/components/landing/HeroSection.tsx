@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Sparkles, Volume2, VolumeX } from "lucide-react";
+import { ArrowRight, Sparkles, Volume2, VolumeX, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const HeroSection = () => {
@@ -18,7 +18,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-[85vh] sm:min-h-screen flex items-center justify-center overflow-hidden pt-16">
+    <section className="relative min-h-[90vh] sm:min-h-screen flex items-center justify-center overflow-hidden pt-16">
       {/* Video background */}
       <video
         ref={videoRef}
@@ -31,10 +31,10 @@ const HeroSection = () => {
       />
 
       {/* Dark overlay for readability */}
-      <div className="absolute inset-0 bg-black/50" />
+      <div className="absolute inset-0 bg-black/55" />
 
       {/* Gradient overlay (brand) */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
 
       {/* Mute toggle */}
       <button
@@ -52,27 +52,25 @@ const HeroSection = () => {
         >
           <Sparkles className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-primary" />
           <span className="text-xs sm:text-sm text-primary font-medium">
-            Plataforma de ensino com IA para Residência Médica
+            Plataforma inteligente para Residência Médica
           </span>
         </div>
 
         <h1
-          className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight mb-4 sm:mb-6 text-white drop-shadow-lg animate-fade-in"
+          className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.1] mb-4 sm:mb-6 text-white drop-shadow-lg animate-fade-in"
           style={{ animationDelay: "0.1s" }}
         >
-          Saiba exatamente o que
+          Estude com direção.
           <br />
-          estudar <span className="gradient-text">todos os dias</span>
-          <br />
-          até a prova
+          <span className="gradient-text">Não com tentativa e erro.</span>
         </h1>
 
         <p
-          className="max-w-2xl mx-auto text-base sm:text-lg md:text-xl text-white/80 mb-8 sm:mb-10 animate-fade-in drop-shadow"
+          className="max-w-2xl mx-auto text-base sm:text-lg md:text-xl text-white/85 mb-8 sm:mb-10 animate-fade-in drop-shadow leading-relaxed"
           style={{ animationDelay: "0.2s" }}
         >
-          O ENAZIZI organiza seu estudo, adapta seu plano automaticamente
-          e guia você até a aprovação.
+          O ENAZIZI cria um plano diário inteligente com base no seu desempenho,
+          seus erros e a prova que você vai fazer.
         </p>
 
         <div
@@ -81,7 +79,7 @@ const HeroSection = () => {
         >
           <Button size="lg" asChild className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 glow">
             <Link to="/register">
-              Criar conta grátis <ArrowRight className="ml-2 h-5 w-5" />
+              Começar agora <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>
           <Button
@@ -90,8 +88,13 @@ const HeroSection = () => {
             asChild
             className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-white/30 text-white hover:bg-white/10"
           >
-            <a href="#features">Ver como funciona</a>
+            <a href="#como-funciona">Ver como funciona</a>
           </Button>
+        </div>
+
+        {/* Scroll hint */}
+        <div className="mt-10 sm:mt-14 animate-bounce">
+          <ChevronDown className="h-6 w-6 text-white/40 mx-auto" />
         </div>
       </div>
     </section>
