@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useCoreData } from "./useCoreData";
 import { saveDashboardSnapshot, loadDashboardSnapshot } from "@/lib/dashboardSnapshot";
+import { useFeatureFlags } from "./useFeatureFlags";
 
 export interface DashboardStats {
   flashcards: number;
