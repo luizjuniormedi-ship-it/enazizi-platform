@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useStudyContext } from "@/lib/studyContext";
 
 function getSourcePriority(source: string | null | undefined): number {
   if (!source) return 3;
