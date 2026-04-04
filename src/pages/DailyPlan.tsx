@@ -238,23 +238,55 @@ const DailyPlan = () => {
   };
 
   const toggleReviewDone = async (reviewId: string) => {
-    const next = new Set(completedReviews);
-    if (next.has(reviewId)) {
+    const wasDone = completedReviews.has(reviewId);
+
+    if (wasDone) {
+      // Undo: revert to pending
+      const { error } = await supabase
+        .from("revisoes")
+        .update({ status: "pendente", concluida_em: null })
+        .eq("id", reviewId)
+        .eq("user_id", user!.id);
+
+      if (error) {
+        console.error("[DailyPlan] Falha ao reverter revisão:", error.message);
+        toast({ title: "Erro ao reverter revisão", description: error.message, variant: "destructive" });
+        return;
+      }
+
+      const next = new Set(completedReviews);
       next.delete(reviewId);
-      await supabase.from("revisoes").update({ status: "pendente", concluida_em: null }).eq("id", reviewId);
+      setCompletedReviews(next);
     } else {
+      // Complete: persist first, then update UI
+      const { error } = await supabase
+        .from("revisoes")
+        .update({ status: "concluida", concluida_em: new Date().toISOString() })
+        .eq("id", reviewId)
+        .eq("user_id", user!.id);
+
+      if (error) {
+        console.error("[DailyPlan] Falha ao concluir revisão:", error.message);
+        toast({ title: "Erro ao salvar revisão", description: error.message, variant: "destructive" });
+        return;
+      }
+
+      const next = new Set(completedReviews);
       next.add(reviewId);
-      await supabase.from("revisoes").update({ status: "concluida", concluida_em: new Date().toISOString() }).eq("id", reviewId);
-      if (user) {
-        const review = scheduledReviews.find(r => r.id === reviewId);
-        if (review) {
-          updateStudyPerformanceContext(user.id, [{ id: "", tema: review.tema, especialidade: review.especialidade }]).catch(() => {});
-        }
+      setCompletedReviews(next);
+
+      // Update performance context in background
+      const review = scheduledReviews.find(r => r.id === reviewId);
+      if (review && user) {
+        updateStudyPerformanceContext(user.id, [{ id: "", tema: review.tema, especialidade: review.especialidade }]).catch(() => {});
       }
     }
-    setCompletedReviews(next);
-    // Invalidate dashboard caches so counters update in real-time
+
+    // Invalidate all dashboard/mission/engine caches after confirmed persistence
     invalidateAll();
+    queryClient.invalidateQueries({ queryKey: ["mission-mode"] });
+    queryClient.invalidateQueries({ queryKey: ["weekly-goals"] });
+    queryClient.invalidateQueries({ queryKey: ["preparation-index"] });
   };
 
   // ── Topic completion with self-assessment ──
