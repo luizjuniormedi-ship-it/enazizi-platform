@@ -64,17 +64,9 @@ function getHeavyRecoveryPhase(day: number): HeavyRecoveryPhase {
   if (day <= 23) return 3;
   return 4;
 }
-
-const HEAVY_RECOVERY_STORAGE_KEY = "enazizi-heavy-recovery";
-
-// Legacy localStorage helpers — kept only for migration bridge read
-function loadHeavyRecoveryStateLegacy(): { startedAt: string } | null {
-  try {
-    const raw = localStorage.getItem(HEAVY_RECOVERY_STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch { return null; }
-}
+// NOTE: localStorage recovery bridge is now handled by recoveryPersistence.ts
+// The HEAVY_RECOVERY_STORAGE_KEY constant and loadHeavyRecoveryStateLegacy()
+// were removed here as dead code — migration bridge lives in recoveryPersistence.ts.
 
 function buildHeavyRecoveryState(startedAt: string | null, active: boolean): HeavyRecoveryState {
   if (!active || !startedAt) {

@@ -3,6 +3,10 @@
  * (tutor_sessions, tutor_messages, tutor_context_snapshots)
  * while legacy chat_conversations/chat_messages remain the primary source.
  *
+ * STATUS: TRANSITIONAL — dual-write active.
+ * Next step: migrate READ path to tutor_sessions/tutor_messages,
+ * then deprecate chat_conversations/chat_messages for tutor agent_type.
+ *
  * Uses persistent DB lookups + unique constraint for dedup safety.
  */
 import { supabase } from "@/integrations/supabase/client";

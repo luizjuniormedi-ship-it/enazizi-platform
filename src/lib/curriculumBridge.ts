@@ -1,8 +1,13 @@
 /**
- * Curriculum Bridge — compatibility layer between old curriculum_matrix 
+ * Curriculum Bridge — compatibility layer between old curriculum_matrix
  * and new normalized curriculum_topics/subtopics/weights.
- * 
+ *
  * Strategy: try new tables first, fallback to curriculum_matrix.
+ *
+ * STATUS: TRANSITIONAL
+ * - fetchCurriculumForEngine: new tables are primary, legacy fallback still active
+ * - fetchFromLegacyMatrix: @deprecated — will be removed when new tables are fully populated
+ * - fetchAllCurriculumTopics: new tables are primary, legacy fallback still active
  */
 import { supabase } from "@/integrations/supabase/client";
 
@@ -105,6 +110,7 @@ export async function fetchCurriculumForEngine(
   }
 }
 
+/** @deprecated — Legacy fallback. Will be removed when normalized curriculum is fully populated. */
 async function fetchFromLegacyMatrix(
   banca: string,
   minPriority: number,
