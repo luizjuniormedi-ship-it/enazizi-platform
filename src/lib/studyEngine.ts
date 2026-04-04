@@ -5,7 +5,8 @@ import { adjustNewTopicsByLock, type ContentLockStatus } from "@/hooks/useConten
 import { retrievability as fsrsRetrievability, State as FsrsState } from "./fsrs";
 import type { StudyTaskType, StudyObjective } from "./studyContext";
 import { getExamProfile, getMergedExamProfile, applyExamModifiers, type ExamProfile } from "./examProfiles";
-// curriculum_matrix is queried directly from DB (no static import needed)
+import { fetchCurriculumForEngine, fetchAllCurriculumTopics } from "./curriculumBridge";
+import { saveStudyEngineSnapshot } from "./dualWrite";
 
 export type RecommendationType = "review" | "practice" | "clinical" | "new" | "error_review" | "simulado" | "chronicle";
 export type TargetModule = "tutor" | "questoes" | "flashcards" | "plantao" | "anamnese" | "simulado" | "cronograma" | "banco-erros" | "cronicas";
@@ -779,26 +780,15 @@ export async function generateRecommendations({ userId, coreData }: EngineInput)
       });
     }
 
-    // ── 6b. Curriculum gap filler — from curriculum_matrix with banca weights ──
+    // ── 6b. Curriculum gap filler — using curriculum bridge (new tables with legacy fallback) ──
     const studiedTopicNames = new Set(temas.map((t: any) => (t.tema || "").toLowerCase()));
     const userBancas = Array.isArray(targetExams) && targetExams.length > 0 ? targetExams : ["ENARE"];
-    const bancaWeightCol = (b: string): string => {
-      const map: Record<string, string> = { "ENARE": "peso_banca_enare", "USP": "peso_banca_usp", "SUS-SP": "peso_banca_sus_sp", "UNICAMP": "peso_banca_unicamp", "UNIFESP": "peso_banca_unifesp" };
-      return map[b.toUpperCase()] || "peso_banca_enare";
-    };
-    const primaryBancaCol = bancaWeightCol(userBancas[0]);
+    const primaryBanca = userBancas[0];
 
-    const { data: matrixData } = await supabase
-      .from("curriculum_matrix")
-      .select("subtema, tema, especialidade, prioridade_base, incidencia_geral, tipo_cobranca, dificuldade_base, pre_requisitos, " + primaryBancaCol)
-      .eq("ativo", true)
-      .gte("prioridade_base", 6)
-      .order(primaryBancaCol, { ascending: false })
-      .order("prioridade_base", { ascending: false })
-      .limit(80);
+    const curriculumItems = await fetchCurriculumForEngine(primaryBanca, 6, 80);
 
     const curriculumGaps: { topic: string; specialty: string; subtema: string; bancaPeso: number; prioridade: number; incidencia: string }[] = [];
-    for (const item of (matrixData || []) as any[]) {
+    for (const item of curriculumItems) {
       const subLower = (item.subtema || "").toLowerCase();
       const temaLower = (item.tema || "").toLowerCase();
       const alreadyStudied = studiedTopicNames.has(subLower) ||
@@ -809,7 +799,7 @@ export async function generateRecommendations({ userId, coreData }: EngineInput)
           topic: item.subtema,
           specialty: item.especialidade,
           subtema: item.tema,
-          bancaPeso: item[primaryBancaCol] || 5,
+          bancaPeso: item.bancaPeso,
           prioridade: item.prioridade_base,
           incidencia: item.incidencia_geral,
         });
@@ -860,14 +850,10 @@ export async function generateRecommendations({ userId, coreData }: EngineInput)
     });
   }
 
-  // ── Curriculum-based priority boost (from curriculum_matrix) ────
-  const { data: matrixTopics } = await supabase
-    .from("curriculum_matrix")
-    .select("subtema, tema, especialidade")
-    .eq("ativo", true)
-    .limit(300);
-  const matrixSet = new Set((matrixTopics || []).map((m: any) => (m.subtema || "").toLowerCase()));
-  const matrixTemaSet = new Set((matrixTopics || []).map((m: any) => (m.tema || "").toLowerCase()));
+  // ── Curriculum-based priority boost (using curriculum bridge) ────
+  const allCurriculumTopics = await fetchAllCurriculumTopics();
+  const matrixSet = new Set(allCurriculumTopics.map(m => (m.subtema || "").toLowerCase()));
+  const matrixTemaSet = new Set(allCurriculumTopics.map(m => (m.tema || "").toLowerCase()));
   const CURRICULUM_BOOST = 8;
   for (const rec of recs) {
     const topicLower = (rec.topic || "").toLowerCase();
@@ -957,6 +943,24 @@ export async function generateRecommendations({ userId, coreData }: EngineInput)
       adaptive,
     };
   }
+
+  // ── Save snapshot (fire-and-forget) ──
+  const weakErrors = (errorBankData || []).slice(0, 5).map((e: any) => e.tema);
+  const strongDomains = (cd?.domainMap || []).filter((d: any) => d.domain_score >= 70).map((d: any) => d.specialty);
+  saveStudyEngineSnapshot({
+    userId,
+    approvalScore: adaptive.approvalScore,
+    phase: adaptive.weights.phase,
+    memoryPressure: adaptive.memoryPressure,
+    pendingReviews: pendingReviews.length,
+    overdueReviews: adaptive.overdueCount,
+    contentLock: adaptive.lockStatus !== "allowed",
+    recoveryMode: adaptive.recoveryMode,
+    heavyRecoveryActive: adaptive.heavyRecovery.active,
+    heavyRecoveryPhase: adaptive.heavyRecovery.phase,
+    weakTopics: weakErrors,
+    strongTopics: strongDomains,
+  });
 
   return { recommendations: result, adaptive };
  } catch (err) {
