@@ -212,7 +212,7 @@ const DailyPlan = () => {
   };
 
   const goToQuestions = (topic: string, specialty: string) => {
-    navigateWithContext("/dashboard/questions-bank", {
+    navigateWithContext("/dashboard/simulados", {
       source: "daily-plan",
       specialty,
       topic,
