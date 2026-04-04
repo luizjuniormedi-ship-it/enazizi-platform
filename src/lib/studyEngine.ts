@@ -133,13 +133,18 @@ function cap(n: number, max = 100) {
 }
 
 // ── Compute approval score (same logic as ApprovalScoreCard) ───
-async function computeApprovalScore(userId: string, practiceData: any[], examData: any[], anamnesisData: any[], clinicalData: any[]): Promise<number> {
-  const { data: domainData } = await supabase
-    .from("medical_domain_map")
-    .select("specialty, domain_score, questions_answered")
-    .eq("user_id", userId);
+async function computeApprovalScore(userId: string, practiceData: any[], examData: any[], anamnesisData: any[], clinicalData: any[], domainMapFromCore?: CoreDataResult["domainMap"]): Promise<number> {
+  let specialties: any[];
+  if (domainMapFromCore) {
+    specialties = domainMapFromCore;
+  } else {
+    const { data: domainData } = await supabase
+      .from("medical_domain_map")
+      .select("specialty, domain_score, questions_answered")
+      .eq("user_id", userId);
+    specialties = domainData || [];
+  }
 
-  const specialties = domainData || [];
   const avgDomain = specialties.length > 0
     ? specialties.reduce((s, d) => s + (d.domain_score || 0), 0) / specialties.length
     : 0;
