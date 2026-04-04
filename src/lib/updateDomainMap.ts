@@ -41,6 +41,12 @@ export async function updateDomainMap(userId: string, entries: DomainEntry[]): P
           domain_score: newScore,
           last_studied_at: new Date().toISOString(),
         }).eq("id", existing.id);
+
+        // Dual-write to new performance_by_topic table
+        dualWritePerformanceByTopic({
+          userId, specialty, topic: specialty,
+          questionsAnswered: total, correctAnswers: correct,
+        });
       } else {
         await supabase.from("medical_domain_map").insert({
           user_id: userId,
