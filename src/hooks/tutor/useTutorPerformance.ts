@@ -5,6 +5,7 @@ import { useGamification, XP_REWARDS, getSmartXpMultiplier } from "@/hooks/useGa
 import { showEvolutionFeedback } from "@/lib/evolutionFeedback";
 import { useToast } from "@/hooks/use-toast";
 import { dualWritePerformanceByTopic, dualWriteUserTopicProfile } from "@/lib/dualWrite";
+import { dualWriteTutorContextSnapshot } from "@/lib/tutorDualWrite";
 import type { StudyPerformance } from "@/components/tutor/TutorConstants";
 
 const DEFAULT_PERFORMANCE: StudyPerformance = {
@@ -135,6 +136,13 @@ export function useTutorPerformance(userId: string | undefined) {
           sessionAccuracy: sessionQuestions > 0 ? Math.round((sessionCorrect / sessionQuestions) * 100) : 0,
         });
       }
+
+      // Dual-write tutor context snapshot
+      dualWriteTutorContextSnapshot({
+        userId: userId!,
+        currentGoal: currentTopic,
+        accuracy: sessionQuestions > 0 ? Math.round((sessionCorrect / sessionQuestions) * 100) : undefined,
+      });
     }
 
     // Smart XP calculation

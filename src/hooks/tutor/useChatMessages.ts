@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Msg, Conversation } from "@/components/tutor/TutorConstants";
 import { FUNCTION_NAME } from "@/components/tutor/TutorConstants";
+import { dualWriteTutorSession, dualWriteTutorMessage } from "@/lib/tutorDualWrite";
 
 export function useChatMessages(userId: string | undefined) {
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -44,6 +45,8 @@ export function useChatMessages(userId: string | undefined) {
       .single();
     if (newConv) {
       setActiveConversationId(newConv.id);
+      // Dual-write: create tutor_session
+      dualWriteTutorSession({ userId, conversationId: newConv.id });
       return newConv.id;
     }
     return null;
@@ -55,6 +58,8 @@ export function useChatMessages(userId: string | undefined) {
       conversation_id: convId, user_id: userId, role, content,
     });
     await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+    // Dual-write: mirror to tutor_messages
+    dualWriteTutorMessage({ userId, conversationId: convId, role, content });
   }, [userId]);
 
   const deleteConversation = useCallback(async (convId: string) => {
