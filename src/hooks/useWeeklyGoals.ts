@@ -20,14 +20,21 @@ export interface WeeklyGoalsData {
   weekLabel: string;
 }
 
-function getMonday(): Date {
+function getMonday(offset = 0): Date {
   const now = new Date();
   const day = now.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   const monday = new Date(now);
-  monday.setDate(now.getDate() + diff);
+  monday.setDate(now.getDate() + diff + offset * 7);
   monday.setHours(0, 0, 0, 0);
   return monday;
+}
+
+function getSunday(monday: Date): Date {
+  const sun = new Date(monday);
+  sun.setDate(monday.getDate() + 6);
+  sun.setHours(23, 59, 59, 999);
+  return sun;
 }
 
 function zoneMultiplier(zone: PreparationZone): number {
