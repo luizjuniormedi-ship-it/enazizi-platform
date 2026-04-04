@@ -171,11 +171,9 @@ export function useWeeklyGoals() {
 
       const overallPercent = Math.round(goals.reduce((sum, g) => sum + g.percent, 0) / goals.length);
 
-      const monday = getMonday();
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
       const fmt = (d: Date) => `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const weekLabel = `${fmt(monday)} – ${fmt(sunday)}`;
+      const weekSunday = getSunday(monday);
+      const weekLabel = `${fmt(monday)} – ${fmt(weekSunday)}`;
 
       return {
         goals,
