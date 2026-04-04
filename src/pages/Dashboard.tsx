@@ -103,12 +103,15 @@ const queryClient = useQueryClient();
   useEffect(() => {
     if (!user?.id) return;
     const invalidateAll = () => {
+      queryClient.invalidateQueries({ queryKey: ["core-data"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
       queryClient.invalidateQueries({ queryKey: ["study-engine"] });
       queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
-      queryClient.invalidateQueries({ queryKey: ["preparation-index"] });
     };
-    const invalidateDash = () => queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+    const invalidateDash = () => {
+      queryClient.invalidateQueries({ queryKey: ["core-data"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+    };
     const channel = supabase
       .channel('dashboard-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'practice_attempts', filter: `user_id=eq.${user.id}` }, invalidateAll)
