@@ -11,6 +11,7 @@ import {
   getSessionMemoryBlock,
 } from "../_shared/enazizi-prompt.ts";
 import { aiFetch, getModelForTier } from "../_shared/ai-fetch.ts";
+import { logAiUsage } from "../_shared/ai-cache.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
 
 const corsHeaders = {
