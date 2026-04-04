@@ -4,6 +4,7 @@
  * All operations are fire-and-forget to avoid blocking the UI.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { ensureFsrsCard } from "@/lib/fsrsAutoCreate";
 
 /**
  * Dual-write performance data to performance_by_topic table.
@@ -122,6 +123,9 @@ export function dualWriteUserTopicProfile(params: {
             review_interval_days: 1,
             last_practiced_at: new Date().toISOString(),
           });
+
+        // Auto-create FSRS card for new topic profile
+        ensureFsrsCard(userId, "tema", topic);
       }
     } catch (e) {
       console.warn("[DualWrite] user_topic_profiles:", e);
