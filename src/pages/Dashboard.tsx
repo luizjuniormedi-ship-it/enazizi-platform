@@ -29,6 +29,7 @@ import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner"
 import ExamSetupReminder from "@/components/dashboard/ExamSetupReminder";
 import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
+import RecoveryModeBanner from "@/components/dashboard/RecoveryModeBanner";
 
 import DashboardSummaryCard from "@/components/dashboard/DashboardSummaryCard";
 import PreparationIndexCard from "@/components/dashboard/PreparationIndexCard";
