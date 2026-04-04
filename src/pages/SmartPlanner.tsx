@@ -98,7 +98,7 @@ const SmartPlanner = () => {
     setExamDate(profileRes.data?.exam_date || null);
     setTargetExams((profileRes.data?.target_exams as string[]) || []);
     setRecoveryMode(!!recoveryRes.data);
-    setHeavyRecoveryPhase(recoveryRes.data?.recovery_type === "heavy" ? (recoveryRes.data?.phase || 1) : undefined);
+    setHeavyRecoveryPhase(recoveryRes.data?.mode === "heavy" ? (recoveryRes.data?.phase || 1) : undefined);
     setLoading(false);
   }, [user]);
 
