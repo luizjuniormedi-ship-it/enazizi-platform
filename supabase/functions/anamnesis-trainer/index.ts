@@ -238,6 +238,7 @@ Dificuldade: ${difficulty || "intermediário"}${ageInstruction}${subtopicInstruc
 Gere um paciente realista para treino de anamnese. Queixa vaga e coloquial. Dados ocultos completos.
 Lembre-se: NUNCA repita pacientes anteriores. Varie todos os parâmetros demográficos e clínicos.`;
 
+      const startMs = Date.now();
       const response = await aiFetch({
         model: "google/gemini-2.5-flash",
         messages: [
@@ -246,6 +247,8 @@ Lembre-se: NUNCA repita pacientes anteriores. Varie todos os parâmetros demogr�
         ],
         stream: false,
       });
+      const elapsed = Date.now() - startMs;
+      logAnamnesis(response.ok, elapsed, response.ok ? undefined : `status ${response.status}`);
 
       if (!response.ok) {
         const t = await response.text();
