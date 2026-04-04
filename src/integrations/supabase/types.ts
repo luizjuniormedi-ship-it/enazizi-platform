@@ -729,6 +729,84 @@ export type Database = {
         }
         Relationships: []
       }
+      curriculum_matrix: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao_curta: string | null
+          dificuldade_base: number
+          especialidade: string
+          gatilhos_clinicos: string[]
+          id: string
+          incidencia_geral: string
+          integra_com_osce: boolean
+          integra_com_pratica: boolean
+          integra_com_revisao_fsrs: boolean
+          palavras_chave: string[]
+          peso_banca_enare: number
+          peso_banca_sus_sp: number
+          peso_banca_unicamp: number
+          peso_banca_unifesp: number
+          peso_banca_usp: number
+          pre_requisitos: string[]
+          prioridade_base: number
+          subtema: string
+          tema: string
+          tipo_cobranca: string[]
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao_curta?: string | null
+          dificuldade_base?: number
+          especialidade: string
+          gatilhos_clinicos?: string[]
+          id?: string
+          incidencia_geral?: string
+          integra_com_osce?: boolean
+          integra_com_pratica?: boolean
+          integra_com_revisao_fsrs?: boolean
+          palavras_chave?: string[]
+          peso_banca_enare?: number
+          peso_banca_sus_sp?: number
+          peso_banca_unicamp?: number
+          peso_banca_unifesp?: number
+          peso_banca_usp?: number
+          pre_requisitos?: string[]
+          prioridade_base?: number
+          subtema: string
+          tema: string
+          tipo_cobranca?: string[]
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao_curta?: string | null
+          dificuldade_base?: number
+          especialidade?: string
+          gatilhos_clinicos?: string[]
+          id?: string
+          incidencia_geral?: string
+          integra_com_osce?: boolean
+          integra_com_pratica?: boolean
+          integra_com_revisao_fsrs?: boolean
+          palavras_chave?: string[]
+          peso_banca_enare?: number
+          peso_banca_sus_sp?: number
+          peso_banca_unicamp?: number
+          peso_banca_unifesp?: number
+          peso_banca_usp?: number
+          pre_requisitos?: string[]
+          prioridade_base?: number
+          subtema?: string
+          tema?: string
+          tipo_cobranca?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       daily_generation_log: {
         Row: {
           created_at: string
