@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     // Get students with phone
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("user_id, display_name, phone")
+      .select("user_id, display_name, phone, target_exams, target_exam, exam_date, recovery_mode")
       .not("phone", "is", null)
       .neq("phone", "")
       .eq("status", "active")
@@ -84,13 +84,19 @@ Deno.serve(async (req) => {
       if (recentByUser[l.target_user_id].length < 5) recentByUser[l.target_user_id].push(l.message_text);
     });
 
-    // Revisões
-    const { data: allRevisoes } = await supabase
-      .from("revisoes")
-      .select("user_id, tipo_revisao, risco_esquecimento, tema_id, temas_estudados(tema, especialidade)")
-      .eq("status", "pendente")
-      .lte("data_revisao", today)
-      .in("user_id", userIds);
+    // Dados em lote
+    const [{ data: allRevisoes }, { data: allGamification }, { data: allApproval }, { data: allWeeklyGoals }] = await Promise.all([
+      supabase.from("revisoes")
+        .select("user_id, tipo_revisao, risco_esquecimento, tema_id, temas_estudados(tema, especialidade)")
+        .eq("status", "pendente").lte("data_revisao", today).in("user_id", userIds),
+      supabase.from("user_gamification")
+        .select("user_id, current_streak, xp, level").in("user_id", userIds),
+      supabase.from("approval_scores")
+        .select("user_id, score, created_at").in("user_id", userIds).order("created_at", { ascending: false }),
+      supabase.from("weekly_goals")
+        .select("user_id, questions_target, questions_done, reviews_target, reviews_done, week_start")
+        .in("user_id", userIds).gte("week_start", new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0]),
+    ]);
 
     const revisoesByUser: Record<string, any[]> = {};
     (allRevisoes || []).forEach((r: any) => {
@@ -98,14 +104,18 @@ Deno.serve(async (req) => {
       revisoesByUser[r.user_id].push(r);
     });
 
-    // Gamification
-    const { data: allGamification } = await supabase
-      .from("user_gamification")
-      .select("user_id, current_streak, xp, level")
-      .in("user_id", userIds);
-
     const gamByUser: Record<string, any> = {};
     (allGamification || []).forEach((g: any) => { gamByUser[g.user_id] = g; });
+
+    const approvalByUser: Record<string, number> = {};
+    (allApproval || []).forEach((a: any) => {
+      if (!approvalByUser[a.user_id]) approvalByUser[a.user_id] = Math.min(100, Math.round(a.score));
+    });
+
+    const weeklyByUser: Record<string, any> = {};
+    (allWeeklyGoals || []).forEach((w: any) => {
+      if (!weeklyByUser[w.user_id]) weeklyByUser[w.user_id] = w;
+    });
 
     // Filter pending students
     const pendingProfiles = profiles.filter((p: any) => !sentToday.has(p.user_id));
@@ -127,6 +137,32 @@ Deno.serve(async (req) => {
         const urgentes = revisoes.filter((r: any) => r.risco_esquecimento === "alto" || r.risco_esquecimento === "critico");
         const previousMessages = recentByUser[profile.user_id] || [];
 
+        // Novos dados
+        const targetExams = profile.target_exams;
+        const bancasAlvo = Array.isArray(targetExams) && targetExams.length > 0
+          ? targetExams.join(", ").toUpperCase()
+          : (profile.target_exam || "não definida").toUpperCase();
+
+        const examDate = profile.exam_date;
+        let contagemRegressiva = "";
+        if (examDate) {
+          const diasRestantes = Math.ceil((new Date(examDate).getTime() - Date.now()) / 86400000);
+          if (diasRestantes > 0) contagemRegressiva = `${diasRestantes} dias para a prova`;
+          else if (diasRestantes === 0) contagemRegressiva = "A PROVA É HOJE!";
+        }
+
+        const isRecoveryMode = profile.recovery_mode === true;
+        const approvalScore = approvalByUser[profile.user_id];
+        const approvalText = approvalScore !== undefined ? `${approvalScore}%` : "não calculado";
+
+        const weekly = weeklyByUser[profile.user_id];
+        let metasText = "";
+        if (weekly) {
+          const qPct = weekly.questions_target > 0 ? Math.min(100, Math.round((weekly.questions_done / weekly.questions_target) * 100)) : 0;
+          const rPct = weekly.reviews_target > 0 ? Math.min(100, Math.round((weekly.reviews_done / weekly.reviews_target) * 100)) : 0;
+          metasText = `Questões: ${weekly.questions_done}/${weekly.questions_target} (${qPct}%) | Revisões: ${weekly.reviews_done}/${weekly.reviews_target} (${rPct}%)`;
+        }
+
         const revisoesText = revisoes.length > 0
           ? revisoes.map((r: any) => {
               const tema = r.temas_estudados?.tema || "Tema";
@@ -142,6 +178,7 @@ Deno.serve(async (req) => {
         else if (streak >= 2) mood = "good";
         else if (streak === 0) mood = "slacking";
         if (revisoes.length > 5 && urgentes.length > 2) mood = "danger";
+        if (isRecoveryMode) mood = "recovery";
 
         const moodInstructions: Record<string, string> = {
           champion: "Elogie o streak com humor médico. Tom: orgulhoso e engraçado.",
@@ -149,25 +186,33 @@ Deno.serve(async (req) => {
           meh: "Tom: provocativo mas amigável.",
           slacking: "Streak zerou! Tom: bronca divertida mas firme.",
           danger: "URGENTE! Muitas revisões atrasadas. Tom: alarmante com humor.",
+          recovery: "MODO RECUPERAÇÃO PESADA. Tom: acolhedor, celebre cada pequeno avanço. NÃO pressione.",
         };
 
         const antiRepBlock = previousMessages.length > 0
           ? `\n🚫 NÃO REPITA:\n${previousMessages.map((m, i) => `[${i + 1}] "${m.substring(0, 120)}"`).join("\n")}\n`
           : "";
 
-        const prompt = `Gere mensagem WhatsApp curta e motivacional (máx 500 chars) para aluno de medicina.
+        const prompt = `Gere mensagem WhatsApp curta e motivacional (máx 600 chars) para aluno de medicina.
 Emojis com moderação. Direto. SEM markdown. SEM asteriscos.
 
 SEED: ${Math.random().toString(36).slice(2, 10)}
 ${antiRepBlock}
 TOM: ${moodInstructions[mood]}
 Nome: ${profile.display_name || "Aluno"} | Streak: ${streak} | Nível: ${gam.level}
+Bancas alvo: ${bancasAlvo}
+${contagemRegressiva ? `Contagem regressiva: ${contagemRegressiva}` : ""}
+Índice de preparação: ${approvalText}
+${metasText ? `Metas da semana: ${metasText}` : ""}
+${isRecoveryMode ? "⚠️ MODO RECUPERAÇÃO PESADA ATIVO" : ""}
 Revisões: ${revisoes.length} (${urgentes.length} urgentes)
 ${revisoesText}
 
 Link: https://enazizi.com
 
-Comece com saudação pelo nome. Inclua piada médica. Mencione revisões.
+Comece com saudação pelo nome. Inclua piada médica. Mencione bancas alvo e revisões.
+${contagemRegressiva ? "Mencione os dias restantes para a prova." : ""}
+${isRecoveryMode ? "Celebre qualquer progresso, não pressione." : ""}
 A ÚLTIMA LINHA da mensagem DEVE ser exatamente: "Responda SAIR para não receber mais."`;
 
         let message = "";
@@ -179,7 +224,7 @@ A ÚLTIMA LINHA da mensagem DEVE ser exatamente: "Responda SAIR para não recebe
               body: JSON.stringify({
                 model: "google/gemini-2.5-flash-lite",
                 messages: [
-                  { role: "system", content: "Gere mensagens WhatsApp únicas e engraçadas para alunos de medicina. Sem markdown. Sem asteriscos." },
+                  { role: "system", content: "Gere mensagens WhatsApp únicas e engraçadas para alunos de medicina preparando para residência. Sempre mencione bancas alvo e dados reais. Sem markdown. Sem asteriscos." },
                   { role: "user", content: prompt },
                 ],
                 max_tokens: 512,
@@ -195,10 +240,9 @@ A ÚLTIMA LINHA da mensagem DEVE ser exatamente: "Responda SAIR para não recebe
 
         if (!message) {
           const firstName = (profile.display_name || "Aluno").split(" ")[0];
-          message = `Olá ${firstName}! 📚 Você tem ${revisoes.length} revisão(ões) pendente(s) hoje. Bons estudos! 💪`;
+          message = `Olá ${firstName}! 📚 Você tem ${revisoes.length} revisão(ões) pendente(s) hoje. 🎯 ${bancasAlvo}. Bons estudos! 💪\nhttps://enazizi.com\nResponda SAIR para não receber mais.`;
         }
 
-        // Fix AI sometimes splitting "enazizi" into "e nazizi"
         message = message.replace(/e\s+nazizi\.com/gi, "enazizi.com");
 
         return {
