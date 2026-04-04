@@ -47,6 +47,21 @@ const ChatGPT = () => {
   const [changingTopic, setChangingTopic] = useState(false);
   const [newTopic, setNewTopic] = useState("");
 
+  // Mission mode detection from URL params
+  const [searchParams] = useSearchParams();
+  const tutorMode = searchParams.get("tutor_mode") as "free" | "mission" | null;
+  const missionContext = tutorMode === "mission" ? {
+    mode: "mission" as const,
+    topic: searchParams.get("topic") || undefined,
+    error: searchParams.get("error") || undefined,
+    phase: searchParams.get("phase") || undefined,
+    objective: searchParams.get("objective") || undefined,
+    pendingReviews: searchParams.get("pendingReviews") ? Number(searchParams.get("pendingReviews")) : undefined,
+    accuracy: searchParams.get("accuracy") ? Number(searchParams.get("accuracy")) : undefined,
+    examFocus: searchParams.get("examFocus") || undefined,
+    heavyRecovery: searchParams.get("heavyRecovery") === "true",
+  } : null;
+
   // Speech to text
   const { isListening, hasSpeechRecognition, toggleListening } = useSpeechToText(
     (text) => setInput((prev) => prev ? prev + " " + text : text)
@@ -112,10 +127,26 @@ const ChatGPT = () => {
     });
   }, [registerAutoSave, studyStarted, messages, currentTopic, enaziziStep, performance, selectedUploadIds, sessionQuestions, sessionCorrect]);
 
+  // Mission-mode auto-start (from MissionTutorHint)
+  const missionHandled = useRef(false);
+  useEffect(() => {
+    if (!missionContext || !user || missionHandled.current) return;
+    if (missionContext.topic) {
+      missionHandled.current = true;
+      const msg = `Explique de forma estratégica e direta: ${missionContext.topic}${missionContext.error ? `. Meu principal erro: ${missionContext.error}` : ""}. Foque no que cai na prova.`;
+      setStudyStarted(true);
+      setMetricsCollapsed(true);
+      setCurrentTopic(missionContext.topic);
+      setTopic(missionContext.topic);
+      setTimeout(() => sendMessage(msg), 500);
+    }
+  }, [missionContext, user]);
+
   // StudyContext-driven auto-start (from guided flows via URL params)
   const studyCtx = useStudyContext();
   const ctxHandled = useRef(false);
   useEffect(() => {
+    if (missionContext) return; // skip if mission mode handled
     if (!studyCtx || !user || ctxHandled.current) return;
     if (studyCtx.topic) {
       ctxHandled.current = true;
@@ -134,7 +165,7 @@ const ChatGPT = () => {
       setTopic(studyCtx.topic);
       setTimeout(() => sendMessage(ensureSequentialInitialMessage(msg)), 500);
     }
-  }, [studyCtx, user]);
+  }, [studyCtx, user, missionContext]);
 
   // Location-state driven auto-start (legacy)
   const errorBankHandled = useRef(false);
@@ -234,6 +265,7 @@ const ChatGPT = () => {
         },
         error_bank: errorBankData.length > 0 ? errorBankData : undefined,
         session_memory: sessionMemory.getMemoryPayload(),
+        mission_context: missionContext || undefined,
       },
       onChunk: (fullText) => {
         setMessages(prev => {
