@@ -241,6 +241,7 @@ const queryClient = useQueryClient();
           PROGRESSO SEMANAL — visual simples
          ══════════════════════════════════════════ */}
       {!isNewUser && <SafeCard name="WeeklyEvolution"><WeeklyEvolutionBar /></SafeCard>}
+      {!isNewUser && <SafeCard name="WeeklyGoals"><WeeklyGoalsCard /></SafeCard>}
 
       {/* ══════════════════════════════════════════
           CHANCE POR PROVA — readiness per exam
