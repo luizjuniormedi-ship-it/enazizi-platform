@@ -1,50 +1,68 @@
 
 
-# Integrar Perfil de Banca e Dados do Aluno ao Modo Plantão
+# Refinamento Completo do ENAZIZI — UX, Consistência e Integração
 
-## Situação Atual
-O Modo Plantão já implementa tudo que o prompt descreve: apresentação do paciente, etapas de diagnóstico/conduta/tratamento adaptativo, feedback final com scores detalhados, adaptação por dificuldade/triage, e deterioração por inatividade. O sistema já tem 2336 linhas de UI e 538 linhas de edge function.
+## Diagnóstico
 
-**O que falta**: o sistema não recebe nem usa os dados de banca do aluno (ENARE/USP/SUS-SP/ENAMED), seu histórico de erros, nem a proximidade da prova para adaptar o estilo do caso.
+Após auditoria do Dashboard, MissionMode, StudyEngine, SmartAlertCard, HeroStudyCard e módulos relacionados, o sistema já está bem estruturado. Os refinamentos identificados são cirúrgicos.
 
-## Mudanças
+## Inconsistências Encontradas
 
-### 1. Frontend — Enviar dados do perfil ao iniciar caso
-**Arquivo**: `src/pages/ClinicalSimulation.tsx`
-- No `startSimulation()`, buscar do perfil do usuário: `target_exams` (bancas), erros recentes na especialidade (via `error_bank`), e data da prova
-- Enviar esses dados no body da request `action: "start"`:
-  - `target_exams: ["enare", "usp"]`
-  - `user_level: "intermediário"` (já existe via `difficulty`)
-  - `recent_errors: { has_errors: true, error_types: ["diagnóstico", "conduta"] }`
-  - `exam_proximity_days: 45`
+| # | Problema | Severidade | Arquivo |
+|---|----------|-----------|---------|
+| 1 | MissionMode exibe `currentTask.reason` bruto do engine (ex: "Acerto de 45% em Cardiologia") em vez de usar `getHumanReadableReason()` | Média | `MissionMode.tsx` |
+| 2 | HeroStudyCard não mostra motivo da tarefa principal — só tema e tempo | Média | `HeroStudyCard.tsx` |
+| 3 | FreeStudyCard mostra "Acesso livre" sem indicar o que é prioridade — pode distrair | Baixa | `FreeStudyCard.tsx` |
+| 4 | SmartAlertCard não mostra o tema específico do erro quando há erros acumulados | Média | `SmartAlertCard.tsx` |
+| 5 | RecentProgressCard pode não aparecer (depende de evolutions) sem fallback | Baixa | Dashboard.tsx |
+| 6 | DashboardSummaryCard "Streak" repete 🔥 do greeting (informação duplicada) | Baixa | `Dashboard.tsx` |
 
-### 2. Edge Function — Injetar contexto de banca no prompt
-**Arquivo**: `supabase/functions/clinical-simulation/index.ts`
-- Importar `getBancaProfile` e `buildBancaBlock` de `_shared/banca-profiles.ts`
-- No bloco `action === "start"`, adicionar ao prompt do usuário:
-  - Bloco de adaptação por banca (estilo, profundidade, ênfases)
-  - Informações de erros prévios para reforço
-  - Proximidade da prova para aumentar complexidade
-- Exemplo de instrução adicionada: "Adapte o estilo do caso para a banca ENARE: direto, objetivo, foco em conduta. O aluno errou recentemente em diagnóstico de cardiologia — inclua pistas que testem esse tipo de raciocínio."
+## Plano de Correções
 
-### 3. Lookup de erros no frontend
-**Arquivo**: `src/pages/ClinicalSimulation.tsx`
-- Antes de chamar a API, fazer query rápida ao `error_bank` filtrando pela especialidade selecionada e pelo user_id
-- Extrair tipos de erro predominantes (diagnóstico/conduta/tratamento) e temas
-- Passar como `recent_errors` no body
+### 1. MissionMode — Humanizar motivos das tarefas
+**Arquivo**: `src/pages/MissionMode.tsx`
+- Importar `getHumanReadableReason` de `@/lib/humanizedReasons`
+- Substituir `{currentTask.reason}` por `{getHumanReadableReason(currentTask)}` na tela de tarefa ativa (linha ~228)
+- Fazer o mesmo no FocusHardMode (linha ~142)
+
+### 2. HeroStudyCard — Adicionar motivo da primeira tarefa
+**Arquivo**: `src/components/dashboard/HeroStudyCard.tsx`
+- Importar `getHumanReadableReason`
+- Abaixo do subtítulo "topTask.topic · ~Xmin", adicionar uma linha com o motivo humanizado em texto menor
+- Manter compacto: 1 linha, `text-xs text-muted-foreground`
+
+### 3. SmartAlertCard — Enriquecer alerta de erros com tema
+**Arquivo**: `src/components/dashboard/SmartAlertCard.tsx`
+- Na Priority 3 (erros), buscar o tema com mais erros do `useDashboardData` (já disponível via `data`)
+- Trocar mensagem genérica por: "X erros acumulados em [tema principal] — revise para não repetir"
+- Se não houver tema específico, manter fallback genérico
+
+### 4. Dashboard — Remover streak duplicado do grid
+**Arquivo**: `src/pages/Dashboard.tsx`
+- O greeting já mostra "🔥 X dias seguidos"
+- No grid de métricas, trocar o card "Streak" por "Evolução" mostrando a accuracy geral e delta semanal, que é mais útil
+
+### 5. FreeStudyCard — Adicionar label de contexto
+**Arquivo**: `src/components/dashboard/FreeStudyCard.tsx`
+- Trocar título "Acesso livre" por "Explorar módulos"
+- Adicionar subtítulo discreto: "Estude fora da missão"
 
 ## Arquivos Afetados
 
 | Arquivo | Ação |
 |---------|------|
-| `src/pages/ClinicalSimulation.tsx` | Buscar target_exams do perfil + erros recentes, enviar no start |
-| `supabase/functions/clinical-simulation/index.ts` | Receber e injetar contexto de banca + erros no prompt de geração |
+| `src/pages/MissionMode.tsx` | Usar `getHumanReadableReason()` nos motivos |
+| `src/components/dashboard/HeroStudyCard.tsx` | Adicionar motivo humanizado da tarefa principal |
+| `src/components/dashboard/SmartAlertCard.tsx` | Enriquecer alerta de erros com tema específico |
+| `src/pages/Dashboard.tsx` | Trocar card Streak duplicado por Evolução |
+| `src/components/dashboard/FreeStudyCard.tsx` | Renomear para "Explorar módulos" |
 
 ## O que NÃO muda
-- Toda a lógica de interação, ABCDE, deterioração, prescrição, avaliação final
-- UI existente permanece intacta
+- Study Engine, FSRS, cronograma, mentoria, OSCE, readiness por banca
+- Estrutura do Dashboard (HeroStudyCard, ExamReadinessCard, etc.)
+- Lógica de missão, persistência, cache invalidation
 - Nenhuma funcionalidade removida
 
 ## Resultado
-O Plantão passa a gerar casos adaptados ao perfil real do aluno: estilo da banca, reforço de erros anteriores e pressão proporcional à proximidade da prova.
+Dashboard e Missão passam a usar linguagem 100% humanizada, sem métricas técnicas expostas. Alertas ficam mais específicos. Informação duplicada eliminada. Experiência mais clara e orientada à ação.
 
