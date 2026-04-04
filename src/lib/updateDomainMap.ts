@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { mapTopicToSpecialty } from "./mapTopicToSpecialty";
+import { dualWritePerformanceByTopic } from "./dualWrite";
 
 interface DomainEntry {
   topic: string;
