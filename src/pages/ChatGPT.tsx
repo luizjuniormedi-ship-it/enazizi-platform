@@ -127,10 +127,26 @@ const ChatGPT = () => {
     });
   }, [registerAutoSave, studyStarted, messages, currentTopic, enaziziStep, performance, selectedUploadIds, sessionQuestions, sessionCorrect]);
 
+  // Mission-mode auto-start (from MissionTutorHint)
+  const missionHandled = useRef(false);
+  useEffect(() => {
+    if (!missionContext || !user || missionHandled.current) return;
+    if (missionContext.topic) {
+      missionHandled.current = true;
+      const msg = `Explique de forma estratégica e direta: ${missionContext.topic}${missionContext.error ? `. Meu principal erro: ${missionContext.error}` : ""}. Foque no que cai na prova.`;
+      setStudyStarted(true);
+      setMetricsCollapsed(true);
+      setCurrentTopic(missionContext.topic);
+      setTopic(missionContext.topic);
+      setTimeout(() => sendMessage(msg), 500);
+    }
+  }, [missionContext, user]);
+
   // StudyContext-driven auto-start (from guided flows via URL params)
   const studyCtx = useStudyContext();
   const ctxHandled = useRef(false);
   useEffect(() => {
+    if (missionContext) return; // skip if mission mode handled
     if (!studyCtx || !user || ctxHandled.current) return;
     if (studyCtx.topic) {
       ctxHandled.current = true;
@@ -149,7 +165,7 @@ const ChatGPT = () => {
       setTopic(studyCtx.topic);
       setTimeout(() => sendMessage(ensureSequentialInitialMessage(msg)), 500);
     }
-  }, [studyCtx, user]);
+  }, [studyCtx, user, missionContext]);
 
   // Location-state driven auto-start (legacy)
   const errorBankHandled = useRef(false);
