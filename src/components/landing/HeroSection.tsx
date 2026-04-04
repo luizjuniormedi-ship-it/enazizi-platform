@@ -92,6 +92,15 @@ const HeroSection = () => {
           </Button>
         </div>
 
+        <div
+          className="mt-4 animate-fade-in"
+          style={{ animationDelay: "0.4s" }}
+        >
+          <Button variant="link" asChild className="text-white/80 hover:text-white text-sm sm:text-base underline underline-offset-4">
+            <Link to="/login">Já tem conta? Entrar</Link>
+          </Button>
+        </div>
+
         {/* Scroll hint */}
         <div className="mt-10 sm:mt-14 animate-bounce">
           <ChevronDown className="h-6 w-6 text-white/40 mx-auto" />
