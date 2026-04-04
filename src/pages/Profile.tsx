@@ -38,6 +38,7 @@ const EXAM_OPTIONS = [
 const Profile = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { invalidateAll } = useDashboardInvalidation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState("");
