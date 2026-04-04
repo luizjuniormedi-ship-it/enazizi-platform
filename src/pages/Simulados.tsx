@@ -449,6 +449,7 @@ const Simulados = () => {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studyCtx, checked, pendingSession, phase]);
+
   const handleFinish = useCallback(async (answers: Record<number, number>, flagged: number[]) => {
     setFinalAnswers(answers);
     setFlaggedQuestions(flagged);
