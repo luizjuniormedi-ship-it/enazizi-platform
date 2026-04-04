@@ -102,39 +102,60 @@ export type Database = {
       }
       ai_content_cache: {
         Row: {
+          banca: string | null
           cache_key: string
           content_json: Json
           content_type: string
           created_at: string
+          difficulty: number | null
           expires_at: string | null
           hit_count: number
           id: string
           model_used: string | null
+          module: string | null
+          normalized_prompt_hash: string | null
           quality_score: number | null
+          specialty: string | null
+          subtopic: string | null
+          topic: string | null
           updated_at: string
         }
         Insert: {
+          banca?: string | null
           cache_key: string
           content_json: Json
           content_type?: string
           created_at?: string
+          difficulty?: number | null
           expires_at?: string | null
           hit_count?: number
           id?: string
           model_used?: string | null
+          module?: string | null
+          normalized_prompt_hash?: string | null
           quality_score?: number | null
+          specialty?: string | null
+          subtopic?: string | null
+          topic?: string | null
           updated_at?: string
         }
         Update: {
+          banca?: string | null
           cache_key?: string
           content_json?: Json
           content_type?: string
           created_at?: string
+          difficulty?: number | null
           expires_at?: string | null
           hit_count?: number
           id?: string
           model_used?: string | null
+          module?: string | null
+          normalized_prompt_hash?: string | null
           quality_score?: number | null
+          specialty?: string | null
+          subtopic?: string | null
+          topic?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -3485,6 +3506,35 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      queue_results: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string
+          result_json: Json | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id: string
+          result_json?: Json | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string
+          result_json?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "queue_results_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "queue_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ranking_snapshots: {
         Row: {
