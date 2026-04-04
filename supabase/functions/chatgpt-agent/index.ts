@@ -134,6 +134,7 @@ ${session_memory.erros_consecutivos >= 3 ? "\n⚠️ ALERTA DE TRAVAMENTO: O alu
     const maxTokens = isMissionMode ? 4096 : 16384;
     const allMessages = [{ role: "system", content: instructions }, ...messages];
     const body = JSON.stringify({ model: "gpt-4o", messages: allMessages, stream: true, max_tokens: maxTokens });
+    const startMs = Date.now();
 
     // 1) Try OpenAI first
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
