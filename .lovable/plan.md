@@ -1,46 +1,96 @@
 
+# Nova Tela Central de Missão Diária
 
-# Atualizar Páginas de Entrada (Landing + Login) e Corrigir Botão "Entrar" no Mobile
+## Visão Geral
+Transformar a página `MissionMode.tsx` de uma lista simples de tarefas em um **plano estratégico visual** com 10 blocos informativos, mantendo toda a lógica existente do Study Engine, FSRS, Recovery e hooks.
 
-## Problema
-O botão "Entrar" some no mobile na Navbar da Landing page. As páginas de entrada (Landing e Login) precisam de atualização visual e consistência entre desktop, tablet e mobile.
+## Arquitetura
+A página atual (353 linhas) será reescrita como orquestrador de **sub-componentes independentes**. O hook `useMissionMode` e o `useStudyEngine` já fornecem todos os dados necessários — nenhuma lógica de backend precisa mudar.
 
-## Análise do Código Atual
+## Componentes Novos (todos em `src/components/mission/`)
 
-A Navbar já tem um bloco `md:hidden` com botão "Entrar" (linha 33-40). O problema pode ser:
-1. O botão `variant="ghost"` com `size="sm"` fica invisível sobre o vídeo hero (texto branco/transparente sobre fundo escuro)
-2. A Navbar usa `bg-background/80` que pode não ter contraste suficiente sobre o vídeo
+### 1. `MissionSituationCard.tsx` — Situação Atual
+- Consome `useExamReadiness` (chance por banca), `usePreparationIndex` (PrepIndex), `adaptive.mode` (fase)
+- Calcula tendência comparando `approvalScore` atual vs `approval_scores` da semana anterior (já em `coreData`)
+- Frase dinâmica gerada por fase + tendência
 
-## Solução
+### 2. `MissionDiagnosticCard.tsx` — Diagnóstico Inteligente
+- Título: "O que mais impacta sua evolução hoje"
+- Lista até 3 fatores extraídos de: `adaptive.lockReasons`, `adaptive.overdueCount`, `adaptive.recoveryMode`, `adaptive.heavyRecovery`, erros do Study Engine
+- Cada fator com ícone e cor (vermelho/amarelo)
 
-### 1. Navbar — Corrigir botão "Entrar" no mobile
-- Trocar o botão "Entrar" mobile de `variant="ghost" size="sm"` para `variant="outline" size="sm"` com borda visível
-- Garantir que a navbar tenha `bg-background/95` no mobile para contraste sobre o vídeo
-- Aumentar o touch target do botão para `h-10 min-w-[72px]`
+### 3. `MissionObjectiveCard.tsx` — Objetivo do Dia
+- Gera frase-objetivo baseada em `adaptive.mode.phase` + `adaptive.recoveryMode` + `heavyRecovery.phase`
+- Ex: "Corrigir erros críticos e reduzir backlog" (fase crítica) ou "Consolidar cardiologia com simulado" (competitivo)
 
-### 2. Landing Page — Atualização visual
-- HeroSection: melhorar responsividade dos CTAs no mobile (padding, font-size)
-- ConversionBadgesSection: ajustar grid de badges para mobile (2 colunas em vez de wrap)
-- CTASection: garantir que botões não fiquem cortados em telas pequenas
+### 4. `MissionTaskList.tsx` — Missão do Dia (Tarefas)
+- Reutiliza `state.tasks` do `useMissionMode` (já ordenado pelo Study Engine)
+- Cada item mostra: ícone tipo, tema, objetivo curto, tempo estimado, badge de prioridade
+- Item atual destacado com borda primária
 
-### 3. Login Page — Atualização mobile
-- No mobile (`< lg`), o left panel (hero) ocupa muito espaço vertical — condensar stats e esconder features
-- Garantir que o formulário fique visível sem scroll excessivo no mobile
-- Adicionar logo ENAZIZI (mascot) no topo do form mobile em vez do Brain icon genérico
+### 5. `MissionTaskActions.tsx` — Execução Interativa
+- Botões "Iniciar Atividade", "Já concluí", "Pular" (mesma lógica atual)
+- Usa `buildStudyPath()` para navegação contextual
+- CTA principal com `h-14` thumb-friendly
 
-### 4. Consistência cross-platform
-- Verificar que todos os breakpoints (320px, 375px, 414px, 768px, 1024px+) renderizam corretamente
-- Navbar: mesma aparência em PWA, browser mobile e desktop
+### 6. `MissionProgressFeedback.tsx` — Feedback em Tempo Real
+- Barra de progresso + contadores (X/Y revisões, X/Y questões)
+- Agrupa tarefas por tipo e mostra progresso por categoria
+- Mensagens motivacionais baseadas em % concluído
 
-## Arquivos a editar
-- `src/components/landing/Navbar.tsx` — fix botão "Entrar" mobile + contraste
-- `src/components/landing/HeroSection.tsx` — ajustes mobile menores
-- `src/components/landing/CTASection.tsx` — responsividade
-- `src/components/landing/ConversionBadgesSection.tsx` — grid mobile
-- `src/pages/Login.tsx` — condensar hero panel no mobile, melhorar UX do form
+### 7. `MissionImpactProjection.tsx` — Projeção de Impacto
+- Calcula estimativas simples: `-(overdueCount que serão resolvidos)` revisões, `+X%` estimado na chance
+- Baseado nos tipos de tarefa pendentes (review reduz overdue, practice melhora accuracy)
 
-## Impacto
-- Botão "Entrar" sempre visível no mobile
-- Páginas de entrada consistentes em todas as plataformas
-- Zero alteração em lógica de autenticação ou backend
+### 8. `MissionAlerts.tsx` — Alertas Inteligentes
+- Recovery Mode → banner laranja com `recoveryReason`
+- Heavy Recovery → badge com fase atual (1-4) e `phaseDescription`
+- Content Lock → aviso de bloqueio
+- Dias sem estudar (via `gamification.current_streak === 0`)
 
+### 9. `MissionTutorHint.tsx` — Tutor IA Opcional
+- Aparece apenas se a tarefa atual é tipo `error_review` com `vezes_errado >= 3`
+- Card discreto: "Quer uma explicação rápida?" + botão "Explicar agora" → navega para tutor com contexto
+
+### 10. `MissionContinuity.tsx` — Próximo Passo
+- Mostra `nextTask` (já disponível no hook)
+- Se missão quase completa: "Amanhã o foco será..." (baseado na fase do Study Engine)
+
+## Página Principal — `src/pages/MissionMode.tsx`
+
+Reescrita como orquestrador:
+- Tela `completed` (vitória) preservada com melhorias visuais
+- Tela `paused` preservada
+- Tela `active` reorganizada como scroll vertical com os 10 blocos
+- `FocusHardMode` preservado (ativação automática para prova próxima / score baixo)
+- Layout: scroll vertical mobile-first, max-w-lg centralizado
+
+## Dados — Zero Queries Novas
+Todos os dados já existem nos hooks:
+- `useStudyEngine()` → `adaptive` (approvalScore, weights, mode, lockStatus, memoryPressure, overdueCount, recoveryMode, heavyRecovery)
+- `useMissionMode()` → `state`, `currentTask`, `nextTask`, `progress`, `completedMinutes`
+- `useExamReadiness()` → chance por banca
+- `usePreparationIndex()` → prepIndex, zone, delta
+- `useCoreData()` → gamification streak, approvalScores histórico
+
+## Fluxo Preservado
+```text
+Dashboard (HeroStudyCard) → startMission() → MissionMode
+  → Bloco 1-3: contexto visual (situação + diagnóstico + objetivo)
+  → Bloco 4-5: tarefas + execução (buildStudyPath → módulos)
+  → Bloco 6: progresso em tempo real
+  → Bloco 7-8: impacto + alertas
+  → Bloco 9-10: tutor opcional + continuidade
+  → Conclusão: tela vitória → invalidateDashboard → Dashboard
+```
+
+## Arquivos
+- **Novos** (10): `src/components/mission/MissionSituationCard.tsx`, `MissionDiagnosticCard.tsx`, `MissionObjectiveCard.tsx`, `MissionTaskList.tsx`, `MissionTaskActions.tsx`, `MissionProgressFeedback.tsx`, `MissionImpactProjection.tsx`, `MissionAlerts.tsx`, `MissionTutorHint.tsx`, `MissionContinuity.tsx`
+- **Editado** (1): `src/pages/MissionMode.tsx` — reescrita como orquestrador dos sub-componentes
+
+## UI/UX
+- Mobile-first (430px viewport atual do usuário)
+- Cards com `rounded-xl`, sombras suaves, espaçamento `space-y-3`
+- Cores: primary para CTA, amber para alertas, emerald para progresso, red para crítico
+- Toda interface em pt-BR
+- Top bar fixa com progresso global (preservada)
