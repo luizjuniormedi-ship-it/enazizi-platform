@@ -275,6 +275,8 @@ export const BASE_CURRICULUM: CurriculumTopic[] = [
   { week: 36, topic: "Hiperprolactinemia", specialty: "Endocrinologia" },
   { week: 36, topic: "Distúrbios do Potássio", specialty: "Nefrologia" },
   { week: 36, topic: "Anemias Microcíticas", specialty: "Hematologia" },
+  { week: 36, topic: "Câncer de Pulmão", specialty: "Oncologia" },
+  { week: 36, topic: "Monitorização Hemodinâmica", specialty: "Terapia Intensiva" },
   // Semana 37
   { week: 37, topic: "Desnutrição na Infância", specialty: "Pediatria" },
   { week: 37, topic: "Testes Diagnósticos", specialty: "Medicina Preventiva" },
