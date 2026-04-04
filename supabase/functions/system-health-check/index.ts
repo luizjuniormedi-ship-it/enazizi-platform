@@ -511,15 +511,18 @@ Deno.serve(async (req) => {
       total_info: totalInfo,
     });
 
+    const fullResult = {
+      success: true,
+      total_alerts: alerts.length,
+      critical: totalCritical,
+      warning: totalWarning,
+      info: totalInfo,
+      alerts,
+    };
+    cachedFullResult = { data: fullResult, ts: Date.now() };
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        total_alerts: alerts.length,
-        critical: totalCritical,
-        warning: totalWarning,
-        info: totalInfo,
-        alerts,
-      }),
+      JSON.stringify(fullResult),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
