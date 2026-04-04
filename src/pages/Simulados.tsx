@@ -211,6 +211,8 @@ const Simulados = () => {
   const { toast } = useToast();
   const { addXp } = useGamification();
   const queryClient = useQueryClient();
+  const studyCtx = useStudyContext();
+  const autoStartedRef = useRef(false);
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [questions, setQuestions] = useState<SimQuestion[]>([]);
