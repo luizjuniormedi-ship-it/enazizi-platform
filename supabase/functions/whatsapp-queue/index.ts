@@ -274,8 +274,37 @@ Deno.serve(async (req) => {
       const { data } = await query;
       let exec = data && data.length > 0 ? data[0] : null;
 
+      // ── Self-healing: auto-reset stale executions (>6h no progress) ──
+      if (exec && (exec.status === "running" || exec.status === "paused")) {
+        const startedAt = new Date(exec.started_at || exec.created_at).getTime();
+        const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000;
+        if (startedAt < sixHoursAgo) {
+          // Cancel remaining pending/processing items
+          await supabaseAdmin
+            .from("whatsapp_message_log")
+            .update({ delivery_status: "cancelled", updated_at: new Date().toISOString() })
+            .eq("execution_id", exec.id)
+            .in("delivery_status", ["pending", "processing"]);
+
+          await supabaseAdmin
+            .from("whatsapp_send_executions")
+            .update({ status: "stopped", finished_at: new Date().toISOString() })
+            .eq("id", exec.id);
+
+          await supabaseAdmin.from("whatsapp_execution_logs").insert({
+            execution_id: exec.id,
+            action: "auto_reset_stale",
+            status: "success",
+            message: `Execução parada automaticamente após 6h sem progresso`,
+          });
+
+          exec = { ...exec, status: "stopped" };
+          console.log(`Auto-reset stale execution ${exec.id}`);
+        }
+      }
+
       // ── Self-healing: auto-link orphan messages ──
-      if (exec) {
+      if (exec && exec.status !== "stopped") {
         // Check for orphan pending messages from today not linked to any execution
         const { data: orphans } = await supabaseAdmin
           .from("whatsapp_message_log")
