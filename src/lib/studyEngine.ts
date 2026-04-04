@@ -121,6 +121,7 @@ export interface EngineResult {
 
 interface EngineInput {
   userId: string;
+  coreData?: CoreDataResult;
 }
 
 function id(prefix: string, idx: number) {
