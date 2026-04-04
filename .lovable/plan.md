@@ -1,21 +1,37 @@
 
 
-# Correção do botão "Questões" no Plano de Hoje
+# Auto-iniciar Simulado com 20 Questões do Tema
 
 ## Problema
-O botão "Questões" nas revisões pendentes navega para `/dashboard/questions-bank`, que **não existe** como rota. A rota correta (`/dashboard/banco-questoes`) redireciona para `/dashboard/simulados`. Resultado: o usuário clica e nada funciona.
+Quando o usuário clica "Questões" nas revisões pendentes, ele é levado ao Simulados com o tema pré-selecionado, mas precisa configurar manualmente e clicar "Iniciar". O ideal é que já inicie automaticamente com 20 questões do tema, dificuldade intermediária-difícil.
 
-## Correção
-Alterar a função `goToQuestions` em `src/pages/DailyPlan.tsx` para navegar diretamente para `/dashboard/simulados` com o contexto de estudo (tema, especialidade), permitindo que o módulo de simulados auto-configure questões do tema.
+## Solução
+Adicionar lógica de auto-start no `Simulados.tsx`: quando detectar `StudyContext` vindo do `daily-plan` com `taskType=practice`, disparar automaticamente o `handleStart` com 20 questões, dificuldade "misto" (30% intermediárias, 70% difíceis), modo "estudo".
+
+### Arquivo: `src/pages/Simulados.tsx`
+- Importar `useStudyContext` e `decodeStudyContext`
+- Adicionar `useEffect` que verifica se há contexto de estudo com `source === "daily-plan"` e `taskType === "practice"`
+- Se sim, chamar `handleStart` automaticamente com:
+  - `topics: [ctx.specialty]`
+  - `count: 20`
+  - `difficulty: "misto"` (garante mix intermediário+difícil)
+  - `timePerQuestion: 3`
+  - `mode: "estudo"`
+  - `specificTopic: ctx.topic`
+- Usar ref `autoStarted` para evitar disparo duplicado
+- Não disparar se houver sessão pendente (`pendingSession`)
 
 ### Arquivo: `src/pages/DailyPlan.tsx`
-- Linha 215: trocar `"/dashboard/questions-bank"` por `"/dashboard/simulados"`
+- Sem alteração — já passa contexto correto via URL
 
-Também corrigir o `StudyBlockActions.tsx` (linha 38) que aponta para `banco-questoes` (redireciona mas perde query params):
-- Trocar `"/dashboard/banco-questoes"` por `"/dashboard/simulados"`
+## Fluxo resultante
+1. Usuário clica "Questões" em tema "Cardiopatias Congênitas"
+2. Navega para `/dashboard/simulados?sc_source=daily-plan&sc_topic=...`
+3. Simulados detecta o contexto automaticamente
+4. Inicia geração de 20 questões (mix intermediário-difícil) do tema
+5. Usuário já entra direto no exame, sem configurar nada
 
 ## Impacto
-- Zero risco — apenas corrige destinos de navegação
-- Contexto de estudo (tema/especialidade) já é propagado via `encodeStudyContext`
-- Simulados já aceita e auto-configura com esses parâmetros
+- Risco baixo — auto-start só ocorre com contexto explícito do daily-plan
+- Sem alteração em fluxo manual (usuário que acessa Simulados diretamente continua vendo o setup)
 
