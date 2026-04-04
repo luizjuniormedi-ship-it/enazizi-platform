@@ -205,7 +205,7 @@ const Login = () => {
           </div>
           <h1 className="text-2xl font-bold text-center mb-1">{forgotMode ? "Recuperar senha" : "Bem-vindo de volta"}</h1>
           <p className="text-muted-foreground text-center mb-6 text-sm">
-            {forgotMode ? "Digite seu email para receber o link de redefinição" : "Entre na sua conta para continuar"}
+            {forgotMode ? "Digite seu email para receber o link de redefinição" : "Continue sua jornada até a aprovação"}
           </p>
 
           {forgotMode ? (

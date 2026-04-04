@@ -17,10 +17,10 @@ const CTASection = forwardRef<HTMLElement>((_, ref) => (
         </div>
 
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-black mb-3 sm:mb-4">
-          Sua aprovação não pode esperar
+          Não espere a véspera para começar
         </h2>
         <p className="text-muted-foreground text-base sm:text-lg mb-6 sm:mb-8 max-w-xl mx-auto">
-          Cada dia sem treinar com IA é um dia que seus concorrentes ganham vantagem. Comece hoje e veja a diferença.
+          Cada dia sem um plano estruturado é um dia que seus concorrentes avançam. O ENAZIZI começa a trabalhar por você hoje.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
