@@ -67,20 +67,13 @@ function getHeavyRecoveryPhase(day: number): HeavyRecoveryPhase {
 
 const HEAVY_RECOVERY_STORAGE_KEY = "enazizi-heavy-recovery";
 
-function loadHeavyRecoveryState(): { startedAt: string } | null {
+// Legacy localStorage helpers — kept only for migration bridge read
+function loadHeavyRecoveryStateLegacy(): { startedAt: string } | null {
   try {
     const raw = localStorage.getItem(HEAVY_RECOVERY_STORAGE_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
   } catch { return null; }
-}
-
-function persistHeavyRecovery(startedAt: string) {
-  localStorage.setItem(HEAVY_RECOVERY_STORAGE_KEY, JSON.stringify({ startedAt }));
-}
-
-function clearHeavyRecovery() {
-  localStorage.removeItem(HEAVY_RECOVERY_STORAGE_KEY);
 }
 
 function buildHeavyRecoveryState(startedAt: string | null, active: boolean): HeavyRecoveryState {
