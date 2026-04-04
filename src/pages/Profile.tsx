@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import FaculdadeCombobox from "@/components/FaculdadeCombobox";
 import { isValidPhone, isValidName } from "@/lib/profileValidation";
+import { useDashboardInvalidation } from "@/hooks/useDashboardInvalidation";
 import { Switch } from "@/components/ui/switch";
 import { ALL_SPECIALTIES } from "@/constants/specialties";
 import { cn } from "@/lib/utils";
