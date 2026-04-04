@@ -9,6 +9,40 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/**
+ * Extrai e parseia JSON de respostas da IA de forma segura.
+ * Lida com: markdown fences, texto antes/depois do JSON,
+ * booleanos com comentários, trailing commas, campos malformados.
+ */
+function safeParseAIJson(raw: string, _action: string): Record<string, unknown> {
+  // 1. Remove markdown fences
+  let cleaned = raw.replace(/```(?:json)?\s*/gi, "").replace(/```\s*/g, "").trim();
+
+  // 2. Extract the outermost JSON object
+  const firstBrace = cleaned.indexOf("{");
+  const lastBrace = cleaned.lastIndexOf("}");
+  if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+    throw new Error("No JSON object found");
+  }
+  cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+
+  // 3. Sanitize common AI malformations
+  // Fix: true (some comment) → true
+  cleaned = cleaned.replace(/:\s*(true|false)\s*\([^)]*\)/gi, ": $1");
+  // Fix: "value" (comment) → "value"
+  cleaned = cleaned.replace(/("(?:[^"\\]|\\.)*")\s*\([^)]*\)/g, "$1");
+  // Fix trailing commas before } or ]
+  cleaned = cleaned.replace(/,\s*([}\]])/g, "$1");
+  // Fix single quotes used as string delimiters (basic cases)
+  // Fix NaN or undefined values
+  cleaned = cleaned.replace(/:\s*NaN\b/g, ": 0");
+  cleaned = cleaned.replace(/:\s*undefined\b/g, ": null");
+
+  // 4. Parse
+  return JSON.parse(cleaned);
+}
+
+
 const SYSTEM_PROMPT = `IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês como idioma principal. Inglês permitido APENAS em nomes de artigos/guidelines.
 
 Você é o simulador de PLANTÃO MÉDICO do sistema ENAZIZI. Você desempenha DOIS papéis simultâneos:
@@ -509,11 +543,32 @@ Responda APENAS em JSON válido.`,
 
     let parsed;
     try {
-      const jsonStr = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      parsed = JSON.parse(jsonStr);
+      parsed = safeParseAIJson(raw, action);
     } catch {
-      console.error("Failed to parse AI response:", raw);
-      throw new Error("Resposta da IA inválida");
+      console.error("Failed to parse AI response after sanitization:", raw.slice(0, 500));
+      // Fallback: return a minimal valid response so the session is never lost
+      if (action === "finish") {
+        parsed = {
+          final_score: 0,
+          grade: "Indisponível",
+          correct_diagnosis: "Não foi possível avaliar",
+          student_got_diagnosis: false,
+          evaluation: { resumo: "Erro ao processar avaliação da IA. Tente novamente." },
+          differential_diagnoses: [],
+          checklist: [],
+          recommendations: "A avaliação não pôde ser processada. Sua sessão foi salva.",
+          xp_earned: 5,
+          time_total_minutes: 0,
+        };
+      } else {
+        parsed = {
+          response: "Desculpe, houve um erro ao processar a resposta. Por favor, repita sua ação.",
+          response_type: "error_fallback",
+          patient_status: "estável",
+          vitals: {},
+          score_delta: 0,
+        };
+      }
     }
 
     // If this was a teacher case and action is "finish", save results
