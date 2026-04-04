@@ -1,5 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import ENAZIZI_PROMPT from "../_shared/enazizi-prompt.ts";
+import {
+  getLessonPrompt,
+  getCompactLessonPrompt,
+  getRecallPrompt,
+  getQuestionPrompt,
+  getDiscussionPrompt,
+  getScoringPrompt,
+  getReinforcementPrompt,
+  getFeynmanPrompt,
+  getSessionMemoryBlock,
+} from "../_shared/enazizi-prompt.ts";
 import { aiFetch, getModelForTier } from "../_shared/ai-fetch.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
 
