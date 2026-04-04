@@ -1,96 +1,99 @@
 
+
 # Nova Tela Central de Missão Diária
 
-## Visão Geral
-Transformar a página `MissionMode.tsx` de uma lista simples de tarefas em um **plano estratégico visual** com 10 blocos informativos, mantendo toda a lógica existente do Study Engine, FSRS, Recovery e hooks.
+## Resumo
+Transformar a `MissionMode.tsx` de uma lista simples de tarefas em um **plano estratégico visual** com 10 blocos informativos, integrado a todos os sistemas existentes (Study Engine, FSRS, Recovery, PrepIndex, Approval Score, chance por banca).
 
-## Arquitetura
-A página atual (353 linhas) será reescrita como orquestrador de **sub-componentes independentes**. O hook `useMissionMode` e o `useStudyEngine` já fornecem todos os dados necessários — nenhuma lógica de backend precisa mudar.
+## Problema Atual
+A missão hoje é uma tela genérica com tarefa atual + próxima + lista colapsável. Não mostra situação do aluno, diagnóstico, objetivo, impacto ou alertas — parece uma lista de tarefas, não um plano estratégico.
 
-## Componentes Novos (todos em `src/components/mission/`)
+## Solução — 10 Componentes Novos + Reescrita do Orquestrador
 
-### 1. `MissionSituationCard.tsx` — Situação Atual
-- Consome `useExamReadiness` (chance por banca), `usePreparationIndex` (PrepIndex), `adaptive.mode` (fase)
-- Calcula tendência comparando `approvalScore` atual vs `approval_scores` da semana anterior (já em `coreData`)
-- Frase dinâmica gerada por fase + tendência
+### Componentes (em `src/components/mission/`)
 
-### 2. `MissionDiagnosticCard.tsx` — Diagnóstico Inteligente
+**1. MissionSituationCard** — Situação Atual
+- Grid 3 colunas: Chance por banca (useExamReadiness), PrepIndex (usePreparationIndex), Tendência (weeklyDelta)
+- Badge da fase atual (Crítico/Atenção/Competitivo/Pronto)
+- Frase dinâmica baseada em tendência + fase
+
+**2. MissionDiagnosticCard** — Diagnóstico Inteligente
 - Título: "O que mais impacta sua evolução hoje"
-- Lista até 3 fatores extraídos de: `adaptive.lockReasons`, `adaptive.overdueCount`, `adaptive.recoveryMode`, `adaptive.heavyRecovery`, erros do Study Engine
-- Cada fator com ícone e cor (vermelho/amarelo)
+- Até 3 fatores extraídos do `adaptive`: overdueCount, recoveryMode, heavyRecovery, lockStatus, memoryPressure, streak
+- Cada fator com ícone e severidade (vermelho/amarelo)
+- Não aparece se tudo estiver bem
 
-### 3. `MissionObjectiveCard.tsx` — Objetivo do Dia
-- Gera frase-objetivo baseada em `adaptive.mode.phase` + `adaptive.recoveryMode` + `heavyRecovery.phase`
-- Ex: "Corrigir erros críticos e reduzir backlog" (fase crítica) ou "Consolidar cardiologia com simulado" (competitivo)
+**3. MissionObjectiveCard** — Objetivo do Dia
+- Frase-objetivo gerada por fase + recovery + lock
+- Ex: "Corrigir seus maiores erros e reduzir o backlog de revisões"
 
-### 4. `MissionTaskList.tsx` — Missão do Dia (Tarefas)
-- Reutiliza `state.tasks` do `useMissionMode` (já ordenado pelo Study Engine)
-- Cada item mostra: ícone tipo, tema, objetivo curto, tempo estimado, badge de prioridade
-- Item atual destacado com borda primária
+**4. MissionTaskList** — Lista de Tarefas
+- Todas as tarefas com ícone tipo, tema, tempo
+- Tarefa atual destacada, concluídas com check verde
 
-### 5. `MissionTaskActions.tsx` — Execução Interativa
-- Botões "Iniciar Atividade", "Já concluí", "Pular" (mesma lógica atual)
-- Usa `buildStudyPath()` para navegação contextual
-- CTA principal com `h-14` thumb-friendly
+**5. MissionTaskActions** — Execução Interativa
+- Card da tarefa atual com CTA `h-14` thumb-friendly "Iniciar Atividade"
+- Botões "Já concluí" e "Pular"
+- Usa `buildStudyPath()` existente
 
-### 6. `MissionProgressFeedback.tsx` — Feedback em Tempo Real
-- Barra de progresso + contadores (X/Y revisões, X/Y questões)
-- Agrupa tarefas por tipo e mostra progresso por categoria
-- Mensagens motivacionais baseadas em % concluído
+**6. MissionProgressFeedback** — Feedback em Tempo Real
+- Barra de progresso + tempo concluído/total
+- Progresso por tipo (Revisões: 2/4, Questões: 1/3)
+- Mensagem motivacional dinâmica
 
-### 7. `MissionImpactProjection.tsx` — Projeção de Impacto
-- Calcula estimativas simples: `-(overdueCount que serão resolvidos)` revisões, `+X%` estimado na chance
-- Baseado nos tipos de tarefa pendentes (review reduz overdue, practice melhora accuracy)
+**7. MissionImpactProjection** — Projeção de Impacto
+- Estimativas: "-X revisões pendentes", "+Y% acurácia", "+Z temas"
+- Baseado nos tipos de tarefa da missão
 
-### 8. `MissionAlerts.tsx` — Alertas Inteligentes
-- Recovery Mode → banner laranja com `recoveryReason`
-- Heavy Recovery → badge com fase atual (1-4) e `phaseDescription`
+**8. MissionAlerts** — Alertas Inteligentes
+- Recovery Mode → banner laranja
+- Heavy Recovery → badge com fase 1-4
 - Content Lock → aviso de bloqueio
-- Dias sem estudar (via `gamification.current_streak === 0`)
+- Streak zero → aviso de retomada
 
-### 9. `MissionTutorHint.tsx` — Tutor IA Opcional
-- Aparece apenas se a tarefa atual é tipo `error_review` com `vezes_errado >= 3`
-- Card discreto: "Quer uma explicação rápida?" + botão "Explicar agora" → navega para tutor com contexto
+**9. MissionTutorHint** — Tutor IA Opcional
+- Aparece apenas para tarefas de revisão/correção de erros
+- Card discreto com "Quer uma explicação rápida?" + botão "Explicar"
 
-### 10. `MissionContinuity.tsx` — Próximo Passo
-- Mostra `nextTask` (já disponível no hook)
-- Se missão quase completa: "Amanhã o foco será..." (baseado na fase do Study Engine)
+**10. MissionContinuity** — Próximo Passo
+- Preview da próxima tarefa
+- Hint do que esperar amanhã baseado na fase
 
-## Página Principal — `src/pages/MissionMode.tsx`
+### Página Principal — `src/pages/MissionMode.tsx`
+- Reescrita como orquestrador que monta os 10 blocos em scroll vertical
+- Tela completed (vitória) preservada com melhorias visuais
+- Tela paused preservada
+- FocusHardMode preservado (ativação automática)
+- Layout mobile-first, max-w-lg centralizado
+- Top bar fixa com progresso global preservada
+- Hooks consumidos: `useStudyEngine`, `useMissionMode`, `useExamReadiness`, `usePreparationIndex`, `useCoreData`
 
-Reescrita como orquestrador:
-- Tela `completed` (vitória) preservada com melhorias visuais
-- Tela `paused` preservada
-- Tela `active` reorganizada como scroll vertical com os 10 blocos
-- `FocusHardMode` preservado (ativação automática para prova próxima / score baixo)
-- Layout: scroll vertical mobile-first, max-w-lg centralizado
-
-## Dados — Zero Queries Novas
-Todos os dados já existem nos hooks:
-- `useStudyEngine()` → `adaptive` (approvalScore, weights, mode, lockStatus, memoryPressure, overdueCount, recoveryMode, heavyRecovery)
-- `useMissionMode()` → `state`, `currentTask`, `nextTask`, `progress`, `completedMinutes`
-- `useExamReadiness()` → chance por banca
-- `usePreparationIndex()` → prepIndex, zone, delta
-- `useCoreData()` → gamification streak, approvalScores histórico
+## Dados — Zero Queries Novas ao Backend
+Todos os dados já existem nos hooks atuais:
+- `adaptive` do Study Engine (approvalScore, mode, lockStatus, memoryPressure, overdueCount, recoveryMode, heavyRecovery)
+- `state/currentTask/nextTask/progress` do useMissionMode
+- `examReadiness` do useExamReadiness
+- `prepIndex` do usePreparationIndex
+- `gamification.current_streak` do useCoreData
 
 ## Fluxo Preservado
 ```text
-Dashboard (HeroStudyCard) → startMission() → MissionMode
-  → Bloco 1-3: contexto visual (situação + diagnóstico + objetivo)
-  → Bloco 4-5: tarefas + execução (buildStudyPath → módulos)
+Dashboard → startMission() → MissionMode
+  → Blocos 1-3: contexto (situação + diagnóstico + objetivo)
+  → Blocos 4-5: tarefas + execução
   → Bloco 6: progresso em tempo real
-  → Bloco 7-8: impacto + alertas
-  → Bloco 9-10: tutor opcional + continuidade
-  → Conclusão: tela vitória → invalidateDashboard → Dashboard
+  → Blocos 7-8: impacto + alertas
+  → Blocos 9-10: tutor + continuidade
+  → Conclusão → invalidateDashboard → Dashboard
 ```
 
 ## Arquivos
-- **Novos** (10): `src/components/mission/MissionSituationCard.tsx`, `MissionDiagnosticCard.tsx`, `MissionObjectiveCard.tsx`, `MissionTaskList.tsx`, `MissionTaskActions.tsx`, `MissionProgressFeedback.tsx`, `MissionImpactProjection.tsx`, `MissionAlerts.tsx`, `MissionTutorHint.tsx`, `MissionContinuity.tsx`
-- **Editado** (1): `src/pages/MissionMode.tsx` — reescrita como orquestrador dos sub-componentes
+- **Novos (10)**: `src/components/mission/MissionSituationCard.tsx`, `MissionDiagnosticCard.tsx`, `MissionObjectiveCard.tsx`, `MissionTaskList.tsx`, `MissionTaskActions.tsx`, `MissionProgressFeedback.tsx`, `MissionImpactProjection.tsx`, `MissionAlerts.tsx`, `MissionTutorHint.tsx`, `MissionContinuity.tsx`
+- **Editado (1)**: `src/pages/MissionMode.tsx`
 
-## UI/UX
-- Mobile-first (430px viewport atual do usuário)
-- Cards com `rounded-xl`, sombras suaves, espaçamento `space-y-3`
-- Cores: primary para CTA, amber para alertas, emerald para progresso, red para crítico
+## Impacto
+- Zero alteração em backend, hooks ou Study Engine
 - Toda interface em pt-BR
-- Top bar fixa com progresso global (preservada)
+- Mobile-first (430px viewport)
+- Cards com rounded-xl, sombras suaves, cores semânticas (primary, amber, emerald, red)
+
