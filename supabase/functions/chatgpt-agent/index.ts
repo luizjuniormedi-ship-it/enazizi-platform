@@ -197,6 +197,7 @@ ${session_memory.erros_consecutivos >= 3 ? "\n⚠️ ALERTA DE TRAVAMENTO: O alu
       });
     }
 
+    logAiUsage({ userId: "stream", functionName: "chatgpt-agent", modelUsed: "google/gemini-2.5-pro", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "pro" }).catch(() => {});
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
