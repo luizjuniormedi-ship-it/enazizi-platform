@@ -48,8 +48,8 @@ export function useChatMessages(userId: string | undefined) {
       .single();
     if (newConv) {
       setActiveConversationId(newConv.id);
-      // Dual-write: create tutor_session
-      dualWriteTutorSession({ userId, conversationId: newConv.id });
+      // Dual-write: create tutor_session (flag-gated)
+      if (tutorDualWriteEnabled) dualWriteTutorSession({ userId, conversationId: newConv.id });
       return newConv.id;
     }
     return null;
