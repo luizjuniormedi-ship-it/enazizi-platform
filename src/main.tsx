@@ -4,7 +4,7 @@ import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
 import "./index.css";
 
-const APP_RELEASE = "2026-04-04-v4";
+const APP_RELEASE = "2026-04-04-v5";
 
 // Redirect to canonical domain in production
 const canonical = "enazizi.com";
