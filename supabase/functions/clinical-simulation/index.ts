@@ -531,11 +531,24 @@ Responda APENAS em JSON válido.`,
     }
 
     // Call AI
+    const startMs = Date.now();
     const aiResp = await aiFetch({
       model: "google/gemini-2.5-flash",
       messages,
       timeoutMs: 60000,
     });
+    const elapsed = Date.now() - startMs;
+
+    logAiUsage({
+      userId: user.id,
+      functionName: "clinical-simulation",
+      modelUsed: "google/gemini-2.5-flash",
+      success: aiResp.ok,
+      responseTimeMs: elapsed,
+      cacheHit: false,
+      modelTier: "standard",
+      errorMessage: aiResp.ok ? undefined : `status ${aiResp.status}`,
+    }).catch(() => {});
 
     if (!aiResp.ok) {
       const errText = await aiResp.text();
