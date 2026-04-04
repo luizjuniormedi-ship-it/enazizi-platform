@@ -67,7 +67,7 @@ export default function HeroStudyCard() {
     state, progress, totalMinutes, completedMinutes,
     engineLoading, hasTasks, startMission, resumeMission,
   } = useMissionMode();
-  const { data: recommendations, isLoading: recLoading } = useStudyEngine();
+  const { data: recommendations, isLoading: recLoading, adaptive } = useStudyEngine();
   const { data: dashData } = useDashboardData();
   const [expanded, setExpanded] = useState(false);
 
