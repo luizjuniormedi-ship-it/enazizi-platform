@@ -6,6 +6,7 @@ import { useStudyEngine } from "@/hooks/useStudyEngine";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { buildStudyPath } from "@/lib/studyRouter";
+import { getHumanReadableReason } from "@/lib/humanizedReasons";
 import FocusHardMode from "@/components/study/FocusHardMode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
