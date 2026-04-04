@@ -172,7 +172,7 @@ const Login = () => {
 
         {/* Testimonials */}
         {testimonials.length > 0 && (
-          <div className="mt-6 lg:mt-8 space-y-3">
+          <div className="hidden lg:block mt-6 lg:mt-8 space-y-3">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Avaliações de alunos</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {testimonials.map((t, i) => (

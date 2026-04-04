@@ -8,7 +8,7 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/95 md:bg-background/80 backdrop-blur-xl">
       <div className="container flex h-14 sm:h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
           <img src={enazizi} alt="ENAZIZI" className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg object-cover" />
@@ -31,10 +31,10 @@ const Navbar = () => {
         </div>
 
         <div className="md:hidden flex items-center gap-2">
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="outline" size="sm" asChild className="h-10 min-w-[72px] border-primary/40 text-foreground">
             <Link to="/login">Entrar</Link>
           </Button>
-          <button className="text-foreground" onClick={() => setOpen(!open)}>
+          <button className="text-foreground p-1" onClick={() => setOpen(!open)}>
             {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>

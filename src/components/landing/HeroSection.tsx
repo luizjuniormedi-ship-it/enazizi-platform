@@ -76,10 +76,10 @@ const HeroSection = () => {
         </p>
 
         <div
-          className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center animate-fade-in"
+          className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4 sm:px-0 animate-fade-in"
           style={{ animationDelay: "0.3s" }}
         >
-          <Button size="lg" asChild className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 glow">
+          <Button size="lg" asChild className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 glow">
             <Link to="/register">
               Criar conta grátis <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
@@ -88,7 +88,7 @@ const HeroSection = () => {
             size="lg"
             variant="outline"
             asChild
-            className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-white/30 text-white hover:bg-white/10"
+            className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-white/30 text-white hover:bg-white/10"
           >
             <a href="#features">Ver como funciona</a>
           </Button>
