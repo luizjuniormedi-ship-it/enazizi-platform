@@ -11,7 +11,7 @@ export interface CoreDataResult {
     exam_date: string | null;
   };
   practiceAttempts: { correct: boolean; created_at: string }[];
-  revisoes: { id: string; status: string; data_revisao: string; updated_at: string }[];
+  revisoes: { id: string; status: string; data_revisao: string; created_at: string }[];
   examSessions: { score: number; total_questions: number; finished_at: string }[];
   anamnesisResults: { final_score: number; created_at: string }[];
   temasEstudados: { id: string; tema: string; especialidade: string | null; created_at: string }[];
