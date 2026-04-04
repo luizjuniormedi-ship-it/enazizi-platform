@@ -65,10 +65,22 @@ Profundidade: ${session_memory.profundidade_resposta || "aprofundado"}
 --- FIM DA MEMÓRIA DE SESSÃO ---`;
     }
 
+    const startMs = Date.now();
     const response = await aiFetch({
       messages: [{ role: "system", content: systemPrompt }, ...messages],
       stream: true,
     });
+    const elapsed = Date.now() - startMs;
+
+    logAiUsage({
+      userId: "system-mentor",
+      functionName: "mentor-chat",
+      modelUsed: "google/gemini-3-flash-preview",
+      success: response.ok,
+      responseTimeMs: elapsed,
+      modelTier: "standard",
+      errorMessage: response.ok ? undefined : `status ${response.status}`,
+    }).catch(() => {});
 
     if (!response.ok) {
       const t = await response.text();
