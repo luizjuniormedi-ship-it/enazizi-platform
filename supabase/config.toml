@@ -83,3 +83,6 @@ verify_jwt = false
 
 [functions.auto-assign-simulados]
 verify_jwt = false
+
+[functions.dashboard-snapshot]
+verify_jwt = false
