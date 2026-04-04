@@ -103,6 +103,7 @@ export function useWeeklyGoals() {
   const { user } = useAuth();
   const { data: prepData } = usePreparationIndex();
   const { data: dashData } = useDashboardData();
+  const { adaptive } = useStudyEngine();
 
   return useQuery<WeeklyGoalsData>({
     queryKey: ["weekly-goals", user?.id],
