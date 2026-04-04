@@ -146,6 +146,7 @@ ${session_memory.erros_consecutivos >= 3 ? "\n⚠️ ALERTA DE TRAVAMENTO: O alu
       });
 
       if (response.ok) {
+        logAiUsage({ userId: "stream", functionName: "chatgpt-agent", modelUsed: "gpt-4o", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard" }).catch(() => {});
         return new Response(response.body, {
           headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
         });
