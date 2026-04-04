@@ -110,6 +110,7 @@ export async function fetchCurriculumForEngine(
   }
 }
 
+/** @deprecated — Legacy fallback. Will be removed when normalized curriculum is fully populated. */
 async function fetchFromLegacyMatrix(
   banca: string,
   minPriority: number,
