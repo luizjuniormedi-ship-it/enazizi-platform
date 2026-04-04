@@ -108,7 +108,7 @@ REGRAS:
 
       // Review mode — exam-focused
       if (studyMode === "review") {
-        return `${base}
+        return `${getRecallPrompt()}
 ${levelPrompt}
 ${weakTopicsPrompt}
 FASE ATUAL: REVISÃO PARA PROVA
