@@ -58,6 +58,8 @@ export function useChatMessages(userId: string | undefined) {
       conversation_id: convId, user_id: userId, role, content,
     });
     await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+    // Dual-write: mirror to tutor_messages
+    dualWriteTutorMessage({ userId, conversationId: convId, role, content });
   }, [userId]);
 
   const deleteConversation = useCallback(async (convId: string) => {
