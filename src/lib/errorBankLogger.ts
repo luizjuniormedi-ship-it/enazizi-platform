@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { ensureFsrsCard } from "@/lib/fsrsAutoCreate";
 
 interface LogErrorParams {
   userId: string;
