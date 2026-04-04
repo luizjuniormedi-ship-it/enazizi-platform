@@ -31,9 +31,9 @@ describe("Landing Page Components", () => {
         <HeroSection />
       </MemoryRouter>
     );
-    expect(screen.getByText("Residência Médica")).toBeInTheDocument();
-    expect(screen.getByText(/Sua aprovação em/)).toBeInTheDocument();
-    expect(screen.getByText(/começa aqui/)).toBeInTheDocument();
+    expect(screen.getByText(/todos os dias/)).toBeInTheDocument();
+    expect(screen.getByText(/Saiba exatamente/)).toBeInTheDocument();
+    expect(screen.getByText(/até a prova/)).toBeInTheDocument();
   });
 
   it("renders FeaturesSection with ENAZIZI methodology", async () => {

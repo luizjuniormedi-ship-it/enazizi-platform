@@ -132,6 +132,20 @@ const Login = () => {
         <h2 className="text-2xl lg:text-3xl font-bold mb-2">Sua plataforma completa para residência médica</h2>
         <p className="text-muted-foreground mb-6 lg:mb-8 text-sm lg:text-base">Estude com inteligência artificial, questões reais de provas e ferramentas que se adaptam ao seu ritmo.</p>
 
+        {/* Checklist de valor */}
+        <div className="hidden lg:flex flex-col gap-2 mb-6 text-sm">
+          {[
+            "Missão diária pronta ao abrir o app",
+            "Revisões automáticas no momento certo",
+            "Evolução real medida por IA",
+          ].map((item) => (
+            <div key={item} className="flex items-center gap-2 text-muted-foreground">
+              <span className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs">✓</span>
+              <span>{item}</span>
+            </div>
+          ))}
+        </div>
+
         {/* Stats grid */}
         <div className="grid grid-cols-4 gap-3 mb-6 lg:mb-10">
           {stats.map((s) => (
@@ -191,7 +205,7 @@ const Login = () => {
           </div>
           <h1 className="text-2xl font-bold text-center mb-1">{forgotMode ? "Recuperar senha" : "Bem-vindo de volta"}</h1>
           <p className="text-muted-foreground text-center mb-6 text-sm">
-            {forgotMode ? "Digite seu email para receber o link de redefinição" : "Entre na sua conta para continuar"}
+            {forgotMode ? "Digite seu email para receber o link de redefinição" : "Continue sua jornada até a aprovação"}
           </p>
 
           {forgotMode ? (
