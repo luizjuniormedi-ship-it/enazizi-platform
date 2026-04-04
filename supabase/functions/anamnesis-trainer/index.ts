@@ -286,11 +286,14 @@ Lembre-se: NUNCA repita pacientes anteriores. Varie todos os par√¢metros demogr√
         { role: "user", content: `action="interact"\nPergunta do aluno: ${userMessage}` },
       ];
 
+      const startMs2 = Date.now();
       const response = await aiFetch({
         model: "google/gemini-2.5-flash",
         messages: contextMessages,
         stream: false,
       });
+      const elapsed2 = Date.now() - startMs2;
+      logAnamnesis(response.ok, elapsed2, response.ok ? undefined : `status ${response.status}`);
 
       if (!response.ok) {
         const t = await response.text();
