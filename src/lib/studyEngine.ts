@@ -26,6 +26,72 @@ export interface StudyRecommendation {
   _groupKey?: string;
 }
 
+/** Heavy recovery phase (30-day progressive plan) */
+export type HeavyRecoveryPhase = 1 | 2 | 3 | 4;
+
+export interface HeavyRecoveryState {
+  active: boolean;
+  phase: HeavyRecoveryPhase;
+  dayInRecovery: number;
+  startedAt: string | null;
+  /** Phase labels for UI */
+  phaseLabel: string;
+  phaseDescription: string;
+  /** Max daily tasks per phase */
+  maxTasks: number;
+  /** Max new topics allowed */
+  maxNewTopics: number;
+  /** Progress % through 30-day plan */
+  progressPercent: number;
+}
+
+const HEAVY_RECOVERY_PHASES: Record<HeavyRecoveryPhase, { label: string; description: string; maxTasks: number; maxNew: number }> = {
+  1: { label: "Estabilização", description: "Parando o colapso — foco apenas em revisões críticas e erros recorrentes.", maxTasks: 4, maxNew: 0 },
+  2: { label: "Limpeza Controlada", description: "Reduzindo pendências — revisões + questões leves.", maxTasks: 5, maxNew: 0 },
+  3: { label: "Reativação", description: "Retomando o fluxo — liberação gradual de conteúdo.", maxTasks: 6, maxNew: 1 },
+  4: { label: "Reintegração", description: "Voltando ao normal — remoção progressiva de restrições.", maxTasks: 7, maxNew: 2 },
+};
+
+function getHeavyRecoveryPhase(day: number): HeavyRecoveryPhase {
+  if (day <= 7) return 1;
+  if (day <= 15) return 2;
+  if (day <= 23) return 3;
+  return 4;
+}
+
+const HEAVY_RECOVERY_STORAGE_KEY = "enazizi-heavy-recovery";
+
+function loadHeavyRecoveryState(): { startedAt: string } | null {
+  try {
+    const raw = localStorage.getItem(HEAVY_RECOVERY_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
+function persistHeavyRecovery(startedAt: string) {
+  localStorage.setItem(HEAVY_RECOVERY_STORAGE_KEY, JSON.stringify({ startedAt }));
+}
+
+function clearHeavyRecovery() {
+  localStorage.removeItem(HEAVY_RECOVERY_STORAGE_KEY);
+}
+
+function buildHeavyRecoveryState(startedAt: string | null, active: boolean): HeavyRecoveryState {
+  if (!active || !startedAt) {
+    return { active: false, phase: 1, dayInRecovery: 0, startedAt: null, phaseLabel: "", phaseDescription: "", maxTasks: 8, maxNewTopics: 3, progressPercent: 0 };
+  }
+  const day = Math.max(1, Math.ceil((Date.now() - new Date(startedAt).getTime()) / 86400000));
+  const phase = getHeavyRecoveryPhase(Math.min(day, 30));
+  const config = HEAVY_RECOVERY_PHASES[phase];
+  return {
+    active: true, phase, dayInRecovery: day, startedAt,
+    phaseLabel: config.label, phaseDescription: config.description,
+    maxTasks: config.maxTasks, maxNewTopics: config.maxNew,
+    progressPercent: Math.min(Math.round((day / 30) * 100), 100),
+  };
+}
+
 /** Adaptive state exposed to Dashboard/Mission/Mentor */
 export interface AdaptiveState {
   approvalScore: number;
@@ -43,6 +109,8 @@ export interface AdaptiveState {
   recoveryMode: boolean;
   /** Human-readable reason for recovery mode */
   recoveryReason: string;
+  /** Heavy recovery mode — 30-day progressive recovery plan */
+  heavyRecovery: HeavyRecoveryState;
 }
 
 export interface EngineResult {
@@ -360,9 +428,46 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     weights.maxNewTopics = 0;
   }
 
+  // ── Heavy Recovery mode detection (30-day progressive plan) ──
+  const heavyRecoveryThreshold =
+    overdueCount >= 25 && memoryPressure >= 80 && approvalScore < 40;
+  const persistedHR = loadHeavyRecoveryState();
+  let heavyRecoveryStartedAt: string | null = persistedHR?.startedAt || null;
+
+  if (heavyRecoveryThreshold && !heavyRecoveryStartedAt) {
+    // Activate heavy recovery
+    heavyRecoveryStartedAt = new Date().toISOString();
+    persistHeavyRecovery(heavyRecoveryStartedAt);
+  }
+
+  // Check if heavy recovery should exit (day > 30 AND conditions improved)
+  if (heavyRecoveryStartedAt) {
+    const dayInHR = Math.ceil((Date.now() - new Date(heavyRecoveryStartedAt).getTime()) / 86400000);
+    if (dayInHR > 30 && overdueCount < 10 && memoryPressure < 50 && approvalScore >= 40) {
+      clearHeavyRecovery();
+      heavyRecoveryStartedAt = null;
+    }
+  }
+
+  const heavyRecovery = buildHeavyRecoveryState(heavyRecoveryStartedAt, !!heavyRecoveryStartedAt);
+
+  // Apply heavy recovery constraints
+  if (heavyRecovery.active) {
+    weights.maxNewTopics = heavyRecovery.maxNewTopics;
+    if (heavyRecovery.phase <= 2) {
+      weights.reviewWeight = Math.max(weights.reviewWeight, 0.65);
+      weights.practicalWeight = Math.min(weights.practicalWeight, 0.05);
+    } else if (heavyRecovery.phase === 3) {
+      weights.reviewWeight = Math.max(weights.reviewWeight, 0.45);
+      weights.practicalWeight = Math.min(weights.practicalWeight, 0.15);
+    }
+  }
+
   // ── Build adaptive state ─────────────────────────────────────
   const mode = getAdaptiveMode(weights.phase);
-  const focusReason = recoveryMode
+  const focusReason = heavyRecovery.active
+    ? `Recuperação Pesada — Fase ${heavyRecovery.phase}: ${heavyRecovery.phaseLabel}. ${heavyRecovery.phaseDescription}`
+    : recoveryMode
     ? recoveryReason
     : buildFocusReason(weights, overdueCount, lockStatus);
   const adaptive: AdaptiveState = {
@@ -374,8 +479,9 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     focusReason,
     memoryPressure,
     overdueCount,
-    recoveryMode,
-    recoveryReason,
+    recoveryMode: recoveryMode || heavyRecovery.active,
+    recoveryReason: heavyRecovery.active ? heavyRecovery.phaseDescription : recoveryReason,
+    heavyRecovery,
   };
 
   // ── 1. Overdue / pending reviews ─────────────────────────────
@@ -775,7 +881,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
 
   // ── Sort by priority then apply weight-based slot limits ─────
   recs.sort((a, b) => b.priority - a.priority);
-  const maxTotal = recoveryMode ? 5 : 8;
+  const maxTotal = heavyRecovery.active ? heavyRecovery.maxTasks : recoveryMode ? 5 : 8;
   const result = applyWeights(recs, weights, maxTotal);
 
   // ── FALLBACK: guarantee at least 1 task for any user ─────────
@@ -822,6 +928,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       overdueCount: 0,
       recoveryMode: false,
       recoveryReason: "",
+      heavyRecovery: buildHeavyRecoveryState(null, false),
     },
   };
  }

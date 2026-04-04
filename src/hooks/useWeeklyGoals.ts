@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { usePreparationIndex, PreparationZone } from "./usePreparationIndex";
 import { useDashboardData } from "./useDashboardData";
+import { useStudyEngine } from "./useStudyEngine";
 
 export interface WeeklyGoal {
   key: string;
@@ -103,6 +104,7 @@ export function useWeeklyGoals() {
   const { user } = useAuth();
   const { data: prepData } = usePreparationIndex();
   const { data: dashData } = useDashboardData();
+  const { adaptive } = useStudyEngine();
 
   return useQuery<WeeklyGoalsData>({
     queryKey: ["weekly-goals", user?.id],
@@ -127,24 +129,38 @@ export function useWeeklyGoals() {
       const mult = zoneMultiplier(zone);
       const examUrgency = daysUntilExam !== null && daysUntilExam < 30 ? 1.5 : 1;
 
-      // Base targets
-      const questionsBase = Math.round(210 * mult);
-      const revisoesBase = Math.max(Math.round((pendingRevisoes + 10) * examUrgency), 15);
+      // Heavy recovery multipliers per phase
+      const hr = adaptive?.heavyRecovery;
+      const hrMult = hr?.active
+        ? hr.phase === 1 ? 0.3
+        : hr.phase === 2 ? 0.5
+        : hr.phase === 3 ? 0.7
+        : 0.9
+        : 1;
+
+      // Base targets (adjusted by heavy recovery)
+      const questionsBase = Math.round(210 * mult * hrMult);
+      const revisoesBase = Math.max(Math.round((pendingRevisoes + 10) * examUrgency * (hr?.active ? Math.min(hrMult + 0.3, 1) : 1)), hr?.active ? 10 : 15);
       let temasBase = 5;
       if (breakdown.cronograma > 80) temasBase = 2;
       else if (breakdown.cronograma > 60) temasBase = 3;
       else if (breakdown.cronograma < 30) temasBase = 7;
+      if (hr?.active) temasBase = hr.maxNewTopics;
       let praticaBase = 2;
       if (zone === "competitivo" || zone === "forte") praticaBase = 3;
       if (zone === "base_fraca") praticaBase = 1;
       if (daysUntilExam !== null && daysUntilExam < 30) praticaBase = Math.min(praticaBase + 1, 4);
+      if (hr?.active && hr.phase <= 2) praticaBase = 0;
+      else if (hr?.active && hr.phase === 3) praticaBase = Math.min(praticaBase, 1);
 
       // Carryover: 50% of previous week deficit, capped at 1.5x base
+      // During heavy recovery phases 1-2, disable carryover to avoid overload
       const calcCarryover = (base: number, prevActual: number) => {
-        const prevTarget = base; // approx same base
+        if (hr?.active && hr.phase <= 2) return 0;
+        const prevTarget = base;
         const deficit = Math.max(0, prevTarget - prevActual);
         const carry = Math.round(deficit * 0.5);
-        return Math.min(carry, Math.round(base * 0.5)); // cap so total <= 1.5x
+        return Math.min(carry, Math.round(base * 0.5));
       };
 
       const qCarry = calcCarryover(questionsBase, prevProgress.questions);
