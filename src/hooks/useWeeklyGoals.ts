@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { usePreparationIndex, PreparationZone } from "./usePreparationIndex";
 import { useDashboardData } from "./useDashboardData";
+import { useStudyEngine } from "./useStudyEngine";
+import { useDashboardData } from "./useDashboardData";
 
 export interface WeeklyGoal {
   key: string;
