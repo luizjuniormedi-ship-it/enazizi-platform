@@ -279,7 +279,7 @@ ANAMNESE ÚNICA (REGRA ABSOLUTA):
 Diga: "Qual sua resposta? (A, B, C, D ou E)"`;
 
     case "discussion":
-      return `${base}
+      return `${getDiscussionPrompt()}
 FASE ATUAL: DISCUSSÃO DA QUESTÃO (STATE 8)
 Tema: "${topic}"
 
