@@ -125,18 +125,21 @@ Deno.serve(async (req) => {
           errorsCount: errorRes.count || 0,
           simuladosCompleted: exams.length,
           avgDomainScore: avgDomain,
-          approvalScore: approvalRes.data?.score || 0,
+          // approval_score comes from approval_scores table, NOT from accuracy
+          approvalScore: approvalRes.data?.score || null,
         },
         gamification: gamRes.data || { current_streak: 0, xp: 0, level: 1 },
         generatedAt: new Date().toISOString(),
       }
 
-      // Upsert snapshot
+      // Upsert snapshot — approval_score from approval_scores table, not accuracy
       await supabase
         .from('dashboard_snapshots')
         .upsert({
           user_id: userId,
           snapshot_json: snapshot,
+          approval_score: approvalRes.data?.score ?? null,
+          pending_reviews: pendingReviews,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' })
 
