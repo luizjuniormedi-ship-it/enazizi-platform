@@ -67,7 +67,7 @@ async function fetchWeeklyProgress(userId: string, fromISO: string) {
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
       .eq("status", "concluida")
-      .gte("updated_at", fromISO),
+      .gte("concluida_em", fromISO),
     supabase
       .from("temas_estudados")
       .select("id", { count: "exact", head: true })

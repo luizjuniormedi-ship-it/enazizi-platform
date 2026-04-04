@@ -92,14 +92,19 @@ const queryClient = useQueryClient();
 
   // Realtime subscription with debounce for critical tables
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingKeysRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user?.id) return;
 
     const debouncedInvalidate = (keys: string[][]) => {
+      keys.forEach(k => pendingKeysRef.current.add(JSON.stringify(k)));
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = setTimeout(() => {
-        keys.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
+        pendingKeysRef.current.forEach(k =>
+          queryClient.invalidateQueries({ queryKey: JSON.parse(k) })
+        );
+        pendingKeysRef.current.clear();
       }, 1500);
     };
 
