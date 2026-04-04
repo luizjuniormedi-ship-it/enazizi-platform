@@ -442,23 +442,29 @@ serve(async (req) => {
     }
 
     if (session_memory) {
-      systemPrompt += `\n\n--- MEMÓRIA DE SESSÃO ---
+      systemPrompt += `\n\n${getSessionMemoryBlock()}
+--- DADOS DA SESSÃO ---
 Último tema: ${session_memory.ultimo_tema || "nenhum"}
 Erros consecutivos: ${session_memory.erros_consecutivos || 0}
 Profundidade: ${session_memory.profundidade_resposta || "aprofundado"}
 ${session_memory.erros_consecutivos >= 3 ? "⚠️ TRAVAMENTO DETECTADO: Simplifique a explicação." : ""}
---- FIM DA MEMÓRIA DE SESSÃO ---`;
+--- FIM ---`;
     }
 
-    // Use lighter model for performance/recall phases, pro for teaching
-    const isLightPhase = ["performance", "recall", "recall_result"].includes(phase);
+    // Phase-based model tier and token limits
+    const isLightPhase = ["performance", "recall", "recall_result", "active-recall", "reinforcement"].includes(phase);
+    const isMediumPhase = ["questions", "discussion", "discursive"].includes(phase);
     const modelTier = isLightPhase ? "standard" : "pro";
+    const maxTokens = isLightPhase ? 4096 : isMediumPhase ? 8192 : 16384;
+
+    // Trim message history: keep only last 10 messages to reduce token usage
+    const trimmedMessages = messages.length > 10 ? messages.slice(-10) : messages;
 
     const response = await aiFetch({
       model: getModelForTier(modelTier),
-      messages: [{ role: "system", content: systemPrompt }, ...messages],
+      messages: [{ role: "system", content: systemPrompt }, ...trimmedMessages],
       stream: true,
-      maxTokens: isLightPhase ? 8192 : 16384,
+      maxTokens,
     });
 
     if (!response.ok) {
