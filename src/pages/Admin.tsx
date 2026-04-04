@@ -393,6 +393,9 @@ const Admin = () => {
             <TabsTrigger value="qa" className="gap-1.5">
               <Bug className="h-3.5 w-3.5" /> QA
             </TabsTrigger>
+            <TabsTrigger value="flags" className="gap-1.5">
+              <ToggleLeft className="h-3.5 w-3.5" /> Flags
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="whatsapp">
