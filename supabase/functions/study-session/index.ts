@@ -432,6 +432,12 @@ serve(async (req) => {
   try {
     const { messages, phase, topic, userContext, performanceData, session_memory, studyMode, targetExam } = await req.json();
 
+    if (!Array.isArray(messages)) {
+      return new Response(JSON.stringify({ error: "Campo 'messages' é obrigatório e deve ser um array." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     let systemPrompt = getPhasePrompt(phase, topic, performanceData, studyMode);
 
     // Inject banca-specific adaptation
