@@ -225,9 +225,10 @@ function buildFocusReason(weights: PlanWeights, overdueCount: number, lockStatus
 }
 
 // ── main engine ────────────────────────────────────────────────
-export async function generateRecommendations({ userId }: EngineInput): Promise<EngineResult> {
+export async function generateRecommendations({ userId, coreData }: EngineInput): Promise<EngineResult> {
  try {
   const recs: StudyRecommendation[] = [];
+  const cd = coreData; // optional pre-fetched data from useCoreData
 
   // Individual queries with safe fallback — one failure never breaks the engine
   const safe = async <T>(fn: () => PromiseLike<{ data: T | null; error: any }>, label: string): Promise<T | null> => {
@@ -241,19 +242,17 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     }
   };
 
+  // Queries that ALWAYS need to run (engine-exclusive with specific filters/joins)
   const [
     revisoesData,
     errorBankData,
     desempenhoData,
     temasData,
-    practiceData,
-    examData,
-    anamnesisData,
-    clinicalSimData,
     fsrsDueData,
     mentorTargets,
     practicalExamData,
-    profileData,
+    // Only query these if coreData not provided
+    ...conditionalResults
   ] = await Promise.all([
     safe(() => supabase
       .from("revisoes")
@@ -275,6 +274,7 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       .eq("user_id", userId)
       .order("taxa_acerto", { ascending: true })
       .limit(20), "desempenho"),
+    // temas_estudados — engine needs extra fields (data_estudo, status, dificuldade) not in coreData
     safe(() => supabase
       .from("temas_estudados")
       .select("id, tema, especialidade, data_estudo, status, dificuldade")
@@ -282,58 +282,67 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       .order("data_estudo", { ascending: false })
       .limit(50), "temas"),
     safe(() => supabase
-      .from("practice_attempts")
-      .select("correct, created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(200), "practice"),
-    safe(() => supabase
-      .from("exam_sessions")
-      .select("id, score, total_questions, finished_at")
-      .eq("user_id", userId)
-      .eq("status", "finished")
-      .order("finished_at", { ascending: false })
-      .limit(10), "exams"),
-    safe(() => supabase
-      .from("anamnesis_results")
-      .select("id, specialty, final_score, created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(10), "anamnesis"),
-    safe(() => supabase
-      .from("anamnesis_sessions")
-      .select("id, specialty, final_score, created_at")
-      .eq("user_id", userId)
-      .eq("status", "finished")
-      .order("created_at", { ascending: false })
-      .limit(10), "clinical_sim"),
-    safe(() => supabase
       .from("fsrs_cards")
       .select("id, card_type, card_ref_id, stability, difficulty, state, due, lapses")
       .eq("user_id", userId)
       .lte("due", new Date().toISOString())
       .order("due", { ascending: true })
       .limit(30), "fsrs"),
-    // Mentor theme plans targeting this student
     safe(() => supabase
       .from("mentor_theme_plan_targets")
       .select("plan_id")
       .eq("target_id", userId)
       , "mentor_targets"),
-    // Practical exam results for OSCE integration
     safe(() => supabase
       .from("practical_exam_results")
       .select("final_score, specialty, scores_json, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(10), "practical_exams"),
-    // Profile for exam_date
-    safe(() => supabase
-      .from("profiles")
-      .select("exam_date, target_exam, target_exams")
-      .eq("user_id", userId)
-      .single(), "profile"),
+    // Conditional: only fetch if no coreData
+    ...(cd ? [] : [
+      safe(() => supabase
+        .from("practice_attempts")
+        .select("correct, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(200), "practice"),
+      safe(() => supabase
+        .from("exam_sessions")
+        .select("id, score, total_questions, finished_at")
+        .eq("user_id", userId)
+        .eq("status", "finished")
+        .order("finished_at", { ascending: false })
+        .limit(10), "exams"),
+      safe(() => supabase
+        .from("anamnesis_results")
+        .select("id, specialty, final_score, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(10), "anamnesis"),
+      safe(() => supabase
+        .from("anamnesis_sessions")
+        .select("id, specialty, final_score, created_at")
+        .eq("user_id", userId)
+        .eq("status", "finished")
+        .order("created_at", { ascending: false })
+        .limit(10), "clinical_sim"),
+      safe(() => supabase
+        .from("profiles")
+        .select("exam_date, target_exam, target_exams")
+        .eq("user_id", userId)
+        .single(), "profile"),
+    ]),
   ]);
+
+  // Resolve data: prefer coreData, fallback to direct queries
+  const practiceData = cd ? cd.practiceAttempts : conditionalResults[0];
+  const examData = cd ? cd.examSessions : conditionalResults[1];
+  const anamnesisData = cd ? cd.anamnesisResults : conditionalResults[2];
+  const clinicalSimData = cd ? null : conditionalResults[3]; // anamnesis_sessions not in coreData
+  const profileData = cd
+    ? { exam_date: cd.profile.exam_date, target_exam: cd.profile.target_exam, target_exams: cd.profile.target_exams }
+    : conditionalResults[4];
 
   // ── Load mentor topics & exam dates if any active mentorships ──
   let mentorTopics: string[] = [];
