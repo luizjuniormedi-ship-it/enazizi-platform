@@ -155,6 +155,7 @@ serve(async (req) => {
     }
 
     if (action === "evaluate") {
+      const startMs2 = Date.now();
       const response = await aiFetch({
         model: "google/gemini-2.5-flash",
         messages: [
@@ -167,12 +168,15 @@ serve(async (req) => {
         maxTokens: 2048,
         timeoutMs: 25000,
       });
+      const elapsed2 = Date.now() - startMs2;
 
       if (!response.ok) {
+        logAiUsage({ userId: user.id, functionName: "practical-exam-evaluate", modelUsed: "google/gemini-2.5-flash", success: false, responseTimeMs: elapsed2, cacheHit: false, modelTier: "fast" }).catch(() => {});
         return new Response(JSON.stringify({ error: "Erro ao avaliar desempenho" }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      logAiUsage({ userId: user.id, functionName: "practical-exam-evaluate", modelUsed: "google/gemini-2.5-flash", success: true, responseTimeMs: elapsed2, cacheHit: false, modelTier: "fast" }).catch(() => {});
 
       const aiData = await response.json();
       const content = aiData.choices?.[0]?.message?.content || "";
