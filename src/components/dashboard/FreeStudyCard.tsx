@@ -20,8 +20,9 @@ export default function FreeStudyCard() {
     <Card className="border-border/40">
       <CardHeader className="pb-2 pt-4 px-4">
         <CardTitle className="text-sm font-semibold text-muted-foreground">
-          Acesso livre
+          Explorar módulos
         </CardTitle>
+        <p className="text-xs text-muted-foreground/70">Estude fora da missão</p>
       </CardHeader>
       <CardContent className="px-3 pb-4">
         <div className="grid grid-cols-3 gap-2">

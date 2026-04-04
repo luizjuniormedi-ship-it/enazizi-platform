@@ -76,6 +76,10 @@ export default function SmartAlertCard() {
 
   // Priority 3: High error count
   if (metrics.errorsCount >= 5) {
+    const topErrorTopic = metrics.topErrorTopic || null;
+    const errorMsg = topErrorTopic
+      ? `${metrics.errorsCount} erros acumulados em ${topErrorTopic} — revise para não repetir`
+      : `${metrics.errorsCount} erros acumulados — revise para não repetir`;
     return (
       <Card className="border-orange-500/30 bg-orange-500/5">
         <CardContent className="p-4 flex items-center gap-3">
@@ -84,7 +88,7 @@ export default function SmartAlertCard() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium leading-snug">
-              {metrics.errorsCount} erros acumulados — revise para não repetir
+              {errorMsg}
             </p>
           </div>
           <Button

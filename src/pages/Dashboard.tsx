@@ -255,14 +255,14 @@ const queryClient = useQueryClient();
               ]}
             />
           </SafeCard>
-          <SafeCard name="SummaryStreak">
+          <SafeCard name="SummaryEvolucao">
             <DashboardSummaryCard
-              icon={Flame}
-              title="Streak"
-              accentClass="text-orange-500 bg-orange-500/10"
-              onClick={() => setOpenSection("streak")}
+              icon={Target}
+              title="Evolução"
+              accentClass="text-emerald-500 bg-emerald-500/10"
+              onClick={() => setOpenSection("desempenho")}
               metrics={[
-                { label: "Dias", value: `🔥 ${stats.streak}` },
+                { label: "Acerto", value: `${metrics.accuracy}%` },
                 { label: "Nível", value: metrics.gamificationLevel },
               ]}
             />

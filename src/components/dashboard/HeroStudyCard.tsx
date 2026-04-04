@@ -179,6 +179,9 @@ export default function HeroStudyCard() {
             <p className="text-sm text-muted-foreground">
               {topTask.topic} · ~{totalStudyMinutes}min
             </p>
+            <p className="text-xs text-muted-foreground/80 mt-0.5">
+              💡 {getHumanReadableReason(topTask)}
+            </p>
           </div>
 
           {/* ── Primary CTA — min 56px height, thumb-friendly ── */}
