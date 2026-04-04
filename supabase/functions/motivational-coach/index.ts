@@ -84,10 +84,21 @@ REGRAS DE ESPAÇAMENTO:
       systemPrompt += `\n\n--- CONTEXTO DO ALUNO (materiais de estudo) ---\n${userContext}\n--- FIM DO CONTEXTO ---`;
     }
 
+    const startMs = Date.now();
     const response = await aiFetch({
       messages: [{ role: "system", content: systemPrompt }, ...messages],
       stream: true,
     });
+    const elapsed = Date.now() - startMs;
+
+    logAiUsage({
+      userId: "system-coach",
+      functionName: "motivational-coach",
+      modelUsed: "google/gemini-3-flash-preview",
+      success: response.ok,
+      responseTimeMs: elapsed,
+      modelTier: "standard",
+    }).catch(() => {});
 
     if (!response.ok) {
       const t = await response.text();
