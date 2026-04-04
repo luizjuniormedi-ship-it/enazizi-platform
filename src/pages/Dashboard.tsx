@@ -92,6 +92,7 @@ const queryClient = useQueryClient();
 
   // Invalidate all dashboard-related caches on mount (returning from modules)
   useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["core-data"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
     queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
     queryClient.invalidateQueries({ queryKey: ["study-engine"] });
