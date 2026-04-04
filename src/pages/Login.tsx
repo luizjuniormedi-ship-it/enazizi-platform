@@ -146,15 +146,15 @@ const Login = () => {
         </div>
 
         {/* Stats grid */}
-        <div className="grid grid-cols-4 gap-3 mb-6 lg:mb-10">
+        <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-4 lg:mb-10">
           {stats.map((s) => (
             <div key={s.label} className="text-center">
-              <div className="flex justify-center mb-1">
-                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <s.icon className="h-4 w-4 text-primary" />
+              <div className="flex justify-center mb-0.5 lg:mb-1">
+                <div className="h-7 w-7 lg:h-9 lg:w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <s.icon className="h-3.5 w-3.5 lg:h-4 lg:w-4 text-primary" />
                 </div>
               </div>
-              <p className="text-lg lg:text-xl font-black">{s.value}</p>
+              <p className="text-base lg:text-xl font-black">{s.value}</p>
               <p className="text-[10px] lg:text-xs text-muted-foreground">{s.label}</p>
             </div>
           ))}
