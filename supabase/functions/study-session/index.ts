@@ -325,7 +325,7 @@ Pergunte:
 Aguarde a resposta. Depois corrija com nota 0-5 por critério.`;
 
     case "scoring":
-      return `${base}
+      return `${getScoringPrompt()}
 FASE ATUAL: CORREÇÃO DISCURSIVA + ATUALIZAÇÃO (STATES 10-11)
 Tema: "${topic}"
 
