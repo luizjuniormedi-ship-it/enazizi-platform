@@ -1,10 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Clock, ArrowRight, Play } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
-import { useMissionMode } from "@/hooks/useMissionMode";
 
 /**
  * Shows at most 1 smart alert based on priority:
