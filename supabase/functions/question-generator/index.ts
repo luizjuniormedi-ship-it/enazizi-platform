@@ -16,6 +16,13 @@ serve(async (req) => {
     const body = await req.json();
     const { messages, userContext, stream: clientStream, difficulty, maxRetries, timeoutMs, outputFormat, avoidStatements, generationContext, targetExam } = body;
 
+    // Input validation: messages must be an array
+    if (!Array.isArray(messages)) {
+      return new Response(JSON.stringify({ error: "Campo 'messages' é obrigatório e deve ser um array." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Default to streaming unless client explicitly sets stream=false
     const useStream = clientStream !== false;
     const safeMaxRetries = typeof maxRetries === "number" ? Math.max(0, Math.min(2, maxRetries)) : undefined;

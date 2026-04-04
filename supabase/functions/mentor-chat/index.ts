@@ -13,7 +13,14 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, userContext, session_memory, targetExam } = await req.json();
+    const body = await req.json();
+    const { messages, userContext, session_memory, targetExam } = body;
+
+    if (!Array.isArray(messages)) {
+      return new Response(JSON.stringify({ error: "Campo 'messages' é obrigatório e deve ser um array." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     let systemPrompt = ENAZIZI_PROMPT;
 

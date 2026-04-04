@@ -10,7 +10,15 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, userContext } = await req.json();
+    const body = await req.json();
+    const messages = body?.messages;
+    const userContext = body?.userContext;
+
+    if (!Array.isArray(messages)) {
+      return new Response(JSON.stringify({ error: "Campo 'messages' é obrigatório e deve ser um array." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const systemPrompt = `Você é o GERADOR OFICIAL DE FLASHCARDS CLÍNICOS do sistema ENAZIZI.
 
