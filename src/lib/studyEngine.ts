@@ -428,9 +428,46 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     weights.maxNewTopics = 0;
   }
 
+  // ── Heavy Recovery mode detection (30-day progressive plan) ──
+  const heavyRecoveryThreshold =
+    overdueCount >= 25 && memoryPressure >= 80 && approvalScore < 40;
+  const persistedHR = loadHeavyRecoveryState();
+  let heavyRecoveryStartedAt: string | null = persistedHR?.startedAt || null;
+
+  if (heavyRecoveryThreshold && !heavyRecoveryStartedAt) {
+    // Activate heavy recovery
+    heavyRecoveryStartedAt = new Date().toISOString();
+    persistHeavyRecovery(heavyRecoveryStartedAt);
+  }
+
+  // Check if heavy recovery should exit (day > 30 AND conditions improved)
+  if (heavyRecoveryStartedAt) {
+    const dayInHR = Math.ceil((Date.now() - new Date(heavyRecoveryStartedAt).getTime()) / 86400000);
+    if (dayInHR > 30 && overdueCount < 10 && memoryPressure < 50 && approvalScore >= 40) {
+      clearHeavyRecovery();
+      heavyRecoveryStartedAt = null;
+    }
+  }
+
+  const heavyRecovery = buildHeavyRecoveryState(heavyRecoveryStartedAt, !!heavyRecoveryStartedAt);
+
+  // Apply heavy recovery constraints
+  if (heavyRecovery.active) {
+    weights.maxNewTopics = heavyRecovery.maxNewTopics;
+    if (heavyRecovery.phase <= 2) {
+      weights.reviewWeight = Math.max(weights.reviewWeight, 0.65);
+      weights.practicalWeight = Math.min(weights.practicalWeight, 0.05);
+    } else if (heavyRecovery.phase === 3) {
+      weights.reviewWeight = Math.max(weights.reviewWeight, 0.45);
+      weights.practicalWeight = Math.min(weights.practicalWeight, 0.15);
+    }
+  }
+
   // ── Build adaptive state ─────────────────────────────────────
   const mode = getAdaptiveMode(weights.phase);
-  const focusReason = recoveryMode
+  const focusReason = heavyRecovery.active
+    ? `Recuperação Pesada — Fase ${heavyRecovery.phase}: ${heavyRecovery.phaseLabel}. ${heavyRecovery.phaseDescription}`
+    : recoveryMode
     ? recoveryReason
     : buildFocusReason(weights, overdueCount, lockStatus);
   const adaptive: AdaptiveState = {
@@ -442,8 +479,9 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
     focusReason,
     memoryPressure,
     overdueCount,
-    recoveryMode,
-    recoveryReason,
+    recoveryMode: recoveryMode || heavyRecovery.active,
+    recoveryReason: heavyRecovery.active ? heavyRecovery.phaseDescription : recoveryReason,
+    heavyRecovery,
   };
 
   // ── 1. Overdue / pending reviews ─────────────────────────────
