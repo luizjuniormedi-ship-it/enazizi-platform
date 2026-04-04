@@ -860,10 +860,21 @@ export async function generateRecommendations({ userId, coreData }: EngineInput)
     });
   }
 
-  // ── Curriculum-based priority boost (strategic coverage) ────
+  // ── Curriculum-based priority boost (from curriculum_matrix) ────
+  const { data: matrixTopics } = await supabase
+    .from("curriculum_matrix")
+    .select("subtema, tema, especialidade")
+    .eq("ativo", true)
+    .limit(300);
+  const matrixSet = new Set((matrixTopics || []).map((m: any) => (m.subtema || "").toLowerCase()));
+  const matrixTemaSet = new Set((matrixTopics || []).map((m: any) => (m.tema || "").toLowerCase()));
   const CURRICULUM_BOOST = 8;
   for (const rec of recs) {
-    if (isInCurriculum(rec.topic, rec.specialty)) {
+    const topicLower = (rec.topic || "").toLowerCase();
+    const isInMatrix = matrixSet.has(topicLower) ||
+      matrixTemaSet.has(topicLower) ||
+      [...matrixSet].some(m => m.includes(topicLower.slice(0, 10)) || topicLower.includes(m.slice(0, 10)));
+    if (isInMatrix) {
       rec.priority = cap(rec.priority + CURRICULUM_BOOST);
       if (!rec.reason.includes("📚")) {
         rec.reason = `📚 ${rec.reason}`;
