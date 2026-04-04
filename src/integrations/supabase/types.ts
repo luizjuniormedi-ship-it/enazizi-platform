@@ -2321,6 +2321,133 @@ export type Database = {
           },
         ]
       }
+      qa_auto_fixes: {
+        Row: {
+          action_taken: string
+          created_at: string
+          duration_ms: number | null
+          event_id: string
+          id: string
+          result_after: Json | null
+          result_before: Json | null
+          success: boolean
+        }
+        Insert: {
+          action_taken: string
+          created_at?: string
+          duration_ms?: number | null
+          event_id: string
+          id?: string
+          result_after?: Json | null
+          result_before?: Json | null
+          success?: boolean
+        }
+        Update: {
+          action_taken?: string
+          created_at?: string
+          duration_ms?: number | null
+          event_id?: string
+          id?: string
+          result_after?: Json | null
+          result_before?: Json | null
+          success?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qa_auto_fixes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "qa_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qa_escalations: {
+        Row: {
+          acknowledged: boolean
+          created_at: string
+          event_id: string
+          hypothesis_primary: string | null
+          hypothesis_secondary: string | null
+          id: string
+          recommended_action: string | null
+          report: string
+        }
+        Insert: {
+          acknowledged?: boolean
+          created_at?: string
+          event_id: string
+          hypothesis_primary?: string | null
+          hypothesis_secondary?: string | null
+          id?: string
+          recommended_action?: string | null
+          report: string
+        }
+        Update: {
+          acknowledged?: boolean
+          created_at?: string
+          event_id?: string
+          hypothesis_primary?: string | null
+          hypothesis_secondary?: string | null
+          id?: string
+          recommended_action?: string | null
+          report?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qa_escalations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "qa_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qa_events: {
+        Row: {
+          causa_provavel: string | null
+          created_at: string
+          details: Json | null
+          error_type: Database["public"]["Enums"]["qa_error_type"]
+          id: string
+          impacto: string | null
+          module: string
+          payload: Json | null
+          resolved_at: string | null
+          run_id: string | null
+          severity: Database["public"]["Enums"]["qa_severity"]
+          status: Database["public"]["Enums"]["qa_fix_status"]
+        }
+        Insert: {
+          causa_provavel?: string | null
+          created_at?: string
+          details?: Json | null
+          error_type: Database["public"]["Enums"]["qa_error_type"]
+          id?: string
+          impacto?: string | null
+          module: string
+          payload?: Json | null
+          resolved_at?: string | null
+          run_id?: string | null
+          severity?: Database["public"]["Enums"]["qa_severity"]
+          status?: Database["public"]["Enums"]["qa_fix_status"]
+        }
+        Update: {
+          causa_provavel?: string | null
+          created_at?: string
+          details?: Json | null
+          error_type?: Database["public"]["Enums"]["qa_error_type"]
+          id?: string
+          impacto?: string | null
+          module?: string
+          payload?: Json | null
+          resolved_at?: string | null
+          run_id?: string | null
+          severity?: Database["public"]["Enums"]["qa_severity"]
+          status?: Database["public"]["Enums"]["qa_fix_status"]
+        }
+        Relationships: []
+      }
       qa_test_results: {
         Row: {
           created_at: string
@@ -4094,6 +4221,35 @@ export type Database = {
         | "professor"
         | "coordinator"
         | "institutional_admin"
+      qa_error_type:
+        | "IA_QUALIDADE"
+        | "IA_JSON_INVALIDO"
+        | "IA_RESPOSTA_EM_INGLES"
+        | "ENUNCIADO_CURTO"
+        | "ALTERNATIVA_FRACA"
+        | "CACHE_VAZIO"
+        | "CACHE_NAO_POPULADO"
+        | "AUTH_401"
+        | "AUTH_TOKEN_AUSENTE"
+        | "EDGE_TIMEOUT"
+        | "EDGE_FALHA_INTERNA"
+        | "DADOS_INCONSISTENTES"
+        | "DADOS_ORFAOS"
+        | "RLS_NEGANDO_ACESSO"
+        | "LOG_NAO_REGISTRADO"
+        | "MISSAO_INCOERENTE"
+        | "TUTOR_GENERICO"
+        | "PROGRESSO_NAO_ATUALIZA"
+        | "CTA_SEM_ACAO"
+        | "PERFORMANCE_BAIXA"
+      qa_fix_status:
+        | "detectado"
+        | "corrigido_automaticamente"
+        | "corrigido_com_retry"
+        | "corrigido_parcialmente"
+        | "falha_persistente"
+        | "escalado"
+      qa_severity: "critico" | "alto" | "medio" | "baixo"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4228,6 +4384,37 @@ export const Constants = {
         "coordinator",
         "institutional_admin",
       ],
+      qa_error_type: [
+        "IA_QUALIDADE",
+        "IA_JSON_INVALIDO",
+        "IA_RESPOSTA_EM_INGLES",
+        "ENUNCIADO_CURTO",
+        "ALTERNATIVA_FRACA",
+        "CACHE_VAZIO",
+        "CACHE_NAO_POPULADO",
+        "AUTH_401",
+        "AUTH_TOKEN_AUSENTE",
+        "EDGE_TIMEOUT",
+        "EDGE_FALHA_INTERNA",
+        "DADOS_INCONSISTENTES",
+        "DADOS_ORFAOS",
+        "RLS_NEGANDO_ACESSO",
+        "LOG_NAO_REGISTRADO",
+        "MISSAO_INCOERENTE",
+        "TUTOR_GENERICO",
+        "PROGRESSO_NAO_ATUALIZA",
+        "CTA_SEM_ACAO",
+        "PERFORMANCE_BAIXA",
+      ],
+      qa_fix_status: [
+        "detectado",
+        "corrigido_automaticamente",
+        "corrigido_com_retry",
+        "corrigido_parcialmente",
+        "falha_persistente",
+        "escalado",
+      ],
+      qa_severity: ["critico", "alto", "medio", "baixo"],
     },
   },
 } as const
