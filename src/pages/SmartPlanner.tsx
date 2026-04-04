@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   Target, BookOpen, CalendarDays, History,
-  Loader2, Brain, AlertTriangle, GraduationCap, Clock, TrendingUp, BarChart3, RefreshCw
+  Loader2, Brain, AlertTriangle, GraduationCap, Clock, TrendingUp, BarChart3, RefreshCw,
+  Flame, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -17,22 +18,32 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
-// Reuse existing cronograma components
+// Existing cronograma components
 import CronogramaNovoTema from "@/components/cronograma/CronogramaNovoTema";
 import CronogramaTemas from "@/components/cronograma/CronogramaTemas";
 import CronogramaHistorico from "@/components/cronograma/CronogramaHistorico";
-import { useNavigate } from "react-router-dom";
 import StudyPlanContent from "@/components/cronograma/StudyPlanContent";
 import { syncTemasToModules, updateStudyPerformanceContext } from "@/lib/cronogramaSync";
 
-// Import types and algorithms from cronograma
+// New strategic components
+import PlannerStrategicHeader from "@/components/planner/PlannerStrategicHeader";
+import PlannerTaskCard, { type TaskCategory } from "@/components/planner/PlannerTaskCard";
+import PlannerFSRSSection from "@/components/planner/PlannerFSRSSection";
+import PlannerErrorZone from "@/components/planner/PlannerErrorZone";
+
+// Types and algorithms from cronograma
 import {
   type TemaEstudado, type Revisao, type Desempenho, type CronogramaConfig,
   type PesosAlgoritmo, type TemaComputado,
   computeTema, calcPreparation, getPreparationLevel,
   generateReviewsByError, REVIEW_DAYS, SPECIALTIES,
 } from "@/pages/CronogramaInteligente";
+
+// Study Engine
+import { useStudyEngine } from "@/hooks/useStudyEngine";
+import { useExamReadiness } from "@/hooks/useExamReadiness";
 
 const DEFAULT_PESOS: PesosAlgoritmo = { erro: 0.3, tempo: 0.2, atraso: 0.2, dificuldade: 0.15, confianca: 0.15 };
 
@@ -44,23 +55,50 @@ const SmartPlanner = () => {
   const [desempenhos, setDesempenhos] = useState<Desempenho[]>([]);
   const [config, setConfig] = useState<CronogramaConfig | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("objetivo");
+  const [activeTab, setActiveTab] = useState("estrategia");
   const [showReprocess, setShowReprocess] = useState(false);
   const [newExamDate, setNewExamDate] = useState<Date>();
   const [reprocessing, setReprocessing] = useState(false);
 
+  // New data
+  const [approvalScore, setApprovalScore] = useState(0);
+  const [chanceByExam, setChanceByExam] = useState<{ banca: string; chance_score: number }[]>([]);
+  const [fsrsCards, setFsrsCards] = useState<any[]>([]);
+  const [errorBank, setErrorBank] = useState<any[]>([]);
+  const [examDate, setExamDate] = useState<string | null>(null);
+  const [targetExams, setTargetExams] = useState<string[]>([]);
+  const [recoveryMode, setRecoveryMode] = useState(false);
+  const [heavyRecoveryPhase, setHeavyRecoveryPhase] = useState<number | undefined>();
+
+  const { data: engineRecs, adaptive } = useStudyEngine();
+
   const loadData = useCallback(async () => {
     if (!user) return;
-    const [temasRes, revisoesRes, desRes, configRes] = await Promise.all([
+    const [temasRes, revisoesRes, desRes, configRes, approvalRes, chanceRes, fsrsRes, errorRes, profileRes, recoveryRes] = await Promise.all([
       supabase.from("temas_estudados").select("*").eq("user_id", user.id).order("data_estudo", { ascending: false }),
       supabase.from("revisoes").select("*").eq("user_id", user.id).order("data_revisao", { ascending: true }),
       supabase.from("desempenho_questoes").select("*").eq("user_id", user.id).order("data_registro", { ascending: false }),
       supabase.from("cronograma_config").select("*").eq("user_id", user.id).maybeSingle(),
+      supabase.from("approval_scores").select("score, phase").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("chance_by_exam").select("banca, chance_score").eq("user_id", user.id),
+      supabase.from("fsrs_cards").select("id, card_ref_id, card_type, due, stability, difficulty, state, reps, lapses").eq("user_id", user.id),
+      supabase.from("error_bank").select("id, tema, subtema, vezes_errado, categoria_erro, motivo_erro").eq("user_id", user.id).eq("dominado", false).order("vezes_errado", { ascending: false }).limit(20),
+      supabase.from("profiles").select("exam_date, target_exams").eq("user_id", user.id).maybeSingle(),
+      supabase.from("recovery_runs").select("mode, phase, active").eq("user_id", user.id).eq("active", true).maybeSingle(),
     ]);
+
     setTemas((temasRes.data as any[]) || []);
     setRevisoes((revisoesRes.data as any[]) || []);
     setDesempenhos((desRes.data as any[]) || []);
     setConfig((configRes.data as any) || null);
+    setApprovalScore(approvalRes.data?.score || 0);
+    setChanceByExam((chanceRes.data as any[]) || []);
+    setFsrsCards((fsrsRes.data as any[]) || []);
+    setErrorBank((errorRes.data as any[]) || []);
+    setExamDate(profileRes.data?.exam_date || null);
+    setTargetExams((profileRes.data?.target_exams as string[]) || []);
+    setRecoveryMode(!!recoveryRes.data);
+    setHeavyRecoveryPhase(recoveryRes.data?.mode === "heavy" ? (recoveryRes.data?.phase || 1) : undefined);
     setLoading(false);
   }, [user]);
 
@@ -73,14 +111,12 @@ const SmartPlanner = () => {
   const today = new Date().toISOString().split("T")[0];
   const revisoesHoje = revisoes.filter(r => r.data_revisao <= today && r.status === "pendente");
   const revisoesAtrasadas = revisoes.filter(r => r.data_revisao < today && r.status === "pendente");
+  const totalRevisoesPendentes = revisoes.filter(r => r.status === "pendente").length;
+  const totalRevisoesConcluidas = revisoes.filter(r => r.status === "concluida").length;
   const totalQuestoes = desempenhos.reduce((s, d) => s + d.questoes_feitas, 0);
   const totalErros = desempenhos.reduce((s, d) => s + d.questoes_erradas, 0);
   const taxaGeralAcerto = totalQuestoes > 0 ? Math.round(((totalQuestoes - totalErros) / totalQuestoes) * 100) : 0;
   const preparation = calcPreparation(temas, revisoes, desempenhos);
-  const prepLevel = getPreparationLevel(preparation);
-
-  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
-  const revisoesSemana = revisoes.filter(r => r.status === "concluida" && r.concluida_em && new Date(r.concluida_em) >= weekAgo).length;
 
   // Specialty performance
   const specPerf: Record<string, { feitas: number; erros: number }> = {};
@@ -95,7 +131,111 @@ const SmartPlanner = () => {
     name, taxa: Math.round(((v.feitas - v.erros) / v.feitas) * 100), feitas: v.feitas
   }));
 
-  // Handlers (reused from cronograma)
+  // Week stats
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+  const revisoesSemana = revisoes.filter(r => r.status === "concluida" && r.concluida_em && new Date(r.concluida_em) >= weekAgo).length;
+  const weekNumber = examDate
+    ? Math.max(1, Math.ceil((Date.now() - new Date(new Date().getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)))
+    : undefined;
+
+  // Build strategic task list from engine + FSRS + errors
+  const buildStrategicTasks = () => {
+    const tasks: {
+      id: string; title: string; specialty: string; subtopic?: string | null;
+      category: TaskCategory; reason: string; impact: string;
+      estimatedMinutes: number; priority: number; overdue?: boolean;
+      targetPath: string; errorCount?: number;
+    }[] = [];
+
+    // 1. Error bank entries → highest priority
+    errorBank.slice(0, 3).forEach((e, i) => {
+      tasks.push({
+        id: `error-${e.id}`,
+        title: e.tema,
+        specialty: "Clínica",
+        subtopic: e.subtema,
+        category: "error_active",
+        reason: e.motivo_erro || `Erro recorrente — ${e.vezes_errado}x nas últimas sessões.`,
+        impact: "Corrigir agora evita repetir o mesmo erro na prova.",
+        estimatedMinutes: 15,
+        priority: 95 - i,
+        errorCount: e.vezes_errado,
+        targetPath: "/dashboard/banco-erros",
+      });
+    });
+
+    // 2. Overdue FSRS cards → critical review
+    const overdueFsrs = fsrsCards.filter(c => new Date(c.due) < new Date()).slice(0, 3);
+    overdueFsrs.forEach((c, i) => {
+      tasks.push({
+        id: `fsrs-crit-${c.id}`,
+        title: `Revisão FSRS — ${c.card_type}`,
+        specialty: "",
+        category: "critical_review",
+        reason: "Risco alto de esquecimento. Estabilidade baixa no FSRS.",
+        impact: "Revisar agora estabiliza a memória de longo prazo.",
+        estimatedMinutes: 12,
+        priority: 92 - i,
+        overdue: true,
+        targetPath: "/dashboard/plano-dia",
+      });
+    });
+
+    // 3. Engine recommendations
+    (engineRecs || []).slice(0, 5).forEach((rec, i) => {
+      let category: TaskCategory = "practice";
+      if (rec.type === "review") category = "near_review";
+      else if (rec.type === "error_review") category = "error_active";
+      else if (rec.type === "new") category = "new_content";
+      else if (rec.type === "simulado") category = "simulado";
+      else if (rec.type === "clinical") category = "practice";
+
+      tasks.push({
+        id: rec.id,
+        title: rec.topic,
+        specialty: rec.specialty,
+        subtopic: rec.subtopic,
+        category,
+        reason: rec.reason || "Recomendação do motor de estudo adaptativo.",
+        impact: rec.type === "review" ? "Fixar conteúdo na memória de longo prazo."
+          : rec.type === "error_review" ? "Corrigir ponto fraco antes da prova."
+          : rec.type === "new" ? "Expandir cobertura de conteúdo."
+          : "Consolidar conhecimento via prática.",
+        estimatedMinutes: rec.estimatedMinutes,
+        priority: rec.priority,
+        targetPath: rec.targetPath,
+      });
+    });
+
+    // 4. Overdue revisões (cronograma)
+    revisoesAtrasadas.slice(0, 3).forEach((r, i) => {
+      const tema = temas.find(t => t.id === r.tema_id);
+      if (!tema) return;
+      // Skip if already represented by FSRS
+      if (tasks.some(t => t.title === tema.tema && t.category === "critical_review")) return;
+      tasks.push({
+        id: `rev-${r.id}`,
+        title: tema.tema,
+        specialty: tema.especialidade,
+        subtopic: tema.subtopico,
+        category: "critical_review",
+        reason: `Revisão ${r.tipo_revisao} atrasada — risco de esquecimento aumentando.`,
+        impact: "Revisar agora mantém a curva de retenção estável.",
+        estimatedMinutes: 15,
+        priority: 88 - i,
+        overdue: true,
+        targetPath: "/dashboard/plano-dia",
+      });
+    });
+
+    // Sort by priority desc
+    tasks.sort((a, b) => b.priority - a.priority);
+    return tasks;
+  };
+
+  const strategicTasks = buildStrategicTasks();
+
+  // Handlers (preserved from original)
   const handleAddTema = async (
     tema: string, especialidade: string, subtopico: string, dataEstudo: string,
     fonte: string, dificuldade: string, observacoes: string,
@@ -111,7 +251,6 @@ const SmartPlanner = () => {
         if (!upErr) anexos.push({ name: file.name, path: filePath });
       }
     }
-
     const { data, error } = await supabase.from("temas_estudados").insert({
       user_id: user.id, tema, especialidade, subtopico: subtopico || null,
       data_estudo: dataEstudo, fonte, dificuldade,
@@ -119,11 +258,9 @@ const SmartPlanner = () => {
       anexos: anexos.length > 0 ? anexos : [],
     } as any).select().single();
     if (error || !data) { toast({ title: "Erro", description: "Não foi possível salvar o tema.", variant: "destructive" }); return; }
-
     const temaId = (data as any).id;
     const taxaErro = questoesFeitas > 0 ? Math.round((questoesErradas / questoesFeitas) * 100) : 0;
     const taxaAcerto = questoesFeitas > 0 ? Math.round(((questoesFeitas - questoesErradas) / questoesFeitas) * 100) : 0;
-
     if (questoesFeitas > 0) {
       await supabase.from("desempenho_questoes").insert({
         user_id: user.id, tema_id: temaId,
@@ -131,7 +268,6 @@ const SmartPlanner = () => {
         taxa_acerto: taxaAcerto, nivel_confianca: "parcial",
       } as any);
     }
-
     const configExtras = config?.revisoes_extras_ativas !== false;
     const reviews = configExtras ? generateReviewsByError(dataEstudo, taxaErro) : generateReviewsByError(dataEstudo, 0);
     const reviewRows = reviews.map(r => ({
@@ -139,7 +275,6 @@ const SmartPlanner = () => {
       data_revisao: r.data, status: "pendente", prioridade: 50, risco_esquecimento: "baixo",
     }));
     await supabase.from("revisoes").insert(reviewRows as any);
-
     toast({ title: "✅ Tema registrado!", description: `${reviews.length} revisões agendadas.` });
     setActiveTab("conteudo");
     loadData();
@@ -153,7 +288,6 @@ const SmartPlanner = () => {
     const acertos = questoesFeitas - questoesErradas;
     const taxa = questoesFeitas > 0 ? Math.round((acertos / questoesFeitas) * 100) : 0;
     const taxaErro = questoesFeitas > 0 ? Math.round((questoesErradas / questoesFeitas) * 100) : 0;
-
     await supabase.from("revisoes").update({ status: "concluida", concluida_em: new Date().toISOString() } as any).eq("id", revisao.id);
     await supabase.from("desempenho_questoes").insert({
       user_id: user.id, tema_id: revisao.tema_id, revisao_id: revisao.id,
@@ -161,7 +295,6 @@ const SmartPlanner = () => {
       taxa_acerto: taxa, tempo_gasto: tempoGasto,
       nivel_confianca: nivelConfianca, observacoes: obs || null,
     } as any);
-
     const configExtras = config?.revisoes_extras_ativas !== false;
     if (configExtras && taxaErro > 20) {
       const tema = temas.find(t => t.id === revisao.tema_id);
@@ -171,7 +304,6 @@ const SmartPlanner = () => {
         if (taxaErro > 60) extrasNeeded = ["D2", "D4", "D5"].filter(t => !existingTypes.includes(t));
         else if (taxaErro > 40) extrasNeeded = ["D2", "D5"].filter(t => !existingTypes.includes(t));
         else extrasNeeded = ["D5"].filter(t => !existingTypes.includes(t));
-
         if (extrasNeeded.length > 0) {
           const extraRows = extrasNeeded.map(tipo => {
             const d = new Date(tema.data_estudo + "T12:00:00");
@@ -182,18 +314,14 @@ const SmartPlanner = () => {
         }
       }
     }
-
     if (nivelConfianca === "nao_sei") {
       const nextPending = revisoes.find(r => r.tema_id === revisao.tema_id && r.status === "pendente" && r.id !== revisao.id);
       if (nextPending) {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
         await supabase.from("revisoes").update({ data_revisao: tomorrow.toISOString().split("T")[0], prioridade: 90 } as any).eq("id", nextPending.id);
       }
     }
-
     toast({ title: "✅ Revisão concluída!", description: `Acerto: ${taxa}%` });
-    // Inline execution removed — revision completed via callback
     const tema = temas.find(t => t.id === revisao.tema_id);
     if (tema) {
       updateStudyPerformanceContext(user.id, [{ id: tema.id, tema: tema.tema, especialidade: tema.especialidade }]).catch(() => {});
@@ -209,10 +337,7 @@ const SmartPlanner = () => {
     loadData();
   };
 
-  // Redirect to Daily Plan instead of inline execution
-  const startRevisao = (_revisao: Revisao) => {
-    navigate("/dashboard/plano-dia");
-  };
+  const startRevisao = (_revisao: Revisao) => { navigate("/dashboard/plano-dia"); };
 
   const reprocessCronograma = async () => {
     if (!user || !newExamDate) {
@@ -225,16 +350,8 @@ const SmartPlanner = () => {
       const existingSubjects = temas.map(t => t.tema);
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-study-plan`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.session?.access_token}`,
-        },
-        body: JSON.stringify({
-          examDate: format(newExamDate, "yyyy-MM-dd"),
-          hoursPerDay: 4,
-          daysPerWeek: 5,
-          existingSubjects,
-        }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.session?.access_token}` },
+        body: JSON.stringify({ examDate: format(newExamDate, "yyyy-MM-dd"), hoursPerDay: 4, daysPerWeek: 5, existingSubjects }),
       });
       const result = await resp.json();
       if (!resp.ok) throw new Error(result.error || "Erro ao reprocessar");
@@ -256,13 +373,6 @@ const SmartPlanner = () => {
     );
   }
 
-
-  // Count topics per specialty
-  const specTopicCount: Record<string, number> = {};
-  temas.forEach(t => { specTopicCount[t.especialidade] = (specTopicCount[t.especialidade] || 0) + 1; });
-  const totalRevisoesPendentes = revisoes.filter(r => r.status === "pendente").length;
-  const totalRevisoesConcluidas = revisoes.filter(r => r.status === "concluida").length;
-
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Header */}
@@ -270,24 +380,16 @@ const SmartPlanner = () => {
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2">
             <Brain className="h-6 w-6 text-primary" />
-            Plano Geral
+            Planner Estratégico
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Estratégia macro de estudos — planeje aqui, execute no Dashboard
+            Estratégia, prioridade e inteligência adaptativa
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {revisoesAtrasadas.length > 0 && (
-            <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
-              <AlertTriangle className="h-3 w-3 mr-1" />
-              {revisoesAtrasadas.length} atrasadas
-            </Badge>
-          )}
-          <Button variant="secondary" size="sm" onClick={() => setShowReprocess(true)}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Recalcular Cronograma
-          </Button>
-        </div>
+        <Button variant="secondary" size="sm" onClick={() => setShowReprocess(true)}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Recalcular
+        </Button>
       </div>
 
       {/* Reprocess Panel */}
@@ -296,10 +398,10 @@ const SmartPlanner = () => {
           <CardContent className="p-4 space-y-4">
             <h2 className="text-base font-semibold flex items-center gap-2">
               <RefreshCw className="h-5 w-5 text-primary" />
-              Recalcular Cronograma com Nova Data
+              Recalcular com Nova Data
             </h2>
             <p className="text-sm text-muted-foreground">
-              O cronograma será regenerado mantendo os {temas.length} temas existentes, redistribuindo revisões para a nova data da prova.
+              O cronograma será regenerado mantendo os {temas.length} temas, redistribuindo revisões.
             </p>
             <div className="flex items-end gap-4 flex-wrap">
               <div className="space-y-2">
@@ -308,18 +410,11 @@ const SmartPlanner = () => {
                   <PopoverTrigger asChild>
                     <Button variant="outline" className={cn("w-[220px] justify-start text-left font-normal", !newExamDate && "text-muted-foreground")}>
                       <CalendarDays className="mr-2 h-4 w-4" />
-                      {newExamDate ? format(newExamDate, "dd/MM/yyyy") : "Selecionar nova data"}
+                      {newExamDate ? format(newExamDate, "dd/MM/yyyy") : "Selecionar data"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={newExamDate}
-                      onSelect={setNewExamDate}
-                      disabled={(date) => date < new Date()}
-                      className={cn("p-3 pointer-events-auto")}
-                      locale={ptBR}
-                    />
+                    <Calendar mode="single" selected={newExamDate} onSelect={setNewExamDate} disabled={(date) => date < new Date()} className={cn("p-3 pointer-events-auto")} locale={ptBR} />
                   </PopoverContent>
                 </Popover>
               </div>
@@ -333,13 +428,13 @@ const SmartPlanner = () => {
         </Card>
       )}
 
-      {/* Tabs — 4 seções claras */}
+      {/* Tabs — 4 seções */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full grid grid-cols-4 h-auto">
-          <TabsTrigger value="objetivo" className="text-xs py-2 flex flex-col gap-0.5 items-center">
+          <TabsTrigger value="estrategia" className="text-xs py-2 flex flex-col gap-0.5 items-center">
             <Target className="h-4 w-4" />
-            <span className="hidden sm:inline">Prova & Objetivo</span>
-            <span className="sm:hidden">Objetivo</span>
+            <span className="hidden sm:inline">Estratégia</span>
+            <span className="sm:hidden">Estratégia</span>
           </TabsTrigger>
           <TabsTrigger value="conteudo" className="text-xs py-2 flex flex-col gap-0.5 items-center">
             <BookOpen className="h-4 w-4" />
@@ -358,85 +453,89 @@ const SmartPlanner = () => {
           </TabsTrigger>
         </TabsList>
 
-        {/* ──────────────────────────────────────── */}
-        {/* SEÇÃO 1 — PROVA E OBJETIVO */}
-        {/* ──────────────────────────────────────── */}
-        <TabsContent value="objetivo" className="space-y-4 mt-4">
-          {/* Overview cards */}
-          <div className="grid grid-cols-2 gap-3">
-            <Card>
-              <CardContent className="p-3 text-center">
-                <GraduationCap className="h-5 w-5 text-primary mx-auto mb-1" />
-                <p className="text-lg font-bold">{temas.length}</p>
-                <p className="text-[10px] text-muted-foreground">Temas cadastrados</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-3 text-center">
-                <TrendingUp className="h-5 w-5 text-emerald-500 mx-auto mb-1" />
-                <p className="text-lg font-bold">{preparation}%</p>
-                <p className="text-[10px] text-muted-foreground">Preparação ({typeof prepLevel === 'object' ? prepLevel.label : prepLevel})</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-3 text-center">
-                <BarChart3 className="h-5 w-5 text-blue-500 mx-auto mb-1" />
-                <p className="text-lg font-bold">{taxaGeralAcerto}%</p>
-                <p className="text-[10px] text-muted-foreground">Acerto geral ({totalQuestoes} Q)</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-3 text-center">
-                <CalendarDays className="h-5 w-5 text-amber-500 mx-auto mb-1" />
-                <p className="text-lg font-bold">{totalRevisoesPendentes}</p>
-                <p className="text-[10px] text-muted-foreground">Revisões pendentes</p>
-              </CardContent>
-            </Card>
-          </div>
+        {/* ── ESTRATÉGIA ── */}
+        <TabsContent value="estrategia" className="space-y-4 mt-4">
+          {/* Strategic Header */}
+          <PlannerStrategicHeader
+            examDate={examDate}
+            targetExams={targetExams}
+            approvalScore={approvalScore}
+            chanceByExam={chanceByExam}
+            pendingReviews={totalRevisoesPendentes}
+            overdueReviews={revisoesAtrasadas.length}
+            recoveryMode={recoveryMode || !!adaptive?.recoveryMode}
+            heavyRecoveryPhase={heavyRecoveryPhase || (adaptive?.heavyRecovery?.active ? adaptive.heavyRecovery.phase : undefined)}
+            weekNumber={weekNumber}
+          />
 
-          {/* Importar edital / configurar prova */}
+          {/* FSRS Status */}
+          <PlannerFSRSSection cards={fsrsCards} />
+
+          {/* Error Zone */}
+          <PlannerErrorZone errors={errorBank} />
+
+          {/* Strategic Tasks */}
+          {strategicTasks.length > 0 && (
+            <div className="space-y-2">
+              <h2 className="text-sm font-semibold flex items-center gap-2">
+                <Zap className="h-4 w-4 text-primary" />
+                Tarefas Estratégicas
+                <Badge variant="secondary" className="text-[10px]">{strategicTasks.length}</Badge>
+              </h2>
+              <p className="text-[10px] text-muted-foreground">
+                Ordenadas por impacto e urgência. O motor de estudo prioriza automaticamente.
+              </p>
+              {strategicTasks.map(task => (
+                <PlannerTaskCard
+                  key={task.id}
+                  title={task.title}
+                  specialty={task.specialty}
+                  subtopic={task.subtopic}
+                  category={task.category}
+                  reason={task.reason}
+                  impact={task.impact}
+                  estimatedMinutes={task.estimatedMinutes}
+                  priority={task.priority}
+                  overdue={task.overdue}
+                  errorCount={task.errorCount}
+                  onAction={() => navigate(task.targetPath)}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Study Plan Content */}
           <StudyPlanContent
             onSyncComplete={async () => { await loadData(); setActiveTab("conteudo"); }}
             onSubjectsGenerated={async (subjects: string[]) => {
               if (!user) return;
-              const today = new Date().toISOString().split("T")[0];
-
+              const today2 = new Date().toISOString().split("T")[0];
               await supabase.from("desempenho_questoes").delete().eq("user_id", user.id);
               await supabase.from("revisoes").delete().eq("user_id", user.id);
               await supabase.from("temas_estudados").delete().eq("user_id", user.id);
               setTemas([]);
-
               if (subjects.length === 0) return { temasRegistrados: 0, flashcardsCriados: 0, questoesVinculadas: 0, revisoesAgendadas: 0 };
-
-              const { data: latestPlan } = await supabase
-                .from("study_plans").select("plan_json")
-                .eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
+              const { data: latestPlan } = await supabase.from("study_plans").select("plan_json").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
               const topicMap: { topic: string; subtopics: string[] }[] = (latestPlan?.plan_json as any)?.topicMap || [];
-
               const registeredTemas: { id: string; tema: string; especialidade: string }[] = [];
               let totalReviews = 0;
               for (const subject of subjects) {
                 const especialidade = (await import("@/lib/mapTopicToSpecialty")).mapTopicToSpecialty(subject) || "Medicina Preventiva";
                 const topicEntry = topicMap.find(t => t.topic.toLowerCase() === subject.toLowerCase());
                 const subtopico = topicEntry?.subtopics?.join(", ") || null;
-
                 const { data, error } = await supabase.from("temas_estudados").insert({
-                  user_id: user.id, tema: subject, especialidade,
-                  data_estudo: today, fonte: "plano_estudos", dificuldade: "medio",
-                  subtopico, observacoes: "Registrado pelo Plano Geral", status: "ativo",
+                  user_id: user.id, tema: subject, especialidade, data_estudo: today2, fonte: "plano_estudos", dificuldade: "medio", subtopico, observacoes: "Registrado pelo Plano Geral", status: "ativo",
                 } as any).select().single();
                 if (error || !data) continue;
                 const temaId = (data as any).id;
                 registeredTemas.push({ id: temaId, tema: subject, especialidade });
-                const reviews = generateReviewsByError(today, 0);
+                const reviews = generateReviewsByError(today2, 0);
                 totalReviews += reviews.length;
                 const reviewRows = reviews.map(r => ({
-                  user_id: user.id, tema_id: temaId, tipo_revisao: r.tipo,
-                  data_revisao: r.data, status: "pendente", prioridade: 50, risco_esquecimento: "baixo",
+                  user_id: user.id, tema_id: temaId, tipo_revisao: r.tipo, data_revisao: r.data, status: "pendente", prioridade: 50, risco_esquecimento: "baixo",
                 }));
                 await supabase.from("revisoes").insert(reviewRows as any);
               }
-
               let flashcardsCriados = 0;
               let questoesVinculadas = 0;
               if (registeredTemas.length > 0) {
@@ -447,12 +546,29 @@ const SmartPlanner = () => {
                 } catch (err) { console.error("Sync error:", err); }
                 await loadData();
               }
-
               return { temasRegistrados: registeredTemas.length, flashcardsCriados, questoesVinculadas, revisoesAgendadas: totalReviews };
             }}
           />
 
-          {/* Specialty distribution */}
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 gap-2">
+            <Card>
+              <CardContent className="p-3 text-center">
+                <BarChart3 className="h-4 w-4 text-primary mx-auto mb-1" />
+                <p className="text-lg font-bold">{taxaGeralAcerto}%</p>
+                <p className="text-[9px] text-muted-foreground">Acerto ({totalQuestoes} Q)</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3 text-center">
+                <TrendingUp className="h-4 w-4 text-emerald-500 mx-auto mb-1" />
+                <p className="text-lg font-bold">{revisoesSemana}</p>
+                <p className="text-[9px] text-muted-foreground">Revisões esta semana</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Specialty Performance */}
           {specEntries.length > 0 && (
             <Card>
               <CardHeader className="pb-2 pt-3 px-4">
@@ -471,25 +587,9 @@ const SmartPlanner = () => {
               </CardContent>
             </Card>
           )}
-
-          {/* Week summary */}
-          <Card>
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Revisões concluídas esta semana</span>
-                <span className="font-bold">{revisoesSemana}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs mt-1">
-                <span className="text-muted-foreground">Total de revisões concluídas</span>
-                <span className="font-bold">{totalRevisoesConcluidas}</span>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
-        {/* ──────────────────────────────────────── */}
-        {/* SEÇÃO 2 — DISTRIBUIÇÃO DE CONTEÚDO */}
-        {/* ──────────────────────────────────────── */}
+        {/* ── CONTEÚDO ── */}
         <TabsContent value="conteudo" className="space-y-4 mt-4">
           <CronogramaNovoTema specialties={SPECIALTIES} onAdd={handleAddTema} />
           <CronogramaTemas
@@ -498,42 +598,31 @@ const SmartPlanner = () => {
           />
         </TabsContent>
 
-        {/* ──────────────────────────────────────── */}
-        {/* SEÇÃO 3 — CALENDÁRIO MACRO */}
-        {/* ──────────────────────────────────────── */}
+        {/* ── CALENDÁRIO ── */}
         <TabsContent value="calendario" className="space-y-4 mt-4">
           <PlannerCalendarView revisoes={revisoes} temas={temas} />
         </TabsContent>
 
-        {/* ──────────────────────────────────────── */}
-        {/* SEÇÃO 4 — HISTÓRICO E AJUSTES */}
-        {/* ──────────────────────────────────────── */}
+        {/* ── HISTÓRICO ── */}
         <TabsContent value="historico" className="space-y-4 mt-4">
-          <CronogramaHistorico
-            temas={temas} revisoes={revisoes} desempenhos={desempenhos}
-          />
+          <CronogramaHistorico temas={temas} revisoes={revisoes} desempenhos={desempenhos} />
         </TabsContent>
       </Tabs>
     </div>
   );
 };
 
-// Macro calendar view — strategy overview, no execution buttons
+// Macro calendar view
 function PlannerCalendarView({ revisoes, temas }: { revisoes: Revisao[]; temas: TemaEstudado[] }) {
   const today = new Date();
   const days: { date: string; label: string; reviews: (Revisao & { temaNome: string })[] }[] = [];
-
   for (let i = 0; i < 30; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     const dateStr = d.toISOString().split("T")[0];
     const dayReviews = revisoes
       .filter(r => r.data_revisao === dateStr && r.status === "pendente")
-      .map(r => ({
-        ...r,
-        temaNome: temas.find(t => t.id === r.tema_id)?.tema || "Tema",
-      }));
-
+      .map(r => ({ ...r, temaNome: temas.find(t => t.id === r.tema_id)?.tema || "Tema" }));
     const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
     days.push({
       date: dateStr,
@@ -541,8 +630,6 @@ function PlannerCalendarView({ revisoes, temas }: { revisoes: Revisao[]; temas: 
       reviews: dayReviews,
     });
   }
-
-  // Only show days with reviews or first 7 days
   const visibleDays = days.filter((d, i) => i < 7 || d.reviews.length > 0);
 
   return (
@@ -578,9 +665,7 @@ function PlannerCalendarView({ revisoes, temas }: { revisoes: Revisao[]; temas: 
                     <span className="text-muted-foreground ml-auto shrink-0">{r.tipo_revisao}</span>
                   </div>
                 ))}
-                {day.reviews.length > 5 && (
-                  <p className="text-[10px] text-muted-foreground">+{day.reviews.length - 5} mais</p>
-                )}
+                {day.reviews.length > 5 && <p className="text-[10px] text-muted-foreground">+{day.reviews.length - 5} mais</p>}
               </div>
             )}
           </CardContent>
