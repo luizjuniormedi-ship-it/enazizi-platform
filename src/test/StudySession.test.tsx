@@ -33,6 +33,7 @@ vi.mock("@/integrations/supabase/client", () => ({
               limit: () => Promise.resolve({ data: [] }),
             }),
           }),
+          single: () => Promise.resolve({ data: null, error: null }),
         }),
       }),
       insert: () => Promise.resolve({ data: null, error: null }),
@@ -41,6 +42,11 @@ vi.mock("@/integrations/supabase/client", () => ({
       getSession: () => Promise.resolve({ data: { session: null }, error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
     },
+    channel: () => ({
+      on: function() { return this; },
+      subscribe: () => ({ unsubscribe: vi.fn() }),
+    }),
+    removeChannel: vi.fn(),
   },
 }));
 
