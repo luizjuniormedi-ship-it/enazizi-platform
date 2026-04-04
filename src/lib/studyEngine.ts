@@ -819,6 +819,8 @@ export async function generateRecommendations({ userId }: EngineInput): Promise<
       focusReason: "Vamos começar seus estudos!",
       memoryPressure: 0,
       overdueCount: 0,
+      recoveryMode: false,
+      recoveryReason: "",
     },
   };
  }
