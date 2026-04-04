@@ -788,7 +788,7 @@ export async function generateRecommendations({ userId, coreData }: EngineInput)
     const curriculumItems = await fetchCurriculumForEngine(primaryBanca, 6, 80);
 
     const curriculumGaps: { topic: string; specialty: string; subtema: string; bancaPeso: number; prioridade: number; incidencia: string }[] = [];
-    for (const item of (matrixData || []) as any[]) {
+    for (const item of curriculumItems) {
       const subLower = (item.subtema || "").toLowerCase();
       const temaLower = (item.tema || "").toLowerCase();
       const alreadyStudied = studiedTopicNames.has(subLower) ||
@@ -799,7 +799,7 @@ export async function generateRecommendations({ userId, coreData }: EngineInput)
           topic: item.subtema,
           specialty: item.especialidade,
           subtema: item.tema,
-          bancaPeso: item[primaryBancaCol] || 5,
+          bancaPeso: item.bancaPeso,
           prioridade: item.prioridade_base,
           incidencia: item.incidencia_geral,
         });
