@@ -849,9 +849,6 @@ const AnamnesisTrainer = () => {
             <Button onClick={handleExportPdf} variant="outline" size="sm">
               <FileText className="h-4 w-4 mr-1" /> PDF
             </Button>
-            <Button onClick={handleReset} variant="outline" size="sm">
-              <RotateCcw className="h-4 w-4 mr-1" /> Nova Consulta
-            </Button>
           </div>
         </div>
 
