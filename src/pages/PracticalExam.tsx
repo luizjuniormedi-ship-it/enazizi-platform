@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRefreshUserState } from "@/hooks/useRefreshUserState";
+import { useAuth } from "@/hooks/useAuth";
 import { completeStudyAction } from "@/lib/completeStudyAction";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -81,6 +82,7 @@ export default function PracticalExam() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { refreshAll } = useRefreshUserState();
+  const { user } = useAuth();
   const [phase, setPhase] = useState<Phase>("setup");
   const [specialty, setSpecialty] = useState("Clínica Médica");
   const [difficulty, setDifficulty] = useState("intermediário");
