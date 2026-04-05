@@ -15,12 +15,11 @@ export async function markTaskCompleted(userId: string, task: StudyRecommendatio
   try {
     // 1. Mark review as done
     if (task.type === "review") {
-      await supabase
+      await (supabase
         .from("revisoes")
         .update({ revisada: true, data_revisao: today } as any)
         .eq("user_id", userId)
-        .ilike("tema", `%${topic}%`)
-        .eq("revisada", false);
+        .ilike("tema", `%${topic}%`) as any);
     }
 
     // 2. Mark error as dominated
