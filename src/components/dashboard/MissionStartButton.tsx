@@ -58,7 +58,7 @@ export default function MissionStartButton() {
             size="lg"
             onClick={() => {
               if (state.status === "paused") resumeMission();
-              navigate("/dashboard/missao");
+              navigate("/mission");
             }}
           >
             <ArrowRight className="h-5 w-5" />
