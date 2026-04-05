@@ -236,6 +236,11 @@ const Dashboard = () => {
         <HeroStudyCard />
       </SafeCard>
 
+      {/* Streak — inline, compact */}
+      <SafeCard name="StreakBanner">
+        <StreakBanner />
+      </SafeCard>
+
       {/* ══════════════════════════════════════════
           ÍNDICE DE PREPARAÇÃO — indicador central
          ══════════════════════════════════════════ */}
