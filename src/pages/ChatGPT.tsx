@@ -512,6 +512,44 @@ const ChatGPT = () => {
   const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Estudante";
   const nextPhase = getNextPhaseInfo(enaziziStep);
 
+  // Mission return overlay
+  if (showMissionReturn) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] p-4">
+        <div className="max-w-md w-full rounded-2xl border border-primary/30 bg-card shadow-2xl p-8 text-center space-y-6 animate-fade-in">
+          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+            <span className="text-3xl">✅</span>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold">Sessão Concluída!</h2>
+            <p className="text-muted-foreground text-sm mt-1">
+              Você estudou <span className="font-semibold text-foreground">{currentTopic || "o tema"}</span> com sucesso.
+            </p>
+            {tutorOrigin === "error_review" && (
+              <p className="text-xs text-emerald-500 mt-2">✓ Erros marcados como revisados</p>
+            )}
+          </div>
+          <Button className="w-full gap-2 h-14 text-base" size="lg" onClick={handleReturnToMission}>
+            <ArrowRight className="h-5 w-5" />
+            CONTINUAR MISSÃO
+          </Button>
+          <button
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => {
+              setShowMissionReturn(false);
+              setStudyStarted(false);
+              setCurrentTopic("");
+              setMessages([]);
+              navigate("/dashboard");
+            }}
+          >
+            Voltar ao Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const content = (
     <div className={`flex flex-col animate-fade-in min-w-0 w-full ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-3 sm:p-6 overflow-hidden" : "h-full"}`}>
       <TutorHeader
