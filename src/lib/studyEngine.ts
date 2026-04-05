@@ -872,24 +872,54 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     }
   }
 
-  const flashcardDue = fsrsDue.filter((c: any) => c.card_type === "flashcard");
-  if (flashcardDue.length > 0) {
-    flashcardDue.sort((a: any, b: any) => a.stability - b.stability);
-    const urgency = flashcardDue.length > 10 ? "alta" : flashcardDue.length > 3 ? "moderada" : "normal";
-    addRec({
-      id: "fsrs-flashcards",
-      type: "review",
-      topic: `${flashcardDue.length} Flashcards`,
-      specialty: "Revisão Espaçada",
-      priority: cap(85 + Math.min(flashcardDue.length, 10)),
-      reason: flashcardDue.length > 5
-        ? `${flashcardDue.length} flashcards pendentes — prioridade ${urgency}!`
-        : `${flashcardDue.length} flashcard(s) pronto(s) para revisão.`,
-      targetModule: "flashcards",
-      targetPath: "/dashboard/flashcards",
-      estimatedMinutes: Math.max(5, flashcardDue.length * 2),
-      objective: "review",
-    });
+  // ── FSRS flashcard reviews (only when FSRS ON) ────────────────
+  if (fsrsEnabled) {
+    const flashcardDue = fsrsDue.filter((c: any) => c.card_type === "flashcard");
+    if (flashcardDue.length > 0) {
+      flashcardDue.sort((a: any, b: any) => a.stability - b.stability);
+      const urgency = flashcardDue.length > 10 ? "alta" : flashcardDue.length > 3 ? "moderada" : "normal";
+      addRec({
+        id: "fsrs-flashcards",
+        type: "review",
+        topic: `${flashcardDue.length} Flashcards`,
+        specialty: "Revisão Espaçada",
+        priority: cap(85 + Math.min(flashcardDue.length, 10)),
+        reason: flashcardDue.length > 5
+          ? `${flashcardDue.length} flashcards pendentes — prioridade ${urgency}!`
+          : `${flashcardDue.length} flashcard(s) pronto(s) para revisão.`,
+        targetModule: "flashcards",
+        targetPath: "/dashboard/flashcards",
+        estimatedMinutes: Math.max(5, flashcardDue.length * 2),
+        objective: "review",
+      });
+    }
+  } else {
+    // ── Legacy review queue (when FSRS OFF) ─────────────────────
+    const legacyQueue = await generateLegacyReviewQueue(userId);
+    // Add legacy review items that aren't already covered by the revisoes section
+    const existingReviewTopics = new Set(recs.filter(r => r.type === "review").map(r => r.topic));
+    for (let i = 0; i < Math.min(legacyQueue.length, 5); i++) {
+      const item = legacyQueue[i];
+      if (existingReviewTopics.has(item.topic)) continue;
+      addRec({
+        id: `legacy-rev-${i}`,
+        type: "review",
+        topic: item.topic,
+        specialty: item.specialty,
+        subtopic: item.subtopic,
+        priority: item.priority,
+        reason: item.source === "error"
+          ? `Reforço: "${item.topic}" precisa de revisão (erro recorrente).`
+          : item.daysOverdue > 3
+          ? `⚠️ Revisão de "${item.topic}" atrasada ${item.daysOverdue} dias.`
+          : `Revisão pendente de "${item.topic}".`,
+        targetModule: "tutor",
+        targetPath: "/dashboard/chatgpt",
+        estimatedMinutes: 15,
+        objective: "review",
+        _groupKey: `legacy:${item.topic}`,
+      });
+    }
   }
 
   // ── Curriculum-based priority boost (using curriculum bridge) ────
