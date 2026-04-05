@@ -159,6 +159,7 @@ const App = () => (
               <Route path="/institucional" element={<InstitutionalRoute><DashboardLayout /></InstitutionalRoute>}>
                 <Route index element={<InstitutionalDashboard />} />
               </Route>
+              <Route path="/mission" element={<ProtectedRoute><MissionEntry /></ProtectedRoute>} />
               <Route path="/install" element={<Install />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="*" element={<NotFound />} />
