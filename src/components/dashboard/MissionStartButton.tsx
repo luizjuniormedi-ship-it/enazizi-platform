@@ -1,4 +1,5 @@
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMissionMode } from "@/hooks/useMissionMode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,11 +9,29 @@ import { useSafeCta } from "@/hooks/useSafeCta";
 
 export default function MissionStartButton() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { loading: starting, execute: safeCta } = useSafeCta();
   const {
     state, progress, totalMinutes, completedMinutes,
     engineLoading, hasTasks, startMission, resumeMission,
   } = useMissionMode();
+  const autostartFired = useRef(false);
+
+  // Autostart from MissionEntry via ?autostart=mission
+  useEffect(() => {
+    if (autostartFired.current) return;
+    if (searchParams.get("autostart") !== "mission") return;
+    if (engineLoading || !hasTasks) return;
+    if (state.status !== "idle") {
+      // Already active/paused — just clean param
+      setSearchParams({}, { replace: true });
+      autostartFired.current = true;
+      return;
+    }
+    autostartFired.current = true;
+    startMission();
+    setSearchParams({}, { replace: true });
+  }, [searchParams, engineLoading, hasTasks, state.status, startMission, setSearchParams]);
 
   // Active or paused — show resume card
   if (state.status === "active" || state.status === "paused") {
