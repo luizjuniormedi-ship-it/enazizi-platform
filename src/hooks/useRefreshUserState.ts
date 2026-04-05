@@ -38,13 +38,22 @@ export function useRefreshUserState() {
       invalidateDashboardSnapshot(user.id);
     }
 
-    // Async snapshot rebuild + weekly snapshot (fire-and-forget)
+    // Async: streak update + snapshot rebuild + weekly snapshot (fire-and-forget)
     if (user?.id) {
       const uid = user.id;
+
+      // Update streak
+      import("@/lib/activityLogger").then(({ updateStreak }) => {
+        updateStreak(uid).then(() => {
+          queryClient.invalidateQueries({ queryKey: ["streak-banner"] });
+          queryClient.invalidateQueries({ queryKey: ["streak-calendar"] });
+        });
+      });
+
       import("@/integrations/supabase/client").then(({ supabase }) => {
         supabase.functions.invoke("dashboard-snapshot", {
           body: { action: "update" },
-        }).catch(() => {});
+        }).then(() => {});
       });
 
       // Save weekly snapshot periodically (non-blocking)
