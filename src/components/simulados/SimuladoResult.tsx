@@ -284,10 +284,14 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
         </div>
       )}
 
-      <div className="flex gap-3 justify-center flex-wrap">
-        <Button onClick={onNewSimulado}>Novo Simulado</Button>
-        <Button variant="outline" onClick={() => navigate("/dashboard")}>Voltar ao Dashboard</Button>
-      </div>
+      <TaskCompletionCard
+        title="Simulado concluído!"
+        subtitle={`Você acertou ${correctCount} de ${questions.length} questões (${pct}%). Seu progresso foi atualizado.`}
+        secondaryLabel="Novo Simulado"
+        onSecondary={onNewSimulado}
+        tertiaryLabel="Refazer erros"
+        onTertiary={errorQuestions.length > 0 ? onRetryErrors : undefined}
+      />
     </div>
   );
 };
