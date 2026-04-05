@@ -1,48 +1,41 @@
 
 
-# Plano: Ajustar Estado Final das Feature Flags
+# Plano: Corrigir Redirect Pós-Login para MissionEntry
 
-## Estado Atual (banco)
-Todas as 7 flags estão `enabled = true`. Isso inclui `new_recovery_enabled` e `new_fsrs_flow_enabled`, que **não têm efeito real** em runtime (conforme validação anterior).
+## Problema
+O redirect para `/mission` falha porque:
+1. A chave `sessionStorage("enazizi_mission_entry_seen")` é setada na primeira visita ao Dashboard — mesmo que o usuário navegue para lá sem ter logado, a chave já existe
+2. O redirect acontece **dentro** do Dashboard, causando flash visual do Dashboard antes do redirect
+3. Se o usuário recarrega a aba, o `sessionStorage` já tem a chave e nunca mais redireciona
 
-## Ações
+## Solução
 
-### 1. Desativar 2 flags sem efeito real
-Executar via insert tool (UPDATE):
-```sql
-UPDATE system_flags SET enabled = false, updated_by = NULL
-WHERE flag_key IN ('new_recovery_enabled', 'new_fsrs_flow_enabled');
-```
+### 1. Mover redirect para o `AuthProvider` (ou componente dedicado)
+Em vez de redirecionar dentro do Dashboard, interceptar no evento `SIGNED_IN` do `onAuthStateChange`:
+- No `useAuth.tsx`, quando `event === "SIGNED_IN"` e a flag estiver ativa, setar uma flag temporária (ex: `localStorage("enazizi_should_redirect_mission") = "true"`)
+- Isso garante que o redirect é disparado **por login**, não por visita ao Dashboard
 
-Registrar auditoria:
-```sql
-INSERT INTO system_flag_audit (flag_key, previous_value, new_value, reason)
-VALUES 
-  ('new_recovery_enabled', true, false, 'Flag sem efeito real em runtime — desativada até integração completa'),
-  ('new_fsrs_flow_enabled', true, false, 'Flag sem efeito real em runtime — desativada até integração completa');
-```
+### 2. Criar componente `MissionRedirectGuard` no App.tsx
+Componente leve dentro das rotas protegidas que:
+- Checa se `localStorage` tem `enazizi_should_redirect_mission`
+- Se sim, remove a chave e redireciona para `/mission`
+- Se não, renderiza normalmente
+- Isso elimina o flash do Dashboard
 
-### 2. Confirmar 5 flags que ficam ON
-Estas já estão `true` no banco — nenhuma ação necessária:
-- `mission_entry_enabled` — redireciona pós-login para `/mission`
-- `new_planner_enabled` — aba Estratégia no SmartPlanner
-- `new_tutor_flow_enabled` — dual-write tutor_sessions/tutor_messages
-- `new_dashboard_snapshot_enabled` — snapshot-first no dashboard
-- `new_chance_by_exam_enabled` — exibição de chance por banca
+### 3. Remover lógica de redirect do Dashboard.tsx
+- Deletar o `useEffect` das linhas 96-103
+- O Dashboard volta a ser apenas Dashboard, sem lógica de gate
 
-### 3. Estado final esperado
+### 4. Alternativa mais simples (recomendada)
+Manter a lógica no Dashboard mas trocar `sessionStorage` por `localStorage` com timestamp do login:
+- No `SIGNED_IN` do auth, gravar `localStorage("enazizi_last_login_ts") = Date.now()`
+- No Dashboard, comparar: se `last_login_ts` foi há menos de 10 segundos E flag ON E não tem `enazizi_mission_seen_<ts>` → redirecionar
+- Isso garante que só redireciona no login fresco, não em recargas
 
-| Flag | Estado | Motivo |
-|------|--------|--------|
-| `mission_entry_enabled` | **ON** | Funcional — redireciona para missão |
-| `new_planner_enabled` | **ON** | Funcional — controla aba estratégia |
-| `new_tutor_flow_enabled` | **ON** | Funcional — dual-write tutor |
-| `new_dashboard_snapshot_enabled` | **ON** | Funcional — snapshot-first |
-| `new_chance_by_exam_enabled` | **ON** | Funcional — chance por banca |
-| `new_recovery_enabled` | **OFF** | Sem efeito real — aguardando integração |
-| `new_fsrs_flow_enabled` | **OFF** | Sem efeito real — aguardando integração |
+## Arquivos a alterar
+1. **`src/hooks/useAuth.tsx`** — gravar timestamp de login no `SIGNED_IN`
+2. **`src/pages/Dashboard.tsx`** — trocar lógica de `sessionStorage` para checar timestamp recente
 
 ## O que NÃO muda
-- Nenhum código, rota, componente ou lógica
-- Apenas 2 UPDATEs + 2 INSERTs de auditoria no banco
+- MissionEntry.tsx, rotas, feature flags, Study Engine
 
