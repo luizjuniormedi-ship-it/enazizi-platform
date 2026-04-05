@@ -64,6 +64,7 @@ export default function MissionMode() {
   } = useMissionMode();
 
   const [useFocusHard, setUseFocusHard] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const streak = coreData?.gamification?.current_streak ?? undefined;
 
   useEffect(() => {
