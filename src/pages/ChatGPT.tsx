@@ -431,6 +431,7 @@ const ChatGPT = () => {
 
   const { refreshAll } = useRefreshUserState();
   const [showMissionReturn, setShowMissionReturn] = useState(false);
+  const savedTopicForReturn = useRef("");
 
   const onFinishSession = async () => {
     await handleFinishSession(currentTopic, completeSession, async (step, tema) => {
