@@ -388,10 +388,7 @@ const CronogramaInteligente = () => {
     toast({ title: "✅ Revisão concluída!", description: `Acerto: ${taxa}% | Erro: ${taxaErro}%` });
     setActiveRevisao(null);
     // Invalidate dashboard cache so counts update
-    queryClient.invalidateQueries({ queryKey: ["core-data"] });
-    queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
-    queryClient.invalidateQueries({ queryKey: ["study-engine"] });
-    queryClient.invalidateQueries({ queryKey: ["smart-notifications"] });
+    refreshAll();
     // Sync study context for Tutor IA
     const tema = temas.find(t => t.id === revisao.tema_id);
     if (tema) {

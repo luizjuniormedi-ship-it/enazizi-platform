@@ -530,10 +530,7 @@ const Simulados = () => {
     }
 
     await completeSession();
-    queryClient.invalidateQueries({ queryKey: ["core-data"] });
-    queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
-    queryClient.invalidateQueries({ queryKey: ["study-engine"] });
-    queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
+    refreshAll();
     setPhase("finished");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questions, user, mode]);

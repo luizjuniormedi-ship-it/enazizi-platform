@@ -549,9 +549,7 @@ const AnamnesisTrainer = () => {
       }
 
       await completeSession();
-      queryClient.invalidateQueries({ queryKey: ["core-data"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
-      queryClient.invalidateQueries({ queryKey: ["study-engine"] });
+      refreshAll();
       setPhase("result");
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });

@@ -165,9 +165,7 @@ export default function PracticalExam() {
       });
       if (res.error) throw res.error;
       setEvaluation(res.data);
-      queryClient.invalidateQueries({ queryKey: ["core-data"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
-      queryClient.invalidateQueries({ queryKey: ["study-engine"] });
+      refreshAll();
       setPhase("result");
     } catch (err) {
       console.error(err);

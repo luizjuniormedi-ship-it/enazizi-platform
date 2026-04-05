@@ -1085,10 +1085,7 @@ const ClinicalSimulation = () => {
       setPhase("result");
       await completePersistedSession();
       await addXp(XP_REWARDS.plantao_completed);
-      queryClient.invalidateQueries({ queryKey: ["core-data"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
-      queryClient.invalidateQueries({ queryKey: ["study-engine"] });
-      queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
+      refreshAll();
       await saveSimulationToHistory(res);
 
       if (user && res.final_score < 70) {
