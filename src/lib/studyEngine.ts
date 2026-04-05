@@ -419,12 +419,11 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
   // Adjust max new topics based on content lock
   weights.maxNewTopics = adjustNewTopicsByLock(weights.maxNewTopics, lockStatus);
 
-  // ── FSRS memory pressure ─────────────────────────────────────
-  const fsrsDue = (fsrsDueData || []) as any[];
-  const memoryPressure = cap(
-    (overdueCount / 20) * 50 + (fsrsDue.length / 30) * 50,
-    100
-  );
+  // ── FSRS memory pressure (only when FSRS enabled) ─────────────
+  const fsrsDue = fsrsEnabled ? (fsrsDueData || []) as any[] : [];
+  const memoryPressure = fsrsEnabled
+    ? cap((overdueCount / 20) * 50 + (fsrsDue.length / 30) * 50, 100)
+    : cap((overdueCount / 20) * 100, 100); // legacy: only revisoes count
 
   // ── Recovery mode detection ──────────────────────────────────
   const recoveryMode = overdueCount >= 15 || memoryPressure >= 70 ||
