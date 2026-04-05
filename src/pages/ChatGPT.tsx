@@ -8,8 +8,10 @@ import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
-import { Trash2 } from "lucide-react";
+import { Trash2, ArrowRight } from "lucide-react";
 import { useSessionMemory } from "@/contexts/SessionMemoryContext";
+import { useRefreshUserState } from "@/hooks/useRefreshUserState";
+import { Button } from "@/components/ui/button";
 
 import { FUNCTION_NAME, NON_MEDICAL_KEYWORDS, ensureSequentialInitialMessage } from "@/components/tutor/TutorConstants";
 import type { Msg } from "@/components/tutor/TutorConstants";
