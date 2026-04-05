@@ -1,39 +1,48 @@
 
 
-# Plano: Deletar Questões Administrativas + Blindar Pipeline
+# Plano: Ajustar Estado Final das Feature Flags
 
-## Problema
-92 questões do `hrpp_edital2026.pdf` são sobre processo seletivo, taxas, documentação — zero conteúdo clínico. O filtro atual não bloqueia termos administrativos.
+## Estado Atual (banco)
+Todas as 7 flags estão `enabled = true`. Isso inclui `new_recovery_enabled` e `new_fsrs_flow_enabled`, que **não têm efeito real** em runtime (conforme validação anterior).
 
 ## Ações
 
-### 1. Deletar questões do edital (SQL via insert tool)
-- Deletar todas as 92 questões com `source = 'upload:hrpp_edital2026.pdf'`
-- Deletar o registro do upload na tabela `uploads`
-- Remover o arquivo do storage `user-uploads`
-
-### 2. Expandir `NON_MEDICAL_CONTENT_REGEX` — client-side
-**`src/lib/medicalValidation.ts`** — adicionar termos administrativos:
-```
-taxa de inscri|processo seletivo|período de inscrição|
-edital de convoca|cronograma do processo|matrícula dos aprovados|
-homologa[cç][aã]o|classificação final|prazo de recurso|
-resultado preliminar|documentação exigida|valor da taxa|
-vagas reservadas|candidato inscrito|prova objetiva do processo
+### 1. Desativar 2 flags sem efeito real
+Executar via insert tool (UPDATE):
+```sql
+UPDATE system_flags SET enabled = false, updated_by = NULL
+WHERE flag_key IN ('new_recovery_enabled', 'new_fsrs_flow_enabled');
 ```
 
-### 3. Expandir `NON_MEDICAL_CONTENT_REGEX` — edge function
-**`supabase/functions/process-upload/index.ts`** — mesmos termos administrativos no regex da linha 11
+Registrar auditoria:
+```sql
+INSERT INTO system_flag_audit (flag_key, previous_value, new_value, reason)
+VALUES 
+  ('new_recovery_enabled', true, false, 'Flag sem efeito real em runtime — desativada até integração completa'),
+  ('new_fsrs_flow_enabled', true, false, 'Flag sem efeito real em runtime — desativada até integração completa');
+```
 
-### 4. Melhorar prompt de validação médica
-No step de validação (aiFetch com gemini-flash-lite), instruir explicitamente:
-- "Editais, regulamentos de processo seletivo, cronogramas e documentos administrativos NÃO são conteúdo médico"
+### 2. Confirmar 5 flags que ficam ON
+Estas já estão `true` no banco — nenhuma ação necessária:
+- `mission_entry_enabled` — redireciona pós-login para `/mission`
+- `new_planner_enabled` — aba Estratégia no SmartPlanner
+- `new_tutor_flow_enabled` — dual-write tutor_sessions/tutor_messages
+- `new_dashboard_snapshot_enabled` — snapshot-first no dashboard
+- `new_chance_by_exam_enabled` — exibição de chance por banca
 
-### 5. Adicionar filtro de comprimento mínimo
-No step de geração de questões, rejeitar `statement.length < 120` (conforme padrão já definido nas memórias do projeto)
+### 3. Estado final esperado
+
+| Flag | Estado | Motivo |
+|------|--------|--------|
+| `mission_entry_enabled` | **ON** | Funcional — redireciona para missão |
+| `new_planner_enabled` | **ON** | Funcional — controla aba estratégia |
+| `new_tutor_flow_enabled` | **ON** | Funcional — dual-write tutor |
+| `new_dashboard_snapshot_enabled` | **ON** | Funcional — snapshot-first |
+| `new_chance_by_exam_enabled` | **ON** | Funcional — chance por banca |
+| `new_recovery_enabled` | **OFF** | Sem efeito real — aguardando integração |
+| `new_fsrs_flow_enabled` | **OFF** | Sem efeito real — aguardando integração |
 
 ## O que NÃO muda
-- Study Engine, Dashboard, MissionEntry
-- Questões clínicas existentes
-- Lógica de flashcards
+- Nenhum código, rota, componente ou lógica
+- Apenas 2 UPDATEs + 2 INSERTs de auditoria no banco
 
