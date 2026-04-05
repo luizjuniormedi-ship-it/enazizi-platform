@@ -84,7 +84,7 @@ const SmartPlanner = () => {
       supabase.from("desempenho_questoes").select("*").eq("user_id", user.id).order("data_registro", { ascending: false }),
       supabase.from("cronograma_config").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.from("approval_scores").select("score, phase").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
-      supabase.from("chance_by_exam").select("banca, chance_score").eq("user_id", user.id),
+      chanceByExamEnabled ? supabase.from("chance_by_exam").select("banca, chance_score").eq("user_id", user.id) : Promise.resolve({ data: [], error: null }),
       supabase.from("fsrs_cards").select("id, card_ref_id, card_type, due, stability, difficulty, state, reps, lapses").eq("user_id", user.id),
       supabase.from("error_bank").select("id, tema, subtema, vezes_errado, categoria_erro, motivo_erro").eq("user_id", user.id).eq("dominado", false).order("vezes_errado", { ascending: false }).limit(20),
       supabase.from("profiles").select("exam_date, target_exams").eq("user_id", user.id).maybeSingle(),
