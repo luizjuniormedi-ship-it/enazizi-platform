@@ -1,49 +1,40 @@
 
 
-# Plano: Unificar Visibilidade das Atividades do Dia
+# Plano: Corrigir Atualização do Contador de Revisões Atrasadas
 
 ## Problema
-Dois cards (HeroStudyCard + TodayStudyCard) mostram as mesmas tarefas do Study Engine de formas diferentes, gerando confusão.
+O card "Você tem 40 revisões atrasadas" no SmartAlertCard nunca atualiza porque:
+
+1. **`useCoreData`** tem `staleTime: 3min` e `refetchOnWindowFocus: false` — os dados das revisões ficam congelados
+2. **`useDashboardData`** tem `staleTime: 2min` e `refetchOnWindowFocus: false` — mesmo problema
+3. **Snapshot persistente** tem staleness de 10 minutos — na primeira visita, o dado antigo do snapshot é usado
+4. Quando o aluno completa revisões, o `invalidateAll()` é chamado, mas se ele volta ao Dashboard sem ter passado por um fluxo que chama `invalidateAll`, o número fica estático
 
 ## Solução
 
-### 1. Remover TodayStudyCard do Dashboard
-- Remover o componente `TodayStudyCard` da página do Dashboard
-- Toda a informação já está no HeroStudyCard
+### 1. Habilitar `refetchOnWindowFocus` nos hooks críticos
+Quando o aluno sai da missão/revisão e volta ao Dashboard, os dados devem ser rebuscados automaticamente.
 
-### 2. Melhorar o HeroStudyCard para mostrar tarefas visíveis sem clique
-- As primeiras 3 tarefas ficam **sempre visíveis** (sem precisar expandir)
-- Cada tarefa mostra: emoji do tipo + nome do tema + tempo estimado
-- O botão "Ver detalhes" mostra as restantes (se houver mais de 3)
-- Isso resolve o problema: o aluno abre o app e **imediatamente vê o que tem que fazer**
+- **`useCoreData.ts`**: mudar `refetchOnWindowFocus: false` → `true`
+- **`useDashboardData.ts`**: mudar `refetchOnWindowFocus: false` → `true`
 
-### 3. Resultado visual no mobile (430px)
+### 2. Reduzir `staleTime` do `useCoreData`
+De 3 minutos para 1 minuto, para que revisões concluídas reflitam mais rápido.
 
-```text
-┌─────────────────────────────┐
-│  ✨ Sua missão de hoje      │
-│  Cardiologia · ~45min       │
-│                             │
-│  [■■■ COMEÇAR ESTUDO ■■■]   │
-│  [🔥 Modo Foco Total      ] │
-│                             │
-│  🔄 2 revisões  📝 3 quest. │
-│─────────────────────────────│
-│  🔄 Revisão — Cardiologia   │  ← sempre visível
-│  ❌ Correção — Pneumologia  │  ← sempre visível  
-│  📝 Questões — Nefrologia   │  ← sempre visível
-│  ▼ Ver mais (2 tarefas)     │
-└─────────────────────────────┘
-```
+### 3. Invalidar caches ao retornar ao Dashboard
+No componente `SmartAlertCard` ou na página do Dashboard, adicionar invalidação quando a rota muda para `/dashboard` (o aluno volta de uma sessão de estudo).
+
+### 4. Garantir que fluxos de revisão chamam `invalidateAll`
+Verificar que os handlers de conclusão de revisão (sessão de estudo, missão) estão invalidando os caches corretamente.
 
 ## Arquivos a alterar
 
-1. **`src/components/dashboard/HeroStudyCard.tsx`** — mostrar 3 tarefas sempre visíveis, expandir para ver o resto
-2. **Página do Dashboard** — remover uso do `TodayStudyCard`
+1. **`src/hooks/useCoreData.ts`** — `refetchOnWindowFocus: true`, `staleTime: 60_000`
+2. **`src/hooks/useDashboardData.ts`** — `refetchOnWindowFocus: true`
+3. **`src/lib/dashboardSnapshot.ts`** — reduzir `STALE_MS` de 10min para 5min
 
 ## O que NÃO muda
-- Lógica do Study Engine
-- Modo Missão
-- Navegação lateral
-- Nenhum dado ou backend
+- Lógica de cálculo do `pendingRevisoes`
+- SmartAlertCard (já mostra o valor correto, só precisa receber dado atualizado)
+- Study Engine ou FSRS
 
