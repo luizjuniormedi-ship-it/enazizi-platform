@@ -56,24 +56,40 @@ export interface StudyActionFullResult extends StudyActionResult {
 /* ── Helpers internos ── */
 
 async function markReviewDone(userId: string, topic: string, now: string): Promise<string | null> {
-  const { data: temaRow } = await supabase
+  const today = now.slice(0, 10);
+
+  // Step 1: find all temas_estudados IDs matching topic
+  const { data: temaRows } = await supabase
     .from("temas_estudados")
     .select("id")
     .eq("user_id", userId)
-    .ilike("tema", `%${topic}%`)
+    .ilike("tema", `%${topic}%`);
+
+  if (!temaRows || temaRows.length === 0) return null;
+
+  const temaIds = temaRows.map(r => r.id);
+
+  // Step 2: find oldest pending revision linked to those temas
+  const { data: pendingReview } = await supabase
+    .from("revisoes")
+    .select("id")
+    .eq("user_id", userId)
+    .in("tema_id", temaIds)
+    .eq("status", "pendente")
+    .lte("data_revisao", today)
+    .order("data_revisao", { ascending: true })
     .limit(1)
     .maybeSingle();
 
-  if (temaRow) {
-    await supabase
-      .from("revisoes")
-      .update({ status: "concluida" as any, concluida_em: now } as any)
-      .eq("user_id", userId)
-      .eq("tema_id", temaRow.id)
-      .eq("status", "pendente");
-    return "revisoes";
-  }
-  return null;
+  if (!pendingReview) return null;
+
+  // Step 3: update that specific revision
+  const { error } = await supabase
+    .from("revisoes")
+    .update({ status: "concluida" as any, concluida_em: now } as any)
+    .eq("id", pendingReview.id);
+
+  return error ? null : "revisoes";
 }
 
 async function markErrorDominated(userId: string, topic: string, now: string): Promise<string | null> {
