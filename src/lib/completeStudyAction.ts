@@ -305,6 +305,7 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
     payload,
     tablesUpdated,
     errors.length === 0 ? "success" : "error",
+    errors,
   );
 
   // 6. Sincronizar user_missions (se missionId fornecido)
