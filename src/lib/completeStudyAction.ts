@@ -69,14 +69,13 @@ async function markReviewDone(userId: string, topic: string, now: string): Promi
 
   const temaIds = temaRows.map(r => r.id);
 
-  // Step 2: find oldest pending revision linked to those temas
+  // Step 2: find oldest pending revision linked to those temas (sem filtro de data — safety net)
   const { data: pendingReview } = await supabase
     .from("revisoes")
     .select("id")
     .eq("user_id", userId)
     .in("tema_id", temaIds)
     .eq("status", "pendente")
-    .lte("data_revisao", today)
     .order("data_revisao", { ascending: true })
     .limit(1)
     .maybeSingle();
