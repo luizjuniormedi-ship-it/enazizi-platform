@@ -429,15 +429,60 @@ const ChatGPT = () => {
     }
   };
 
+  const { refreshAll } = useRefreshUserState();
+  const [showMissionReturn, setShowMissionReturn] = useState(false);
+
   const onFinishSession = async () => {
     await handleFinishSession(currentTopic, completeSession, async (step, tema) => {
       await saveEnaziziStep(step, tema, performance, sessionQuestions);
     });
+
+    // FSRS card creation for the studied topic
+    if (user?.id && currentTopic) {
+      try {
+        const { data: existing } = await supabase.from("fsrs_cards")
+          .select("id").eq("user_id", user.id).eq("card_ref_id", currentTopic).eq("card_type", "tema").maybeSingle();
+        if (!existing) {
+          await supabase.from("fsrs_cards").insert({
+            user_id: user.id, card_ref_id: currentTopic, card_type: "tema",
+            difficulty: 5, stability: 1, state: 0, reps: 0, lapses: 0,
+            elapsed_days: 0, scheduled_days: 1, due: new Date().toISOString(),
+          });
+        }
+      } catch {}
+    }
+
+    // If error_review origin, mark errors as reviewed
+    if (user?.id && tutorOrigin === "error_review" && currentTopic) {
+      try {
+        await supabase.from("error_bank").update({ dominado: true, dominado_em: new Date().toISOString() })
+          .eq("user_id", user.id).eq("tema", currentTopic).eq("dominado", false);
+      } catch {}
+    }
+
+    // Refresh global state
+    refreshAll();
+
+    // Show return-to-mission CTA if came from mission
+    if (tutorMode === "mission") {
+      setShowMissionReturn(true);
+      return; // Don't reset UI yet — show the CTA
+    }
+
     setStudyStarted(false);
     setCurrentTopic("");
     setMessages([]);
     chatMessages.setActiveConversationId(null);
     setMetricsCollapsed(false);
+  };
+
+  const handleReturnToMission = () => {
+    setShowMissionReturn(false);
+    setStudyStarted(false);
+    setCurrentTopic("");
+    setMessages([]);
+    chatMessages.setActiveConversationId(null);
+    navigate("/dashboard/missao");
   };
 
   const onNewSession = () => {
