@@ -15,11 +15,23 @@ export async function markTaskCompleted(userId: string, task: StudyRecommendatio
   try {
     // 1. Mark review as done
     if (task.type === "review") {
-      await (supabase
-        .from("revisoes")
-        .update({ revisada: true, data_revisao: today } as any)
+      // Find the tema_id from temas_estudados matching the topic
+      const { data: temaRow } = await supabase
+        .from("temas_estudados")
+        .select("id")
         .eq("user_id", userId)
-        .ilike("tema", `%${topic}%`) as any);
+        .ilike("tema", `%${topic}%`)
+        .limit(1)
+        .maybeSingle();
+
+      if (temaRow) {
+        await supabase
+          .from("revisoes")
+          .update({ status: "concluida" as any, concluida_em: now } as any)
+          .eq("user_id", userId)
+          .eq("tema_id", temaRow.id)
+          .eq("status", "pendente");
+      }
     }
 
     // 2. Mark error as dominated
