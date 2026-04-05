@@ -234,36 +234,7 @@ async function writeAuditEvent(
   }
 }
 
-/* ── Atualizar user_missions ── */
-
-async function syncUserMission(payload: StudyActionPayload): Promise<boolean> {
-  if (!payload.missionId || !payload.taskId) return false;
-  try {
-    const { data: mission } = await supabase
-      .from("user_missions")
-      .select("completed_tasks, current_index, current_tasks")
-      .eq("id", payload.missionId)
-      .maybeSingle();
-    if (!mission) return false;
-
-    const completed = Array.isArray(mission.completed_tasks) ? mission.completed_tasks : [];
-    if (completed.includes(payload.taskId)) return true; // already done
-
-    const newCompleted = [...completed, payload.taskId];
-    const tasks = Array.isArray(mission.current_tasks) ? mission.current_tasks : [];
-    const nextIndex = Math.min(mission.current_index + 1, tasks.length);
-    const isFinished = nextIndex >= tasks.length;
-
-    await supabase.from("user_missions").update({
-      completed_tasks: newCompleted as any,
-      current_index: nextIndex,
-      status: isFinished ? "completed" : "active",
-    }).eq("id", payload.missionId);
-    return true;
-  } catch {
-    return false;
-  }
-}
+/* ── user_missions é gerido exclusivamente por useMissionMode ── */
 
 /* ── Serviço principal ── */
 
