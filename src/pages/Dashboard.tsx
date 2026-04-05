@@ -33,6 +33,7 @@ import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import RecoveryModeBanner from "@/components/dashboard/RecoveryModeBanner";
 
+import ResumeMissionBanner from "@/components/dashboard/ResumeMissionBanner";
 import DashboardSummaryCard from "@/components/dashboard/DashboardSummaryCard";
 import PreparationIndexCard from "@/components/dashboard/PreparationIndexCard";
 import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
