@@ -274,13 +274,18 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       .eq("user_id", userId)
       .order("data_estudo", { ascending: false })
       .limit(50), "temas"),
-    safe(() => supabase
-      .from("fsrs_cards")
-      .select("id, card_type, card_ref_id, stability, difficulty, state, due, lapses")
-      .eq("user_id", userId)
-      .lte("due", new Date().toISOString())
-      .order("due", { ascending: true })
-      .limit(30), "fsrs"),
+    // FSRS query — only when flag ON
+    ...(fsrsEnabled ? [
+      safe(() => supabase
+        .from("fsrs_cards")
+        .select("id, card_type, card_ref_id, stability, difficulty, state, due, lapses")
+        .eq("user_id", userId)
+        .lte("due", new Date().toISOString())
+        .order("due", { ascending: true })
+        .limit(30), "fsrs"),
+    ] : [
+      Promise.resolve(null), // placeholder so array indices stay correct
+    ]),
     safe(() => supabase
       .from("mentor_theme_plan_targets")
       .select("plan_id")
