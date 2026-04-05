@@ -56,6 +56,7 @@ const QuestionsBank = () => {
   const { isProfessor } = useProfessorCheck();
   const { toast } = useToast();
   const { addXp } = useGamification();
+  const { invalidateAll } = useDashboardInvalidation();
   const navigate = useNavigate();
   const studyCtx = useStudyContext();
   const [questions, setQuestions] = useState<Question[]>([]);
