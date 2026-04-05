@@ -1,6 +1,6 @@
 /**
  * Persists task completion to the database when user clicks "Já concluí".
- * Handles: revisoes, error_bank, fsrs_cards, and temas_estudados.
+ * Handles: revisoes, error_bank, fsrs_cards, temas_estudados, and daily_plan_tasks.
  */
 import { supabase } from "@/integrations/supabase/client";
 import type { StudyRecommendation } from "@/hooks/useStudyEngine";
@@ -13,9 +13,8 @@ export async function markTaskCompleted(userId: string, task: StudyRecommendatio
   const today = now.slice(0, 10);
 
   try {
-    // 1. Mark review as done
+    // 1. Mark review as done (revisoes table)
     if (task.type === "review") {
-      // Find the tema_id from temas_estudados matching the topic
       const { data: temaRow } = await supabase
         .from("temas_estudados")
         .select("id")
@@ -34,7 +33,7 @@ export async function markTaskCompleted(userId: string, task: StudyRecommendatio
       }
     }
 
-    // 2. Mark error as dominated
+    // 2. Mark error as dominated (error_bank)
     if (task.type === "error_review") {
       await supabase
         .from("error_bank")
@@ -75,6 +74,40 @@ export async function markTaskCompleted(userId: string, task: StudyRecommendatio
       data_estudo: today,
       status: "concluido",
     });
+
+    // 5. Mark matching daily_plan_task as completed (plano semanal sync)
+    const { data: todayPlan } = await supabase
+      .from("daily_plans")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("plan_date", today)
+      .limit(1)
+      .maybeSingle();
+
+    if (todayPlan) {
+      // Find uncompleted task matching topic in today's plan
+      await supabase
+        .from("daily_plan_tasks")
+        .update({ completed: true, completed_at: now } as any)
+        .eq("daily_plan_id", todayPlan.id)
+        .eq("user_id", userId)
+        .eq("completed", false)
+        .ilike("title", `%${topic}%`);
+
+      // Update completed_count on the daily_plan
+      const { count } = await supabase
+        .from("daily_plan_tasks")
+        .select("id", { count: "exact", head: true })
+        .eq("daily_plan_id", todayPlan.id)
+        .eq("completed", true);
+
+      if (count !== null) {
+        await supabase
+          .from("daily_plans")
+          .update({ completed_count: count, updated_at: now } as any)
+          .eq("id", todayPlan.id);
+      }
+    }
   } catch {
     // Fire-and-forget — never block the mission flow
   }

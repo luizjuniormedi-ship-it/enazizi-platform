@@ -33,6 +33,12 @@ export function useRefreshUserState() {
     queryClient.invalidateQueries({ queryKey: ["smart-notifications"] });
     queryClient.invalidateQueries({ queryKey: ["gamification"] });
 
+    // Data tables used by study engine
+    queryClient.invalidateQueries({ queryKey: ["revisoes"] });
+    queryClient.invalidateQueries({ queryKey: ["fsrs-cards"] });
+    queryClient.invalidateQueries({ queryKey: ["error-bank"] });
+    queryClient.invalidateQueries({ queryKey: ["daily-plan-tasks"] });
+
     // Persistent snapshot
     if (user?.id) {
       invalidateDashboardSnapshot(user.id);
