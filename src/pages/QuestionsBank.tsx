@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useDashboardInvalidation } from "@/hooks/useDashboardInvalidation";
 import { isMedicalQuestion } from "@/lib/medicalValidation";
 import MedicalTermHighlighter from "@/components/medical/MedicalTermHighlighter";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
@@ -55,6 +56,7 @@ const QuestionsBank = () => {
   const { isProfessor } = useProfessorCheck();
   const { toast } = useToast();
   const { addXp } = useGamification();
+  const { invalidateAll } = useDashboardInvalidation();
   const navigate = useNavigate();
   const studyCtx = useStudyContext();
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -284,6 +286,7 @@ const QuestionsBank = () => {
     if (practiceIdx + 1 >= filtered.length) {
       setPracticing(false);
       loadStats();
+      invalidateAll();
       // Trigger replenish when practice ends for the active topic
       if (practiceQuestion?.topic) checkAndReplenish(practiceQuestion.topic);
       toast({

@@ -528,6 +528,7 @@ const Simulados = () => {
     }
 
     await completeSession();
+    queryClient.invalidateQueries({ queryKey: ["core-data"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
     queryClient.invalidateQueries({ queryKey: ["study-engine"] });
     queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
