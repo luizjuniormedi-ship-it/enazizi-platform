@@ -108,13 +108,10 @@ export default function MissionMode() {
   useEffect(() => {
     if (state.status !== "idle") {
       if (autostartMission) {
-        navigate("/dashboard/missao", { replace: true });
+        navigate("/mission", { replace: true });
       }
       return;
     }
-
-    if (autostartMission || autostartFired.current) return;
-    navigate("/dashboard", { replace: true });
   }, [state.status, autostartMission, navigate]);
 
   if (state.status === "idle") return null;
