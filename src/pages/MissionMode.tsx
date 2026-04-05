@@ -180,10 +180,7 @@ export default function MissionMode() {
         estimatedMinutes={currentTask.estimatedMinutes}
         reason={focusReason}
         onClose={handleEnd}
-        onComplete={() => {
-          completeCurrentTask("manual");
-          refreshAll();
-        }}
+        onComplete={handleManualComplete}
       >
         <div className="space-y-4">
           <div className="flex items-center gap-2">
