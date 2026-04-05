@@ -1,48 +1,53 @@
 
 
-# Plano: Corrigir atualização de revisões pendentes após execução de tarefas
+# Plano: Corrigir "Já concluí" para atualizar revisões e dashboard
 
-## Problema
-Quando o usuário completa uma revisão ou tarefa de estudo, as revisões pendentes no Dashboard não atualizam porque:
+## Problema identificado
 
-1. **QuestionsBank** (módulo principal de revisão) **nunca invalida nenhum cache** após o usuário responder questões
-2. **Nenhum módulo invalida `core-data`** — que é a fonte de dados do Study Engine. Mesmo invalidando `study-engine`, os dados base continuam stale
-3. O `study-engine` tem `refetchOnWindowFocus: false`, então voltar ao Dashboard não dispara refetch
-4. O `PendingReviewsCard` lê do cache do `study-engine`, que permanece com dados antigos
+Quando o usuário clica **"Já concluí"** na missão, o `completeCurrentTask()` apenas atualiza o estado interno da missão (localStorage + `user_missions`). Ele **NÃO**:
+
+1. Marca a revisão como concluída no banco (`revisoes` / `fsrs_cards`)
+2. Chama `refreshAll()` para invalidar caches
+3. Resultado: o Study Engine continua gerando as mesmas recomendações, o dashboard mostra as mesmas pendências, e ao voltar à tela o assunto reaparece como se nada tivesse sido feito
 
 ## Correção
 
-### 1. QuestionsBank — adicionar invalidação ao concluir sessão
-Em `src/pages/QuestionsBank.tsx`, importar `useDashboardInvalidation` e chamar `invalidateAll()` quando o usuário terminar de responder questões (ao sair da página ou concluir a sessão).
+### 1. `src/hooks/useMissionMode.ts` — Adicionar callback de side-effects após completar tarefa
 
-### 2. Adicionar `core-data` nas invalidações de todos os módulos de estudo
-Nos módulos que já invalidam `dashboard-data` e `study-engine` mas esquecem `core-data`:
-- `src/pages/Flashcards.tsx`
-- `src/pages/ClinicalSimulation.tsx`
-- `src/pages/Simulados.tsx`
-- `src/pages/AnamnesisTrainer.tsx`
-- `src/pages/PracticalExam.tsx`
-- `src/pages/CronogramaInteligente.tsx`
+Após `completeCurrentTask`, disparar:
 
-Adicionar `queryClient.invalidateQueries({ queryKey: ["core-data"] })` junto das invalidações existentes.
+- **Se task.type === "review"**: marcar revisão como concluída no banco (`revisoes` → `revisada = true` ou atualizar `next_review`)
+- **Se task.type === "error_review"**: marcar erro como "dominated" no `error_bank`
+- **Atualizar FSRS card** se existir (registrar review com grade "good")
+- **Chamar `refreshAll()`** para invalidar todos os caches (study-engine, core-data, dashboard-data, mission-mode)
 
-### 3. Habilitar refetch on window focus no Study Engine
-Em `src/hooks/useStudyEngine.ts`, alterar `refetchOnWindowFocus: false` para `refetchOnWindowFocus: true`. Isso garante que ao voltar para a aba do Dashboard, os dados sejam recalculados.
+### 2. Criar helper `src/lib/markTaskCompleted.ts`
 
-### 4. MissionMode — invalidar `core-data` também
-Em `src/pages/MissionMode.tsx`, adicionar `core-data` na função `invalidateDashboard`.
+Função que recebe `userId` + `task` (StudyRecommendation) e executa as escritas no banco:
 
-## Arquivos a alterar
-1. `src/pages/QuestionsBank.tsx` — adicionar `useDashboardInvalidation` + `invalidateAll()`
-2. `src/pages/Flashcards.tsx` — adicionar invalidação de `core-data`
-3. `src/pages/ClinicalSimulation.tsx` — adicionar invalidação de `core-data`
-4. `src/pages/Simulados.tsx` — adicionar invalidação de `core-data`
-5. `src/pages/AnamnesisTrainer.tsx` — adicionar invalidação de `core-data`
-6. `src/pages/PracticalExam.tsx` — adicionar invalidação de `core-data`
-7. `src/pages/CronogramaInteligente.tsx` — adicionar invalidação de `core-data`
-8. `src/pages/MissionMode.tsx` — adicionar `core-data` na invalidação
-9. `src/hooks/useStudyEngine.ts` — `refetchOnWindowFocus: true`
+```
+async function markTaskCompleted(userId, task):
+  - task.type "review" → UPDATE revisoes SET revisada=true WHERE tema ILIKE task.topic
+  - task.type "error_review" → UPDATE error_bank SET status='dominated' WHERE tema ILIKE task.topic
+  - Qualquer tipo → UPDATE fsrs_cards SET last_review=now(), due=now()+interval WHERE card matches topic
+  - Qualquer tipo → INSERT temas_estudados (registro de estudo)
+```
+
+### 3. `src/pages/MissionMode.tsx` — Integrar refreshAll após conclusão
+
+No handler de "Já concluí" e no `completeCurrentTask`, chamar `refreshAll()` após a conclusão para que:
+- `PendingReviewsCard` atualize imediatamente (consome `useStudyEngine`)
+- Dashboard reflita progresso real
+- Ao voltar à tela da missão, o assunto NÃO reapareça
 
 ## O que NÃO muda
-- Study Engine, PendingReviewsCard, MissionEntry, rotas, banco de dados
+- Study Engine (lógica de recomendação)
+- Estrutura das tabelas
+- Fluxo de navegação
+- Metodologia do Tutor IA
+
+## Arquivos afetados
+1. **Criar**: `src/lib/markTaskCompleted.ts`
+2. **Editar**: `src/hooks/useMissionMode.ts` (chamar markTaskCompleted + refreshAll)
+3. **Editar**: `src/pages/MissionMode.tsx` (garantir refreshAll no onComplete)
 
