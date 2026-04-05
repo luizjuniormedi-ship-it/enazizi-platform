@@ -252,6 +252,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       .select("id, tema_id, data_revisao, status, prioridade, risco_esquecimento, temas_estudados(tema, especialidade)")
       .eq("user_id", userId)
       .eq("status", "pendente")
+      .lte("data_revisao", new Date().toISOString().slice(0, 10))
       .order("prioridade", { ascending: false })
       .limit(20), "revisoes"),
     safe(() => supabase
