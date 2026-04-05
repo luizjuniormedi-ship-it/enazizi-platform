@@ -1,70 +1,34 @@
 
 
-# Correção Cirúrgica: 4 Bugs da Rota /mission
+# Plano: Corrigir IVAS reaparecendo após "Já concluí"
 
-## Arquivos alterados
-1. `src/lib/completeStudyAction.ts`
-2. `src/hooks/useMissionMode.ts` (mínimo)
-3. `src/pages/MissionMode.tsx`
+## Diagnóstico
 
----
+**Causa raiz**: Dois componentes discordam sobre quais revisões são válidas.
 
-## Bug 1 — Revisões nunca marcadas como concluídas
+1. **Study Engine** (`src/lib/studyEngine.ts` linha 250-256): busca `revisoes` com `status = 'pendente'` **sem filtro de data**. Depois, nas linhas 555-584, recomenda TODAS as revisões pendentes (incluindo futuras como IVAS em 2026-04-07).
 
-**Causa**: `markReviewDone()` busca em `temas_estudados` por `.ilike("tema")`, encontra qualquer row (inclusive recém-inserida), e tenta atualizar `revisoes` por `tema_id` — mas essa row pode não ter revisões pendentes.
+2. **`markReviewDone`** (`src/lib/completeStudyAction.ts` linha 79): filtra `.lte("data_revisao", today)` — só encontra revisões de hoje ou passadas. Como a próxima revisão de IVAS é 2026-04-07 (futuro), o update afeta 0 linhas. Resultado: IVAS volta como pendente na próxima missão.
 
-**Correção em `completeStudyAction.ts`**:
+**Dados reais do banco para IVAS**:
+- 2026-04-01: concluida
+- 2026-04-03: concluida  
+- 2026-04-07: **pendente** (futuro)
+- 2026-04-15: pendente (futuro)
+- 2026-04-30: pendente (futuro)
 
-Reescrever `markReviewDone()`:
-1. Buscar IDs de `temas_estudados` que casam com o tópico: `SELECT id FROM temas_estudados WHERE user_id = X AND tema ILIKE '%topic%'`
-2. Com esses IDs, buscar em `revisoes` WHERE `tema_id IN (ids)` AND `status = 'pendente'` AND `data_revisao <= hoje`, ORDER BY `data_revisao ASC`, LIMIT 1
-3. Atualizar essa revisão específica por `id`
-4. Verificar se `error` é null E se a query realmente afetou uma linha. Se não encontrou revisão pendente, retornar `null` (falha real)
+## Correção (2 arquivos)
 
----
+### 1. `src/lib/studyEngine.ts` — Filtrar revisões futuras
 
-## Bug 2 — Race condition em `user_missions`
+Na query de revisões (linha 250-256), adicionar `.lte("data_revisao", today)` para não recomendar revisões que ainda não venceram.
 
-**Causa**: `syncUserMission()` no serviço central e `upsertMissionDB()` no hook competem pela escrita.
+Isso garante que o engine só recomende revisões que o usuário realmente precisa fazer hoje.
 
-**Correção**:
-- Remover a função `syncUserMission()` inteira de `completeStudyAction.ts`
-- Remover a chamada na linha 312
-- `missionUpdated` passa a ser sempre `false` (missão é gerida exclusivamente pelo hook `useMissionMode`)
-- Nenhuma alteração no hook — ele já é a fonte única correta
+### 2. `src/lib/completeStudyAction.ts` — Fallback para revisão futura
 
----
-
-## Bug 3 — Duplicação em `temas_estudados`
-
-**Causa**: `registerTemaEstudado()` faz INSERT cego.
-
-**Correção**: Antes do INSERT, verificar existência:
-```
-SELECT id FROM temas_estudados 
-WHERE user_id = X AND tema = topic AND data_estudo = today
-LIMIT 1
-```
-Se já existir, retornar `"temas_estudados"` sem inserir. Se não existir, inserir normalmente.
-
----
-
-## Bug 4 — Feedback falso positivo
-
-**Correção em `completeStudyAction.ts`**:
-- Para `taskType = "review"`: se `tablesUpdated` não contém `"revisoes"` após a execução, adicionar erro explícito: `"revisoes: nenhuma revisão pendente encontrada"`
-- Para `taskType = "error_review"`: se não contém `"error_bank"`, adicionar erro similar
-- `success` continua sendo `errors.length === 0` — agora será `false` quando nada real mudou
-
-**Correção em `MissionMode.tsx`**:
-- Tornar `handleManualComplete` async
-- Aguardar retorno de `completeStudyAction` (requer que `completeCurrentTask` retorne a Promise)
-- Alternativa mais simples: manter toast como está, pois o Bug 1 sendo corrigido resolve o problema na raiz (revisões passarão a ser marcadas de verdade)
-
-Abordagem escolhida: **manter toast simples** — a correção do Bug 1 elimina o falso positivo na prática. O toast já serve como feedback de progressão da missão (que funciona corretamente via estado local + debounce DB).
-
----
+Se o usuário conseguir clicar "Já concluí" em uma revisão sem correspondência hoje (edge case), remover o filtro `.lte("data_revisao", today)` e marcar a próxima revisão pendente independente da data. Isso serve como safety net.
 
 ## O que NÃO muda
-- Study Engine, rotas, navegação, Tutor IA, estrutura de tabelas, RLS
+- Estrutura de tabelas, rotas, RLS, Tutor IA, useMissionMode
 
