@@ -1,33 +1,39 @@
 
-# Plano: Criar MissionEntry — Entrada Pós-Login para Missão
 
-## Resumo
-Criar uma página `/mission` que aparece após o login (controlada por feature flag `mission_entry_enabled`), mostrando a missão do dia com dados reais e um CTA para começar. O Dashboard continua intacto.
+# Plano: Corrigir Redirect Pós-Login para MissionEntry
 
-## Mudanças
+## Problema
+O redirect do Dashboard para `/mission` não funciona porque:
+1. O `useEffect` não aguarda as flags carregarem — durante loading, `isEnabled("mission_entry_enabled")` retorna `false` (safe default)
+2. Se o usuário já visitou na mesma aba, `sessionStorage` já tem a chave e bloqueia o redirect
 
-### 1. Migration — nova flag
-Inserir `mission_entry_enabled` (desabilitada por padrão) na tabela `system_flags`.
+## Correção
 
-### 2. `src/hooks/useFeatureFlags.ts`
-- Adicionar `"mission_entry_enabled"` ao tipo `FlagKey`
-- Adicionar ao `SAFE_DEFAULTS` com valor `false`
+### `src/pages/Dashboard.tsx`
+- Adicionar `loading` do `useFeatureFlags` nas dependências
+- Só avaliar o redirect **depois** que as flags carregarem (`if (loading) return`)
+- Manter o resto da lógica igual
 
-### 3. `src/pages/MissionEntry.tsx` (novo)
-- Usa `useDashboardData` para dados reais (revisões, questões, streak, accuracy)
-- Se flag desativada → redirect para `/dashboard`
-- Mostra: nome do aluno, stats rápidos, tarefas do dia, explicação, botão "COMEÇAR MISSÃO"
-- Link secundário "Ir para dashboard"
-- Marca `sessionStorage` para não redirecionar em loop
+```typescript
+const { isEnabled, loading: flagsLoading } = useFeatureFlags();
 
-### 4. `src/App.tsx`
-- Adicionar lazy import do `MissionEntry`
-- Adicionar rota `/mission` dentro de `ProtectedRoute` (sem `DashboardLayout`, é tela cheia)
-
-### 5. `src/pages/Dashboard.tsx`
-- No início do componente, checar: se flag `mission_entry_enabled` ativa E `sessionStorage` não tem `enazizi_mission_entry_seen` → redirect para `/mission`
-- Isso garante que o primeiro acesso pós-login vai para MissionEntry
+useEffect(() => {
+  if (flagsLoading) return; // esperar flags carregarem
+  const SESSION_KEY = "enazizi_mission_entry_seen";
+  if (isEnabled("mission_entry_enabled") && !sessionStorage.getItem(SESSION_KEY)) {
+    sessionStorage.setItem(SESSION_KEY, "true");
+    navigate("/mission", { replace: true });
+  }
+}, [flagsLoading, isEnabled, navigate]);
+```
 
 ## O que NÃO muda
-- Dashboard, Study Engine, navegação lateral, banco de dados (além da flag)
-- Flag começa desativada = zero impacto até admin ativar
+- MissionEntry.tsx (já está correto)
+- Rota `/mission` no App.tsx
+- Feature flag no banco (já está enabled)
+- Nenhum outro componente
+
+## Resultado
+- Login → Dashboard carrega → flags carregam → redirect para `/mission`
+- Após visitar MissionEntry, volta ao Dashboard sem loop
+
