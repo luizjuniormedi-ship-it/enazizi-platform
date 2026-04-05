@@ -46,6 +46,13 @@ export interface StudyActionResult {
   errors: string[];
 }
 
+export interface StudyActionFullResult extends StudyActionResult {
+  missionUpdated: boolean;
+  dashboardRefreshRequired: boolean;
+  weeklyPlanRecalculated: boolean;
+  auditEventId: string | null;
+}
+
 /* ── Helpers internos ── */
 
 async function markReviewDone(userId: string, topic: string, now: string): Promise<string | null> {
@@ -166,9 +173,71 @@ async function logTelemetry(payload: StudyActionPayload, tablesUpdated: string[]
   }
 }
 
+/* ── Auditoria ── */
+
+async function writeAuditEvent(
+  payload: StudyActionPayload,
+  tablesUpdated: string[],
+  status: "success" | "error",
+): Promise<string | null> {
+  try {
+    const { data } = await supabase.from("study_action_events" as any).insert({
+      user_id: payload.userId,
+      mission_id: payload.missionId || null,
+      task_id: payload.taskId || null,
+      task_type: payload.taskType,
+      source: payload.source,
+      origin_module: payload.originModule,
+      affected_table: tablesUpdated.join(",") || null,
+      status,
+      payload_json: {
+        topic: payload.topic,
+        subtopic: payload.subtopic,
+        specialty: payload.specialty,
+        metadata: payload.metadata,
+        tablesUpdated,
+      },
+    } as any).select("id").single();
+    return (data as any)?.id || null;
+  } catch {
+    return null;
+  }
+}
+
+/* ── Atualizar user_missions ── */
+
+async function syncUserMission(payload: StudyActionPayload): Promise<boolean> {
+  if (!payload.missionId || !payload.taskId) return false;
+  try {
+    const { data: mission } = await supabase
+      .from("user_missions")
+      .select("completed_tasks, current_index, current_tasks")
+      .eq("id", payload.missionId)
+      .maybeSingle();
+    if (!mission) return false;
+
+    const completed = Array.isArray(mission.completed_tasks) ? mission.completed_tasks : [];
+    if (completed.includes(payload.taskId)) return true; // already done
+
+    const newCompleted = [...completed, payload.taskId];
+    const tasks = Array.isArray(mission.current_tasks) ? mission.current_tasks : [];
+    const nextIndex = Math.min(mission.current_index + 1, tasks.length);
+    const isFinished = nextIndex >= tasks.length;
+
+    await supabase.from("user_missions").update({
+      completed_tasks: newCompleted as any,
+      current_index: nextIndex,
+      status: isFinished ? "completed" : "active",
+    }).eq("id", payload.missionId);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /* ── Serviço principal ── */
 
-export async function completeStudyAction(payload: StudyActionPayload): Promise<StudyActionResult> {
+export async function completeStudyAction(payload: StudyActionPayload): Promise<StudyActionFullResult> {
   const { userId, taskType, topic, source, specialty } = payload;
   const now = new Date().toISOString();
   const today = now.slice(0, 10);
@@ -229,9 +298,23 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
   // 4. Telemetria (fire-and-forget)
   logTelemetry(payload, tablesUpdated, errors);
 
+  // 5. Auditoria persistente
+  const auditEventId = await writeAuditEvent(
+    payload,
+    tablesUpdated,
+    errors.length === 0 ? "success" : "error",
+  );
+
+  // 6. Sincronizar user_missions (se missionId fornecido)
+  const missionUpdated = await syncUserMission(payload);
+
   return {
     success: errors.length === 0,
     tablesUpdated,
     errors,
+    missionUpdated,
+    dashboardRefreshRequired: true,
+    weeklyPlanRecalculated: tablesUpdated.includes("daily_plan_tasks"),
+    auditEventId,
   };
 }
