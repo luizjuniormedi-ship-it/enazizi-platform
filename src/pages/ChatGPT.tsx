@@ -494,7 +494,7 @@ const ChatGPT = () => {
     setCurrentTopic("");
     setMessages([]);
     chatMessages.setActiveConversationId(null);
-    navigate("/dashboard/missao");
+    navigate("/mission");
   };
 
   const onNewSession = () => {

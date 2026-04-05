@@ -140,7 +140,7 @@ const App = () => (
                 <Route path="feynman" element={<Navigate to="/dashboard/chatgpt" replace />} />
                 <Route path="mentor" element={<AIMentor />} />
                 <Route path="planner" element={<SmartPlanner />} />
-                <Route path="missao" element={<MissionMode />} />
+                <Route path="missao" element={<Navigate to="/mission" replace />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="perfil" element={<Profile />} />
                 <Route path="sessao-estudo" element={<StudySession />} />
@@ -159,7 +159,25 @@ const App = () => (
               <Route path="/institucional" element={<InstitutionalRoute><DashboardLayout /></InstitutionalRoute>}>
                 <Route index element={<InstitutionalDashboard />} />
               </Route>
-              <Route path="/mission" element={<ProtectedRoute><MissionEntry /></ProtectedRoute>} />
+              <Route path="/mission" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                <Route index element={<MissionMode />} />
+              </Route>
+              {/* Study execution aliases */}
+              <Route path="/study/tutor" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                <Route index element={<ChatGPT />} />
+              </Route>
+              <Route path="/study/flashcards" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                <Route index element={<Flashcards />} />
+              </Route>
+              <Route path="/study/simulado" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                <Route index element={<Simulados />} />
+              </Route>
+              <Route path="/study/clinical" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                <Route index element={<ClinicalSimulation />} />
+              </Route>
+              <Route path="/study/anamnese" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                <Route index element={<AnamnesisTrainer />} />
+              </Route>
               <Route path="/install" element={<Install />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="*" element={<NotFound />} />

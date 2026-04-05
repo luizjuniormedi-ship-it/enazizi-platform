@@ -31,7 +31,7 @@ export default function MissionStartButton() {
     autostartFired.current = true;
     startMission();
     setSearchParams({}, { replace: true });
-    navigate("/dashboard/missao");
+    navigate("/mission");
   }, [searchParams, engineLoading, hasTasks, state.status, startMission, setSearchParams]);
 
   // Active or paused — show resume card
@@ -58,7 +58,7 @@ export default function MissionStartButton() {
             size="lg"
             onClick={() => {
               if (state.status === "paused") resumeMission();
-              navigate("/dashboard/missao");
+              navigate("/mission");
             }}
           >
             <ArrowRight className="h-5 w-5" />
@@ -72,7 +72,7 @@ export default function MissionStartButton() {
   const handleStart = () => {
     safeCta({
       action: () => { startMission(); },
-      nextStep: "/dashboard/missao",
+      nextStep: "/mission",
       errorMessage: "Não foi possível iniciar a sessão. Tente novamente em alguns segundos.",
     });
   };

@@ -11,7 +11,9 @@ export function useMissionLock() {
 
   const isMissionRoute =
     location.pathname === "/dashboard/missao" ||
-    location.pathname.startsWith("/dashboard/missao/");
+    location.pathname.startsWith("/dashboard/missao/") ||
+    location.pathname === "/mission" ||
+    location.pathname.startsWith("/study/");
 
   const isInMissionFlow =
     state.status === "active" || state.status === "paused";

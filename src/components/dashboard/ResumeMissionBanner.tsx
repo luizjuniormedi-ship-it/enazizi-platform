@@ -33,7 +33,7 @@ export default function ResumeMissionBanner() {
       <Button
         className="w-full gap-2 h-12 text-base font-bold"
         size="lg"
-        onClick={() => navigate("/dashboard/missao")}
+        onClick={() => navigate("/mission")}
       >
         <ArrowRight className="h-5 w-5" />
         RETOMAR MISSÃO

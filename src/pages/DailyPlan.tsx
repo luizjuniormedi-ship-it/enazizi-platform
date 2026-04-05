@@ -577,7 +577,7 @@ const DailyPlan = () => {
           </div>
           <Button
             className="w-full gap-2 font-semibold"
-            onClick={() => { startMission(); navigate("/dashboard/missao"); }}
+            onClick={() => { startMission(); navigate("/mission"); }}
           >
             <Play className="h-4 w-4" /> INICIAR MISSÃO DO DIA
           </Button>

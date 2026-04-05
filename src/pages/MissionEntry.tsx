@@ -49,7 +49,7 @@ export default function MissionEntry() {
   const missionStarted = (stats?.todayCompleted ?? 0) > 0;
 
   const handleStart = () => {
-    navigate("/dashboard/missao?autostart=mission");
+    navigate("/mission?autostart=mission");
   };
 
   return (
