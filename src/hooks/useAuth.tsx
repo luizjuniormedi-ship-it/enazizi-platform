@@ -35,6 +35,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Track login count for feedback survey (no reload - React state handles UI update)
       if (event === "SIGNED_IN") {
+        // Mark fresh login for MissionEntry redirect
+        localStorage.setItem("enazizi_last_login_ts", String(Date.now()));
+
         const uid = session?.user?.id;
         if (uid) {
           const key = `enazizi_login_count_${uid}`;

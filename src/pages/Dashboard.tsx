@@ -92,12 +92,16 @@ const Dashboard = () => {
   const prevLevelRef = useRef<number | null>(null);
   const prevStreakRef = useRef<number | null>(null);
 
-  // Redirect to MissionEntry on first visit if flag enabled
+  // Redirect to MissionEntry on fresh login if flag enabled
   useEffect(() => {
-    if (flagsLoading) return; // esperar flags carregarem
-    const SESSION_KEY = "enazizi_mission_entry_seen";
-    if (isEnabled("mission_entry_enabled") && !sessionStorage.getItem(SESSION_KEY)) {
-      sessionStorage.setItem(SESSION_KEY, "true");
+    if (flagsLoading) return;
+    if (!isEnabled("mission_entry_enabled")) return;
+    const loginTs = localStorage.getItem("enazizi_last_login_ts");
+    if (!loginTs) return;
+    const elapsed = Date.now() - Number(loginTs);
+    // Only redirect if login happened < 15 seconds ago (fresh login)
+    if (elapsed < 15_000) {
+      localStorage.removeItem("enazizi_last_login_ts");
       navigate("/mission", { replace: true });
     }
   }, [flagsLoading, isEnabled, navigate]);
