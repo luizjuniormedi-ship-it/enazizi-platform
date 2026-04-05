@@ -47,6 +47,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             !!createdAt && Date.now() - new Date(createdAt).getTime() > 24 * 60 * 60 * 1000;
           const nextCount = isLegacyUser ? Math.max(prev + 1, 3) : prev + 1;
           localStorage.setItem(key, String(nextCount));
+
+          // Log login activity
+          import("@/lib/activityLogger").then(({ logActivity }) => {
+            logActivity(uid, "login");
+          });
         }
 
         // Update PWA service worker in background (no reload)
