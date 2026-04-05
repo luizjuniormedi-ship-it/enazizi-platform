@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRefreshUserState } from "@/hooks/useRefreshUserState";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useMissionMode } from "@/hooks/useMissionMode";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
