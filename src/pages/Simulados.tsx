@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRefreshUserState } from "@/hooks/useRefreshUserState";
+import { completeStudyAction } from "@/lib/completeStudyAction";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
 import { NON_MEDICAL_CONTENT_REGEX } from "@/lib/medicalValidation";
@@ -530,6 +531,16 @@ const Simulados = () => {
     }
 
     await completeSession();
+    if (user?.id) {
+      const topicsSummary = questions.map(q => q.topic).filter(Boolean).join(", ").slice(0, 100) || "Simulado";
+      await completeStudyAction({
+        userId: user.id,
+        taskType: "simulado",
+        topic: topicsSummary,
+        source: "auto",
+        originModule: "simulados",
+      });
+    }
     refreshAll();
     setPhase("finished");
   // eslint-disable-next-line react-hooks/exhaustive-deps

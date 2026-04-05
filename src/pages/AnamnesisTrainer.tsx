@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRefreshUserState } from "@/hooks/useRefreshUserState";
+import { completeStudyAction } from "@/lib/completeStudyAction";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
@@ -550,6 +551,15 @@ const AnamnesisTrainer = () => {
       }
 
       await completeSession();
+      if (user?.id) {
+        await completeStudyAction({
+          userId: user.id,
+          taskType: "anamnesis",
+          topic: specialty || "Anamnese",
+          source: "auto",
+          originModule: "anamnesis",
+        });
+      }
       refreshAll();
       setPhase("result");
     } catch (e: any) {

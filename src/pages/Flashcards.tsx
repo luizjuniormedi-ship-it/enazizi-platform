@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRefreshUserState } from "@/hooks/useRefreshUserState";
+import { completeStudyAction } from "@/lib/completeStudyAction";
 import { isMedicalContent } from "@/lib/medicalValidation";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
@@ -271,6 +272,15 @@ const Flashcards = () => {
   const handleFinish = (stats: { correct: number; wrong: number; skipped: number }) => {
     clearInterval(sprintTimerRef.current);
     setSessionStats(stats);
+    if (user?.id) {
+      completeStudyAction({
+        userId: user.id,
+        taskType: "flashcard",
+        topic: topicSearch || "Flashcards",
+        source: "auto",
+        originModule: "flashcards",
+      });
+    }
     refreshAll();
     setPhase("finished");
   };

@@ -3,6 +3,7 @@ import { useStudyEngine, type StudyRecommendation } from "./useStudyEngine";
 import { useAuth } from "./useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { markTaskCompleted } from "@/lib/markTaskCompleted";
+import { completeStudyAction, type StudyActionType } from "@/lib/completeStudyAction";
 
 export type MissionStatus = "idle" | "active" | "paused" | "completed";
 
@@ -204,7 +205,17 @@ export function useMissionMode() {
 
       // Persist to DB (fire-and-forget)
       if (user?.id) {
-        markTaskCompleted(user.id, task);
+        completeStudyAction({
+          userId: user.id,
+          missionId: prev.dbId,
+          taskId: task.id,
+          taskType: (task.type || "content") as StudyActionType,
+          topic: task.topic || "",
+          subtopic: task.subtopic,
+          specialty: (task as any).specialty,
+          source,
+          originModule: "mission",
+        });
 
         import("@/lib/activityLogger").then(({ logActivity }) => {
           logActivity(user.id, "task_completed", {

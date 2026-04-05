@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { Trash2, ArrowRight } from "lucide-react";
 import { useSessionMemory } from "@/contexts/SessionMemoryContext";
+import { completeStudyAction } from "@/lib/completeStudyAction";
 import { useRefreshUserState } from "@/hooks/useRefreshUserState";
 import { Button } from "@/components/ui/button";
 
@@ -462,6 +463,15 @@ const ChatGPT = () => {
     }
 
     // Refresh global state
+    if (user?.id && currentTopic) {
+      await completeStudyAction({
+        userId: user.id,
+        taskType: tutorOrigin === "error_review" ? "error_review" : "tutor",
+        topic: currentTopic,
+        source: "auto",
+        originModule: "chatgpt",
+      });
+    }
     refreshAll();
 
     // Show return-to-mission CTA if came from mission

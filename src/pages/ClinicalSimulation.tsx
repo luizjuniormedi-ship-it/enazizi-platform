@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRefreshUserState } from "@/hooks/useRefreshUserState";
+import { completeStudyAction } from "@/lib/completeStudyAction";
 import { createPortal } from "react-dom";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useStudyContext } from "@/lib/studyContext";
@@ -1086,6 +1087,15 @@ const ClinicalSimulation = () => {
       setPhase("result");
       await completePersistedSession();
       await addXp(XP_REWARDS.plantao_completed);
+      if (user?.id) {
+        await completeStudyAction({
+          userId: user.id,
+          taskType: "clinical",
+          topic: specialty || "Simulação Clínica",
+          source: "auto",
+          originModule: "clinical-simulation",
+        });
+      }
       refreshAll();
       await saveSimulationToHistory(res);
 

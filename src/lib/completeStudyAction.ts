@@ -1,0 +1,237 @@
+/**
+ * Protocolo central de conclusão de ações de estudo — ENAZIZI
+ *
+ * Toda conclusão de estudo (manual ou automática) deve passar por aqui.
+ * Responsabilidades:
+ *  1. Persistir conclusão na tabela correta
+ *  2. Atualizar user_missions
+ *  3. Sincronizar daily_plan_tasks
+ *  4. Registrar telemetria
+ *  5. Disparar refreshAll (via callback)
+ */
+import { supabase } from "@/integrations/supabase/client";
+
+/* ── Mapa central de tipos ── */
+export type StudyActionType =
+  | "review"
+  | "error_review"
+  | "flashcard"
+  | "content"
+  | "daily_plan"
+  | "tutor"
+  | "question"
+  | "simulado"
+  | "clinical"
+  | "anamnesis"
+  | "practical"
+  | "new"
+  | "practice";
+
+export interface StudyActionPayload {
+  userId: string;
+  missionId?: string | null;
+  taskId?: string;
+  taskType: StudyActionType;
+  topic: string;
+  subtopic?: string;
+  specialty?: string;
+  source: "auto" | "manual";
+  originModule: string;
+  metadata?: Record<string, any>;
+}
+
+export interface StudyActionResult {
+  success: boolean;
+  tablesUpdated: string[];
+  errors: string[];
+}
+
+/* ── Helpers internos ── */
+
+async function markReviewDone(userId: string, topic: string, now: string): Promise<string | null> {
+  const { data: temaRow } = await supabase
+    .from("temas_estudados")
+    .select("id")
+    .eq("user_id", userId)
+    .ilike("tema", `%${topic}%`)
+    .limit(1)
+    .maybeSingle();
+
+  if (temaRow) {
+    await supabase
+      .from("revisoes")
+      .update({ status: "concluida" as any, concluida_em: now } as any)
+      .eq("user_id", userId)
+      .eq("tema_id", temaRow.id)
+      .eq("status", "pendente");
+    return "revisoes";
+  }
+  return null;
+}
+
+async function markErrorDominated(userId: string, topic: string, now: string): Promise<string | null> {
+  const { error } = await supabase
+    .from("error_bank")
+    .update({ dominado: true, dominado_em: now })
+    .eq("user_id", userId)
+    .ilike("tema", `%${topic}%`)
+    .eq("dominado", false);
+  return error ? null : "error_bank";
+}
+
+async function updateFsrsCard(userId: string, topic: string, now: string): Promise<string | null> {
+  const { data: card } = await supabase
+    .from("fsrs_cards")
+    .select("id, stability, scheduled_days")
+    .eq("user_id", userId)
+    .eq("card_type", "tema")
+    .ilike("card_ref_id", `%${topic}%`)
+    .limit(1)
+    .maybeSingle();
+
+  if (card) {
+    const nextDays = Math.max(1, Math.round((card.stability || 1) * 2.5));
+    const nextDue = new Date(Date.now() + nextDays * 86400_000).toISOString();
+    await supabase.from("fsrs_cards").update({
+      last_review: now,
+      due: nextDue,
+      scheduled_days: nextDays,
+      elapsed_days: 0,
+    }).eq("id", card.id);
+    return "fsrs_cards";
+  }
+  return null;
+}
+
+async function registerTemaEstudado(userId: string, topic: string, specialty: string, source: string, today: string): Promise<string | null> {
+  const { error } = await supabase.from("temas_estudados").insert({
+    user_id: userId,
+    tema: topic,
+    especialidade: specialty,
+    fonte: `mission_${source}`,
+    data_estudo: today,
+    status: "concluido",
+  });
+  return error ? null : "temas_estudados";
+}
+
+async function syncDailyPlan(userId: string, topic: string, now: string, today: string): Promise<string | null> {
+  const { data: todayPlan } = await supabase
+    .from("daily_plans")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("plan_date", today)
+    .limit(1)
+    .maybeSingle();
+
+  if (!todayPlan) return null;
+
+  await supabase
+    .from("daily_plan_tasks")
+    .update({ completed: true, completed_at: now } as any)
+    .eq("daily_plan_id", todayPlan.id)
+    .eq("user_id", userId)
+    .eq("completed", false)
+    .ilike("title", `%${topic}%`);
+
+  const { count } = await supabase
+    .from("daily_plan_tasks")
+    .select("id", { count: "exact", head: true })
+    .eq("daily_plan_id", todayPlan.id)
+    .eq("completed", true);
+
+  if (count !== null) {
+    await supabase
+      .from("daily_plans")
+      .update({ completed_count: count, updated_at: now } as any)
+      .eq("id", todayPlan.id);
+  }
+  return "daily_plan_tasks";
+}
+
+async function logTelemetry(payload: StudyActionPayload, tablesUpdated: string[], errors: string[]) {
+  try {
+    const { logActivity } = await import("@/lib/activityLogger");
+    await logActivity(payload.userId, "study_action_completed", {
+      taskId: payload.taskId,
+      taskType: payload.taskType,
+      topic: payload.topic,
+      source: payload.source,
+      originModule: payload.originModule,
+      tablesUpdated,
+      errors: errors.length > 0 ? errors : undefined,
+    });
+  } catch {
+    // telemetry never blocks
+  }
+}
+
+/* ── Serviço principal ── */
+
+export async function completeStudyAction(payload: StudyActionPayload): Promise<StudyActionResult> {
+  const { userId, taskType, topic, source, specialty } = payload;
+  const now = new Date().toISOString();
+  const today = now.slice(0, 10);
+  const tablesUpdated: string[] = [];
+  const errors: string[] = [];
+
+  const safe = async (fn: () => Promise<string | null>, label: string) => {
+    try {
+      const result = await fn();
+      if (result) tablesUpdated.push(result);
+    } catch (e: any) {
+      errors.push(`${label}: ${e?.message || "unknown"}`);
+    }
+  };
+
+  // 1. Persistir na tabela correta por tipo
+  switch (taskType) {
+    case "review":
+      await safe(() => markReviewDone(userId, topic, now), "revisoes");
+      await safe(() => updateFsrsCard(userId, topic, now), "fsrs");
+      break;
+    case "error_review":
+      await safe(() => markErrorDominated(userId, topic, now), "error_bank");
+      await safe(() => updateFsrsCard(userId, topic, now), "fsrs");
+      break;
+    case "flashcard":
+      await safe(() => updateFsrsCard(userId, topic, now), "fsrs");
+      break;
+    case "content":
+    case "new":
+    case "tutor":
+      // Content/new/tutor — register study
+      break;
+    case "question":
+    case "simulado":
+    case "practice":
+      // Performance already persisted by modules themselves
+      break;
+    case "clinical":
+    case "anamnesis":
+    case "practical":
+      // Sessions already persisted by modules
+      break;
+    case "daily_plan":
+      // Only sync daily plan below
+      break;
+  }
+
+  // 2. Sempre registrar tema estudado
+  await safe(
+    () => registerTemaEstudado(userId, topic, specialty || "Geral", source, today),
+    "temas_estudados"
+  );
+
+  // 3. Sempre sincronizar daily plan
+  await safe(() => syncDailyPlan(userId, topic, now, today), "daily_plan");
+
+  // 4. Telemetria (fire-and-forget)
+  logTelemetry(payload, tablesUpdated, errors);
+
+  return {
+    success: errors.length === 0,
+    tablesUpdated,
+    errors,
+  };
+}
