@@ -179,6 +179,7 @@ async function writeAuditEvent(
   payload: StudyActionPayload,
   tablesUpdated: string[],
   status: "success" | "error",
+  errorMessages: string[] = [],
 ): Promise<string | null> {
   try {
     const { data } = await supabase.from("study_action_events" as any).insert({
@@ -188,11 +189,12 @@ async function writeAuditEvent(
       task_type: payload.taskType,
       source: payload.source,
       origin_module: payload.originModule,
+      topic: payload.topic || null,
+      subtopic: payload.subtopic || null,
       affected_table: tablesUpdated.join(",") || null,
       status,
+      error_message: status === "error" ? (errorMessages?.join("; ") || null) : null,
       payload_json: {
-        topic: payload.topic,
-        subtopic: payload.subtopic,
         specialty: payload.specialty,
         metadata: payload.metadata,
         tablesUpdated,
@@ -303,6 +305,7 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
     payload,
     tablesUpdated,
     errors.length === 0 ? "success" : "error",
+    errors,
   );
 
   // 6. Sincronizar user_missions (se missionId fornecido)

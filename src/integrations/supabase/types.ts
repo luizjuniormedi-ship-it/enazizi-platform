@@ -4221,42 +4221,51 @@ export type Database = {
           affected_record_id: string | null
           affected_table: string | null
           created_at: string
+          error_message: string | null
           id: string
           mission_id: string | null
           origin_module: string
           payload_json: Json | null
           source: string
           status: string
+          subtopic: string | null
           task_id: string | null
           task_type: string
+          topic: string | null
           user_id: string
         }
         Insert: {
           affected_record_id?: string | null
           affected_table?: string | null
           created_at?: string
+          error_message?: string | null
           id?: string
           mission_id?: string | null
           origin_module: string
           payload_json?: Json | null
           source?: string
           status?: string
+          subtopic?: string | null
           task_id?: string | null
           task_type: string
+          topic?: string | null
           user_id: string
         }
         Update: {
           affected_record_id?: string | null
           affected_table?: string | null
           created_at?: string
+          error_message?: string | null
           id?: string
           mission_id?: string | null
           origin_module?: string
           payload_json?: Json | null
           source?: string
           status?: string
+          subtopic?: string | null
           task_id?: string | null
           task_type?: string
+          topic?: string | null
           user_id?: string
         }
         Relationships: []
