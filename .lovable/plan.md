@@ -1,41 +1,33 @@
+
 # Plano: Criar MissionEntry — Entrada Pós-Login para Missão
 
-## O que será feito
+## Resumo
+Criar uma página `/mission` que aparece após o login (controlada por feature flag `mission_entry_enabled`), mostrando a missão do dia com dados reais e um CTA para começar. O Dashboard continua intacto.
 
-### 1. Nova feature flag no banco
-- Inserir `mission_entry_enabled` na tabela `system_flags` (desabilitada por padrão)
-- Adicionar ao tipo `FlagKey` em `useFeatureFlags.ts` com default `false`
+## Mudanças
 
-### 2. Criar página `src/pages/MissionEntry.tsx`
-- Componente conforme especificado pelo usuário
-- Mostra missão do dia com dados reais do `useDashboardData`
-- Botão principal "COMEÇAR MISSÃO" → `/dashboard/missao`
-- Link "Ir para dashboard" como fallback
-- Se flag desativada → redireciona para `/dashboard`
-- Se sem dados → redireciona para `/dashboard`
+### 1. Migration — nova flag
+Inserir `mission_entry_enabled` (desabilitada por padrão) na tabela `system_flags`.
 
-### 3. Registrar rota em `App.tsx`
-- Adicionar rota `/mission` como lazy-loaded dentro do `ProtectedRoute`
-- Não altera rotas existentes
+### 2. `src/hooks/useFeatureFlags.ts`
+- Adicionar `"mission_entry_enabled"` ao tipo `FlagKey`
+- Adicionar ao `SAFE_DEFAULTS` com valor `false`
 
-### 4. Redirecionar pós-login para MissionEntry
-- No `ProtectedRoute.tsx`, após todas as verificações de perfil/onboarding passarem:
-  - Se flag `mission_entry_enabled` ativa E rota atual é `/dashboard` (index) E não veio de navegação interna → redirecionar para `/mission`
-  - Usar sessionStorage flag para evitar loop (só redireciona 1x por sessão)
+### 3. `src/pages/MissionEntry.tsx` (novo)
+- Usa `useDashboardData` para dados reais (revisões, questões, streak, accuracy)
+- Se flag desativada → redirect para `/dashboard`
+- Mostra: nome do aluno, stats rápidos, tarefas do dia, explicação, botão "COMEÇAR MISSÃO"
+- Link secundário "Ir para dashboard"
+- Marca `sessionStorage` para não redirecionar em loop
 
-## Arquivos alterados
+### 4. `src/App.tsx`
+- Adicionar lazy import do `MissionEntry`
+- Adicionar rota `/mission` dentro de `ProtectedRoute` (sem `DashboardLayout`, é tela cheia)
 
-| Arquivo | Mudança |
-|---|---|
-| `src/hooks/useFeatureFlags.ts` | Adicionar `mission_entry_enabled` ao `FlagKey` e `SAFE_DEFAULTS` |
-| `src/pages/MissionEntry.tsx` | **Novo** — página completa |
-| `src/App.tsx` | Adicionar rota `/mission` com lazy load |
-| `src/pages/Dashboard.tsx` | Adicionar redirect condicional no início se flag ativa e primeira visita da sessão |
-| **Migration SQL** | Inserir flag `mission_entry_enabled` |
+### 5. `src/pages/Dashboard.tsx`
+- No início do componente, checar: se flag `mission_entry_enabled` ativa E `sessionStorage` não tem `enazizi_mission_entry_seen` → redirect para `/mission`
+- Isso garante que o primeiro acesso pós-login vai para MissionEntry
 
 ## O que NÃO muda
-- Dashboard continua funcionando normalmente
-- Study Engine intocado
-- Navegação lateral intocada
-- Qualquer módulo existente
-- Se flag desligada = zero impacto
+- Dashboard, Study Engine, navegação lateral, banco de dados (além da flag)
+- Flag começa desativada = zero impacto até admin ativar
