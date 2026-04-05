@@ -112,6 +112,7 @@ export interface EngineResult {
 interface EngineInput {
   userId: string;
   coreData?: CoreDataResult;
+  recoveryEnabled?: boolean; // feature flag — false = skip DB persistence
 }
 
 function id(prefix: string, idx: number) {
