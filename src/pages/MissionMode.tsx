@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useMissionMode } from "@/hooks/useMissionMode";
@@ -44,7 +44,10 @@ export default function MissionMode() {
   const { data: prepIndex } = usePreparationIndex();
   const { data: coreData } = useCoreData();
 
-  const manualFocusTotal = new URLSearchParams(location.search).get("focus") === "total";
+  const searchParams = new URLSearchParams(location.search);
+  const manualFocusTotal = searchParams.get("focus") === "total";
+  const autostartMission = searchParams.get("autostart") === "mission";
+  const autostartFired = useRef(false);
 
   const invalidateDashboard = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
@@ -55,6 +58,7 @@ export default function MissionMode() {
   const {
     state, currentTask, nextTask, progress,
     totalMinutes, completedMinutes,
+    engineLoading, hasTasks, startMission,
     completeCurrentTask, skipCurrentTask,
     pauseMission, resumeMission, endMission,
   } = useMissionMode();
@@ -76,8 +80,30 @@ export default function MissionMode() {
   }, [user, adaptive, manualFocusTotal]);
 
   useEffect(() => {
-    if (state.status === "idle") navigate("/dashboard", { replace: true });
-  }, [state.status, navigate]);
+    if (autostartMission && state.status !== "idle") {
+      navigate("/dashboard/missao", { replace: true });
+    }
+  }, [autostartMission, state.status, navigate]);
+
+  useEffect(() => {
+    if (state.status !== "idle") return;
+
+    if (autostartMission) {
+      if (autostartFired.current || engineLoading) return;
+      autostartFired.current = true;
+
+      if (hasTasks) {
+        startMission();
+        navigate("/dashboard/missao", { replace: true });
+        return;
+      }
+
+      navigate("/dashboard", { replace: true });
+      return;
+    }
+
+    navigate("/dashboard", { replace: true });
+  }, [state.status, autostartMission, engineLoading, hasTasks, startMission, navigate]);
 
   if (state.status === "idle") return null;
 
