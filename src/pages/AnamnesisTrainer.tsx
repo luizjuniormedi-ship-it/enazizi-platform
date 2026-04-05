@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRefreshUserState } from "@/hooks/useRefreshUserState";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
@@ -233,6 +234,7 @@ const AnamnesisTrainer = () => {
   const { toast } = useToast();
   const { addXp } = useGamification();
   const queryClient = useQueryClient();
+  const { refreshAll } = useRefreshUserState();
   const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
   const studyCtx = useStudyContext();
@@ -547,9 +549,7 @@ const AnamnesisTrainer = () => {
       }
 
       await completeSession();
-      queryClient.invalidateQueries({ queryKey: ["core-data"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
-      queryClient.invalidateQueries({ queryKey: ["study-engine"] });
+      refreshAll();
       setPhase("result");
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });

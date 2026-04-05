@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRefreshUserState } from "@/hooks/useRefreshUserState";
 import { isMedicalContent } from "@/lib/medicalValidation";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
@@ -39,6 +40,7 @@ interface FsrsReviewState {
 const Flashcards = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { refreshAll } = useRefreshUserState();
   const studyCtx = useStudyContext();
   const [allCards, setAllCards] = useState<FlashcardItem[]>([]);
   const [dueCards, setDueCards] = useState<FlashcardItem[]>([]);
@@ -268,9 +270,7 @@ const Flashcards = () => {
   const handleFinish = (stats: { correct: number; wrong: number; skipped: number }) => {
     clearInterval(sprintTimerRef.current);
     setSessionStats(stats);
-    queryClient.invalidateQueries({ queryKey: ["core-data"] });
-    queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
-    queryClient.invalidateQueries({ queryKey: ["study-engine"] });
+    refreshAll();
     setPhase("finished");
   };
 
@@ -346,7 +346,7 @@ const Flashcards = () => {
           )}
           <div className="flex gap-2 justify-center">
             <Button onClick={() => { setPhase("setup"); }}>Nova Sessão</Button>
-            <Button variant="outline" onClick={() => { queryClient.invalidateQueries({ queryKey: ["dashboard-data"] }); navigate("/dashboard"); }}>Voltar ao Dashboard</Button>
+            <Button variant="outline" onClick={() => { refreshAll(); navigate("/dashboard"); }}>Voltar ao Dashboard</Button>
           </div>
         </div>
       </div>

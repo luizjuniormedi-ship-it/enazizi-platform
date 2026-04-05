@@ -2,36 +2,24 @@ import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./useAuth";
 import { invalidateDashboardSnapshot } from "@/lib/dashboardSnapshot";
+import { useRefreshUserState } from "./useRefreshUserState";
 
 /**
  * Shared hook for invalidating all dashboard-related caches.
- * Use after any user action that changes study data (reviews, questions, simulados, etc.)
+ * `invalidateAll` now delegates to the central `useRefreshUserState` hook
+ * so every study module gets the same comprehensive cache bust.
  */
 export function useDashboardInvalidation() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { refreshAll } = useRefreshUserState();
 
+  /** Full invalidation — use after any study action */
   const invalidateAll = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["core-data"] });
-    queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
-    queryClient.invalidateQueries({ queryKey: ["study-engine"] });
-    queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
-    queryClient.invalidateQueries({ queryKey: ["weekly-goals"] });
-    queryClient.invalidateQueries({ queryKey: ["mission-mode"] });
+    refreshAll();
+  }, [refreshAll]);
 
-    // Invalidate persistent snapshot so next dashboard load does full recompute
-    if (user?.id) {
-      invalidateDashboardSnapshot(user.id);
-    }
-
-    // Trigger async snapshot rebuild via edge function (fire-and-forget)
-    import("@/integrations/supabase/client").then(({ supabase }) => {
-      supabase.functions.invoke("dashboard-snapshot", {
-        body: { action: "update" },
-      }).catch(() => {});
-    });
-  }, [queryClient, user?.id]);
-
+  /** Lighter invalidation — dashboard-only */
   const invalidateDashboard = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
     if (user?.id) {

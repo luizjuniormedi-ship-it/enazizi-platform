@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRefreshUserState } from "@/hooks/useRefreshUserState";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useMissionMode } from "@/hooks/useMissionMode";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
@@ -38,6 +39,7 @@ export default function MissionMode() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+  const { refreshAll } = useRefreshUserState();
   const { user } = useAuth();
   const { adaptive } = useStudyEngine();
   const { data: examReadiness } = useExamReadiness();
@@ -50,11 +52,8 @@ export default function MissionMode() {
   const autostartFired = useRef(false);
 
   const invalidateDashboard = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["core-data"] });
-    queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
-    queryClient.invalidateQueries({ queryKey: ["study-engine"] });
-    queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
-  }, [queryClient]);
+    refreshAll();
+  }, [refreshAll]);
 
   const {
     state, currentTask, nextTask, progress,
