@@ -53,6 +53,7 @@ const SmartPlanner = () => {
   const navigate = useNavigate();
   const { isEnabled } = useFeatureFlags();
   const plannerV2 = isEnabled("new_planner_enabled");
+  const chanceByExamEnabled = isEnabled("new_chance_by_exam_enabled");
   const [temas, setTemas] = useState<TemaEstudado[]>([]);
   const [revisoes, setRevisoes] = useState<Revisao[]>([]);
   const [desempenhos, setDesempenhos] = useState<Desempenho[]>([]);
