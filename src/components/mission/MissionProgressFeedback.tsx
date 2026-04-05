@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Activity, Clock } from "lucide-react";
+import { Activity, Clock, TrendingUp } from "lucide-react";
+import ProgressDelta from "@/components/study/ProgressDelta";
 import type { StudyRecommendation } from "@/hooks/useStudyEngine";
 
 interface Props {
@@ -20,7 +21,6 @@ function getMotivationalMessage(pct: number): string {
 }
 
 export default function MissionProgressFeedback({ tasks, completedIds, progress, completedMinutes, totalMinutes }: Props) {
-  // Group by type
   const byType: Record<string, { done: number; total: number }> = {};
   for (const t of tasks) {
     if (!byType[t.type]) byType[t.type] = { done: 0, total: 0 };
@@ -33,6 +33,8 @@ export default function MissionProgressFeedback({ tasks, completedIds, progress,
     clinical: "Clínicos", new: "Novos", simulado: "Simulados",
   };
 
+  const remaining = tasks.length - completedIds.length;
+
   return (
     <Card className="rounded-xl">
       <CardContent className="p-4 space-y-3">
@@ -42,7 +44,7 @@ export default function MissionProgressFeedback({ tasks, completedIds, progress,
         </h3>
 
         <div>
-          <Progress value={progress} className="h-2.5" />
+          <Progress value={progress} className="h-2.5 transition-all duration-500" />
           <div className="flex justify-between mt-1">
             <span className="text-[10px] text-muted-foreground">{progress}% concluído</span>
             <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
@@ -62,6 +64,13 @@ export default function MissionProgressFeedback({ tasks, completedIds, progress,
             </div>
           ))}
         </div>
+
+        {remaining > 0 && completedIds.length > 0 && (
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <TrendingUp className="h-3 w-3 text-primary" />
+            Faltam {remaining} tarefa{remaining > 1 ? "s" : ""} para concluir hoje
+          </p>
+        )}
 
         <p className="text-xs text-muted-foreground italic">
           {getMotivationalMessage(progress)}

@@ -2,12 +2,23 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle, ArrowRight, RotateCcw } from "lucide-react";
+import ProgressDelta from "./ProgressDelta";
+
+interface DeltaItem {
+  label: string;
+  before: number;
+  after: number;
+  direction?: "less" | "more";
+  suffix?: string;
+}
 
 interface TaskCompletionCardProps {
   title?: string;
   subtitle?: string;
   /** Extra stats to show above the CTA */
   children?: React.ReactNode;
+  /** Delta items to show progress change */
+  deltas?: DeltaItem[];
   /** Label for the secondary action (e.g. "Novo Simulado") */
   secondaryLabel?: string;
   /** Callback for the secondary action */
@@ -21,6 +32,7 @@ export default function TaskCompletionCard({
   title = "Tarefa concluída!",
   subtitle = "Seu progresso já foi atualizado. Vamos para a próxima etapa da missão.",
   children,
+  deltas,
   secondaryLabel,
   onSecondary,
   tertiaryLabel,
@@ -41,7 +53,13 @@ export default function TaskCompletionCard({
           </div>
         </div>
 
+        {deltas && deltas.length > 0 && <ProgressDelta items={deltas} />}
+
         {children}
+
+        <p className="text-xs text-center text-muted-foreground italic">
+          Sua missão foi atualizada com base no seu desempenho
+        </p>
 
         <Button
           onClick={() => navigate("/dashboard/missao")}
