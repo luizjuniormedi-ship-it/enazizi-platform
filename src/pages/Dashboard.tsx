@@ -9,6 +9,7 @@ const EXAM_LABELS: Record<string, string> = {
 };
 
 import { useEffect, useRef, lazy, Suspense, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +42,7 @@ import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useMessageDelivery } from "@/hooks/useMessageDelivery";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useCoreData } from "@/hooks/useCoreData";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { fireCelebration } from "@/lib/celebrations";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -80,13 +82,24 @@ type SectionKey = "desempenho" | "cronograma" | "streak" | "simulados" | null;
 
 const Dashboard = () => {
   useRevisionNotifier();
-const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { evaluateAndDeliver } = useMessageDelivery();
+  const { isEnabled } = useFeatureFlags();
   useCoreData(); // preload shared data layer
   const { data, isLoading } = useDashboardData();
   const prevLevelRef = useRef<number | null>(null);
   const prevStreakRef = useRef<number | null>(null);
+
+  // Redirect to MissionEntry on first visit if flag enabled
+  useEffect(() => {
+    const SESSION_KEY = "enazizi_mission_entry_seen";
+    if (isEnabled("mission_entry_enabled") && !sessionStorage.getItem(SESSION_KEY)) {
+      sessionStorage.setItem(SESSION_KEY, "true");
+      navigate("/mission", { replace: true });
+    }
+  }, [isEnabled, navigate]);
   const [openSection, setOpenSection] = useState<SectionKey>(null);
   const isMobile = useIsMobile();
 
