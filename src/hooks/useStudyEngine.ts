@@ -28,7 +28,7 @@ export const useStudyEngine = () => {
     enabled: !!user && !!coreData,
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
   });
 
   // Unwrap EngineResult so consumers get the same array API
