@@ -140,7 +140,7 @@ const App = () => (
                 <Route path="feynman" element={<Navigate to="/dashboard/chatgpt" replace />} />
                 <Route path="mentor" element={<AIMentor />} />
                 <Route path="planner" element={<SmartPlanner />} />
-                <Route path="missao" element={<MissionMode />} />
+                <Route path="missao" element={<Navigate to="/mission" replace />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="perfil" element={<Profile />} />
                 <Route path="sessao-estudo" element={<StudySession />} />
