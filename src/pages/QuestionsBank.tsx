@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { useDashboardInvalidation } from "@/hooks/useDashboardInvalidation";
 import { isMedicalQuestion } from "@/lib/medicalValidation";
 import MedicalTermHighlighter from "@/components/medical/MedicalTermHighlighter";
