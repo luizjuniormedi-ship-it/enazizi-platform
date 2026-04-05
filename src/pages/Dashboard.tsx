@@ -9,6 +9,7 @@ const EXAM_LABELS: Record<string, string> = {
 };
 
 import { useEffect, useRef, lazy, Suspense, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
