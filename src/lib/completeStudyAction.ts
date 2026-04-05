@@ -56,24 +56,40 @@ export interface StudyActionFullResult extends StudyActionResult {
 /* ── Helpers internos ── */
 
 async function markReviewDone(userId: string, topic: string, now: string): Promise<string | null> {
-  const { data: temaRow } = await supabase
+  const today = now.slice(0, 10);
+
+  // Step 1: find all temas_estudados IDs matching topic
+  const { data: temaRows } = await supabase
     .from("temas_estudados")
     .select("id")
     .eq("user_id", userId)
-    .ilike("tema", `%${topic}%`)
+    .ilike("tema", `%${topic}%`);
+
+  if (!temaRows || temaRows.length === 0) return null;
+
+  const temaIds = temaRows.map(r => r.id);
+
+  // Step 2: find oldest pending revision linked to those temas
+  const { data: pendingReview } = await supabase
+    .from("revisoes")
+    .select("id")
+    .eq("user_id", userId)
+    .in("tema_id", temaIds)
+    .eq("status", "pendente")
+    .lte("data_revisao", today)
+    .order("data_revisao", { ascending: true })
     .limit(1)
     .maybeSingle();
 
-  if (temaRow) {
-    await supabase
-      .from("revisoes")
-      .update({ status: "concluida" as any, concluida_em: now } as any)
-      .eq("user_id", userId)
-      .eq("tema_id", temaRow.id)
-      .eq("status", "pendente");
-    return "revisoes";
-  }
-  return null;
+  if (!pendingReview) return null;
+
+  // Step 3: update that specific revision
+  const { error } = await supabase
+    .from("revisoes")
+    .update({ status: "concluida" as any, concluida_em: now } as any)
+    .eq("id", pendingReview.id);
+
+  return error ? null : "revisoes";
 }
 
 async function markErrorDominated(userId: string, topic: string, now: string): Promise<string | null> {
@@ -111,6 +127,18 @@ async function updateFsrsCard(userId: string, topic: string, now: string): Promi
 }
 
 async function registerTemaEstudado(userId: string, topic: string, specialty: string, source: string, today: string): Promise<string | null> {
+  // Dedup: check if already registered today
+  const { data: existing } = await supabase
+    .from("temas_estudados")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("tema", topic)
+    .eq("data_estudo", today)
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) return "temas_estudados";
+
   const { error } = await supabase.from("temas_estudados").insert({
     user_id: userId,
     tema: topic,
@@ -206,36 +234,7 @@ async function writeAuditEvent(
   }
 }
 
-/* ── Atualizar user_missions ── */
-
-async function syncUserMission(payload: StudyActionPayload): Promise<boolean> {
-  if (!payload.missionId || !payload.taskId) return false;
-  try {
-    const { data: mission } = await supabase
-      .from("user_missions")
-      .select("completed_tasks, current_index, current_tasks")
-      .eq("id", payload.missionId)
-      .maybeSingle();
-    if (!mission) return false;
-
-    const completed = Array.isArray(mission.completed_tasks) ? mission.completed_tasks : [];
-    if (completed.includes(payload.taskId)) return true; // already done
-
-    const newCompleted = [...completed, payload.taskId];
-    const tasks = Array.isArray(mission.current_tasks) ? mission.current_tasks : [];
-    const nextIndex = Math.min(mission.current_index + 1, tasks.length);
-    const isFinished = nextIndex >= tasks.length;
-
-    await supabase.from("user_missions").update({
-      completed_tasks: newCompleted as any,
-      current_index: nextIndex,
-      status: isFinished ? "completed" : "active",
-    }).eq("id", payload.missionId);
-    return true;
-  } catch {
-    return false;
-  }
-}
+/* ── user_missions é gerido exclusivamente por useMissionMode ── */
 
 /* ── Serviço principal ── */
 
@@ -297,10 +296,18 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
   // 3. Sempre sincronizar daily plan
   await safe(() => syncDailyPlan(userId, topic, now, today), "daily_plan");
 
-  // 4. Telemetria (fire-and-forget)
+  // 4. Validação de falso positivo — Bug 4
+  if (taskType === "review" && !tablesUpdated.includes("revisoes")) {
+    errors.push("revisoes: nenhuma revisão pendente encontrada");
+  }
+  if (taskType === "error_review" && !tablesUpdated.includes("error_bank")) {
+    errors.push("error_bank: nenhum erro pendente encontrado");
+  }
+
+  // 5. Telemetria (fire-and-forget)
   logTelemetry(payload, tablesUpdated, errors);
 
-  // 5. Auditoria persistente
+  // 6. Auditoria persistente
   const auditEventId = await writeAuditEvent(
     payload,
     tablesUpdated,
@@ -308,14 +315,11 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
     errors,
   );
 
-  // 6. Sincronizar user_missions (se missionId fornecido)
-  const missionUpdated = await syncUserMission(payload);
-
   return {
     success: errors.length === 0,
     tablesUpdated,
     errors,
-    missionUpdated,
+    missionUpdated: false,
     dashboardRefreshRequired: true,
     weeklyPlanRecalculated: tablesUpdated.includes("daily_plan_tasks"),
     auditEventId,

@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useStudyEngine, type StudyRecommendation } from "./useStudyEngine";
 import { useAuth } from "./useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { markTaskCompleted } from "@/lib/markTaskCompleted";
 import { completeStudyAction, type StudyActionType } from "@/lib/completeStudyAction";
 
 export type MissionStatus = "idle" | "active" | "paused" | "completed";
