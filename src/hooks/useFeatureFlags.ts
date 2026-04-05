@@ -13,7 +13,8 @@ export type FlagKey =
   | "new_dashboard_snapshot_enabled"
   | "new_recovery_enabled"
   | "new_fsrs_flow_enabled"
-  | "new_chance_by_exam_enabled";
+  | "new_chance_by_exam_enabled"
+  | "mission_entry_enabled";
 
 export interface SystemFlag {
   flag_key: string;
