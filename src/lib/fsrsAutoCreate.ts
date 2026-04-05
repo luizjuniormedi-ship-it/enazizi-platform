@@ -8,8 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
 export function ensureFsrsCard(
   userId: string,
   cardType: string,
-  cardRefId: string
+  cardRefId: string,
+  /** When false, skip card creation (flag new_fsrs_flow_enabled=OFF) */
+  enabled: boolean = true
 ): void {
+  if (!enabled) return;
   (async () => {
     try {
       await supabase.from("fsrs_cards").insert({
