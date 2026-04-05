@@ -344,11 +344,12 @@ const Flashcards = () => {
           {total > 0 && (
             <p className="text-sm text-muted-foreground">Taxa de acerto: {rate}%</p>
           )}
-          <div className="flex gap-2 justify-center">
-            <Button onClick={() => { setPhase("setup"); }}>Nova Sessão</Button>
-            <Button variant="outline" onClick={() => { refreshAll(); navigate("/dashboard"); }}>Voltar ao Dashboard</Button>
-          </div>
         </div>
+        <TaskCompletionCard
+          title="Revisão concluída!"
+          secondaryLabel="Nova Sessão"
+          onSecondary={() => setPhase("setup")}
+        />
       </div>
     );
   }
