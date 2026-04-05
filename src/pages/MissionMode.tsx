@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useMissionMode } from "@/hooks/useMissionMode";
@@ -44,7 +44,10 @@ export default function MissionMode() {
   const { data: prepIndex } = usePreparationIndex();
   const { data: coreData } = useCoreData();
 
-  const manualFocusTotal = new URLSearchParams(location.search).get("focus") === "total";
+  const searchParams = new URLSearchParams(location.search);
+  const manualFocusTotal = searchParams.get("focus") === "total";
+  const autostartMission = searchParams.get("autostart") === "mission";
+  const autostartFired = useRef(false);
 
   const invalidateDashboard = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
@@ -55,6 +58,7 @@ export default function MissionMode() {
   const {
     state, currentTask, nextTask, progress,
     totalMinutes, completedMinutes,
+    engineLoading, hasTasks, startMission,
     completeCurrentTask, skipCurrentTask,
     pauseMission, resumeMission, endMission,
   } = useMissionMode();
@@ -76,8 +80,29 @@ export default function MissionMode() {
   }, [user, adaptive, manualFocusTotal]);
 
   useEffect(() => {
-    if (state.status === "idle") navigate("/dashboard", { replace: true });
-  }, [state.status, navigate]);
+    if (!autostartMission || autostartFired.current || state.status !== "idle") return;
+    if (engineLoading) return;
+
+    if (!hasTasks) {
+      navigate("/dashboard", { replace: true });
+      return;
+    }
+
+    autostartFired.current = true;
+    startMission();
+  }, [autostartMission, state.status, engineLoading, hasTasks, startMission, navigate]);
+
+  useEffect(() => {
+    if (state.status !== "idle") {
+      if (autostartMission) {
+        navigate("/dashboard/missao", { replace: true });
+      }
+      return;
+    }
+
+    if (autostartMission || autostartFired.current) return;
+    navigate("/dashboard", { replace: true });
+  }, [state.status, autostartMission, navigate]);
 
   if (state.status === "idle") return null;
 
