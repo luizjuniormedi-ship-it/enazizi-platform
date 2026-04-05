@@ -286,6 +286,7 @@ const QuestionsBank = () => {
     if (practiceIdx + 1 >= filtered.length) {
       setPracticing(false);
       loadStats();
+      invalidateAll();
       // Trigger replenish when practice ends for the active topic
       if (practiceQuestion?.topic) checkAndReplenish(practiceQuestion.topic);
       toast({
