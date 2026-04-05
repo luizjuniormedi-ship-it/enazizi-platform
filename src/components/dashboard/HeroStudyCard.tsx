@@ -114,7 +114,7 @@ export default function HeroStudyCard() {
               size="lg"
               onClick={() => {
                 if (isMissionPaused) resumeMission();
-                navigate("/dashboard/missao");
+                navigate("/mission");
               }}
             >
               <ArrowRight className="h-5 w-5" />
