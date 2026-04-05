@@ -93,7 +93,7 @@ export default function SmartAlertCard() {
               size="sm"
               variant="outline"
               className="shrink-0 text-xs gap-1 h-10 px-3"
-              onClick={() => navigate("/dashboard/missao")}
+              onClick={() => navigate("/mission")}
             >
               Estudar <ArrowRight className="h-3.5 w-3.5" />
             </Button>
