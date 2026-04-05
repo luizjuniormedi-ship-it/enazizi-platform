@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useMissionMode } from "@/hooks/useMissionMode";
 import { Button } from "@/components/ui/button";
 import { Rocket, Target, Flame, Brain, BookOpen, ArrowRight } from "lucide-react";
 
