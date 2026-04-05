@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useStudyEngine, type StudyRecommendation } from "./useStudyEngine";
 import { useAuth } from "./useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { markTaskCompleted } from "@/lib/markTaskCompleted";
 
 export type MissionStatus = "idle" | "active" | "paused" | "completed";
 
@@ -201,7 +202,10 @@ export function useMissionMode() {
       const nextIdx = prev.currentIndex + 1;
       const isFinished = nextIdx >= prev.tasks.length;
 
+      // Persist to DB (fire-and-forget)
       if (user?.id) {
+        markTaskCompleted(user.id, task);
+
         import("@/lib/activityLogger").then(({ logActivity }) => {
           logActivity(user.id, "task_completed", {
             taskId: task.id, type: task.type, topic: task.topic, source,

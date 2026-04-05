@@ -168,7 +168,10 @@ export default function MissionMode() {
         estimatedMinutes={currentTask.estimatedMinutes}
         reason={focusReason}
         onClose={handleEnd}
-        onComplete={completeCurrentTask}
+        onComplete={() => {
+          completeCurrentTask("manual");
+          refreshAll();
+        }}
       >
         <div className="space-y-4">
           <div className="flex items-center gap-2">
@@ -259,7 +262,10 @@ export default function MissionMode() {
             {currentTask && (
               <MissionTaskActions
                 task={currentTask}
-                onComplete={completeCurrentTask}
+                onComplete={() => {
+                  completeCurrentTask("manual");
+                  refreshAll();
+                }}
                 onSkip={skipCurrentTask}
               />
             )}
