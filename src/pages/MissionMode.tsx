@@ -107,7 +107,6 @@ export default function MissionMode() {
 
   if (state.status === "idle") return null;
 
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const handleEnd = () => { setShowExitConfirm(true); };
   const confirmEnd = () => { invalidateDashboard(); endMission(); navigate("/dashboard"); };
   const cancelEnd = () => { setShowExitConfirm(false); };
