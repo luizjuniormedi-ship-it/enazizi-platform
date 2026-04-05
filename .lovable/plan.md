@@ -1,30 +1,24 @@
 
-# Plano: Corrigir botão "COMEÇAR MISSÃO" na MissionEntry
+# Plano: Corrigir botão MissionEntry para abrir Dashboard com missão ativa
 
 ## Problema
-O botão "COMEÇAR MISSÃO" na MissionEntry navega para `/dashboard/missao`, mas a página MissionMode (linha 79) redireciona imediatamente de volta para `/dashboard` quando `state.status === "idle"` — ou seja, a missão não foi iniciada antes da navegação.
+O botão "COMEÇAR MISSÃO" na MissionEntry chama `startMission()` e navega para `/dashboard`. Porém, `startMission()` depende de `recommendations` do `useStudyEngine()`, que pode ainda não ter carregado no contexto da MissionEntry — resultando em `tasks.length === 0` e retorno silencioso (linha 73). O usuário chega ao Dashboard com missão `idle`, sem o painel de missão ativo.
 
 ## Solução
-Alterar `MissionEntry.tsx` para importar `useMissionMode` e chamar `startMission()` antes de navegar, igual ao que `MissionStartButton` já faz.
+Alterar `handleStart` na MissionEntry para aguardar as recomendações antes de iniciar, ou navegar para o Dashboard e deixar o `MissionStartButton` do Dashboard lidar com o início (já que lá o hook tem os dados carregados).
 
-## Arquivo a alterar
+A abordagem mais robusta: em vez de tentar `startMission()` na MissionEntry (onde os dados podem não estar prontos), apenas navegar para `/dashboard` com um query param `?autostart=mission`. No Dashboard, o `MissionStartButton` detecta esse param e dispara `startMission()` automaticamente quando as recomendações estiverem prontas.
 
-**`src/pages/MissionEntry.tsx`**:
-1. Importar `useMissionMode`
-2. Extrair `state`, `startMission`, `resumeMission` do hook
-3. Alterar `handleStart`:
-   - Se `state.status === "active" || "paused"` → `resumeMission()` se pausado, depois navegar
-   - Se `state.status === "idle"` → `startMission()` e depois navegar para `/dashboard/missao`
+## Arquivos a alterar
 
-```tsx
-const { state, startMission, resumeMission } = useMissionMode();
+### 1. `src/pages/MissionEntry.tsx`
+- Simplificar `handleStart`: remover chamadas a `startMission`/`resumeMission`
+- Navegar para `/dashboard?autostart=mission`
 
-const handleStart = () => {
-  if (state.status === "paused") resumeMission();
-  if (state.status === "idle") startMission();
-  navigate("/dashboard/missao");
-};
-```
+### 2. `src/components/dashboard/MissionStartButton.tsx`
+- Ler query param `autostart=mission`
+- Quando presente e `state.status === "idle"` e `hasTasks` e não `engineLoading`: chamar `startMission()` automaticamente e limpar o param
+- Isso garante que o start só acontece quando os dados estão prontos
 
 ## O que NÃO muda
-- MissionMode.tsx, rotas, Dashboard, Study Engine
+- `useMissionMode.ts`, `MissionMode.tsx`, rotas, Study Engine
