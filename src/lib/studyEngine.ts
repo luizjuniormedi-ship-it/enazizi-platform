@@ -216,7 +216,7 @@ function buildFocusReason(weights: PlanWeights, overdueCount: number, lockStatus
 }
 
 // ── main engine ────────────────────────────────────────────────
-export async function generateRecommendations({ userId, coreData }: EngineInput): Promise<EngineResult> {
+export async function generateRecommendations({ userId, coreData, recoveryEnabled = true }: EngineInput): Promise<EngineResult> {
  try {
   const recs: StudyRecommendation[] = [];
   const cd = coreData; // optional pre-fetched data from useCoreData
