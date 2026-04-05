@@ -37,6 +37,10 @@ export function buildStudyPath(
   const ctx = buildStudyContext(rec, source);
   const params = encodeStudyContext(ctx);
 
+  // Mission context — allows module to report back completion
+  if (rec.id) params.set("sc_task_id", rec.id);
+  params.set("sc_origin", source);
+
   // Legacy compat params
   params.set("origin", "guided");
   if (rec.topic) params.set("topic", rec.topic);

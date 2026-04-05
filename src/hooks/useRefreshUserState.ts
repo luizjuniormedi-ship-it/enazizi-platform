@@ -38,12 +38,50 @@ export function useRefreshUserState() {
       invalidateDashboardSnapshot(user.id);
     }
 
-    // Async snapshot rebuild (fire-and-forget)
-    import("@/integrations/supabase/client").then(({ supabase }) => {
-      supabase.functions.invoke("dashboard-snapshot", {
-        body: { action: "update" },
-      }).catch(() => {});
-    });
+    // Async snapshot rebuild + weekly snapshot (fire-and-forget)
+    if (user?.id) {
+      const uid = user.id;
+      import("@/integrations/supabase/client").then(({ supabase }) => {
+        supabase.functions.invoke("dashboard-snapshot", {
+          body: { action: "update" },
+        }).catch(() => {});
+      });
+
+      // Save weekly snapshot periodically (non-blocking)
+      import("@/lib/weeklySnapshot").then(({ saveWeeklySnapshot }) => {
+        // Only save if we haven't saved in the last hour
+        const lastSave = localStorage.getItem("enazizi_weekly_snap_ts");
+        if (lastSave && Date.now() - Number(lastSave) < 3600_000) return;
+        localStorage.setItem("enazizi_weekly_snap_ts", String(Date.now()));
+
+        import("@/integrations/supabase/client").then(({ supabase }) => {
+          supabase.from("daily_plans")
+            .select("plan_json, completed_blocks, completed_count, total_blocks, approval_score, prep_index")
+            .eq("user_id", uid)
+            .order("plan_date", { ascending: false })
+            .limit(7)
+            .then(({ data: plans }) => {
+              if (!plans?.length) return;
+              const planned = plans.flatMap(p => {
+                const j = p.plan_json as any;
+                return Array.isArray(j) ? j : [];
+              });
+              const completed = plans.flatMap(p => {
+                const c = p.completed_blocks as any;
+                return Array.isArray(c) ? c : [];
+              });
+              const latest = plans[0];
+              saveWeeklySnapshot(uid, {
+                plannedTasks: planned,
+                completedTasks: completed,
+                carryover: [],
+                approvalScore: latest.approval_score ?? undefined,
+                prepIndex: latest.prep_index ?? undefined,
+              });
+            });
+        });
+      });
+    }
   }, [queryClient, user?.id]);
 
   return { refreshAll };

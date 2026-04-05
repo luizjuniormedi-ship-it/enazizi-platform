@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useStudyEngine, type StudyRecommendation } from "./useStudyEngine";
 import { useAuth } from "./useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,53 +10,156 @@ export interface MissionState {
   tasks: StudyRecommendation[];
   currentIndex: number;
   completedIds: string[];
+  completionSources: Record<string, "auto" | "manual">;
   startedAt: string | null;
   pausedAt: string | null;
+  dbId: string | null; // user_missions row id
 }
 
 const STORAGE_KEY = "enazizi-mission-state";
+const IDLE_STATE: MissionState = {
+  status: "idle",
+  tasks: [],
+  currentIndex: 0,
+  completedIds: [],
+  completionSources: {},
+  startedAt: null,
+  pausedAt: null,
+  dbId: null,
+};
 
-function loadPersistedState(): MissionState | null {
+/* ── localStorage fallback ── */
+function loadLocal(): MissionState | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const state = JSON.parse(raw) as MissionState;
-    // Expire after 24h
-    if (state.startedAt) {
-      const elapsed = Date.now() - new Date(state.startedAt).getTime();
-      if (elapsed > 24 * 60 * 60 * 1000) return null;
+    const s = JSON.parse(raw) as MissionState;
+    if (s.startedAt && Date.now() - new Date(s.startedAt).getTime() > 24 * 3600_000) return null;
+    return { ...s, completionSources: s.completionSources || {}, dbId: s.dbId || null };
+  } catch { return null; }
+}
+
+function saveLocal(s: MissionState) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
+}
+
+/* ── DB helpers (fire-and-forget with error swallow) ── */
+async function upsertMissionDB(userId: string, state: MissionState): Promise<string | null> {
+  try {
+    if (state.dbId) {
+      await supabase.from("user_missions").update({
+        current_tasks: state.tasks as any,
+        completed_tasks: state.completedIds as any,
+        current_index: state.currentIndex,
+        status: state.status === "idle" ? "completed" : state.status,
+        completion_sources: state.completionSources as any,
+        started_at: state.startedAt || new Date().toISOString(),
+      }).eq("id", state.dbId);
+      return state.dbId;
     }
-    return state;
+    // Insert new
+    const { data } = await supabase.from("user_missions").insert({
+      user_id: userId,
+      current_tasks: state.tasks as any,
+      completed_tasks: state.completedIds as any,
+      current_index: state.currentIndex,
+      status: state.status === "idle" ? "active" : state.status,
+      completion_sources: state.completionSources as any,
+      started_at: state.startedAt || new Date().toISOString(),
+    }).select("id").single();
+    return data?.id || null;
+  } catch {
+    return state.dbId;
+  }
+}
+
+async function loadMissionDB(userId: string): Promise<MissionState | null> {
+  try {
+    const { data } = await supabase
+      .from("user_missions")
+      .select("*")
+      .eq("user_id", userId)
+      .in("status", ["active", "paused"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!data) return null;
+
+    // Expire after 24h
+    const elapsed = Date.now() - new Date(data.started_at).getTime();
+    if (elapsed > 24 * 3600_000) {
+      await supabase.from("user_missions").update({ status: "completed" }).eq("id", data.id);
+      return null;
+    }
+
+    return {
+      status: data.status as MissionStatus,
+      tasks: (data.current_tasks || []) as unknown as StudyRecommendation[],
+      currentIndex: data.current_index,
+      completedIds: (data.completed_tasks || []) as unknown as string[],
+      completionSources: (data.completion_sources || {}) as Record<string, "auto" | "manual">,
+      startedAt: data.started_at,
+      pausedAt: null,
+      dbId: data.id,
+    };
   } catch {
     return null;
   }
 }
 
-function persistState(state: MissionState) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+async function completeMissionDB(dbId: string | null) {
+  if (!dbId) return;
+  try {
+    await supabase.from("user_missions").update({ status: "completed" }).eq("id", dbId);
+  } catch {}
 }
 
 export function useMissionMode() {
   const { user } = useAuth();
   const { data: recommendations, isLoading: engineLoading } = useStudyEngine();
+  const dbSyncRef = useRef(false);
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const [state, setState] = useState<MissionState>(() => {
-    return loadPersistedState() || {
-      status: "idle",
-      tasks: [],
-      currentIndex: 0,
-      completedIds: [],
-      startedAt: null,
-      pausedAt: null,
-    };
-  });
+  const [state, setState] = useState<MissionState>(() => loadLocal() || IDLE_STATE);
 
-  // Persist on change
+  // ── Load from DB on mount (DB takes priority over localStorage) ──
   useEffect(() => {
-    if (state.status !== "idle") {
-      persistState(state);
-    }
-  }, [state]);
+    if (!user?.id || dbSyncRef.current) return;
+    dbSyncRef.current = true;
+
+    loadMissionDB(user.id).then((dbState) => {
+      if (dbState && dbState.status !== "idle") {
+        setState(dbState);
+        saveLocal(dbState);
+      } else {
+        // If local has state but DB doesn't, migrate local → DB
+        const local = loadLocal();
+        if (local && local.status !== "idle") {
+          upsertMissionDB(user.id, local).then((id) => {
+            if (id) setState(prev => ({ ...prev, dbId: id }));
+          });
+        }
+      }
+    });
+  }, [user?.id]);
+
+  // ── Sync to DB + localStorage on every state change (debounced) ──
+  useEffect(() => {
+    if (state.status === "idle") return;
+    saveLocal(state);
+
+    if (!user?.id) return;
+    clearTimeout(syncTimeoutRef.current);
+    syncTimeoutRef.current = setTimeout(() => {
+      upsertMissionDB(user.id, state).then((id) => {
+        if (id && id !== state.dbId) {
+          setState(prev => prev.dbId === id ? prev : { ...prev, dbId: id });
+        }
+      });
+    }, 500); // debounce 500ms
+
+    return () => clearTimeout(syncTimeoutRef.current);
+  }, [state.status, state.currentIndex, state.completedIds.length, user?.id]);
 
   const currentTask = state.tasks[state.currentIndex] || null;
   const nextTask = state.tasks[state.currentIndex + 1] || null;
@@ -76,22 +179,26 @@ export function useMissionMode() {
       tasks,
       currentIndex: 0,
       completedIds: [],
+      completionSources: {},
       startedAt: new Date().toISOString(),
       pausedAt: null,
+      dbId: null,
     };
     setState(newState);
   }, [recommendations]);
 
-  const completeCurrentTask = useCallback(() => {
+  const completeCurrentTask = useCallback((source: "auto" | "manual" = "auto") => {
     setState(prev => {
       const task = prev.tasks[prev.currentIndex];
       if (!task) return prev;
       const newCompleted = [...prev.completedIds, task.id];
+      const newSources = { ...prev.completionSources, [task.id]: source };
       const nextIdx = prev.currentIndex + 1;
       const isFinished = nextIdx >= prev.tasks.length;
       return {
         ...prev,
         completedIds: newCompleted,
+        completionSources: newSources,
         currentIndex: isFinished ? prev.currentIndex : nextIdx,
         status: isFinished ? "completed" : "active",
       };
@@ -117,16 +224,10 @@ export function useMissionMode() {
   }, []);
 
   const endMission = useCallback(() => {
+    completeMissionDB(state.dbId);
     localStorage.removeItem(STORAGE_KEY);
-    setState({
-      status: "idle",
-      tasks: [],
-      currentIndex: 0,
-      completedIds: [],
-      startedAt: null,
-      pausedAt: null,
-    });
-  }, []);
+    setState(IDLE_STATE);
+  }, [state.dbId]);
 
   return {
     state,
