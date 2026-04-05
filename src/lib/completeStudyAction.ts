@@ -127,6 +127,18 @@ async function updateFsrsCard(userId: string, topic: string, now: string): Promi
 }
 
 async function registerTemaEstudado(userId: string, topic: string, specialty: string, source: string, today: string): Promise<string | null> {
+  // Dedup: check if already registered today
+  const { data: existing } = await supabase
+    .from("temas_estudados")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("tema", topic)
+    .eq("data_estudo", today)
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) return "temas_estudados";
+
   const { error } = await supabase.from("temas_estudados").insert({
     user_id: userId,
     tema: topic,
