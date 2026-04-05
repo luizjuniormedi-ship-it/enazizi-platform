@@ -31,7 +31,7 @@ export default function MissionStartButton() {
     autostartFired.current = true;
     startMission();
     setSearchParams({}, { replace: true });
-    navigate("/dashboard/missao");
+    navigate("/mission");
   }, [searchParams, engineLoading, hasTasks, state.status, startMission, setSearchParams]);
 
   // Active or paused — show resume card
