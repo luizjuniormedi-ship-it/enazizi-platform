@@ -82,6 +82,7 @@ const QuestionsBank = () => {
   const [selected, setSelected] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
   const [score, setScore] = useState({ correct: 0, total: 0 });
+  const [practiceFinished, setPracticeFinished] = useState(false);
 
   // Expanded explanations
   const [expandedId, setExpandedId] = useState<string | null>(null);
