@@ -1,14 +1,15 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Clock, ArrowRight, Play } from "lucide-react";
+import { AlertTriangle, Clock, ArrowRight, Play, TrendingDown, Target } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
 /**
  * Shows at most 1 smart alert based on priority:
- * 1. Overdue reviews
- * 2. Critical weak topic
- * 3. Exam approaching
+ * 1. Exam imminent (≤15 days)
+ * 2. Overdue reviews (≥3)
+ * 3. Frequency drop (streak broken or low activity)
+ * 4. High error count
  */
 export default function SmartAlertCard() {
   const navigate = useNavigate();
@@ -17,7 +18,34 @@ export default function SmartAlertCard() {
   if (!data) return null;
   const { metrics, stats } = data;
 
-  // Priority 1: Pending reviews
+  // Priority 1: Exam very close
+  if (stats.daysUntilExam !== null && stats.daysUntilExam <= 15) {
+    return (
+      <Card className="border-destructive/30 bg-destructive/5">
+        <CardContent className="p-4 flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-destructive/10 shrink-0">
+            <Target className="h-5 w-5 text-destructive" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold leading-snug">
+              {stats.daysUntilExam} dias para a prova
+            </p>
+            <p className="text-xs text-muted-foreground">Foco total — cada sessão conta</p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="shrink-0 text-xs gap-1 h-10 px-3 active:scale-[0.97] transition-transform border-destructive/30 text-destructive"
+            onClick={() => navigate("/dashboard/missao")}
+          >
+            <Play className="h-3.5 w-3.5" /> Estudar
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Priority 2: Pending reviews
   if (metrics.pendingRevisoes >= 3) {
     return (
       <Card className="border-amber-500/30 bg-amber-500/5">
@@ -27,25 +55,24 @@ export default function SmartAlertCard() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium leading-snug">
-              Você tem {metrics.pendingRevisoes} revisões atrasadas
+              {metrics.pendingRevisoes} revisões atrasadas
             </p>
+            <p className="text-xs text-muted-foreground">Essas revisões evitam esquecimento</p>
           </div>
           <Button
             size="sm"
             variant="outline"
             className="shrink-0 text-xs gap-1 h-10 px-3 active:scale-[0.97] transition-transform"
-            onClick={() => {
-              navigate("/dashboard/plano-dia?autostart=reviews");
-            }}
+            onClick={() => navigate("/dashboard/plano-dia?autostart=reviews")}
           >
-            <Play className="h-3.5 w-3.5" /> Revisar agora
+            <Play className="h-3.5 w-3.5" /> Revisar
           </Button>
         </CardContent>
       </Card>
     );
   }
 
-  // Priority 2: Exam approaching with low progress
+  // Priority 3: Exam approaching (30 days) with low progress
   if (stats.daysUntilExam !== null && stats.daysUntilExam <= 30) {
     const taskPercent = stats.totalTasks > 0
       ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
@@ -53,9 +80,9 @@ export default function SmartAlertCard() {
     if (taskPercent < 50) {
       return (
         <Card className="border-destructive/30 bg-destructive/5">
-          <CardContent className="p-3 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-destructive/10 shrink-0">
-              <AlertTriangle className="h-4 w-4 text-destructive" />
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-destructive/10 shrink-0">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium">
@@ -65,10 +92,10 @@ export default function SmartAlertCard() {
             <Button
               size="sm"
               variant="outline"
-              className="shrink-0 text-xs gap-1 h-8"
+              className="shrink-0 text-xs gap-1 h-10 px-3"
               onClick={() => navigate("/dashboard/missao")}
             >
-              Estudar <ArrowRight className="h-3 w-3" />
+              Estudar <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </CardContent>
         </Card>
@@ -76,7 +103,34 @@ export default function SmartAlertCard() {
     }
   }
 
-  // Priority 3: High error count
+  // Priority 4: Frequency drop (streak = 0 but had activity before)
+  if (stats.streak === 0 && metrics.questionsAnswered > 5) {
+    return (
+      <Card className="border-orange-500/30 bg-orange-500/5">
+        <CardContent className="p-4 flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-orange-500/10 shrink-0">
+            <TrendingDown className="h-5 w-5 text-orange-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium leading-snug">
+              Você está desacelerando esta semana
+            </p>
+            <p className="text-xs text-muted-foreground">Retome o ritmo com uma sessão rápida</p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="shrink-0 text-xs gap-1 h-10 px-3 active:scale-[0.97] transition-transform"
+            onClick={() => navigate("/dashboard/missao")}
+          >
+            <Play className="h-3.5 w-3.5" /> Começar
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Priority 5: High error count
   if (metrics.errorsCount >= 5) {
     return (
       <Card className="border-orange-500/30 bg-orange-500/5">
