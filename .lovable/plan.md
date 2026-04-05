@@ -1,39 +1,39 @@
 
 
-# Plano: Corrigir Redirect Pós-Login para MissionEntry
+# Plano: Deletar Questões Administrativas + Blindar Pipeline
 
 ## Problema
-O redirect do Dashboard para `/mission` não funciona porque:
-1. O `useEffect` não aguarda as flags carregarem — durante loading, `isEnabled("mission_entry_enabled")` retorna `false` (safe default)
-2. Se o usuário já visitou na mesma aba, `sessionStorage` já tem a chave e bloqueia o redirect
+92 questões do `hrpp_edital2026.pdf` são sobre processo seletivo, taxas, documentação — zero conteúdo clínico. O filtro atual não bloqueia termos administrativos.
 
-## Correção
+## Ações
 
-### `src/pages/Dashboard.tsx`
-- Adicionar `loading` do `useFeatureFlags` nas dependências
-- Só avaliar o redirect **depois** que as flags carregarem (`if (loading) return`)
-- Manter o resto da lógica igual
+### 1. Deletar questões do edital (SQL via insert tool)
+- Deletar todas as 92 questões com `source = 'upload:hrpp_edital2026.pdf'`
+- Deletar o registro do upload na tabela `uploads`
+- Remover o arquivo do storage `user-uploads`
 
-```typescript
-const { isEnabled, loading: flagsLoading } = useFeatureFlags();
-
-useEffect(() => {
-  if (flagsLoading) return; // esperar flags carregarem
-  const SESSION_KEY = "enazizi_mission_entry_seen";
-  if (isEnabled("mission_entry_enabled") && !sessionStorage.getItem(SESSION_KEY)) {
-    sessionStorage.setItem(SESSION_KEY, "true");
-    navigate("/mission", { replace: true });
-  }
-}, [flagsLoading, isEnabled, navigate]);
+### 2. Expandir `NON_MEDICAL_CONTENT_REGEX` — client-side
+**`src/lib/medicalValidation.ts`** — adicionar termos administrativos:
+```
+taxa de inscri|processo seletivo|período de inscrição|
+edital de convoca|cronograma do processo|matrícula dos aprovados|
+homologa[cç][aã]o|classificação final|prazo de recurso|
+resultado preliminar|documentação exigida|valor da taxa|
+vagas reservadas|candidato inscrito|prova objetiva do processo
 ```
 
-## O que NÃO muda
-- MissionEntry.tsx (já está correto)
-- Rota `/mission` no App.tsx
-- Feature flag no banco (já está enabled)
-- Nenhum outro componente
+### 3. Expandir `NON_MEDICAL_CONTENT_REGEX` — edge function
+**`supabase/functions/process-upload/index.ts`** — mesmos termos administrativos no regex da linha 11
 
-## Resultado
-- Login → Dashboard carrega → flags carregam → redirect para `/mission`
-- Após visitar MissionEntry, volta ao Dashboard sem loop
+### 4. Melhorar prompt de validação médica
+No step de validação (aiFetch com gemini-flash-lite), instruir explicitamente:
+- "Editais, regulamentos de processo seletivo, cronogramas e documentos administrativos NÃO são conteúdo médico"
+
+### 5. Adicionar filtro de comprimento mínimo
+No step de geração de questões, rejeitar `statement.length < 120` (conforme padrão já definido nas memórias do projeto)
+
+## O que NÃO muda
+- Study Engine, Dashboard, MissionEntry
+- Questões clínicas existentes
+- Lógica de flashcards
 
