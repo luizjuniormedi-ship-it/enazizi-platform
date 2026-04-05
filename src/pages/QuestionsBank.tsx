@@ -300,6 +300,19 @@ const QuestionsBank = () => {
 
   const globalRate = globalStats.total > 0 ? Math.round((globalStats.correct / globalStats.total) * 100) : 0;
 
+  if (practiceFinished) {
+    return (
+      <div className="max-w-xl mx-auto space-y-6 animate-fade-in py-8">
+        <TaskCompletionCard
+          title="Prática finalizada!"
+          subtitle={`Você acertou ${score.correct} de ${score.total} questões. Progresso atualizado.`}
+          secondaryLabel="Voltar ao Banco"
+          onSecondary={() => setPracticeFinished(false)}
+        />
+      </div>
+    );
+  }
+
   if (practicing && practiceQuestion) {
     return (
       <div className="space-y-6 animate-fade-in max-w-3xl">
