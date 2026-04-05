@@ -5278,6 +5278,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_missions: {
+        Row: {
+          completed_tasks: Json
+          completion_sources: Json
+          created_at: string
+          current_index: number
+          current_tasks: Json
+          id: string
+          started_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_tasks?: Json
+          completion_sources?: Json
+          created_at?: string
+          current_index?: number
+          current_tasks?: Json
+          id?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_tasks?: Json
+          completion_sources?: Json
+          created_at?: string
+          current_index?: number
+          current_tasks?: Json
+          id?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_module_access: {
         Row: {
           created_at: string
@@ -5518,6 +5557,45 @@ export type Database = {
           telegram_chat_id?: string | null
           telegram_group_link?: string | null
           title?: string
+        }
+        Relationships: []
+      }
+      weekly_snapshots: {
+        Row: {
+          approval_score: number | null
+          carryover: Json
+          completed_tasks: Json
+          created_at: string
+          id: string
+          planned_tasks: Json
+          prep_index: number | null
+          summary: string | null
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          approval_score?: number | null
+          carryover?: Json
+          completed_tasks?: Json
+          created_at?: string
+          id?: string
+          planned_tasks?: Json
+          prep_index?: number | null
+          summary?: string | null
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          approval_score?: number | null
+          carryover?: Json
+          completed_tasks?: Json
+          created_at?: string
+          id?: string
+          planned_tasks?: Json
+          prep_index?: number | null
+          summary?: string | null
+          user_id?: string
+          week_start?: string
         }
         Relationships: []
       }
