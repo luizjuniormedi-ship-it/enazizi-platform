@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRefreshUserState } from "@/hooks/useRefreshUserState";
+import { completeStudyAction } from "@/lib/completeStudyAction";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -166,6 +167,15 @@ export default function PracticalExam() {
       });
       if (res.error) throw res.error;
       setEvaluation(res.data);
+      if (user?.id) {
+        await completeStudyAction({
+          userId: user.id,
+          taskType: "practical",
+          topic: specialty || "Prova Prática",
+          source: "auto",
+          originModule: "practical-exam",
+        });
+      }
       refreshAll();
       setPhase("result");
     } catch (err) {

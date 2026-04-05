@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { completeStudyAction } from "@/lib/completeStudyAction";
 import { useRefreshUserState } from "@/hooks/useRefreshUserState";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -387,7 +388,16 @@ const CronogramaInteligente = () => {
 
     toast({ title: "✅ Revisão concluída!", description: `Acerto: ${taxa}% | Erro: ${taxaErro}%` });
     setActiveRevisao(null);
-    // Invalidate dashboard cache so counts update
+    if (user?.id) {
+      const tema = temas.find(t => t.id === revisao.tema_id);
+      completeStudyAction({
+        userId: user.id,
+        taskType: "review",
+        topic: tema?.tema || "Revisão",
+        source: "auto",
+        originModule: "cronograma",
+      });
+    }
     refreshAll();
     // Sync study context for Tutor IA
     const tema = temas.find(t => t.id === revisao.tema_id);
