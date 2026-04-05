@@ -346,7 +346,7 @@ const Flashcards = () => {
           )}
           <div className="flex gap-2 justify-center">
             <Button onClick={() => { setPhase("setup"); }}>Nova Sessão</Button>
-            <Button variant="outline" onClick={() => { queryClient.invalidateQueries({ queryKey: ["dashboard-data"] }); navigate("/dashboard"); }}>Voltar ao Dashboard</Button>
+            <Button variant="outline" onClick={() => { refreshAll(); navigate("/dashboard"); }}>Voltar ao Dashboard</Button>
           </div>
         </div>
       </div>
