@@ -32,45 +32,39 @@ interface MobileNavGroup {
 
 const mobileNavGroups: MobileNavGroup[] = [
   {
-    title: "Principal",
+    title: "Estudar",
     items: [
       { to: "/dashboard", label: "📊 Dashboard" },
-      { to: "/dashboard/chatgpt", label: "✨ Tutor" },
-      { to: "/dashboard/plano-dia", label: "⚡ Plano do Dia" },
+      { to: "/dashboard/chatgpt", label: "✨ Tutor IA" },
+      { to: "/dashboard/simulados", label: "📝 Simulados" },
+      { to: "/dashboard/flashcards", label: "🃏 Flashcards" },
+      { to: "/dashboard/resumos", label: "📖 Resumos" },
       { to: "/dashboard/diagnostico", label: "🩺 Nivelamento" },
     ],
   },
   {
-    title: "Estudo",
+    title: "Progresso",
     items: [
-      { to: "/dashboard/planner", label: "📅 Plano Geral" },
-      { to: "/dashboard/flashcards", label: "🃏 Flashcards" },
-      { to: "/dashboard/simulados", label: "📝 Simulados" },
-      { to: "/dashboard/resumos", label: "📖 Resumos" },
-    ],
-  },
-  {
-    title: "Prática e Progresso",
-    items: [
-      { to: "/dashboard/anamnese", label: "💬 Anamnese" },
-      { to: "/dashboard/prova-pratica", label: "🩺 Prova Prática" },
-      { to: "/dashboard/plantao", label: "🚨 Plantão" },
+      { to: "/dashboard/analytics", label: "📊 Analytics" },
       { to: "/dashboard/banco-erros", label: "⚠️ Banco de Erros" },
       { to: "/dashboard/mapa-dominio", label: "🗺️ Mapa de Evolução" },
-      { to: "/dashboard/analytics", label: "📊 Analytics" },
       { to: "/dashboard/rankings", label: "👑 Rankings" },
       { to: "/dashboard/conquistas", label: "🏆 Conquistas" },
     ],
   },
   {
-    title: "Mais Ferramentas",
+    title: "Ferramentas",
     items: [
+      { to: "/dashboard/anamnese", label: "💬 Anamnese" },
+      { to: "/dashboard/prova-pratica", label: "🩺 Prova Prática" },
+      { to: "/dashboard/plantao", label: "🚨 Plantão" },
       { to: "/dashboard/apostilas", label: "📚 Apostilas" },
       { to: "/dashboard/cronicas", label: "📖 Crônicas Médicas" },
       { to: "/dashboard/discursivas", label: "✍️ Discursivas" },
       { to: "/dashboard/predictor", label: "📈 Previsão" },
       { to: "/dashboard/proficiencia", label: "🎓 Proficiência" },
       { to: "/dashboard/coach", label: "💪 Coach" },
+      { to: "/dashboard/planner", label: "📅 Plano Estratégico" },
     ],
   },
 ];

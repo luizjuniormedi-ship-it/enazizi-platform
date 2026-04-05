@@ -121,7 +121,7 @@ const App = () => (
                 
                 <Route path="coach" element={<MotivationalCoach />} />
                 <Route path="chatgpt" element={<ChatGPT />} />
-                <Route path="plano-dia" element={<DailyPlan />} />
+                <Route path="plano-dia" element={<Navigate to="/dashboard" replace />} />
                 <Route path="predictor" element={<PerformancePredictor />} />
                 <Route path="diagnostico" element={<Diagnostic />} />
                 

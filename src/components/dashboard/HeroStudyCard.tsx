@@ -208,31 +208,58 @@ export default function HeroStudyCard() {
           </Button>
         </div>
 
-        {/* ── Day Plan (collapsible, tappable rows) ── */}
+          {/* ── Mini Plan Summary (always visible) ── */}
         <div className="border-t border-border/30">
+          {/* Quick summary chips */}
+          {(() => {
+            const reviewCount = tasks.filter(t => t.type === "review" || t.type === "error_review").length;
+            const practiceCount = tasks.filter(t => t.type === "practice" || t.type === "simulado").length;
+            const newCount = tasks.filter(t => t.type === "new" || t.type === "clinical").length;
+            return (
+              <div className="flex items-center justify-center gap-2 flex-wrap px-4 py-3">
+                {reviewCount > 0 && (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                    🔄 {reviewCount} {reviewCount === 1 ? "revisão" : "revisões"}
+                  </span>
+                )}
+                {practiceCount > 0 && (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400">
+                    📝 {practiceCount} {practiceCount === 1 ? "questão" : "questões"}
+                  </span>
+                )}
+                {newCount > 0 && (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-primary/15 text-primary">
+                    📚 {newCount} {newCount === 1 ? "conteúdo novo" : "novos"}
+                  </span>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Expandable detail */}
           <button
             onClick={() => setExpanded(!expanded)}
-            className="w-full flex items-center justify-center gap-1.5 py-3 text-xs text-muted-foreground hover:text-foreground active:bg-muted/30 transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs text-muted-foreground hover:text-foreground active:bg-muted/30 transition-colors border-t border-border/20"
           >
             {expanded ? (
-              <>Ocultar plano <ChevronUp className="h-3.5 w-3.5" /></>
+              <>Ocultar detalhes <ChevronUp className="h-3.5 w-3.5" /></>
             ) : (
-              <>Ver plano do dia ({tasks.length} {tasks.length === 1 ? "tarefa" : "tarefas"}) <ChevronDown className="h-3.5 w-3.5" /></>
+              <>Ver detalhes ({tasks.length} {tasks.length === 1 ? "tarefa" : "tarefas"}) <ChevronDown className="h-3.5 w-3.5" /></>
             )}
           </button>
 
           {expanded && (
             <div className="px-4 sm:px-5 pb-4 divide-y divide-border/30 animate-fade-in">
-              {tasks.slice(0, 4).map((task) => (
+              {tasks.slice(0, 5).map((task) => (
                 <DayPlanRow
                   key={task.id}
                   task={task}
                   onTap={() => navigate(buildStudyPath(task, "daily-plan"))}
                 />
               ))}
-              {tasks.length > 4 && (
+              {tasks.length > 5 && (
                 <p className="text-xs text-center text-muted-foreground pt-3">
-                  +{tasks.length - 4} {tasks.length - 4 === 1 ? "tarefa" : "tarefas"} no plano completo
+                  +{tasks.length - 5} {tasks.length - 5 === 1 ? "tarefa" : "tarefas"} restantes
                 </p>
               )}
             </div>
