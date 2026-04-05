@@ -1,4 +1,5 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
+// remove duplicate useLocation import below
 import { SessionMemoryProvider } from "@/contexts/SessionMemoryContext";
 import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
 import { useJourneyRefresh } from "@/hooks/useJourneyRefresh";
