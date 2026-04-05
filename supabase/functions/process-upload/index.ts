@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const NON_MEDICAL_CONTENT_REGEX = /(direito|jur[ií]d|penal|constitucional|processo penal|inquérito|inqu[eé]rito|stf|stj|delegad|advogad|pol[ií]cia federal|c[oó]digo penal|a[cç][aã]o penal|inform[aá]tica|tecnologia da informa[cç][aã]o|engenharia|contabilidade|economia|administra[cç][aã]o|programa[cç][aã]o|declara[cç][aã]o financeira|declara[cç][oõ]es de interesse|pagamento de qualquer esp[eé]cie|empresa farmac[eê]utica|ind[uú]stria farmac[eê]utica|honor[aá]rio|palestrante remunerado|v[ií]nculo empregat[ií]cio|conflito de interesse|relat[oó]rio de interesse)/i;
+const NON_MEDICAL_CONTENT_REGEX = /(direito|jur[ií]d|penal|constitucional|processo penal|inquérito|inqu[eé]rito|stf|stj|delegad|advogad|pol[ií]cia federal|c[oó]digo penal|a[cç][aã]o penal|inform[aá]tica|tecnologia da informa[cç][aã]o|engenharia|contabilidade|economia|administra[cç][aã]o|programa[cç][aã]o|declara[cç][aã]o financeira|declara[cç][oõ]es de interesse|pagamento de qualquer esp[eé]cie|empresa farmac[eê]utica|ind[uú]stria farmac[eê]utica|honor[aá]rio|palestrante remunerado|v[ií]nculo empregat[ií]cio|conflito de interesse|relat[oó]rio de interesse|taxa de inscri|processo seletivo|per[ií]odo de inscri[cç][aã]o|edital de convoca|cronograma do processo|matr[ií]cula dos aprovados|homologa[cç][aã]o|classifica[cç][aã]o final|prazo de recurso|resultado preliminar|documenta[cç][aã]o exigida|valor da taxa|vagas reservadas|candidato inscrito|prova objetiva do processo)/i;
 const MAX_PROCESS_FILE_BYTES = 20 * 1024 * 1024;
 const MAX_PDF_PAGES_TO_PARSE = 120;
 
@@ -117,7 +117,7 @@ async function processInBackground(
       messages: [
         {
           role: "system",
-          content: `Analise o texto e determine se é relacionado a medicina/saúde. Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicação", "main_topic": "especialidade médica principal"}`
+          content: `Analise o texto e determine se é relacionado a medicina/saúde CLÍNICA. Editais, regulamentos de processo seletivo, cronogramas, requisitos de inscrição e documentos administrativos NÃO são conteúdo médico. Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicação", "main_topic": "especialidade médica principal"}`
         },
         { role: "user", content: `Classifique:\n\n${truncatedText.slice(0, 3000)}` }
       ],
@@ -234,7 +234,7 @@ Se não encontrar questões válidas, retorne {"questions": []}`
           if (jsonMatch) {
             const parsed = JSON.parse(jsonMatch[0]);
             for (const q of (parsed.questions || [])) {
-              if (q.statement && Array.isArray(q.options) && q.options.length >= 4 && q.options.length <= 5 && typeof q.correct_index === "number" && !NON_MEDICAL_CONTENT_REGEX.test(q.statement) && !/\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo)\b/i.test(q.statement)) {
+              if (q.statement && Array.isArray(q.options) && q.options.length >= 4 && q.options.length <= 5 && typeof q.correct_index === "number" && String(q.statement).trim().length >= 120 && !NON_MEDICAL_CONTENT_REGEX.test(q.statement) && !/\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo)\b/i.test(q.statement)) {
                 results.push({ statement: String(q.statement).trim(), options: q.options.map(String), correct_index: q.correct_index, explanation: String(q.explanation || "").trim(), topic: String(q.topic || detectedTopic).trim() });
               }
             }
