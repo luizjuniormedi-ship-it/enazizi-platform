@@ -2349,17 +2349,18 @@ const ClinicalSimulation = () => {
           )}
 
           {/* Actions */}
-          <div className="flex gap-3 flex-wrap">
-            <Button onClick={reset} className="flex-1 gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground">
-              <RotateCcw className="h-4 w-4" /> Novo Plantão
-            </Button>
-            <Button onClick={retryWithSameConfig} variant="outline" className="gap-2">
-              <Zap className="h-4 w-4" /> Refazer Mesmo
-            </Button>
-            <Button onClick={exportCasePdf} variant="outline" className="gap-2">
+          <TaskCompletionCard
+            title="Simulação clínica concluída!"
+            secondaryLabel="Novo Plantão"
+            onSecondary={reset}
+            tertiaryLabel="Refazer Mesmo"
+            onTertiary={retryWithSameConfig}
+          />
+          <div className="flex gap-2 justify-center">
+            <Button onClick={exportCasePdf} variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
               <Download className="h-4 w-4" /> Exportar PDF
             </Button>
-            <Button onClick={shareResult} variant="outline" className="gap-2">
+            <Button onClick={shareResult} variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
               <ClipboardCheck className="h-4 w-4" /> Compartilhar
             </Button>
           </div>
