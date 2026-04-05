@@ -114,7 +114,58 @@ export default function MissionMode() {
     }
   }, [state.status, autostartMission, navigate]);
 
-  if (state.status === "idle") return null;
+  // ── Idle state: show mission entry screen ──
+  if (state.status === "idle") {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-6">
+          <div className="text-center space-y-2">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-2">
+              <Rocket className="w-8 h-8 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground">Missão de hoje</h1>
+            <p className="text-sm text-muted-foreground">
+              Seu plano foi ajustado com base no seu desempenho e na sua prova.
+            </p>
+          </div>
+
+          {engineLoading ? (
+            <div className="flex flex-col items-center gap-3 py-8">
+              <Rocket className="w-10 h-10 text-primary animate-bounce" />
+              <p className="text-muted-foreground text-sm">Preparando sua missão…</p>
+            </div>
+          ) : !hasTasks ? (
+            <div className="text-center space-y-4 py-8">
+              <Trophy className="w-12 h-12 text-primary mx-auto" />
+              <p className="text-muted-foreground">Nenhuma tarefa pendente. Parabéns!</p>
+              <Button onClick={() => navigate("/dashboard")} variant="outline">
+                Ir ao Dashboard
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Button
+                onClick={() => { startMission(); }}
+                className="w-full h-14 text-lg font-bold gap-2"
+                size="lg"
+              >
+                COMEÇAR MISSÃO
+                <Play className="w-5 h-5" />
+              </Button>
+              <div className="text-center">
+                <button
+                  onClick={() => navigate("/dashboard")}
+                  className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+                >
+                  Ir para dashboard
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const handleEnd = () => { setShowExitConfirm(true); };
   const confirmEnd = () => { invalidateDashboard(); endMission(); navigate("/dashboard"); };
