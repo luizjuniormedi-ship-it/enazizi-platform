@@ -319,6 +319,7 @@ const ClinicalSimulation = () => {
   const { toast } = useToast();
   const { addXp } = useGamification();
   const queryClient = useQueryClient();
+  const { refreshAll } = useRefreshUserState();
   const [searchParams] = useSearchParams();
   const studyCtx = useStudyContext();
   const teacherCaseId = searchParams.get("teacher_case_id");

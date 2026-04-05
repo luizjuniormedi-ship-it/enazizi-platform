@@ -39,6 +39,7 @@ export default function MissionMode() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+  const { refreshAll } = useRefreshUserState();
   const { user } = useAuth();
   const { adaptive } = useStudyEngine();
   const { data: examReadiness } = useExamReadiness();

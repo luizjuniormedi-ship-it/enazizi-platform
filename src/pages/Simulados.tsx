@@ -212,6 +212,7 @@ const Simulados = () => {
   const { toast } = useToast();
   const { addXp } = useGamification();
   const queryClient = useQueryClient();
+  const { refreshAll } = useRefreshUserState();
   const studyCtx = useStudyContext();
   const autoStartedRef = useRef(false);
 

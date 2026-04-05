@@ -78,6 +78,7 @@ type Phase = "setup" | "loading" | "exam" | "evaluating" | "result";
 export default function PracticalExam() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { refreshAll } = useRefreshUserState();
   const [phase, setPhase] = useState<Phase>("setup");
   const [specialty, setSpecialty] = useState("Clínica Médica");
   const [difficulty, setDifficulty] = useState("intermediário");
