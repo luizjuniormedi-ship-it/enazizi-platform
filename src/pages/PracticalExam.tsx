@@ -437,16 +437,14 @@ export default function PracticalExam() {
         )}
 
         {/* Actions */}
-        <div className="flex gap-2">
-          <Button className="flex-1 gap-2" onClick={() => { setPhase("setup"); setEvaluation(null); setCaseData(null); }}>
-            <RotateCcw className="h-4 w-4" />
-            Nova Prova
-          </Button>
-          <Button variant="outline" className="gap-2" onClick={() => navigate("/dashboard/chatgpt?origin=practical-exam&specialty=" + encodeURIComponent(specialty))}>
-            <BookOpen className="h-4 w-4" />
-            Revisar no Tutor
-          </Button>
-        </div>
+        <TaskCompletionCard
+          title="Prova prática concluída!"
+          subtitle={`Nota: ${evaluation?.final_score?.toFixed(1) || "—"} — ${evaluation?.grade || "—"}. Progresso atualizado.`}
+          secondaryLabel="Nova Prova"
+          onSecondary={() => { setPhase("setup"); setEvaluation(null); setCaseData(null); }}
+          tertiaryLabel="Revisar no Tutor"
+          onTertiary={() => navigate("/dashboard/chatgpt?origin=practical-exam&specialty=" + encodeURIComponent(specialty))}
+        />
       </div>
     );
   }
