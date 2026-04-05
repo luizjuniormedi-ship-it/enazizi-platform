@@ -296,10 +296,18 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
   // 3. Sempre sincronizar daily plan
   await safe(() => syncDailyPlan(userId, topic, now, today), "daily_plan");
 
-  // 4. Telemetria (fire-and-forget)
+  // 4. Validação de falso positivo — Bug 4
+  if (taskType === "review" && !tablesUpdated.includes("revisoes")) {
+    errors.push("revisoes: nenhuma revisão pendente encontrada");
+  }
+  if (taskType === "error_review" && !tablesUpdated.includes("error_bank")) {
+    errors.push("error_bank: nenhum erro pendente encontrado");
+  }
+
+  // 5. Telemetria (fire-and-forget)
   logTelemetry(payload, tablesUpdated, errors);
 
-  // 5. Auditoria persistente
+  // 6. Auditoria persistente
   const auditEventId = await writeAuditEvent(
     payload,
     tablesUpdated,
@@ -307,14 +315,11 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
     errors,
   );
 
-  // 6. Sincronizar user_missions (se missionId fornecido)
-  const missionUpdated = await syncUserMission(payload);
-
   return {
     success: errors.length === 0,
     tablesUpdated,
     errors,
-    missionUpdated,
+    missionUpdated: false,
     dashboardRefreshRequired: true,
     weeklyPlanRecalculated: tablesUpdated.includes("daily_plan_tasks"),
     auditEventId,
