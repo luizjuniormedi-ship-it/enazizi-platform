@@ -68,6 +68,17 @@ export default function MissionMode() {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const streak = coreData?.gamification?.current_streak ?? undefined;
 
+  const handleManualComplete = useCallback(() => {
+    const before = state.completedIds.length;
+    const total = state.tasks.length;
+    completeCurrentTask("manual");
+    refreshAll();
+    toast.success("Tarefa registrada como concluída ✅", {
+      description: `Missão: ${before + 1}/${total} • Plano semanal recalculado`,
+      duration: 3000,
+    });
+  }, [completeCurrentTask, refreshAll, state.completedIds.length, state.tasks.length]);
+
   useEffect(() => {
     if (manualFocusTotal) { setUseFocusHard(true); return; }
     if (!user || !adaptive) return;
