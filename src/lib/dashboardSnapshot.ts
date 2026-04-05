@@ -12,7 +12,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { DashboardStats, DashboardMetrics } from "@/hooks/useDashboardData";
 
-const STALE_MS = 10 * 60 * 1000; // 10 minutes
+const STALE_MS = 5 * 60 * 1000; // 5 minutes
 
 export interface SnapshotPayload {
   stats: DashboardStats;
