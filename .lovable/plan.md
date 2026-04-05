@@ -1,53 +1,62 @@
 
 
-# Plano: Corrigir "Já concluí" para atualizar revisões e dashboard
+# Plano: Corrigir markTaskCompleted para usar colunas corretas
 
-## Problema identificado
+## Problema identificado no teste
 
-Quando o usuário clica **"Já concluí"** na missão, o `completeCurrentTask()` apenas atualiza o estado interno da missão (localStorage + `user_missions`). Ele **NÃO**:
+O `markTaskCompleted.ts` usa colunas que **não existem** na tabela `revisoes`:
+- Usa `tema` → tabela tem `tema_id` (uuid, FK para `temas_estudados`)
+- Usa `revisada` → tabela tem `status` ('pendente' → 'concluida')
+- Usa `data_revisao` para marcar → tabela tem `concluida_em`
 
-1. Marca a revisão como concluída no banco (`revisoes` / `fsrs_cards`)
-2. Chama `refreshAll()` para invalidar caches
-3. Resultado: o Study Engine continua gerando as mesmas recomendações, o dashboard mostra as mesmas pendências, e ao voltar à tela o assunto reaparece como se nada tivesse sido feito
+Resultado: a query falha silenciosamente (catch vazio), o Study Engine continua vendo `status = 'pendente'` e regenera as mesmas revisões.
+
+## Evidência do teste
+
+- Banco **registrou** em `temas_estudados` (fonte: `mission_manual`) ✅
+- Banco **NÃO atualizou** `revisoes.status` para 'concluida' ❌
+- Dashboard continua mostrando **40 revisões pendentes** após completar 2 tarefas ❌
+- Missão internamente avançou (1/5 → 2/5) ✅ mas ao voltar mostra "COMEÇAR MISSÃO" novamente
 
 ## Correção
 
-### 1. `src/hooks/useMissionMode.ts` — Adicionar callback de side-effects após completar tarefa
+### `src/lib/markTaskCompleted.ts`
 
-Após `completeCurrentTask`, disparar:
+**Seção 1 — Revisões**: Substituir query com coluna inexistente por query correta:
 
-- **Se task.type === "review"**: marcar revisão como concluída no banco (`revisoes` → `revisada = true` ou atualizar `next_review`)
-- **Se task.type === "error_review"**: marcar erro como "dominated" no `error_bank`
-- **Atualizar FSRS card** se existir (registrar review com grade "good")
-- **Chamar `refreshAll()`** para invalidar todos os caches (study-engine, core-data, dashboard-data, mission-mode)
+```ts
+// ANTES (quebrado):
+await supabase.from("revisoes")
+  .update({ revisada: true, data_revisao: today })
+  .eq("user_id", userId)
+  .ilike("tema", `%${topic}%`)
 
-### 2. Criar helper `src/lib/markTaskCompleted.ts`
+// DEPOIS (correto):
+// 1. Buscar tema_id na tabela temas_estudados
+const { data: temaRow } = await supabase
+  .from("temas_estudados")
+  .select("id")
+  .eq("user_id", userId)
+  .ilike("tema", `%${topic}%`)
+  .limit(1)
+  .maybeSingle();
 
-Função que recebe `userId` + `task` (StudyRecommendation) e executa as escritas no banco:
-
+if (temaRow) {
+  await supabase.from("revisoes")
+    .update({ status: "concluida", concluida_em: now })
+    .eq("user_id", userId)
+    .eq("tema_id", temaRow.id)
+    .eq("status", "pendente");
+}
 ```
-async function markTaskCompleted(userId, task):
-  - task.type "review" → UPDATE revisoes SET revisada=true WHERE tema ILIKE task.topic
-  - task.type "error_review" → UPDATE error_bank SET status='dominated' WHERE tema ILIKE task.topic
-  - Qualquer tipo → UPDATE fsrs_cards SET last_review=now(), due=now()+interval WHERE card matches topic
-  - Qualquer tipo → INSERT temas_estudados (registro de estudo)
-```
 
-### 3. `src/pages/MissionMode.tsx` — Integrar refreshAll após conclusão
+**Seção 2 — FSRS cards**: A query FSRS já está correta (usa `card_ref_id`), manter como está.
 
-No handler de "Já concluí" e no `completeCurrentTask`, chamar `refreshAll()` após a conclusão para que:
-- `PendingReviewsCard` atualize imediatamente (consome `useStudyEngine`)
-- Dashboard reflita progresso real
-- Ao voltar à tela da missão, o assunto NÃO reapareça
-
-## O que NÃO muda
-- Study Engine (lógica de recomendação)
-- Estrutura das tabelas
-- Fluxo de navegação
-- Metodologia do Tutor IA
+**Seção 3 — Error bank**: A query error_bank já está correta (usa `tema`), manter como está.
 
 ## Arquivos afetados
-1. **Criar**: `src/lib/markTaskCompleted.ts`
-2. **Editar**: `src/hooks/useMissionMode.ts` (chamar markTaskCompleted + refreshAll)
-3. **Editar**: `src/pages/MissionMode.tsx` (garantir refreshAll no onComplete)
+1. **Editar**: `src/lib/markTaskCompleted.ts` — corrigir query de revisões
+
+## O que NÃO muda
+- Study Engine, tabelas, rotas, useMissionMode
 
