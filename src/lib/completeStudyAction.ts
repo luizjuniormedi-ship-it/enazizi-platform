@@ -179,6 +179,7 @@ async function writeAuditEvent(
   payload: StudyActionPayload,
   tablesUpdated: string[],
   status: "success" | "error",
+  errorMessages: string[] = [],
 ): Promise<string | null> {
   try {
     const { data } = await supabase.from("study_action_events" as any).insert({
