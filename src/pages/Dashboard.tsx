@@ -82,13 +82,24 @@ type SectionKey = "desempenho" | "cronograma" | "streak" | "simulados" | null;
 
 const Dashboard = () => {
   useRevisionNotifier();
-const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { evaluateAndDeliver } = useMessageDelivery();
+  const { isEnabled } = useFeatureFlags();
   useCoreData(); // preload shared data layer
   const { data, isLoading } = useDashboardData();
   const prevLevelRef = useRef<number | null>(null);
   const prevStreakRef = useRef<number | null>(null);
+
+  // Redirect to MissionEntry on first visit if flag enabled
+  useEffect(() => {
+    const SESSION_KEY = "enazizi_mission_entry_seen";
+    if (isEnabled("mission_entry_enabled") && !sessionStorage.getItem(SESSION_KEY)) {
+      sessionStorage.setItem(SESSION_KEY, "true");
+      navigate("/mission", { replace: true });
+    }
+  }, [isEnabled, navigate]);
   const [openSection, setOpenSection] = useState<SectionKey>(null);
   const isMobile = useIsMobile();
 
