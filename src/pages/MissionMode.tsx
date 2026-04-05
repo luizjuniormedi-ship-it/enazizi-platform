@@ -80,30 +80,29 @@ export default function MissionMode() {
   }, [user, adaptive, manualFocusTotal]);
 
   useEffect(() => {
-    if (autostartMission && state.status !== "idle") {
-      navigate("/dashboard/missao", { replace: true });
-    }
-  }, [autostartMission, state.status, navigate]);
+    if (!autostartMission || autostartFired.current || state.status !== "idle") return;
+    if (engineLoading) return;
 
-  useEffect(() => {
-    if (state.status !== "idle") return;
-
-    if (autostartMission) {
-      if (autostartFired.current || engineLoading) return;
-      autostartFired.current = true;
-
-      if (hasTasks) {
-        startMission();
-        navigate("/dashboard/missao", { replace: true });
-        return;
-      }
-
+    if (!hasTasks) {
       navigate("/dashboard", { replace: true });
       return;
     }
 
+    autostartFired.current = true;
+    startMission();
+  }, [autostartMission, state.status, engineLoading, hasTasks, startMission, navigate]);
+
+  useEffect(() => {
+    if (state.status !== "idle") {
+      if (autostartMission) {
+        navigate("/dashboard/missao", { replace: true });
+      }
+      return;
+    }
+
+    if (autostartMission || autostartFired.current) return;
     navigate("/dashboard", { replace: true });
-  }, [state.status, autostartMission, engineLoading, hasTasks, startMission, navigate]);
+  }, [state.status, autostartMission, navigate]);
 
   if (state.status === "idle") return null;
 
