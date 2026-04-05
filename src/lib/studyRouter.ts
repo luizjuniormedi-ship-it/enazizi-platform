@@ -47,8 +47,24 @@ export function buildStudyPath(
   if (rec.specialty) params.set("specialty", rec.specialty);
 
   switch (rec.targetModule) {
-    case "tutor":
+    case "tutor": {
+      // Inject tutor-specific context for mission integration
+      params.set("tutor_mode", source === "mission" ? "mission" : "free");
+
+      // Map task type → tutor phase
+      const phaseMap: Record<string, string> = {
+        error_review: "correction",
+        review: "fixation",
+        new: "lesson",
+        practice: "fixation",
+        clinical: "fixation",
+      };
+      const phase = phaseMap[rec.type] || "lesson";
+      params.set("phase", phase);
+      params.set("tutor_origin", rec.type);
+
       return `/dashboard/chatgpt?${params}`;
+    }
 
     case "questoes":
       return `/dashboard/banco-questoes?${params}`;
