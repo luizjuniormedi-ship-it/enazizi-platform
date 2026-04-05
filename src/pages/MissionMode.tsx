@@ -64,6 +64,7 @@ export default function MissionMode() {
   } = useMissionMode();
 
   const [useFocusHard, setUseFocusHard] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const streak = coreData?.gamification?.current_streak ?? undefined;
 
   useEffect(() => {
@@ -106,7 +107,9 @@ export default function MissionMode() {
 
   if (state.status === "idle") return null;
 
-  const handleEnd = () => { invalidateDashboard(); endMission(); navigate("/dashboard"); };
+  const handleEnd = () => { setShowExitConfirm(true); };
+  const confirmEnd = () => { invalidateDashboard(); endMission(); navigate("/dashboard"); };
+  const cancelEnd = () => { setShowExitConfirm(false); };
 
   // ── Mission Complete ──
   if (state.status === "completed") {
@@ -306,6 +309,34 @@ export default function MissionMode() {
           </div>
         )}
       </div>
+
+      {/* Exit Confirmation Dialog */}
+      {showExitConfirm && (
+        <div className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <Card className="max-w-sm w-full shadow-2xl animate-fade-in">
+            <CardContent className="p-6 text-center space-y-4">
+              <div className="h-14 w-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+                <X className="h-7 w-7 text-destructive" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold">Sair da missão?</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Você completou {state.completedIds.length} de {state.tasks.length} tarefas.
+                  Sair agora pode comprometer seu progresso de hoje.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button className="flex-1 gap-1.5" onClick={cancelEnd}>
+                  <Play className="h-4 w-4" /> Continuar
+                </Button>
+                <Button variant="outline" className="flex-1" onClick={confirmEnd}>
+                  Sair mesmo assim
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
