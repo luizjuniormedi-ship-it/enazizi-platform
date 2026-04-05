@@ -271,8 +271,8 @@ export const useDashboardData = () => {
       }
     },
     enabled: !!user && !!coreData,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 60_000,
     gcTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
   });
 };
