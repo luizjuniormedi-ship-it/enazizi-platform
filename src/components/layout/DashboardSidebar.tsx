@@ -30,50 +30,42 @@ interface NavGroup {
 
 const navGroups: NavGroup[] = [
   {
-    title: "Principal",
+    title: "Estudar",
     defaultOpen: true,
     items: [
       { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-      { to: "/dashboard/chatgpt", icon: Sparkles, label: "Tutor" },
-      { to: "/dashboard/plano-dia", icon: Zap, label: "Plano do Dia" },
+      { to: "/dashboard/chatgpt", icon: Sparkles, label: "Tutor IA" },
+      { to: "/dashboard/simulados", icon: FileText, label: "Simulados" },
+      { to: "/dashboard/flashcards", icon: FlipVertical, label: "Flashcards" },
+      { to: "/dashboard/resumos", icon: BookOpen, label: "Resumos" },
       { to: "/dashboard/diagnostico", icon: Stethoscope, label: "Nivelamento" },
     ],
   },
   {
-    title: "Estudo",
+    title: "Progresso",
     defaultOpen: false,
     items: [
-      { to: "/dashboard/planner", icon: CalendarDays, label: "Plano Geral" },
-      { to: "/dashboard/flashcards", icon: FlipVertical, label: "Flashcards" },
-      { to: "/dashboard/simulados", icon: FileText, label: "Simulados" },
-      { to: "/dashboard/resumos", icon: BookOpen, label: "Resumos" },
-    ],
-  },
-  {
-    title: "Prática e Progresso",
-    defaultOpen: false,
-    items: [
-      { to: "/dashboard/anamnese", icon: MessageCircle, label: "Anamnese" },
-      { to: "/dashboard/prova-pratica", icon: Stethoscope, label: "Prova Prática" },
-      { to: "/dashboard/plantao", icon: Activity, label: "Plantão" },
+      { to: "/dashboard/analytics", icon: BarChart3, label: "Analytics" },
       { to: "/dashboard/banco-erros", icon: AlertTriangle, label: "Banco de Erros" },
       { to: "/dashboard/mapa-dominio", icon: Map, label: "Mapa de Evolução" },
-      { to: "/dashboard/analytics", icon: BarChart3, label: "Analytics" },
       { to: "/dashboard/rankings", icon: Crown, label: "Rankings" },
       { to: "/dashboard/conquistas", icon: Trophy, label: "Conquistas" },
     ],
   },
   {
-    title: "Mais Ferramentas",
+    title: "Ferramentas",
     defaultOpen: false,
     items: [
-      
+      { to: "/dashboard/anamnese", icon: MessageCircle, label: "Anamnese" },
+      { to: "/dashboard/prova-pratica", icon: Stethoscope, label: "Prova Prática" },
+      { to: "/dashboard/plantao", icon: Activity, label: "Plantão" },
       { to: "/dashboard/apostilas", icon: FileText, label: "Apostilas" },
       { to: "/dashboard/cronicas", icon: Scroll, label: "Crônicas Médicas" },
       { to: "/dashboard/discursivas", icon: PenLine, label: "Discursivas" },
       { to: "/dashboard/predictor", icon: TrendingUp, label: "Previsão" },
       { to: "/dashboard/proficiencia", icon: GraduationCap, label: "Proficiência" },
       { to: "/dashboard/coach", icon: Heart, label: "Coach" },
+      { to: "/dashboard/planner", icon: CalendarDays, label: "Plano Estratégico" },
     ],
   },
 ];
