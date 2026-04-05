@@ -221,48 +221,65 @@ const DashboardLayout = () => {
   const { theme, toggle: toggleTheme } = useTheme();
   const location = useLocation();
 
+  // Hide all navigation chrome when mission is actively executing
+  const isMissionLocked = (() => {
+    const isMissionRoute = location.pathname === "/dashboard/missao";
+    const params = new URLSearchParams(location.search);
+    const fromMission = params.get("sc_origin") === "mission" || params.get("tutor_mode") === "mission";
+    return isMissionRoute || fromMission;
+  })();
+
   return (
   <SessionMemoryProvider>
   <div className="flex min-h-[100dvh] min-h-screen bg-background w-full overflow-hidden">
-    <DashboardSidebar />
+    {!isMissionLocked && <DashboardSidebar />}
     <div className="flex-1 flex flex-col min-w-0 w-full max-w-full">
-      <header className="landscape-tablet:hidden lg:hidden h-14 border-b border-border flex items-center px-3 sm:px-4 gap-2 sm:gap-3 flex-shrink-0">
-        <MobileNav />
-        <img src={enazizi} alt="ENAZIZI" className="h-6 w-6 rounded object-cover flex-shrink-0" />
-        <span className="font-bold text-sm truncate">ENAZIZI</span>
-        <div className="ml-auto flex items-center gap-1 flex-shrink-0">
+      {!isMissionLocked && (
+        <header className="landscape-tablet:hidden lg:hidden h-14 border-b border-border flex items-center px-3 sm:px-4 gap-2 sm:gap-3 flex-shrink-0">
+          <MobileNav />
+          <img src={enazizi} alt="ENAZIZI" className="h-6 w-6 rounded object-cover flex-shrink-0" />
+          <span className="font-bold text-sm truncate">ENAZIZI</span>
+          <div className="ml-auto flex items-center gap-1 flex-shrink-0">
+            <GlobalSearch />
+            <NotificationBell />
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              aria-label="Alternar tema"
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+          </div>
+        </header>
+      )}
+      {!isMissionLocked && (
+        <div className="hidden landscape-tablet:flex lg:flex h-12 border-b border-border items-center justify-end px-4 gap-2 flex-shrink-0">
           <GlobalSearch />
           <NotificationBell />
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-sm"
             aria-label="Alternar tema"
           >
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            <span className="hidden xl:inline">{theme === "dark" ? "Claro" : "Escuro"}</span>
           </button>
         </div>
-      </header>
-      {/* Desktop top bar */}
-      <div className="hidden landscape-tablet:flex lg:flex h-12 border-b border-border items-center justify-end px-4 gap-2 flex-shrink-0">
-        <GlobalSearch />
-        <NotificationBell />
-        <button
-          onClick={toggleTheme}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-sm"
-          aria-label="Alternar tema"
-        >
-          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          <span className="hidden xl:inline">{theme === "dark" ? "Claro" : "Escuro"}</span>
-        </button>
-      </div>
-      <main className="dashboard-main flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-x-hidden overflow-y-auto relative w-full min-h-0 min-w-0 flex flex-col">
-        <ProficiencyGate />
-        <ActiveVideoRoomPopup />
-        <div key={location.pathname} className="animate-fade-in relative z-10 w-full max-w-full pb-16 lg:pb-0 flex-1 min-w-0 min-h-0 flex flex-col">
+      )}
+      <main className={cn(
+        "dashboard-main flex-1 overflow-x-hidden overflow-y-auto relative w-full min-h-0 min-w-0 flex flex-col",
+        isMissionLocked ? "p-0" : "p-3 sm:p-4 md:p-6 lg:p-8"
+      )}>
+        {!isMissionLocked && <ProficiencyGate />}
+        {!isMissionLocked && <ActiveVideoRoomPopup />}
+        <div key={location.pathname} className={cn(
+          "animate-fade-in relative z-10 w-full max-w-full flex-1 min-w-0 min-h-0 flex flex-col",
+          isMissionLocked ? "" : "pb-16 lg:pb-0"
+        )}>
           <Outlet />
         </div>
       </main>
-      <BottomTabBar />
+      {!isMissionLocked && <BottomTabBar />}
     </div>
   </div>
   </SessionMemoryProvider>
