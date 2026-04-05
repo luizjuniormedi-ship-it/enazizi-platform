@@ -5212,6 +5212,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity_log: {
+        Row: {
+          created_at: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_feedback: {
         Row: {
           created_at: string
@@ -5240,6 +5264,7 @@ export type Database = {
         Row: {
           created_at: string
           current_streak: number
+          freeze_available: number
           id: string
           last_activity_date: string | null
           level: number
@@ -5253,6 +5278,7 @@ export type Database = {
         Insert: {
           created_at?: string
           current_streak?: number
+          freeze_available?: number
           id?: string
           last_activity_date?: string | null
           level?: number
@@ -5266,6 +5292,7 @@ export type Database = {
         Update: {
           created_at?: string
           current_streak?: number
+          freeze_available?: number
           id?: string
           last_activity_date?: string | null
           level?: number
