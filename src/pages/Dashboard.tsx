@@ -23,6 +23,7 @@ import HeroStudyCard from "@/components/dashboard/HeroStudyCard";
 import ExamReadinessCard from "@/components/dashboard/ExamReadinessCard";
 import MentorshipBanner from "@/components/dashboard/MentorshipBanner";
 import SmartAlertCard from "@/components/dashboard/SmartAlertCard";
+import StreakBanner from "@/components/dashboard/StreakBanner";
 import WeeklyEvolutionBar from "@/components/dashboard/WeeklyEvolutionBar";
 import WeeklyGoalsCard from "@/components/dashboard/WeeklyGoalsCard";
 import FreeStudyCard from "@/components/dashboard/FreeStudyCard";
