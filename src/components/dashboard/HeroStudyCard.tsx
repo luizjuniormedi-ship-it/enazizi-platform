@@ -236,33 +236,48 @@ export default function HeroStudyCard() {
             );
           })()}
 
-          {/* Expandable detail */}
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs text-muted-foreground hover:text-foreground active:bg-muted/30 transition-colors border-t border-border/20"
-          >
-            {expanded ? (
-              <>Ocultar detalhes <ChevronUp className="h-3.5 w-3.5" /></>
-            ) : (
-              <>Ver detalhes ({tasks.length} {tasks.length === 1 ? "tarefa" : "tarefas"}) <ChevronDown className="h-3.5 w-3.5" /></>
-            )}
-          </button>
+          {/* First 3 tasks always visible */}
+          <div className="px-4 sm:px-5 divide-y divide-border/30">
+            {tasks.slice(0, 3).map((task) => (
+              <DayPlanRow
+                key={task.id}
+                task={task}
+                onTap={() => navigate(buildStudyPath(task, "daily-plan"))}
+              />
+            ))}
+          </div>
 
-          {expanded && (
-            <div className="px-4 sm:px-5 pb-4 divide-y divide-border/30 animate-fade-in">
-              {tasks.slice(0, 5).map((task) => (
-                <DayPlanRow
-                  key={task.id}
-                  task={task}
-                  onTap={() => navigate(buildStudyPath(task, "daily-plan"))}
-                />
-              ))}
-              {tasks.length > 5 && (
-                <p className="text-xs text-center text-muted-foreground pt-3">
-                  +{tasks.length - 5} {tasks.length - 5 === 1 ? "tarefa" : "tarefas"} restantes
-                </p>
+          {/* Expandable: remaining tasks */}
+          {tasks.length > 3 && (
+            <>
+              <button
+                onClick={() => setExpanded(!expanded)}
+                className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs text-muted-foreground hover:text-foreground active:bg-muted/30 transition-colors border-t border-border/20"
+              >
+                {expanded ? (
+                  <>Ocultar <ChevronUp className="h-3.5 w-3.5" /></>
+                ) : (
+                  <>Ver mais ({tasks.length - 3} {tasks.length - 3 === 1 ? "tarefa" : "tarefas"}) <ChevronDown className="h-3.5 w-3.5" /></>
+                )}
+              </button>
+
+              {expanded && (
+                <div className="px-4 sm:px-5 pb-4 divide-y divide-border/30 animate-fade-in">
+                  {tasks.slice(3, 8).map((task) => (
+                    <DayPlanRow
+                      key={task.id}
+                      task={task}
+                      onTap={() => navigate(buildStudyPath(task, "daily-plan"))}
+                    />
+                  ))}
+                  {tasks.length > 8 && (
+                    <p className="text-xs text-center text-muted-foreground pt-3">
+                      +{tasks.length - 8} {tasks.length - 8 === 1 ? "tarefa" : "tarefas"} restantes
+                    </p>
+                  )}
+                </div>
               )}
-            </div>
+            </>
           )}
         </div>
       </CardContent>
