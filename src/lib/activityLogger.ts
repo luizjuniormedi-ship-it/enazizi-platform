@@ -24,8 +24,7 @@ export function logActivity(
   supabase
     .from("user_activity_log")
     .insert({ user_id: userId, event_type: event, event_data: (data || {}) as any })
-    .then(() => {})
-    .catch(() => {});
+    .then(() => {});
 }
 
 /**
