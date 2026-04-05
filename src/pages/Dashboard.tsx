@@ -230,6 +230,11 @@ const Dashboard = () => {
 
       <SafeCard name="AchievementToast"><AchievementToast /></SafeCard>
 
+      {/* Resume Mission — top priority CTA */}
+      <SafeCard name="ResumeMission">
+        <ResumeMissionBanner />
+      </SafeCard>
+
       {/* ══════════════════════════════════════════
           BLOCO PRINCIPAL — HERO (40-50% da tela)
          ══════════════════════════════════════════ */}
