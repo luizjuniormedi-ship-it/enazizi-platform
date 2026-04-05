@@ -1,3 +1,4 @@
+
 # Plano: Corrigir navegação pós-MissionEntry
 
 ## Problema
