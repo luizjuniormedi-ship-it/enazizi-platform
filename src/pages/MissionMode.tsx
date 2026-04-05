@@ -259,7 +259,10 @@ export default function MissionMode() {
             {currentTask && (
               <MissionTaskActions
                 task={currentTask}
-                onComplete={completeCurrentTask}
+                onComplete={() => {
+                  completeCurrentTask("manual");
+                  refreshAll();
+                }}
                 onSkip={skipCurrentTask}
               />
             )}

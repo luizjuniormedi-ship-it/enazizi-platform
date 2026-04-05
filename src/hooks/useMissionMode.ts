@@ -202,7 +202,10 @@ export function useMissionMode() {
       const nextIdx = prev.currentIndex + 1;
       const isFinished = nextIdx >= prev.tasks.length;
 
+      // Persist to DB (fire-and-forget)
       if (user?.id) {
+        markTaskCompleted(user.id, task);
+
         import("@/lib/activityLogger").then(({ logActivity }) => {
           logActivity(user.id, "task_completed", {
             taskId: task.id, type: task.type, topic: task.topic, source,
