@@ -132,18 +132,42 @@ const ChatGPT = () => {
     });
   }, [registerAutoSave, studyStarted, messages, currentTopic, enaziziStep, performance, selectedUploadIds, sessionQuestions, sessionCorrect]);
 
-  // Mission-mode auto-start (from MissionTutorHint)
+  // Mission-mode auto-start (from MissionMode task routing)
   const missionHandled = useRef(false);
   useEffect(() => {
     if (!missionContext || !user || missionHandled.current) return;
     if (missionContext.topic) {
       missionHandled.current = true;
-      const msg = `Explique de forma estratégica e direta: ${missionContext.topic}${missionContext.error ? `. Meu principal erro: ${missionContext.error}` : ""}. Foque no que cai na prova.`;
+
+      // Build phase-correct initial prompt
+      const phase = missionContext.phase || "lesson";
+      let msg: string;
+      if (phase === "correction") {
+        msg = `MODO CORREÇÃO DE ERROS — Tema: ${missionContext.topic}. ` +
+          `O aluno errou neste tema e precisa de correção direcionada. ` +
+          `Identifique os erros comuns, explique por que a alternativa correta é certa e reforce as "golden rules" do tema. ` +
+          `Foque no que cai na prova.${missionContext.error ? ` Erro específico: ${missionContext.error}` : ""}`;
+      } else if (phase === "fixation") {
+        msg = `MODO REVISÃO/FIXAÇÃO — Tema: ${missionContext.topic}. ` +
+          `O aluno precisa consolidar este tema. Inicie com Active Recall: faça 5 perguntas sequenciais para testar a memorização, ` +
+          `depois proponha um caso clínico objetivo (A-E). Foque em pegadinhas de prova.`;
+      } else {
+        msg = `Quero estudar o tema: ${missionContext.topic}. ` +
+          `Comece com o Bloco Técnico 1 (conceito e definição — explicação técnica baseada na literatura). ` +
+          `Estou na etapa 3/15 do Protocolo ENAZIZI.`;
+      }
+
       setStudyStarted(true);
       setMetricsCollapsed(true);
       setCurrentTopic(missionContext.topic);
       setTopic(missionContext.topic);
-      setTimeout(() => sendMessage(msg), 500);
+
+      // Set appropriate step based on phase
+      const stepMap: Record<string, number> = { lesson: 3, fixation: 7, correction: 12 };
+      const step = stepMap[phase] || 3;
+      setEnaziziStep(step);
+
+      setTimeout(() => sendMessage(ensureSequentialInitialMessage(msg)), 500);
     }
   }, [missionContext, user]);
 
