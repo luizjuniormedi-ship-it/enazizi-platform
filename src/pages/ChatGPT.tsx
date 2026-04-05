@@ -466,6 +466,7 @@ const ChatGPT = () => {
 
     // Show return-to-mission CTA if came from mission
     if (tutorMode === "mission") {
+      savedTopicForReturn.current = currentTopic;
       setShowMissionReturn(true);
       return; // Don't reset UI yet — show the CTA
     }
