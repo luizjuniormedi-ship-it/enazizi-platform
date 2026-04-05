@@ -7,6 +7,7 @@ import type { StudyTaskType, StudyObjective } from "./studyContext";
 import { getExamProfile, getMergedExamProfile, applyExamModifiers, type ExamProfile } from "./examProfiles";
 import { fetchCurriculumForEngine, fetchAllCurriculumTopics } from "./curriculumBridge";
 import { saveStudyEngineSnapshot } from "./dualWrite";
+import { generateLegacyReviewQueue, type LegacyReviewItem } from "./legacyReviewQueue";
 import {
   loadActiveRecoveryRun, startRecoveryRun, endRecoveryRun,
   updateRecoveryPhase, logRecoveryEvent, type ActiveRecoveryRun,
