@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRefreshUserState } from "@/hooks/useRefreshUserState";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -849,9 +850,6 @@ const AnamnesisTrainer = () => {
             <Button onClick={handleExportPdf} variant="outline" size="sm">
               <FileText className="h-4 w-4 mr-1" /> PDF
             </Button>
-            <Button onClick={handleReset} variant="outline" size="sm">
-              <RotateCcw className="h-4 w-4 mr-1" /> Nova Consulta
-            </Button>
           </div>
         </div>
 
@@ -1180,6 +1178,13 @@ const AnamnesisTrainer = () => {
             </CardContent>
           </Card>
         )}
+
+        <TaskCompletionCard
+          title="Anamnese concluída!"
+          subtitle={`Nota: ${evalData.grade} — ${evalData.final_score} pontos. Progresso atualizado.`}
+          secondaryLabel="Nova Consulta"
+          onSecondary={handleReset}
+        />
       </div>
     );
   }

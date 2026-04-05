@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { useDashboardInvalidation } from "@/hooks/useDashboardInvalidation";
 import { isMedicalQuestion } from "@/lib/medicalValidation";
 import MedicalTermHighlighter from "@/components/medical/MedicalTermHighlighter";
@@ -81,6 +82,7 @@ const QuestionsBank = () => {
   const [selected, setSelected] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
   const [score, setScore] = useState({ correct: 0, total: 0 });
+  const [practiceFinished, setPracticeFinished] = useState(false);
 
   // Expanded explanations
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -285,14 +287,10 @@ const QuestionsBank = () => {
   const nextQuestion = () => {
     if (practiceIdx + 1 >= filtered.length) {
       setPracticing(false);
+      setPracticeFinished(true);
       loadStats();
       invalidateAll();
-      // Trigger replenish when practice ends for the active topic
       if (practiceQuestion?.topic) checkAndReplenish(practiceQuestion.topic);
-      toast({
-        title: "Prática finalizada!",
-        description: `Você acertou ${score.correct + (selected === practiceQuestion?.correct_index ? 1 : 0)} de ${score.total + 1} questões.`,
-      });
       return;
     }
     setPracticeIdx((i) => i + 1);
@@ -301,6 +299,19 @@ const QuestionsBank = () => {
   };
 
   const globalRate = globalStats.total > 0 ? Math.round((globalStats.correct / globalStats.total) * 100) : 0;
+
+  if (practiceFinished) {
+    return (
+      <div className="max-w-xl mx-auto space-y-6 animate-fade-in py-8">
+        <TaskCompletionCard
+          title="Prática finalizada!"
+          subtitle={`Você acertou ${score.correct} de ${score.total} questões. Progresso atualizado.`}
+          secondaryLabel="Voltar ao Banco"
+          onSecondary={() => setPracticeFinished(false)}
+        />
+      </div>
+    );
+  }
 
   if (practicing && practiceQuestion) {
     return (

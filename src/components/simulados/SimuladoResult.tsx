@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Award, BarChart3, AlertTriangle, GraduationCap, RotateCcw, Bookmark, BookOpen, Loader2, TrendingUp, Clock, Skull, Target } from "lucide-react";
+import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -284,10 +285,14 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
         </div>
       )}
 
-      <div className="flex gap-3 justify-center flex-wrap">
-        <Button onClick={onNewSimulado}>Novo Simulado</Button>
-        <Button variant="outline" onClick={() => navigate("/dashboard")}>Voltar ao Dashboard</Button>
-      </div>
+      <TaskCompletionCard
+        title="Simulado concluído!"
+        subtitle={`Você acertou ${correctCount} de ${questions.length} questões (${pct}%). Seu progresso foi atualizado.`}
+        secondaryLabel="Novo Simulado"
+        onSecondary={onNewSimulado}
+        tertiaryLabel="Refazer erros"
+        onTertiary={errorQuestions.length > 0 ? onRetryErrors : undefined}
+      />
     </div>
   );
 };

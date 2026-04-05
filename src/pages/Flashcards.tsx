@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRefreshUserState } from "@/hooks/useRefreshUserState";
 import { isMedicalContent } from "@/lib/medicalValidation";
@@ -344,11 +345,12 @@ const Flashcards = () => {
           {total > 0 && (
             <p className="text-sm text-muted-foreground">Taxa de acerto: {rate}%</p>
           )}
-          <div className="flex gap-2 justify-center">
-            <Button onClick={() => { setPhase("setup"); }}>Nova Sessão</Button>
-            <Button variant="outline" onClick={() => { refreshAll(); navigate("/dashboard"); }}>Voltar ao Dashboard</Button>
-          </div>
         </div>
+        <TaskCompletionCard
+          title="Revisão concluída!"
+          secondaryLabel="Nova Sessão"
+          onSecondary={() => setPhase("setup")}
+        />
       </div>
     );
   }
