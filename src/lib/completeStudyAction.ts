@@ -193,7 +193,7 @@ async function writeAuditEvent(
       subtopic: payload.subtopic || null,
       affected_table: tablesUpdated.join(",") || null,
       status,
-      error_message: status === "error" ? (errors?.join("; ") || null) : null,
+      error_message: status === "error" ? (errorMessages?.join("; ") || null) : null,
       payload_json: {
         specialty: payload.specialty,
         metadata: payload.metadata,
