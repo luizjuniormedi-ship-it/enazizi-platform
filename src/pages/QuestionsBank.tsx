@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useDashboardInvalidation } from "@/hooks/useDashboardInvalidation";
 import { isMedicalQuestion } from "@/lib/medicalValidation";
 import MedicalTermHighlighter from "@/components/medical/MedicalTermHighlighter";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
