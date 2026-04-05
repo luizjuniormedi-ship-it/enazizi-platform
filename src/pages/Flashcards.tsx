@@ -270,9 +270,7 @@ const Flashcards = () => {
   const handleFinish = (stats: { correct: number; wrong: number; skipped: number }) => {
     clearInterval(sprintTimerRef.current);
     setSessionStats(stats);
-    queryClient.invalidateQueries({ queryKey: ["core-data"] });
-    queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
-    queryClient.invalidateQueries({ queryKey: ["study-engine"] });
+    refreshAll();
     setPhase("finished");
   };
 
