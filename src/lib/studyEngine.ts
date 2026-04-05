@@ -112,6 +112,7 @@ export interface EngineResult {
 interface EngineInput {
   userId: string;
   coreData?: CoreDataResult;
+  recoveryEnabled?: boolean; // feature flag — false = skip DB persistence
 }
 
 function id(prefix: string, idx: number) {
@@ -215,7 +216,7 @@ function buildFocusReason(weights: PlanWeights, overdueCount: number, lockStatus
 }
 
 // ── main engine ────────────────────────────────────────────────
-export async function generateRecommendations({ userId, coreData }: EngineInput): Promise<EngineResult> {
+export async function generateRecommendations({ userId, coreData, recoveryEnabled = true }: EngineInput): Promise<EngineResult> {
  try {
   const recs: StudyRecommendation[] = [];
   const cd = coreData; // optional pre-fetched data from useCoreData
@@ -437,63 +438,69 @@ export async function generateRecommendations({ userId, coreData }: EngineInput)
   const heavyRecoveryThreshold =
     overdueCount >= 25 && memoryPressure >= 80 && approvalScore < 40;
 
-  // Load from DB (includes localStorage migration bridge)
-  let activeRun: ActiveRecoveryRun | null = await loadActiveRecoveryRun(userId);
+  // Load from DB (includes localStorage migration bridge) — only when flag ON
+  let activeRun: ActiveRecoveryRun | null = recoveryEnabled
+    ? await loadActiveRecoveryRun(userId)
+    : null;
   let heavyRecoveryStartedAt: string | null = activeRun?.mode === "heavy" ? activeRun.started_at : null;
 
-  // Handle recovery normal persistence (fire-and-forget)
-  if (recoveryMode && !activeRun) {
-    const reason = recoveryReason;
-    if (heavyRecoveryThreshold) {
-      activeRun = await startRecoveryRun(userId, "heavy", reason);
+  if (recoveryEnabled) {
+    // Handle recovery normal persistence (fire-and-forget)
+    if (recoveryMode && !activeRun) {
+      const reason = recoveryReason;
+      if (heavyRecoveryThreshold) {
+        activeRun = await startRecoveryRun(userId, "heavy", reason);
+        if (activeRun) {
+          heavyRecoveryStartedAt = activeRun.started_at;
+          logRecoveryEvent(activeRun.id, userId, "entered_heavy_recovery", reason, {
+            overdueCount, memoryPressure, approvalScore,
+          });
+        }
+      } else {
+        activeRun = await startRecoveryRun(userId, "normal", reason);
+        if (activeRun) {
+          logRecoveryEvent(activeRun.id, userId, "entered_recovery", reason, {
+            overdueCount, memoryPressure, approvalScore,
+          });
+        }
+      }
+    } else if (heavyRecoveryThreshold && activeRun?.mode === "normal") {
+      // Upgrade normal → heavy
+      await endRecoveryRun(activeRun.id, userId, "normal");
+      activeRun = await startRecoveryRun(userId, "heavy", "Escalado para recuperação pesada");
       if (activeRun) {
         heavyRecoveryStartedAt = activeRun.started_at;
-        logRecoveryEvent(activeRun.id, userId, "entered_heavy_recovery", reason, {
-          overdueCount, memoryPressure, approvalScore,
-        });
-      }
-    } else {
-      activeRun = await startRecoveryRun(userId, "normal", reason);
-      if (activeRun) {
-        logRecoveryEvent(activeRun.id, userId, "entered_recovery", reason, {
+        logRecoveryEvent(activeRun.id, userId, "entered_heavy_recovery", "Escalado de normal para pesada", {
           overdueCount, memoryPressure, approvalScore,
         });
       }
     }
-  } else if (heavyRecoveryThreshold && activeRun?.mode === "normal") {
-    // Upgrade normal → heavy
-    await endRecoveryRun(activeRun.id, userId, "normal");
-    activeRun = await startRecoveryRun(userId, "heavy", "Escalado para recuperação pesada");
-    if (activeRun) {
-      heavyRecoveryStartedAt = activeRun.started_at;
-      logRecoveryEvent(activeRun.id, userId, "entered_heavy_recovery", "Escalado de normal para pesada", {
-        overdueCount, memoryPressure, approvalScore,
-      });
-    }
-  }
 
-  // Check if heavy recovery should exit (day > 30 AND conditions improved)
-  if (heavyRecoveryStartedAt && activeRun?.mode === "heavy") {
-    const dayInHR = Math.ceil((Date.now() - new Date(heavyRecoveryStartedAt).getTime()) / 86400000);
-    const currentPhase = getHeavyRecoveryPhase(Math.min(dayInHR, 30));
+    // Check if heavy recovery should exit (day > 30 AND conditions improved)
+    if (heavyRecoveryStartedAt && activeRun?.mode === "heavy") {
+      const dayInHR = Math.ceil((Date.now() - new Date(heavyRecoveryStartedAt).getTime()) / 86400000);
+      const currentPhase = getHeavyRecoveryPhase(Math.min(dayInHR, 30));
 
-    // Update phase in DB if changed
-    if (activeRun.phase !== currentPhase) {
-      updateRecoveryPhase(activeRun.id, userId, currentPhase);
+      // Update phase in DB if changed
+      if (activeRun.phase !== currentPhase) {
+        updateRecoveryPhase(activeRun.id, userId, currentPhase);
+      }
+
+      if (dayInHR > 30 && overdueCount < 10 && memoryPressure < 50 && approvalScore >= 40) {
+        await endRecoveryRun(activeRun.id, userId, "heavy");
+        heavyRecoveryStartedAt = null;
+        activeRun = null;
+      }
     }
 
-    if (dayInHR > 30 && overdueCount < 10 && memoryPressure < 50 && approvalScore >= 40) {
-      await endRecoveryRun(activeRun.id, userId, "heavy");
-      heavyRecoveryStartedAt = null;
+    // Exit normal recovery if conditions improved
+    if (activeRun?.mode === "normal" && !recoveryMode) {
+      await endRecoveryRun(activeRun.id, userId, "normal");
       activeRun = null;
     }
   }
-
-  // Exit normal recovery if conditions improved
-  if (activeRun?.mode === "normal" && !recoveryMode) {
-    await endRecoveryRun(activeRun.id, userId, "normal");
-    activeRun = null;
-  }
+  // When recoveryEnabled=false, recoveryMode boolean still works (in-memory)
+  // but no DB reads/writes happen — legacy behavior
 
   const heavyRecovery = buildHeavyRecoveryState(heavyRecoveryStartedAt, !!heavyRecoveryStartedAt);
 

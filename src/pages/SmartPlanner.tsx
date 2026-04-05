@@ -53,6 +53,8 @@ const SmartPlanner = () => {
   const navigate = useNavigate();
   const { isEnabled } = useFeatureFlags();
   const plannerV2 = isEnabled("new_planner_enabled");
+  const chanceByExamEnabled = isEnabled("new_chance_by_exam_enabled");
+  const recoveryFlagEnabled = isEnabled("new_recovery_enabled");
   const [temas, setTemas] = useState<TemaEstudado[]>([]);
   const [revisoes, setRevisoes] = useState<Revisao[]>([]);
   const [desempenhos, setDesempenhos] = useState<Desempenho[]>([]);
@@ -83,11 +85,11 @@ const SmartPlanner = () => {
       supabase.from("desempenho_questoes").select("*").eq("user_id", user.id).order("data_registro", { ascending: false }),
       supabase.from("cronograma_config").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.from("approval_scores").select("score, phase").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
-      supabase.from("chance_by_exam").select("banca, chance_score").eq("user_id", user.id),
+      chanceByExamEnabled ? supabase.from("chance_by_exam").select("banca, chance_score").eq("user_id", user.id) : Promise.resolve({ data: [], error: null }),
       supabase.from("fsrs_cards").select("id, card_ref_id, card_type, due, stability, difficulty, state, reps, lapses").eq("user_id", user.id),
       supabase.from("error_bank").select("id, tema, subtema, vezes_errado, categoria_erro, motivo_erro").eq("user_id", user.id).eq("dominado", false).order("vezes_errado", { ascending: false }).limit(20),
       supabase.from("profiles").select("exam_date, target_exams").eq("user_id", user.id).maybeSingle(),
-      supabase.from("recovery_runs").select("mode, phase, active").eq("user_id", user.id).eq("active", true).maybeSingle(),
+      recoveryFlagEnabled ? supabase.from("recovery_runs").select("mode, phase, active").eq("user_id", user.id).eq("active", true).maybeSingle() : Promise.resolve({ data: null, error: null }),
     ]);
 
     setTemas((temasRes.data as any[]) || []);
