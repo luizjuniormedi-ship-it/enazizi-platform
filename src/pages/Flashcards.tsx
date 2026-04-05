@@ -276,7 +276,7 @@ const Flashcards = () => {
       completeStudyAction({
         userId: user.id,
         taskType: "flashcard",
-        topic: selectedTopic || "Flashcards",
+        topic: topicSearch || "Flashcards",
         source: "auto",
         originModule: "flashcards",
       });
