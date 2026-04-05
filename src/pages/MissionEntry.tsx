@@ -53,7 +53,7 @@ export default function MissionEntry() {
   const handleStart = () => {
     if (missionState.status === "paused") resumeMission();
     if (missionState.status === "idle") startMission();
-    navigate("/dashboard/missao");
+    navigate("/dashboard");
   };
 
   return (
