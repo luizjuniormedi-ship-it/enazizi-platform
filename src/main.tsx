@@ -4,25 +4,22 @@ import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
 import "./index.css";
 
-const APP_RELEASE = "2026-04-05-v6";
-
-// Redirect to canonical domain in production
+const APP_RELEASE = "2026-04-05-v7";
+const RELEASE_KEY = "enazizi_release";
+const RELEASE_QUERY_KEY = "__app_release";
 const canonical = "enazizi.com";
-if (
+
+const shouldRedirectToCanonical =
   window.location.hostname !== canonical &&
   window.location.hostname !== `www.${canonical}` &&
   !window.location.hostname.includes("localhost") &&
   !window.location.hostname.includes("id-preview--") &&
-  !window.location.hostname.includes("lovableproject.com")
-) {
-  window.location.replace(`https://${canonical}${window.location.pathname}${window.location.search}`);
-}
+  !window.location.hostname.includes("lovableproject.com");
 
-// Guard: disable SW in iframe/preview contexts
 const isInIframe = (() => {
   try {
     return window.self !== window.top;
-  } catch (e) {
+  } catch {
     return true;
   }
 })();
@@ -31,58 +28,108 @@ const isPreviewHost =
   window.location.hostname.includes("id-preview--") ||
   window.location.hostname.includes("lovableproject.com");
 
-// --- Cache-busting: detect stale release and force refresh ---
-const RELEASE_KEY = "enazizi_release";
-const storedRelease = localStorage.getItem(RELEASE_KEY);
+const standaloneNavigator = navigator as Navigator & { standalone?: boolean };
+const isStandalone =
+  window.matchMedia("(display-mode: standalone)").matches ||
+  Boolean(standaloneNavigator.standalone);
 
-if (storedRelease && storedRelease !== APP_RELEASE) {
-  console.log(`[ENAZIZI] Release changed ${storedRelease} → ${APP_RELEASE}. Clearing caches…`);
-  // Unregister all service workers
-  navigator.serviceWorker?.getRegistrations().then((regs) => {
-    regs.forEach((r) => r.unregister());
-  });
-  // Clear all CacheStorage
-  if ("caches" in window) {
-    caches.keys().then((names) => names.forEach((n) => caches.delete(n)));
-  }
-  localStorage.setItem(RELEASE_KEY, APP_RELEASE);
-  // Reload once to get fresh assets
-  window.location.reload();
-} else {
-  // First visit or same release — store and continue
-  localStorage.setItem(RELEASE_KEY, APP_RELEASE);
-}
+const unregisterServiceWorkers = async () => {
+  if (!("serviceWorker" in navigator)) return;
 
-console.log(`[ENAZIZI] Release: ${APP_RELEASE}`);
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  await Promise.allSettled(registrations.map((registration) => registration.unregister()));
+};
 
-if (isPreviewHost || isInIframe) {
-  // Unregister any existing service workers in preview/iframe contexts
-  navigator.serviceWorker?.getRegistrations().then((registrations) => {
-    registrations.forEach((r) => r.unregister());
-  });
-} else {
-  // Register service worker for PWA (auto-update) — production only
+const clearCacheStorage = async () => {
+  if (!("caches" in window)) return;
+
+  const cacheNames = await caches.keys();
+  await Promise.allSettled(cacheNames.map((cacheName) => caches.delete(cacheName)));
+};
+
+const forceReloadWithRelease = () => {
+  const reloadUrl = new URL(window.location.href);
+  reloadUrl.searchParams.set(RELEASE_QUERY_KEY, APP_RELEASE);
+  window.location.replace(reloadUrl.toString());
+};
+
+const removeReleaseQueryParam = () => {
+  const currentUrl = new URL(window.location.href);
+  if (!currentUrl.searchParams.has(RELEASE_QUERY_KEY)) return;
+
+  currentUrl.searchParams.delete(RELEASE_QUERY_KEY);
+  window.history.replaceState({}, "", currentUrl.toString());
+};
+
+const mountApp = () => {
+  createRoot(document.getElementById("root")!).render(<App />);
+};
+
+const registerProductionServiceWorker = () => {
   const updateSW = registerSW({
+    immediate: true,
     onNeedRefresh() {
-      console.log("[PWA] Nova versão disponível, atualizando...");
+      console.log("[PWA] Nova versão disponível, atualizando agora...");
       updateSW(true);
     },
     onOfflineReady() {
       console.log("[PWA] App pronto para uso offline.");
     },
+    onRegisteredSW(_swUrl, registration) {
+      if (!registration) return;
+
+      const checkForUpdates = () => {
+        registration.update().catch(() => {});
+
+        if (registration.waiting) {
+          updateSW(true);
+        }
+      };
+
+      checkForUpdates();
+
+      const intervalMs = isStandalone ? 60_000 : 5 * 60 * 1000;
+      window.setInterval(checkForUpdates, intervalMs);
+      window.addEventListener("focus", checkForUpdates);
+      window.addEventListener("pageshow", checkForUpdates);
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          checkForUpdates();
+        }
+      });
+    },
   });
+};
 
-  // Periodic update check every 10 minutes
-  setInterval(() => {
-    updateSW();
-  }, 10 * 60 * 1000);
+const boot = async () => {
+  if (shouldRedirectToCanonical) {
+    window.location.replace(`https://${canonical}${window.location.pathname}${window.location.search}`);
+    return;
+  }
 
-  // Check for updates when user returns to the app
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") {
-      updateSW();
-    }
-  });
-}
+  const storedRelease = localStorage.getItem(RELEASE_KEY);
 
-createRoot(document.getElementById("root")!).render(<App />);
+  if (storedRelease && storedRelease !== APP_RELEASE) {
+    console.log(`[ENAZIZI] Release changed ${storedRelease} → ${APP_RELEASE}. Clearing caches…`);
+    await unregisterServiceWorkers();
+    await clearCacheStorage();
+    localStorage.setItem(RELEASE_KEY, APP_RELEASE);
+    forceReloadWithRelease();
+    return;
+  }
+
+  localStorage.setItem(RELEASE_KEY, APP_RELEASE);
+  removeReleaseQueryParam();
+  console.log(`[ENAZIZI] Release: ${APP_RELEASE}`);
+
+  if (isPreviewHost || isInIframe) {
+    await unregisterServiceWorkers();
+    mountApp();
+    return;
+  }
+
+  registerProductionServiceWorker();
+  mountApp();
+};
+
+void boot();
