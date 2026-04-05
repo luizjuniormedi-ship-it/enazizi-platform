@@ -114,6 +114,7 @@ interface EngineInput {
   userId: string;
   coreData?: CoreDataResult;
   recoveryEnabled?: boolean; // feature flag — false = skip DB persistence
+  fsrsEnabled?: boolean;     // feature flag — false = use legacy review queue
 }
 
 function id(prefix: string, idx: number) {
