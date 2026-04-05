@@ -526,7 +526,7 @@ const ChatGPT = () => {
               Você estudou <span className="font-semibold text-foreground">{currentTopic || "o tema"}</span> com sucesso.
             </p>
             {tutorOrigin === "error_review" && (
-              <p className="text-xs text-emerald-500 mt-2">✓ Erros marcados como revisados</p>
+              <p className="text-xs text-primary mt-2">✓ Erros marcados como revisados</p>
             )}
           </div>
           <Button className="w-full gap-2 h-14 text-base" size="lg" onClick={handleReturnToMission}>
