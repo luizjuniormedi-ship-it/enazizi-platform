@@ -26,7 +26,7 @@ const LOCK_LABELS: Record<string, string> = {
 const LOCK_ACTIONS: Record<string, { label: string; path: string }> = {
   blocked: { label: "Revisar agora", path: "/dashboard/plano-dia" },
   limited: { label: "Ver plano", path: "/dashboard/plano-dia" },
-  allowed: { label: "Avançar", path: "/dashboard/missao" },
+  allowed: { label: "Avançar", path: "/mission" },
 };
 
 export default function AdaptiveModeCard() {

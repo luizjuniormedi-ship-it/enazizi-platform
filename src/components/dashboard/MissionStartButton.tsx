@@ -72,7 +72,7 @@ export default function MissionStartButton() {
   const handleStart = () => {
     safeCta({
       action: () => { startMission(); },
-      nextStep: "/dashboard/missao",
+      nextStep: "/mission",
       errorMessage: "Não foi possível iniciar a sessão. Tente novamente em alguns segundos.",
     });
   };

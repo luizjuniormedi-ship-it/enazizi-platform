@@ -36,7 +36,7 @@ export default function SmartAlertCard() {
             size="sm"
             variant="outline"
             className="shrink-0 text-xs gap-1 h-10 px-3 active:scale-[0.97] transition-transform border-destructive/30 text-destructive"
-            onClick={() => navigate("/dashboard/missao")}
+            onClick={() => navigate("/mission")}
           >
             <Play className="h-3.5 w-3.5" /> Estudar
           </Button>

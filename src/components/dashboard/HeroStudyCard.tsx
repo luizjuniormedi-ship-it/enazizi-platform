@@ -158,7 +158,7 @@ export default function HeroStudyCard() {
   const handleStart = (focusTotal = false) => {
     safeCta({
       action: () => { startMission(); },
-      nextStep: focusTotal ? "/dashboard/missao?focus=total" : "/dashboard/missao",
+      nextStep: focusTotal ? "/mission?focus=total" : "/mission",
       errorMessage: "Não foi possível iniciar. Tente novamente.",
     });
   };

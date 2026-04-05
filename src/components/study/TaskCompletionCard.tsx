@@ -62,7 +62,7 @@ export default function TaskCompletionCard({
         </p>
 
         <Button
-          onClick={() => navigate("/dashboard/missao")}
+          onClick={() => navigate("/mission")}
           size="lg"
           className="w-full gap-2 text-base font-semibold glow"
         >
