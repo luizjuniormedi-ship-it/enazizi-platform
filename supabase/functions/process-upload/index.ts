@@ -117,7 +117,7 @@ async function processInBackground(
       messages: [
         {
           role: "system",
-          content: `Analise o texto e determine se é relacionado a medicina/saúde. Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicação", "main_topic": "especialidade médica principal"}`
+          content: `Analise o texto e determine se é relacionado a medicina/saúde CLÍNICA. Editais, regulamentos de processo seletivo, cronogramas, requisitos de inscrição e documentos administrativos NÃO são conteúdo médico. Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicação", "main_topic": "especialidade médica principal"}`
         },
         { role: "user", content: `Classifique:\n\n${truncatedText.slice(0, 3000)}` }
       ],
