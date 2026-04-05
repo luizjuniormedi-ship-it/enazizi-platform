@@ -11,9 +11,8 @@ export type ActivityEvent =
   | "session_ended"
   | "returned_next_day"
   | "streak_broken"
-  | "freeze_used";
-  | "study_action_completed"
-  | "freeze_used";
+  | "freeze_used"
+  | "study_action_completed";
 
 /**
  * Logs a user activity event (fire-and-forget, never blocks UI).
