@@ -1,41 +1,49 @@
 
 
-# Plano: Simplificar a Jornada do Usuário
+# Plano: Unificar Visibilidade das Atividades do Dia
 
 ## Problema
-O aluno tem 3 portas de entrada confusas: Dashboard, Plano do Dia e Menu lateral com 20+ itens. Não sabe por onde começar.
+Dois cards (HeroStudyCard + TodayStudyCard) mostram as mesmas tarefas do Study Engine de formas diferentes, gerando confusão.
 
-## Solução: Jornada Unificada
+## Solução
 
-### 1. Remover "Plano do Dia" como item separado do menu
-- Remover `/dashboard/plano-dia` da navegação lateral e mobile
-- Redirecionar a rota para `/dashboard` (manter compatibilidade)
-- A informação do plano já aparece dentro do HeroStudyCard no Dashboard
+### 1. Remover TodayStudyCard do Dashboard
+- Remover o componente `TodayStudyCard` da página do Dashboard
+- Toda a informação já está no HeroStudyCard
 
-### 2. Fortalecer o Dashboard como hub único
-- O HeroStudyCard já mostra as tarefas do dia e o botão "Começar Estudo"
-- Adicionar um resumo visual rápido das tarefas pendentes (revisões, questões, conteúdo novo) direto no card
-- O clique vai para o Modo Missão, que executa tudo em sequência
+### 2. Melhorar o HeroStudyCard para mostrar tarefas visíveis sem clique
+- As primeiras 3 tarefas ficam **sempre visíveis** (sem precisar expandir)
+- Cada tarefa mostra: emoji do tipo + nome do tema + tempo estimado
+- O botão "Ver detalhes" mostra as restantes (se houver mais de 3)
+- Isso resolve o problema: o aluno abre o app e **imediatamente vê o que tem que fazer**
 
-### 3. Simplificar o menu lateral
-- Reorganizar em 3 grupos claros:
-  - **Estudar**: Dashboard, Tutor IA, Simulados, Flashcards
-  - **Progresso**: Analytics, Banco de Erros, Rankings, Conquistas
-  - **Ferramentas**: Resumos, Apostilas, Discursivas, Coach, etc.
-- Remover itens redundantes (Plano do Dia, Plano Geral fica apenas dentro de settings/perfil ou como sub-tela)
+### 3. Resultado visual no mobile (430px)
 
-### 4. Manter acesso direto aos módulos
-- Alunos que querem ir direto em Simulados ou Flashcards continuam podendo pelo menu
-- Mas o caminho recomendado é sempre Dashboard → Missão
+```text
+┌─────────────────────────────┐
+│  ✨ Sua missão de hoje      │
+│  Cardiologia · ~45min       │
+│                             │
+│  [■■■ COMEÇAR ESTUDO ■■■]   │
+│  [🔥 Modo Foco Total      ] │
+│                             │
+│  🔄 2 revisões  📝 3 quest. │
+│─────────────────────────────│
+│  🔄 Revisão — Cardiologia   │  ← sempre visível
+│  ❌ Correção — Pneumologia  │  ← sempre visível  
+│  📝 Questões — Nefrologia   │  ← sempre visível
+│  ▼ Ver mais (2 tarefas)     │
+└─────────────────────────────┘
+```
 
 ## Arquivos a alterar
-1. **`DashboardSidebar.tsx`** — reorganizar grupos, remover Plano do Dia
-2. **`DashboardLayout.tsx`** — atualizar mobileNavGroups
-3. **`App.tsx`** — redirect `/dashboard/plano-dia` → `/dashboard`
-4. **`HeroStudyCard.tsx`** — incluir mini-resumo do plano inline
 
-## Resultado
-- Aluno abre o app → vê o Dashboard → clica "Começar Estudo" → Missão guia tudo
-- Sem confusão entre 3 telas diferentes
-- Módulos avulsos continuam acessíveis para quem quiser
+1. **`src/components/dashboard/HeroStudyCard.tsx`** — mostrar 3 tarefas sempre visíveis, expandir para ver o resto
+2. **Página do Dashboard** — remover uso do `TodayStudyCard`
+
+## O que NÃO muda
+- Lógica do Study Engine
+- Modo Missão
+- Navegação lateral
+- Nenhum dado ou backend
 
