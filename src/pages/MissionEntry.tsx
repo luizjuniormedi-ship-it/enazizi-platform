@@ -51,6 +51,8 @@ export default function MissionEntry() {
   const missionStarted = (stats?.todayCompleted ?? 0) > 0;
 
   const handleStart = () => {
+    if (missionState.status === "paused") resumeMission();
+    if (missionState.status === "idle") startMission();
     navigate("/dashboard/missao");
   };
 
