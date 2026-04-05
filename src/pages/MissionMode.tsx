@@ -112,7 +112,7 @@ export default function MissionMode() {
   if (state.status === "completed") {
     return (
       <div className="fixed inset-0 z-50 bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full border-primary/30 shadow-2xl">
+        <Card className="max-w-md w-full border-primary/30 shadow-2xl animate-fade-in">
           <CardContent className="p-8 text-center space-y-6">
             <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
               <Trophy className="h-10 w-10 text-primary" />
@@ -121,6 +121,9 @@ export default function MissionMode() {
               <h1 className="text-2xl font-bold">Missão Concluída! 🎉</h1>
               <p className="text-muted-foreground mt-2">
                 Você completou {state.completedIds.length} de {state.tasks.length} tarefas
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Você reduziu risco de erro nos temas estudados hoje
               </p>
             </div>
             <div className="grid grid-cols-3 gap-3">
@@ -137,6 +140,9 @@ export default function MissionMode() {
                 <div className="text-[10px] text-muted-foreground">Progresso</div>
               </div>
             </div>
+            <p className="text-xs text-muted-foreground italic">
+              Sua missão foi atualizada com base no seu desempenho
+            </p>
             <Button className="w-full gap-2" size="lg" onClick={handleEnd}>
               <Sparkles className="h-4 w-4" />
               Voltar ao Dashboard
