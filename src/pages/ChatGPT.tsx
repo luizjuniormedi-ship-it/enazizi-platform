@@ -49,17 +49,22 @@ const ChatGPT = () => {
 
   // Mission mode detection from URL params
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const tutorMode = searchParams.get("tutor_mode") as "free" | "mission" | null;
+  const tutorPhase = searchParams.get("phase") as "correction" | "lesson" | "fixation" | null;
+  const tutorOrigin = searchParams.get("tutor_origin") || null;
+  const scTaskId = searchParams.get("sc_task_id") || null;
   const missionContext = tutorMode === "mission" ? {
     mode: "mission" as const,
-    topic: searchParams.get("topic") || undefined,
+    topic: searchParams.get("sc_topic") || searchParams.get("topic") || undefined,
     error: searchParams.get("error") || undefined,
-    phase: searchParams.get("phase") || undefined,
-    objective: searchParams.get("objective") || undefined,
+    phase: tutorPhase || searchParams.get("phase") || undefined,
+    objective: searchParams.get("sc_objective") || searchParams.get("objective") || undefined,
     pendingReviews: searchParams.get("pendingReviews") ? Number(searchParams.get("pendingReviews")) : undefined,
     accuracy: searchParams.get("accuracy") ? Number(searchParams.get("accuracy")) : undefined,
     examFocus: searchParams.get("examFocus") || undefined,
     heavyRecovery: searchParams.get("heavyRecovery") === "true",
+    origin: tutorOrigin || undefined,
   } : null;
 
   // Speech to text
