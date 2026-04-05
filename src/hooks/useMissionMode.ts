@@ -185,7 +185,12 @@ export function useMissionMode() {
       dbId: null,
     };
     setState(newState);
-  }, [recommendations]);
+    if (user?.id) {
+      import("@/lib/activityLogger").then(({ logActivity }) => {
+        logActivity(user.id, "mission_started", { taskCount: tasks.length });
+      });
+    }
+  }, [recommendations, user?.id]);
 
   const completeCurrentTask = useCallback((source: "auto" | "manual" = "auto") => {
     setState(prev => {
@@ -195,6 +200,18 @@ export function useMissionMode() {
       const newSources = { ...prev.completionSources, [task.id]: source };
       const nextIdx = prev.currentIndex + 1;
       const isFinished = nextIdx >= prev.tasks.length;
+
+      if (user?.id) {
+        import("@/lib/activityLogger").then(({ logActivity }) => {
+          logActivity(user.id, "task_completed", {
+            taskId: task.id, type: task.type, topic: task.topic, source,
+          });
+          if (isFinished) {
+            logActivity(user.id, "mission_completed", { total: prev.tasks.length });
+          }
+        });
+      }
+
       return {
         ...prev,
         completedIds: newCompleted,
@@ -203,17 +220,23 @@ export function useMissionMode() {
         status: isFinished ? "completed" : "active",
       };
     });
-  }, []);
+  }, [user?.id]);
 
   const skipCurrentTask = useCallback(() => {
     setState(prev => {
+      const task = prev.tasks[prev.currentIndex];
+      if (user?.id && task) {
+        import("@/lib/activityLogger").then(({ logActivity }) => {
+          logActivity(user.id, "task_skipped", { taskId: task.id, type: task.type });
+        });
+      }
       const nextIdx = prev.currentIndex + 1;
       if (nextIdx >= prev.tasks.length) {
         return { ...prev, status: "completed" };
       }
       return { ...prev, currentIndex: nextIdx };
     });
-  }, []);
+  }, [user?.id]);
 
   const pauseMission = useCallback(() => {
     setState(prev => ({ ...prev, status: "paused", pausedAt: new Date().toISOString() }));
@@ -224,10 +247,18 @@ export function useMissionMode() {
   }, []);
 
   const endMission = useCallback(() => {
+    if (user?.id) {
+      import("@/lib/activityLogger").then(({ logActivity }) => {
+        logActivity(user.id, "mission_abandoned", {
+          completed: state.completedIds.length,
+          total: state.tasks.length,
+        });
+      });
+    }
     completeMissionDB(state.dbId);
     localStorage.removeItem(STORAGE_KEY);
     setState(IDLE_STATE);
-  }, [state.dbId]);
+  }, [state.dbId, state.completedIds.length, state.tasks.length, user?.id]);
 
   return {
     state,
