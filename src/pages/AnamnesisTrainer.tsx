@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRefreshUserState } from "@/hooks/useRefreshUserState";
 import { useSearchParams, useNavigate } from "react-router-dom";
