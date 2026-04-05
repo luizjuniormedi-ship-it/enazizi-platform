@@ -7,6 +7,7 @@ import type { StudyTaskType, StudyObjective } from "./studyContext";
 import { getExamProfile, getMergedExamProfile, applyExamModifiers, type ExamProfile } from "./examProfiles";
 import { fetchCurriculumForEngine, fetchAllCurriculumTopics } from "./curriculumBridge";
 import { saveStudyEngineSnapshot } from "./dualWrite";
+import { generateLegacyReviewQueue, type LegacyReviewItem } from "./legacyReviewQueue";
 import {
   loadActiveRecoveryRun, startRecoveryRun, endRecoveryRun,
   updateRecoveryPhase, logRecoveryEvent, type ActiveRecoveryRun,
@@ -113,6 +114,7 @@ interface EngineInput {
   userId: string;
   coreData?: CoreDataResult;
   recoveryEnabled?: boolean; // feature flag — false = skip DB persistence
+  fsrsEnabled?: boolean;     // feature flag — false = use legacy review queue
 }
 
 function id(prefix: string, idx: number) {
@@ -216,7 +218,7 @@ function buildFocusReason(weights: PlanWeights, overdueCount: number, lockStatus
 }
 
 // ── main engine ────────────────────────────────────────────────
-export async function generateRecommendations({ userId, coreData, recoveryEnabled = true }: EngineInput): Promise<EngineResult> {
+export async function generateRecommendations({ userId, coreData, recoveryEnabled = true, fsrsEnabled = true }: EngineInput): Promise<EngineResult> {
  try {
   const recs: StudyRecommendation[] = [];
   const cd = coreData; // optional pre-fetched data from useCoreData
@@ -272,13 +274,18 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       .eq("user_id", userId)
       .order("data_estudo", { ascending: false })
       .limit(50), "temas"),
-    safe(() => supabase
-      .from("fsrs_cards")
-      .select("id, card_type, card_ref_id, stability, difficulty, state, due, lapses")
-      .eq("user_id", userId)
-      .lte("due", new Date().toISOString())
-      .order("due", { ascending: true })
-      .limit(30), "fsrs"),
+    // FSRS query — only when flag ON
+    ...(fsrsEnabled ? [
+      safe(() => supabase
+        .from("fsrs_cards")
+        .select("id, card_type, card_ref_id, stability, difficulty, state, due, lapses")
+        .eq("user_id", userId)
+        .lte("due", new Date().toISOString())
+        .order("due", { ascending: true })
+        .limit(30), "fsrs"),
+    ] : [
+      Promise.resolve(null), // placeholder so array indices stay correct
+    ]),
     safe(() => supabase
       .from("mentor_theme_plan_targets")
       .select("plan_id")
@@ -412,12 +419,11 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
   // Adjust max new topics based on content lock
   weights.maxNewTopics = adjustNewTopicsByLock(weights.maxNewTopics, lockStatus);
 
-  // ── FSRS memory pressure ─────────────────────────────────────
-  const fsrsDue = (fsrsDueData || []) as any[];
-  const memoryPressure = cap(
-    (overdueCount / 20) * 50 + (fsrsDue.length / 30) * 50,
-    100
-  );
+  // ── FSRS memory pressure (only when FSRS enabled) ─────────────
+  const fsrsDue = fsrsEnabled ? (fsrsDueData || []) as any[] : [];
+  const memoryPressure = fsrsEnabled
+    ? cap((overdueCount / 20) * 50 + (fsrsDue.length / 30) * 50, 100)
+    : cap((overdueCount / 20) * 100, 100); // legacy: only revisoes count
 
   // ── Recovery mode detection ──────────────────────────────────
   const recoveryMode = overdueCount >= 15 || memoryPressure >= 70 ||
@@ -866,24 +872,54 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     }
   }
 
-  const flashcardDue = fsrsDue.filter((c: any) => c.card_type === "flashcard");
-  if (flashcardDue.length > 0) {
-    flashcardDue.sort((a: any, b: any) => a.stability - b.stability);
-    const urgency = flashcardDue.length > 10 ? "alta" : flashcardDue.length > 3 ? "moderada" : "normal";
-    addRec({
-      id: "fsrs-flashcards",
-      type: "review",
-      topic: `${flashcardDue.length} Flashcards`,
-      specialty: "Revisão Espaçada",
-      priority: cap(85 + Math.min(flashcardDue.length, 10)),
-      reason: flashcardDue.length > 5
-        ? `${flashcardDue.length} flashcards pendentes — prioridade ${urgency}!`
-        : `${flashcardDue.length} flashcard(s) pronto(s) para revisão.`,
-      targetModule: "flashcards",
-      targetPath: "/dashboard/flashcards",
-      estimatedMinutes: Math.max(5, flashcardDue.length * 2),
-      objective: "review",
-    });
+  // ── FSRS flashcard reviews (only when FSRS ON) ────────────────
+  if (fsrsEnabled) {
+    const flashcardDue = fsrsDue.filter((c: any) => c.card_type === "flashcard");
+    if (flashcardDue.length > 0) {
+      flashcardDue.sort((a: any, b: any) => a.stability - b.stability);
+      const urgency = flashcardDue.length > 10 ? "alta" : flashcardDue.length > 3 ? "moderada" : "normal";
+      addRec({
+        id: "fsrs-flashcards",
+        type: "review",
+        topic: `${flashcardDue.length} Flashcards`,
+        specialty: "Revisão Espaçada",
+        priority: cap(85 + Math.min(flashcardDue.length, 10)),
+        reason: flashcardDue.length > 5
+          ? `${flashcardDue.length} flashcards pendentes — prioridade ${urgency}!`
+          : `${flashcardDue.length} flashcard(s) pronto(s) para revisão.`,
+        targetModule: "flashcards",
+        targetPath: "/dashboard/flashcards",
+        estimatedMinutes: Math.max(5, flashcardDue.length * 2),
+        objective: "review",
+      });
+    }
+  } else {
+    // ── Legacy review queue (when FSRS OFF) ─────────────────────
+    const legacyQueue = await generateLegacyReviewQueue(userId);
+    // Add legacy review items that aren't already covered by the revisoes section
+    const existingReviewTopics = new Set(recs.filter(r => r.type === "review").map(r => r.topic));
+    for (let i = 0; i < Math.min(legacyQueue.length, 5); i++) {
+      const item = legacyQueue[i];
+      if (existingReviewTopics.has(item.topic)) continue;
+      addRec({
+        id: `legacy-rev-${i}`,
+        type: "review",
+        topic: item.topic,
+        specialty: item.specialty,
+        subtopic: item.subtopic,
+        priority: item.priority,
+        reason: item.source === "error"
+          ? `Reforço: "${item.topic}" precisa de revisão (erro recorrente).`
+          : item.daysOverdue > 3
+          ? `⚠️ Revisão de "${item.topic}" atrasada ${item.daysOverdue} dias.`
+          : `Revisão pendente de "${item.topic}".`,
+        targetModule: "tutor",
+        targetPath: "/dashboard/chatgpt",
+        estimatedMinutes: 15,
+        objective: "review",
+        _groupKey: `legacy:${item.topic}`,
+      });
+    }
   }
 
   // ── Curriculum-based priority boost (using curriculum bridge) ────

@@ -18,11 +18,12 @@ export const useStudyEngine = () => {
   // Sync module-level FSRS toggle so fire-and-forget calls respect the flag
   useEffect(() => { setFsrsEnabled(fsrsEnabled); }, [fsrsEnabled]);
   const query = useQuery({
-    queryKey: ["study-engine", user?.id, !!coreData, recoveryEnabled],
+    queryKey: ["study-engine", user?.id, !!coreData, recoveryEnabled, fsrsEnabled],
     queryFn: () => generateRecommendations({
       userId: user!.id,
       coreData: coreData || undefined,
       recoveryEnabled,
+      fsrsEnabled,
     }),
     enabled: !!user && !!coreData,
     staleTime: 2 * 60 * 1000,
