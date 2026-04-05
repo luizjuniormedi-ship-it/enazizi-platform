@@ -146,7 +146,7 @@ export default function MissionMode() {
             <p className="text-xs text-muted-foreground italic">
               Sua missão foi atualizada com base no seu desempenho
             </p>
-            <Button className="w-full gap-2" size="lg" onClick={handleEnd}>
+            <Button className="w-full gap-2" size="lg" onClick={() => { invalidateDashboard(); endMission(); navigate("/dashboard"); }}>
               <Sparkles className="h-4 w-4" />
               Voltar ao Dashboard
             </Button>
