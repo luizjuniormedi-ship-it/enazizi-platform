@@ -86,7 +86,7 @@ const Dashboard = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { evaluateAndDeliver } = useMessageDelivery();
-  const { isEnabled } = useFeatureFlags();
+  const { isEnabled, loading: flagsLoading } = useFeatureFlags();
   useCoreData(); // preload shared data layer
   const { data, isLoading } = useDashboardData();
   const prevLevelRef = useRef<number | null>(null);
@@ -94,12 +94,13 @@ const Dashboard = () => {
 
   // Redirect to MissionEntry on first visit if flag enabled
   useEffect(() => {
+    if (flagsLoading) return; // esperar flags carregarem
     const SESSION_KEY = "enazizi_mission_entry_seen";
     if (isEnabled("mission_entry_enabled") && !sessionStorage.getItem(SESSION_KEY)) {
       sessionStorage.setItem(SESSION_KEY, "true");
       navigate("/mission", { replace: true });
     }
-  }, [isEnabled, navigate]);
+  }, [flagsLoading, isEnabled, navigate]);
   const [openSection, setOpenSection] = useState<SectionKey>(null);
   const isMobile = useIsMobile();
 
