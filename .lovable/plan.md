@@ -1,24 +1,18 @@
-
-# Plano: Corrigir botão MissionEntry para abrir Dashboard com missão ativa
+# Plano: Corrigir navegação pós-MissionEntry
 
 ## Problema
-O botão "COMEÇAR MISSÃO" na MissionEntry chama `startMission()` e navega para `/dashboard`. Porém, `startMission()` depende de `recommendations` do `useStudyEngine()`, que pode ainda não ter carregado no contexto da MissionEntry — resultando em `tasks.length === 0` e retorno silencioso (linha 73). O usuário chega ao Dashboard com missão `idle`, sem o painel de missão ativo.
+O autostart no `MissionStartButton` chama `startMission()` e limpa o query param, mas **não navega para `/dashboard/missao`**. O usuário fica preso no Dashboard em vez de ir para a tela de execução da missão.
 
-## Solução
-Alterar `handleStart` na MissionEntry para aguardar as recomendações antes de iniciar, ou navegar para o Dashboard e deixar o `MissionStartButton` do Dashboard lidar com o início (já que lá o hook tem os dados carregados).
+## Correção
 
-A abordagem mais robusta: em vez de tentar `startMission()` na MissionEntry (onde os dados podem não estar prontos), apenas navegar para `/dashboard` com um query param `?autostart=mission`. No Dashboard, o `MissionStartButton` detecta esse param e dispara `startMission()` automaticamente quando as recomendações estiverem prontas.
+**`src/components/dashboard/MissionStartButton.tsx`** — no `useEffect` de autostart (linha 31-33), após `startMission()`, adicionar `navigate("/dashboard/missao")`:
 
-## Arquivos a alterar
-
-### 1. `src/pages/MissionEntry.tsx`
-- Simplificar `handleStart`: remover chamadas a `startMission`/`resumeMission`
-- Navegar para `/dashboard?autostart=mission`
-
-### 2. `src/components/dashboard/MissionStartButton.tsx`
-- Ler query param `autostart=mission`
-- Quando presente e `state.status === "idle"` e `hasTasks` e não `engineLoading`: chamar `startMission()` automaticamente e limpar o param
-- Isso garante que o start só acontece quando os dados estão prontos
+```tsx
+autostartFired.current = true;
+startMission();
+setSearchParams({}, { replace: true });
+navigate("/dashboard/missao");
+```
 
 ## O que NÃO muda
-- `useMissionMode.ts`, `MissionMode.tsx`, rotas, Study Engine
+- MissionEntry.tsx, useMissionMode, rotas, Study Engine
