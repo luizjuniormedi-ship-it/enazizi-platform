@@ -14,6 +14,7 @@ export default function MissionEntry() {
   const { user } = useAuth();
   const { data, isLoading } = useDashboardData();
   const { isEnabled, loading: flagsLoading } = useFeatureFlags();
+  const { state: missionState, startMission, resumeMission } = useMissionMode();
 
   useEffect(() => {
     if (flagsLoading) return;
