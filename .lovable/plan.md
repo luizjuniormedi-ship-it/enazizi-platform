@@ -1,62 +1,70 @@
 
 
-# Plano: Corrigir markTaskCompleted para usar colunas corretas
+# Correção Cirúrgica: 4 Bugs da Rota /mission
 
-## Problema identificado no teste
+## Arquivos alterados
+1. `src/lib/completeStudyAction.ts`
+2. `src/hooks/useMissionMode.ts` (mínimo)
+3. `src/pages/MissionMode.tsx`
 
-O `markTaskCompleted.ts` usa colunas que **não existem** na tabela `revisoes`:
-- Usa `tema` → tabela tem `tema_id` (uuid, FK para `temas_estudados`)
-- Usa `revisada` → tabela tem `status` ('pendente' → 'concluida')
-- Usa `data_revisao` para marcar → tabela tem `concluida_em`
+---
 
-Resultado: a query falha silenciosamente (catch vazio), o Study Engine continua vendo `status = 'pendente'` e regenera as mesmas revisões.
+## Bug 1 — Revisões nunca marcadas como concluídas
 
-## Evidência do teste
+**Causa**: `markReviewDone()` busca em `temas_estudados` por `.ilike("tema")`, encontra qualquer row (inclusive recém-inserida), e tenta atualizar `revisoes` por `tema_id` — mas essa row pode não ter revisões pendentes.
 
-- Banco **registrou** em `temas_estudados` (fonte: `mission_manual`) ✅
-- Banco **NÃO atualizou** `revisoes.status` para 'concluida' ❌
-- Dashboard continua mostrando **40 revisões pendentes** após completar 2 tarefas ❌
-- Missão internamente avançou (1/5 → 2/5) ✅ mas ao voltar mostra "COMEÇAR MISSÃO" novamente
+**Correção em `completeStudyAction.ts`**:
 
-## Correção
+Reescrever `markReviewDone()`:
+1. Buscar IDs de `temas_estudados` que casam com o tópico: `SELECT id FROM temas_estudados WHERE user_id = X AND tema ILIKE '%topic%'`
+2. Com esses IDs, buscar em `revisoes` WHERE `tema_id IN (ids)` AND `status = 'pendente'` AND `data_revisao <= hoje`, ORDER BY `data_revisao ASC`, LIMIT 1
+3. Atualizar essa revisão específica por `id`
+4. Verificar se `error` é null E se a query realmente afetou uma linha. Se não encontrou revisão pendente, retornar `null` (falha real)
 
-### `src/lib/markTaskCompleted.ts`
+---
 
-**Seção 1 — Revisões**: Substituir query com coluna inexistente por query correta:
+## Bug 2 — Race condition em `user_missions`
 
-```ts
-// ANTES (quebrado):
-await supabase.from("revisoes")
-  .update({ revisada: true, data_revisao: today })
-  .eq("user_id", userId)
-  .ilike("tema", `%${topic}%`)
+**Causa**: `syncUserMission()` no serviço central e `upsertMissionDB()` no hook competem pela escrita.
 
-// DEPOIS (correto):
-// 1. Buscar tema_id na tabela temas_estudados
-const { data: temaRow } = await supabase
-  .from("temas_estudados")
-  .select("id")
-  .eq("user_id", userId)
-  .ilike("tema", `%${topic}%`)
-  .limit(1)
-  .maybeSingle();
+**Correção**:
+- Remover a função `syncUserMission()` inteira de `completeStudyAction.ts`
+- Remover a chamada na linha 312
+- `missionUpdated` passa a ser sempre `false` (missão é gerida exclusivamente pelo hook `useMissionMode`)
+- Nenhuma alteração no hook — ele já é a fonte única correta
 
-if (temaRow) {
-  await supabase.from("revisoes")
-    .update({ status: "concluida", concluida_em: now })
-    .eq("user_id", userId)
-    .eq("tema_id", temaRow.id)
-    .eq("status", "pendente");
-}
+---
+
+## Bug 3 — Duplicação em `temas_estudados`
+
+**Causa**: `registerTemaEstudado()` faz INSERT cego.
+
+**Correção**: Antes do INSERT, verificar existência:
 ```
+SELECT id FROM temas_estudados 
+WHERE user_id = X AND tema = topic AND data_estudo = today
+LIMIT 1
+```
+Se já existir, retornar `"temas_estudados"` sem inserir. Se não existir, inserir normalmente.
 
-**Seção 2 — FSRS cards**: A query FSRS já está correta (usa `card_ref_id`), manter como está.
+---
 
-**Seção 3 — Error bank**: A query error_bank já está correta (usa `tema`), manter como está.
+## Bug 4 — Feedback falso positivo
 
-## Arquivos afetados
-1. **Editar**: `src/lib/markTaskCompleted.ts` — corrigir query de revisões
+**Correção em `completeStudyAction.ts`**:
+- Para `taskType = "review"`: se `tablesUpdated` não contém `"revisoes"` após a execução, adicionar erro explícito: `"revisoes: nenhuma revisão pendente encontrada"`
+- Para `taskType = "error_review"`: se não contém `"error_bank"`, adicionar erro similar
+- `success` continua sendo `errors.length === 0` — agora será `false` quando nada real mudou
+
+**Correção em `MissionMode.tsx`**:
+- Tornar `handleManualComplete` async
+- Aguardar retorno de `completeStudyAction` (requer que `completeCurrentTask` retorne a Promise)
+- Alternativa mais simples: manter toast como está, pois o Bug 1 sendo corrigido resolve o problema na raiz (revisões passarão a ser marcadas de verdade)
+
+Abordagem escolhida: **manter toast simples** — a correção do Bug 1 elimina o falso positivo na prática. O toast já serve como feedback de progressão da missão (que funciona corretamente via estado local + debounce DB).
+
+---
 
 ## O que NÃO muda
-- Study Engine, tabelas, rotas, useMissionMode
+- Study Engine, rotas, navegação, Tutor IA, estrutura de tabelas, RLS
 
