@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,8 +8,10 @@ import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
-import { Trash2 } from "lucide-react";
+import { Trash2, ArrowRight } from "lucide-react";
 import { useSessionMemory } from "@/contexts/SessionMemoryContext";
+import { useRefreshUserState } from "@/hooks/useRefreshUserState";
+import { Button } from "@/components/ui/button";
 
 import { FUNCTION_NAME, NON_MEDICAL_KEYWORDS, ensureSequentialInitialMessage } from "@/components/tutor/TutorConstants";
 import type { Msg } from "@/components/tutor/TutorConstants";
@@ -49,17 +51,22 @@ const ChatGPT = () => {
 
   // Mission mode detection from URL params
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const tutorMode = searchParams.get("tutor_mode") as "free" | "mission" | null;
+  const tutorPhase = searchParams.get("phase") as "correction" | "lesson" | "fixation" | null;
+  const tutorOrigin = searchParams.get("tutor_origin") || null;
+  const scTaskId = searchParams.get("sc_task_id") || null;
   const missionContext = tutorMode === "mission" ? {
     mode: "mission" as const,
-    topic: searchParams.get("topic") || undefined,
+    topic: searchParams.get("sc_topic") || searchParams.get("topic") || undefined,
     error: searchParams.get("error") || undefined,
-    phase: searchParams.get("phase") || undefined,
-    objective: searchParams.get("objective") || undefined,
+    phase: tutorPhase || searchParams.get("phase") || undefined,
+    objective: searchParams.get("sc_objective") || searchParams.get("objective") || undefined,
     pendingReviews: searchParams.get("pendingReviews") ? Number(searchParams.get("pendingReviews")) : undefined,
     accuracy: searchParams.get("accuracy") ? Number(searchParams.get("accuracy")) : undefined,
     examFocus: searchParams.get("examFocus") || undefined,
     heavyRecovery: searchParams.get("heavyRecovery") === "true",
+    origin: tutorOrigin || undefined,
   } : null;
 
   // Speech to text
@@ -127,18 +134,42 @@ const ChatGPT = () => {
     });
   }, [registerAutoSave, studyStarted, messages, currentTopic, enaziziStep, performance, selectedUploadIds, sessionQuestions, sessionCorrect]);
 
-  // Mission-mode auto-start (from MissionTutorHint)
+  // Mission-mode auto-start (from MissionMode task routing)
   const missionHandled = useRef(false);
   useEffect(() => {
     if (!missionContext || !user || missionHandled.current) return;
     if (missionContext.topic) {
       missionHandled.current = true;
-      const msg = `Explique de forma estratégica e direta: ${missionContext.topic}${missionContext.error ? `. Meu principal erro: ${missionContext.error}` : ""}. Foque no que cai na prova.`;
+
+      // Build phase-correct initial prompt
+      const phase = missionContext.phase || "lesson";
+      let msg: string;
+      if (phase === "correction") {
+        msg = `MODO CORREÇÃO DE ERROS — Tema: ${missionContext.topic}. ` +
+          `O aluno errou neste tema e precisa de correção direcionada. ` +
+          `Identifique os erros comuns, explique por que a alternativa correta é certa e reforce as "golden rules" do tema. ` +
+          `Foque no que cai na prova.${missionContext.error ? ` Erro específico: ${missionContext.error}` : ""}`;
+      } else if (phase === "fixation") {
+        msg = `MODO REVISÃO/FIXAÇÃO — Tema: ${missionContext.topic}. ` +
+          `O aluno precisa consolidar este tema. Inicie com Active Recall: faça 5 perguntas sequenciais para testar a memorização, ` +
+          `depois proponha um caso clínico objetivo (A-E). Foque em pegadinhas de prova.`;
+      } else {
+        msg = `Quero estudar o tema: ${missionContext.topic}. ` +
+          `Comece com o Bloco Técnico 1 (conceito e definição — explicação técnica baseada na literatura). ` +
+          `Estou na etapa 3/15 do Protocolo ENAZIZI.`;
+      }
+
       setStudyStarted(true);
       setMetricsCollapsed(true);
       setCurrentTopic(missionContext.topic);
       setTopic(missionContext.topic);
-      setTimeout(() => sendMessage(msg), 500);
+
+      // Set appropriate step based on phase
+      const stepMap: Record<string, number> = { lesson: 3, fixation: 7, correction: 12 };
+      const step = stepMap[phase] || 3;
+      setEnaziziStep(step);
+
+      setTimeout(() => sendMessage(ensureSequentialInitialMessage(msg)), 500);
     }
   }, [missionContext, user]);
 
@@ -398,15 +429,62 @@ const ChatGPT = () => {
     }
   };
 
+  const { refreshAll } = useRefreshUserState();
+  const [showMissionReturn, setShowMissionReturn] = useState(false);
+  const savedTopicForReturn = useRef("");
+
   const onFinishSession = async () => {
     await handleFinishSession(currentTopic, completeSession, async (step, tema) => {
       await saveEnaziziStep(step, tema, performance, sessionQuestions);
     });
+
+    // FSRS card creation for the studied topic
+    if (user?.id && currentTopic) {
+      try {
+        const { data: existing } = await supabase.from("fsrs_cards")
+          .select("id").eq("user_id", user.id).eq("card_ref_id", currentTopic).eq("card_type", "tema").maybeSingle();
+        if (!existing) {
+          await supabase.from("fsrs_cards").insert({
+            user_id: user.id, card_ref_id: currentTopic, card_type: "tema",
+            difficulty: 5, stability: 1, state: 0, reps: 0, lapses: 0,
+            elapsed_days: 0, scheduled_days: 1, due: new Date().toISOString(),
+          });
+        }
+      } catch {}
+    }
+
+    // If error_review origin, mark errors as reviewed
+    if (user?.id && tutorOrigin === "error_review" && currentTopic) {
+      try {
+        await supabase.from("error_bank").update({ dominado: true, dominado_em: new Date().toISOString() })
+          .eq("user_id", user.id).eq("tema", currentTopic).eq("dominado", false);
+      } catch {}
+    }
+
+    // Refresh global state
+    refreshAll();
+
+    // Show return-to-mission CTA if came from mission
+    if (tutorMode === "mission") {
+      savedTopicForReturn.current = currentTopic;
+      setShowMissionReturn(true);
+      return; // Don't reset UI yet — show the CTA
+    }
+
     setStudyStarted(false);
     setCurrentTopic("");
     setMessages([]);
     chatMessages.setActiveConversationId(null);
     setMetricsCollapsed(false);
+  };
+
+  const handleReturnToMission = () => {
+    setShowMissionReturn(false);
+    setStudyStarted(false);
+    setCurrentTopic("");
+    setMessages([]);
+    chatMessages.setActiveConversationId(null);
+    navigate("/dashboard/missao");
   };
 
   const onNewSession = () => {
@@ -435,6 +513,44 @@ const ChatGPT = () => {
 
   const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Estudante";
   const nextPhase = getNextPhaseInfo(enaziziStep);
+
+  // Mission return overlay
+  if (showMissionReturn) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] p-4">
+        <div className="max-w-md w-full rounded-2xl border border-primary/30 bg-card shadow-2xl p-8 text-center space-y-6 animate-fade-in">
+          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+            <span className="text-3xl">✅</span>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold">Sessão Concluída!</h2>
+            <p className="text-muted-foreground text-sm mt-1">
+              Você estudou <span className="font-semibold text-foreground">{savedTopicForReturn.current || currentTopic || "o tema"}</span> com sucesso.
+            </p>
+            {tutorOrigin === "error_review" && (
+              <p className="text-xs text-primary mt-2">✓ Erros marcados como revisados</p>
+            )}
+          </div>
+          <Button className="w-full gap-2 h-14 text-base" size="lg" onClick={handleReturnToMission}>
+            <ArrowRight className="h-5 w-5" />
+            CONTINUAR MISSÃO
+          </Button>
+          <button
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => {
+              setShowMissionReturn(false);
+              setStudyStarted(false);
+              setCurrentTopic("");
+              setMessages([]);
+              navigate("/dashboard");
+            }}
+          >
+            Voltar ao Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const content = (
     <div className={`flex flex-col animate-fade-in min-w-0 w-full ${isFullscreen ? "fixed inset-0 z-[100] bg-background p-3 sm:p-6 overflow-hidden" : "h-full"}`}>
