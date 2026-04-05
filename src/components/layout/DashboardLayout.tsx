@@ -223,7 +223,7 @@ const DashboardLayout = () => {
 
   // Hide all navigation chrome when mission is actively executing
   const isMissionLocked = (() => {
-    const isMissionRoute = location.pathname === "/dashboard/missao";
+    const isMissionRoute = location.pathname === "/dashboard/missao" || location.pathname === "/mission" || location.pathname.startsWith("/study/");
     const params = new URLSearchParams(location.search);
     const fromMission = params.get("sc_origin") === "mission" || params.get("tutor_mode") === "mission";
     return isMissionRoute || fromMission;

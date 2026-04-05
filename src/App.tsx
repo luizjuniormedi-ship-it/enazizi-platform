@@ -159,7 +159,25 @@ const App = () => (
               <Route path="/institucional" element={<InstitutionalRoute><DashboardLayout /></InstitutionalRoute>}>
                 <Route index element={<InstitutionalDashboard />} />
               </Route>
-              <Route path="/mission" element={<ProtectedRoute><MissionEntry /></ProtectedRoute>} />
+              <Route path="/mission" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                <Route index element={<MissionMode />} />
+              </Route>
+              {/* Study execution aliases */}
+              <Route path="/study/tutor" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                <Route index element={<ChatGPT />} />
+              </Route>
+              <Route path="/study/flashcards" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                <Route index element={<Flashcards />} />
+              </Route>
+              <Route path="/study/simulado" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                <Route index element={<Simulados />} />
+              </Route>
+              <Route path="/study/clinical" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                <Route index element={<ClinicalSimulation />} />
+              </Route>
+              <Route path="/study/anamnese" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                <Route index element={<AnamnesisTrainer />} />
+              </Route>
               <Route path="/install" element={<Install />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="*" element={<NotFound />} />
