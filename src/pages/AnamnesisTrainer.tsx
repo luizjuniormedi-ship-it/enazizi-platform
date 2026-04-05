@@ -1178,6 +1178,13 @@ const AnamnesisTrainer = () => {
             </CardContent>
           </Card>
         )}
+
+        <TaskCompletionCard
+          title="Anamnese concluída!"
+          subtitle={`Nota: ${evalData.grade} — ${evalData.final_score} pontos. Progresso atualizado.`}
+          secondaryLabel="Nova Consulta"
+          onSecondary={handleReset}
+        />
       </div>
     );
   }
