@@ -33,7 +33,7 @@ export interface StudyRecommendation {
   _groupKey?: string;
   /** Canonical source table for direct DB updates */
   sourceTable?: string;
-  /** Canonical record ID in sourceTable */
+  /** Canonical record ID in sourceTable (oldest pending review for grouped reviews) */
   sourceRecordId?: string;
   /** FSRS card ID when applicable */
   fsrsCardId?: string;
@@ -41,6 +41,12 @@ export interface StudyRecommendation {
   errorBankId?: string;
   /** Daily plan task ID when applicable */
   dailyPlanTaskId?: string;
+  /** Number of pending reviews for this topic (grouped) */
+  pendingCount?: number;
+  /** All pending review IDs for this topic (oldest first) */
+  pendingReviewIds?: string[];
+  /** Next scheduled review date after current */
+  nextReviewDate?: string;
 }
 
 /** Heavy recovery phase (30-day progressive plan) */
