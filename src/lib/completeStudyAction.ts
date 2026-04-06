@@ -38,6 +38,16 @@ export interface StudyActionPayload {
   source: "auto" | "manual";
   originModule: string;
   metadata?: Record<string, any>;
+  /** Canonical source table (e.g. "revisoes", "error_bank") */
+  sourceTable?: string;
+  /** Canonical record ID for direct DB update */
+  sourceRecordId?: string;
+  /** FSRS card ID for direct update */
+  fsrsCardId?: string;
+  /** Error bank ID for direct update */
+  errorBankId?: string;
+  /** Daily plan task ID for direct update */
+  dailyPlanTaskId?: string;
 }
 
 export interface StudyActionResult {
@@ -55,10 +65,22 @@ export interface StudyActionFullResult extends StudyActionResult {
 
 /* ── Helpers internos ── */
 
-async function markReviewDone(userId: string, topic: string, now: string): Promise<string | null> {
-  const today = now.slice(0, 10);
+async function markReviewDone(userId: string, topic: string, now: string, sourceRecordId?: string): Promise<string | null> {
+  // Direct update by canonical ID (preferred path)
+  if (sourceRecordId) {
+    const { error } = await supabase
+      .from("revisoes")
+      .update({ status: "concluida" as any, concluida_em: now } as any)
+      .eq("id", sourceRecordId)
+      .eq("user_id", userId)
+      .eq("status", "pendente");
+    if (!error) return "revisoes";
+    // If direct ID failed (already completed?), don't fallback
+    console.warn("[completeStudyAction] markReviewDone by ID failed:", sourceRecordId, error.message);
+    return null;
+  }
 
-  // Step 1: find all temas_estudados IDs matching topic
+  // Legacy fallback: text-based matching (for tasks without sourceRecordId)
   const { data: temaRows } = await supabase
     .from("temas_estudados")
     .select("id")
@@ -66,10 +88,8 @@ async function markReviewDone(userId: string, topic: string, now: string): Promi
     .ilike("tema", `%${topic}%`);
 
   if (!temaRows || temaRows.length === 0) return null;
-
   const temaIds = temaRows.map(r => r.id);
 
-  // Step 2: find oldest pending revision linked to those temas (sem filtro de data — safety net)
   const { data: pendingReview } = await supabase
     .from("revisoes")
     .select("id")
@@ -82,7 +102,6 @@ async function markReviewDone(userId: string, topic: string, now: string): Promi
 
   if (!pendingReview) return null;
 
-  // Step 3: update that specific revision
   const { error } = await supabase
     .from("revisoes")
     .update({ status: "concluida" as any, concluida_em: now } as any)
@@ -91,7 +110,21 @@ async function markReviewDone(userId: string, topic: string, now: string): Promi
   return error ? null : "revisoes";
 }
 
-async function markErrorDominated(userId: string, topic: string, now: string): Promise<string | null> {
+async function markErrorDominated(userId: string, topic: string, now: string, errorBankId?: string): Promise<string | null> {
+  // Direct update by canonical ID (preferred)
+  if (errorBankId) {
+    const { error } = await supabase
+      .from("error_bank")
+      .update({ dominado: true, dominado_em: now })
+      .eq("id", errorBankId)
+      .eq("user_id", userId)
+      .eq("dominado", false);
+    if (!error) return "error_bank";
+    console.warn("[completeStudyAction] markErrorDominated by ID failed:", errorBankId, error.message);
+    return null;
+  }
+
+  // Legacy fallback
   const { error } = await supabase
     .from("error_bank")
     .update({ dominado: true, dominado_em: now })
@@ -101,7 +134,31 @@ async function markErrorDominated(userId: string, topic: string, now: string): P
   return error ? null : "error_bank";
 }
 
-async function updateFsrsCard(userId: string, topic: string, now: string): Promise<string | null> {
+async function updateFsrsCard(userId: string, topic: string, now: string, fsrsCardId?: string): Promise<string | null> {
+  // Direct update by canonical ID (preferred)
+  if (fsrsCardId) {
+    const { data: card } = await supabase
+      .from("fsrs_cards")
+      .select("id, stability, scheduled_days")
+      .eq("id", fsrsCardId)
+      .eq("user_id", userId)
+      .limit(1)
+      .maybeSingle();
+
+    if (card) {
+      const nextDays = Math.max(1, Math.round((card.stability || 1) * 2.5));
+      const nextDue = new Date(Date.now() + nextDays * 86400_000).toISOString();
+      await supabase.from("fsrs_cards").update({
+        last_review: now,
+        due: nextDue,
+        scheduled_days: nextDays,
+        elapsed_days: 0,
+      }).eq("id", card.id);
+      return "fsrs_cards";
+    }
+  }
+
+  // Legacy fallback: text-based matching
   const { data: card } = await supabase
     .from("fsrs_cards")
     .select("id, stability, scheduled_days")
@@ -253,18 +310,18 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
     }
   };
 
-  // 1. Persistir na tabela correta por tipo
+  // 1. Persistir na tabela correta por tipo (usando IDs canônicos quando disponíveis)
   switch (taskType) {
     case "review":
-      await safe(() => markReviewDone(userId, topic, now), "revisoes");
-      await safe(() => updateFsrsCard(userId, topic, now), "fsrs");
+      await safe(() => markReviewDone(userId, topic, now, payload.sourceRecordId), "revisoes");
+      await safe(() => updateFsrsCard(userId, topic, now, payload.fsrsCardId), "fsrs");
       break;
     case "error_review":
-      await safe(() => markErrorDominated(userId, topic, now), "error_bank");
-      await safe(() => updateFsrsCard(userId, topic, now), "fsrs");
+      await safe(() => markErrorDominated(userId, topic, now, payload.errorBankId || payload.sourceRecordId), "error_bank");
+      await safe(() => updateFsrsCard(userId, topic, now, payload.fsrsCardId), "fsrs");
       break;
     case "flashcard":
-      await safe(() => updateFsrsCard(userId, topic, now), "fsrs");
+      await safe(() => updateFsrsCard(userId, topic, now, payload.fsrsCardId || payload.sourceRecordId), "fsrs");
       break;
     case "content":
     case "new":

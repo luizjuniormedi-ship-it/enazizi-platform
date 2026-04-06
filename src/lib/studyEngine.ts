@@ -31,6 +31,16 @@ export interface StudyRecommendation {
   objective?: StudyObjective;
   /** Category tag for anti-duplicate grouping */
   _groupKey?: string;
+  /** Canonical source table for direct DB updates */
+  sourceTable?: string;
+  /** Canonical record ID in sourceTable */
+  sourceRecordId?: string;
+  /** FSRS card ID when applicable */
+  fsrsCardId?: string;
+  /** Error bank ID when applicable */
+  errorBankId?: string;
+  /** Daily plan task ID when applicable */
+  dailyPlanTaskId?: string;
 }
 
 /** Heavy recovery phase (30-day progressive plan) */
@@ -581,6 +591,8 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       estimatedMinutes: 15,
       objective: "review",
       _groupKey: `review:${tema}`,
+      sourceTable: "revisoes",
+      sourceRecordId: rev.id,
     });
   }
 
@@ -613,6 +625,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       estimatedMinutes: 10,
       objective: "correction",
       _groupKey: `error:${err.tema}`,
+      sourceTable: "error_bank",
+      sourceRecordId: err.id,
+      errorBankId: err.id,
     });
   }
 
