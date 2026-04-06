@@ -560,7 +560,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     heavyRecovery,
   };
 
-  // ── 1. Overdue / pending reviews ─────────────────────────────
+  // ── 1. Overdue / pending reviews (GROUPED BY TEMA) ────────────
   const seenTopics = new Set<string>();
   const addRec = (rec: StudyRecommendation) => {
     const groupKey = rec._groupKey || `${rec.type}:${rec.topic}`;
@@ -569,37 +569,82 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     recs.push(rec);
   };
 
-  for (let i = 0; i < Math.min(pendingReviews.length, 5); i++) {
-    const rev = pendingReviews[i];
-    const isOverdue = rev.data_revisao <= today;
+  // Group pending reviews by tema name
+  const reviewsByTema = new Map<string, { reviews: any[]; spec: string }>();
+  for (const rev of pendingReviews) {
     const tema = rev.temas_estudados?.tema || "Tema";
     const spec = rev.temas_estudados?.especialidade || "Geral";
+    if (!reviewsByTema.has(tema)) {
+      reviewsByTema.set(tema, { reviews: [], spec });
+    }
+    reviewsByTema.get(tema)!.reviews.push(rev);
+  }
+
+  // Sort each group by data_revisao ASC (oldest first)
+  for (const [, group] of reviewsByTema) {
+    group.reviews.sort((a: any, b: any) =>
+      new Date(a.data_revisao).getTime() - new Date(b.data_revisao).getTime()
+    );
+  }
+
+  // Build one recommendation per tema
+  let revIdx = 0;
+  const sortedTemas = [...reviewsByTema.entries()]
+    .sort((a, b) => {
+      // Sort by oldest review date ASC (most overdue first)
+      const aOldest = new Date(a[1].reviews[0].data_revisao).getTime();
+      const bOldest = new Date(b[1].reviews[0].data_revisao).getTime();
+      return aOldest - bOldest;
+    })
+    .slice(0, 5);
+
+  for (const [tema, { reviews, spec }] of sortedTemas) {
+    const oldest = reviews[0];
+    const isOverdue = oldest.data_revisao <= today;
     const basePriority = isOverdue ? 95 : 80;
-    const riskBonus = rev.risco_esquecimento === "alto" ? 5 : rev.risco_esquecimento === "medio" ? 2 : 0;
+    const riskBonus = oldest.risco_esquecimento === "alto" ? 5 : oldest.risco_esquecimento === "medio" ? 2 : 0;
     const phaseBonus = weights.phase === "critico" ? 5 : 0;
-    // Aggressive: overdue > 3 days gets extra boost
-    const daysOverdue = isOverdue ? Math.max(0, Math.floor((Date.now() - new Date(rev.data_revisao).getTime()) / 86400000)) : 0;
+    const daysOverdue = isOverdue ? Math.max(0, Math.floor((Date.now() - new Date(oldest.data_revisao).getTime()) / 86400000)) : 0;
     const overdueBoost = daysOverdue > 3 ? 10 : 0;
+    const pendingCount = reviews.length;
+    const pendingReviewIds = reviews.map((r: any) => r.id);
+    const nextReviewDate = reviews.length > 1 ? reviews[1].data_revisao : undefined;
+
+    // Check FSRS card for this tema for priority boost
+    const fsrsCard = fsrsDue.find((c: any) =>
+      c.card_type === "tema" && (
+        c.card_ref_id === oldest.tema_id ||
+        (c.card_ref_id || "").toLowerCase().includes(tema.toLowerCase().slice(0, 10))
+      )
+    );
+    const fsrsBoost = fsrsCard ? 5 : 0;
+
+    const countLabel = pendingCount > 1 ? ` (${pendingCount} pendentes)` : "";
 
     addRec({
-      id: id("rev", i),
+      id: id("rev", revIdx),
       type: "review",
       topic: tema,
       specialty: spec,
-      priority: cap(basePriority + riskBonus + phaseBonus + overdueBoost - i),
+      priority: cap(basePriority + riskBonus + phaseBonus + overdueBoost + fsrsBoost - revIdx),
       reason: isOverdue
         ? daysOverdue > 3
-          ? `⚠️ Revisão de "${tema}" atrasada ${daysOverdue} dias — prioridade máxima!`
-          : `Revisão atrasada de "${tema}" — risco de esquecer!`
-        : `Revisão programada de "${tema}" para hoje.`,
+          ? `⚠️ Revisão de "${tema}" atrasada ${daysOverdue} dias${countLabel} — prioridade máxima!`
+          : `Revisão atrasada de "${tema}"${countLabel} — risco de esquecer!`
+        : `Revisão programada de "${tema}"${countLabel} para hoje.`,
       targetModule: "tutor",
       targetPath: "/dashboard/chatgpt",
       estimatedMinutes: 15,
       objective: "review",
       _groupKey: `review:${tema}`,
       sourceTable: "revisoes",
-      sourceRecordId: rev.id,
+      sourceRecordId: oldest.id,
+      fsrsCardId: fsrsCard?.id,
+      pendingCount,
+      pendingReviewIds,
+      nextReviewDate,
     });
+    revIdx++;
   }
 
   // ── 2. Error bank ────────────────────────────────────────────
