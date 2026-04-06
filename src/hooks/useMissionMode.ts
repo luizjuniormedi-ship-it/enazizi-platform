@@ -197,10 +197,9 @@ export function useMissionMode() {
     setState(prev => {
       const task = prev.tasks[prev.currentIndex];
       if (!task) return prev;
-      const newCompleted = [...prev.completedIds, task.id];
-      const newSources = { ...prev.completionSources, [task.id]: source };
-      const nextIdx = prev.currentIndex + 1;
-      const isFinished = nextIdx >= prev.tasks.length;
+
+      // For grouped reviews: decrement pendingCount, advance sourceRecordId
+      const hasPendingGroup = (task as any).pendingCount > 1 && (task as any).pendingReviewIds?.length > 1;
 
       // Persist to DB (fire-and-forget)
       if (user?.id) {
@@ -224,10 +223,44 @@ export function useMissionMode() {
         import("@/lib/activityLogger").then(({ logActivity }) => {
           logActivity(user.id, "task_completed", {
             taskId: task.id, type: task.type, topic: task.topic, source,
+            pendingBefore: (task as any).pendingCount || 1,
           });
-          if (isFinished) {
-            logActivity(user.id, "mission_completed", { total: prev.tasks.length });
-          }
+        });
+      }
+
+      // If grouped review with remaining pendentes: update task in-place
+      if (hasPendingGroup) {
+        const ids = [...(task as any).pendingReviewIds];
+        ids.shift(); // remove the one we just completed
+        const newCount = (task as any).pendingCount - 1;
+        const nextDate = ids.length > 1 ? (task as any).nextReviewDate : undefined;
+
+        const updatedTasks = [...prev.tasks];
+        updatedTasks[prev.currentIndex] = {
+          ...task,
+          sourceRecordId: ids[0], // advance to next oldest
+          pendingCount: newCount,
+          pendingReviewIds: ids,
+          nextReviewDate: nextDate,
+          reason: task.reason.replace(/\(\d+ pendentes\)/, `(${newCount} pendente${newCount > 1 ? 's' : ''})`),
+        } as any;
+
+        return {
+          ...prev,
+          tasks: updatedTasks,
+          // Don't advance index — same task, just decremented
+        };
+      }
+
+      // Normal flow: advance to next task
+      const newCompleted = [...prev.completedIds, task.id];
+      const newSources = { ...prev.completionSources, [task.id]: source };
+      const nextIdx = prev.currentIndex + 1;
+      const isFinished = nextIdx >= prev.tasks.length;
+
+      if (isFinished && user?.id) {
+        import("@/lib/activityLogger").then(({ logActivity }) => {
+          logActivity(user.id, "mission_completed", { total: prev.tasks.length });
         });
       }
 
