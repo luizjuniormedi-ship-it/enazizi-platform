@@ -1,91 +1,65 @@
 project_id = "qszsyskumcmuknumwxtk"
 
-[functions.mentor-chat]
-verify_jwt = false
-
-[functions.process-upload]
-verify_jwt = false
-
-[functions.generate-study-plan]
-verify_jwt = false
-
-[functions.question-generator]
-verify_jwt = false
-
-[functions.content-summarizer]
-verify_jwt = false
-
-[functions.motivational-coach]
-verify_jwt = false
-
-[functions.learning-optimizer]
-verify_jwt = false
-
-[functions.performance-predictor]
-verify_jwt = false
-
-[functions.admin-actions]
-verify_jwt = false
-
-[functions.populate-questions]
-verify_jwt = false
-
-[functions.professor-simulado]
-verify_jwt = false
-
-[functions.discursive-questions]
-verify_jwt = false
-
-[functions.benchmark-percentile]
-verify_jwt = false
-
-[functions.enamed-generator]
-verify_jwt = false
-
-[functions.clinical-simulation]
-verify_jwt = false
-
-[functions.anamnesis-trainer]
-verify_jwt = false
-
-[functions.medical-term-lookup]
-verify_jwt = false
-
-[functions.telegram-classroom]
-verify_jwt = false
-
-[functions.daily-question-generator]
-verify_jwt = false
-
-[functions.system-health-check]
-verify_jwt = false
-
-[functions.search-real-questions]
-verify_jwt = false
-
-[functions.extract-exam-questions]
-verify_jwt = false
-
-[functions.feynman-trainer]
-verify_jwt = false
-
-[functions.process-docx-questions]
-verify_jwt = false
-
-[functions.ingest-questions]
-verify_jwt = false
-
-[functions.extract-exam-visual]
-verify_jwt = false
-
-[functions.bulk-generate-content]
-verify_jwt = false
-
-[functions.auto-assign-simulados]
-verify_jwt = false
-
-[functions.dashboard-snapshot]
-verify_jwt = false
-
-[functions.process-email-queue]
-verify_jwt = true
+[functions]
+  [functions.admin-actions]
+    verify_jwt = false
+  [functions.anamnesis-trainer]
+    verify_jwt = false
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.auto-assign-simulados]
+    verify_jwt = false
+  [functions.benchmark-percentile]
+    verify_jwt = false
+  [functions.bulk-generate-content]
+    verify_jwt = false
+  [functions.clinical-simulation]
+    verify_jwt = false
+  [functions.content-summarizer]
+    verify_jwt = false
+  [functions.daily-question-generator]
+    verify_jwt = false
+  [functions.dashboard-snapshot]
+    verify_jwt = false
+  [functions.discursive-questions]
+    verify_jwt = false
+  [functions.enamed-generator]
+    verify_jwt = false
+  [functions.extract-exam-questions]
+    verify_jwt = false
+  [functions.extract-exam-visual]
+    verify_jwt = false
+  [functions.feynman-trainer]
+    verify_jwt = false
+  [functions.generate-study-plan]
+    verify_jwt = false
+  [functions.ingest-questions]
+    verify_jwt = false
+  [functions.learning-optimizer]
+    verify_jwt = false
+  [functions.medical-term-lookup]
+    verify_jwt = false
+  [functions.mentor-chat]
+    verify_jwt = false
+  [functions.motivational-coach]
+    verify_jwt = false
+  [functions.performance-predictor]
+    verify_jwt = false
+  [functions.populate-questions]
+    verify_jwt = false
+  [functions.process-docx-questions]
+    verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
+  [functions.process-upload]
+    verify_jwt = false
+  [functions.professor-simulado]
+    verify_jwt = false
+  [functions.question-generator]
+    verify_jwt = false
+  [functions.search-real-questions]
+    verify_jwt = false
+  [functions.system-health-check]
+    verify_jwt = false
+  [functions.telegram-classroom]
+    verify_jwt = false
