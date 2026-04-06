@@ -1060,6 +1060,42 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     }
   }
 
+  // ── Enrich with dailyPlanTaskId (lightweight lookup) ─────────
+  try {
+    const { data: todayPlan } = await supabase
+      .from("daily_plans")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("plan_date", today)
+      .limit(1)
+      .maybeSingle();
+
+    if (todayPlan) {
+      const { data: planTasks } = await supabase
+        .from("daily_plan_tasks")
+        .select("id, title, topic, completed")
+        .eq("daily_plan_id", todayPlan.id)
+        .eq("completed", false);
+
+      if (planTasks && planTasks.length > 0) {
+        for (const rec of recs) {
+          const topicLower = (rec.topic || "").toLowerCase();
+          const match = planTasks.find(pt => {
+            const ptTitle = (pt.title || "").toLowerCase();
+            const ptTopic = (pt.topic || "").toLowerCase();
+            return ptTitle.includes(topicLower) || ptTopic.includes(topicLower) ||
+              topicLower.includes(ptTitle.slice(0, 10)) || topicLower.includes(ptTopic.slice(0, 10));
+          });
+          if (match) {
+            rec.dailyPlanTaskId = match.id;
+          }
+        }
+      }
+    }
+  } catch {
+    // dailyPlanTaskId enrichment is best-effort
+  }
+
   // ── Sort by priority then apply weight-based slot limits ─────
   recs.sort((a, b) => b.priority - a.priority);
   const maxTotal = heavyRecovery.active ? heavyRecovery.maxTasks : recoveryMode ? 5 : 8;
