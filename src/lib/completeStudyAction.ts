@@ -310,18 +310,18 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
     }
   };
 
-  // 1. Persistir na tabela correta por tipo
+  // 1. Persistir na tabela correta por tipo (usando IDs canônicos quando disponíveis)
   switch (taskType) {
     case "review":
-      await safe(() => markReviewDone(userId, topic, now), "revisoes");
-      await safe(() => updateFsrsCard(userId, topic, now), "fsrs");
+      await safe(() => markReviewDone(userId, topic, now, payload.sourceRecordId), "revisoes");
+      await safe(() => updateFsrsCard(userId, topic, now, payload.fsrsCardId), "fsrs");
       break;
     case "error_review":
-      await safe(() => markErrorDominated(userId, topic, now), "error_bank");
-      await safe(() => updateFsrsCard(userId, topic, now), "fsrs");
+      await safe(() => markErrorDominated(userId, topic, now, payload.errorBankId || payload.sourceRecordId), "error_bank");
+      await safe(() => updateFsrsCard(userId, topic, now, payload.fsrsCardId), "fsrs");
       break;
     case "flashcard":
-      await safe(() => updateFsrsCard(userId, topic, now), "fsrs");
+      await safe(() => updateFsrsCard(userId, topic, now, payload.fsrsCardId || payload.sourceRecordId), "fsrs");
       break;
     case "content":
     case "new":

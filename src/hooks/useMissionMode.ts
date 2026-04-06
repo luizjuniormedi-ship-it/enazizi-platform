@@ -214,6 +214,11 @@ export function useMissionMode() {
           specialty: (task as any).specialty,
           source,
           originModule: "mission",
+          sourceTable: (task as any).sourceTable,
+          sourceRecordId: (task as any).sourceRecordId,
+          fsrsCardId: (task as any).fsrsCardId,
+          errorBankId: (task as any).errorBankId,
+          dailyPlanTaskId: (task as any).dailyPlanTaskId,
         });
 
         import("@/lib/activityLogger").then(({ logActivity }) => {
