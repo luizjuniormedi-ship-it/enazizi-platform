@@ -591,6 +591,8 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       estimatedMinutes: 15,
       objective: "review",
       _groupKey: `review:${tema}`,
+      sourceTable: "revisoes",
+      sourceRecordId: rev.id,
     });
   }
 
