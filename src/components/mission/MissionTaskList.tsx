@@ -66,6 +66,11 @@ export default function MissionTaskList({ tasks, currentIndex, completedIds }: P
                     {task.topic}
                   </span>
                 </div>
+                {(task as any).pendingCount > 1 && !done && (
+                  <Badge variant="outline" className="text-[9px] shrink-0 border-destructive/40 text-destructive">
+                    {(task as any).pendingCount}x
+                  </Badge>
+                )}
                 <Badge variant="outline" className="text-[10px] shrink-0">
                   {TYPE_LABELS[task.type] || task.type}
                 </Badge>
