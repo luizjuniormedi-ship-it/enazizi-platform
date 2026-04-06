@@ -38,6 +38,16 @@ export interface StudyActionPayload {
   source: "auto" | "manual";
   originModule: string;
   metadata?: Record<string, any>;
+  /** Canonical source table (e.g. "revisoes", "error_bank") */
+  sourceTable?: string;
+  /** Canonical record ID for direct DB update */
+  sourceRecordId?: string;
+  /** FSRS card ID for direct update */
+  fsrsCardId?: string;
+  /** Error bank ID for direct update */
+  errorBankId?: string;
+  /** Daily plan task ID for direct update */
+  dailyPlanTaskId?: string;
 }
 
 export interface StudyActionResult {
