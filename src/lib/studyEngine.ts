@@ -625,6 +625,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       estimatedMinutes: 10,
       objective: "correction",
       _groupKey: `error:${err.tema}`,
+      sourceTable: "error_bank",
+      sourceRecordId: err.id,
+      errorBankId: err.id,
     });
   }
 
