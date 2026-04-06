@@ -65,10 +65,22 @@ export interface StudyActionFullResult extends StudyActionResult {
 
 /* ── Helpers internos ── */
 
-async function markReviewDone(userId: string, topic: string, now: string): Promise<string | null> {
-  const today = now.slice(0, 10);
+async function markReviewDone(userId: string, topic: string, now: string, sourceRecordId?: string): Promise<string | null> {
+  // Direct update by canonical ID (preferred path)
+  if (sourceRecordId) {
+    const { error } = await supabase
+      .from("revisoes")
+      .update({ status: "concluida" as any, concluida_em: now } as any)
+      .eq("id", sourceRecordId)
+      .eq("user_id", userId)
+      .eq("status", "pendente");
+    if (!error) return "revisoes";
+    // If direct ID failed (already completed?), don't fallback
+    console.warn("[completeStudyAction] markReviewDone by ID failed:", sourceRecordId, error.message);
+    return null;
+  }
 
-  // Step 1: find all temas_estudados IDs matching topic
+  // Legacy fallback: text-based matching (for tasks without sourceRecordId)
   const { data: temaRows } = await supabase
     .from("temas_estudados")
     .select("id")
@@ -76,10 +88,8 @@ async function markReviewDone(userId: string, topic: string, now: string): Promi
     .ilike("tema", `%${topic}%`);
 
   if (!temaRows || temaRows.length === 0) return null;
-
   const temaIds = temaRows.map(r => r.id);
 
-  // Step 2: find oldest pending revision linked to those temas (sem filtro de data — safety net)
   const { data: pendingReview } = await supabase
     .from("revisoes")
     .select("id")
@@ -92,7 +102,6 @@ async function markReviewDone(userId: string, topic: string, now: string): Promi
 
   if (!pendingReview) return null;
 
-  // Step 3: update that specific revision
   const { error } = await supabase
     .from("revisoes")
     .update({ status: "concluida" as any, concluida_em: now } as any)
