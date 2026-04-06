@@ -37,7 +37,7 @@ export default function MissionTaskActions({ task, onComplete, onSkip }: Props) 
             {TYPE_LABELS[task.type] || task.type}
           </Badge>
           {hasPending && (
-            <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-600">
+            <Badge variant="outline" className="text-[10px] border-destructive/50 text-destructive">
               {pendingCount} pendente{pendingCount > 1 ? "s" : ""}
             </Badge>
           )}
