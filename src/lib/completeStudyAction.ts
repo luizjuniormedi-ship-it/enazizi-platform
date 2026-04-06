@@ -134,7 +134,31 @@ async function markErrorDominated(userId: string, topic: string, now: string, er
   return error ? null : "error_bank";
 }
 
-async function updateFsrsCard(userId: string, topic: string, now: string): Promise<string | null> {
+async function updateFsrsCard(userId: string, topic: string, now: string, fsrsCardId?: string): Promise<string | null> {
+  // Direct update by canonical ID (preferred)
+  if (fsrsCardId) {
+    const { data: card } = await supabase
+      .from("fsrs_cards")
+      .select("id, stability, scheduled_days")
+      .eq("id", fsrsCardId)
+      .eq("user_id", userId)
+      .limit(1)
+      .maybeSingle();
+
+    if (card) {
+      const nextDays = Math.max(1, Math.round((card.stability || 1) * 2.5));
+      const nextDue = new Date(Date.now() + nextDays * 86400_000).toISOString();
+      await supabase.from("fsrs_cards").update({
+        last_review: now,
+        due: nextDue,
+        scheduled_days: nextDays,
+        elapsed_days: 0,
+      }).eq("id", card.id);
+      return "fsrs_cards";
+    }
+  }
+
+  // Legacy fallback: text-based matching
   const { data: card } = await supabase
     .from("fsrs_cards")
     .select("id, stability, scheduled_days")
