@@ -31,6 +31,16 @@ export interface StudyRecommendation {
   objective?: StudyObjective;
   /** Category tag for anti-duplicate grouping */
   _groupKey?: string;
+  /** Canonical source table for direct DB updates */
+  sourceTable?: string;
+  /** Canonical record ID in sourceTable */
+  sourceRecordId?: string;
+  /** FSRS card ID when applicable */
+  fsrsCardId?: string;
+  /** Error bank ID when applicable */
+  errorBankId?: string;
+  /** Daily plan task ID when applicable */
+  dailyPlanTaskId?: string;
 }
 
 /** Heavy recovery phase (30-day progressive plan) */
