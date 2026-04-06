@@ -110,7 +110,21 @@ async function markReviewDone(userId: string, topic: string, now: string, source
   return error ? null : "revisoes";
 }
 
-async function markErrorDominated(userId: string, topic: string, now: string): Promise<string | null> {
+async function markErrorDominated(userId: string, topic: string, now: string, errorBankId?: string): Promise<string | null> {
+  // Direct update by canonical ID (preferred)
+  if (errorBankId) {
+    const { error } = await supabase
+      .from("error_bank")
+      .update({ dominado: true, dominado_em: now })
+      .eq("id", errorBankId)
+      .eq("user_id", userId)
+      .eq("dominado", false);
+    if (!error) return "error_bank";
+    console.warn("[completeStudyAction] markErrorDominated by ID failed:", errorBankId, error.message);
+    return null;
+  }
+
+  // Legacy fallback
   const { error } = await supabase
     .from("error_bank")
     .update({ dominado: true, dominado_em: now })
