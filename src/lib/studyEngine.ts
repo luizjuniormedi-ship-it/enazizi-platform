@@ -1158,6 +1158,20 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     strongTopics: strongDomains,
   });
 
+  // Debug: final output verification
+  if (result.length > 0) {
+    const first = result[0] as any;
+    console.log("[StudyEngine] FINAL OUTPUT first rec:", JSON.stringify({
+      id: first.id, type: first.type, topic: first.topic,
+      sourceRecordId: first.sourceRecordId ?? "UNDEFINED",
+      errorBankId: first.errorBankId ?? "UNDEFINED",
+      fsrsCardId: first.fsrsCardId ?? "UNDEFINED",
+      sourceTable: first.sourceTable ?? "UNDEFINED",
+      pendingCount: first.pendingCount ?? "UNDEFINED",
+      keys: Object.keys(first),
+    }));
+  }
+
   return { recommendations: result, adaptive };
  } catch (err) {
   console.error("[StudyEngine] Error generating recommendations:", err);
