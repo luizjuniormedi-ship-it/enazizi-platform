@@ -213,23 +213,62 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
         let source: "ai" | "bank" | "mixed" | "cache" = "ai";
 
         // --- CACHE: buscar questões existentes no banco antes de chamar IA ---
-        const topicFilters = topics.map((t: string) => `topic.ilike.%${t}%`).join(",");
+        // Extract subtopics from topic strings like "Cardiologia (IAM, Arritmias)"
+        const subtopicTerms: string[] = topics.flatMap((t: string) => {
+          const match = String(t).match(/\(([^)]+)\)/);
+          return match ? match[1].split(",").map((s: string) => s.trim()).filter(Boolean) : [];
+        });
+        const hasSubtopicFilter = subtopicTerms.length > 0;
         
-        const [{ data: cachedBank }, { data: cachedReal }] = await Promise.all([
-          sb.from("questions_bank")
-            .select("statement, options, correct_index, explanation, topic")
-            .or(topicFilters)
-            .eq("is_global", true)
-            .eq("review_status", "approved")
-            .limit(requestedCount * 2),
-          sb.from("real_exam_questions")
-            .select("statement, options, correct_index, explanation, topic")
-            .or(topicFilters)
-            .eq("is_active", true)
-            .limit(requestedCount * 2),
-        ]);
-
-        let allCached = [...(cachedBank || []), ...(cachedReal || [])];
+        // Use baseTopics (without parenthetical subtopics) for cache lookup
+        const topicFilters = baseTopics.map((t: string) => `topic.ilike.%${t}%`).join(",");
+        
+        let allCached: any[] = [];
+        
+        // If user selected specific subtopics, try subtopic-filtered cache first
+        if (hasSubtopicFilter) {
+          const subFilters = subtopicTerms.map((s: string) => `topic.ilike.%${s}%`).join(",");
+          const [{ data: subBank }, { data: subReal }] = await Promise.all([
+            sb.from("questions_bank")
+              .select("statement, options, correct_index, explanation, topic")
+              .or(subFilters)
+              .eq("is_global", true)
+              .eq("review_status", "approved")
+              .limit(requestedCount * 2),
+            sb.from("real_exam_questions")
+              .select("statement, options, correct_index, explanation, topic")
+              .or(subFilters)
+              .eq("is_active", true)
+              .limit(requestedCount * 2),
+          ]);
+          allCached = [...(subBank || []), ...(subReal || [])];
+          console.log(`[Cache] Subtopic filter (${subtopicTerms.join(", ")}): found ${allCached.length} questions`);
+        }
+        
+        // If no subtopic matches or not enough, fall back to broad topic filter
+        if (allCached.length < requestedCount) {
+          const [{ data: cachedBank }, { data: cachedReal }] = await Promise.all([
+            sb.from("questions_bank")
+              .select("statement, options, correct_index, explanation, topic")
+              .or(topicFilters)
+              .eq("is_global", true)
+              .eq("review_status", "approved")
+              .limit(requestedCount * 2),
+            sb.from("real_exam_questions")
+              .select("statement, options, correct_index, explanation, topic")
+              .or(topicFilters)
+              .eq("is_active", true)
+              .limit(requestedCount * 2),
+          ]);
+          // Dedup: don't add questions already in allCached
+          const existingKeys = new Set(allCached.map((q: any) => String(q.statement || "").slice(0, 80).toLowerCase()));
+          const broadResults = [...(cachedBank || []), ...(cachedReal || [])].filter((q: any) => {
+            const key = String(q.statement || "").slice(0, 80).toLowerCase();
+            return !existingKeys.has(key);
+          });
+          // If subtopics were selected, put subtopic matches first
+          allCached = [...allCached, ...broadResults];
+        }
 
         // Dedup against previousStatements
         const allPrevStatements = Array.isArray(previousStatements) ? [...previousStatements] : [];
