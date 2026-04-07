@@ -306,12 +306,19 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
       const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
       const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-      // Extract specialty from last user message
+      // Extract specialty and subtopic from context + user message
       const userMsg = messages?.[messages.length - 1]?.content || "";
       const HIGH_YIELD_KEYS = Object.keys(HIGH_YIELD);
       const matchedTopics = HIGH_YIELD_KEYS.filter(k => userMsg.toLowerCase().includes(k.toLowerCase()));
 
-      if (matchedTopics.length > 0) {
+      // If user selected specific subtopics, skip cache entirely — always generate fresh
+      const hasSubtopicFilter = generationContext?.subtopic && String(generationContext.subtopic).trim().length > 0;
+
+      if (hasSubtopicFilter) {
+        console.log(`[question-generator] Subtopic filter detected ("${generationContext.subtopic}") — skipping cache, generating fresh via AI`);
+      }
+
+      if (!hasSubtopicFilter && matchedTopics.length > 0) {
         const topicFilters = matchedTopics.map(t => `topic.ilike.%${t}%`).join(",");
         const [{ data: cachedBank }, { data: cachedReal }] = await Promise.all([
           sb.from("questions_bank")
