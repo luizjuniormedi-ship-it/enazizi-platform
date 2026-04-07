@@ -154,6 +154,7 @@ const ExamSimulator = () => {
             },
             body: JSON.stringify({
               stream: false,
+              outputFormat: "json",
               difficulty: examConfig.difficulty,
               messages: [{ role: "user", content: `Gere ${needed} questões EXCLUSIVAMENTE médicas para simulado de residência médica. Áreas: ${examConfig.areas.join(", ")}. Retorne JSON array puro sem markdown: [{"statement":"...", "options":["a","b","c","d","e"], "correct_index": 0, "topic":"Área", "explanation":"..."}]` }],
               generationContext: {
