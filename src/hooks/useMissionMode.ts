@@ -47,6 +47,16 @@ function saveLocal(s: MissionState) {
 /* ── DB helpers (fire-and-forget with error swallow) ── */
 async function upsertMissionDB(userId: string, state: MissionState): Promise<string | null> {
   try {
+    // Debug: verify canonical IDs before DB write
+    if (state.tasks.length > 0) {
+      const first = state.tasks[0] as any;
+      console.log("[MissionMode] upsertMissionDB canonical IDs in first task:", {
+        sourceRecordId: first.sourceRecordId || "MISSING",
+        errorBankId: first.errorBankId || "MISSING",
+        dailyPlanTaskId: first.dailyPlanTaskId || "MISSING",
+      });
+    }
+
     if (state.dbId) {
       await supabase.from("user_missions").update({
         current_tasks: state.tasks as any,
@@ -175,9 +185,38 @@ export function useMissionMode() {
   const startMission = useCallback(() => {
     const tasks = recommendations || [];
     if (tasks.length === 0) return;
+
+    // Ensure canonical IDs survive serialization (defensive deep-copy)
+    const safeTasks = tasks.map(t => {
+      const obj: any = { ...t };
+      // Explicitly preserve canonical IDs that may be stripped by optional chaining
+      if ((t as any).sourceTable) obj.sourceTable = (t as any).sourceTable;
+      if ((t as any).sourceRecordId) obj.sourceRecordId = (t as any).sourceRecordId;
+      if ((t as any).fsrsCardId) obj.fsrsCardId = (t as any).fsrsCardId;
+      if ((t as any).errorBankId) obj.errorBankId = (t as any).errorBankId;
+      if ((t as any).dailyPlanTaskId) obj.dailyPlanTaskId = (t as any).dailyPlanTaskId;
+      if ((t as any).pendingCount) obj.pendingCount = (t as any).pendingCount;
+      if ((t as any).pendingReviewIds) obj.pendingReviewIds = (t as any).pendingReviewIds;
+      if ((t as any).nextReviewDate) obj.nextReviewDate = (t as any).nextReviewDate;
+      return obj as StudyRecommendation;
+    });
+
+    // Debug: log canonical IDs for the first task
+    if (safeTasks.length > 0) {
+      const first = safeTasks[0] as any;
+      console.log("[MissionMode] startMission canonical IDs:", {
+        id: first.id, type: first.type,
+        sourceRecordId: first.sourceRecordId || "MISSING",
+        errorBankId: first.errorBankId || "MISSING",
+        fsrsCardId: first.fsrsCardId || "MISSING",
+        dailyPlanTaskId: first.dailyPlanTaskId || "MISSING",
+        sourceTable: first.sourceTable || "MISSING",
+      });
+    }
+
     const newState: MissionState = {
       status: "active",
-      tasks,
+      tasks: safeTasks,
       currentIndex: 0,
       completedIds: [],
       completionSources: {},
@@ -188,7 +227,7 @@ export function useMissionMode() {
     setState(newState);
     if (user?.id) {
       import("@/lib/activityLogger").then(({ logActivity }) => {
-        logActivity(user.id, "mission_started", { taskCount: tasks.length });
+        logActivity(user.id, "mission_started", { taskCount: safeTasks.length });
       });
     }
   }, [recommendations, user?.id]);

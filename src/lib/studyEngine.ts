@@ -1098,8 +1098,23 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
 
   // ── Sort by priority then apply weight-based slot limits ─────
   recs.sort((a, b) => b.priority - a.priority);
+
+  // Debug: log canonical IDs before applyWeights
+  const recsWithIds = recs.filter(r => (r as any).sourceRecordId || (r as any).errorBankId);
+  if (recsWithIds.length > 0) {
+    console.log("[StudyEngine] Recs with canonical IDs BEFORE applyWeights:", recsWithIds.length,
+      recsWithIds.slice(0, 3).map(r => ({ id: r.id, type: r.type, sourceRecordId: (r as any).sourceRecordId, errorBankId: (r as any).errorBankId }))
+    );
+  } else {
+    console.warn("[StudyEngine] NO recs have canonical IDs before applyWeights");
+  }
+
   const maxTotal = heavyRecovery.active ? heavyRecovery.maxTasks : recoveryMode ? 5 : 8;
   const result = applyWeights(recs, weights, maxTotal);
+
+  // Debug: log canonical IDs after applyWeights
+  const resultWithIds = result.filter(r => (r as any).sourceRecordId || (r as any).errorBankId);
+  console.log("[StudyEngine] Recs with canonical IDs AFTER applyWeights:", resultWithIds.length, "of", result.length);
 
   // ── FALLBACK: guarantee at least 1 task for any user ─────────
   if (result.length === 0) {
