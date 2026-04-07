@@ -303,255 +303,235 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
       systemPrompt += `\n\n=== QUESTÕES JÁ GERADAS (NÃO REPITA) ===\nAs seguintes questões já foram geradas em lotes anteriores. NÃO repita cenários clínicos similares, NÃO repita o mesmo perfil de paciente, NÃO repita o mesmo diagnóstico principal:\n${summaries}\n=== FIM DA LISTA ===`;
     }
 
-    // --- CACHE for JSON mode: try to serve from DB before calling AI ---
+    // --- SLOT-BASED GENERATION for JSON mode ---
     if (isJsonMode) {
       const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
       const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-      // Extract specialty and subtopic from context + user message
+      // Parse requested count from user message
       const userMsg = messages?.[messages.length - 1]?.content || "";
-      const HIGH_YIELD_KEYS = Object.keys(HIGH_YIELD);
-      const matchedTopics = HIGH_YIELD_KEYS.filter(k => userMsg.toLowerCase().includes(k.toLowerCase()));
+      const countMatch = userMsg.match(/(?:gere|crie|faça|gerar)\s+(?:exatamente\s+)?(\d+)/i);
+      const requestedCount = countMatch ? Math.min(parseInt(countMatch[1]), 50) : 10;
 
-      // If user selected specific subtopics, skip cache entirely — always generate fresh
-      const hasSubtopicFilter = generationContext?.subtopic && String(generationContext.subtopic).trim().length > 0;
-
-      if (hasSubtopicFilter) {
-        console.log(`[question-generator] Subtopic filter detected ("${generationContext.subtopic}") — skipping cache, generating fresh via AI`);
+      // Compute per-difficulty slot targets
+      type DiffSlot = { level: string; target: number; desc: string };
+      const levelDescs: Record<string, string> = {
+        facil: "FÁCIL — conceitos diretos, diagnóstico clássico e evidente, apresentação típica, sem pegadinhas.",
+        intermediario: "INTERMEDIÁRIO — exige raciocínio clínico moderado, diagnósticos diferenciais simples.",
+        dificil: "DIFÍCIL — apresentações atípicas, múltiplas comorbidades, dilemas de conduta complexos, pegadinhas de prova.",
+      };
+      const slots: DiffSlot[] = [];
+      if (difficulty === "misto") {
+        const nInterm = Math.round(requestedCount * 0.3);
+        const nDificil = requestedCount - nInterm;
+        if (nInterm > 0) slots.push({ level: "intermediario", target: nInterm, desc: levelDescs.intermediario });
+        if (nDificil > 0) slots.push({ level: "dificil", target: nDificil, desc: levelDescs.dificil });
+      } else {
+        const level = difficulty || "intermediario";
+        slots.push({ level, target: requestedCount, desc: levelDescs[level] || levelDescs.intermediario });
       }
 
+      console.log(`[question-generator] Slot plan: ${slots.map(s => `${s.level}=${s.target}`).join(", ")} (total=${requestedCount})`);
+
+      // Extract topic info
+      const HIGH_YIELD_KEYS = Object.keys(HIGH_YIELD);
+      const matchedTopics = HIGH_YIELD_KEYS.filter(k => userMsg.toLowerCase().includes(k.toLowerCase()));
+      const hasSubtopicFilter = generationContext?.subtopic && String(generationContext.subtopic).trim().length > 0;
+
+      // Try cache (with difficulty partitioning)
+      let allCached: any[] = [];
       if (!hasSubtopicFilter && matchedTopics.length > 0) {
         const topicFilters = matchedTopics.map(t => `topic.ilike.%${t}%`).join(",");
         const [{ data: cachedBank }, { data: cachedReal }] = await Promise.all([
-          sb.from("questions_bank")
-            .select("statement, options, correct_index, explanation, topic")
-            .or(topicFilters)
-            .eq("is_global", true)
-            .eq("review_status", "approved")
-            .limit(30),
-          sb.from("real_exam_questions")
-            .select("statement, options, correct_index, explanation, topic")
-            .or(topicFilters)
-            .eq("is_active", true)
-            .limit(30),
+          sb.from("questions_bank").select("statement, options, correct_index, explanation, topic, difficulty").or(topicFilters).eq("is_global", true).eq("review_status", "approved").limit(50),
+          sb.from("real_exam_questions").select("statement, options, correct_index, explanation, topic, difficulty").or(topicFilters).eq("is_active", true).limit(30),
         ]);
+        allCached = [...(cachedBank || []), ...(cachedReal || [])];
 
-        let allCached = [...(cachedBank || []), ...(cachedReal || [])];
-
-        // Dedup against avoidStatements
+        // Dedup
         if (Array.isArray(avoidStatements) && avoidStatements.length > 0) {
           const prevKeys = new Set(avoidStatements.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
-          allCached = allCached.filter((q: any) => {
-            const key = String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ");
-            return !prevKeys.has(key);
-          });
+          allCached = allCached.filter((q: any) => !prevKeys.has(String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
         }
-
-        // Filter out image refs and English content from cached questions
+        // Filter English + image refs
         allCached = allCached.filter((q: any) => {
           const stmt = String(q.statement || "");
-          if (IMAGE_REF_PATTERN.test(stmt)) {
-            console.warn(`[question-generator/cache] Rejeitada por ref a imagem: "${stmt.slice(0, 80)}"`);
-            return false;
-          }
-          if (ENGLISH_PATTERN.test(stmt)) {
-            console.warn(`[question-generator/cache] Rejeitada por inglês: "${stmt.slice(0, 80)}"`);
-            return false;
-          }
-          return true;
+          return !IMAGE_REF_PATTERN.test(stmt) && !ENGLISH_PATTERN.test(stmt);
         });
-
-        // If we have enough cached questions (>= 5), serve them directly
-        if (allCached.length >= 5) {
-          allCached.sort(() => Math.random() - 0.5);
-          const cachedQuestions = allCached.slice(0, 10).map((q: any) => ({
-            statement: cleanQuestionText(q.statement || ""),
-            options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : [],
-            correct_index: q.correct_index ?? 0,
-            topic: q.topic || matchedTopics[0],
-            explanation: cleanQuestionText(q.explanation || ""),
-          }));
-
-          console.log(`[question-generator] Served ${cachedQuestions.length} questions from cache (0 AI calls, source=cache)`);
-
-          const cachedResponse = {
-            choices: [{
-              message: {
-                tool_calls: [{
-                  function: {
-                    name: "generate_questions",
-                    arguments: JSON.stringify({ questions: cachedQuestions }),
-                  },
-                }],
-              },
-            }],
-            source: "cache",
-          };
-          return new Response(JSON.stringify(cachedResponse), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
       }
-    }
 
-    // Build AI fetch options
-    const aiFetchOptions: any = {
-      messages: [{ role: "system", content: systemPrompt }, ...messages],
-      stream: isJsonMode ? false : useStream,
-      ...(safeMaxRetries !== undefined ? { maxRetries: safeMaxRetries } : {}),
-      ...(safeTimeoutMs !== undefined ? { timeoutMs: safeTimeoutMs } : {}),
-    };
+      // Partition cache by difficulty
+      const normDiff = (q: any): string => {
+        const d = Number(q.difficulty);
+        if (Number.isFinite(d)) {
+          if (d <= 2) return "facil";
+          if (d >= 4) return "dificil";
+          return "intermediario";
+        }
+        return "intermediario";
+      };
+      const cacheByLevel: Record<string, any[]> = { facil: [], intermediario: [], dificil: [] };
+      for (const q of allCached) {
+        const lvl = normDiff(q);
+        if (cacheByLevel[lvl]) cacheByLevel[lvl].push(q);
+      }
 
-    // Use tool calling for structured JSON output
-    if (isJsonMode) {
-      aiFetchOptions.tools = [{
-        type: "function",
-        function: {
-          name: "generate_questions",
-          description: "Generate medical residency exam questions as structured JSON",
-          parameters: {
-            type: "object",
-            properties: {
-              questions: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    statement: { type: "string", description: "Full clinical case statement" },
-                    options: { type: "array", items: { type: "string" }, description: "5 answer options" },
-                    correct_index: { type: "integer", description: "Index of correct answer (0-4)" },
-                    topic: { type: "string", description: "Medical specialty - subtopic" },
-                    explanation: { type: "string", description: "Detailed explanation" },
-                  },
-                  required: ["statement", "options", "correct_index", "topic", "explanation"],
-                  additionalProperties: false,
-                },
-              },
-            },
-            required: ["questions"],
-            additionalProperties: false,
-          },
-        },
-      }];
-      aiFetchOptions.tool_choice = { type: "function", function: { name: "generate_questions" } };
-    }
+      // Generate per slot
+      const allQuestions: any[] = [];
+      const globalPrev = Array.isArray(avoidStatements) ? [...avoidStatements] : [];
+      const SAFE_BATCH = 8;
 
-    let response: Response;
-    const startMs = Date.now();
-    try {
-      response = await aiFetch(aiFetchOptions);
-    } catch (aiErr) {
-      console.error("question-generator aiFetch error:", aiErr);
-      const msg = aiErr instanceof Error ? aiErr.message : "Serviço de IA indisponível";
-      return new Response(JSON.stringify({ error: msg }), {
-        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const elapsed = Date.now() - startMs;
-    logAiUsage({
-      userId: "system-question-gen",
-      functionName: "question-generator",
-      modelUsed: "google/gemini-3-flash-preview",
-      success: response.ok,
-      responseTimeMs: elapsed,
-      modelTier: "standard",
-      errorMessage: response.ok ? undefined : `status ${response.status}`,
-    }).catch(() => {});
+      for (const slot of slots) {
+        const { level, target, desc } = slot;
+        console.log(`[question-generator][Slot ${level}] Target: ${target}`);
 
-    if (!response.ok) {
-      const t = await response.text();
-      console.error("AI response error:", response.status, t.slice(0, 300));
-      
-      const userMsg2 = response.status === 402
-        ? "Créditos de IA esgotados. Tente novamente mais tarde."
-        : response.status === 429
-        ? "Muitas requisições. Aguarde um momento e tente novamente."
-        : "Erro no serviço de IA. Tente novamente em alguns minutos.";
-      
-      return new Response(JSON.stringify({ error: userMsg2 }), {
-        status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+        // Cache for this slot
+        const cached = (cacheByLevel[level] || []).sort(() => Math.random() - 0.5).slice(0, target);
+        const fromCache = cached.map((q: any) => ({
+          statement: cleanQuestionText(q.statement || ""),
+          options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : [],
+          correct_index: q.correct_index ?? 0,
+          topic: q.topic || matchedTopics[0] || "Clínica Médica",
+          explanation: cleanQuestionText(q.explanation || ""),
+          difficulty_level: level,
+        }));
 
-    if (useStream) {
-      return new Response(response.body, {
-        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-      });
-    } else {
-      const json = await response.json();
+        let slotQuestions = [...fromCache];
+        let remaining = target - slotQuestions.length;
 
-      // Server-side quality filter for JSON mode
-      if (isJsonMode) {
-        const toolCall = json.choices?.[0]?.message?.tool_calls?.[0];
-        if (toolCall?.function?.arguments) {
-          try {
-            const parsed = JSON.parse(toolCall.function.arguments);
-            if (Array.isArray(parsed.questions)) {
-              const before = parsed.questions.length;
-              // Clean LaTeX residues from all text fields
-              parsed.questions = parsed.questions.map((q: any) => ({
+        // AI generation for remaining
+        if (remaining > 0) {
+          const MAX_ATTEMPTS = Math.ceil(remaining * 2.0 / SAFE_BATCH) + 2;
+          for (let attempt = 0; attempt < MAX_ATTEMPTS && slotQuestions.length < target; attempt++) {
+            const needed = Math.min(SAFE_BATCH, target - slotQuestions.length);
+            if (needed <= 0) break;
+
+            const slotPrompt = `Gere exatamente ${needed} questões de múltipla escolha (A-E) para residência médica.
+
+IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês em nenhum campo.
+
+NÍVEL DE DIFICULDADE: ${desc}
+TODAS as ${needed} questões DEVEM ser nível ${level.toUpperCase()}.
+
+TEMAS: ${matchedTopics.length > 0 ? matchedTopics.join(", ") : (generationContext?.topic || "Clínica Médica")}
+
+Retorne APENAS um array JSON puro:
+[{"statement":"caso clínico em português (mín 400 chars)","options":["A)...","B)...","C)...","D)...","E)..."],"correct_index":0,"topic":"tema","explanation":"explicação detalhada em português","difficulty_level":"${level}"}]
+
+REGRAS: mínimo 400 chars no enunciado, 5 alternativas, caso clínico completo, NUNCA LaTeX, NUNCA imagens/figuras, NUNCA inglês.
+${globalPrev.length > 0 ? `\nNÃO REPITA:\n${globalPrev.slice(0, 40).map((s, i) => `${i + 1}. ${String(s).slice(0, 100)}`).join("\n")}` : ""}`;
+
+            try {
+              const resp = await aiFetch({
+                messages: [{ role: "system", content: systemPrompt }, { role: "user", content: slotPrompt }],
+                maxTokens: 32768,
+                timeoutMs: 55000,
+              });
+
+              if (!resp.ok) { const t = await resp.text(); console.error(`[Slot ${level}] AI error:`, t.slice(0, 200)); continue; }
+              const aiData = await resp.json();
+
+              // Extract questions from tool call or content
+              let parsed: any[] = [];
+              const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+              if (toolCall?.function?.arguments) {
+                try {
+                  const tc = JSON.parse(toolCall.function.arguments);
+                  parsed = Array.isArray(tc.questions) ? tc.questions : [];
+                } catch {}
+              }
+              if (parsed.length === 0) {
+                const content = aiData.choices?.[0]?.message?.content || "";
+                const jm = content.match(/\[[\s\S]*\]/);
+                if (jm) {
+                  try { parsed = JSON.parse(jm[0].replace(/,\s*([\]}])/g, "$1")); } catch {
+                    const lb = jm[0].lastIndexOf("}");
+                    if (lb > 0) try { parsed = JSON.parse(jm[0].slice(0, lb + 1) + "]"); } catch {}
+                  }
+                }
+              }
+
+              // Strict filter
+              const valid = parsed.filter((q: any) => {
+                const stmt = String(q.statement || "");
+                if (stmt.length < 350) return false;
+                if (ENGLISH_PATTERN.test(stmt)) { console.warn(`[Slot ${level}] Rejeitada: inglês`); return false; }
+                if (IMAGE_REF_PATTERN.test(stmt)) { console.warn(`[Slot ${level}] Rejeitada: imagem`); return false; }
+                if (!Array.isArray(q.options) || q.options.length < 4) return false;
+                if (ENGLISH_PATTERN.test(q.options.join(" "))) { console.warn(`[Slot ${level}] Rejeitada: opções em inglês`); return false; }
+                return true;
+              }).map((q: any) => ({
                 ...q,
                 statement: cleanQuestionText(q.statement || ""),
                 options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : q.options,
                 explanation: q.explanation ? cleanQuestionText(q.explanation) : q.explanation,
+                difficulty_level: level, // Force slot level
               }));
-              parsed.questions = parsed.questions.filter((q: any) =>
-                isValidQuestion(q) && hasMinimumContext(q.statement || "")
-              );
 
-              // Context-aware filtering when generationContext is provided
-              if (generationContext && typeof generationContext === "object") {
-                const contextBefore = parsed.questions.length;
-                parsed.questions = parsed.questions.filter((q: any) => {
-                  const result = validateQuestionContext(q, generationContext);
-                  if (!result.valid) {
-                    logGenerationRejection(
-                      result.reason || "unknown",
-                      { specialty: generationContext.specialty, topic: generationContext.topic },
-                      q.statement || ""
-                    );
-                    return false;
-                  }
-                  return true;
-                });
-                console.log(`[question-generator] Context filter: ${contextBefore} -> ${parsed.questions.length} questions`);
-              }
-
-              // Global AI validation layer
-              {
-                const valCtx = generationContext ? { specialty: generationContext.specialty, topic: generationContext.topic } : {};
-                const { valid: validQs, rejected } = validateQuestionBatch(parsed.questions, valCtx);
-                if (rejected.length > 0) {
-                  console.log(`[question-generator] AI validation rejected ${rejected.length} questions: ${rejected.map(r => r.reason).join(", ")}`);
-                }
-                parsed.questions = validQs;
-              }
-              // Fix consecutive repeated correct_index by swapping options
-              for (let i = 1; i < parsed.questions.length; i++) {
-                const prev = parsed.questions[i - 1];
-                const curr = parsed.questions[i];
-                if (curr.correct_index === prev.correct_index && Array.isArray(curr.options) && curr.options.length === 5) {
-                  const avoid = new Set([prev.correct_index]);
-                  if (i >= 2) avoid.add(parsed.questions[i - 2].correct_index);
-                  const candidates = [0, 1, 2, 3, 4].filter(x => !avoid.has(x));
-                  const newIdx = candidates[Math.floor(Math.random() * candidates.length)];
-                  const oldIdx = curr.correct_index;
-                  const temp = curr.options[newIdx];
-                  curr.options[newIdx] = curr.options[oldIdx];
-                  curr.options[oldIdx] = temp;
-                  curr.options = curr.options.map((opt: string, oi: number) => {
-                    const letter = String.fromCharCode(65 + oi);
-                    return opt.replace(/^[A-E]\)\s*/, `${letter}) `);
-                  });
-                  curr.correct_index = newIdx;
+              // Dedup
+              const prevKeys = new Set(globalPrev.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
+              for (const q of valid) {
+                if (slotQuestions.length >= target) break;
+                const key = String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ");
+                if (!prevKeys.has(key)) {
+                  globalPrev.push(String(q.statement || "").slice(0, 120));
+                  slotQuestions.push(q);
                 }
               }
-              console.log(`[question-generator] Filtered: ${before} -> ${parsed.questions.length} questions`);
-              toolCall.function.arguments = JSON.stringify(parsed);
+              console.log(`[Slot ${level}] batch ${attempt + 1}: total ${slotQuestions.length}/${target}`);
+            } catch (err) {
+              console.error(`[Slot ${level}] batch ${attempt + 1} exception:`, err);
             }
-          } catch { /* keep original */ }
+          }
+        }
+
+        // Track cache entries
+        for (const q of fromCache) globalPrev.push(String(q.statement || "").slice(0, 120));
+
+        allQuestions.push(...slotQuestions.slice(0, target));
+      }
+
+      // Fix consecutive repeated correct_index
+      for (let i = 1; i < allQuestions.length; i++) {
+        const prev = allQuestions[i - 1];
+        const curr = allQuestions[i];
+        if (curr.correct_index === prev.correct_index && Array.isArray(curr.options) && curr.options.length === 5) {
+          const avoid = new Set([prev.correct_index]);
+          if (i >= 2) avoid.add(allQuestions[i - 2].correct_index);
+          const candidates = [0, 1, 2, 3, 4].filter(x => !avoid.has(x));
+          const newIdx = candidates[Math.floor(Math.random() * candidates.length)];
+          const oldIdx = curr.correct_index;
+          const temp = curr.options[newIdx];
+          curr.options[newIdx] = curr.options[oldIdx];
+          curr.options[oldIdx] = temp;
+          curr.correct_index = newIdx;
         }
       }
+
+      // Log metrics
+      const finalDist: Record<string, number> = {};
+      for (const q of allQuestions) finalDist[q.difficulty_level || "unknown"] = (finalDist[q.difficulty_level || "unknown"] || 0) + 1;
+      console.log(`[question-generator] RESULTADO: ${allQuestions.length}/${requestedCount} | Dist: ${JSON.stringify(finalDist)}`);
+
+      // Return in tool_call format (same as before)
+      const slotResponse = {
+        choices: [{
+          message: {
+            tool_calls: [{
+              function: {
+                name: "generate_questions",
+                arguments: JSON.stringify({ questions: allQuestions }),
+              },
+            }],
+          },
+        }],
+        source: "slot-based",
+        difficulty_distribution: finalDist,
+      };
+      return new Response(JSON.stringify(slotResponse), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
       return new Response(JSON.stringify(json), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
