@@ -257,8 +257,12 @@ const Simulados = () => {
 
   const startExamWithQuestions = (qs: SimQuestion[], config: any) => {
     setQuestions(qs);
-    const isTimedMode = config.mode === "prova" || config.mode === "extremo";
-    const timeLeft = isTimedMode ? qs.length * config.timePerQuestion * 60 : 0;
+    const isTimedMode = config.mode === "prova" || config.mode === "extremo" || config.mode === "prova_real";
+    const timeLeft = isTimedMode
+      ? config.mode === "prova_real" && config.realExamProfile
+        ? (EXAM_PROFILES[config.realExamProfile]?.timeMinutes || 300) * 60
+        : qs.length * config.timePerQuestion * 60
+      : 0;
     setRestoredState({ timeLeft });
     startTimeRef.current = new Date();
     setPhase("exam");
