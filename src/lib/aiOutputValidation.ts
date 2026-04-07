@@ -53,23 +53,18 @@ export function validateAIContent(
 
 // ── Question validation ──
 
-function validateQuestionClient(q: any, ctx: ClientValidationContext): ClientValidationResult {
+function validateQuestionClient(q: any, _ctx: ClientValidationContext): ClientValidationResult {
   const statement = q.statement || q.question || "";
 
-  if (ENGLISH_PATTERN.test(statement)) {
-    return { valid: false, reason: "english_content" };
-  }
-  if (NON_MEDICAL_PATTERN.test(statement)) {
-    return { valid: false, reason: "non_medical" };
-  }
-  if (IMAGE_REF_PATTERN.test(statement)) {
-    return { valid: false, reason: "image_reference" };
-  }
-  if (!statement || statement.length < 30) {
+  // Structural validation only — backend already handles content quality filters
+  if (!statement || statement.length < 10) {
     return { valid: false, reason: "too_short" };
   }
-  if (Array.isArray(q.options) && (q.options.length < 4 || q.options.length > 5)) {
+  if (!Array.isArray(q.options) || q.options.length < 4 || q.options.length > 5) {
     return { valid: false, reason: "invalid_options" };
+  }
+  if (typeof q.correct_index !== "number" && typeof q.correct !== "number") {
+    return { valid: false, reason: "no_correct_answer" };
   }
 
   return { valid: true };

@@ -47,8 +47,6 @@ function saveLocal(s: MissionState) {
 /* ── DB helpers (fire-and-forget with error swallow) ── */
 async function upsertMissionDB(userId: string, state: MissionState): Promise<string | null> {
   try {
-    console.log("[MissionMode] upsertMissionDB state.tasks[0]", JSON.stringify(state.tasks[0] ?? null));
-
     if (state.dbId) {
       await supabase.from("user_missions").update({
         current_tasks: state.tasks as any,
