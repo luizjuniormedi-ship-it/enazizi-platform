@@ -373,6 +373,46 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           }
         }
 
+        // Complementation loop: if still short, do extra AI rounds
+        if (questions.length < requestedCount) {
+          const extraNeeded = requestedCount - questions.length;
+          console.log(`[Complement] Need ${extraNeeded} more questions, running extra AI rounds`);
+          const extraPrev = [...allPrevStatements, ...questions.map((q: any) => String(q.statement || "").slice(0, 120))];
+          const EXTRA_ATTEMPTS = Math.ceil(extraNeeded / SAFE_BATCH) + 2;
+          for (let ext = 0; ext < EXTRA_ATTEMPTS && questions.length < requestedCount; ext++) {
+            const stillNeed = Math.min(SAFE_BATCH, requestedCount - questions.length);
+            if (stillNeed <= 0) break;
+            try {
+              const aiPrompt = buildPrompt(stillNeed, extraPrev);
+              const resp = await aiFetch({
+                messages: [{ role: "user", content: aiPrompt }],
+                model: "google/gemini-2.5-flash",
+                maxTokens: 32768,
+                timeoutMs: 120000,
+              });
+              if (!resp.ok) continue;
+              const aiD = await resp.json();
+              const cnt = sanitizeAiContent(aiD.choices?.[0]?.message?.content || "");
+              const jm = cnt.match(/\[[\s\S]*\]/);
+              if (!jm) continue;
+              let rj = jm[0].replace(/,\s*([\]}])/g, "$1");
+              let ps: any[] = [];
+              try { ps = JSON.parse(rj); } catch {
+                const lb = rj.lastIndexOf("}");
+                if (lb > 0) try { ps = JSON.parse(rj.slice(0, lb + 1) + "]"); } catch { continue; }
+                else continue;
+              }
+              const vld = ps.filter((q: any) => String(q.statement || "").length >= 400 && Array.isArray(q.options) && q.options.length >= 4);
+              for (const q of vld) {
+                if (questions.length >= requestedCount) break;
+                extraPrev.push(String(q.statement || "").slice(0, 120));
+                questions.push({ ...q, statement: sanitizeStatement(q.statement || ""), block: q.block || baseTopics[0] || topics[0], difficulty_level: q.difficulty_level || difficulty });
+              }
+              console.log(`[Complement round ${ext + 1}] total: ${questions.length}/${requestedCount}`);
+            } catch (e) { console.error(`[Complement ${ext + 1}] error:`, e); }
+          }
+        }
+
         // Fix consecutive repeated correct_index
         for (let i = 1; i < questions.length; i++) {
           const prev = questions[i - 1];
