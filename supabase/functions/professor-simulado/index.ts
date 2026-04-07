@@ -16,6 +16,8 @@ function sanitizeStatement(raw: string): string {
   s = s.replace(/\n?\s*\*{0,2}(Tópico|Tema|Especialidade|Subtema|Dificuldade|Difficulty)[:\s].*/gi, "");
   // Remove "Questão X:" prefix
   s = s.replace(/^\s*\*{0,2}Questão\s*\d*\s*:?\s*\*{0,2}\s*/gi, "");
+  // Clean LaTeX residues
+  s = cleanQuestionText(s);
   // Truncate after last "?" if trailing lines are short non-clinical metadata
   const lastQ = s.lastIndexOf("?");
   if (lastQ > 0 && lastQ < s.length - 2) {
@@ -27,6 +29,18 @@ function sanitizeStatement(raw: string): string {
     }
   }
   return s.trim();
+}
+
+/** Filter out questions that reference images/figures we cannot display */
+function filterImageRefs(questions: any[]): any[] {
+  return questions.filter((q: any) => {
+    const stmt = String(q.statement || "");
+    if (IMAGE_REF_PATTERN.test(stmt)) {
+      console.warn(`[professor-simulado] Rejeitada por ref a imagem: "${stmt.slice(0, 80)}"`);
+      return false;
+    }
+    return true;
+  });
 }
 
 type DifficultyLevel = "facil" | "intermediario" | "dificil";
