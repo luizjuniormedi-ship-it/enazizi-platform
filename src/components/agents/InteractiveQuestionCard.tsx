@@ -33,6 +33,11 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
   const answered = selected !== null;
   const isCorrect = selected === question.correctIndex;
 
+  // Clean LaTeX residues from statement and options
+  const cleanedStatement = useMemo(() => cleanLatex(question.statement), [question.statement]);
+  const cleanedOptions = useMemo(() => question.options.map(o => cleanLatex(o)), [question.options]);
+  const cleanedExplanation = useMemo(() => cleanLatex(question.explanation), [question.explanation]);
+
   const handleSelect = async (optionIndex: number) => {
     setSelected(optionIndex);
     const correct = optionIndex === question.correctIndex;
