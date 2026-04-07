@@ -106,8 +106,9 @@ const App = () => (
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+               <Route path="/login" element={<Login />} />
+               <Route path="/demo-questoes-imagem" element={<DemoImageQuestions />} />
+               <Route path="/register" element={<Register />} />
               <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                 <Route index element={<Dashboard />} />
                 <Route path="cronograma" element={<Navigate to="/dashboard/planner" replace />} />
