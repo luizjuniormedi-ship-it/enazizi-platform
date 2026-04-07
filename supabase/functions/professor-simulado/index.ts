@@ -396,6 +396,21 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           });
         }
 
+        // Filter out image refs and English content from cached questions
+        allCached = allCached.filter((q: any) => {
+          const stmt = String(q.statement || "");
+          if (IMAGE_REF_PATTERN.test(stmt)) {
+            console.warn(`[professor-simulado/cache] Rejeitada por ref a imagem: "${stmt.slice(0, 80)}"`);
+            return false;
+          }
+          const ENGLISH_RE = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female|diagnosis is|management of|regarding the|concerning the|correct answer|following statements|all of the following|except which|best describes|chief complaint)\b/i;
+          if (ENGLISH_RE.test(stmt)) {
+            console.warn(`[professor-simulado/cache] Rejeitada por inglês: "${stmt.slice(0, 80)}"`);
+            return false;
+          }
+          return true;
+        });
+
         const selectedCached = pickCachedQuestions({
           questions: allCached,
           requestedCount,
@@ -405,9 +420,9 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 
         const fromCache = selectedCached.map((q: any) => ({
           statement: sanitizeStatement(q.statement || ""),
-          options: Array.isArray(q.options) ? q.options : [],
+          options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : [],
           correct_index: q.correct_index ?? 0,
-          explanation: q.explanation || "",
+          explanation: cleanQuestionText(q.explanation || ""),
           topic: q.topic || topics[0],
           block: baseTopics.find((t: string) => String(q.topic || "").toLowerCase().includes(t.toLowerCase())) || baseTopics[0] || topics[0],
           difficulty_level: inferDifficultyLevel(q, difficulty),
