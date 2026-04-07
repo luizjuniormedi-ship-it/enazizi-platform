@@ -311,6 +311,8 @@ REGRAS:
 - Baseie-se em provas reais de residência (ENARE, USP, UNIFESP)
 - REGRA DE GABARITO: NUNCA repita a mesma letra de resposta correta em questões consecutivas
 - TODOS os textos DEVEM estar em português brasileiro
+- NUNCA use formatação LaTeX (ex: $x$, \\times, \\%). Use texto puro: 148×90 mmHg, 38%, etc.
+- NUNCA referencie imagens, figuras, gráficos ou radiografias. Todas as informações clínicas devem estar descritas no texto.
 
 ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 - NUNCA repita nome, idade, sexo ou perfil de paciente entre questões
