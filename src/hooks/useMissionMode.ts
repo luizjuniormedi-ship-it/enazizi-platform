@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useStudyEngine, type StudyRecommendation } from "./useStudyEngine";
 import { useAuth } from "./useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -119,7 +119,18 @@ async function completeMissionDB(dbId: string | null) {
 
 export function useMissionMode() {
   const { user } = useAuth();
-  const { data: recommendations, isLoading: engineLoading } = useStudyEngine();
+  const { data: rawRecommendations, isLoading: engineLoading } = useStudyEngine();
+
+  // Deep-copy para eliminar problemas de referência/proxy do React Query
+  const recommendations = useMemo(
+    () => {
+      if (!rawRecommendations) return [];
+      const deep = JSON.parse(JSON.stringify(rawRecommendations)) as StudyRecommendation[];
+      console.log("[MissionMode] normalizedRecommendations[0]", JSON.stringify(deep[0] ?? null));
+      return deep;
+    },
+    [rawRecommendations]
+  );
   const dbSyncRef = useRef(false);
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -343,7 +354,7 @@ export function useMissionMode() {
     totalMinutes,
     completedMinutes,
     engineLoading,
-    hasTasks: (recommendations || []).length > 0,
+    hasTasks: recommendations.length > 0,
     startMission,
     completeCurrentTask,
     skipCurrentTask,
