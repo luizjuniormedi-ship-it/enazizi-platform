@@ -275,12 +275,11 @@ const Simulados = () => {
         : qs.length * config.timePerQuestion * 60
       : 0;
 
-    // Assign TRI params for TRI mode
+    // Assign TRI params for TRI mode based on tagged difficulty
     if (config.mode === "tri") {
-      const params: TRIParams[] = qs.map(q => {
-        // Infer difficulty from prompt difficulty or topic complexity
-        const diffLevel = config.difficulty === "tri" ? "intermediario" : config.difficulty;
-        return assignTRIParams(diffLevel as "facil" | "intermediario" | "dificil");
+      const params: TRIParams[] = qs.map((q: any) => {
+        const diffLevel = q._triDifficulty || "intermediario";
+        return assignTRIParams(diffLevel);
       });
       triParamsRef.current = params;
     }
