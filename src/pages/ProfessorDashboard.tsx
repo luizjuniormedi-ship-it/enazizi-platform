@@ -246,7 +246,7 @@ const ProfessorDashboard = () => {
           const subs = subtopics[topic]?.trim();
           const topicLabel = subs ? `${topic} (${subs})` : topic;
           
-          const BATCH = 25;
+          const BATCH = 10;
           const batches = Math.ceil(topicCount / BATCH);
           let topicQuestions: any[] = [];
           
