@@ -192,7 +192,8 @@ const ProfessorDashboard = () => {
 
   const regenerateMissing = async () => {
     const target = parseInt(questionCount);
-    const deficit = target - generatedQuestions.length;
+    const currentQuestions = [...generatedQuestions]; // snapshot
+    const deficit = target - currentQuestions.length;
     if (deficit <= 0) return;
     setGenerating(true);
     try {
@@ -200,7 +201,7 @@ const ProfessorDashboard = () => {
         const subs = subtopics[t]?.trim();
         return subs ? `${t} (${subs})` : t;
       });
-      const previousStatements = generatedQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
+      const previousStatements = currentQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
       
       toast({ title: "Regenerando...", description: `Gerando ${deficit} questões faltantes` });
       
@@ -214,8 +215,10 @@ const ProfessorDashboard = () => {
       });
       
       const newQs = res.questions || [];
-      setGeneratedQuestions(prev => [...prev, ...newQs]);
-      toast({ title: "Pronto!", description: `${newQs.length} questões regeneradas.` });
+      // Merge with snapshot to avoid race condition
+      const merged = [...currentQuestions, ...newQs];
+      setGeneratedQuestions(merged);
+      toast({ title: "Pronto!", description: `${newQs.length} questões regeneradas. Total: ${merged.length}/${target}` });
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao regenerar", variant: "destructive" });
     } finally {
@@ -243,7 +246,7 @@ const ProfessorDashboard = () => {
           const subs = subtopics[topic]?.trim();
           const topicLabel = subs ? `${topic} (${subs})` : topic;
           
-          const BATCH = 25;
+          const BATCH = 10;
           const batches = Math.ceil(topicCount / BATCH);
           let topicQuestions: any[] = [];
           
@@ -286,7 +289,7 @@ const ProfessorDashboard = () => {
           const subs = subtopics[t]?.trim();
           return subs ? `${t} (${subs})` : t;
         });
-        const FRONTEND_BATCH = 25;
+        const FRONTEND_BATCH = 10;
         const batches = Math.ceil(total / FRONTEND_BATCH);
 
         for (let b = 0; b < batches; b++) {
@@ -325,9 +328,9 @@ const ProfessorDashboard = () => {
 
       // Complement loop: fill deficit if fewer than target
       const target = total;
-      for (let fill = 0; fill < 2 && allQuestions.length < target; fill++) {
+      for (let fill = 0; fill < 4 && allQuestions.length < target; fill++) {
         const deficit = target - allQuestions.length;
-        toast({ title: `Completando déficit...`, description: `Faltam ${deficit} questões` });
+        toast({ title: `Completando déficit...`, description: `Faltam ${deficit} questões (tentativa ${fill + 1})` });
         const prevStmts = allQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
         const topicsWithSubsFill = selectedTopics.map((t) => {
           const subs = subtopics[t]?.trim();
@@ -337,7 +340,7 @@ const ProfessorDashboard = () => {
           const res = await callAPI({
             action: "generate_questions",
             topics: topicsWithSubsFill,
-            count: Math.min(deficit, 25),
+            count: deficit,
             difficulty,
             previousStatements: prevStmts,
           });
@@ -1219,7 +1222,7 @@ const ProfessorDashboard = () => {
             <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }}>Cancelar</Button>
             <Button
               onClick={createSimulado}
-              disabled={creating || (questionMode === "ai" ? generatedQuestions.length === 0 : manualQuestions.length === 0)}
+              disabled={creating || generating || (questionMode === "ai" ? (generatedQuestions.length === 0 || generatedQuestions.length < parseInt(questionCount)) : manualQuestions.length === 0)}
               className="gap-2"
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

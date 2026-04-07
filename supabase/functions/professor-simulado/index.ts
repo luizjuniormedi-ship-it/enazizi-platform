@@ -97,17 +97,18 @@ serve(async (req) => {
         const { topics, count = 10, difficulty = "intermediario", difficultyMix, previousStatements } = params;
         if (!topics || !topics.length) throw new Error("Selecione pelo menos um tema");
 
-        const batchCount = Math.min(count, 30); // Cap at 30 per call (frontend handles batching)
+        const requestedCount = Math.min(count, 60);
+        // Smaller batches = more reliable JSON + less truncation
+        const SAFE_BATCH = 8;
 
         const topicList = topics.join(", ");
-        const perTopic = Math.max(1, Math.floor(batchCount / topics.length));
 
         // Build difficulty instruction
         let difficultyInstruction = "";
         if (difficulty === "misto" && difficultyMix) {
-          const nFacil = Math.round(batchCount * (difficultyMix.facil || 0) / 100);
-          const nInterm = Math.round(batchCount * (difficultyMix.intermediario || 0) / 100);
-          const nDificil = batchCount - nFacil - nInterm;
+          const nFacil = Math.round(requestedCount * (difficultyMix.facil || 0) / 100);
+          const nInterm = Math.round(requestedCount * (difficultyMix.intermediario || 0) / 100);
+          const nDificil = requestedCount - nFacil - nInterm;
           difficultyInstruction = `DISTRIBUIÇÃO DE DIFICULDADE OBRIGATÓRIA:
 - ${nFacil} questões de nível FÁCIL (conceitos básicos, diagnóstico direto, caso clínico simples)
 - ${nInterm} questões de nível INTERMEDIÁRIO (raciocínio clínico moderado, diagnósticos diferenciais)
@@ -119,11 +120,11 @@ Cada questão DEVE ter o campo "difficulty_level" com valor "facil", "intermedia
             intermediario: "INTERMEDIÁRIO (raciocínio clínico moderado, diagnósticos diferenciais)",
             dificil: "DIFÍCIL (casos complexos, pegadinhas de prova, múltiplas comorbidades)",
           };
-          difficultyInstruction = `NÍVEL DE DIFICULDADE: Todas as ${batchCount} questões devem ser de nível ${levelMap[difficulty] || levelMap.intermediario}.
+          difficultyInstruction = `NÍVEL DE DIFICULDADE: Todas as questões devem ser de nível ${levelMap[difficulty] || levelMap.intermediario}.
 Cada questão DEVE ter o campo "difficulty_level" com valor "${difficulty}".`;
         }
 
-        // High-yield subtopics map (inline — edge functions can't import from src/)
+        // High-yield subtopics map
         const HIGH_YIELD: Record<string, string[]> = {
           "Cardiologia": ["Insuficiência Cardíaca", "Síndromes Coronarianas Agudas", "Hipertensão Arterial", "Arritmias", "Endocardite"],
           "Cirurgia": ["Abdome Agudo", "Politrauma", "Hérnias", "Colecistite", "Apendicite"],
@@ -157,7 +158,9 @@ Cada questão DEVE ter o campo "difficulty_level" com valor "${difficulty}".`;
           ? `\n\nSUBTÓPICOS PRIORITÁRIOS (dar preferência a estes por serem os mais cobrados em provas de residência):\n${priorityLines}\nDê preferência a esses subtópicos ao criar os casos clínicos, distribuindo as questões entre eles.`
           : "";
 
-        const prompt = `Gere exatamente ${batchCount} questões objetivas de múltipla escolha (A-E) para residência médica sobre: ${topicList}.${priorityBlock}
+        const buildPrompt = (batchSize: number, prevStatements: string[]) => {
+          const perTopic = Math.max(1, Math.floor(batchSize / topics.length));
+          let prompt = `Gere exatamente ${batchSize} questões objetivas de múltipla escolha (A-E) para residência médica sobre: ${topicList}.${priorityBlock}
 
 IDIOMA OBRIGATÓRIO: TUDO deve ser escrito em PORTUGUÊS BRASILEIRO. Enunciados, alternativas, explicações, blocos — absolutamente TUDO em pt-BR. NUNCA use inglês.
 
@@ -188,24 +191,23 @@ Siga o padrão ENAMED/ENARE com caso clínico completo contendo:
 6. Pergunta objetiva final clara
 
 REGRAS:
-- OBRIGATÓRIO: No mínimo 70% das questões (${Math.ceil(batchCount * 0.7)} de ${batchCount}) devem ser baseadas em CASOS CLÍNICOS com apresentação de paciente, história, exame físico e/ou exames complementares
-- As demais (até 30%) podem ser questões teóricas diretas
+- OBRIGATÓRIO: No mínimo 70% das questões devem ser baseadas em CASOS CLÍNICOS
 - 5 alternativas (A-E)
 - correct_index é o índice (0-4) da alternativa correta
 - Baseie-se em provas reais de residência (ENARE, USP, UNIFESP)
-- Agrupe as questões por bloco temático no array (todas de um bloco juntas, depois o próximo bloco)
-- REGRA DE GABARITO: NUNCA repita a mesma letra de resposta correta em questões consecutivas. Distribua equilibradamente entre A(0), B(1), C(2), D(3) e E(4). Em cada bloco de 5 questões, use pelo menos 3 letras diferentes.
-- TODOS os textos DEVEM estar em português brasileiro. PROIBIDO qualquer texto em inglês.
+- REGRA DE GABARITO: NUNCA repita a mesma letra de resposta correta em questões consecutivas
+- TODOS os textos DEVEM estar em português brasileiro
 
 ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 - NUNCA repita nome, idade, sexo ou perfil de paciente entre questões
 - Cada questão DEVE ter um paciente COMPLETAMENTE DIFERENTE
-- Variar: nomes regionais brasileiros, idades de 0 a 95 anos, profissões diversas
-- Alternar cenários: PS, enfermaria, UTI, UBS, SAMU, ambulatório, domicílio
-- Variar comorbidades: DM, HAS, IRC, HIV, tabagismo, etilismo, gestante
-- Variar queixa principal e tempo de evolução (horas, dias, semanas, meses)
-- PROIBIDO: dois pacientes com mesmo perfil demográfico no mesmo bloco
-- Retorne APENAS o JSON, sem texto adicional${Array.isArray(previousStatements) && previousStatements.length > 0 ? `\n\n=== QUESTÕES JÁ GERADAS (NÃO REPITA) ===\nNÃO repita cenários similares aos seguintes:\n${previousStatements.slice(0, 100).map((s: string, i: number) => `${i + 1}. ${String(s).slice(0, 120)}`).join("\n")}\n=== FIM ===` : ""}`;
+- Retorne APENAS o JSON, sem texto adicional`;
+
+          if (prevStatements.length > 0) {
+            prompt += `\n\n=== QUESTÕES JÁ GERADAS (NÃO REPITA) ===\nNÃO repita cenários similares aos seguintes:\n${prevStatements.slice(0, 80).map((s: string, i: number) => `${i + 1}. ${s}`).join("\n")}\n=== FIM ===`;
+          }
+          return prompt;
+        };
 
         let questions: any[] = [];
         let source: "ai" | "bank" | "mixed" | "cache" = "ai";
@@ -219,28 +221,29 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
             .or(topicFilters)
             .eq("is_global", true)
             .eq("review_status", "approved")
-            .limit(batchCount * 2),
+            .limit(requestedCount * 2),
           sb.from("real_exam_questions")
             .select("statement, options, correct_index, explanation, topic")
             .or(topicFilters)
             .eq("is_active", true)
-            .limit(batchCount * 2),
+            .limit(requestedCount * 2),
         ]);
 
         let allCached = [...(cachedBank || []), ...(cachedReal || [])];
 
         // Dedup against previousStatements
-        if (Array.isArray(previousStatements) && previousStatements.length > 0) {
-          const prevKeys = new Set(previousStatements.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
+        const allPrevStatements = Array.isArray(previousStatements) ? [...previousStatements] : [];
+        if (allPrevStatements.length > 0) {
+          const prevKeys = new Set(allPrevStatements.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
           allCached = allCached.filter((q: any) => {
             const key = String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ");
             return !prevKeys.has(key);
           });
         }
 
-        // Shuffle and take up to batchCount
+        // Shuffle and take up to requestedCount
         allCached.sort(() => Math.random() - 0.5);
-        const fromCache = allCached.slice(0, batchCount).map((q: any) => ({
+        const fromCache = allCached.slice(0, requestedCount).map((q: any) => ({
           statement: sanitizeStatement(q.statement || ""),
           options: Array.isArray(q.options) ? q.options : [],
           correct_index: q.correct_index ?? 0,
@@ -250,33 +253,34 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           difficulty_level: difficulty || "intermediario",
         }));
 
-        const remaining = batchCount - fromCache.length;
+        let remaining = requestedCount - fromCache.length;
         console.log(`[Cache] Found ${fromCache.length} cached, need ${remaining} from AI`);
 
         if (remaining === 0) {
-          // 100% from cache — no AI call needed
           questions = fromCache;
           source = "cache";
         } else {
-          // Need AI for remaining questions
-          const aiPrompt = remaining < batchCount
-            ? prompt.replace(`Gere exatamente ${batchCount}`, `Gere exatamente ${remaining}`).replace(`das ${batchCount} questões`, `das ${remaining} questões`)
-            : prompt;
-
+          // AI completion loop: generate in small batches until we hit the target
           let aiQuestions: any[] = [];
-          let aiSuccess = false;
-          for (let attempt = 0; attempt < 2 && !aiSuccess; attempt++) {
+          const MAX_AI_ATTEMPTS = Math.ceil(remaining * 2.0 / SAFE_BATCH) + 2; // generous attempts
+          const collectedPrev = [...allPrevStatements, ...fromCache.map((q: any) => String(q.statement || "").slice(0, 120))];
+
+          for (let attempt = 0; attempt < MAX_AI_ATTEMPTS && aiQuestions.length < remaining; attempt++) {
+            const stillNeeded = Math.min(SAFE_BATCH, remaining - aiQuestions.length);
+            if (stillNeeded <= 0) break;
+
             try {
+              const aiPrompt = buildPrompt(stillNeeded, collectedPrev);
               const response = await aiFetch({
                 messages: [{ role: "user", content: aiPrompt }],
                 model: "google/gemini-2.5-flash",
-                maxTokens: 16384,
+                maxTokens: 32768,
                 timeoutMs: 120000,
               });
 
               if (!response.ok) {
                 const t = await response.text();
-                console.error(`AI error attempt ${attempt + 1}:`, t);
+                console.error(`AI batch ${attempt + 1} error:`, t.slice(0, 200));
                 continue;
               }
 
@@ -285,44 +289,63 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 
               const jsonMatch = content.match(/\[[\s\S]*\]/);
               if (!jsonMatch) {
-                console.warn(`AI attempt ${attempt + 1}: no JSON array found`);
+                console.warn(`AI batch ${attempt + 1}: no JSON array found`);
                 continue;
               }
 
               let rawJson = jsonMatch[0];
               rawJson = rawJson.replace(/,\s*([\]}])/g, "$1");
+              let parsed: any[] = [];
               try {
-                aiQuestions = JSON.parse(rawJson);
+                parsed = JSON.parse(rawJson);
               } catch {
                 const lastBrace = rawJson.lastIndexOf("}");
                 if (lastBrace > 0) {
-                  const truncated = rawJson.slice(0, lastBrace + 1) + "]";
                   try {
-                    aiQuestions = JSON.parse(truncated);
-                    console.warn(`Recovered ${aiQuestions.length} questions from truncated JSON`);
-                  } catch {
-                    console.warn(`AI attempt ${attempt + 1}: JSON recovery failed`);
-                    continue;
-                  }
-                } else {
-                  continue;
-                }
+                    parsed = JSON.parse(rawJson.slice(0, lastBrace + 1) + "]");
+                    console.warn(`Recovered ${parsed.length} questions from truncated JSON`);
+                  } catch { continue; }
+                } else { continue; }
               }
 
-              aiSuccess = aiQuestions.length > 0;
+              // Filter valid questions immediately
+              const valid = parsed.filter((q: any) => {
+                const s = String(q.statement || "");
+                if (s.length < 400) return false;
+                if (!/[?.]/.test(s.slice(-80))) return false;
+                if (!Array.isArray(q.options) || q.options.length < 4) return false;
+                return true;
+              }).map((q: any) => ({
+                ...q,
+                statement: sanitizeStatement(q.statement || ""),
+                block: q.block || baseTopics[0] || topics[0],
+                difficulty_level: q.difficulty_level || difficulty,
+              }));
+
+              // Dedup against collected
+              const prevKeys = new Set(collectedPrev.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
+              const deduped = valid.filter((q: any) => {
+                const key = String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ");
+                return !prevKeys.has(key);
+              });
+
+              for (const q of deduped) {
+                collectedPrev.push(String(q.statement || "").slice(0, 120));
+              }
+              aiQuestions = [...aiQuestions, ...deduped];
+              console.log(`[AI batch ${attempt + 1}] Got ${deduped.length} valid, total AI: ${aiQuestions.length}/${remaining}`);
             } catch (err) {
-              console.error(`AI attempt ${attempt + 1} exception:`, err);
+              console.error(`AI batch ${attempt + 1} exception:`, err);
             }
           }
 
-          if (fromCache.length > 0 && aiSuccess) {
+          if (fromCache.length > 0 && aiQuestions.length > 0) {
             questions = [...fromCache, ...aiQuestions];
             source = "mixed";
           } else if (fromCache.length > 0) {
-            // AI failed but we have cache
             questions = fromCache;
             source = "cache";
-          } else if (aiSuccess) {
+          } else if (aiQuestions.length > 0) {
             questions = aiQuestions;
             source = "ai";
           } else {
@@ -334,7 +357,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
               .in("topic", topics)
               .eq("is_global", true)
               .order("created_at", { ascending: false })
-              .limit(batchCount);
+              .limit(requestedCount);
             if (bankRows && bankRows.length > 0) {
               questions = bankRows.map((r: any) => ({
                 statement: sanitizeStatement(r.statement || ""),
@@ -349,16 +372,8 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
             }
           }
         }
-        // Post-parse dedup against previousStatements
-        if (Array.isArray(previousStatements) && previousStatements.length > 0) {
-          const prevKeys = new Set(previousStatements.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
-          questions = questions.filter((q: any) => {
-            const key = String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ");
-            return !prevKeys.has(key);
-          });
-        }
 
-        // Fix consecutive repeated correct_index: swap options to vary the answer letter
+        // Fix consecutive repeated correct_index
         for (let i = 1; i < questions.length; i++) {
           const prev = questions[i - 1];
           const curr = questions[i];
@@ -379,22 +394,24 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           }
         }
 
-        // Sanitize statements: remove answers/metadata leaked by AI
-        questions = questions.map((q: any) => ({ ...q, statement: sanitizeStatement(q.statement || "") }));
+        // Truncate to exactly requestedCount
+        if (questions.length > requestedCount) {
+          questions = questions.slice(0, requestedCount);
+        }
 
-        // Reject incomplete/truncated questions (statement too short or missing question mark)
-        questions = questions.filter((q: any) => {
-          const s = String(q.statement || "");
-          if (s.length < 400) return false;
-          // Must end with ? or have options — reject mid-sentence truncation
-          if (!/[?.]/.test(s.slice(-80))) return false;
-          if (!Array.isArray(q.options) || q.options.length < 4) return false;
-          return true;
+        const generatedCount = questions.length;
+        const missingCount = requestedCount - generatedCount;
+
+        console.log(`Generated ${generatedCount}/${requestedCount} questions (source: ${source}, missing: ${missingCount})`);
+
+        return ok({
+          questions,
+          source,
+          requested_count: requestedCount,
+          generated_count: generatedCount,
+          missing_count: missingCount,
+          exact_count: missingCount === 0,
         });
-
-        console.log(`Generated ${questions.length} questions (source: ${source})`);
-
-        return ok({ questions, source });
       }
 
       case "create_simulado": {
