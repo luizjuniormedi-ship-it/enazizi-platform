@@ -328,9 +328,9 @@ const ProfessorDashboard = () => {
 
       // Complement loop: fill deficit if fewer than target
       const target = total;
-      for (let fill = 0; fill < 2 && allQuestions.length < target; fill++) {
+      for (let fill = 0; fill < 4 && allQuestions.length < target; fill++) {
         const deficit = target - allQuestions.length;
-        toast({ title: `Completando déficit...`, description: `Faltam ${deficit} questões` });
+        toast({ title: `Completando déficit...`, description: `Faltam ${deficit} questões (tentativa ${fill + 1})` });
         const prevStmts = allQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
         const topicsWithSubsFill = selectedTopics.map((t) => {
           const subs = subtopics[t]?.trim();
@@ -340,7 +340,7 @@ const ProfessorDashboard = () => {
           const res = await callAPI({
             action: "generate_questions",
             topics: topicsWithSubsFill,
-            count: Math.min(deficit, 25),
+            count: deficit,
             difficulty,
             previousStatements: prevStmts,
           });
