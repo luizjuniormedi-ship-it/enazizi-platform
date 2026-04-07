@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Award, BarChart3, AlertTriangle, GraduationCap, RotateCcw, Bookmark, BookOpen, Loader2, TrendingUp, Clock, Skull, Target } from "lucide-react";
+import { Award, BarChart3, AlertTriangle, GraduationCap, RotateCcw, Bookmark, BookOpen, Loader2, TrendingUp, Clock, Skull, Target, Trophy, Users } from "lucide-react";
 import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { XP_REWARDS } from "@/hooks/useGamification";
+import { EXAM_PROFILES, estimatePercentile, estimateGrade } from "@/lib/realExamDistribution";
 import type { SimQuestion } from "./SimuladoExam";
 import type { SimuladoMode } from "./SimuladoSetup";
 
@@ -17,9 +18,10 @@ interface SimuladoResultProps {
   flaggedQuestions: number[];
   mode: SimuladoMode;
   elapsedSeconds?: number;
+  realExamProfile?: string;
 }
 
-const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErrors, flaggedQuestions, mode, elapsedSeconds }: SimuladoResultProps) => {
+const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErrors, flaggedQuestions, mode, elapsedSeconds, realExamProfile }: SimuladoResultProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [generatingGuide, setGeneratingGuide] = useState<string | null>(null);
@@ -48,6 +50,13 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
   const avgTimePerQuestion = elapsedSeconds && totalAnswered > 0
     ? Math.round(elapsedSeconds / totalAnswered)
     : null;
+
+  // Real exam competitive analysis
+  const isProvaReal = mode === "prova_real" && realExamProfile;
+  const profile = isProvaReal ? (EXAM_PROFILES[realExamProfile] || EXAM_PROFILES.GERAL) : null;
+  const cutoff = profile?.cutoffEstimate || 60;
+  const percentile = profile ? estimatePercentile(pct, cutoff) : null;
+  const gradeInfo = profile ? estimateGrade(pct, cutoff) : null;
 
   const getDiagnosis = (areaPct: number) => {
     if (areaPct >= 80) return { label: "Dominado", color: "text-green-500", bg: "bg-green-500" };
@@ -102,26 +111,47 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
   });
   const weakAreas = sortedAreas.filter(([, v]) => v.total > 0 && (v.correct / v.total) * 100 < 60);
 
+  // Identify topics that cost the most points
+  const impactAreas = sortedAreas
+    .map(([area, v]) => ({ area, missed: v.total - v.correct, total: v.total, pct: v.total > 0 ? Math.round((v.correct / v.total) * 100) : 0 }))
+    .filter(a => a.missed > 0)
+    .sort((a, b) => b.missed - a.missed)
+    .slice(0, 5);
+
   return (
     <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
       <div className="text-center py-6">
-        {isExtremo ? (
+        {isProvaReal ? (
+          <Trophy className="h-16 w-16 text-amber-500 mx-auto mb-4" />
+        ) : isExtremo ? (
           <Skull className="h-16 w-16 text-destructive mx-auto mb-4" />
         ) : (
           <Award className="h-16 w-16 text-primary mx-auto mb-4" />
         )}
         <h1 className="text-3xl font-bold mb-2">
-          {isExtremo ? "Prova Extrema Concluída!" : "Simulado Concluído!"}
+          {isProvaReal ? `Prova Real ${profile?.name} Concluída!` : isExtremo ? "Prova Extrema Concluída!" : "Simulado Concluído!"}
         </h1>
-        <div className={`text-5xl font-black ${isExtremo && pct < 60 ? "text-destructive" : "text-primary"}`}>{pct}%</div>
+        <div className={`text-5xl font-black ${
+          isProvaReal ? (gradeInfo?.approved ? "text-green-500" : "text-destructive") :
+          isExtremo && pct < 60 ? "text-destructive" : "text-primary"
+        }`}>{pct}%</div>
         <p className="text-muted-foreground mt-2">{correctCount} de {questions.length} questões corretas</p>
         {totalAnswered < questions.length && (
           <p className="text-xs text-yellow-600 mt-1">{questions.length - totalAnswered} questões não respondidas</p>
         )}
         <p className="text-xs text-muted-foreground mt-1">+{XP_REWARDS.simulado_completed} XP ganhos 🎉</p>
 
+        {/* Prova Real: Grade badge */}
+        {isProvaReal && gradeInfo && (
+          <div className={`mt-4 inline-block px-4 py-2 rounded-full text-sm font-semibold ${
+            gradeInfo.approved ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+          }`}>
+            {gradeInfo.approved ? "✅" : "❌"} Nota {gradeInfo.grade} — {gradeInfo.label}
+          </div>
+        )}
+
         {/* Extreme verdict */}
-        {isExtremo && (
+        {isExtremo && !isProvaReal && (
           <div className={`mt-4 inline-block px-4 py-2 rounded-full text-sm font-semibold ${
             pct >= 80 ? "bg-emerald-100 text-emerald-700" :
             pct >= 60 ? "bg-amber-100 text-amber-700" :
@@ -143,6 +173,65 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
           </div>
         )}
       </div>
+
+      {/* ── Prova Real: Competitive Analysis ── */}
+      {isProvaReal && profile && percentile !== null && gradeInfo && (
+        <div className="glass-card p-6 border-amber-500/20">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <Users className="h-5 w-5 text-amber-500" /> Análise Competitiva — {profile.name}
+          </h3>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="p-3 rounded-lg bg-secondary/50 text-center">
+              <p className="text-xs text-muted-foreground mb-1">Sua Nota</p>
+              <p className="text-2xl font-black text-primary">{pct}%</p>
+            </div>
+            <div className="p-3 rounded-lg bg-secondary/50 text-center">
+              <p className="text-xs text-muted-foreground mb-1">Nota de Corte Estimada</p>
+              <p className="text-2xl font-black text-amber-600">{cutoff}%</p>
+            </div>
+            <div className="p-3 rounded-lg bg-secondary/50 text-center">
+              <p className="text-xs text-muted-foreground mb-1">Percentil Estimado</p>
+              <p className="text-2xl font-black text-primary">{percentile}º</p>
+            </div>
+            <div className="p-3 rounded-lg bg-secondary/50 text-center">
+              <p className="text-xs text-muted-foreground mb-1">Posição Relativa</p>
+              <p className="text-lg font-bold text-primary">Top {100 - percentile}%</p>
+            </div>
+          </div>
+          <div className={`p-3 rounded-lg ${gradeInfo.approved ? "bg-green-500/10 border border-green-500/20" : "bg-red-500/10 border border-red-500/20"}`}>
+            <p className="text-sm">{gradeInfo.message}</p>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-3">* Estimativas baseadas em análise estatística de provas anteriores. Valores aproximados.</p>
+        </div>
+      )}
+
+      {/* ── Prova Real: Impact Analysis ── */}
+      {isProvaReal && impactAreas.length > 0 && (
+        <div className="glass-card p-6">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-destructive" /> Temas que Mais Derrubaram
+          </h3>
+          <div className="space-y-3">
+            {impactAreas.map(({ area, missed, total, pct: areaPct }, i) => (
+              <div key={area} className="flex items-center gap-3">
+                <span className="text-lg font-black text-destructive w-6">{i + 1}</span>
+                <div className="flex-1">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-medium">{area}</span>
+                    <span className="text-destructive font-semibold">-{missed} questões ({areaPct}% acerto)</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-secondary">
+                    <div className={`h-full rounded-full ${areaPct >= 60 ? "bg-yellow-500" : "bg-destructive"}`} style={{ width: `${areaPct}%` }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            Focar nestes {impactAreas.length} temas poderia aumentar sua nota em até +{impactAreas.reduce((s, a) => s + a.missed, 0)} pontos.
+          </p>
+        </div>
+      )}
 
       {/* Area breakdown with diagnosis */}
       <div className="glass-card p-6">
@@ -184,7 +273,7 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
       </div>
 
       {/* Extreme Mode: Corrective Action Plan */}
-      {isExtremo && weakAreas.length > 0 && (
+      {(isExtremo || isProvaReal) && weakAreas.length > 0 && (
         <div className="glass-card p-6 border-destructive/20">
           <h3 className="font-semibold mb-4 flex items-center gap-2">
             <Target className="h-5 w-5 text-destructive" /> Plano Corretivo Pós-Prova
@@ -209,7 +298,7 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
                       : "Quase lá. Foque nas pegadinhas e casos clínicos complexos."}
                   </p>
                   <div className="flex gap-2 flex-wrap">
-                    <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => handleStudyWithTutor({ topic: area, statement: `Preciso revisar ${area} após resultado baixo na prova extrema`, options: [], correct: 0 })}>
+                    <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => handleStudyWithTutor({ topic: area, statement: `Preciso revisar ${area} após resultado baixo na prova`, options: [], correct: 0 })}>
                       <GraduationCap className="h-3 w-3" /> Tutor IA
                     </Button>
                     <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => navigate(`/dashboard/simulados?sc_topic=${encodeURIComponent(area)}&sc_objective=reforço`)}>
@@ -286,8 +375,8 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
       )}
 
       <TaskCompletionCard
-        title="Simulado concluído!"
-        subtitle={`Você acertou ${correctCount} de ${questions.length} questões (${pct}%). Seu progresso foi atualizado.`}
+        title={isProvaReal ? "Prova Real concluída!" : "Simulado concluído!"}
+        subtitle={`Você acertou ${correctCount} de ${questions.length} questões (${pct}%). ${isProvaReal && gradeInfo ? (gradeInfo.approved ? "Parabéns, aprovado!" : "Continue estudando!") : "Seu progresso foi atualizado."}`}
         secondaryLabel="Novo Simulado"
         onSecondary={onNewSimulado}
         tertiaryLabel="Refazer erros"

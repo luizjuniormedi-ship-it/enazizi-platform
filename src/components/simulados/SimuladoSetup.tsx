@@ -1,13 +1,14 @@
 import { useState, useMemo } from "react";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
-import { FileText, Play, History, BookOpen, Timer, Skull } from "lucide-react";
+import { FileText, Play, History, BookOpen, Timer, Skull, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import SimuladoHistory from "./SimuladoHistory";
+import { EXAM_PROFILES, calculateTopicDistribution, calculateDifficultySlots } from "@/lib/realExamDistribution";
 
 import { ALL_SPECIALTIES as ALL_TOPICS, SPECIALTY_CYCLES } from "@/constants/specialties";
 import { SPECIALTY_SUBTOPICS } from "@/constants/subtopics";
@@ -31,10 +32,10 @@ const EXAM_BOARDS = [
   { value: "SANTA_CASA", label: "Santa Casa SP" },
 ];
 
-export type SimuladoMode = "prova" | "estudo" | "extremo";
+export type SimuladoMode = "prova" | "estudo" | "extremo" | "prova_real";
 
 interface SimuladoSetupProps {
-  onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string }) => void;
+  onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string; realExamProfile?: string }) => void;
   onResumeSession: () => void;
   onDiscardSession: () => void;
   onRetryErrors: (sessionId: string) => void;
@@ -59,6 +60,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
   const [specificTopic, setSpecificTopic] = useState("");
   const [examBoard, setExamBoard] = useState("all");
   const [mode, setMode] = useState<SimuladoMode>("estudo");
+  const [realExamBoard, setRealExamBoard] = useState("GERAL");
 
   const toggleTopic = (topic: string) => {
     setSelectedTopics(prev =>
@@ -66,12 +68,32 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
     );
   };
 
+  const selectedProfile = EXAM_PROFILES[realExamBoard] || EXAM_PROFILES.GERAL;
+
   const handleStart = () => {
+    if (mode === "prova_real") {
+      const profile = selectedProfile;
+      const topicsFromProfile = profile.topicWeights.map(tw => tw.topic);
+      const count = profile.totalQuestions;
+      const timePerQ = profile.timeMinutes / count;
+      onStart({
+        topics: topicsFromProfile,
+        count,
+        difficulty: "prova_real",
+        timePerQuestion: timePerQ,
+        mode: "prova_real",
+        examBoard: realExamBoard,
+        realExamProfile: realExamBoard,
+      });
+      return;
+    }
     const count = customCount ? parseInt(customCount) : questionCount;
     onStart({ topics: selectedTopics, count, difficulty, timePerQuestion, mode, specificTopic: specificTopic.trim() || undefined, examBoard: examBoard !== "all" ? examBoard : undefined });
   };
 
-  const totalTime = (customCount ? parseInt(customCount) || questionCount : questionCount) * timePerQuestion;
+  const totalTime = mode === "prova_real"
+    ? selectedProfile.timeMinutes
+    : (customCount ? parseInt(customCount) || questionCount : questionCount) * timePerQuestion;
 
   return (
     <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
@@ -92,6 +114,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             "Defina a quantidade de questões (5 a 100) e o nível de dificuldade",
             "No Modo Estudo: veja explicação após cada resposta e aprenda em tempo real",
             "No Modo Prova: cronômetro, sem feedback, resultado completo no final",
+            "No Modo Prova Real: simula uma prova de residência completa com distribuição real de temas",
             "Marque questões com a flag para revisão posterior em ambos os modos",
           ]} />
         </div>
@@ -127,7 +150,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
           {/* Mode toggle */}
           <div>
             <label className="text-sm font-semibold mb-3 block">Modo do Simulado</label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <button
                 onClick={() => setMode("estudo")}
                 className={`p-4 rounded-xl border-2 transition-all text-left ${
@@ -158,6 +181,22 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
               </button>
               <button
                 onClick={() => {
+                  setMode("prova_real");
+                }}
+                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  mode === "prova_real"
+                    ? "border-amber-500 bg-amber-500/10"
+                    : "border-border bg-secondary/30 hover:border-amber-500/30"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <Trophy className="h-5 w-5 text-amber-500" />
+                  <span className="font-semibold text-sm">Prova Real</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Simula prova de residência. Distribuição e dificuldade reais.</p>
+              </button>
+              <button
+                onClick={() => {
                   setMode("extremo");
                   setDifficulty("dificil");
                   if (!customCount && questionCount < 50) setQuestionCount(50);
@@ -178,101 +217,157 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             </div>
           </div>
 
-          {/* Topic selection grouped by cycle */}
-          <div>
-            <label className="text-sm font-semibold mb-3 block">Selecione os assuntos</label>
-            <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-3" />
-            {(cycleFilter
-              ? [{ label: cycleFilter, specialties: getFilteredSpecialties(cycleFilter) }]
-              : SPECIALTY_CYCLES
-            ).map(cycle => (
-              <div key={cycle.label} className="mb-4">
-                <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">{cycle.label}</p>
-                <div className="flex flex-wrap gap-2">
-                  {cycle.specialties.map(topic => (
-                    <button
-                      key={topic}
-                      onClick={() => toggleTopic(topic)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                        selectedTopics.includes(topic)
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/30"
-                      }`}
-                    >
-                      {topic}
-                    </button>
+          {/* ── Prova Real Configuration ── */}
+          {mode === "prova_real" && (
+            <>
+              <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 space-y-3">
+                <p className="text-sm font-semibold text-amber-600 flex items-center gap-2">
+                  <Trophy className="h-4 w-4" /> Simulado Prova Real
+                </p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• <strong>{selectedProfile.totalQuestions} questões</strong> com distribuição de temas idêntica à prova real</li>
+                  <li>• Dificuldade mista: {selectedProfile.difficultyMix.easy}% fácil, {selectedProfile.difficultyMix.medium}% médio, {selectedProfile.difficultyMix.hard}% difícil</li>
+                  <li>• Cronômetro: <strong>{selectedProfile.timeMinutes} minutos</strong> ({Math.round(selectedProfile.timeMinutes / 60)}h)</li>
+                  <li>• Nota de corte estimada: <strong>{selectedProfile.cutoffEstimate}%</strong></li>
+                  <li>• Resultado com percentil estimado e análise competitiva</li>
+                </ul>
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold mb-2 block">Selecione a Banca</label>
+                <Select value={realExamBoard} onValueChange={setRealExamBoard}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Escolha a banca" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(EXAM_PROFILES).map(([key, profile]) => (
+                      <SelectItem key={key} value={key}>{profile.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Topic distribution preview */}
+              <div>
+                <label className="text-sm font-semibold mb-2 block">Distribuição de Temas</label>
+                <div className="space-y-2">
+                  {calculateTopicDistribution(selectedProfile, selectedProfile.totalQuestions).map(({ topic, count }) => (
+                    <div key={topic} className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">{topic}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 h-2 rounded-full bg-secondary overflow-hidden">
+                          <div className="h-full rounded-full bg-amber-500" style={{ width: `${(count / selectedProfile.totalQuestions) * 100}%` }} />
+                        </div>
+                        <span className="text-xs font-medium w-12 text-right">{count}q ({Math.round((count / selectedProfile.totalQuestions) * 100)}%)</span>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
-            ))}
-            <div className="flex gap-2 mt-2">
-              <Button variant="ghost" size="sm" className="text-xs" onClick={() => setSelectedTopics([...ALL_TOPICS])}>
-                Selecionar todos
-              </Button>
-              <Button variant="ghost" size="sm" className="text-xs" onClick={() => setSelectedTopics([])}>
-                Limpar
-              </Button>
-            </div>
-            </div>
+            </>
+          )}
 
-            {/* Subtopics based on selected specialties */}
-            {(() => {
-              const availableSubtopics = selectedTopics.flatMap(t => (SPECIALTY_SUBTOPICS[t] || []).map(sub => ({ specialty: t, sub })));
-              if (availableSubtopics.length === 0) return null;
-              return (
-                <div>
-                  <label className="text-sm font-semibold mb-2 block">Subtemas (opcional)</label>
-                  <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
-                    {availableSubtopics.map(({ specialty, sub }) => (
-                      <button
-                        key={`${specialty}-${sub}`}
-                        onClick={() => setSpecificTopic(prev => {
-                          const current = prev.split(",").map(s => s.trim()).filter(Boolean);
-                          return current.includes(sub)
-                            ? current.filter(s => s !== sub).join(", ")
-                            : [...current, sub].join(", ");
-                        })}
-                        className={`px-2 py-1 rounded-full text-[10px] font-medium transition-all border ${
-                          specificTopic.split(",").map(s => s.trim()).includes(sub)
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/30"
-                        }`}
-                      >
-                        {sub}
-                      </button>
-                    ))}
+          {/* ── Standard modes: Topic selection ── */}
+          {mode !== "prova_real" && (
+            <>
+              {/* Topic selection grouped by cycle */}
+              <div>
+                <label className="text-sm font-semibold mb-3 block">Selecione os assuntos</label>
+                <CycleFilter activeCycle={cycleFilter} onCycleChange={setCycleFilter} className="mb-3" />
+                {(cycleFilter
+                  ? [{ label: cycleFilter, specialties: getFilteredSpecialties(cycleFilter) }]
+                  : SPECIALTY_CYCLES
+                ).map(cycle => (
+                  <div key={cycle.label} className="mb-4">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">{cycle.label}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {cycle.specialties.map(topic => (
+                        <button
+                          key={topic}
+                          onClick={() => toggleTopic(topic)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                            selectedTopics.includes(topic)
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/30"
+                          }`}
+                        >
+                          {topic}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">Clique para selecionar subtemas ou digite abaixo</p>
-                </div>
-              );
-            })()}
-
-            {/* Specific topic free text */}
-            <div>
-              <label className="text-sm font-semibold mb-2 block">Tema específico (opcional)</label>
-              <Input
-                placeholder="Ex: Doença de Chagas, Pré-eclâmpsia, IAM com supra..."
-                value={specificTopic}
-                onChange={(e) => setSpecificTopic(e.target.value)}
-                className="text-sm"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Deixe vazio para temas variados dentro das especialidades selecionadas</p>
-            </div>
-          {/* Exam Board */}
-          <div>
-            <label className="text-sm font-semibold mb-2 block">Banca / Estilo de Prova</label>
-            <Select value={examBoard} onValueChange={setExamBoard}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todas as bancas" />
-              </SelectTrigger>
-              <SelectContent>
-                {EXAM_BOARDS.map(b => (
-                  <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground mt-1">Questões geradas seguirão o estilo e formato da banca selecionada</p>
-          </div>
+                <div className="flex gap-2 mt-2">
+                  <Button variant="ghost" size="sm" className="text-xs" onClick={() => setSelectedTopics([...ALL_TOPICS])}>
+                    Selecionar todos
+                  </Button>
+                  <Button variant="ghost" size="sm" className="text-xs" onClick={() => setSelectedTopics([])}>
+                    Limpar
+                  </Button>
+                </div>
+              </div>
+
+              {/* Subtopics based on selected specialties */}
+              {(() => {
+                const availableSubtopics = selectedTopics.flatMap(t => (SPECIALTY_SUBTOPICS[t] || []).map(sub => ({ specialty: t, sub })));
+                if (availableSubtopics.length === 0) return null;
+                return (
+                  <div>
+                    <label className="text-sm font-semibold mb-2 block">Subtemas (opcional)</label>
+                    <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                      {availableSubtopics.map(({ specialty, sub }) => (
+                        <button
+                          key={`${specialty}-${sub}`}
+                          onClick={() => setSpecificTopic(prev => {
+                            const current = prev.split(",").map(s => s.trim()).filter(Boolean);
+                            return current.includes(sub)
+                              ? current.filter(s => s !== sub).join(", ")
+                              : [...current, sub].join(", ");
+                          })}
+                          className={`px-2 py-1 rounded-full text-[10px] font-medium transition-all border ${
+                            specificTopic.split(",").map(s => s.trim()).includes(sub)
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/30"
+                          }`}
+                        >
+                          {sub}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Clique para selecionar subtemas ou digite abaixo</p>
+                  </div>
+                );
+              })()}
+
+              {/* Specific topic free text */}
+              <div>
+                <label className="text-sm font-semibold mb-2 block">Tema específico (opcional)</label>
+                <Input
+                  placeholder="Ex: Doença de Chagas, Pré-eclâmpsia, IAM com supra..."
+                  value={specificTopic}
+                  onChange={(e) => setSpecificTopic(e.target.value)}
+                  className="text-sm"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Deixe vazio para temas variados dentro das especialidades selecionadas</p>
+              </div>
+
+              {/* Exam Board */}
+              <div>
+                <label className="text-sm font-semibold mb-2 block">Banca / Estilo de Prova</label>
+                <Select value={examBoard} onValueChange={setExamBoard}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todas as bancas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EXAM_BOARDS.map(b => (
+                      <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">Questões geradas seguirão o estilo e formato da banca selecionada</p>
+              </div>
+            </>
+          )}
 
           {/* Extreme mode info banner */}
           {mode === "extremo" && (
@@ -290,8 +385,8 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             </div>
           )}
 
-          {/* Difficulty — locked in extremo */}
-          {mode !== "extremo" && (
+          {/* Difficulty — locked in extremo and prova_real */}
+          {mode !== "extremo" && mode !== "prova_real" && (
             <div>
               <label className="text-sm font-semibold mb-3 block">Nível de dificuldade</label>
               <div className="flex gap-2 flex-wrap">
@@ -307,20 +402,22 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             </div>
           )}
 
-          {/* Question count — extremo has higher presets */}
-          <div>
-            <label className="text-sm font-semibold mb-3 block">Quantas questões?</label>
-            <div className="flex gap-2 flex-wrap">
-              {(mode === "extremo" ? [50, 80, 100] : [5, 10, 15, 20, 30]).map(n => (
-                <Button key={n} variant={questionCount === n && !customCount ? "default" : "outline"} size="sm" onClick={() => { setQuestionCount(n); setCustomCount(""); }}>
-                  {n}
-                </Button>
-              ))}
-              {mode !== "extremo" && (
-                <Input type="number" placeholder="Outro..." className="w-24 h-9" min={1} max={100} value={customCount} onChange={e => setCustomCount(e.target.value)} />
-              )}
+          {/* Question count — extremo has higher presets, prova_real is fixed */}
+          {mode !== "prova_real" && (
+            <div>
+              <label className="text-sm font-semibold mb-3 block">Quantas questões?</label>
+              <div className="flex gap-2 flex-wrap">
+                {(mode === "extremo" ? [50, 80, 100] : [5, 10, 15, 20, 30]).map(n => (
+                  <Button key={n} variant={questionCount === n && !customCount ? "default" : "outline"} size="sm" onClick={() => { setQuestionCount(n); setCustomCount(""); }}>
+                    {n}
+                  </Button>
+                ))}
+                {mode !== "extremo" && (
+                  <Input type="number" placeholder="Outro..." className="w-24 h-9" min={1} max={100} value={customCount} onChange={e => setCustomCount(e.target.value)} />
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Timer — prova and extremo */}
           {(mode === "prova" || mode === "extremo") && (
@@ -345,12 +442,12 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
 
           <Button
             size="lg"
-            className={`w-full ${mode === "extremo" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : ""}`}
+            className={`w-full ${mode === "extremo" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : mode === "prova_real" ? "bg-amber-600 hover:bg-amber-700 text-white" : ""}`}
             onClick={handleStart}
-            disabled={selectedTopics.length === 0}
+            disabled={mode !== "prova_real" && selectedTopics.length === 0}
           >
-            {mode === "extremo" ? <Skull className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-            {mode === "estudo" ? "Iniciar Modo Estudo" : mode === "extremo" ? "Iniciar Prova Extrema" : "Iniciar Simulado"} ({customCount || questionCount} questões)
+            {mode === "extremo" ? <Skull className="h-4 w-4 mr-2" /> : mode === "prova_real" ? <Trophy className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+            {mode === "estudo" ? "Iniciar Modo Estudo" : mode === "extremo" ? "Iniciar Prova Extrema" : mode === "prova_real" ? `Iniciar Prova Real ${selectedProfile.name}` : "Iniciar Simulado"} ({mode === "prova_real" ? selectedProfile.totalQuestions : (customCount || questionCount)} questões)
           </Button>
         </div>
       )}

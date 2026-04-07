@@ -7,6 +7,7 @@ import { updateDomainMap } from "@/lib/updateDomainMap";
 import { NON_MEDICAL_CONTENT_REGEX } from "@/lib/medicalValidation";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { filterValidQuestions } from "@/lib/aiOutputValidation";
+import { EXAM_PROFILES, calculateTopicDistribution, calculateDifficultySlots } from "@/lib/realExamDistribution";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -256,8 +257,12 @@ const Simulados = () => {
 
   const startExamWithQuestions = (qs: SimQuestion[], config: any) => {
     setQuestions(qs);
-    const isTimedMode = config.mode === "prova" || config.mode === "extremo";
-    const timeLeft = isTimedMode ? qs.length * config.timePerQuestion * 60 : 0;
+    const isTimedMode = config.mode === "prova" || config.mode === "extremo" || config.mode === "prova_real";
+    const timeLeft = isTimedMode
+      ? config.mode === "prova_real" && config.realExamProfile
+        ? (EXAM_PROFILES[config.realExamProfile]?.timeMinutes || 300) * 60
+        : qs.length * config.timePerQuestion * 60
+      : 0;
     setRestoredState({ timeLeft });
     startTimeRef.current = new Date();
     setPhase("exam");
@@ -269,13 +274,13 @@ const Simulados = () => {
     }
   };
 
-  const handleStart = async (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string }) => {
+  const handleStart = async (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string; realExamProfile?: string }) => {
     if (config.topics.length === 0) {
       toast({ title: "Selecione pelo menos um assunto", variant: "destructive" });
       return;
     }
-    if (!config.count || config.count < 1 || config.count > 100) {
-      toast({ title: "Número de questões inválido (1-100)", variant: "destructive" });
+    if (!config.count || config.count < 1 || config.count > 200) {
+      toast({ title: "Número de questões inválido (1-200)", variant: "destructive" });
       return;
     }
 
@@ -289,6 +294,69 @@ const Simulados = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
+
+      // ── Prova Real: generate per-topic with real distribution ──
+      if (config.mode === "prova_real" && config.realExamProfile) {
+        const profile = EXAM_PROFILES[config.realExamProfile] || EXAM_PROFILES.GERAL;
+        const topicDist = calculateTopicDistribution(profile, config.count);
+        const diffSlots = calculateDifficultySlots(profile, config.count);
+
+        let allQuestions: SimQuestion[] = [];
+        const totalTopics = topicDist.length;
+
+        for (let ti = 0; ti < totalTopics; ti++) {
+          const { topic, count: topicCount } = topicDist[ti];
+          setLoadingProgress(`Gerando ${topicCount} questões de ${topic}... (${ti + 1}/${totalTopics})`);
+          setLoadingPercent(Math.round(((ti) / totalTopics) * 85));
+
+          // Determine difficulty for this batch proportionally
+          const easyForTopic = Math.round((diffSlots.easy / config.count) * topicCount);
+          const hardForTopic = Math.round((diffSlots.hard / config.count) * topicCount);
+          const mediumForTopic = topicCount - easyForTopic - hardForTopic;
+
+          // Generate per difficulty slot for this topic
+          const topicSlots = [
+            { diff: "facil", n: easyForTopic },
+            { diff: "intermediario", n: mediumForTopic },
+            { diff: "dificil", n: hardForTopic },
+          ].filter(s => s.n > 0);
+
+          for (const slot of topicSlots) {
+            try {
+              const batch = await generateBatch(
+                [topic], slot.n, slot.diff, accessToken,
+                undefined, config.examBoard,
+                allQuestions.map(q => q.statement.slice(0, 120)),
+              );
+              allQuestions.push(...batch);
+            } catch {
+              // continue
+            }
+          }
+        }
+
+        setLoadingPercent(90);
+        setLoadingProgress("Validando questões...");
+        allQuestions = deduplicateQuestions(allQuestions);
+        const finalQuestions = allQuestions.slice(0, config.count).sort(() => Math.random() - 0.5);
+
+        if (finalQuestions.length === 0) {
+          toast({ title: "Erro ao gerar prova real. Tente novamente.", variant: "destructive" });
+          setPhase("setup");
+          return;
+        }
+
+        if (finalQuestions.length < config.count * 0.7) {
+          setQuestions(finalQuestions);
+          setPartialCount(finalQuestions.length);
+          setPhase("partial");
+          return;
+        }
+
+        setLoadingPercent(100);
+        startExamWithQuestions(finalQuestions, config);
+        return;
+      }
 
       // ── Step 1: Fetch previously answered question IDs ──
       setLoadingProgress("Verificando questões já respondidas...");
@@ -475,7 +543,7 @@ const Simulados = () => {
 
       await supabase.from("exam_sessions").insert({
         user_id: user.id,
-        title: `${mode === "extremo" ? "🔥 Prova Extrema" : "Simulado"} - ${selectedTopics.slice(0, 3).join(", ")}${selectedTopics.length > 3 ? "..." : ""}`,
+        title: `${mode === "prova_real" ? "🏆 Prova Real" : mode === "extremo" ? "🔥 Prova Extrema" : "Simulado"} - ${selectedTopics.slice(0, 3).join(", ")}${selectedTopics.length > 3 ? "..." : ""}`,
         total_questions: questions.length,
         time_limit_minutes: Math.round(elapsedSecondsRef.current / 60),
         status: "finished",
@@ -632,6 +700,7 @@ const Simulados = () => {
         flaggedQuestions={flaggedQuestions}
         mode={mode}
         elapsedSeconds={elapsedSecondsRef.current}
+        realExamProfile={configRef.current?.realExamProfile}
       />
     );
   }
