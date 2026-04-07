@@ -763,7 +763,7 @@ const Simulados = () => {
     <SimuladoExam
       key="simulado-exam-stable"
       questions={questions}
-      timeSeconds={restoredState?.timeLeft ?? ((mode === "prova" || mode === "extremo") ? questions.length * 3 * 60 : 0)}
+      timeSeconds={restoredState?.timeLeft ?? ((mode === "prova" || mode === "extremo" || mode === "tri") ? questions.length * 3 * 60 : 0)}
       onFinish={handleFinish}
       onAutoSaveState={() => ({ current: 0, selectedAnswers: {}, timeLeft: 0 })}
       onStateChange={(state) => { examStateRef.current = state; }}
