@@ -104,7 +104,8 @@ async function generateBatch(
         ...(avoidStatements && avoidStatements.length > 0 ? { avoidStatements } : {}),
         generationContext: {
           specialty: topics[0] || "Clínica Médica",
-          topic: specificTopic || topics.join(", "),
+          topic: topics.join(", "),
+          subtopic: specificTopic || undefined,
           objective: "practice",
           difficulty: difficulty === "dificil" ? "hard" : difficulty === "facil" ? "easy" : difficulty === "misto" ? "mixed" : "medium",
           language: "pt-BR",
