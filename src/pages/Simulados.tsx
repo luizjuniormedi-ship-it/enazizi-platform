@@ -700,6 +700,7 @@ const Simulados = () => {
         flaggedQuestions={flaggedQuestions}
         mode={mode}
         elapsedSeconds={elapsedSecondsRef.current}
+        realExamProfile={configRef.current?.realExamProfile}
       />
     );
   }
