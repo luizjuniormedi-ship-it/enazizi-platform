@@ -206,7 +206,45 @@ async function registerTemaEstudado(userId: string, topic: string, specialty: st
   return error ? null : "temas_estudados";
 }
 
-async function syncDailyPlan(userId: string, topic: string, now: string, today: string): Promise<string | null> {
+async function syncDailyPlan(userId: string, topic: string, now: string, today: string, dailyPlanTaskId?: string): Promise<string | null> {
+  // Fast path: direct update by canonical ID (no text matching)
+  if (dailyPlanTaskId) {
+    const { error } = await supabase
+      .from("daily_plan_tasks")
+      .update({ completed: true, completed_at: now } as any)
+      .eq("id", dailyPlanTaskId)
+      .eq("user_id", userId)
+      .eq("completed", false);
+
+    if (!error) {
+      // Update completed_count on the parent daily_plan
+      const { data: task } = await supabase
+        .from("daily_plan_tasks")
+        .select("daily_plan_id")
+        .eq("id", dailyPlanTaskId)
+        .maybeSingle();
+
+      if (task) {
+        const { count } = await supabase
+          .from("daily_plan_tasks")
+          .select("id", { count: "exact", head: true })
+          .eq("daily_plan_id", task.daily_plan_id)
+          .eq("completed", true);
+
+        if (count !== null) {
+          await supabase
+            .from("daily_plans")
+            .update({ completed_count: count, updated_at: now } as any)
+            .eq("id", task.daily_plan_id);
+        }
+      }
+      return "daily_plan_tasks";
+    }
+    // If ID-based update failed, fall through to text matching
+    console.warn("[completeStudyAction] syncDailyPlan by ID failed:", dailyPlanTaskId);
+  }
+
+  // Fallback: text-based matching
   const { data: todayPlan } = await supabase
     .from("daily_plans")
     .select("id")
@@ -349,8 +387,8 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
     "temas_estudados"
   );
 
-  // 3. Sempre sincronizar daily plan
-  await safe(() => syncDailyPlan(userId, topic, now, today), "daily_plan");
+  // 3. Sempre sincronizar daily plan (prefer canonical ID)
+  await safe(() => syncDailyPlan(userId, topic, now, today, payload.dailyPlanTaskId), "daily_plan");
 
   // 4. Validação de falso positivo — Bug 4
   if (taskType === "review" && !tablesUpdated.includes("revisoes")) {

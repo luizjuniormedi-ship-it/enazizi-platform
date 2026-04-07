@@ -64,13 +64,13 @@ export default function MissionTaskList({ tasks, currentIndex, completedIds }: P
                 <div className="min-w-0 flex-1">
                   <span className={`block truncate font-medium ${done ? "line-through" : ""}`}>
                     {task.topic}
+                    {(task as any).pendingCount > 1 && !done && (
+                      <span className="text-[10px] font-normal text-muted-foreground ml-1">
+                        · {(task as any).pendingCount} pendente{(task as any).pendingCount > 1 ? "s" : ""}
+                      </span>
+                    )}
                   </span>
                 </div>
-                {(task as any).pendingCount > 1 && !done && (
-                  <Badge variant="outline" className="text-[9px] shrink-0 border-destructive/40 text-destructive">
-                    {(task as any).pendingCount}x
-                  </Badge>
-                )}
                 <Badge variant="outline" className="text-[10px] shrink-0">
                   {TYPE_LABELS[task.type] || task.type}
                 </Badge>
