@@ -189,11 +189,7 @@ function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
     .filter(
       (q) =>
         q.options.length >= 4 &&
-        q.statement.length >= 200 &&
-        !NON_MEDICAL_CONTENT_REGEX.test(q.statement) &&
-        !/\b(the patient|which of the following|presents with|most likely|treatment of choice|year-old male|year-old female|diagnosis|management|regarding|concerning|history of|what is the|correct answer)\b/i.test(q.statement) &&
-        /\d+\s*(anos?|meses|dias|horas|semanas)/.test(q.statement) &&
-        !/\b(imagem abaixo|figura abaixo|vide imagem|observe a imagem|na imagem|na figura|ECG abaixo|tomografia abaixo|radiografia abaixo|imagem a seguir|figura a seguir|conforme a imagem|conforme a figura)\b/i.test(q.statement),
+        q.statement.length > 10,
     );
 }
 
