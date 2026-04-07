@@ -543,7 +543,7 @@ const Simulados = () => {
 
       await supabase.from("exam_sessions").insert({
         user_id: user.id,
-        title: `${mode === "extremo" ? "🔥 Prova Extrema" : "Simulado"} - ${selectedTopics.slice(0, 3).join(", ")}${selectedTopics.length > 3 ? "..." : ""}`,
+        title: `${mode === "prova_real" ? "🏆 Prova Real" : mode === "extremo" ? "🔥 Prova Extrema" : "Simulado"} - ${selectedTopics.slice(0, 3).join(", ")}${selectedTopics.length > 3 ? "..." : ""}`,
         total_questions: questions.length,
         time_limit_minutes: Math.round(elapsedSecondsRef.current / 60),
         status: "finished",
