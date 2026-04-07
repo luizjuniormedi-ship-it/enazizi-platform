@@ -51,6 +51,16 @@ export default function MissionTaskActions({ task, onComplete, onSkip }: Props) 
           <h2 className="text-lg font-bold">
             {task.topic}
           </h2>
+          {task.type === "review" && hasPending && (
+            <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+              {pendingCount} revisões pendentes deste tema
+            </p>
+          )}
+          {task.type === "review" && pendingCount === 1 && (
+            <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+              Última revisão pendente deste tema
+            </p>
+          )}
           <p className="text-xs text-muted-foreground mt-0.5">
             {getHumanReadableReason(task)}
           </p>
