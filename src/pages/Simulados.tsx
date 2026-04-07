@@ -8,6 +8,14 @@ import { NON_MEDICAL_CONTENT_REGEX } from "@/lib/medicalValidation";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { filterValidQuestions } from "@/lib/aiOutputValidation";
 import { EXAM_PROFILES, calculateTopicDistribution, calculateDifficultySlots } from "@/lib/realExamDistribution";
+import {
+  type TRIParams,
+  type TRIQuestionResult,
+  assignTRIParams,
+  triProbability,
+  itemInformation,
+  estimateInitialTheta,
+} from "@/lib/triEngine";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +37,7 @@ import type { SimuladoMode } from "@/components/simulados/SimuladoSetup";
 import SimuladoExam from "@/components/simulados/SimuladoExam";
 import type { SimQuestion } from "@/components/simulados/SimuladoExam";
 import SimuladoResult from "@/components/simulados/SimuladoResult";
+import TRIResult from "@/components/simulados/TRIResult";
 
 type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 
