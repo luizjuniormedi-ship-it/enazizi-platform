@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import MedicalTermHighlighter from "@/components/medical/MedicalTermHighlighter";
 import { CheckCircle2, XCircle, BookOpen, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -7,6 +7,7 @@ import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { cleanLatex } from "@/lib/cleanLatex";
 
 export interface InteractiveQuestion {
   statement: string;
@@ -31,6 +32,11 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
   const navigate = useNavigate();
   const answered = selected !== null;
   const isCorrect = selected === question.correctIndex;
+
+  // Clean LaTeX residues from statement and options
+  const cleanedStatement = useMemo(() => cleanLatex(question.statement), [question.statement]);
+  const cleanedOptions = useMemo(() => question.options.map(o => cleanLatex(o)), [question.options]);
+  const cleanedExplanation = useMemo(() => cleanLatex(question.explanation), [question.explanation]);
 
   const handleSelect = async (optionIndex: number) => {
     setSelected(optionIndex);
@@ -80,12 +86,12 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
       {/* Question number + statement */}
       <p className="text-sm font-medium leading-relaxed">
         <span className="text-primary font-bold mr-1.5">Questão {index + 1}.</span>
-        <MedicalTermHighlighter text={question.statement} />
+        <MedicalTermHighlighter text={cleanedStatement} />
       </p>
 
       {/* Options */}
       <div className="space-y-2">
-        {question.options.map((opt, oi) => {
+        {cleanedOptions.map((opt, oi) => {
           const isThis = selected === oi;
           const isRight = oi === question.correctIndex;
 
@@ -140,7 +146,7 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
               <span className="font-medium text-foreground flex items-center gap-1 mb-1">
                 <BookOpen className="h-3.5 w-3.5" /> Explicação:
               </span>
-              <MedicalTermHighlighter text={question.explanation} />
+              <MedicalTermHighlighter text={cleanedExplanation} />
             </div>
           )}
           {question.reference && (

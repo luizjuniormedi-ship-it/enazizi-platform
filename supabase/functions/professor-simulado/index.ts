@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
+import { aiFetch, sanitizeAiContent, cleanQuestionText } from "../_shared/ai-fetch.ts";
+import { IMAGE_REF_PATTERN } from "../_shared/question-filters.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,6 +16,8 @@ function sanitizeStatement(raw: string): string {
   s = s.replace(/\n?\s*\*{0,2}(Tópico|Tema|Especialidade|Subtema|Dificuldade|Difficulty)[:\s].*/gi, "");
   // Remove "Questão X:" prefix
   s = s.replace(/^\s*\*{0,2}Questão\s*\d*\s*:?\s*\*{0,2}\s*/gi, "");
+  // Clean LaTeX residues
+  s = cleanQuestionText(s);
   // Truncate after last "?" if trailing lines are short non-clinical metadata
   const lastQ = s.lastIndexOf("?");
   if (lastQ > 0 && lastQ < s.length - 2) {
@@ -26,6 +29,18 @@ function sanitizeStatement(raw: string): string {
     }
   }
   return s.trim();
+}
+
+/** Filter out questions that reference images/figures we cannot display */
+function filterImageRefs(questions: any[]): any[] {
+  return questions.filter((q: any) => {
+    const stmt = String(q.statement || "");
+    if (IMAGE_REF_PATTERN.test(stmt)) {
+      console.warn(`[professor-simulado] Rejeitada por ref a imagem: "${stmt.slice(0, 80)}"`);
+      return false;
+    }
+    return true;
+  });
 }
 
 type DifficultyLevel = "facil" | "intermediario" | "dificil";
@@ -296,6 +311,8 @@ REGRAS:
 - Baseie-se em provas reais de residência (ENARE, USP, UNIFESP)
 - REGRA DE GABARITO: NUNCA repita a mesma letra de resposta correta em questões consecutivas
 - TODOS os textos DEVEM estar em português brasileiro
+- NUNCA use formatação LaTeX (ex: $x$, \\times, \\%). Use texto puro: 148×90 mmHg, 38%, etc.
+- NUNCA referencie imagens, figuras, gráficos ou radiografias. Todas as informações clínicas devem estar descritas no texto.
 
 ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
 - NUNCA repita nome, idade, sexo ou perfil de paciente entre questões
@@ -581,6 +598,16 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
         if (questions.length > requestedCount) {
           questions = questions.slice(0, requestedCount);
         }
+
+        // Filter out questions referencing images we can't display
+        questions = filterImageRefs(questions);
+
+        // Clean LaTeX residues from options
+        questions = questions.map((q: any) => ({
+          ...q,
+          options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : q.options,
+          explanation: q.explanation ? cleanQuestionText(q.explanation) : q.explanation,
+        }));
 
         const generatedCount = questions.length;
         const missingCount = requestedCount - generatedCount;

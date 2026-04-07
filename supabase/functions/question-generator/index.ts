@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { aiFetch } from "../_shared/ai-fetch.ts";
+import { aiFetch, cleanQuestionText } from "../_shared/ai-fetch.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
 import { isValidQuestion, hasMinimumContext, validateQuestionContext, logGenerationRejection } from "../_shared/question-filters.ts";
 import { validateQuestionBatch } from "../_shared/ai-validation.ts";
@@ -52,6 +52,8 @@ REGRAS:
 - Distribua gabaritos entre as letras (não repita a mesma letra consecutivamente)
 - Varie perfis de pacientes (idade, sexo, cenário: UBS, PS, enfermaria, UTI, ambulatório)
 - NUNCA repita cenários clínicos similares
+- NUNCA use formatação LaTeX (ex: $x$, \\times, \\%). Use texto puro: 148×90 mmHg, 38%, etc.
+- NUNCA referencie imagens, figuras, gráficos ou radiografias (ex: "observe a imagem abaixo"). Todas as informações devem estar no texto.
 - Cite referência bibliográfica específica (Harrison cap. X, Sabiston, Nelson, etc.)
 
 COMPLEXIDADE EXIGIDA:
@@ -472,6 +474,13 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
             const parsed = JSON.parse(toolCall.function.arguments);
             if (Array.isArray(parsed.questions)) {
               const before = parsed.questions.length;
+              // Clean LaTeX residues from all text fields
+              parsed.questions = parsed.questions.map((q: any) => ({
+                ...q,
+                statement: cleanQuestionText(q.statement || ""),
+                options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : q.options,
+                explanation: q.explanation ? cleanQuestionText(q.explanation) : q.explanation,
+              }));
               parsed.questions = parsed.questions.filter((q: any) =>
                 isValidQuestion(q) && hasMinimumContext(q.statement || "")
               );
