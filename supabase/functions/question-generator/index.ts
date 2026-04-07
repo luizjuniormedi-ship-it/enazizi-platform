@@ -52,6 +52,8 @@ REGRAS:
 - Distribua gabaritos entre as letras (não repita a mesma letra consecutivamente)
 - Varie perfis de pacientes (idade, sexo, cenário: UBS, PS, enfermaria, UTI, ambulatório)
 - NUNCA repita cenários clínicos similares
+- NUNCA use formatação LaTeX (ex: $x$, \\times, \\%). Use texto puro: 148×90 mmHg, 38%, etc.
+- NUNCA referencie imagens, figuras, gráficos ou radiografias (ex: "observe a imagem abaixo"). Todas as informações devem estar no texto.
 - Cite referência bibliográfica específica (Harrison cap. X, Sabiston, Nelson, etc.)
 
 COMPLEXIDADE EXIGIDA:
