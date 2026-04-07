@@ -295,6 +295,69 @@ const Simulados = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
 
+      // ── Prova Real: generate per-topic with real distribution ──
+      if (config.mode === "prova_real" && config.realExamProfile) {
+        const profile = EXAM_PROFILES[config.realExamProfile] || EXAM_PROFILES.GERAL;
+        const topicDist = calculateTopicDistribution(profile, config.count);
+        const diffSlots = calculateDifficultySlots(profile, config.count);
+
+        let allQuestions: SimQuestion[] = [];
+        const totalTopics = topicDist.length;
+
+        for (let ti = 0; ti < totalTopics; ti++) {
+          const { topic, count: topicCount } = topicDist[ti];
+          setLoadingProgress(`Gerando ${topicCount} questões de ${topic}... (${ti + 1}/${totalTopics})`);
+          setLoadingPercent(Math.round(((ti) / totalTopics) * 85));
+
+          // Determine difficulty for this batch proportionally
+          const easyForTopic = Math.round((diffSlots.easy / config.count) * topicCount);
+          const hardForTopic = Math.round((diffSlots.hard / config.count) * topicCount);
+          const mediumForTopic = topicCount - easyForTopic - hardForTopic;
+
+          // Generate per difficulty slot for this topic
+          const topicSlots = [
+            { diff: "facil", n: easyForTopic },
+            { diff: "intermediario", n: mediumForTopic },
+            { diff: "dificil", n: hardForTopic },
+          ].filter(s => s.n > 0);
+
+          for (const slot of topicSlots) {
+            try {
+              const batch = await generateBatch(
+                [topic], slot.n, slot.diff, accessToken,
+                undefined, config.examBoard,
+                allQuestions.map(q => q.statement.slice(0, 120)),
+              );
+              allQuestions.push(...batch);
+            } catch {
+              // continue
+            }
+          }
+        }
+
+        setLoadingPercent(90);
+        setLoadingProgress("Validando questões...");
+        allQuestions = deduplicateQuestions(allQuestions);
+        const finalQuestions = allQuestions.slice(0, config.count).sort(() => Math.random() - 0.5);
+
+        if (finalQuestions.length === 0) {
+          toast({ title: "Erro ao gerar prova real. Tente novamente.", variant: "destructive" });
+          setPhase("setup");
+          return;
+        }
+
+        if (finalQuestions.length < config.count * 0.7) {
+          setQuestions(finalQuestions);
+          setPartialCount(finalQuestions.length);
+          setPhase("partial");
+          return;
+        }
+
+        setLoadingPercent(100);
+        startExamWithQuestions(finalQuestions, config);
+        return;
+      }
+
       // ── Step 1: Fetch previously answered question IDs ──
       setLoadingProgress("Verificando questões já respondidas...");
       const { data: pastAttempts } = await supabase
