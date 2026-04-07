@@ -7,6 +7,7 @@ import { updateDomainMap } from "@/lib/updateDomainMap";
 import { NON_MEDICAL_CONTENT_REGEX } from "@/lib/medicalValidation";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { filterValidQuestions } from "@/lib/aiOutputValidation";
+import { EXAM_PROFILES, calculateTopicDistribution, calculateDifficultySlots } from "@/lib/realExamDistribution";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
