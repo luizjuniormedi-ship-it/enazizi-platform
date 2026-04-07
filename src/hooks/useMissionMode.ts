@@ -354,7 +354,7 @@ export function useMissionMode() {
     totalMinutes,
     completedMinutes,
     engineLoading,
-    hasTasks: (recommendations || []).length > 0,
+    hasTasks: recommendations.length > 0,
     startMission,
     completeCurrentTask,
     skipCurrentTask,
