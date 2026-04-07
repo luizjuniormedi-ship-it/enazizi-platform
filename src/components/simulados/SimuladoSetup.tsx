@@ -470,7 +470,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
           )}
 
           {/* Question count — extremo has higher presets, prova_real is fixed */}
-          {mode !== "prova_real" && (
+          {mode !== "prova_real" && mode !== "tri" && (
             <div>
               <label className="text-sm font-semibold mb-3 block">Quantas questões?</label>
               <div className="flex gap-2 flex-wrap">
