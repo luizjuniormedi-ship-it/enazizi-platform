@@ -317,8 +317,8 @@ const Simulados = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
 
-      // ── Prova Real: generate per-topic with real distribution ──
-      if (config.mode === "prova_real" && config.realExamProfile) {
+      // ── Prova Real / TRI: generate per-topic with real distribution ──
+      if ((config.mode === "prova_real" || config.mode === "tri") && config.realExamProfile) {
         const profile = EXAM_PROFILES[config.realExamProfile] || EXAM_PROFILES.GERAL;
         const topicDist = calculateTopicDistribution(profile, config.count);
         const diffSlots = calculateDifficultySlots(profile, config.count);
