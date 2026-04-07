@@ -28,6 +28,105 @@ function sanitizeStatement(raw: string): string {
   return s.trim();
 }
 
+type DifficultyLevel = "facil" | "intermediario" | "dificil";
+
+function normalizeDifficultyLevel(value: unknown): DifficultyLevel | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    if (value <= 2) return "facil";
+    if (value >= 4) return "dificil";
+    return "intermediario";
+  }
+
+  const raw = String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+
+  if (["facil", "easy"].includes(raw)) return "facil";
+  if (["intermediario", "medio", "medium"].includes(raw)) return "intermediario";
+  if (["dificil", "hard"].includes(raw)) return "dificil";
+
+  return null;
+}
+
+function inferDifficultyLevel(question: any, requestedDifficulty?: string): DifficultyLevel {
+  const explicit = normalizeDifficultyLevel(question?.difficulty_level);
+  if (explicit) return explicit;
+
+  const numeric = Number(question?.difficulty);
+  if (Number.isFinite(numeric)) {
+    return normalizeDifficultyLevel(numeric) || "intermediario";
+  }
+
+  return normalizeDifficultyLevel(requestedDifficulty) || "intermediario";
+}
+
+function shuffleArray<T>(items: T[]): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function pickCachedQuestions(params: {
+  questions: any[];
+  requestedCount: number;
+  requestedDifficulty: string;
+  difficultyMix?: { facil?: number; intermediario?: number; dificil?: number };
+}): any[] {
+  const grouped: Record<DifficultyLevel, any[]> = {
+    facil: [],
+    intermediario: [],
+    dificil: [],
+  };
+
+  for (const question of params.questions) {
+    grouped[inferDifficultyLevel(question, params.requestedDifficulty)].push(question);
+  }
+
+  const pools: Record<DifficultyLevel, any[]> = {
+    facil: shuffleArray(grouped.facil),
+    intermediario: shuffleArray(grouped.intermediario),
+    dificil: shuffleArray(grouped.dificil),
+  };
+
+  const selected: any[] = [];
+
+  const takeFromPool = (level: DifficultyLevel, count: number) => {
+    if (count <= 0) return;
+    selected.push(...pools[level].splice(0, count));
+  };
+
+  if (params.requestedDifficulty === "misto" && params.difficultyMix) {
+    const targetFacil = Math.round(params.requestedCount * (params.difficultyMix.facil || 0) / 100);
+    const targetIntermediario = Math.round(params.requestedCount * (params.difficultyMix.intermediario || 0) / 100);
+    const targetDificil = Math.max(0, params.requestedCount - targetFacil - targetIntermediario);
+
+    takeFromPool("facil", targetFacil);
+    takeFromPool("intermediario", targetIntermediario);
+    takeFromPool("dificil", targetDificil);
+  } else {
+    const requestedLevel = normalizeDifficultyLevel(params.requestedDifficulty);
+    if (requestedLevel) {
+      takeFromPool(requestedLevel, params.requestedCount);
+    }
+  }
+
+  if (selected.length < params.requestedCount) {
+    const leftovers = shuffleArray([
+      ...pools.facil,
+      ...pools.intermediario,
+      ...pools.dificil,
+    ]);
+    selected.push(...leftovers.slice(0, params.requestedCount - selected.length));
+  }
+
+  return selected.slice(0, params.requestedCount);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -230,13 +329,13 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           const subFilters = subtopicTerms.map((s: string) => `topic.ilike.%${s}%`).join(",");
           const [{ data: subBank }, { data: subReal }] = await Promise.all([
             sb.from("questions_bank")
-              .select("statement, options, correct_index, explanation, topic")
+              .select("statement, options, correct_index, explanation, topic, difficulty")
               .or(subFilters)
               .eq("is_global", true)
               .eq("review_status", "approved")
               .limit(requestedCount * 2),
             sb.from("real_exam_questions")
-              .select("statement, options, correct_index, explanation, topic")
+              .select("statement, options, correct_index, explanation, topic, difficulty")
               .or(subFilters)
               .eq("is_active", true)
               .limit(requestedCount * 2),
@@ -249,13 +348,13 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
         if (allCached.length < requestedCount) {
           const [{ data: cachedBank }, { data: cachedReal }] = await Promise.all([
             sb.from("questions_bank")
-              .select("statement, options, correct_index, explanation, topic")
+              .select("statement, options, correct_index, explanation, topic, difficulty")
               .or(topicFilters)
               .eq("is_global", true)
               .eq("review_status", "approved")
               .limit(requestedCount * 2),
             sb.from("real_exam_questions")
-              .select("statement, options, correct_index, explanation, topic")
+              .select("statement, options, correct_index, explanation, topic, difficulty")
               .or(topicFilters)
               .eq("is_active", true)
               .limit(requestedCount * 2),
@@ -280,16 +379,21 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           });
         }
 
-        // Shuffle and take up to requestedCount
-        allCached.sort(() => Math.random() - 0.5);
-        const fromCache = allCached.slice(0, requestedCount).map((q: any) => ({
+        const selectedCached = pickCachedQuestions({
+          questions: allCached,
+          requestedCount,
+          requestedDifficulty: difficulty,
+          difficultyMix,
+        });
+
+        const fromCache = selectedCached.map((q: any) => ({
           statement: sanitizeStatement(q.statement || ""),
           options: Array.isArray(q.options) ? q.options : [],
           correct_index: q.correct_index ?? 0,
           explanation: q.explanation || "",
           topic: q.topic || topics[0],
           block: baseTopics.find((t: string) => String(q.topic || "").toLowerCase().includes(t.toLowerCase())) || baseTopics[0] || topics[0],
-          difficulty_level: q.difficulty_level || difficulty || "intermediario",
+          difficulty_level: inferDifficultyLevel(q, difficulty),
         }));
 
         let remaining = requestedCount - fromCache.length;
@@ -358,7 +462,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
                 ...q,
                 statement: sanitizeStatement(q.statement || ""),
                 block: q.block || baseTopics[0] || topics[0],
-                difficulty_level: q.difficulty_level || difficulty,
+                difficulty_level: inferDifficultyLevel(q, difficulty),
               }));
 
               // Dedup against collected
@@ -392,7 +496,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
             console.warn("AI + cache both insufficient, using fallback bank query");
             const { data: bankRows } = await sb
               .from("questions_bank")
-              .select("statement, options, correct_index, explanation, topic")
+              .select("statement, options, correct_index, explanation, topic, difficulty")
               .in("topic", topics)
               .eq("is_global", true)
               .order("created_at", { ascending: false })
@@ -405,7 +509,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
                 explanation: r.explanation || "",
                 topic: r.topic || topics[0] || "",
                 block: baseTopics[0] || topics[0] || "Geral",
-                difficulty_level: "intermediario",
+                difficulty_level: inferDifficultyLevel(r, difficulty),
               }));
               source = "bank";
             }
@@ -445,7 +549,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
               for (const q of vld) {
                 if (questions.length >= requestedCount) break;
                 extraPrev.push(String(q.statement || "").slice(0, 120));
-                questions.push({ ...q, statement: sanitizeStatement(q.statement || ""), block: q.block || baseTopics[0] || topics[0], difficulty_level: q.difficulty_level || difficulty });
+                questions.push({ ...q, statement: sanitizeStatement(q.statement || ""), block: q.block || baseTopics[0] || topics[0], difficulty_level: inferDifficultyLevel(q, difficulty) });
               }
               console.log(`[Complement round ${ext + 1}] total: ${questions.length}/${requestedCount}`);
             } catch (e) { console.error(`[Complement ${ext + 1}] error:`, e); }
@@ -1942,6 +2046,6 @@ REGRAS:
     }
   } catch (e) {
     console.error("professor-simulado error:", e);
-    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro interno" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
