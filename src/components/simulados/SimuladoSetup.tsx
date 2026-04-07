@@ -71,7 +71,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
   const selectedProfile = EXAM_PROFILES[realExamBoard] || EXAM_PROFILES.GERAL;
 
   const handleStart = () => {
-    if (mode === "prova_real") {
+    if (mode === "prova_real" || mode === "tri") {
       const profile = selectedProfile;
       const topicsFromProfile = profile.topicWeights.map(tw => tw.topic);
       const count = profile.totalQuestions;
@@ -79,9 +79,9 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
       onStart({
         topics: topicsFromProfile,
         count,
-        difficulty: "prova_real",
+        difficulty: mode === "tri" ? "tri" : "prova_real",
         timePerQuestion: timePerQ,
-        mode: "prova_real",
+        mode,
         examBoard: realExamBoard,
         realExamProfile: realExamBoard,
       });
@@ -91,7 +91,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
     onStart({ topics: selectedTopics, count, difficulty, timePerQuestion, mode, specificTopic: specificTopic.trim() || undefined, examBoard: examBoard !== "all" ? examBoard : undefined });
   };
 
-  const totalTime = mode === "prova_real"
+  const totalTime = mode === "prova_real" || mode === "tri"
     ? selectedProfile.timeMinutes
     : (customCount ? parseInt(customCount) || questionCount : questionCount) * timePerQuestion;
 
