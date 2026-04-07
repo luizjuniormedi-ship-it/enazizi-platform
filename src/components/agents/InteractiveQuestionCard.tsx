@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import MedicalTermHighlighter from "@/components/medical/MedicalTermHighlighter";
 import { CheckCircle2, XCircle, BookOpen, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -7,6 +7,7 @@ import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { cleanLatex } from "@/lib/cleanLatex";
 
 export interface InteractiveQuestion {
   statement: string;
