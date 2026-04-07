@@ -150,7 +150,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
           {/* Mode toggle */}
           <div>
             <label className="text-sm font-semibold mb-3 block">Modo do Simulado</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <button
                 onClick={() => setMode("estudo")}
                 className={`p-4 rounded-xl border-2 transition-all text-left ${
