@@ -1937,6 +1937,47 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_question_usage: {
+        Row: {
+          answered_correctly: boolean | null
+          confidence_level: string | null
+          id: string
+          question_id: string
+          response_time_seconds: number | null
+          simulado_id: string | null
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          answered_correctly?: boolean | null
+          confidence_level?: string | null
+          id?: string
+          question_id: string
+          response_time_seconds?: number | null
+          simulado_id?: string | null
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          answered_correctly?: boolean | null
+          confidence_level?: string | null
+          id?: string
+          question_id?: string
+          response_time_seconds?: number | null
+          simulado_id?: string | null
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_question_usage_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "medical_image_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_sessions: {
         Row: {
           answers_json: Json | null
@@ -2621,6 +2662,87 @@ export type Database = {
         }
         Relationships: []
       }
+      medical_image_assets: {
+        Row: {
+          asset_code: string
+          clinical_findings: Json
+          created_at: string
+          diagnosis: string
+          difficulty: Database["public"]["Enums"]["difficulty_level"]
+          distractors: Json
+          hash_integrity: string | null
+          id: string
+          image_type: Database["public"]["Enums"]["medical_image_type"]
+          image_url: string
+          incidence_weight: number
+          is_active: boolean
+          review_status: Database["public"]["Enums"]["image_review_status"]
+          source_reference: string | null
+          specialty: string
+          subtopic: string
+          thumbnail_url: string | null
+          tri_a: number
+          tri_b: number
+          tri_c: number
+          updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+          version: number
+        }
+        Insert: {
+          asset_code: string
+          clinical_findings?: Json
+          created_at?: string
+          diagnosis: string
+          difficulty?: Database["public"]["Enums"]["difficulty_level"]
+          distractors?: Json
+          hash_integrity?: string | null
+          id?: string
+          image_type: Database["public"]["Enums"]["medical_image_type"]
+          image_url: string
+          incidence_weight?: number
+          is_active?: boolean
+          review_status?: Database["public"]["Enums"]["image_review_status"]
+          source_reference?: string | null
+          specialty: string
+          subtopic: string
+          thumbnail_url?: string | null
+          tri_a?: number
+          tri_b?: number
+          tri_c?: number
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          version?: number
+        }
+        Update: {
+          asset_code?: string
+          clinical_findings?: Json
+          created_at?: string
+          diagnosis?: string
+          difficulty?: Database["public"]["Enums"]["difficulty_level"]
+          distractors?: Json
+          hash_integrity?: string | null
+          id?: string
+          image_type?: Database["public"]["Enums"]["medical_image_type"]
+          image_url?: string
+          incidence_weight?: number
+          is_active?: boolean
+          review_status?: Database["public"]["Enums"]["image_review_status"]
+          source_reference?: string | null
+          specialty?: string
+          subtopic?: string
+          thumbnail_url?: string | null
+          tri_a?: number
+          tri_b?: number
+          tri_c?: number
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       medical_image_attempts: {
         Row: {
           correct: boolean
@@ -2655,6 +2777,143 @@ export type Database = {
             columns: ["image_id"]
             isOneToOne: false
             referencedRelation: "medical_images"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medical_image_question_audit: {
+        Row: {
+          action_type: string
+          actor: string
+          asset_id: string | null
+          created_at: string
+          id: string
+          new_payload: Json | null
+          notes: string | null
+          old_payload: Json | null
+          question_id: string | null
+        }
+        Insert: {
+          action_type: string
+          actor: string
+          asset_id?: string | null
+          created_at?: string
+          id?: string
+          new_payload?: Json | null
+          notes?: string | null
+          old_payload?: Json | null
+          question_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          actor?: string
+          asset_id?: string | null
+          created_at?: string
+          id?: string
+          new_payload?: Json | null
+          notes?: string | null
+          old_payload?: Json | null
+          question_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_image_question_audit_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "medical_image_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medical_image_question_audit_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "medical_image_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medical_image_questions: {
+        Row: {
+          asset_id: string
+          correct_index: number
+          created_at: string
+          difficulty: Database["public"]["Enums"]["difficulty_level"]
+          exam_style: string
+          explanation: string
+          id: string
+          language_code: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          option_e: string | null
+          question_code: string
+          rationale_map: Json | null
+          statement: string
+          status: Database["public"]["Enums"]["image_question_status"]
+          tri_a: number
+          tri_b: number
+          tri_c: number
+          updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          asset_id: string
+          correct_index: number
+          created_at?: string
+          difficulty?: Database["public"]["Enums"]["difficulty_level"]
+          exam_style?: string
+          explanation: string
+          id?: string
+          language_code?: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          option_e?: string | null
+          question_code: string
+          rationale_map?: Json | null
+          statement: string
+          status?: Database["public"]["Enums"]["image_question_status"]
+          tri_a?: number
+          tri_b?: number
+          tri_c?: number
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          asset_id?: string
+          correct_index?: number
+          created_at?: string
+          difficulty?: Database["public"]["Enums"]["difficulty_level"]
+          exam_style?: string
+          explanation?: string
+          id?: string
+          language_code?: string
+          option_a?: string
+          option_b?: string
+          option_c?: string
+          option_d?: string
+          option_e?: string | null
+          question_code?: string
+          rationale_map?: Json | null
+          statement?: string
+          status?: Database["public"]["Enums"]["image_question_status"]
+          tri_a?: number
+          tri_b?: number
+          tri_c?: number
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_image_questions_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "medical_image_assets"
             referencedColumns: ["id"]
           },
         ]
@@ -6204,6 +6463,20 @@ export type Database = {
         | "professor"
         | "coordinator"
         | "institutional_admin"
+      difficulty_level: "easy" | "medium" | "hard"
+      image_question_status: "draft" | "validated" | "published" | "archived"
+      image_review_status: "draft" | "validated" | "archived"
+      medical_image_type:
+        | "ecg"
+        | "xray"
+        | "ct"
+        | "mri"
+        | "us"
+        | "dermatology"
+        | "pathology"
+        | "ophthalmology"
+        | "endoscopy"
+        | "obstetric_trace"
       qa_error_type:
         | "IA_QUALIDADE"
         | "IA_JSON_INVALIDO"
@@ -6366,6 +6639,21 @@ export const Constants = {
         "professor",
         "coordinator",
         "institutional_admin",
+      ],
+      difficulty_level: ["easy", "medium", "hard"],
+      image_question_status: ["draft", "validated", "published", "archived"],
+      image_review_status: ["draft", "validated", "archived"],
+      medical_image_type: [
+        "ecg",
+        "xray",
+        "ct",
+        "mri",
+        "us",
+        "dermatology",
+        "pathology",
+        "ophthalmology",
+        "endoscopy",
+        "obstetric_trace",
       ],
       qa_error_type: [
         "IA_QUALIDADE",

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Clock, ArrowRight, ArrowLeft, Flag, Bookmark, GraduationCap, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { SimuladoMode } from "./SimuladoSetup";
+import ImageQuestionViewer from "./ImageQuestion";
 
 export interface SimQuestion {
   statement: string;
@@ -12,6 +13,10 @@ export interface SimQuestion {
   explanation?: string;
   bankId?: string;
   source?: string;
+  image_url?: string;
+  image_type?: string;
+  _isImageQuestion?: boolean;
+  _imageQuestionId?: string;
 }
 
 interface SimuladoExamProps {
@@ -176,6 +181,16 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
             <Bookmark className={`h-5 w-5 ${flaggedQuestions.has(current) ? "fill-current" : ""}`} />
           </button>
         </div>
+        {/* Imagem médica se disponível */}
+        {q.image_url && (
+          <div className="mb-4">
+            <ImageQuestionViewer
+              imageUrl={q.image_url}
+              imageType={q.image_type}
+              altText={`Imagem clínica - ${q.topic}`}
+            />
+          </div>
+        )}
         <p className="text-base font-medium mb-6">{q.statement}</p>
         <div className="space-y-3">
           {q.options.map((opt, i) => {
