@@ -47,8 +47,6 @@ function saveLocal(s: MissionState) {
 /* ── DB helpers (fire-and-forget with error swallow) ── */
 async function upsertMissionDB(userId: string, state: MissionState): Promise<string | null> {
   try {
-    console.log("[MissionMode] upsertMissionDB state.tasks[0]", JSON.stringify(state.tasks[0] ?? null));
-
     if (state.dbId) {
       await supabase.from("user_missions").update({
         current_tasks: state.tasks as any,
@@ -125,9 +123,7 @@ export function useMissionMode() {
   const recommendations = useMemo(
     () => {
       if (!rawRecommendations) return [];
-      const deep = JSON.parse(JSON.stringify(rawRecommendations)) as StudyRecommendation[];
-      console.log("[MissionMode] normalizedRecommendations[0]", JSON.stringify(deep[0] ?? null));
-      return deep;
+      return JSON.parse(JSON.stringify(rawRecommendations)) as StudyRecommendation[];
     },
     [rawRecommendations]
   );
@@ -189,12 +185,9 @@ export function useMissionMode() {
     const tasks = recommendations || [];
     if (tasks.length === 0) return;
 
-    console.log("[MissionMode] startMission recommendations[0]", JSON.stringify(tasks[0] ?? null));
-
     // Ensure canonical IDs survive serialization (defensive deep-copy)
     const safeTasks = tasks.map(t => {
       const obj: any = { ...t };
-      // Explicitly preserve canonical IDs that may be stripped by optional chaining
       if ((t as any).sourceTable) obj.sourceTable = (t as any).sourceTable;
       if ((t as any).sourceRecordId) obj.sourceRecordId = (t as any).sourceRecordId;
       if ((t as any).fsrsCardId) obj.fsrsCardId = (t as any).fsrsCardId;
@@ -203,11 +196,8 @@ export function useMissionMode() {
       if ((t as any).pendingCount) obj.pendingCount = (t as any).pendingCount;
       if ((t as any).pendingReviewIds) obj.pendingReviewIds = (t as any).pendingReviewIds;
       if ((t as any).nextReviewDate) obj.nextReviewDate = (t as any).nextReviewDate;
-      obj.debugMissionVersion = "canonical-v2";
       return obj as StudyRecommendation;
     });
-
-    console.log("[MissionMode] startMission safeTasks[0]", JSON.stringify(safeTasks[0] ?? null));
 
     const newState: MissionState = {
       status: "active",
