@@ -54,7 +54,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [questionCount, setQuestionCount] = useState(10);
   const [customCount, setCustomCount] = useState("");
-  const [difficulty, setDifficulty] = useState("intermediario");
+  const [difficulty, setDifficulty] = useState("misto");
   const [timePerQuestion, setTimePerQuestion] = useState(3);
   const [specificTopic, setSpecificTopic] = useState("");
   const [examBoard, setExamBoard] = useState("all");
@@ -296,11 +296,14 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
               <label className="text-sm font-semibold mb-3 block">Nível de dificuldade</label>
               <div className="flex gap-2 flex-wrap">
                 {DIFFICULTY_OPTIONS.map(d => (
-                  <Button key={d.value} variant={difficulty === d.value ? "default" : "outline"} size="sm" onClick={() => setDifficulty(d.value)}>
+              <Button key={d.value} variant={difficulty === d.value ? "default" : "outline"} size="sm" onClick={() => setDifficulty(d.value)}>
                     {d.label}
                   </Button>
                 ))}
               </div>
+              {difficulty === "misto" && (
+                <p className="text-xs text-muted-foreground mt-2">Distribuição: ~30% intermediárias, ~70% difíceis</p>
+              )}
             </div>
           )}
 
