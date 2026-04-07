@@ -549,6 +549,23 @@ const Simulados = () => {
       elapsedSecondsRef.current = Math.round((Date.now() - startTimeRef.current.getTime()) / 1000);
     }
 
+    // Compute TRI results if in TRI mode
+    if (mode === "tri" && triParamsRef.current.length === questions.length) {
+      const initialTheta = 0; // Could fetch from history
+      const results: TRIQuestionResult[] = questions.map((q, i) => {
+        const params = triParamsRef.current[i];
+        const correct = answers[i] === q.correct;
+        return {
+          index: i,
+          correct,
+          params,
+          probability: triProbability(initialTheta, params),
+          informationValue: itemInformation(initialTheta, params),
+        };
+      });
+      setTriResults(results);
+    }
+
     if (user) {
       const areaResults: Record<string, { correct: number; total: number }> = {};
       let correctCount = 0;
