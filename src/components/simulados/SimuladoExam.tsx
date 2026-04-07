@@ -181,6 +181,16 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
             <Bookmark className={`h-5 w-5 ${flaggedQuestions.has(current) ? "fill-current" : ""}`} />
           </button>
         </div>
+        {/* Imagem médica se disponível */}
+        {q.image_url && (
+          <div className="mb-4">
+            <ImageQuestionViewer
+              imageUrl={q.image_url}
+              imageType={q.image_type}
+              altText={`Imagem clínica - ${q.topic}`}
+            />
+          </div>
+        )}
         <p className="text-base font-medium mb-6">{q.statement}</p>
         <div className="space-y-3">
           {q.options.map((opt, i) => {
