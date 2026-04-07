@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch, cleanQuestionText } from "../_shared/ai-fetch.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
-import { isValidQuestion, hasMinimumContext, validateQuestionContext, logGenerationRejection } from "../_shared/question-filters.ts";
+import { isValidQuestion, hasMinimumContext, validateQuestionContext, logGenerationRejection, IMAGE_REF_PATTERN, ENGLISH_PATTERN } from "../_shared/question-filters.ts";
 import { validateQuestionBatch } from "../_shared/ai-validation.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
 
