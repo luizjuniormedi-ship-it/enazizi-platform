@@ -350,7 +350,9 @@ const Simulados = () => {
                 undefined, config.examBoard,
                 allQuestions.map(q => q.statement.slice(0, 120)),
               );
-              allQuestions.push(...batch);
+              // Tag each question with its generated difficulty for TRI
+              const taggedBatch = batch.map(q => ({ ...q, _triDifficulty: slot.diff as "facil" | "intermediario" | "dificil" }));
+              allQuestions.push(...taggedBatch);
             } catch {
               // continue
             }
