@@ -181,14 +181,22 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
             <Bookmark className={`h-5 w-5 ${flaggedQuestions.has(current) ? "fill-current" : ""}`} />
           </button>
         </div>
-        {/* Imagem médica se disponível */}
-        {q.image_url && (
+        {/* Imagem médica se disponível (ignora placeholders) */}
+        {q.image_url && !q.image_url.includes('placeholder') && (
           <div className="mb-4">
             <ImageQuestionViewer
               imageUrl={q.image_url}
               imageType={q.image_type}
               altText={`Imagem clínica - ${q.topic}`}
             />
+          </div>
+        )}
+        {q._isImageQuestion && (!q.image_url || q.image_url.includes('placeholder')) && q.image_type && (
+          <div className="mb-4 flex items-center gap-2 p-3 rounded-lg border border-border bg-muted/30">
+            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
+              🖼️ {q.image_type === 'ecg' ? 'ECG' : q.image_type === 'xray' ? 'Raio-X' : q.image_type === 'dermatology' ? 'Dermatologia' : q.image_type === 'ct' ? 'Tomografia' : q.image_type.toUpperCase()}
+            </span>
+            <span className="text-xs text-muted-foreground">Questão baseada em imagem médica</span>
           </div>
         )}
         <p className="text-base font-medium mb-6">{q.statement}</p>
