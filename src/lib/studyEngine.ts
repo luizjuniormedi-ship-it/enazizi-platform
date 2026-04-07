@@ -621,6 +621,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
 
     const countLabel = pendingCount > 1 ? ` (${pendingCount} pendentes)` : "";
 
+    // Debug: log canonical ID injection
+    console.log("[StudyEngine] Review rec:", { tema, oldestId: oldest.id, fsrsCardId: fsrsCard?.id, pendingCount });
+
     addRec({
       id: id("rev", revIdx),
       type: "review",
