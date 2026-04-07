@@ -47,15 +47,7 @@ function saveLocal(s: MissionState) {
 /* ── DB helpers (fire-and-forget with error swallow) ── */
 async function upsertMissionDB(userId: string, state: MissionState): Promise<string | null> {
   try {
-    // Debug: verify canonical IDs before DB write
-    if (state.tasks.length > 0) {
-      const first = state.tasks[0] as any;
-      console.log("[MissionMode] upsertMissionDB canonical IDs in first task:", {
-        sourceRecordId: first.sourceRecordId || "MISSING",
-        errorBankId: first.errorBankId || "MISSING",
-        dailyPlanTaskId: first.dailyPlanTaskId || "MISSING",
-      });
-    }
+    console.log("[MissionMode] upsertMissionDB state.tasks[0]", JSON.stringify(state.tasks[0] ?? null));
 
     if (state.dbId) {
       await supabase.from("user_missions").update({
@@ -186,6 +178,8 @@ export function useMissionMode() {
     const tasks = recommendations || [];
     if (tasks.length === 0) return;
 
+    console.log("[MissionMode] startMission recommendations[0]", JSON.stringify(tasks[0] ?? null));
+
     // Ensure canonical IDs survive serialization (defensive deep-copy)
     const safeTasks = tasks.map(t => {
       const obj: any = { ...t };
@@ -198,21 +192,11 @@ export function useMissionMode() {
       if ((t as any).pendingCount) obj.pendingCount = (t as any).pendingCount;
       if ((t as any).pendingReviewIds) obj.pendingReviewIds = (t as any).pendingReviewIds;
       if ((t as any).nextReviewDate) obj.nextReviewDate = (t as any).nextReviewDate;
+      obj.debugMissionVersion = "canonical-v2";
       return obj as StudyRecommendation;
     });
 
-    // Debug: log canonical IDs for the first task
-    if (safeTasks.length > 0) {
-      const first = safeTasks[0] as any;
-      console.log("[MissionMode] startMission canonical IDs:", {
-        id: first.id, type: first.type,
-        sourceRecordId: first.sourceRecordId || "MISSING",
-        errorBankId: first.errorBankId || "MISSING",
-        fsrsCardId: first.fsrsCardId || "MISSING",
-        dailyPlanTaskId: first.dailyPlanTaskId || "MISSING",
-        sourceTable: first.sourceTable || "MISSING",
-      });
-    }
+    console.log("[MissionMode] startMission safeTasks[0]", JSON.stringify(safeTasks[0] ?? null));
 
     const newState: MissionState = {
       status: "active",
