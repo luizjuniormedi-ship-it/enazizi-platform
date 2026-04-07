@@ -348,7 +348,6 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
         }
 
         // Filter out image refs and English content from cached questions
-        const { IMAGE_REF_PATTERN, ENGLISH_PATTERN } = await import("../_shared/question-filters.ts");
         allCached = allCached.filter((q: any) => {
           const stmt = String(q.statement || "");
           if (IMAGE_REF_PATTERN.test(stmt)) {
