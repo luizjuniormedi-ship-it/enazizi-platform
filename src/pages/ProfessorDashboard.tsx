@@ -50,8 +50,8 @@ const ProfessorDashboard = () => {
   const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([]);
   const [useAI, setUseAI] = useState(true);
   const [questionMode, setQuestionMode] = useState<"ai" | "manual">("ai");
-  const [difficulty, setDifficulty] = useState("intermediario");
-  const [difficultyMix, setDifficultyMix] = useState({ facil: 20, intermediario: 50, dificil: 30 });
+  const [difficulty, setDifficulty] = useState("misto");
+  const [difficultyMix, setDifficultyMix] = useState({ facil: 20, intermediario: 40, dificil: 40 });
   const [scheduledAt, setScheduledAt] = useState("");
   const [autoAssign, setAutoAssign] = useState(true);
 
