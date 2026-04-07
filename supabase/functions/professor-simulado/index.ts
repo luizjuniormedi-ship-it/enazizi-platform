@@ -597,6 +597,16 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           questions = questions.slice(0, requestedCount);
         }
 
+        // Filter out questions referencing images we can't display
+        questions = filterImageRefs(questions);
+
+        // Clean LaTeX residues from options
+        questions = questions.map((q: any) => ({
+          ...q,
+          options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : q.options,
+          explanation: q.explanation ? cleanQuestionText(q.explanation) : q.explanation,
+        }));
+
         const generatedCount = questions.length;
         const missingCount = requestedCount - generatedCount;
 

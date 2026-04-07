@@ -472,6 +472,13 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
             const parsed = JSON.parse(toolCall.function.arguments);
             if (Array.isArray(parsed.questions)) {
               const before = parsed.questions.length;
+              // Clean LaTeX residues from all text fields
+              parsed.questions = parsed.questions.map((q: any) => ({
+                ...q,
+                statement: cleanQuestionText(q.statement || ""),
+                options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : q.options,
+                explanation: q.explanation ? cleanQuestionText(q.explanation) : q.explanation,
+              }));
               parsed.questions = parsed.questions.filter((q: any) =>
                 isValidQuestion(q) && hasMinimumContext(q.statement || "")
               );
