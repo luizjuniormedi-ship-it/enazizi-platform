@@ -86,7 +86,7 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
       {/* Question number + statement */}
       <p className="text-sm font-medium leading-relaxed">
         <span className="text-primary font-bold mr-1.5">Questão {index + 1}.</span>
-        <MedicalTermHighlighter text={question.statement} />
+        <MedicalTermHighlighter text={cleanedStatement} />
       </p>
 
       {/* Options */}
