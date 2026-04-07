@@ -61,7 +61,8 @@ export async function selectImageQuestions(
   const results: ImageQuestion[] = [];
 
   for (const slot of slots) {
-    let query = supabase
+    // Query usando RPC ou raw para tabelas não tipadas ainda
+    let query = (supabase as any)
       .from("medical_image_questions")
       .select(`
         id, asset_id, question_code, statement, 
@@ -209,7 +210,7 @@ export async function recordImageQuestionUsage(
   answeredCorrectly: boolean,
   responseTimeSeconds: number
 ) {
-  await supabase.from("exam_question_usage").insert({
+  await (supabase as any).from("exam_question_usage").insert({
     question_id: questionId,
     simulado_id: simuladoId,
     user_id: userId,
