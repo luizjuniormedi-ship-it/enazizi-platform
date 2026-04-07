@@ -664,6 +664,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     const errorBoost = Math.min(err.vezes_errado >= 3 ? 20 : 0, 20);
     const scoreBoost = approvalScore < 40 ? 10 : 0;
     const priority = cap(70 + Math.min(err.vezes_errado * 3, 15) - i * 2 + (weights.phase === "critico" ? 8 : 0) + errorBoost + scoreBoost);
+    // Debug: log canonical ID injection for errors
+    console.log("[StudyEngine] Error rec:", { tema: err.tema, errorId: err.id });
+
     addRec({
       id: id("err", i),
       type: "error_review",
