@@ -154,6 +154,7 @@ const ExamSimulator = () => {
             },
             body: JSON.stringify({
               stream: false,
+              outputFormat: "json",
               difficulty: examConfig.difficulty,
               messages: [{ role: "user", content: `Gere ${needed} questões EXCLUSIVAMENTE médicas para simulado de residência médica. Áreas: ${examConfig.areas.join(", ")}. Retorne JSON array puro sem markdown: [{"statement":"...", "options":["a","b","c","d","e"], "correct_index": 0, "topic":"Área", "explanation":"..."}]` }],
               generationContext: {
@@ -171,26 +172,38 @@ const ExamSimulator = () => {
         if (res.ok) {
           try {
             const json = await res.json();
-            const content = json.choices?.[0]?.message?.content || JSON.stringify(json);
-            const match = content.match(/\[[\s\S]*\]/);
-            if (match) {
-              const parsed = JSON.parse(match[0]);
-              const extra: ExamQuestion[] = (Array.isArray(parsed) ? parsed : [])
-                .map((q: any, i: number) => ({
-                  id: `gen-${i}`,
-                  statement: String(q.statement || ""),
-                  options: Array.isArray(q.options) ? q.options.map(String) : [],
-                  correct_index: Number.isInteger(q.correct_index) ? q.correct_index : 0,
-                  topic: String(q.topic || "Geral"),
-                  explanation: String(q.explanation || ""),
-                }))
-                .filter((q) => q.options.length >= 2)
-                .filter(isMedicalQuestion);
-
-              // Apply global AI validation
-              const validatedExtra = filterValidQuestions(extra, { specialty: examConfig.areas[0] });
-              examQuestions = [...examQuestions, ...validatedExtra];
+            
+            // Parse from tool_calls (slot-based) or content fallback
+            let parsed: any[] = [];
+            const toolCall = json.choices?.[0]?.message?.tool_calls?.[0];
+            if (toolCall?.function?.arguments) {
+              try {
+                const tc = JSON.parse(toolCall.function.arguments);
+                parsed = Array.isArray(tc.questions) ? tc.questions : [];
+              } catch {}
             }
+            if (parsed.length === 0) {
+              const content = json.choices?.[0]?.message?.content || JSON.stringify(json);
+              const match = content.match(/\[[\s\S]*\]/);
+              if (match) {
+                try { parsed = JSON.parse(match[0]); } catch {}
+              }
+            }
+
+            const extra: ExamQuestion[] = (Array.isArray(parsed) ? parsed : [])
+              .map((q: any, i: number) => ({
+                id: `gen-${i}`,
+                statement: String(q.statement || ""),
+                options: Array.isArray(q.options) ? q.options.map(String) : [],
+                correct_index: Number.isInteger(q.correct_index) ? q.correct_index : 0,
+                topic: String(q.topic || "Geral"),
+                explanation: String(q.explanation || ""),
+              }))
+              .filter((q) => q.options.length >= 2)
+              .filter(isMedicalQuestion);
+
+            const validatedExtra = filterValidQuestions(extra, { specialty: examConfig.areas[0] });
+            examQuestions = [...examQuestions, ...validatedExtra];
           } catch {
             // ignore parse errors
           }
