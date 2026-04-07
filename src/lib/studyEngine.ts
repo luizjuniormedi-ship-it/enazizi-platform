@@ -621,6 +621,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
 
     const countLabel = pendingCount > 1 ? ` (${pendingCount} pendentes)` : "";
 
+    // Debug: log canonical ID injection
+    console.log("[StudyEngine] Review rec:", { tema, oldestId: oldest.id, fsrsCardId: fsrsCard?.id, pendingCount });
+
     addRec({
       id: id("rev", revIdx),
       type: "review",
@@ -661,6 +664,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     const errorBoost = Math.min(err.vezes_errado >= 3 ? 20 : 0, 20);
     const scoreBoost = approvalScore < 40 ? 10 : 0;
     const priority = cap(70 + Math.min(err.vezes_errado * 3, 15) - i * 2 + (weights.phase === "critico" ? 8 : 0) + errorBoost + scoreBoost);
+    // Debug: log canonical ID injection for errors
+    console.log("[StudyEngine] Error rec:", { tema: err.tema, errorId: err.id });
+
     addRec({
       id: id("err", i),
       type: "error_review",
@@ -1151,6 +1157,20 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     weakTopics: weakErrors,
     strongTopics: strongDomains,
   });
+
+  // Debug: final output verification
+  if (result.length > 0) {
+    const first = result[0] as any;
+    console.log("[StudyEngine] FINAL OUTPUT first rec:", JSON.stringify({
+      id: first.id, type: first.type, topic: first.topic,
+      sourceRecordId: first.sourceRecordId ?? "UNDEFINED",
+      errorBankId: first.errorBankId ?? "UNDEFINED",
+      fsrsCardId: first.fsrsCardId ?? "UNDEFINED",
+      sourceTable: first.sourceTable ?? "UNDEFINED",
+      pendingCount: first.pendingCount ?? "UNDEFINED",
+      keys: Object.keys(first),
+    }));
+  }
 
   return { recommendations: result, adaptive };
  } catch (err) {
