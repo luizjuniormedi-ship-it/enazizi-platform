@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent, cleanQuestionText } from "../_shared/ai-fetch.ts";
-import { IMAGE_REF_PATTERN } from "../_shared/question-filters.ts";
+import { IMAGE_REF_PATTERN, ENGLISH_PATTERN } from "../_shared/question-filters.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -212,430 +212,321 @@ serve(async (req) => {
         if (!topics || !topics.length) throw new Error("Selecione pelo menos um tema");
 
         const requestedCount = Math.min(count, 100);
-        // Smaller batches = more reliable JSON + less truncation
         const SAFE_BATCH = 8;
-
         const topicList = topics.join(", ");
 
-        // Build difficulty instruction
-        let difficultyInstruction = "";
+        // ── Compute exact per-slot targets ──
+        type Slot = { level: DifficultyLevel; target: number };
+        const slots: Slot[] = [];
         if (difficulty === "misto" && difficultyMix) {
           const nFacil = Math.round(requestedCount * (difficultyMix.facil || 0) / 100);
           const nInterm = Math.round(requestedCount * (difficultyMix.intermediario || 0) / 100);
-          const nDificil = requestedCount - nFacil - nInterm;
-          difficultyInstruction = `DISTRIBUIÇÃO DE DIFICULDADE OBRIGATÓRIA:
-- ${nFacil} questões de nível FÁCIL (conceitos básicos, diagnóstico direto, caso clínico simples)
-- ${nInterm} questões de nível INTERMEDIÁRIO (raciocínio clínico moderado, diagnósticos diferenciais)
-- ${nDificil} questões de nível DIFÍCIL (casos complexos, pegadinhas de prova, múltiplas comorbidades, conduta em emergência)
-Cada questão DEVE ter o campo "difficulty_level" com valor "facil", "intermediario" ou "dificil".`;
+          const nDificil = Math.max(0, requestedCount - nFacil - nInterm);
+          if (nFacil > 0) slots.push({ level: "facil", target: nFacil });
+          if (nInterm > 0) slots.push({ level: "intermediario", target: nInterm });
+          if (nDificil > 0) slots.push({ level: "dificil", target: nDificil });
         } else {
-          const levelMap: Record<string, string> = {
-            facil: "FÁCIL (conceitos básicos, diagnóstico direto, caso clínico simples)",
-            intermediario: "INTERMEDIÁRIO (raciocínio clínico moderado, diagnósticos diferenciais)",
-            dificil: "DIFÍCIL (casos complexos, pegadinhas de prova, múltiplas comorbidades)",
-          };
-          difficultyInstruction = `NÍVEL DE DIFICULDADE: Todas as questões devem ser de nível ${levelMap[difficulty] || levelMap.intermediario}.
-Cada questão DEVE ter o campo "difficulty_level" com valor "${difficulty}".`;
+          const level = normalizeDifficultyLevel(difficulty) || "intermediario";
+          slots.push({ level, target: requestedCount });
         }
 
-        // High-yield subtopics map
+        console.log(`[Slots] Distribution: ${slots.map(s => `${s.level}=${s.target}`).join(", ")} (total=${requestedCount})`);
+
+        // ── Difficulty descriptions for prompts ──
+        const levelDesc: Record<DifficultyLevel, string> = {
+          facil: "FÁCIL — conceitos diretos, diagnóstico clássico e evidente, apresentação típica, sem pegadinhas. O aluno deve conseguir acertar apenas com conhecimento básico.",
+          intermediario: "INTERMEDIÁRIO — exige raciocínio clínico moderado, diagnósticos diferenciais simples, conduta padrão com uma ou duas comorbidades.",
+          dificil: "DIFÍCIL — apresentações atípicas, múltiplas comorbidades, dilemas de conduta complexos, pegadinhas de prova de residência (ENARE/USP/UNIFESP).",
+        };
+
+        // ── High-yield subtopics ──
         const HIGH_YIELD: Record<string, string[]> = {
           "Cardiologia": ["Insuficiência Cardíaca", "Síndromes Coronarianas Agudas", "Hipertensão Arterial", "Arritmias", "Endocardite"],
           "Cirurgia": ["Abdome Agudo", "Politrauma", "Hérnias", "Colecistite", "Apendicite"],
-          "Pediatria": ["Neonatologia", "Aleitamento Materno", "Bronquiolite", "Doenças Exantemáticas", "Imunização", "Reanimação Neonatal", "Icterícia Neonatal"],
-          "Ginecologia e Obstetrícia": ["Pré-eclâmpsia", "Hemorragias da Gestação", "Pré-natal", "Diabetes Gestacional", "Anticoncepção", "Trabalho de Parto"],
-          "Medicina Preventiva": ["SUS", "Epidemiologia", "Vacinação", "Estudos Epidemiológicos", "Bioestatística", "Ética e Bioética Médica"],
+          "Pediatria": ["Neonatologia", "Aleitamento Materno", "Bronquiolite", "Doenças Exantemáticas", "Imunização"],
+          "Ginecologia e Obstetrícia": ["Pré-eclâmpsia", "Hemorragias da Gestação", "Pré-natal", "Diabetes Gestacional"],
+          "Medicina Preventiva": ["SUS", "Epidemiologia", "Vacinação", "Estudos Epidemiológicos", "Bioestatística"],
           "Infectologia": ["HIV/AIDS", "Tuberculose", "Sepse", "Arboviroses", "Meningites"],
-          "Pneumologia": ["Asma", "DPOC", "Pneumonia", "Tuberculose Pulmonar", "Tromboembolismo Pulmonar", "Derrame Pleural"],
-          "Gastroenterologia": ["Doença do Refluxo", "Hemorragia Digestiva", "Cirrose Hepática", "Hepatites Virais", "Doença Inflamatória Intestinal"],
+          "Pneumologia": ["Asma", "DPOC", "Pneumonia", "Tuberculose Pulmonar", "Tromboembolismo Pulmonar"],
+          "Gastroenterologia": ["Doença do Refluxo", "Hemorragia Digestiva", "Cirrose Hepática", "Hepatites Virais"],
           "Endocrinologia": ["Diabetes Mellitus", "Tireoidopatias", "Cetoacidose Diabética", "Dislipidemias"],
           "Neurologia": ["AVC Isquêmico", "Epilepsia", "Cefaléias", "Meningites"],
-          "Dermatologia": ["Hanseníase", "Câncer de Pele", "Lesões Elementares da Pele", "Piodermites"],
-          "Nefrologia": ["Insuficiência Renal Aguda", "Distúrbios Hidroeletrolíticos", "Distúrbios Ácido-Base", "Glomerulopatias"],
-          "Hematologia": ["Anemias", "Leucemias", "Linfomas", "Distúrbios da Hemostasia"],
+          "Dermatologia": ["Hanseníase", "Câncer de Pele", "Lesões Elementares da Pele"],
+          "Nefrologia": ["Insuficiência Renal Aguda", "Distúrbios Hidroeletrolíticos", "Distúrbios Ácido-Base"],
+          "Hematologia": ["Anemias", "Leucemias", "Linfomas"],
           "Reumatologia": ["Lúpus Eritematoso Sistêmico", "Artrite Reumatoide", "Vasculites"],
-          "Oncologia": ["Câncer de Mama", "Câncer Colorretal", "Câncer de Pulmão", "Estadiamento TNM"],
-          "Medicina de Emergência": ["PCR e RCP", "Choque", "Trauma", "Anafilaxia"],
-          "Angiologia": ["Trombose Venosa Profunda", "Doença Arterial Periférica", "Aneurisma de Aorta"],
-          "Psiquiatria": ["Depressão", "Esquizofrenia", "Emergências Psiquiátricas", "Dependência Química"],
+          "Psiquiatria": ["Depressão", "Esquizofrenia", "Emergências Psiquiátricas"],
           "Urologia": ["Litíase Renal", "Infecção Urinária", "Hiperplasia Prostática"],
           "Terapia Intensiva": ["Ventilação Mecânica", "Sepse e Choque Séptico", "SDRA"],
         };
-        const baseTopics = topics
-          .map((t: string) => String(t).split("(")[0].trim())
-          .filter(Boolean);
-        const priorityLines = baseTopics
-          .filter((t: string) => HIGH_YIELD[t])
-          .map((t: string) => `- ${t}: ${HIGH_YIELD[t].join(", ")}`)
-          .join("\n");
-        const priorityBlock = priorityLines
-          ? `\n\nSUBTÓPICOS PRIORITÁRIOS (dar preferência a estes por serem os mais cobrados em provas de residência):\n${priorityLines}\nDê preferência a esses subtópicos ao criar os casos clínicos, distribuindo as questões entre eles.`
-          : "";
-
-        const buildPrompt = (batchSize: number, prevStatements: string[]) => {
-          const perTopic = Math.max(1, Math.floor(batchSize / topics.length));
-          let prompt = `Gere exatamente ${batchSize} questões objetivas de múltipla escolha (A-E) para residência médica sobre: ${topicList}.${priorityBlock}
-
-IDIOMA OBRIGATÓRIO: TUDO deve ser escrito em PORTUGUÊS BRASILEIRO. Enunciados, alternativas, explicações, blocos — absolutamente TUDO em pt-BR. NUNCA use inglês.
-
-${difficultyInstruction}
-
-${topics.length > 1 ? `ORGANIZAÇÃO POR BLOCOS: Distribua as questões proporcionalmente entre os temas (~${perTopic} por tema). Cada questão DEVE ter o campo "block" indicando o bloco temático ao qual pertence (ex: "Cardiologia", "Farmacologia").` : `Todas as questões pertencem ao bloco "${topics[0]}". Cada questão DEVE ter o campo "block" com o valor "${topics[0]}".`}
-
-Para cada questão, retorne APENAS um array JSON válido no formato:
-[
-  {
-    "block": "Nome do bloco temático",
-    "statement": "Texto do enunciado com caso clínico em português",
-    "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
-    "correct_index": 0,
-    "explanation": "Explicação detalhada da resposta correta em português",
-    "topic": "Tema/subtema específico da questão",
-    "difficulty_level": "facil|intermediario|dificil"
-  }
-]
-
-TAMANHO MÍNIMO OBRIGATÓRIO DO ENUNCIADO: cada enunciado deve ter NO MÍNIMO 400 caracteres (aproximadamente 6-8 linhas).
-Siga o padrão ENAMED/ENARE com caso clínico completo contendo:
-1. Identificação do paciente (nome fictício brasileiro, idade, sexo, profissão)
-2. Queixa principal e história da doença atual (tempo de evolução, sintomas detalhados)
-3. Antecedentes relevantes (comorbidades, medicações em uso, hábitos de vida)
-4. Exame físico relevante (sinais vitais, achados semiológicos)
-5. Exames complementares quando pertinente (laboratoriais com valores, imagem)
-6. Pergunta objetiva final clara
-
-REGRAS:
-- OBRIGATÓRIO: No mínimo 70% das questões devem ser baseadas em CASOS CLÍNICOS
-- 5 alternativas (A-E)
-- correct_index é o índice (0-4) da alternativa correta
-- Baseie-se em provas reais de residência (ENARE, USP, UNIFESP)
-- REGRA DE GABARITO: NUNCA repita a mesma letra de resposta correta em questões consecutivas
-- TODOS os textos DEVEM estar em português brasileiro
-- NUNCA use formatação LaTeX (ex: $x$, \\times, \\%). Use texto puro: 148×90 mmHg, 38%, etc.
-- NUNCA referencie imagens, figuras, gráficos ou radiografias. Todas as informações clínicas devem estar descritas no texto.
-
-ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
-- NUNCA repita nome, idade, sexo ou perfil de paciente entre questões
-- Cada questão DEVE ter um paciente COMPLETAMENTE DIFERENTE
-- Retorne APENAS o JSON, sem texto adicional`;
-
-          if (prevStatements.length > 0) {
-            prompt += `\n\n=== QUESTÕES JÁ GERADAS (NÃO REPITA) ===\nNÃO repita cenários similares aos seguintes:\n${prevStatements.slice(0, 80).map((s: string, i: number) => `${i + 1}. ${s}`).join("\n")}\n=== FIM ===`;
-          }
-          return prompt;
-        };
-
-        let questions: any[] = [];
-        let source: "ai" | "bank" | "mixed" | "cache" = "ai";
-
-        // --- CACHE: buscar questões existentes no banco antes de chamar IA ---
-        // Extract subtopics from topic strings like "Cardiologia (IAM, Arritmias)"
+        const baseTopics = topics.map((t: string) => String(t).split("(")[0].trim()).filter(Boolean);
         const subtopicTerms: string[] = topics.flatMap((t: string) => {
           const match = String(t).match(/\(([^)]+)\)/);
           return match ? match[1].split(",").map((s: string) => s.trim()).filter(Boolean) : [];
         });
         const hasSubtopicFilter = subtopicTerms.length > 0;
-        
-        // Use baseTopics (without parenthetical subtopics) for cache lookup
+        const priorityLines = baseTopics
+          .filter((t: string) => HIGH_YIELD[t])
+          .map((t: string) => `- ${t}: ${HIGH_YIELD[t].join(", ")}`)
+          .join("\n");
+        const priorityBlock = priorityLines
+          ? `\nSUBTÓPICOS PRIORITÁRIOS:\n${priorityLines}`
+          : "";
+
+        // ── Strict prompt builder per slot ──
+        const buildSlotPrompt = (batchSize: number, level: DifficultyLevel, prevStatements: string[]) => {
+          const perTopic = Math.max(1, Math.floor(batchSize / topics.length));
+          let prompt = `Gere exatamente ${batchSize} questões objetivas de múltipla escolha (A-E) para residência médica sobre: ${topicList}.${priorityBlock}
+
+IDIOMA OBRIGATÓRIO: TUDO deve ser escrito em PORTUGUÊS BRASILEIRO (pt-BR). Enunciados, alternativas, explicações — absolutamente TUDO em português. NUNCA use inglês em nenhum campo.
+
+NÍVEL DE DIFICULDADE OBRIGATÓRIO: ${levelDesc[level]}
+TODAS as ${batchSize} questões DEVEM ser de nível ${level.toUpperCase()}.
+Cada questão DEVE ter o campo "difficulty_level" com valor "${level}".
+
+${topics.length > 1 ? `Distribua proporcionalmente entre os temas (~${perTopic} por tema). Cada questão DEVE ter o campo "block".` : `Todas pertencem ao bloco "${topics[0]}".`}
+
+Retorne APENAS um array JSON válido:
+[
+  {
+    "block": "Nome do bloco",
+    "statement": "Caso clínico completo em português (mín 400 caracteres)",
+    "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
+    "correct_index": 0,
+    "explanation": "Explicação detalhada em português",
+    "topic": "Tema/subtema",
+    "difficulty_level": "${level}"
+  }
+]
+
+REGRAS INVIOLÁVEIS:
+- Mínimo 400 caracteres no enunciado (caso clínico completo com identificação, HDA, exame físico, exames)
+- 5 alternativas plausíveis (A-E)
+- NUNCA use LaTeX ($x$, \\times). Use texto puro: 148×90 mmHg, 38%
+- NUNCA referencie imagens, figuras ou gráficos
+- NUNCA repita a mesma letra de gabarito consecutivamente
+- Varie perfis de pacientes (idade, sexo, cenário)
+- Retorne APENAS o JSON, sem texto adicional`;
+
+          if (prevStatements.length > 0) {
+            prompt += `\n\n=== NÃO REPITA ===\n${prevStatements.slice(0, 60).map((s: string, i: number) => `${i + 1}. ${s}`).join("\n")}\n=== FIM ===`;
+          }
+          return prompt;
+        };
+
+        // ── Helper: strict post-generation filter ──
+        const strictFilter = (questions: any[], level: DifficultyLevel): any[] => {
+          return questions.filter((q: any) => {
+            const stmt = String(q.statement || "");
+            // Reject short
+            if (stmt.length < 350) { console.warn(`[Filter] Rejeitada: curta (${stmt.length} chars)`); return false; }
+            // Reject English
+            if (ENGLISH_PATTERN.test(stmt)) { console.warn(`[Filter] Rejeitada: inglês detectado`); return false; }
+            // Reject image refs
+            if (IMAGE_REF_PATTERN.test(stmt)) { console.warn(`[Filter] Rejeitada: ref imagem`); return false; }
+            // Reject invalid structure
+            if (!Array.isArray(q.options) || q.options.length < 4) { console.warn(`[Filter] Rejeitada: opções inválidas`); return false; }
+            // Check options for English too
+            const optText = q.options.join(" ");
+            if (ENGLISH_PATTERN.test(optText)) { console.warn(`[Filter] Rejeitada: opções em inglês`); return false; }
+            return true;
+          }).map((q: any) => ({
+            ...q,
+            statement: sanitizeStatement(q.statement || ""),
+            options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : q.options,
+            explanation: q.explanation ? cleanQuestionText(q.explanation) : q.explanation,
+            block: q.block || baseTopics[0] || topics[0],
+            difficulty_level: level, // Force the slot's level
+          }));
+        };
+
+        // ── Cache lookup (shared across slots) ──
         const topicFilters = baseTopics.map((t: string) => `topic.ilike.%${t}%`).join(",");
-        
         let allCached: any[] = [];
-        
-        // If user selected specific subtopics, try subtopic-filtered cache first
+
         if (hasSubtopicFilter) {
           const subFilters = subtopicTerms.map((s: string) => `topic.ilike.%${s}%`).join(",");
           const [{ data: subBank }, { data: subReal }] = await Promise.all([
-            sb.from("questions_bank")
-              .select("statement, options, correct_index, explanation, topic, difficulty")
-              .or(subFilters)
-              .eq("is_global", true)
-              .eq("review_status", "approved")
-              .limit(requestedCount * 2),
-            sb.from("real_exam_questions")
-              .select("statement, options, correct_index, explanation, topic, difficulty")
-              .or(subFilters)
-              .eq("is_active", true)
-              .limit(requestedCount * 2),
+            sb.from("questions_bank").select("statement, options, correct_index, explanation, topic, difficulty").or(subFilters).eq("is_global", true).eq("review_status", "approved").limit(requestedCount * 2),
+            sb.from("real_exam_questions").select("statement, options, correct_index, explanation, topic, difficulty").or(subFilters).eq("is_active", true).limit(requestedCount * 2),
           ]);
           allCached = [...(subBank || []), ...(subReal || [])];
-          console.log(`[Cache] Subtopic filter (${subtopicTerms.join(", ")}): found ${allCached.length} questions`);
         }
-        
-        // If no subtopic matches or not enough, fall back to broad topic filter
+
         if (allCached.length < requestedCount) {
           const [{ data: cachedBank }, { data: cachedReal }] = await Promise.all([
-            sb.from("questions_bank")
-              .select("statement, options, correct_index, explanation, topic, difficulty")
-              .or(topicFilters)
-              .eq("is_global", true)
-              .eq("review_status", "approved")
-              .limit(requestedCount * 2),
-            sb.from("real_exam_questions")
-              .select("statement, options, correct_index, explanation, topic, difficulty")
-              .or(topicFilters)
-              .eq("is_active", true)
-              .limit(requestedCount * 2),
+            sb.from("questions_bank").select("statement, options, correct_index, explanation, topic, difficulty").or(topicFilters).eq("is_global", true).eq("review_status", "approved").limit(requestedCount * 2),
+            sb.from("real_exam_questions").select("statement, options, correct_index, explanation, topic, difficulty").or(topicFilters).eq("is_active", true).limit(requestedCount * 2),
           ]);
-          // Dedup: don't add questions already in allCached
           const existingKeys = new Set(allCached.map((q: any) => String(q.statement || "").slice(0, 80).toLowerCase()));
-          const broadResults = [...(cachedBank || []), ...(cachedReal || [])].filter((q: any) => {
-            const key = String(q.statement || "").slice(0, 80).toLowerCase();
-            return !existingKeys.has(key);
-          });
-          // If subtopics were selected, put subtopic matches first
+          const broadResults = [...(cachedBank || []), ...(cachedReal || [])].filter((q: any) => !existingKeys.has(String(q.statement || "").slice(0, 80).toLowerCase()));
           allCached = [...allCached, ...broadResults];
         }
 
-        // Dedup against previousStatements
+        // Filter cache: remove English + image refs
         const allPrevStatements = Array.isArray(previousStatements) ? [...previousStatements] : [];
         if (allPrevStatements.length > 0) {
           const prevKeys = new Set(allPrevStatements.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
-          allCached = allCached.filter((q: any) => {
-            const key = String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ");
-            return !prevKeys.has(key);
-          });
+          allCached = allCached.filter((q: any) => !prevKeys.has(String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
         }
-
-        // Filter out image refs and English content from cached questions
         allCached = allCached.filter((q: any) => {
           const stmt = String(q.statement || "");
-          if (IMAGE_REF_PATTERN.test(stmt)) {
-            console.warn(`[professor-simulado/cache] Rejeitada por ref a imagem: "${stmt.slice(0, 80)}"`);
-            return false;
-          }
-          const ENGLISH_RE = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female|diagnosis is|management of|regarding the|concerning the|correct answer|following statements|all of the following|except which|best describes|chief complaint)\b/i;
-          if (ENGLISH_RE.test(stmt)) {
-            console.warn(`[professor-simulado/cache] Rejeitada por inglês: "${stmt.slice(0, 80)}"`);
-            return false;
-          }
-          return true;
+          return !IMAGE_REF_PATTERN.test(stmt) && !ENGLISH_PATTERN.test(stmt);
         });
 
-        const selectedCached = pickCachedQuestions({
-          questions: allCached,
-          requestedCount,
-          requestedDifficulty: difficulty,
-          difficultyMix,
-        });
+        // ── Partition cache by difficulty ──
+        const cacheByLevel: Record<DifficultyLevel, any[]> = { facil: [], intermediario: [], dificil: [] };
+        for (const q of allCached) {
+          cacheByLevel[inferDifficultyLevel(q, difficulty)].push(q);
+        }
 
-        const fromCache = selectedCached.map((q: any) => ({
-          statement: sanitizeStatement(q.statement || ""),
-          options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : [],
-          correct_index: q.correct_index ?? 0,
-          explanation: cleanQuestionText(q.explanation || ""),
-          topic: q.topic || topics[0],
-          block: baseTopics.find((t: string) => String(q.topic || "").toLowerCase().includes(t.toLowerCase())) || baseTopics[0] || topics[0],
-          difficulty_level: inferDifficultyLevel(q, difficulty),
-        }));
+        // ── SLOT-BASED GENERATION ──
+        let allQuestions: any[] = [];
+        const globalPrev = [...allPrevStatements];
+        let source: "ai" | "bank" | "mixed" | "cache" = "cache";
+        const slotMetrics: any[] = [];
 
-        let remaining = requestedCount - fromCache.length;
-        console.log(`[Cache] Found ${fromCache.length} cached, need ${remaining} from AI`);
+        for (const slot of slots) {
+          const { level, target } = slot;
+          console.log(`\n[Slot ${level}] Target: ${target} questions`);
 
-        if (remaining === 0) {
-          questions = fromCache;
-          source = "cache";
-        } else {
-          // AI completion loop: generate in small batches until we hit the target
-          let aiQuestions: any[] = [];
-          const MAX_AI_ATTEMPTS = Math.ceil(remaining * 2.0 / SAFE_BATCH) + 2; // generous attempts
-          const collectedPrev = [...allPrevStatements, ...fromCache.map((q: any) => String(q.statement || "").slice(0, 120))];
+          // 1. Try cache first for this slot
+          const cachedForSlot = shuffleArray(cacheByLevel[level]);
+          const fromCache = cachedForSlot.slice(0, target).map((q: any) => ({
+            statement: sanitizeStatement(q.statement || ""),
+            options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : [],
+            correct_index: q.correct_index ?? 0,
+            explanation: cleanQuestionText(q.explanation || ""),
+            topic: q.topic || topics[0],
+            block: baseTopics.find((t: string) => String(q.topic || "").toLowerCase().includes(t.toLowerCase())) || baseTopics[0] || topics[0],
+            difficulty_level: level,
+          }));
 
-          for (let attempt = 0; attempt < MAX_AI_ATTEMPTS && aiQuestions.length < remaining; attempt++) {
-            const stillNeeded = Math.min(SAFE_BATCH, remaining - aiQuestions.length);
-            if (stillNeeded <= 0) break;
+          let slotQuestions = [...fromCache];
+          let remaining = target - slotQuestions.length;
+          console.log(`[Slot ${level}] Cache: ${fromCache.length}, AI needed: ${remaining}`);
 
-            try {
-              const aiPrompt = buildPrompt(stillNeeded, collectedPrev);
-              const response = await aiFetch({
-                messages: [{ role: "user", content: aiPrompt }],
-                model: "google/gemini-2.5-flash",
-                maxTokens: 32768,
-                timeoutMs: 120000,
-              });
+          // 2. AI generation for remaining
+          if (remaining > 0) {
+            source = source === "cache" ? "ai" : "mixed";
+            const MAX_ATTEMPTS = Math.ceil(remaining * 2.0 / SAFE_BATCH) + 2;
 
-              if (!response.ok) {
-                const t = await response.text();
-                console.error(`AI batch ${attempt + 1} error:`, t.slice(0, 200));
-                continue;
-              }
+            for (let attempt = 0; attempt < MAX_ATTEMPTS && slotQuestions.length < target; attempt++) {
+              const stillNeeded = Math.min(SAFE_BATCH, target - slotQuestions.length);
+              if (stillNeeded <= 0) break;
 
-              const aiData = await response.json();
-              const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
-
-              const jsonMatch = content.match(/\[[\s\S]*\]/);
-              if (!jsonMatch) {
-                console.warn(`AI batch ${attempt + 1}: no JSON array found`);
-                continue;
-              }
-
-              let rawJson = jsonMatch[0];
-              rawJson = rawJson.replace(/,\s*([\]}])/g, "$1");
-              let parsed: any[] = [];
               try {
-                parsed = JSON.parse(rawJson);
-              } catch {
-                const lastBrace = rawJson.lastIndexOf("}");
-                if (lastBrace > 0) {
-                  try {
-                    parsed = JSON.parse(rawJson.slice(0, lastBrace + 1) + "]");
-                    console.warn(`Recovered ${parsed.length} questions from truncated JSON`);
-                  } catch { continue; }
-                } else { continue; }
+                const prompt = buildSlotPrompt(stillNeeded, level, globalPrev);
+                const response = await aiFetch({
+                  messages: [{ role: "user", content: prompt }],
+                  model: "google/gemini-2.5-flash",
+                  maxTokens: 32768,
+                  timeoutMs: 120000,
+                });
+
+                if (!response.ok) {
+                  const t = await response.text();
+                  console.error(`[Slot ${level}] AI batch ${attempt + 1} error:`, t.slice(0, 200));
+                  continue;
+                }
+
+                const aiData = await response.json();
+                const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
+                const jsonMatch = content.match(/\[[\s\S]*\]/);
+                if (!jsonMatch) { console.warn(`[Slot ${level}] batch ${attempt + 1}: no JSON`); continue; }
+
+                let rawJson = jsonMatch[0].replace(/,\s*([\]}])/g, "$1");
+                let parsed: any[] = [];
+                try { parsed = JSON.parse(rawJson); } catch {
+                  const lb = rawJson.lastIndexOf("}");
+                  if (lb > 0) try { parsed = JSON.parse(rawJson.slice(0, lb + 1) + "]"); } catch { continue; }
+                  else continue;
+                }
+
+                // Strict filter: language, length, structure
+                const valid = strictFilter(parsed, level);
+
+                // Dedup
+                const prevKeys = new Set(globalPrev.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
+                const deduped = valid.filter((q: any) => {
+                  const key = String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ");
+                  return !prevKeys.has(key);
+                });
+
+                for (const q of deduped) {
+                  if (slotQuestions.length >= target) break;
+                  globalPrev.push(String(q.statement || "").slice(0, 120));
+                  slotQuestions.push(q);
+                }
+
+                console.log(`[Slot ${level}] batch ${attempt + 1}: +${deduped.length} valid, total: ${slotQuestions.length}/${target}`);
+              } catch (err) {
+                console.error(`[Slot ${level}] batch ${attempt + 1} exception:`, err);
               }
-
-              // Filter valid questions immediately
-              const valid = parsed.filter((q: any) => {
-                const s = String(q.statement || "");
-                if (s.length < 400) return false;
-                if (!/[?.]/.test(s.slice(-80))) return false;
-                if (!Array.isArray(q.options) || q.options.length < 4) return false;
-                return true;
-              }).map((q: any) => ({
-                ...q,
-                statement: sanitizeStatement(q.statement || ""),
-                block: q.block || baseTopics[0] || topics[0],
-                difficulty_level: inferDifficultyLevel(q, difficulty),
-              }));
-
-              // Dedup against collected
-              const prevKeys = new Set(collectedPrev.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
-              const deduped = valid.filter((q: any) => {
-                const key = String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ");
-                return !prevKeys.has(key);
-              });
-
-              for (const q of deduped) {
-                collectedPrev.push(String(q.statement || "").slice(0, 120));
-              }
-              aiQuestions = [...aiQuestions, ...deduped];
-              console.log(`[AI batch ${attempt + 1}] Got ${deduped.length} valid, total AI: ${aiQuestions.length}/${remaining}`);
-            } catch (err) {
-              console.error(`AI batch ${attempt + 1} exception:`, err);
             }
           }
 
-          if (fromCache.length > 0 && aiQuestions.length > 0) {
-            questions = [...fromCache, ...aiQuestions];
-            source = "mixed";
-          } else if (fromCache.length > 0) {
-            questions = fromCache;
-            source = "cache";
-          } else if (aiQuestions.length > 0) {
-            questions = aiQuestions;
-            source = "ai";
-          } else {
-            // Both failed — last resort fallback
-            console.warn("AI + cache both insufficient, using fallback bank query");
-            const { data: bankRows } = await sb
-              .from("questions_bank")
-              .select("statement, options, correct_index, explanation, topic, difficulty")
-              .in("topic", topics)
-              .eq("is_global", true)
-              .order("created_at", { ascending: false })
-              .limit(requestedCount);
-            if (bankRows && bankRows.length > 0) {
-              questions = bankRows.map((r: any) => ({
-                statement: sanitizeStatement(r.statement || ""),
-                options: Array.isArray(r.options) ? r.options : [],
-                correct_index: r.correct_index ?? 0,
-                explanation: r.explanation || "",
-                topic: r.topic || topics[0] || "",
-                block: baseTopics[0] || topics[0] || "Geral",
-                difficulty_level: inferDifficultyLevel(r, difficulty),
-              }));
-              source = "bank";
-            }
+          // Track from cache too
+          for (const q of fromCache) {
+            globalPrev.push(String(q.statement || "").slice(0, 120));
           }
+
+          slotMetrics.push({
+            level,
+            requested: target,
+            delivered: slotQuestions.length,
+            fromCache: fromCache.length,
+            fromAI: slotQuestions.length - fromCache.length,
+          });
+
+          allQuestions = [...allQuestions, ...slotQuestions.slice(0, target)];
         }
 
-        // Complementation loop: if still short, do extra AI rounds
-        if (questions.length < requestedCount) {
-          const extraNeeded = requestedCount - questions.length;
-          console.log(`[Complement] Need ${extraNeeded} more questions, running extra AI rounds`);
-          const extraPrev = [...allPrevStatements, ...questions.map((q: any) => String(q.statement || "").slice(0, 120))];
-          const EXTRA_ATTEMPTS = Math.ceil(extraNeeded / SAFE_BATCH) + 2;
-          for (let ext = 0; ext < EXTRA_ATTEMPTS && questions.length < requestedCount; ext++) {
-            const stillNeed = Math.min(SAFE_BATCH, requestedCount - questions.length);
-            if (stillNeed <= 0) break;
-            try {
-              const aiPrompt = buildPrompt(stillNeed, extraPrev);
-              const resp = await aiFetch({
-                messages: [{ role: "user", content: aiPrompt }],
-                model: "google/gemini-2.5-flash",
-                maxTokens: 32768,
-                timeoutMs: 120000,
-              });
-              if (!resp.ok) continue;
-              const aiD = await resp.json();
-              const cnt = sanitizeAiContent(aiD.choices?.[0]?.message?.content || "");
-              const jm = cnt.match(/\[[\s\S]*\]/);
-              if (!jm) continue;
-              let rj = jm[0].replace(/,\s*([\]}])/g, "$1");
-              let ps: any[] = [];
-              try { ps = JSON.parse(rj); } catch {
-                const lb = rj.lastIndexOf("}");
-                if (lb > 0) try { ps = JSON.parse(rj.slice(0, lb + 1) + "]"); } catch { continue; }
-                else continue;
-              }
-              const vld = ps.filter((q: any) => String(q.statement || "").length >= 400 && Array.isArray(q.options) && q.options.length >= 4);
-              for (const q of vld) {
-                if (questions.length >= requestedCount) break;
-                extraPrev.push(String(q.statement || "").slice(0, 120));
-                questions.push({ ...q, statement: sanitizeStatement(q.statement || ""), block: q.block || baseTopics[0] || topics[0], difficulty_level: inferDifficultyLevel(q, difficulty) });
-              }
-              console.log(`[Complement round ${ext + 1}] total: ${questions.length}/${requestedCount}`);
-            } catch (e) { console.error(`[Complement ${ext + 1}] error:`, e); }
-          }
-        }
-
-        // Fix consecutive repeated correct_index
-        for (let i = 1; i < questions.length; i++) {
-          const prev = questions[i - 1];
-          const curr = questions[i];
+        // ── Fix consecutive repeated correct_index ──
+        for (let i = 1; i < allQuestions.length; i++) {
+          const prev = allQuestions[i - 1];
+          const curr = allQuestions[i];
           if (curr.correct_index === prev.correct_index && Array.isArray(curr.options) && curr.options.length === 5) {
             const avoid = new Set([prev.correct_index]);
-            if (i >= 2) avoid.add(questions[i - 2].correct_index);
+            if (i >= 2) avoid.add(allQuestions[i - 2].correct_index);
             const candidates = [0, 1, 2, 3, 4].filter(x => !avoid.has(x));
             const newIdx = candidates[Math.floor(Math.random() * candidates.length)];
             const oldIdx = curr.correct_index;
             const temp = curr.options[newIdx];
             curr.options[newIdx] = curr.options[oldIdx];
             curr.options[oldIdx] = temp;
-            curr.options = curr.options.map((opt: string, oi: number) => {
-              const letter = String.fromCharCode(65 + oi);
-              return opt.replace(/^[A-E]\)\s*/, `${letter}) `);
-            });
             curr.correct_index = newIdx;
           }
         }
 
-        // Truncate to exactly requestedCount
-        if (questions.length > requestedCount) {
-          questions = questions.slice(0, requestedCount);
+        // ── Final truncation ──
+        if (allQuestions.length > requestedCount) {
+          allQuestions = allQuestions.slice(0, requestedCount);
         }
 
-        // Filter out questions referencing images we can't display
-        questions = filterImageRefs(questions);
+        // ── Log quality metrics ──
+        const finalDistribution: Record<string, number> = {};
+        for (const q of allQuestions) {
+          const lvl = q.difficulty_level || "unknown";
+          finalDistribution[lvl] = (finalDistribution[lvl] || 0) + 1;
+        }
+        console.log(`\n[RESULTADO FINAL]`);
+        console.log(`Solicitado: ${requestedCount} | Entregue: ${allQuestions.length}`);
+        console.log(`Distribuição: ${JSON.stringify(finalDistribution)}`);
+        console.log(`Slots: ${JSON.stringify(slotMetrics)}`);
 
-        // Clean LaTeX residues from options
-        questions = questions.map((q: any) => ({
-          ...q,
-          options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : q.options,
-          explanation: q.explanation ? cleanQuestionText(q.explanation) : q.explanation,
-        }));
-
-        const generatedCount = questions.length;
+        const generatedCount = allQuestions.length;
         const missingCount = requestedCount - generatedCount;
 
-        console.log(`Generated ${generatedCount}/${requestedCount} questions (source: ${source}, missing: ${missingCount})`);
-
         return ok({
-          questions,
+          questions: allQuestions,
           source,
           requested_count: requestedCount,
           generated_count: generatedCount,
           missing_count: missingCount,
           exact_count: missingCount === 0,
+          difficulty_distribution: finalDistribution,
+          slot_metrics: slotMetrics,
         });
       }
 
