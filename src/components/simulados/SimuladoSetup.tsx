@@ -197,6 +197,22 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
               </button>
               <button
                 onClick={() => {
+                  setMode("tri");
+                }}
+                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  mode === "tri"
+                    ? "border-violet-500 bg-violet-500/10"
+                    : "border-border bg-secondary/30 hover:border-violet-500/30"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <Brain className="h-5 w-5 text-violet-500" />
+                  <span className="font-semibold text-sm">Nível ENARE/USP</span>
+                </div>
+                <p className="text-xs text-muted-foreground">TRI psicométrica. Ranking real. Nota ponderada.</p>
+              </button>
+              <button
+                onClick={() => {
                   setMode("extremo");
                   setDifficulty("dificil");
                   if (!customCount && questionCount < 50) setQuestionCount(50);
