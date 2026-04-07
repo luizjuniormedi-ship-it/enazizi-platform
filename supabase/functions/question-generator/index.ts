@@ -347,15 +347,30 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
           });
         }
 
+        // Filter out image refs and English content from cached questions
+        const { IMAGE_REF_PATTERN, ENGLISH_PATTERN } = await import("../_shared/question-filters.ts");
+        allCached = allCached.filter((q: any) => {
+          const stmt = String(q.statement || "");
+          if (IMAGE_REF_PATTERN.test(stmt)) {
+            console.warn(`[question-generator/cache] Rejeitada por ref a imagem: "${stmt.slice(0, 80)}"`);
+            return false;
+          }
+          if (ENGLISH_PATTERN.test(stmt)) {
+            console.warn(`[question-generator/cache] Rejeitada por inglês: "${stmt.slice(0, 80)}"`);
+            return false;
+          }
+          return true;
+        });
+
         // If we have enough cached questions (>= 5), serve them directly
         if (allCached.length >= 5) {
           allCached.sort(() => Math.random() - 0.5);
           const cachedQuestions = allCached.slice(0, 10).map((q: any) => ({
-            statement: q.statement,
-            options: Array.isArray(q.options) ? q.options : [],
+            statement: cleanQuestionText(q.statement || ""),
+            options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : [],
             correct_index: q.correct_index ?? 0,
             topic: q.topic || matchedTopics[0],
-            explanation: q.explanation || "",
+            explanation: cleanQuestionText(q.explanation || ""),
           }));
 
           console.log(`[question-generator] Served ${cachedQuestions.length} questions from cache (0 AI calls, source=cache)`);
