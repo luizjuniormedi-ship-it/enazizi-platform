@@ -684,6 +684,8 @@ const Simulados = () => {
     setFinalAnswers({});
     setFlaggedQuestions([]);
     setRestoredState(null);
+    setTriResults([]);
+    triParamsRef.current = [];
   };
 
   if (phase === "setup") {
