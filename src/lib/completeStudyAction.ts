@@ -387,8 +387,8 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
     "temas_estudados"
   );
 
-  // 3. Sempre sincronizar daily plan
-  await safe(() => syncDailyPlan(userId, topic, now, today), "daily_plan");
+  // 3. Sempre sincronizar daily plan (prefer canonical ID)
+  await safe(() => syncDailyPlan(userId, topic, now, today, payload.dailyPlanTaskId), "daily_plan");
 
   // 4. Validação de falso positivo — Bug 4
   if (taskType === "review" && !tablesUpdated.includes("revisoes")) {
