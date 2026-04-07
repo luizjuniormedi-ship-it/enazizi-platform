@@ -189,11 +189,7 @@ function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
     .filter(
       (q) =>
         q.options.length >= 4 &&
-        q.statement.length >= 200 &&
-        !NON_MEDICAL_CONTENT_REGEX.test(q.statement) &&
-        !/\b(the patient|which of the following|presents with|most likely|treatment of choice|year-old male|year-old female|diagnosis|management|regarding|concerning|history of|what is the|correct answer)\b/i.test(q.statement) &&
-        /\d+\s*(anos?|meses|dias|horas|semanas)/.test(q.statement) &&
-        !/\b(imagem abaixo|figura abaixo|vide imagem|observe a imagem|na imagem|na figura|ECG abaixo|tomografia abaixo|radiografia abaixo|imagem a seguir|figura a seguir|conforme a imagem|conforme a figura)\b/i.test(q.statement),
+        q.statement.length > 10,
     );
 }
 
@@ -349,7 +345,7 @@ const Simulados = () => {
       let allQuestions: SimQuestion[] = [...selectedFromBank];
 
       if (deficit > 0) {
-        const requestCount = Math.ceil(deficit * 1.3);
+        const requestCount = Math.ceil(deficit * 1.8);
 
         // Sequential generation with anti-repetition context
         const batchCount = Math.ceil(requestCount / BATCH_SIZE);
@@ -376,10 +372,10 @@ const Simulados = () => {
           }
         }
 
-        // Complement if still short — up to 3 retry attempts
-        for (let retryIdx = 0; retryIdx < 3 && allQuestions.length < config.count; retryIdx++) {
+        // Complement if still short — up to 5 retry attempts
+        for (let retryIdx = 0; retryIdx < 5 && allQuestions.length < config.count; retryIdx++) {
           const gap = config.count - allQuestions.length;
-          setLoadingProgress(`Complementando... tentativa ${retryIdx + 1}/3 (${allQuestions.length}/${config.count})`);
+          setLoadingProgress(`Complementando... tentativa ${retryIdx + 1}/5 (${allQuestions.length}/${config.count})`);
           setLoadingPercent(85 + retryIdx * 2);
           try {
             const avoidStatements = allQuestions.map((q) => q.statement.slice(0, 120));
