@@ -1588,133 +1588,6 @@ export type Database = {
         }
         Relationships: []
       }
-      domain_areas: {
-        Row: {
-          created_at: string
-          domain_id: string
-          icon: string | null
-          id: string
-          is_active: boolean | null
-          name: string
-          ordem: number | null
-          slug: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          domain_id: string
-          icon?: string | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-          ordem?: number | null
-          slug: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          domain_id?: string
-          icon?: string | null
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          ordem?: number | null
-          slug?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "domain_areas_domain_id_fkey"
-            columns: ["domain_id"]
-            isOneToOne: false
-            referencedRelation: "domains"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      domain_topics: {
-        Row: {
-          area_id: string
-          created_at: string
-          description: string | null
-          difficulty_base: number | null
-          id: string
-          is_active: boolean | null
-          name: string
-          ordem: number | null
-          slug: string
-          updated_at: string
-        }
-        Insert: {
-          area_id: string
-          created_at?: string
-          description?: string | null
-          difficulty_base?: number | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-          ordem?: number | null
-          slug: string
-          updated_at?: string
-        }
-        Update: {
-          area_id?: string
-          created_at?: string
-          description?: string | null
-          difficulty_base?: number | null
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          ordem?: number | null
-          slug?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "domain_topics_area_id_fkey"
-            columns: ["area_id"]
-            isOneToOne: false
-            referencedRelation: "domain_areas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      domains: {
-        Row: {
-          config_json: Json | null
-          created_at: string
-          description: string | null
-          icon: string | null
-          id: string
-          is_active: boolean | null
-          name: string
-          slug: string
-          updated_at: string
-        }
-        Insert: {
-          config_json?: Json | null
-          created_at?: string
-          description?: string | null
-          icon?: string | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-          slug: string
-          updated_at?: string
-        }
-        Update: {
-          config_json?: Json | null
-          created_at?: string
-          description?: string | null
-          icon?: string | null
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          slug?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       email_send_log: {
         Row: {
           created_at: string
@@ -3153,7 +3026,6 @@ export type Database = {
           created_at: string
           daily_study_hours: number | null
           display_name: string | null
-          domain_id: string | null
           email: string | null
           exam_date: string | null
           experience_reset_at: string | null
@@ -3184,7 +3056,6 @@ export type Database = {
           created_at?: string
           daily_study_hours?: number | null
           display_name?: string | null
-          domain_id?: string | null
           email?: string | null
           exam_date?: string | null
           experience_reset_at?: string | null
@@ -3215,7 +3086,6 @@ export type Database = {
           created_at?: string
           daily_study_hours?: number | null
           display_name?: string | null
-          domain_id?: string | null
           email?: string | null
           exam_date?: string | null
           experience_reset_at?: string | null
@@ -3240,13 +3110,6 @@ export type Database = {
           whatsapp_opt_out?: boolean
         }
         Relationships: [
-          {
-            foreignKeyName: "profiles_domain_id_fkey"
-            columns: ["domain_id"]
-            isOneToOne: false
-            referencedRelation: "domains"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "profiles_organization_id_fkey"
             columns: ["organization_id"]
