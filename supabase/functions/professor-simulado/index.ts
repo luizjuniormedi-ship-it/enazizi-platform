@@ -45,7 +45,7 @@ function normalizeDifficultyLevel(value: unknown): DifficultyLevel | null {
 
   if (["facil", "easy"].includes(raw)) return "facil";
   if (["intermediario", "medio", "medium"].includes(raw)) return "intermediario";
-  if (["dificil", "dificil", "hard"].includes(raw)) return "dificil";
+  if (["dificil", "hard"].includes(raw)) return "dificil";
 
   return null;
 }
