@@ -47,6 +47,16 @@ function saveLocal(s: MissionState) {
 /* ── DB helpers (fire-and-forget with error swallow) ── */
 async function upsertMissionDB(userId: string, state: MissionState): Promise<string | null> {
   try {
+    // Debug: verify canonical IDs before DB write
+    if (state.tasks.length > 0) {
+      const first = state.tasks[0] as any;
+      console.log("[MissionMode] upsertMissionDB canonical IDs in first task:", {
+        sourceRecordId: first.sourceRecordId || "MISSING",
+        errorBankId: first.errorBankId || "MISSING",
+        dailyPlanTaskId: first.dailyPlanTaskId || "MISSING",
+      });
+    }
+
     if (state.dbId) {
       await supabase.from("user_missions").update({
         current_tasks: state.tasks as any,
