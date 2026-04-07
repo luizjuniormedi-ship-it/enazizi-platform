@@ -20,6 +20,7 @@ import DashboardLayout from "./components/layout/DashboardLayout";
 
 // Lazy-load all pages
 const Index = lazyWithRetry(() => import("./pages/Index"), "Index");
+const DemoImageQuestions = lazyWithRetry(() => import("./pages/DemoImageQuestions"), "DemoImageQuestions");
 const Login = lazyWithRetry(() => import("./pages/Login"), "Login");
 const Register = lazyWithRetry(() => import("./pages/Register"), "Register");
 const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"), "Dashboard");
@@ -105,8 +106,9 @@ const App = () => (
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+               <Route path="/login" element={<Login />} />
+               <Route path="/demo-questoes-imagem" element={<DemoImageQuestions />} />
+               <Route path="/register" element={<Register />} />
               <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                 <Route index element={<Dashboard />} />
                 <Route path="cronograma" element={<Navigate to="/dashboard/planner" replace />} />
