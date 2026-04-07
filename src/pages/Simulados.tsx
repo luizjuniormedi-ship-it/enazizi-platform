@@ -345,7 +345,7 @@ const Simulados = () => {
       let allQuestions: SimQuestion[] = [...selectedFromBank];
 
       if (deficit > 0) {
-        const requestCount = Math.ceil(deficit * 1.3);
+        const requestCount = Math.ceil(deficit * 1.8);
 
         // Sequential generation with anti-repetition context
         const batchCount = Math.ceil(requestCount / BATCH_SIZE);
