@@ -192,7 +192,8 @@ const ProfessorDashboard = () => {
 
   const regenerateMissing = async () => {
     const target = parseInt(questionCount);
-    const deficit = target - generatedQuestions.length;
+    const currentQuestions = [...generatedQuestions]; // snapshot
+    const deficit = target - currentQuestions.length;
     if (deficit <= 0) return;
     setGenerating(true);
     try {
@@ -200,7 +201,7 @@ const ProfessorDashboard = () => {
         const subs = subtopics[t]?.trim();
         return subs ? `${t} (${subs})` : t;
       });
-      const previousStatements = generatedQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
+      const previousStatements = currentQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
       
       toast({ title: "Regenerando...", description: `Gerando ${deficit} questões faltantes` });
       
@@ -214,8 +215,10 @@ const ProfessorDashboard = () => {
       });
       
       const newQs = res.questions || [];
-      setGeneratedQuestions(prev => [...prev, ...newQs]);
-      toast({ title: "Pronto!", description: `${newQs.length} questões regeneradas.` });
+      // Merge with snapshot to avoid race condition
+      const merged = [...currentQuestions, ...newQs];
+      setGeneratedQuestions(merged);
+      toast({ title: "Pronto!", description: `${newQs.length} questões regeneradas. Total: ${merged.length}/${target}` });
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao regenerar", variant: "destructive" });
     } finally {
