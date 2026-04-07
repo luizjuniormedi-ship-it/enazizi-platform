@@ -125,9 +125,7 @@ export function useMissionMode() {
   const recommendations = useMemo(
     () => {
       if (!rawRecommendations) return [];
-      const deep = JSON.parse(JSON.stringify(rawRecommendations)) as StudyRecommendation[];
-      console.log("[MissionMode] normalizedRecommendations[0]", JSON.stringify(deep[0] ?? null));
-      return deep;
+      return JSON.parse(JSON.stringify(rawRecommendations)) as StudyRecommendation[];
     },
     [rawRecommendations]
   );
