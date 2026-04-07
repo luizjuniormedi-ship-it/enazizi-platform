@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Clock, ArrowRight, ArrowLeft, Flag, Bookmark, GraduationCap, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { SimuladoMode } from "./SimuladoSetup";
+import ImageQuestionViewer from "./ImageQuestion";
 
 export interface SimQuestion {
   statement: string;
@@ -12,6 +13,10 @@ export interface SimQuestion {
   explanation?: string;
   bankId?: string;
   source?: string;
+  image_url?: string;
+  image_type?: string;
+  _isImageQuestion?: boolean;
+  _imageQuestionId?: string;
 }
 
 interface SimuladoExamProps {
