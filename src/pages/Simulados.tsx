@@ -731,6 +731,20 @@ const Simulados = () => {
   }
 
   if (phase === "finished") {
+    if (mode === "tri" && triResults.length > 0) {
+      return (
+        <TRIResult
+          questions={questions}
+          selectedAnswers={finalAnswers}
+          triResults={triResults}
+          onNewSimulado={handleNewSimulado}
+          onRetryErrors={() => handleRetryErrors()}
+          flaggedQuestions={flaggedQuestions}
+          elapsedSeconds={elapsedSecondsRef.current}
+          realExamProfile={configRef.current?.realExamProfile || "GERAL"}
+        />
+      );
+    }
     return (
       <SimuladoResult
         questions={questions}
