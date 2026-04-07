@@ -221,13 +221,67 @@ export function getAiErrorMessage(error: unknown): string {
 }
 
 /**
- * Sanitize AI response content by removing control characters that break JSON.parse.
- * Preserves newlines, carriage returns, and tabs.
+ * Sanitize AI response content:
+ * 1. Remove control characters that break JSON.parse
+ * 2. Clean LaTeX residues ($...$, \times, \%, etc.)
+ * 3. Strip image/figure references without actual images
  */
 export function sanitizeAiContent(raw: string): string {
-  return raw.replace(/[\x00-\x1F\x7F]/g, (ch: string) =>
+  let cleaned = raw.replace(/[\x00-\x1F\x7F]/g, (ch: string) =>
     ch === '\n' || ch === '\r' || ch === '\t' ? ch : ' '
   );
+
+  // Clean LaTeX inline math: $( 8 3 + 8 4 )$ → (83+84), $. 3 8 %$ → .38%
+  cleaned = cleaned.replace(/\$([^$]{1,60})\$/g, (_match: string, inner: string) => {
+    // Remove extra spaces inside LaTeX fragments
+    let result = inner.trim().replace(/\s+/g, '');
+    // Convert common LaTeX commands to plain text
+    result = result.replace(/\\times/g, '×');
+    result = result.replace(/\\%/g, '%');
+    result = result.replace(/~/g, '');
+    result = result.replace(/\\text\{([^}]*)\}/g, '$1');
+    result = result.replace(/\\mathrm\{([^}]*)\}/g, '$1');
+    result = result.replace(/\\,/g, ' ');
+    result = result.replace(/\\/g, '');
+    return result;
+  });
+
+  // Clean remaining standalone LaTeX commands
+  cleaned = cleaned.replace(/\\times\b/g, '×');
+  cleaned = cleaned.replace(/\\%/g, '%');
+
+  return cleaned;
+}
+
+/**
+ * Clean LaTeX and encoding artifacts from a question statement or option text.
+ * Applied after JSON parsing to individual text fields.
+ */
+export function cleanQuestionText(text: string): string {
+  if (!text) return text;
+  let cleaned = text;
+  
+  // LaTeX inline math
+  cleaned = cleaned.replace(/\$([^$]{1,80})\$/g, (_m: string, inner: string) => {
+    let r = inner.trim().replace(/\s+/g, '');
+    r = r.replace(/\\times/g, '×');
+    r = r.replace(/\\%/g, '%');
+    r = r.replace(/~/g, '');
+    r = r.replace(/\\text\{([^}]*)\}/g, '$1');
+    r = r.replace(/\\mathrm\{([^}]*)\}/g, '$1');
+    r = r.replace(/\\,/g, ' ');
+    r = r.replace(/\\/g, '');
+    return r;
+  });
+  
+  // Standalone LaTeX
+  cleaned = cleaned.replace(/\\times\b/g, '×');
+  cleaned = cleaned.replace(/\\%/g, '%');
+  cleaned = cleaned.replace(/\\textit\{([^}]*)\}/g, '$1');
+  cleaned = cleaned.replace(/\\textbf\{([^}]*)\}/g, '$1');
+  cleaned = cleaned.replace(/\\emph\{([^}]*)\}/g, '$1');
+  
+  return cleaned;
 }
 
 /**
