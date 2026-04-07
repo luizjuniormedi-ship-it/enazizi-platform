@@ -520,7 +520,7 @@ REGRAS INVIOLÁVEIS:
 
         return ok({
           questions: allQuestions,
-          source: fromCache.length > 0 && source !== "ai" ? (source === "cache" ? "cache" : "mixed") : "ai",
+          source,
           requested_count: requestedCount,
           generated_count: generatedCount,
           missing_count: missingCount,
