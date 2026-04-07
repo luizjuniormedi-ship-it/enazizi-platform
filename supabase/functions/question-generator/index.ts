@@ -533,6 +533,53 @@ ${globalPrev.length > 0 ? `\nNÃO REPITA:\n${globalPrev.slice(0, 40).map((s, i) 
       });
     }
 
+    // --- NON-JSON (streaming) mode ---
+    const aiFetchOptions: any = {
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
+      stream: useStream,
+    };
+
+    let response: Response;
+    const startMs = Date.now();
+    try {
+      response = await aiFetch(aiFetchOptions);
+    } catch (aiErr) {
+      console.error("question-generator aiFetch error:", aiErr);
+      const msg = aiErr instanceof Error ? aiErr.message : "Serviço de IA indisponível";
+      return new Response(JSON.stringify({ error: msg }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const elapsed = Date.now() - startMs;
+    logAiUsage({
+      userId: "system-question-gen",
+      functionName: "question-generator",
+      modelUsed: "google/gemini-3-flash-preview",
+      success: response.ok,
+      responseTimeMs: elapsed,
+      modelTier: "standard",
+      errorMessage: response.ok ? undefined : `status ${response.status}`,
+    }).catch(() => {});
+
+    if (!response.ok) {
+      const t = await response.text();
+      console.error("AI response error:", response.status, t.slice(0, 300));
+      const userMsg2 = response.status === 402
+        ? "Créditos de IA esgotados. Tente novamente mais tarde."
+        : response.status === 429
+        ? "Muitas requisições. Aguarde um momento e tente novamente."
+        : "Erro no serviço de IA. Tente novamente em alguns minutos.";
+      return new Response(JSON.stringify({ error: userMsg2 }), {
+        status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (useStream) {
+      return new Response(response.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+    } else {
+      const json = await response.json();
       return new Response(JSON.stringify(json), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
