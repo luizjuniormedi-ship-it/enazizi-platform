@@ -238,6 +238,8 @@ const Simulados = () => {
   const startTimeRef = useRef<Date>();
   const elapsedSecondsRef = useRef<number>(0);
   const configRef = useRef<any>(null);
+  const [triResults, setTriResults] = useState<TRIQuestionResult[]>([]);
+  const triParamsRef = useRef<TRIParams[]>([]);
 
   const { pendingSession, checked, saveSession, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "simulados" });
 
