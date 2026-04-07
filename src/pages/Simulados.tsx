@@ -8,6 +8,14 @@ import { NON_MEDICAL_CONTENT_REGEX } from "@/lib/medicalValidation";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { filterValidQuestions } from "@/lib/aiOutputValidation";
 import { EXAM_PROFILES, calculateTopicDistribution, calculateDifficultySlots } from "@/lib/realExamDistribution";
+import {
+  type TRIParams,
+  type TRIQuestionResult,
+  assignTRIParams,
+  triProbability,
+  itemInformation,
+  estimateInitialTheta,
+} from "@/lib/triEngine";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +37,7 @@ import type { SimuladoMode } from "@/components/simulados/SimuladoSetup";
 import SimuladoExam from "@/components/simulados/SimuladoExam";
 import type { SimQuestion } from "@/components/simulados/SimuladoExam";
 import SimuladoResult from "@/components/simulados/SimuladoResult";
+import TRIResult from "@/components/simulados/TRIResult";
 
 type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 
@@ -229,6 +238,8 @@ const Simulados = () => {
   const startTimeRef = useRef<Date>();
   const elapsedSecondsRef = useRef<number>(0);
   const configRef = useRef<any>(null);
+  const [triResults, setTriResults] = useState<TRIQuestionResult[]>([]);
+  const triParamsRef = useRef<TRIParams[]>([]);
 
   const { pendingSession, checked, saveSession, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "simulados" });
 
@@ -257,12 +268,22 @@ const Simulados = () => {
 
   const startExamWithQuestions = (qs: SimQuestion[], config: any) => {
     setQuestions(qs);
-    const isTimedMode = config.mode === "prova" || config.mode === "extremo" || config.mode === "prova_real";
+    const isTimedMode = config.mode === "prova" || config.mode === "extremo" || config.mode === "prova_real" || config.mode === "tri";
     const timeLeft = isTimedMode
-      ? config.mode === "prova_real" && config.realExamProfile
+      ? (config.mode === "prova_real" || config.mode === "tri") && config.realExamProfile
         ? (EXAM_PROFILES[config.realExamProfile]?.timeMinutes || 300) * 60
         : qs.length * config.timePerQuestion * 60
       : 0;
+
+    // Assign TRI params for TRI mode based on tagged difficulty
+    if (config.mode === "tri") {
+      const params: TRIParams[] = qs.map((q: any) => {
+        const diffLevel = q._triDifficulty || "intermediario";
+        return assignTRIParams(diffLevel);
+      });
+      triParamsRef.current = params;
+    }
+
     setRestoredState({ timeLeft });
     startTimeRef.current = new Date();
     setPhase("exam");
@@ -295,8 +316,8 @@ const Simulados = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
 
-      // ── Prova Real: generate per-topic with real distribution ──
-      if (config.mode === "prova_real" && config.realExamProfile) {
+      // ── Prova Real / TRI: generate per-topic with real distribution ──
+      if ((config.mode === "prova_real" || config.mode === "tri") && config.realExamProfile) {
         const profile = EXAM_PROFILES[config.realExamProfile] || EXAM_PROFILES.GERAL;
         const topicDist = calculateTopicDistribution(profile, config.count);
         const diffSlots = calculateDifficultySlots(profile, config.count);
@@ -328,7 +349,9 @@ const Simulados = () => {
                 undefined, config.examBoard,
                 allQuestions.map(q => q.statement.slice(0, 120)),
               );
-              allQuestions.push(...batch);
+              // Tag each question with its generated difficulty for TRI
+              const taggedBatch = batch.map(q => ({ ...q, _triDifficulty: slot.diff as "facil" | "intermediario" | "dificil" }));
+              allQuestions.push(...taggedBatch);
             } catch {
               // continue
             }
@@ -526,6 +549,23 @@ const Simulados = () => {
       elapsedSecondsRef.current = Math.round((Date.now() - startTimeRef.current.getTime()) / 1000);
     }
 
+    // Compute TRI results if in TRI mode
+    if (mode === "tri" && triParamsRef.current.length === questions.length) {
+      const initialTheta = 0; // Could fetch from history
+      const results: TRIQuestionResult[] = questions.map((q, i) => {
+        const params = triParamsRef.current[i];
+        const correct = answers[i] === q.correct;
+        return {
+          index: i,
+          correct,
+          params,
+          probability: triProbability(initialTheta, params),
+          informationValue: itemInformation(initialTheta, params),
+        };
+      });
+      setTriResults(results);
+    }
+
     if (user) {
       const areaResults: Record<string, { correct: number; total: number }> = {};
       let correctCount = 0;
@@ -543,7 +583,7 @@ const Simulados = () => {
 
       await supabase.from("exam_sessions").insert({
         user_id: user.id,
-        title: `${mode === "prova_real" ? "🏆 Prova Real" : mode === "extremo" ? "🔥 Prova Extrema" : "Simulado"} - ${selectedTopics.slice(0, 3).join(", ")}${selectedTopics.length > 3 ? "..." : ""}`,
+        title: `${mode === "tri" ? "🧠 TRI" : mode === "prova_real" ? "🏆 Prova Real" : mode === "extremo" ? "🔥 Prova Extrema" : "Simulado"} - ${selectedTopics.slice(0, 3).join(", ")}${selectedTopics.length > 3 ? "..." : ""}`,
         total_questions: questions.length,
         time_limit_minutes: Math.round(elapsedSecondsRef.current / 60),
         status: "finished",
@@ -644,6 +684,8 @@ const Simulados = () => {
     setFinalAnswers({});
     setFlaggedQuestions([]);
     setRestoredState(null);
+    setTriResults([]);
+    triParamsRef.current = [];
   };
 
   if (phase === "setup") {
@@ -691,6 +733,20 @@ const Simulados = () => {
   }
 
   if (phase === "finished") {
+    if (mode === "tri" && triResults.length > 0) {
+      return (
+        <TRIResult
+          questions={questions}
+          selectedAnswers={finalAnswers}
+          triResults={triResults}
+          onNewSimulado={handleNewSimulado}
+          onRetryErrors={() => handleRetryErrors()}
+          flaggedQuestions={flaggedQuestions}
+          elapsedSeconds={elapsedSecondsRef.current}
+          realExamProfile={configRef.current?.realExamProfile || "GERAL"}
+        />
+      );
+    }
     return (
       <SimuladoResult
         questions={questions}
@@ -709,7 +765,7 @@ const Simulados = () => {
     <SimuladoExam
       key="simulado-exam-stable"
       questions={questions}
-      timeSeconds={restoredState?.timeLeft ?? ((mode === "prova" || mode === "extremo") ? questions.length * 3 * 60 : 0)}
+      timeSeconds={restoredState?.timeLeft ?? ((mode === "prova" || mode === "extremo" || mode === "tri") ? questions.length * 3 * 60 : 0)}
       onFinish={handleFinish}
       onAutoSaveState={() => ({ current: 0, selectedAnswers: {}, timeLeft: 0 })}
       onStateChange={(state) => { examStateRef.current = state; }}

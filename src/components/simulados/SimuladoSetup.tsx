@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
-import { FileText, Play, History, BookOpen, Timer, Skull, Trophy } from "lucide-react";
+import { FileText, Play, History, BookOpen, Timer, Skull, Trophy, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,7 +32,7 @@ const EXAM_BOARDS = [
   { value: "SANTA_CASA", label: "Santa Casa SP" },
 ];
 
-export type SimuladoMode = "prova" | "estudo" | "extremo" | "prova_real";
+export type SimuladoMode = "prova" | "estudo" | "extremo" | "prova_real" | "tri";
 
 interface SimuladoSetupProps {
   onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string; realExamProfile?: string }) => void;
@@ -71,7 +71,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
   const selectedProfile = EXAM_PROFILES[realExamBoard] || EXAM_PROFILES.GERAL;
 
   const handleStart = () => {
-    if (mode === "prova_real") {
+    if (mode === "prova_real" || mode === "tri") {
       const profile = selectedProfile;
       const topicsFromProfile = profile.topicWeights.map(tw => tw.topic);
       const count = profile.totalQuestions;
@@ -79,9 +79,9 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
       onStart({
         topics: topicsFromProfile,
         count,
-        difficulty: "prova_real",
+        difficulty: mode === "tri" ? "tri" : "prova_real",
         timePerQuestion: timePerQ,
-        mode: "prova_real",
+        mode,
         examBoard: realExamBoard,
         realExamProfile: realExamBoard,
       });
@@ -91,7 +91,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
     onStart({ topics: selectedTopics, count, difficulty, timePerQuestion, mode, specificTopic: specificTopic.trim() || undefined, examBoard: examBoard !== "all" ? examBoard : undefined });
   };
 
-  const totalTime = mode === "prova_real"
+  const totalTime = mode === "prova_real" || mode === "tri"
     ? selectedProfile.timeMinutes
     : (customCount ? parseInt(customCount) || questionCount : questionCount) * timePerQuestion;
 
@@ -150,7 +150,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
           {/* Mode toggle */}
           <div>
             <label className="text-sm font-semibold mb-3 block">Modo do Simulado</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <button
                 onClick={() => setMode("estudo")}
                 className={`p-4 rounded-xl border-2 transition-all text-left ${
@@ -194,6 +194,22 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                   <span className="font-semibold text-sm">Prova Real</span>
                 </div>
                 <p className="text-xs text-muted-foreground">Simula prova de residência. Distribuição e dificuldade reais.</p>
+              </button>
+              <button
+                onClick={() => {
+                  setMode("tri");
+                }}
+                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  mode === "tri"
+                    ? "border-violet-500 bg-violet-500/10"
+                    : "border-border bg-secondary/30 hover:border-violet-500/30"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <Brain className="h-5 w-5 text-violet-500" />
+                  <span className="font-semibold text-sm">Nível ENARE/USP</span>
+                </div>
+                <p className="text-xs text-muted-foreground">TRI psicométrica. Ranking real. Nota ponderada.</p>
               </button>
               <button
                 onClick={() => {
@@ -267,8 +283,59 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             </>
           )}
 
+          {/* ── TRI Mode Configuration ── */}
+          {mode === "tri" && (
+            <>
+              <div className="bg-violet-500/5 border border-violet-500/20 rounded-xl p-4 space-y-3">
+                <p className="text-sm font-semibold text-violet-600 flex items-center gap-2">
+                  <Brain className="h-4 w-4" /> Simulado Nível ENARE/USP — TRI
+                </p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• Usa <strong>Teoria de Resposta ao Item (TRI)</strong> — modelo psicométrico real</li>
+                  <li>• Cada questão tem parâmetros de discriminação, dificuldade e chute</li>
+                  <li>• Nota ponderada: questões difíceis valem mais se você acertar</li>
+                  <li>• <strong>Ranking estimado</strong> entre candidatos reais</li>
+                  <li>• Distribuição: {selectedProfile.difficultyMix.easy}% fácil, {selectedProfile.difficultyMix.medium}% médio, {selectedProfile.difficultyMix.hard}% difícil</li>
+                  <li>• Cronômetro: <strong>{selectedProfile.timeMinutes} minutos</strong></li>
+                </ul>
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold mb-2 block">Banca Alvo</label>
+                <Select value={realExamBoard} onValueChange={setRealExamBoard}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Escolha a banca" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(EXAM_PROFILES).map(([key, profile]) => (
+                      <SelectItem key={key} value={key}>{profile.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Topic distribution preview */}
+              <div>
+                <label className="text-sm font-semibold mb-2 block">Distribuição de Temas</label>
+                <div className="space-y-2">
+                  {calculateTopicDistribution(selectedProfile, selectedProfile.totalQuestions).map(({ topic, count }) => (
+                    <div key={topic} className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">{topic}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 h-2 rounded-full bg-secondary overflow-hidden">
+                          <div className="h-full rounded-full bg-violet-500" style={{ width: `${(count / selectedProfile.totalQuestions) * 100}%` }} />
+                        </div>
+                        <span className="text-xs font-medium w-12 text-right">{count}q</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
           {/* ── Standard modes: Topic selection ── */}
-          {mode !== "prova_real" && (
+          {mode !== "prova_real" && mode !== "tri" && (
             <>
               {/* Topic selection grouped by cycle */}
               <div>
@@ -386,7 +453,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
           )}
 
           {/* Difficulty — locked in extremo and prova_real */}
-          {mode !== "extremo" && mode !== "prova_real" && (
+          {mode !== "extremo" && mode !== "prova_real" && mode !== "tri" && (
             <div>
               <label className="text-sm font-semibold mb-3 block">Nível de dificuldade</label>
               <div className="flex gap-2 flex-wrap">
@@ -403,7 +470,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
           )}
 
           {/* Question count — extremo has higher presets, prova_real is fixed */}
-          {mode !== "prova_real" && (
+          {mode !== "prova_real" && mode !== "tri" && (
             <div>
               <label className="text-sm font-semibold mb-3 block">Quantas questões?</label>
               <div className="flex gap-2 flex-wrap">
@@ -442,12 +509,12 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
 
           <Button
             size="lg"
-            className={`w-full ${mode === "extremo" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : mode === "prova_real" ? "bg-amber-600 hover:bg-amber-700 text-white" : ""}`}
+            className={`w-full ${mode === "extremo" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : mode === "prova_real" ? "bg-amber-600 hover:bg-amber-700 text-white" : mode === "tri" ? "bg-violet-600 hover:bg-violet-700 text-white" : ""}`}
             onClick={handleStart}
-            disabled={mode !== "prova_real" && selectedTopics.length === 0}
+            disabled={mode !== "prova_real" && mode !== "tri" && selectedTopics.length === 0}
           >
-            {mode === "extremo" ? <Skull className="h-4 w-4 mr-2" /> : mode === "prova_real" ? <Trophy className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-            {mode === "estudo" ? "Iniciar Modo Estudo" : mode === "extremo" ? "Iniciar Prova Extrema" : mode === "prova_real" ? `Iniciar Prova Real ${selectedProfile.name}` : "Iniciar Simulado"} ({mode === "prova_real" ? selectedProfile.totalQuestions : (customCount || questionCount)} questões)
+            {mode === "extremo" ? <Skull className="h-4 w-4 mr-2" /> : mode === "prova_real" ? <Trophy className="h-4 w-4 mr-2" /> : mode === "tri" ? <Brain className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+            {mode === "estudo" ? "Iniciar Modo Estudo" : mode === "extremo" ? "Iniciar Prova Extrema" : mode === "prova_real" ? `Iniciar Prova Real ${selectedProfile.name}` : mode === "tri" ? `Iniciar TRI ${selectedProfile.name}` : "Iniciar Simulado"} ({mode === "prova_real" || mode === "tri" ? selectedProfile.totalQuestions : (customCount || questionCount)} questões)
           </Button>
         </div>
       )}
