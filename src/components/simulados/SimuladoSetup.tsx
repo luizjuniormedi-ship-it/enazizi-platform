@@ -283,8 +283,59 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             </>
           )}
 
+          {/* ── TRI Mode Configuration ── */}
+          {mode === "tri" && (
+            <>
+              <div className="bg-violet-500/5 border border-violet-500/20 rounded-xl p-4 space-y-3">
+                <p className="text-sm font-semibold text-violet-600 flex items-center gap-2">
+                  <Brain className="h-4 w-4" /> Simulado Nível ENARE/USP — TRI
+                </p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• Usa <strong>Teoria de Resposta ao Item (TRI)</strong> — modelo psicométrico real</li>
+                  <li>• Cada questão tem parâmetros de discriminação, dificuldade e chute</li>
+                  <li>• Nota ponderada: questões difíceis valem mais se você acertar</li>
+                  <li>• <strong>Ranking estimado</strong> entre candidatos reais</li>
+                  <li>• Distribuição: {selectedProfile.difficultyMix.easy}% fácil, {selectedProfile.difficultyMix.medium}% médio, {selectedProfile.difficultyMix.hard}% difícil</li>
+                  <li>• Cronômetro: <strong>{selectedProfile.timeMinutes} minutos</strong></li>
+                </ul>
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold mb-2 block">Banca Alvo</label>
+                <Select value={realExamBoard} onValueChange={setRealExamBoard}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Escolha a banca" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(EXAM_PROFILES).map(([key, profile]) => (
+                      <SelectItem key={key} value={key}>{profile.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Topic distribution preview */}
+              <div>
+                <label className="text-sm font-semibold mb-2 block">Distribuição de Temas</label>
+                <div className="space-y-2">
+                  {calculateTopicDistribution(selectedProfile, selectedProfile.totalQuestions).map(({ topic, count }) => (
+                    <div key={topic} className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">{topic}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 h-2 rounded-full bg-secondary overflow-hidden">
+                          <div className="h-full rounded-full bg-violet-500" style={{ width: `${(count / selectedProfile.totalQuestions) * 100}%` }} />
+                        </div>
+                        <span className="text-xs font-medium w-12 text-right">{count}q</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
           {/* ── Standard modes: Topic selection ── */}
-          {mode !== "prova_real" && (
+          {mode !== "prova_real" && mode !== "tri" && (
             <>
               {/* Topic selection grouped by cycle */}
               <div>
