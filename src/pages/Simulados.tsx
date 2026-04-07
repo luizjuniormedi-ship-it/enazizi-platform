@@ -268,12 +268,23 @@ const Simulados = () => {
 
   const startExamWithQuestions = (qs: SimQuestion[], config: any) => {
     setQuestions(qs);
-    const isTimedMode = config.mode === "prova" || config.mode === "extremo" || config.mode === "prova_real";
+    const isTimedMode = config.mode === "prova" || config.mode === "extremo" || config.mode === "prova_real" || config.mode === "tri";
     const timeLeft = isTimedMode
-      ? config.mode === "prova_real" && config.realExamProfile
+      ? (config.mode === "prova_real" || config.mode === "tri") && config.realExamProfile
         ? (EXAM_PROFILES[config.realExamProfile]?.timeMinutes || 300) * 60
         : qs.length * config.timePerQuestion * 60
       : 0;
+
+    // Assign TRI params for TRI mode
+    if (config.mode === "tri") {
+      const params: TRIParams[] = qs.map(q => {
+        // Infer difficulty from prompt difficulty or topic complexity
+        const diffLevel = config.difficulty === "tri" ? "intermediario" : config.difficulty;
+        return assignTRIParams(diffLevel as "facil" | "intermediario" | "dificil");
+      });
+      triParamsRef.current = params;
+    }
+
     setRestoredState({ timeLeft });
     startTimeRef.current = new Date();
     setPhase("exam");
