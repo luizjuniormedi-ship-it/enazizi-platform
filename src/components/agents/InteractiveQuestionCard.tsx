@@ -91,7 +91,7 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
 
       {/* Options */}
       <div className="space-y-2">
-        {question.options.map((opt, oi) => {
+        {cleanedOptions.map((opt, oi) => {
           const isThis = selected === oi;
           const isRight = oi === question.correctIndex;
 
