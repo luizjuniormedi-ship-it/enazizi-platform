@@ -253,7 +253,7 @@ Regras:
     // Add difficulty instruction
     if (difficulty) {
       const diffMap: Record<string, string> = {
-        facil: "Gere questões de nível INTERMEDIÁRIO BAIXO: apresentações TÍPICAS mas com caso clínico completo.",
+        facil: "Gere questões de nível FÁCIL: conceitos diretos, apresentações clássicas e típicas, sem pegadinhas. Foco em conhecimento básico e reconhecimento de padrões clínicos clássicos.",
         intermediario: "Gere questões de nível INTERMEDIÁRIO (padrão REVALIDA/ENAMED): diagnósticos diferenciais reais, pacientes com comorbidades.",
         dificil: "Gere questões de nível AVANÇADO (padrão ENAMED/ENARE com pegadinhas): apresentações ATÍPICAS, múltiplas comorbidades, dilemas de conduta.",
         misto: "Mescle: 50% intermediárias (REVALIDA), 50% avançadas/expert (ENAMED/ENARE). PROIBIDO nível fácil.",

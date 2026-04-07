@@ -250,7 +250,7 @@ ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
           explanation: q.explanation || "",
           topic: q.topic || topics[0],
           block: baseTopics.find((t: string) => String(q.topic || "").toLowerCase().includes(t.toLowerCase())) || baseTopics[0] || topics[0],
-          difficulty_level: difficulty || "intermediario",
+          difficulty_level: q.difficulty_level || difficulty || "intermediario",
         }));
 
         let remaining = requestedCount - fromCache.length;
