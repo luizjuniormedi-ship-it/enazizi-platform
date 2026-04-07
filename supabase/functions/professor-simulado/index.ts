@@ -97,7 +97,7 @@ serve(async (req) => {
         const { topics, count = 10, difficulty = "intermediario", difficultyMix, previousStatements } = params;
         if (!topics || !topics.length) throw new Error("Selecione pelo menos um tema");
 
-        const requestedCount = Math.min(count, 60);
+        const requestedCount = Math.min(count, 100);
         // Smaller batches = more reliable JSON + less truncation
         const SAFE_BATCH = 8;
 

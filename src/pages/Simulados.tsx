@@ -372,10 +372,10 @@ const Simulados = () => {
           }
         }
 
-        // Complement if still short — up to 3 retry attempts
-        for (let retryIdx = 0; retryIdx < 3 && allQuestions.length < config.count; retryIdx++) {
+        // Complement if still short — up to 5 retry attempts
+        for (let retryIdx = 0; retryIdx < 5 && allQuestions.length < config.count; retryIdx++) {
           const gap = config.count - allQuestions.length;
-          setLoadingProgress(`Complementando... tentativa ${retryIdx + 1}/3 (${allQuestions.length}/${config.count})`);
+          setLoadingProgress(`Complementando... tentativa ${retryIdx + 1}/5 (${allQuestions.length}/${config.count})`);
           setLoadingPercent(85 + retryIdx * 2);
           try {
             const avoidStatements = allQuestions.map((q) => q.statement.slice(0, 120));
