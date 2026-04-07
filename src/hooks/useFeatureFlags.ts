@@ -36,6 +36,7 @@ const SAFE_DEFAULTS: Record<FlagKey, boolean> = {
   new_fsrs_flow_enabled: true,
   new_chance_by_exam_enabled: true,
   mission_entry_enabled: false,
+  image_questions_enabled: false,
 };
 
 export const useFeatureFlags = () => {
