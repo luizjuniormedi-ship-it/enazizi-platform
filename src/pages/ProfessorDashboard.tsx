@@ -1222,7 +1222,7 @@ const ProfessorDashboard = () => {
             <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }}>Cancelar</Button>
             <Button
               onClick={createSimulado}
-              disabled={creating || (questionMode === "ai" ? generatedQuestions.length === 0 : manualQuestions.length === 0)}
+              disabled={creating || generating || (questionMode === "ai" ? (generatedQuestions.length === 0 || generatedQuestions.length < parseInt(questionCount)) : manualQuestions.length === 0)}
               className="gap-2"
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
