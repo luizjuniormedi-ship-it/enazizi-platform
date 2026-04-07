@@ -289,7 +289,7 @@ const ProfessorDashboard = () => {
           const subs = subtopics[t]?.trim();
           return subs ? `${t} (${subs})` : t;
         });
-        const FRONTEND_BATCH = 25;
+        const FRONTEND_BATCH = 10;
         const batches = Math.ceil(total / FRONTEND_BATCH);
 
         for (let b = 0; b < batches; b++) {
