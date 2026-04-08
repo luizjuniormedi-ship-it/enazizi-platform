@@ -2701,17 +2701,22 @@ export type Database = {
           asset_origin: string
           clinical_confidence: number
           clinical_findings: Json
+          clinical_validation_notes: string | null
           created_at: string
           diagnosis: string
           difficulty: Database["public"]["Enums"]["difficulty_level"]
           distractors: Json
+          duplicate_group_key: string | null
           hash_integrity: string | null
           id: string
           image_type: Database["public"]["Enums"]["medical_image_type"]
           image_url: string
           incidence_weight: number
+          integrity_status: string | null
           is_active: boolean
           review_status: Database["public"]["Enums"]["image_review_status"]
+          reviewed_at: string | null
+          reviewed_by: string | null
           source_reference: string | null
           specialty: string
           subtopic: string
@@ -2729,17 +2734,22 @@ export type Database = {
           asset_origin?: string
           clinical_confidence?: number
           clinical_findings?: Json
+          clinical_validation_notes?: string | null
           created_at?: string
           diagnosis: string
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
           distractors?: Json
+          duplicate_group_key?: string | null
           hash_integrity?: string | null
           id?: string
           image_type: Database["public"]["Enums"]["medical_image_type"]
           image_url: string
           incidence_weight?: number
+          integrity_status?: string | null
           is_active?: boolean
           review_status?: Database["public"]["Enums"]["image_review_status"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           source_reference?: string | null
           specialty: string
           subtopic: string
@@ -2757,17 +2767,22 @@ export type Database = {
           asset_origin?: string
           clinical_confidence?: number
           clinical_findings?: Json
+          clinical_validation_notes?: string | null
           created_at?: string
           diagnosis?: string
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
           distractors?: Json
+          duplicate_group_key?: string | null
           hash_integrity?: string | null
           id?: string
           image_type?: Database["public"]["Enums"]["medical_image_type"]
           image_url?: string
           incidence_weight?: number
+          integrity_status?: string | null
           is_active?: boolean
           review_status?: Database["public"]["Enums"]["image_review_status"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           source_reference?: string | null
           specialty?: string
           subtopic?: string
@@ -6428,6 +6443,18 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      get_image_integrity_summary: {
+        Args: never
+        Returns: {
+          avg_confidence: number
+          image_type: string
+          integrity_issues: number
+          is_active: boolean
+          review_status: string
+          total: number
+          unique_images: number
+        }[]
       }
       get_login_stats: {
         Args: never
