@@ -447,16 +447,24 @@ Deno.serve(async (req) => {
     }
 
     // Batch mode
+    const reprocess_all = body.reprocess_all || false;
+
     if (!image_type) {
       return new Response(JSON.stringify({ error: "image_type is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const size = Math.min(batch_size, 5);
-    const { data: assets } = await supabase.from("medical_image_assets")
+    const size = Math.min(batch_size, 10);
+    let query = supabase.from("medical_image_assets")
       .select("id, asset_code, image_type, diagnosis, specialty, subtopic, clinical_findings")
       .eq("image_type", image_type)
-      .eq("is_active", true)
-      .or("asset_origin.eq.educational_ai,asset_origin.is.null,asset_origin.eq.generic_ai,asset_origin.eq.unknown,validation_level.eq.blocked")
+      .eq("is_active", true);
+
+    if (!reprocess_all) {
+      // Process assets that need curation: non-real, bronze, blocked, or no validation
+      query = query.or("asset_origin.eq.educational_ai,asset_origin.is.null,asset_origin.eq.generic_ai,asset_origin.eq.unknown,validation_level.eq.blocked,validation_level.eq.bronze,validation_level.is.null,multimodal_ready.eq.false");
+    }
+
+    const { data: assets } = await query
       .order("diagnosis")
       .range(offset, offset + size - 1);
 
