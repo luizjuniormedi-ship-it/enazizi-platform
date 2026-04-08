@@ -11,18 +11,54 @@ import type { TablesUpdate } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { ALL_SPECIALTIES } from "@/constants/specialties";
-...
+
+export default function ExamSetupReminder() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [show, setShow] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [examDate, setExamDate] = useState("");
+  const [dailyHours, setDailyHours] = useState("4");
+  const [targetSpecialty, setTargetSpecialty] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const checkExam = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("exam_date")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!data?.exam_date) setShow(true);
+    };
+
+    checkExam();
+  }, [user]);
+
+  const handleSave = async () => {
+    if (!user || !examDate) {
+      toast({ title: "Selecione a data da prova", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+
     try {
       const updates: TablesUpdate<"profiles"> = {
         exam_date: examDate,
         daily_study_hours: parseFloat(dailyHours) || 4,
       };
+
       if (targetSpecialty) updates.target_specialty = targetSpecialty;
 
       const { error } = await supabase
         .from("profiles")
         .update(updates)
         .eq("user_id", user.id);
+
       if (error) throw error;
 
       localStorage.setItem("enazizi_exam_just_configured", "true");

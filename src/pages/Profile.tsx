@@ -17,7 +17,145 @@ import { useDashboardInvalidation } from "@/hooks/useDashboardInvalidation";
 import { Switch } from "@/components/ui/switch";
 import { ALL_SPECIALTIES } from "@/constants/specialties";
 import { cn } from "@/lib/utils";
-...
+
+const EXAM_OPTIONS = [
+  { value: "enare", label: "ENARE" },
+  { value: "revalida", label: "Revalida (INEP)" },
+  { value: "usp", label: "USP" },
+  { value: "unicamp", label: "UNICAMP" },
+  { value: "unifesp", label: "UNIFESP" },
+  { value: "sus-sp", label: "SUS-SP" },
+  { value: "sus-rj", label: "SUS-RJ" },
+  { value: "amrigs", label: "AMRIGS" },
+  { value: "ses-df", label: "SES-DF" },
+  { value: "psu-mg", label: "PSU-MG" },
+  { value: "hcpa", label: "HCPA" },
+  { value: "santa-casa-sp", label: "Santa Casa SP" },
+  { value: "einstein", label: "Einstein" },
+  { value: "sirio-libanes", label: "Sírio-Libanês" },
+  { value: "outra", label: "Outra prova de residência" },
+];
+
+const Profile = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { invalidateAll } = useDashboardInvalidation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [displayName, setDisplayName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [periodo, setPeriodo] = useState("");
+  const [faculdade, setFaculdade] = useState("");
+  const [phone, setPhone] = useState("");
+  const [userType, setUserType] = useState("estudante");
+  const [targetSpecialty, setTargetSpecialty] = useState("");
+  const [examDate, setExamDate] = useState("");
+  const [dailyStudyHours, setDailyStudyHours] = useState("4");
+  const [whatsappDailyBi, setWhatsappDailyBi] = useState(false);
+  const [targetExams, setTargetExams] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const load = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name, avatar_url, email, periodo, faculdade, phone, user_type, target_specialty, exam_date, daily_study_hours, whatsapp_daily_bi, target_exams, target_exam")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (data) {
+        setDisplayName(data.display_name || "");
+        setAvatarUrl(data.avatar_url);
+        setPeriodo(data.periodo ? String(data.periodo) : "");
+        setFaculdade(data.faculdade || "");
+        setPhone(data.phone || "");
+        setUserType(data.user_type || "estudante");
+        setTargetSpecialty(data.target_specialty || "");
+        setExamDate(data.exam_date || "");
+        setDailyStudyHours(data.daily_study_hours ? String(data.daily_study_hours) : "4");
+        setWhatsappDailyBi(data.whatsapp_daily_bi || false);
+        const exams = (data as any).target_exams;
+        if (Array.isArray(exams) && exams.length > 0) {
+          setTargetExams(exams);
+        } else if ((data as any).target_exam) {
+          setTargetExams([(data as any).target_exam]);
+        }
+      }
+
+      setLoading(false);
+    };
+
+    load();
+  }, [user]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Formato inválido", description: "Envie uma imagem (JPG, PNG, etc.)", variant: "destructive" });
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Arquivo muito grande", description: "Máximo de 2MB.", variant: "destructive" });
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${user.id}/avatar.${ext}`;
+
+      await supabase.storage.from("avatars").remove([path]);
+
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("avatars").getPublicUrl(path);
+      const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: urlWithCacheBust })
+        .eq("user_id", user.id);
+      if (updateError) throw updateError;
+
+      setAvatarUrl(urlWithCacheBust);
+      toast({ title: "Avatar atualizado!" });
+    } catch (err: any) {
+      toast({ title: "Erro ao enviar avatar", description: err.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+
+    const trimmed = displayName.trim();
+    const nameCheck = isValidName(trimmed);
+    if (!nameCheck.valid) {
+      toast({ title: nameCheck.message || "Nome inválido", variant: "destructive" });
+      return;
+    }
+
+    const phoneCheck = isValidPhone(phone);
+    if (!phoneCheck.valid) {
+      toast({ title: phoneCheck.message || "Telefone inválido", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+
     try {
       const updateData: TablesUpdate<"profiles"> = {
         display_name: trimmed,
@@ -29,22 +167,25 @@ import { cn } from "@/lib/utils";
         target_exams: targetExams,
         target_exam: targetExams[0] || null,
       };
+
       if (userType === "estudante") {
         updateData.periodo = periodo ? parseInt(periodo) : null;
         updateData.faculdade = faculdade || null;
       }
+
       if (userType === "medico") {
         updateData.target_specialty = targetSpecialty || null;
         updateData.faculdade = faculdade || null;
       }
+
       const { error } = await supabase
         .from("profiles")
         .update(updateData)
         .eq("user_id", user.id);
+
       if (error) throw error;
       toast({ title: "Perfil atualizado!" });
       invalidateAll();
-      // Re-check activity assignments after profile update
       supabase.functions.invoke("auto-assign-simulados").catch(() => {});
     } catch (err: any) {
       toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });

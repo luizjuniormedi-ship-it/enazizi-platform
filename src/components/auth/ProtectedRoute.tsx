@@ -14,34 +14,162 @@ import FaculdadeCombobox from "@/components/FaculdadeCombobox";
 import { isValidPhone, isValidName, isProfileComplete } from "@/lib/profileValidation";
 import WelcomeBackScreen from "@/components/onboarding/WelcomeBackScreen";
 import OnboardingV2Flow from "@/components/onboarding/OnboardingV2Flow";
-...
+
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading, signOut } = useAuth();
+  const { toast } = useToast();
+  const [profileStatus, setProfileStatus] = useState<string | null>(null);
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
+  const [checkingProfile, setCheckingProfile] = useState(true);
+  const [onboardingVersion, setOnboardingVersion] = useState<number>(2);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  const [formName, setFormName] = useState("");
+  const [formPhone, setFormPhone] = useState("");
+  const [formPeriodo, setFormPeriodo] = useState("");
+  const [formFaculdade, setFormFaculdade] = useState("");
+  const [formUserType, setFormUserType] = useState("estudante");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const RESET_VERSION = "4";
+    if (localStorage.getItem("enazizi_onboarding_reset_v") !== RESET_VERSION) {
+      localStorage.removeItem("enazizi_v2_welcome_seen");
+      localStorage.removeItem("enazizi_v2_onboarding_done");
+      localStorage.removeItem("enazizi_exam_setup_skipped");
+      localStorage.setItem("enazizi_onboarding_reset_v", RESET_VERSION);
+    }
+
+    if (!user) {
+      setCheckingProfile(false);
+      return;
+    }
+
+    const check = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("is_blocked, status, display_name, phone, periodo, faculdade, onboarding_version, user_type")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (data?.is_blocked) {
+        setProfileStatus("blocked");
+      } else {
+        const userType = data?.user_type || "estudante";
+        const profileComplete = isProfileComplete({
+          phone: data?.phone,
+          display_name: data?.display_name,
+          periodo: data?.periodo,
+          faculdade: data?.faculdade,
+          user_type: userType,
+        });
+
+        if (userType === "professor" && profileComplete && data?.status === "pending") {
+          await supabase.from("profiles").update({ status: "active" }).eq("user_id", user.id);
+          setProfileStatus("active");
+        } else {
+          setProfileStatus(data?.status || "pending");
+        }
+      }
+
+      const userType = data?.user_type || "estudante";
+      const incomplete = !isProfileComplete({
+        phone: data?.phone,
+        display_name: data?.display_name,
+        periodo: data?.periodo,
+        faculdade: data?.faculdade,
+        user_type: userType,
+      });
+
+      setProfileIncomplete(incomplete);
+      if (incomplete) {
+        setFormName(data?.display_name || "");
+        setFormPhone(data?.phone || "");
+        setFormPeriodo(data?.periodo ? String(data.periodo) : "");
+        setFormFaculdade(data?.faculdade || "");
+        setFormUserType(userType);
+      }
+
+      const obVersion = (data as any)?.onboarding_version ?? 1;
+      setOnboardingVersion(obVersion);
+      const effectiveStatus =
+        userType === "professor" && !incomplete && data?.status === "pending" ? "active" : data?.status;
+
+      if (obVersion < 2 && !incomplete && effectiveStatus === "active") {
+        const welcomeSeen = localStorage.getItem("enazizi_v2_welcome_seen") === "true";
+        const onboardingDone = localStorage.getItem("enazizi_v2_onboarding_done") === "true";
+        if (!welcomeSeen) setShowWelcome(true);
+        else if (!onboardingDone) setShowOnboarding(true);
+      }
+
+      setCheckingProfile(false);
+    };
+
+    check();
+  }, [user]);
+
+  const handleOnboardingSave = async () => {
+    if (!user) return;
+
+    const trimmedName = formName.trim();
+    const isStudent = formUserType === "estudante";
+    const isProfessor = formUserType === "professor";
+
+    const nameCheck = isValidName(trimmedName);
+    if (!nameCheck.valid) {
+      toast({ title: nameCheck.message || "Nome inválido", variant: "destructive" });
+      return;
+    }
+
+    const phoneCheck = isValidPhone(formPhone);
+    if (!phoneCheck.valid) {
+      toast({ title: phoneCheck.message || "Telefone inválido", variant: "destructive" });
+      return;
+    }
+
+    if (isStudent && (!formPeriodo || !formFaculdade)) {
+      toast({ title: "Selecione período e faculdade", variant: "destructive" });
+      return;
+    }
+
+    if (isProfessor && !formFaculdade) {
+      toast({ title: "Selecione sua universidade", variant: "destructive" });
+      return;
+    }
+
+    const cleanPhone = formPhone.replace(/\D/g, "");
+    setSaving(true);
+
     try {
       const updateData: TablesUpdate<"profiles"> = {
         display_name: trimmedName,
         phone: cleanPhone,
         user_type: formUserType,
       };
+
       if (isStudent) {
         updateData.periodo = parseInt(formPeriodo);
         updateData.faculdade = formFaculdade;
       }
+
       if (isProfessor) {
         updateData.faculdade = formFaculdade;
-        updateData.status = "active"; // Auto-activate professors
-        // Insert professor role
+        updateData.status = "active";
         await supabase.from("user_roles").upsert(
           { user_id: user.id, role: "professor" as any },
           { onConflict: "user_id,role" }
         );
       }
+
       const { error } = await supabase
         .from("profiles")
         .update(updateData)
         .eq("user_id", user.id);
+
       if (error) throw error;
       setProfileIncomplete(false);
       toast({ title: "Cadastro completo! 🎉" });
-      // Re-check activity assignments after completing registration
       supabase.functions.invoke("auto-assign-simulados").catch(() => {});
     } catch (err: any) {
       toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
