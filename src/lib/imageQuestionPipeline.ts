@@ -164,45 +164,55 @@ export function imageQuestionToSimQuestion(iq: ImageQuestion): {
 }
 
 /**
+ * Especialidades liberadas para questões com imagem em produção.
+ * TC, US, Patologia e Oftalmologia ficam bloqueadas até reconstrução do acervo.
+ */
+const ALLOWED_IMAGE_TYPES = ["ecg", "xray", "dermatology"];
+
+/**
  * Calcular slots de imagem com base na configuração do simulado.
+ * Apenas tipos liberados são incluídos; tipos bloqueados geram fallback textual.
  */
 export function calculateImageSlots(
   totalQuestions: number,
   imagePercent: number,
   imageTypeDistribution?: Record<string, number>
-): ImageQuestionSlot[] {
+): { slots: ImageQuestionSlot[]; fallbackCount: number } {
   const imageCount = Math.round(totalQuestions * (imagePercent / 100));
-  if (imageCount === 0) return [];
+  if (imageCount === 0) return { slots: [], fallbackCount: 0 };
 
   const defaultDistribution: Record<string, number> = {
-    ecg: 0.25,
-    xray: 0.25,
-    ct: 0.15,
-    dermatology: 0.15,
-    ophthalmology: 0.08,
-    pathology: 0.06,
-    us: 0.06,
+    ecg: 0.40,
+    xray: 0.35,
+    dermatology: 0.25,
   };
 
   const dist = imageTypeDistribution || defaultDistribution;
   const slots: ImageQuestionSlot[] = [];
+  let fallbackCount = 0;
 
   for (const [type, weight] of Object.entries(dist)) {
     const count = Math.round(imageCount * weight);
-    for (let i = 0; i < count; i++) {
-      slots.push({ imageType: type });
+    if (ALLOWED_IMAGE_TYPES.includes(type)) {
+      for (let i = 0; i < count; i++) {
+        slots.push({ imageType: type });
+      }
+    } else {
+      fallbackCount += count;
+      console.warn(`[ImagePipeline] Fallback textual: ${count} questões de ${type} (especialidade bloqueada)`);
     }
   }
 
-  // Ajustar para total exato
-  while (slots.length < imageCount) {
+  // Ajustar para total exato (apenas tipos liberados)
+  const targetSlots = imageCount - fallbackCount;
+  while (slots.length < targetSlots) {
     slots.push({ imageType: "ecg" });
   }
-  while (slots.length > imageCount) {
+  while (slots.length > targetSlots) {
     slots.pop();
   }
 
-  return slots;
+  return { slots, fallbackCount };
 }
 
 /**
