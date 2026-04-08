@@ -3026,6 +3026,7 @@ export type Database = {
           correct_index: number
           created_at: string
           difficulty: Database["public"]["Enums"]["difficulty_level"]
+          editorial_grade: string | null
           editorial_score: number | null
           exam_style: string
           explanation: string
@@ -3039,6 +3040,7 @@ export type Database = {
           option_e: string | null
           question_code: string
           rationale_map: Json | null
+          senior_audit_score: number | null
           statement: string
           status: Database["public"]["Enums"]["image_question_status"]
           tri_a: number
@@ -3054,6 +3056,7 @@ export type Database = {
           correct_index: number
           created_at?: string
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
+          editorial_grade?: string | null
           editorial_score?: number | null
           exam_style?: string
           explanation: string
@@ -3067,6 +3070,7 @@ export type Database = {
           option_e?: string | null
           question_code: string
           rationale_map?: Json | null
+          senior_audit_score?: number | null
           statement: string
           status?: Database["public"]["Enums"]["image_question_status"]
           tri_a?: number
@@ -3082,6 +3086,7 @@ export type Database = {
           correct_index?: number
           created_at?: string
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
+          editorial_grade?: string | null
           editorial_score?: number | null
           exam_style?: string
           explanation?: string
@@ -3095,6 +3100,7 @@ export type Database = {
           option_e?: string | null
           question_code?: string
           rationale_map?: Json | null
+          senior_audit_score?: number | null
           statement?: string
           status?: Database["public"]["Enums"]["image_question_status"]
           tri_a?: number
