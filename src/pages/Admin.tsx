@@ -27,6 +27,7 @@ import AdminUploadsPanel from "@/components/admin/AdminUploadsPanel";
 import AdminHealthHistory from "@/components/admin/AdminHealthHistory";
 import AdminQAPanel from "@/components/admin/AdminQAPanel";
 import AdminFeatureFlags from "@/components/admin/AdminFeatureFlags";
+import ImageQuestionUpgradePanel from "@/components/admin/ImageQuestionUpgradePanel";
 import type { AdminUser, Stats } from "@/components/admin/AdminTypes";
 
 const Admin = () => {
