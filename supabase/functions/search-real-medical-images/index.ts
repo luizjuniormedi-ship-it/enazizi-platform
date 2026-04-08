@@ -48,6 +48,8 @@ const SOURCE_MAP: Record<string, { urls: string[]; license: string }> = {
   ecg: {
     urls: [
       "https://litfl.com/ecg-library/{query}/",
+      "https://en.ecgpedia.org/wiki/{query}",
+      "https://www.wikidoc.org/index.php/{query}_ECG",
     ],
     license: "cc_by_nc_sa",
   },
@@ -194,13 +196,12 @@ Deno.serve(async (req) => {
         .from("medical_image_assets")
         .select("id, asset_code, diagnosis, image_type")
         .eq("image_type", image_type)
-        .or("license_type.eq.ai_generated,license_type.is.null")
+        .or("license_type.eq.ai_generated,license_type.is.null,license_type.eq.pending,asset_origin.eq.pending_real")
         .order("diagnosis")
         .range(offset, offset + Math.min(batch_size, 10) - 1);
 
       if (!reprocess_all) {
-        query = query.eq("is_active", false)
-          .in("review_status", ["blocked_clinical", "needs_review", "validated"]);
+        query = query.neq("asset_origin", "real_clinical");
       }
 
       const { data: assets, error: fetchErr } = await query;
@@ -259,6 +260,7 @@ async function processAsset(
   let bestSourceUrl = "";
   let bestSourceDomain = "";
 
+  // Step 1: Try direct scrape from known sources
   for (const urlTemplate of sources.urls) {
     const searchUrl = buildSearchUrl(urlTemplate, diagnosis);
     console.log(`Searching: ${searchUrl}`);
@@ -266,7 +268,6 @@ async function processAsset(
     try {
       const { images, sourceUrl } = await scrapeForImages(searchUrl);
       if (images.length > 0) {
-        // Pick the first valid clinical image
         for (const imgUrl of images.slice(0, 5)) {
           const uploaded = await downloadAndUpload(imgUrl, imageType, assetCode);
           if (uploaded) {
@@ -282,6 +283,62 @@ async function processAsset(
       }
     } catch (err) {
       console.error(`Error scraping ${urlTemplate}:`, err);
+    }
+  }
+
+  // Step 2: Fallback — use Firecrawl Search API to find real clinical images on the web
+  if (!bestImageUrl && FIRECRAWL_API_KEY) {
+    const modalityTerms: Record<string, string> = {
+      ecg: "ECG electrocardiogram tracing",
+      xray: "X-ray radiograph",
+      ct: "CT scan computed tomography",
+      us: "ultrasound sonography",
+      dermatology: "dermatology clinical photo",
+      pathology: "histopathology microscopy",
+      ophthalmology: "ophthalmology fundoscopy",
+    };
+
+    const searchQuery = `${diagnosis} ${modalityTerms[imageType] || imageType} real clinical image site:radiopaedia.org OR site:wikidoc.org OR site:litfl.com OR site:dermnetnz.org OR site:pathologyoutlines.com`;
+    console.log(`Firecrawl search fallback: ${searchQuery}`);
+
+    try {
+      const searchResp = await fetch("https://api.firecrawl.dev/v1/search", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: searchQuery,
+          limit: 3,
+          scrapeOptions: { formats: ["html"] },
+        }),
+      });
+
+      if (searchResp.ok) {
+        const searchData = await searchResp.json();
+        const results = searchData?.data || [];
+
+        for (const result of results) {
+          const html = result?.html || "";
+          const images = extractImageUrls(html);
+
+          for (const imgUrl of images.slice(0, 3)) {
+            const uploaded = await downloadAndUpload(imgUrl, imageType, assetCode);
+            if (uploaded) {
+              bestImageUrl = uploaded;
+              bestSourceUrl = result?.url || "";
+              try {
+                bestSourceDomain = new URL(bestSourceUrl).hostname;
+              } catch { bestSourceDomain = "web_search"; }
+              break;
+            }
+          }
+          if (bestImageUrl) break;
+        }
+      }
+    } catch (err) {
+      console.error("Firecrawl search fallback error:", err);
     }
   }
 
