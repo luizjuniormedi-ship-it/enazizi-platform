@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { MEDICAL_TERMS } from "@/lib/medicalTerms";
 import { useMedicalTerm } from "@/contexts/MedicalTermContext";
+import { cleanLatex } from "@/lib/cleanLatex";
 
 interface Props {
   text: string;
@@ -43,10 +44,11 @@ function segmentText(text: string): Segment[] {
 const MedicalTermHighlighter = ({ text, className }: Props) => {
   const { openTerm } = useMedicalTerm();
 
-  const segments = useMemo(() => segmentText(text), [text]);
+  const cleanedText = useMemo(() => cleanLatex(text), [text]);
+  const segments = useMemo(() => segmentText(cleanedText), [cleanedText]);
 
   if (segments.length <= 1 && !segments[0]?.isTerm) {
-    return <span className={className}>{text}</span>;
+    return <span className={className}>{cleanedText}</span>;
   }
 
   return (
