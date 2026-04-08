@@ -28,6 +28,7 @@ import AdminHealthHistory from "@/components/admin/AdminHealthHistory";
 import AdminQAPanel from "@/components/admin/AdminQAPanel";
 import AdminFeatureFlags from "@/components/admin/AdminFeatureFlags";
 import ImageQuestionUpgradePanel from "@/components/admin/ImageQuestionUpgradePanel";
+import AdminImageQuestionReviewPanel from "@/components/admin/AdminImageQuestionReviewPanel";
 import AdminModalityPanel from "@/components/admin/AdminModalityPanel";
 import type { AdminUser, Stats } from "@/components/admin/AdminTypes";
 
@@ -302,6 +303,7 @@ const Admin = () => {
       <div className="glass-card p-6">
         <ImageQuestionUpgradePanel />
       </div>
+      <AdminImageQuestionReviewPanel />
 
       {/* Users with tabs */}
       <div className="glass-card p-6">
