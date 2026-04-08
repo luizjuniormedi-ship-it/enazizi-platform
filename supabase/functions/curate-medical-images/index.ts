@@ -113,6 +113,23 @@ const DIAGNOSIS_EN: Record<string, string> = {
   "meningioma": "meningioma histopathology",
   "glioblastoma": "glioblastoma histopathology",
   "carcinoma de células renais": "renal cell carcinoma histopathology",
+  "litíase renal": "renal calculus kidney stone ultrasound",
+  "estenose de piloro": "pyloric stenosis ultrasound",
+  "gravidez ectópica": "ectopic pregnancy ultrasound",
+  "hidronefrose": "hydronephrosis ultrasound",
+  "nódulo tireoidiano": "thyroid nodule ultrasound",
+  "retinopatia hipertensiva": "hypertensive retinopathy fundus",
+  "oclusão de artéria central da retina": "central retinal artery occlusion cherry red spot",
+  "degeneração macular relacionada à idade": "age related macular degeneration AMD fundus",
+  "uveíte anterior": "anterior uveitis slit lamp",
+  "pterígio": "pterygium eye",
+  "pneumotórax hipertensivo": "tension pneumothorax chest CT",
+  "aneurisma de aorta abdominal": "abdominal aortic aneurysm CT",
+  "pneumomediastino": "pneumomediastinum chest xray",
+  "nódulo pulmonar solitário": "solitary pulmonary nodule chest xray",
+  "fratura de costela": "rib fracture chest xray",
+  "corpo estranho esofágico": "esophageal foreign body xray",
+  "bronquiectasias": "bronchiectasis chest xray",
 };
 
 function translateDiagnosis(ptDiagnosis: string): string {
