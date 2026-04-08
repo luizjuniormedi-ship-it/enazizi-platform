@@ -260,6 +260,7 @@ async function processAsset(
   let bestSourceUrl = "";
   let bestSourceDomain = "";
 
+  // Step 1: Try direct scrape from known sources
   for (const urlTemplate of sources.urls) {
     const searchUrl = buildSearchUrl(urlTemplate, diagnosis);
     console.log(`Searching: ${searchUrl}`);
@@ -267,7 +268,6 @@ async function processAsset(
     try {
       const { images, sourceUrl } = await scrapeForImages(searchUrl);
       if (images.length > 0) {
-        // Pick the first valid clinical image
         for (const imgUrl of images.slice(0, 5)) {
           const uploaded = await downloadAndUpload(imgUrl, imageType, assetCode);
           if (uploaded) {
@@ -283,6 +283,62 @@ async function processAsset(
       }
     } catch (err) {
       console.error(`Error scraping ${urlTemplate}:`, err);
+    }
+  }
+
+  // Step 2: Fallback — use Firecrawl Search API to find real clinical images on the web
+  if (!bestImageUrl && FIRECRAWL_API_KEY) {
+    const modalityTerms: Record<string, string> = {
+      ecg: "ECG electrocardiogram tracing",
+      xray: "X-ray radiograph",
+      ct: "CT scan computed tomography",
+      us: "ultrasound sonography",
+      dermatology: "dermatology clinical photo",
+      pathology: "histopathology microscopy",
+      ophthalmology: "ophthalmology fundoscopy",
+    };
+
+    const searchQuery = `${diagnosis} ${modalityTerms[imageType] || imageType} real clinical image site:radiopaedia.org OR site:wikidoc.org OR site:litfl.com OR site:dermnetnz.org OR site:pathologyoutlines.com`;
+    console.log(`Firecrawl search fallback: ${searchQuery}`);
+
+    try {
+      const searchResp = await fetch("https://api.firecrawl.dev/v1/search", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: searchQuery,
+          limit: 3,
+          scrapeOptions: { formats: ["html"] },
+        }),
+      });
+
+      if (searchResp.ok) {
+        const searchData = await searchResp.json();
+        const results = searchData?.data || [];
+
+        for (const result of results) {
+          const html = result?.html || "";
+          const images = extractImageUrls(html);
+
+          for (const imgUrl of images.slice(0, 3)) {
+            const uploaded = await downloadAndUpload(imgUrl, imageType, assetCode);
+            if (uploaded) {
+              bestImageUrl = uploaded;
+              bestSourceUrl = result?.url || "";
+              try {
+                bestSourceDomain = new URL(bestSourceUrl).hostname;
+              } catch { bestSourceDomain = "web_search"; }
+              break;
+            }
+          }
+          if (bestImageUrl) break;
+        }
+      }
+    } catch (err) {
+      console.error("Firecrawl search fallback error:", err);
     }
   }
 
@@ -320,4 +376,5 @@ async function processAsset(
     source_url: bestSourceUrl,
     source_domain: bestSourceDomain,
   };
+}
 }
