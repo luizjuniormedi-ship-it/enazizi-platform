@@ -213,17 +213,41 @@ const AdminImageQuestionReviewPanel = () => {
 
   const handleBulkAction = async (action: "published" | "rejected") => {
     setActionLoading("bulk");
-    const ids = questions.map(q => q.id);
-    const { error } = await supabase
-      .from("medical_image_questions")
-      .update({ status: action } as any)
-      .in("id", ids);
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: `${ids.length} questões ${action === "published" ? "aprovadas" : "rejeitadas"}` });
-      fetchQuestions();
-      fetchCounts();
+    try {
+      // Build query matching ALL questions with current filters, not just current page
+      let query = supabase
+        .from("medical_image_questions")
+        .update({ status: action } as any)
+        .neq("status", action as any);
+
+      if (statusFilter !== "all") {
+        query = query.eq("status", statusFilter as any);
+      }
+      if (difficultyFilter !== "all") {
+        query = query.eq("difficulty", difficultyFilter as any);
+      }
+      // Note: modality filter requires a join which update doesn't support directly
+      // For modality filter, we fall back to fetching all IDs first
+      if (modalityFilter !== "all") {
+        const { data: assetIds } = await supabase
+          .from("medical_image_assets")
+          .select("id")
+          .eq("image_type", modalityFilter as any);
+        if (assetIds && assetIds.length > 0) {
+          query = query.in("asset_id", assetIds.map(a => a.id));
+        }
+      }
+
+      const { error, count } = await query;
+      if (error) {
+        toast({ title: "Erro", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: `Todas as questões ${action === "published" ? "aprovadas" : "rejeitadas"}` });
+        fetchQuestions();
+        fetchCounts();
+      }
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
     setActionLoading(null);
   };
