@@ -65,6 +65,16 @@ export function isImageUrlCompatibleWithType(imageUrl: string, declaredType: str
   return true;
 }
 
+/** Asset origin types */
+export type AssetOrigin = "real_medical" | "validated_medical" | "educational_ai" | "generic_ai" | "blocked_clinical" | "unknown";
+
+/** Validation levels */
+export type ValidationLevel = "gold" | "silver" | "bronze" | "blocked";
+
+/** Origins allowed for multimodal generation */
+const MULTIMODAL_ALLOWED_ORIGINS: AssetOrigin[] = ["real_medical", "validated_medical"];
+const MULTIMODAL_ALLOWED_LEVELS: ValidationLevel[] = ["gold", "silver"];
+
 /**
  * Verifica se um asset pode ser exibido em simulados de produção.
  */
@@ -82,6 +92,44 @@ export function isAssetProductionReady(asset: {
     asset.integrity_status !== "generic_image" &&
     asset.integrity_status !== "mismatch_diagnosis"
   );
+}
+
+/**
+ * Verifica se um asset está pronto para geração multimodal segura.
+ * Regras estritas: somente real_medical/validated_medical com confiança >= 0.90.
+ */
+export function isAssetMultimodalReady(asset: {
+  asset_origin?: string;
+  validation_level?: string;
+  review_status: string;
+  integrity_status?: string;
+  clinical_confidence: number;
+  is_active: boolean;
+  multimodal_ready?: boolean;
+}): { ready: boolean; reason?: string } {
+  if (!asset.is_active) return { ready: false, reason: "Asset inactive" };
+  
+  if (!MULTIMODAL_ALLOWED_ORIGINS.includes(asset.asset_origin as AssetOrigin)) {
+    return { ready: false, reason: `Origin '${asset.asset_origin}' not allowed for multimodal` };
+  }
+  
+  if (!MULTIMODAL_ALLOWED_LEVELS.includes(asset.validation_level as ValidationLevel)) {
+    return { ready: false, reason: `Validation level '${asset.validation_level}' insufficient` };
+  }
+  
+  if (asset.review_status !== "published") {
+    return { ready: false, reason: `Review status '${asset.review_status}' — must be published` };
+  }
+  
+  if (asset.integrity_status !== "ok") {
+    return { ready: false, reason: `Integrity status '${asset.integrity_status}' — must be ok` };
+  }
+  
+  if (asset.clinical_confidence < 0.90) {
+    return { ready: false, reason: `Clinical confidence ${asset.clinical_confidence} < 0.90` };
+  }
+  
+  return { ready: true };
 }
 
 /** Resumo de integridade por tipo */
