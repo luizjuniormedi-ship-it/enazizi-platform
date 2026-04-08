@@ -4640,6 +4640,89 @@ export type Database = {
         }
         Relationships: []
       }
+      simulado_question_analytics: {
+        Row: {
+          bank_question_id: string | null
+          changed_answer: boolean | null
+          correct_answer: number
+          created_at: string
+          difficulty: string | null
+          exam_style: string | null
+          id: string
+          image_question_id: string | null
+          image_type: string | null
+          is_correct: boolean
+          mode: string
+          question_id: string | null
+          question_index: number
+          response_time_seconds: number | null
+          retried_image: boolean | null
+          selected_answer: number | null
+          simulado_session_id: string | null
+          specialty: string | null
+          subtopic: string | null
+          used_zoom: boolean | null
+          user_id: string
+          viewed_explanation: boolean | null
+        }
+        Insert: {
+          bank_question_id?: string | null
+          changed_answer?: boolean | null
+          correct_answer: number
+          created_at?: string
+          difficulty?: string | null
+          exam_style?: string | null
+          id?: string
+          image_question_id?: string | null
+          image_type?: string | null
+          is_correct?: boolean
+          mode?: string
+          question_id?: string | null
+          question_index: number
+          response_time_seconds?: number | null
+          retried_image?: boolean | null
+          selected_answer?: number | null
+          simulado_session_id?: string | null
+          specialty?: string | null
+          subtopic?: string | null
+          used_zoom?: boolean | null
+          user_id: string
+          viewed_explanation?: boolean | null
+        }
+        Update: {
+          bank_question_id?: string | null
+          changed_answer?: boolean | null
+          correct_answer?: number
+          created_at?: string
+          difficulty?: string | null
+          exam_style?: string | null
+          id?: string
+          image_question_id?: string | null
+          image_type?: string | null
+          is_correct?: boolean
+          mode?: string
+          question_id?: string | null
+          question_index?: number
+          response_time_seconds?: number | null
+          retried_image?: boolean | null
+          selected_answer?: number | null
+          simulado_session_id?: string | null
+          specialty?: string | null
+          subtopic?: string | null
+          used_zoom?: boolean | null
+          user_id?: string
+          viewed_explanation?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulado_question_analytics_simulado_session_id_fkey"
+            columns: ["simulado_session_id"]
+            isOneToOne: false
+            referencedRelation: "exam_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       simulation_history: {
         Row: {
           correct_diagnosis: string | null
