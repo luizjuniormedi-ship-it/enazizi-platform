@@ -130,6 +130,20 @@ const cleanText = (t: string) =>
 
 const cleanOpt = (o: string) => cleanText(o).replace(/^[A-E]\)\s*/, "");
 
+// ── Post-generation multimodal audit ───────────────────────────
+const FAKE_PATTERNS = [
+  /logo\b/i, /símbolo\b/i, /\bamerican academy\b/i, /\bsociedade brasileira\b/i,
+  /emblema\b/i, /\binsígnia\b/i, /\bmetaforiza\b/i, /\bsimboliza\b/i,
+  /\bvisualmente sugerido\b/i, /\bvisualmente metaforizada\b/i,
+  /\bcírculo.*roxo\b/i, /\braios.*partindo\b/i, /\bse assemelha\b.*\bfundo de olho\b/i,
+  /\bpadrão de cores.*formas\b/i, /\bconforme ilustrado\b.*\blogo\b/i,
+];
+
+function isFakeMultimodal(statement: string, explanation: string): boolean {
+  const allText = `${statement} ${explanation}`;
+  return FAKE_PATTERNS.some(p => p.test(allText));
+}
+
 // ── Main handler ───────────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -242,20 +256,29 @@ Deno.serve(async (req) => {
         for (const q of questions) {
           if (!q.statement || q.statement.length < 200 || !q.options || q.options.length < 5) continue;
 
+          const stmtClean = cleanText(q.statement);
+          const explClean = cleanText(q.explanation || "");
+
+          // ── AUDIT: reject fake multimodal at generation time ──
+          if (isFakeMultimodal(stmtClean, explClean)) {
+            console.warn(`🚫 FAKE MULTIMODAL rejected at generation: ${stmtClean.slice(0, 80)}...`);
+            continue;
+          }
+
           const opts = q.options || [];
           const qCode = `IMG-${asset.image_type.toUpperCase()}-${Date.now()}-${inserted}`;
 
           const { error: insErr } = await supabase.from("medical_image_questions").insert({
             asset_id: asset.id,
             question_code: qCode,
-            statement: cleanText(q.statement),
+            statement: stmtClean,
             option_a: cleanOpt(opts[0] || ""),
             option_b: cleanOpt(opts[1] || ""),
             option_c: cleanOpt(opts[2] || ""),
             option_d: cleanOpt(opts[3] || ""),
             option_e: cleanOpt(opts[4] || ""),
             correct_index: q.correct_index ?? 0,
-            explanation: cleanText(q.explanation || ""),
+            explanation: explClean,
             difficulty: q.difficulty <= 2 ? "easy" : q.difficulty >= 4 ? "hard" : "medium",
             exam_style: q.exam_style || "USP",
             status: "needs_review",
