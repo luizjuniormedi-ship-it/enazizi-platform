@@ -151,7 +151,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       }
       const { error } = await supabase
         .from("profiles")
-        .update(updateData)
+        .update(updateData as any)
         .eq("user_id", user.id);
       if (error) throw error;
       setProfileIncomplete(false);
