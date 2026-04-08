@@ -217,16 +217,19 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const imageTypes = body.image_types || ["ecg", "xray", "ct", "us", "dermatology", "pathology", "ophthalmology"];
+    const imageType = body.image_type || "ecg";
+    const batchSize = body.batch_size || 3;
+    const offset = body.offset || 0;
     const generateQuestions = body.generate_questions !== false;
 
-    // Get all pending assets
+    // Get batch of pending assets
     const { data: assets, error } = await supabase
       .from("medical_image_assets")
       .select("id, asset_code, diagnosis, image_type, clinical_findings, image_url, asset_origin")
-      .in("image_type", imageTypes)
+      .eq("image_type", imageType)
       .or("asset_origin.eq.pending_real,asset_origin.eq.ai_generated,asset_origin.eq.ai_generated_v2,image_url.is.null")
-      .order("image_type");
+      .order("diagnosis")
+      .range(offset, offset + batchSize - 1);
 
     if (error || !assets) {
       return new Response(JSON.stringify({ error: error?.message || "No assets" }), {
