@@ -73,8 +73,10 @@ export async function selectImageQuestions(
       `)
       .eq("status", "published")
       .eq("language_code", "pt-BR")
-      // BLOQUEIO CLÍNICO: apenas assets com confiança >= 0.80 e status published
+      // BLOQUEIO CLÍNICO: apenas assets publicados, ativos e com confiança >= 0.80
       .eq("medical_image_assets.is_active", true)
+      .eq("medical_image_assets.review_status", "published")
+      .eq("medical_image_assets.integrity_status", "ok")
       .gte("medical_image_assets.clinical_confidence", 0.80);
 
     if (slot.difficulty) {
