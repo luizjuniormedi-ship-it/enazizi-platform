@@ -57,18 +57,17 @@ const AdminQuestionReviewPanel = () => {
   const PAGE_SIZE = 20;
 
   const fetchCounts = async () => {
-    const { data } = await supabase
-      .from("questions_bank")
-      .select("review_status");
-
-    if (data) {
-      const c: Record<string, number> = {};
-      data.forEach((q) => {
-        const s = q.review_status || "unknown";
-        c[s] = (c[s] || 0) + 1;
-      });
-      setCounts(c);
-    }
+    const statuses = ["pending", "approved", "rejected", "needs_upgrade", "needs_review"];
+    const results: Record<string, number> = {};
+    const promises = statuses.map(async (status) => {
+      const { count } = await supabase
+        .from("questions_bank")
+        .select("id", { count: "exact", head: true })
+        .eq("review_status", status);
+      if (count && count > 0) results[status] = count;
+    });
+    await Promise.all(promises);
+    setCounts(results);
   };
 
   const fetchQuestions = async () => {
