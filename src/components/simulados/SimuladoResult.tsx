@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { Award, BarChart3, AlertTriangle, GraduationCap, RotateCcw, Bookmark, BookOpen, Loader2, TrendingUp, Clock, Skull, Target, Trophy, Users } from "lucide-react";
 import TaskCompletionCard from "@/components/study/TaskCompletionCard";
