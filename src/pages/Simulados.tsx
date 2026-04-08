@@ -449,9 +449,12 @@ const Simulados = () => {
       let imageSimQuestions: SimQuestion[] = [];
       try {
         const IMAGE_PERCENT = 20; // 20% do total
-        const slots = calculateImageSlots(config.count, IMAGE_PERCENT, {
+        const { slots, fallbackCount } = calculateImageSlots(config.count, IMAGE_PERCENT, {
           ecg: 0.40, xray: 0.30, dermatology: 0.30,
         });
+        if (fallbackCount > 0) {
+          console.info(`[Simulados] ${fallbackCount} questões de imagem substituídas por fallback textual`);
+        }
         if (slots.length > 0) {
           setLoadingProgress("Buscando questões com imagem...");
           const imageQuestions = await selectImageQuestions(slots);
