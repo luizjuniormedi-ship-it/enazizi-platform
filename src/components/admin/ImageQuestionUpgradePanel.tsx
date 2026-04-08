@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Play, CheckCircle2, AlertTriangle, BarChart3, RefreshCw } from "lucide-react";
+import { Loader2, Play, CheckCircle2, AlertTriangle, BarChart3, RefreshCw, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -28,84 +28,87 @@ export default function ImageQuestionUpgradePanel() {
   const queryClient = useQueryClient();
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
 
   const { data: stats, isLoading, isError, error: statsError } = useQuery({
     queryKey: ["image-question-stats"],
     queryFn: async (): Promise<StatsData> => {
-      try {
-        const { data, error } = await supabase.functions.invoke("upgrade-image-questions", {
-          body: { action: "stats" },
-        });
-        if (error) throw new Error(error.message || "Erro ao buscar estatísticas");
-        if (!data || !data.counts) throw new Error("Resposta inválida do servidor");
-        return data as StatsData;
-      } catch (e: any) {
-        console.warn("[ImageQuestionUpgradePanel] Stats error:", e);
-        throw e;
-      }
+      const { data, error } = await supabase.functions.invoke("upgrade-image-questions", {
+        body: { action: "stats" },
+      });
+      if (error) throw new Error(error.message || "Erro ao buscar estatísticas");
+      if (!data || !data.counts) throw new Error("Resposta inválida do servidor");
+      return data as StatsData;
     },
     refetchInterval: isUpgrading ? 5000 : 30000,
     retry: 2,
     retryDelay: 3000,
   });
 
-  const upgradeMutation = useMutation({
-    mutationFn: async () => {
-      setIsUpgrading(true);
-      setLastError(null);
-      const { data, error } = await supabase.functions.invoke("upgrade-image-questions", {
-        body: { action: "upgrade", batch_size: 3 },
-      });
-      if (error) throw new Error(error.message || "Erro na chamada da função");
-      if (!data) throw new Error("Resposta vazia do servidor");
-      return data;
-    },
-    onSuccess: (data) => {
-      setIsUpgrading(false);
-      queryClient.invalidateQueries({ queryKey: ["image-question-stats"] });
-      const msg = `Lote processado: ${data.upgraded || 0} aprovadas, ${data.rejected || 0} rejeitadas, ${data.failed || 0} falhas`;
-      if ((data.failed || 0) > 0) {
-        toast.warning(msg);
-      } else {
-        toast.success(msg);
-      }
-    },
-    onError: (err: any) => {
-      setIsUpgrading(false);
-      const msg = err?.message || "Erro desconhecido no upgrade";
-      setLastError(msg);
-      toast.error(`Erro no upgrade: ${msg}`);
-    },
-  });
+  const refresh = () => {
+    setLastError(null);
+    queryClient.invalidateQueries({ queryKey: ["image-question-stats"] });
+  };
 
-  const publishAllMutation = useMutation({
-    mutationFn: async () => {
-      setIsPublishing(true);
-      setLastError(null);
-      const { data, error } = await supabase.functions.invoke("upgrade-image-questions", {
-        body: { action: "publish_all" },
-      });
-      if (error) throw new Error(error.message || "Erro na publicação");
-      if (!data) throw new Error("Resposta vazia do servidor");
-      return data;
-    },
-    onSuccess: (data) => {
-      setIsPublishing(false);
-      queryClient.invalidateQueries({ queryKey: ["image-question-stats"] });
+  const invokeAction = async (action: string, body: Record<string, unknown> = {}) => {
+    const { data, error } = await supabase.functions.invoke("upgrade-image-questions", {
+      body: { action, ...body },
+    });
+    if (error) throw new Error(error.message || "Erro na chamada");
+    if (!data) throw new Error("Resposta vazia");
+    return data;
+  };
+
+  const handleUpgrade = async () => {
+    setIsUpgrading(true);
+    setLastError(null);
+    try {
+      const data = await invokeAction("upgrade", { batch_size: 3 });
+      const msg = `Lote processado: ${data.upgraded || 0} aprovadas, ${data.rejected || 0} rejeitadas, ${data.failed || 0} falhas`;
+      (data.failed || 0) > 0 ? toast.warning(msg) : toast.success(msg);
+    } catch (err: any) {
+      setLastError(err.message);
+      toast.error(`Erro no upgrade: ${err.message}`);
+    }
+    setIsUpgrading(false);
+    refresh();
+  };
+
+  const handlePublishAll = async () => {
+    setIsPublishing(true);
+    setLastError(null);
+    try {
+      const data = await invokeAction("publish_all");
       toast.success(`Publicação: ${data.published || 0} publicadas, ${data.rejected || 0} rejeitadas`);
-    },
-    onError: (err: any) => {
-      setIsPublishing(false);
-      const msg = err?.message || "Erro desconhecido na publicação";
-      setLastError(msg);
-      toast.error(`Erro na publicação: ${msg}`);
-    },
-  });
+    } catch (err: any) {
+      setLastError(err.message);
+      toast.error(`Erro na publicação: ${err.message}`);
+    }
+    setIsPublishing(false);
+    refresh();
+  };
+
+  const handleRetryRejected = async () => {
+    setIsRetrying(true);
+    setLastError(null);
+    try {
+      const data = await invokeAction("retry_rejected", { batch_size: 20 });
+      toast.success(`${data.reset || 0} questões rejeitadas voltaram para draft para reprocessamento`);
+    } catch (err: any) {
+      setLastError(err.message);
+      toast.error(`Erro: ${err.message}`);
+    }
+    setIsRetrying(false);
+    refresh();
+  };
 
   const counts = stats?.counts || {};
   const total = stats?.total || 0;
   const publishedPct = total > 0 ? ((counts.published || 0) / total * 100) : 0;
+  const hasDrafts = (counts.draft || 0) > 0;
+  const hasNeedsReview = (counts.needs_review || 0) > 0;
+  const hasRejected = (counts.rejected || 0) > 0;
 
   return (
     <div className="space-y-4">
@@ -114,18 +117,11 @@ export default function ImageQuestionUpgradePanel() {
           <BarChart3 className="h-5 w-5 text-primary" />
           Pipeline de Questões com Imagem
         </h2>
-        <Button
-          variant="ghost" size="sm"
-          onClick={() => {
-            setLastError(null);
-            queryClient.invalidateQueries({ queryKey: ["image-question-stats"] });
-          }}
-        >
+        <Button variant="ghost" size="sm" onClick={refresh}>
           <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Error banner */}
       {(isError || lastError) && (
         <Card className="border-destructive/50 bg-destructive/5">
           <CardContent className="p-3 flex items-center gap-2">
@@ -134,19 +130,8 @@ export default function ImageQuestionUpgradePanel() {
               <p className="text-sm text-destructive font-medium">
                 {lastError || (statsError as Error)?.message || "Erro ao carregar dados"}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                O painel continua funcional. Tente novamente.
-              </p>
             </div>
-            <Button
-              variant="outline" size="sm"
-              onClick={() => {
-                setLastError(null);
-                queryClient.invalidateQueries({ queryKey: ["image-question-stats"] });
-              }}
-            >
-              Tentar novamente
-            </Button>
+            <Button variant="outline" size="sm" onClick={refresh}>Tentar novamente</Button>
           </CardContent>
         </Card>
       )}
@@ -157,7 +142,6 @@ export default function ImageQuestionUpgradePanel() {
         </div>
       ) : (
         <>
-          {/* Status cards */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {Object.entries(STATUS_LABELS).map(([key, { label, color }]) => (
               <Card key={key} className="border-border">
@@ -171,7 +155,6 @@ export default function ImageQuestionUpgradePanel() {
             ))}
           </div>
 
-          {/* Progress bar */}
           <Card className="border-border">
             <CardContent className="p-4 space-y-2">
               <div className="flex justify-between text-sm">
@@ -187,33 +170,49 @@ export default function ImageQuestionUpgradePanel() {
           </Card>
 
           {/* Actions */}
-          <div className="flex gap-3">
-            <Button
-              onClick={() => upgradeMutation.mutate()}
-              disabled={isUpgrading || (counts.draft || 0) === 0}
-              className="flex-1"
-            >
-              {isUpgrading ? (
-                <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Processando...</>
-              ) : (
-                <><Play className="h-4 w-4 mr-2" /> Upgrade Lote (3)</>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => publishAllMutation.mutate()}
-              disabled={isPublishing || (counts.needs_review || 0) === 0}
-              className="flex-1"
-            >
-              {isPublishing ? (
-                <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Publicando...</>
-              ) : (
-                <><CheckCircle2 className="h-4 w-4 mr-2" /> Publicar Revisadas ({counts.needs_review || 0})</>
-              )}
-            </Button>
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-3">
+              <Button
+                onClick={handleUpgrade}
+                disabled={isUpgrading || !hasDrafts}
+                className="flex-1"
+              >
+                {isUpgrading ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Processando...</>
+                ) : (
+                  <><Play className="h-4 w-4 mr-2" /> Upgrade Lote ({counts.draft || 0})</>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handlePublishAll}
+                disabled={isPublishing || !hasNeedsReview}
+                className="flex-1"
+              >
+                {isPublishing ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Publicando...</>
+                ) : (
+                  <><CheckCircle2 className="h-4 w-4 mr-2" /> Publicar Revisadas ({counts.needs_review || 0})</>
+                )}
+              </Button>
+            </div>
+
+            {hasRejected && (
+              <Button
+                variant="secondary"
+                onClick={handleRetryRejected}
+                disabled={isRetrying}
+                className="w-full"
+              >
+                {isRetrying ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Reprocessando...</>
+                ) : (
+                  <><RotateCcw className="h-4 w-4 mr-2" /> Reprocessar Rejeitadas ({counts.rejected || 0})</>
+                )}
+              </Button>
+            )}
           </div>
 
-          {/* Recent errors */}
           {stats?.recent_errors && stats.recent_errors.length > 0 && (
             <Card className="border-destructive/30">
               <CardHeader className="pb-2 pt-3 px-4">

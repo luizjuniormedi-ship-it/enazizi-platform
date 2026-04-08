@@ -206,6 +206,36 @@ serve(async (req) => {
       }
     }
 
+    // --- ACTION: retry_rejected ---
+    if (action === "retry_rejected") {
+      try {
+        const retryLimit = Math.min(batch_size || 10, 50);
+        const { data: rejected, error: fetchErr } = await sb
+          .from("medical_image_questions")
+          .select("id")
+          .eq("status", "rejected")
+          .limit(retryLimit);
+
+        if (fetchErr) throw new Error(fetchErr.message);
+        if (!rejected || rejected.length === 0) {
+          return ok({ success: true, message: "Nenhuma questão rejeitada para reprocessar", reset: 0 });
+        }
+
+        const ids = rejected.map((r: any) => r.id);
+        const { error: updateErr } = await sb
+          .from("medical_image_questions")
+          .update({ status: "draft" })
+          .in("id", ids);
+
+        if (updateErr) throw new Error(updateErr.message);
+
+        return ok({ success: true, reset: ids.length, message: `${ids.length} questões voltaram para draft` });
+      } catch (e) {
+        console.error("[retry_rejected] Error:", e);
+        return errResponse(500, `Erro ao reprocessar rejeitadas: ${(e as Error).message}`, "retry_rejected");
+      }
+    }
+
     // --- ACTION: upgrade (default) ---
     const limit = Math.min(batch_size, 5);
     let drafts: any[] = [];
