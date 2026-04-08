@@ -237,7 +237,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(`Processing ${assets.length} assets across types: ${imageTypes.join(", ")}`);
+    console.log(`Processing ${assets.length} ${imageType} assets (offset ${offset})`);
 
     const summary: Record<string, { searched: number; found: number; questions: number }> = {};
     let totalFound = 0;
