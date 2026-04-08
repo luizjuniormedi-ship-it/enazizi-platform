@@ -48,7 +48,7 @@ const MedicalTermHighlighter = ({ text, className }: Props) => {
   const segments = useMemo(() => segmentText(cleanedText), [cleanedText]);
 
   if (segments.length <= 1 && !segments[0]?.isTerm) {
-    return <span className={className}>{text}</span>;
+    return <span className={className}>{cleanedText}</span>;
   }
 
   return (
