@@ -260,18 +260,20 @@ async function processAsset(asset: { id: string; asset_code: string; image_type:
 
   console.log(`[Asset] ${asset_code}: "${diagnosis}" → "${diagnosisEn}" (${image_type})`);
 
-  // STEP 1: Open-i NIH
-  const nihQuery = `${diagnosisEn} ${modality}`;
-  queries.push(nihQuery);
-  const nih = await searchOpenI(nihQuery);
-  for (const img of nih.images.slice(0, 5)) {
-    const s = safetyFilter(img);
-    if (!s.safe) { issues.push(s.reason!); continue; }
-    const up = await downloadAndUpload(img, image_type, asset_code);
-    if (up) { bestUrl = up; sourceName = "openi.nlm.nih.gov"; sourcePageUrl = nih.pageUrl; license = "public_domain_nih"; break; }
+  // STEP 1: Firecrawl web search (fastest, most reliable)
+  if (FIRECRAWL_API_KEY) {
+    const wsq = `${diagnosisEn} ${modality} real clinical image`;
+    queries.push(`[WebSearch] ${wsq}`);
+    const ws = await webSearchImages(wsq);
+    for (const img of ws.images.slice(0, 5)) {
+      const s = safetyFilter(img);
+      if (!s.safe) { issues.push(s.reason!); continue; }
+      const up = await downloadAndUpload(img, image_type, asset_code);
+      if (up) { bestUrl = up; sourceName = ws.sourceName; sourcePageUrl = ws.sourceUrl; license = "cc_by_nc_sa"; break; }
+    }
   }
 
-  // STEP 2: Firecrawl scrape trusted sites
+  // STEP 2: Firecrawl scrape trusted sites directly
   if (!bestUrl && FIRECRAWL_API_KEY) {
     const srcList = SOURCE_URLS[image_type] || [];
     for (const src of srcList) {
@@ -286,19 +288,6 @@ async function processAsset(asset: { id: string; asset_code: string; image_type:
       }
       if (bestUrl) break;
       await new Promise(r => setTimeout(r, 500));
-    }
-  }
-
-  // STEP 3: Web search fallback
-  if (!bestUrl && FIRECRAWL_API_KEY) {
-    const wsq = `${diagnosisEn} ${modality} real clinical image`;
-    queries.push(`[WebSearch] ${wsq}`);
-    const ws = await webSearchImages(wsq);
-    for (const img of ws.images.slice(0, 5)) {
-      const s = safetyFilter(img);
-      if (!s.safe) { issues.push(s.reason!); continue; }
-      const up = await downloadAndUpload(img, image_type, asset_code);
-      if (up) { bestUrl = up; sourceName = ws.sourceName; sourcePageUrl = ws.sourceUrl; license = "cc_by_nc_sa"; break; }
     }
   }
 
