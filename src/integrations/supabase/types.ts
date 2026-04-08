@@ -6512,7 +6512,14 @@ export type Database = {
         | "upgraded"
         | "needs_review"
         | "rejected"
-      image_review_status: "draft" | "validated" | "archived"
+      image_review_status:
+        | "draft"
+        | "validated"
+        | "archived"
+        | "needs_review"
+        | "blocked_clinical"
+        | "experimental_only"
+        | "published"
       medical_image_type:
         | "ecg"
         | "xray"
@@ -6698,7 +6705,15 @@ export const Constants = {
         "needs_review",
         "rejected",
       ],
-      image_review_status: ["draft", "validated", "archived"],
+      image_review_status: [
+        "draft",
+        "validated",
+        "archived",
+        "needs_review",
+        "blocked_clinical",
+        "experimental_only",
+        "published",
+      ],
       medical_image_type: [
         "ecg",
         "xray",
