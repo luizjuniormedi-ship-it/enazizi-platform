@@ -64,7 +64,12 @@ async function uploadToStorage(
     const base64Clean = base64Data.replace(/^data:image\/\w+;base64,/, "");
     const bytes = Uint8Array.from(atob(base64Clean), (c) => c.charCodeAt(0));
 
-    const filePath = `${imageType}/${assetCode}.png`;
+    // Sanitize filename: remove accents and special chars
+    const safeCode = assetCode
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9_-]/g, "_")
+      .replace(/_+/g, "_");
+    const filePath = `${imageType}/${safeCode}.png`;
 
     const { error } = await supabase.storage
       .from("question-images")
