@@ -167,6 +167,8 @@ interface SearchRequest {
   asset_code?: string;
   batch_mode?: boolean;
   batch_size?: number;
+  reprocess_all?: boolean;
+  offset?: number;
 }
 
 Deno.serve(async (req) => {
@@ -186,21 +188,26 @@ Deno.serve(async (req) => {
 
     // Batch mode: search for multiple assets of a given type
     if (body.batch_mode) {
-      const { image_type, batch_size = 3 } = body;
+      const { image_type, batch_size = 3, reprocess_all = false, offset = 0 } = body;
 
-      const { data: assets, error: fetchErr } = await supabase
+      let query = supabase
         .from("medical_image_assets")
         .select("id, asset_code, diagnosis, image_type")
         .eq("image_type", image_type)
         .or("license_type.eq.ai_generated,license_type.is.null")
-        .eq("is_active", false)
-        .in("review_status", ["blocked_clinical", "needs_review", "validated"])
         .order("diagnosis")
-        .limit(Math.min(batch_size, 5));
+        .range(offset, offset + Math.min(batch_size, 10) - 1);
+
+      if (!reprocess_all) {
+        query = query.eq("is_active", false)
+          .in("review_status", ["blocked_clinical", "needs_review", "validated"]);
+      }
+
+      const { data: assets, error: fetchErr } = await query;
 
       if (fetchErr || !assets || assets.length === 0) {
         return new Response(
-          JSON.stringify({ message: "Nenhum asset elegível encontrado", results: [] }),
+          JSON.stringify({ message: "Nenhum asset elegível encontrado", results: [], has_more: false }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -212,7 +219,9 @@ Deno.serve(async (req) => {
         await new Promise((r) => setTimeout(r, 1500));
       }
 
-      return new Response(JSON.stringify({ results, total: results.length }), {
+      const found = results.filter(r => r.status === "found").length;
+      const has_more = assets.length === Math.min(batch_size, 10);
+      return new Response(JSON.stringify({ results, total: results.length, found, has_more, next_offset: offset + assets.length }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
