@@ -43,7 +43,8 @@ Deno.serve(async (req) => {
     const { data: existingQ } = await supabase
       .from("medical_image_questions")
       .select("asset_id")
-      .in("asset_id", assetIds);
+      .in("asset_id", assetIds)
+      .not("status", "eq", "rejected");
 
     const existingAssetIds = new Set((existingQ || []).map(q => q.asset_id));
     const needsQuestions = assets.filter(a => !existingAssetIds.has(a.id));
