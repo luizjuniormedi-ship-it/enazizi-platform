@@ -107,6 +107,29 @@ export default function ImageQuestionUpgradePanel() {
     refresh();
   };
 
+  const handleSearchRealImages = async (imageType: string) => {
+    setIsSearchingReal(true);
+    setLastError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("search-real-medical-images", {
+        body: { image_type: imageType, batch_mode: true, batch_size: 3 },
+      });
+      if (error) throw new Error(error.message);
+      const found = data?.results?.filter((r: any) => r.status === "found").length || 0;
+      const notFound = data?.results?.filter((r: any) => r.status === "not_found").length || 0;
+      if (found > 0) {
+        toast.success(`🟢 ${found} imagens reais encontradas! ${notFound > 0 ? `(${notFound} sem resultado)` : ""}`);
+      } else {
+        toast.warning("Nenhuma imagem real encontrada neste lote");
+      }
+    } catch (err: any) {
+      setLastError(err.message);
+      toast.error(`Erro na busca: ${err.message}`);
+    }
+    setIsSearchingReal(false);
+    refresh();
+  };
+
   const counts = stats?.counts || {};
   const total = stats?.total || 0;
   const publishedPct = total > 0 ? ((counts.published || 0) / total * 100) : 0;
