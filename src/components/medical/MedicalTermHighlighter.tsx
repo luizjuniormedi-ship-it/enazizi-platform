@@ -44,7 +44,8 @@ function segmentText(text: string): Segment[] {
 const MedicalTermHighlighter = ({ text, className }: Props) => {
   const { openTerm } = useMedicalTerm();
 
-  const segments = useMemo(() => segmentText(text), [text]);
+  const cleanedText = useMemo(() => cleanLatex(text), [text]);
+  const segments = useMemo(() => segmentText(cleanedText), [cleanedText]);
 
   if (segments.length <= 1 && !segments[0]?.isTerm) {
     return <span className={className}>{text}</span>;
