@@ -59,34 +59,50 @@ Deno.serve(async (req) => {
     for (const asset of needsQuestions) {
       console.log(`Generating questions for: ${asset.diagnosis} (${asset.image_type})`);
 
-      const prompt = `Você é um professor de medicina especialista criando questões para residência médica.
+      const textPrompt = `Você é um professor de medicina especialista criando questões para residência médica.
+
+IMPORTANTE: Analise DETALHADAMENTE a imagem clínica fornecida. Suas questões devem ser baseadas nos achados VISÍVEIS na imagem.
 
 CONTEXTO:
 - Tipo de exame: ${asset.image_type.toUpperCase()}
 - Diagnóstico: ${asset.diagnosis}
 - Achados clínicos: ${JSON.stringify(asset.clinical_findings || {})}
 
-Gere EXATAMENTE 3 questões de múltipla escolha sobre esta imagem clínica.
+Gere EXATAMENTE 3 questões de múltipla escolha sobre esta imagem clínica real.
 
 REGRAS:
-1. Enunciado com contexto clínico realista, MÍNIMO 400 caracteres
-2. Paciente com idade, sexo, queixa principal, história
-3. EXATAMENTE 5 alternativas (A a E), cada uma com 80+ caracteres
-4. Explicação detalhada MÍNIMO 200 caracteres
-5. Dificuldade variada: 1 fácil (2), 1 média (3), 1 difícil (4)
-6. Estilo de prova USP/UNIFESP/ENARE
-7. Português brasileiro, sem markdown, sem caracteres especiais
+1. Descreva achados visíveis na imagem no enunciado (ex: "O ECG mostra supradesnivelamento de ST em derivações V1-V4")
+2. Enunciado com contexto clínico realista, MÍNIMO 400 caracteres
+3. Paciente com idade, sexo, queixa principal, história
+4. EXATAMENTE 5 alternativas (A a E), cada uma com 80+ caracteres
+5. Explicação detalhada MÍNIMO 200 caracteres, referenciando achados da imagem
+6. Dificuldade variada: 1 fácil (2), 1 média (3), 1 difícil (4)
+7. Estilo de prova USP/UNIFESP/ENARE
+8. Português brasileiro, sem markdown, sem caracteres especiais
+9. NÃO use expressões como "imagem abaixo" ou "observe a figura" - descreva os achados diretamente
 
 Retorne APENAS um array JSON válido:
 [{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","difficulty":3,"exam_style":"USP","topic":"...","subtopic":"..."}]`;
 
       try {
+        // Build multimodal message with the real image
+        const messageContent: any[] = [
+          {
+            type: "image_url",
+            image_url: { url: asset.image_url }
+          },
+          {
+            type: "text",
+            text: textPrompt
+          }
+        ];
+
         const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             model: "google/gemini-2.5-flash",
-            messages: [{ role: "user", content: prompt }],
+            messages: [{ role: "user", content: messageContent }],
             temperature: 0.7,
           }),
         });
