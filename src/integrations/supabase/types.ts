@@ -4077,6 +4077,98 @@ export type Database = {
         }
         Relationships: []
       }
+      question_generation_run_items: {
+        Row: {
+          asset_code: string | null
+          asset_id: string
+          created_at: string
+          diagnosis: string | null
+          error_message: string | null
+          generated_count: number
+          id: string
+          image_type: string | null
+          payload: Json | null
+          run_id: string
+          status: string
+        }
+        Insert: {
+          asset_code?: string | null
+          asset_id: string
+          created_at?: string
+          diagnosis?: string | null
+          error_message?: string | null
+          generated_count?: number
+          id?: string
+          image_type?: string | null
+          payload?: Json | null
+          run_id: string
+          status: string
+        }
+        Update: {
+          asset_code?: string | null
+          asset_id?: string
+          created_at?: string
+          diagnosis?: string | null
+          error_message?: string | null
+          generated_count?: number
+          id?: string
+          image_type?: string | null
+          payload?: Json | null
+          run_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_generation_run_items_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "question_generation_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      question_generation_runs: {
+        Row: {
+          details: Json | null
+          failed_assets: number
+          finished_at: string | null
+          generated_questions: number
+          id: string
+          notes: string | null
+          processed_assets: number
+          run_type: string
+          started_at: string
+          status: string
+          target_assets: number
+        }
+        Insert: {
+          details?: Json | null
+          failed_assets?: number
+          finished_at?: string | null
+          generated_questions?: number
+          id?: string
+          notes?: string | null
+          processed_assets?: number
+          run_type: string
+          started_at?: string
+          status?: string
+          target_assets?: number
+        }
+        Update: {
+          details?: Json | null
+          failed_assets?: number
+          finished_at?: string | null
+          generated_questions?: number
+          id?: string
+          notes?: string | null
+          processed_assets?: number
+          run_type?: string
+          started_at?: string
+          status?: string
+          target_assets?: number
+        }
+        Relationships: []
+      }
       question_quality_flags: {
         Row: {
           created_at: string
