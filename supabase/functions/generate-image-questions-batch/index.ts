@@ -21,13 +21,13 @@ Deno.serve(async (req) => {
     const batchSize = Math.min(body.batch_size || 2, 5);
     const imageType = body.image_type || null;
 
-    // Find assets with real images but no questions
+    // Find ALL real assets with images
     let query = supabase
       .from("medical_image_assets")
       .select("id, asset_code, diagnosis, image_type, clinical_findings, image_url")
       .eq("asset_origin", "real_clinical")
       .not("image_url", "is", null)
-      .limit(batchSize);
+      .limit(200);
 
     if (imageType) query = query.eq("image_type", imageType);
 
@@ -38,19 +38,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Filter out assets that already have questions
-    const assetIds = assets.map(a => a.id);
+    // Get ALL non-rejected questions to find which assets need new ones
     const { data: existingQ } = await supabase
       .from("medical_image_questions")
       .select("asset_id")
-      .in("asset_id", assetIds)
       .neq("status", "rejected");
 
     const existingAssetIds = new Set((existingQ || []).map(q => q.asset_id));
-    const needsQuestions = assets.filter(a => !existingAssetIds.has(a.id));
+    const needsQuestions = assets.filter(a => !existingAssetIds.has(a.id)).slice(0, batchSize);
 
     if (needsQuestions.length === 0) {
-      return new Response(JSON.stringify({ message: "All assets already have questions" }), {
+      return new Response(JSON.stringify({ message: "All assets already have questions", total_assets: assets.length, with_questions: existingAssetIds.size }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
