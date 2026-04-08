@@ -33,15 +33,20 @@ interface ImageReviewQuestion {
   source_domain?: string;
 }
 
+const REVIEW_QUEUE_STATUSES = ["draft", "needs_review", "upgraded", "upgrading"];
+
 const STATUS_COLORS: Record<string, string> = {
+  queue: "bg-primary/10 text-primary border-primary/30",
   published: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30",
   draft: "bg-muted text-muted-foreground",
   needs_review: "bg-amber-500/10 text-amber-700 border-amber-500/30",
   rejected: "bg-red-500/10 text-red-700 border-red-500/30",
   upgraded: "bg-blue-500/10 text-blue-700 border-blue-500/30",
+  upgrading: "bg-primary/10 text-primary border-primary/30",
 };
 
 const STATUS_LABELS: Record<string, string> = {
+  queue: "Fila ativa",
   published: "Publicada",
   draft: "Rascunho",
   needs_review: "Revisão",
@@ -74,7 +79,7 @@ const AdminImageQuestionReviewPanel = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("queue");
   const [modalityFilter, setModalityFilter] = useState("all");
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -86,22 +91,31 @@ const AdminImageQuestionReviewPanel = () => {
   const PAGE_SIZE = 15;
 
   const fetchCounts = async () => {
-    // Fetch counts per status efficiently using separate count queries
     const statuses = ["published", "draft", "needs_review", "rejected", "upgraded", "upgrading"];
     const results: Record<string, number> = {};
 
-    const promises = statuses.map(async (status) => {
-      const { count } = await supabase
-        .from("medical_image_questions")
-        .select("id", { count: "exact", head: true })
-        .eq("status", status as any);
-      if (count && count > 0) {
+    const countResults = await Promise.all(
+      statuses.map(async (status) => {
+        const { count } = await supabase
+          .from("medical_image_questions")
+          .select("id", { count: "exact", head: true })
+          .eq("status", status as any);
+
+        return { status, count: count || 0 };
+      })
+    );
+
+    let queueCount = 0;
+    countResults.forEach(({ status, count }) => {
+      if (count > 0) {
         results[status] = count;
+      }
+      if (REVIEW_QUEUE_STATUSES.includes(status)) {
+        queueCount += count;
       }
     });
 
-    await Promise.all(promises);
-    setCounts(results);
+    setCounts({ queue: queueCount, ...results });
   };
 
   const fetchQuestions = async () => {
@@ -118,12 +132,16 @@ const AdminImageQuestionReviewPanel = () => {
       .order("created_at", { ascending: false })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
-    if (statusFilter !== "all") {
+    if (statusFilter === "queue") {
+      query = query.in("status", REVIEW_QUEUE_STATUSES as any);
+    } else if (statusFilter !== "all") {
       query = query.eq("status", statusFilter as any);
     }
+
     if (difficultyFilter !== "all") {
       query = query.eq("difficulty", difficultyFilter as any);
     }
+
     if (modalityFilter !== "all") {
       query = query.eq("medical_image_assets.image_type", modalityFilter as any);
     }
@@ -182,14 +200,15 @@ const AdminImageQuestionReviewPanel = () => {
       .from("medical_image_questions")
       .update({ status: action } as any)
       .eq("id", id);
+
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     } else {
       toast({ title: action === "published" ? "✅ Aprovada e publicada" : "❌ Rejeitada" });
-      setQuestions(prev => prev.filter(q => q.id !== id));
-      setTotal(prev => prev - 1);
-      fetchCounts();
+      setPage(0);
+      await Promise.all([fetchQuestions(), fetchCounts()]);
     }
+
     setActionLoading(null);
   };
 
@@ -214,37 +233,46 @@ const AdminImageQuestionReviewPanel = () => {
   const handleBulkAction = async (action: "published" | "rejected") => {
     setActionLoading("bulk");
     try {
-      // Build query matching ALL questions with current filters, not just current page
       let query = supabase
         .from("medical_image_questions")
         .update({ status: action } as any)
         .neq("status", action as any);
 
-      if (statusFilter !== "all") {
+      if (statusFilter === "queue") {
+        query = query.in("status", REVIEW_QUEUE_STATUSES as any);
+      } else if (statusFilter !== "all") {
         query = query.eq("status", statusFilter as any);
       }
+
       if (difficultyFilter !== "all") {
         query = query.eq("difficulty", difficultyFilter as any);
       }
-      // Note: modality filter requires a join which update doesn't support directly
-      // For modality filter, we fall back to fetching all IDs first
+
       if (modalityFilter !== "all") {
-        const { data: assetIds } = await supabase
+        const { data: assetIds, error: assetsError } = await supabase
           .from("medical_image_assets")
           .select("id")
           .eq("image_type", modalityFilter as any);
-        if (assetIds && assetIds.length > 0) {
-          query = query.in("asset_id", assetIds.map(a => a.id));
+
+        if (assetsError) throw assetsError;
+
+        const ids = (assetIds || []).map((a) => a.id);
+        if (ids.length === 0) {
+          toast({ title: "Nenhuma questão encontrada para esse filtro" });
+          setActionLoading(null);
+          return;
         }
+
+        query = query.in("asset_id", ids);
       }
 
-      const { error, count } = await query;
+      const { error } = await query;
       if (error) {
         toast({ title: "Erro", description: error.message, variant: "destructive" });
       } else {
         toast({ title: `Todas as questões ${action === "published" ? "aprovadas" : "rejeitadas"}` });
-        fetchQuestions();
-        fetchCounts();
+        setPage(0);
+        await Promise.all([fetchQuestions(), fetchCounts()]);
       }
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
