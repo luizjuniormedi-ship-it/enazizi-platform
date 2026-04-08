@@ -23,7 +23,7 @@ interface DemoQuestion {
   examStyle: string;
   imageType: string;
   diagnosis: string;
-  imageUrl: string;
+  imageUrl?: string;
 }
 
 const QUESTION_IMAGES: Record<string, string> = {
