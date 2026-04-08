@@ -8,6 +8,7 @@ import { NON_MEDICAL_CONTENT_REGEX } from "@/lib/medicalValidation";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { filterValidQuestions } from "@/lib/aiOutputValidation";
 import { EXAM_PROFILES, calculateTopicDistribution, calculateDifficultySlots } from "@/lib/realExamDistribution";
+import { selectImageQuestions, imageQuestionToSimQuestion, calculateImageSlots } from "@/lib/imageQuestionPipeline";
 import {
   type TRIParams,
   type TRIQuestionResult,
@@ -358,6 +359,19 @@ const Simulados = () => {
           }
         }
 
+        // Inject image questions into prova real/TRI
+        try {
+          const imgSlots = calculateImageSlots(config.count, 15, { ecg: 0.40, xray: 0.30, dermatology: 0.30 });
+          if (imgSlots.length > 0) {
+            const imgQs = await selectImageQuestions(imgSlots);
+            const imgSim = imgQs.map(iq => {
+              const sim = imageQuestionToSimQuestion(iq);
+              return { statement: sim.statement, options: sim.options, correct: sim.correct_index, topic: sim.topic, explanation: sim.explanation, image_url: sim.image_url, image_type: sim.image_type, _isImageQuestion: sim._isImageQuestion, _imageQuestionId: sim._imageQuestionId } as SimQuestion;
+            });
+            allQuestions.push(...imgSim);
+          }
+        } catch { /* fallback sem imagem */ }
+
         setLoadingPercent(90);
         setLoadingProgress("Validando questões...");
         allQuestions = deduplicateQuestions(allQuestions);
@@ -429,12 +443,43 @@ const Simulados = () => {
       setLoadingPercent(25);
       const bankCount = Math.min(bankQuestions.length, config.count);
       const selectedFromBank = bankQuestions.slice(0, bankCount);
-      const deficit = config.count - selectedFromBank.length;
+      let deficit = config.count - selectedFromBank.length;
 
-      setLoadingProgress(`${selectedFromBank.length} questões do banco. ${deficit > 0 ? `Gerando ${deficit} via IA...` : "Pronto!"}`);
+      // ── Step 2.5: Inject image questions (up to 20% of total or available) ──
+      let imageSimQuestions: SimQuestion[] = [];
+      try {
+        const IMAGE_PERCENT = 20; // 20% do total
+        const slots = calculateImageSlots(config.count, IMAGE_PERCENT, {
+          ecg: 0.40, xray: 0.30, dermatology: 0.30,
+        });
+        if (slots.length > 0) {
+          setLoadingProgress("Buscando questões com imagem...");
+          const imageQuestions = await selectImageQuestions(slots);
+          imageSimQuestions = imageQuestions.map(iq => {
+            const sim = imageQuestionToSimQuestion(iq);
+            return {
+              statement: sim.statement,
+              options: sim.options,
+              correct: sim.correct_index,
+              topic: sim.topic,
+              explanation: sim.explanation,
+              image_url: sim.image_url,
+              image_type: sim.image_type,
+              _isImageQuestion: sim._isImageQuestion,
+              _imageQuestionId: sim._imageQuestionId,
+            };
+          });
+          deficit = Math.max(0, deficit - imageSimQuestions.length);
+        }
+      } catch (imgErr) {
+        console.warn("[Simulados] Fallback: sem questões de imagem", imgErr);
+      }
+
+      const imageLabel = imageSimQuestions.length > 0 ? ` + ${imageSimQuestions.length} com imagem` : "";
+      setLoadingProgress(`${selectedFromBank.length} questões do banco${imageLabel}. ${deficit > 0 ? `Gerando ${deficit} via IA...` : "Pronto!"}`);
 
       // ── Step 3: Generate remaining via AI if needed ──
-      let allQuestions: SimQuestion[] = [...selectedFromBank];
+      let allQuestions: SimQuestion[] = [...selectedFromBank, ...imageSimQuestions];
 
       if (deficit > 0) {
         const requestCount = Math.ceil(deficit * 1.8);
