@@ -6497,7 +6497,15 @@ export type Database = {
         | "coordinator"
         | "institutional_admin"
       difficulty_level: "easy" | "medium" | "hard"
-      image_question_status: "draft" | "validated" | "published" | "archived"
+      image_question_status:
+        | "draft"
+        | "validated"
+        | "published"
+        | "archived"
+        | "upgrading"
+        | "upgraded"
+        | "needs_review"
+        | "rejected"
       image_review_status: "draft" | "validated" | "archived"
       medical_image_type:
         | "ecg"
@@ -6674,7 +6682,16 @@ export const Constants = {
         "institutional_admin",
       ],
       difficulty_level: ["easy", "medium", "hard"],
-      image_question_status: ["draft", "validated", "published", "archived"],
+      image_question_status: [
+        "draft",
+        "validated",
+        "published",
+        "archived",
+        "upgrading",
+        "upgraded",
+        "needs_review",
+        "rejected",
+      ],
       image_review_status: ["draft", "validated", "archived"],
       medical_image_type: [
         "ecg",
