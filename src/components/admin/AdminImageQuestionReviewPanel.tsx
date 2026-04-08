@@ -157,6 +157,17 @@ const AdminImageQuestionReviewPanel = () => {
 
   useEffect(() => { fetchQuestions(); fetchCounts(); }, [page, statusFilter, modalityFilter, difficultyFilter]);
 
+  useEffect(() => {
+    const handlePipelineUpdated = () => {
+      setPage(0);
+      fetchQuestions();
+      fetchCounts();
+    };
+
+    window.addEventListener("image-pipeline-updated", handlePipelineUpdated);
+    return () => window.removeEventListener("image-pipeline-updated", handlePipelineUpdated);
+  }, [page, statusFilter, modalityFilter, difficultyFilter]);
+
   const handleAction = async (id: string, action: "published" | "rejected") => {
     setActionLoading(id);
     const { error } = await supabase
