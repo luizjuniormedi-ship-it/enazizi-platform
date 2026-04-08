@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CheckCircle2, XCircle, Eye, ChevronLeft, ChevronRight, Loader2, Filter, Image, Trash2, ZoomIn } from "lucide-react";
+import { CheckCircle2, XCircle, Eye, ChevronLeft, ChevronRight, Loader2, Filter, Image, Trash2, ZoomIn, Search, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -29,6 +29,8 @@ interface ImageReviewQuestion {
   diagnosis?: string;
   image_url?: string;
   specialty?: string;
+  asset_origin?: string;
+  source_domain?: string;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -80,6 +82,7 @@ const AdminImageQuestionReviewPanel = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [searchingReal, setSearchingReal] = useState<string | null>(null);
   const PAGE_SIZE = 15;
 
   const fetchCounts = async () => {
@@ -109,7 +112,7 @@ const AdminImageQuestionReviewPanel = () => {
       .select(`
         id, question_code, statement, option_a, option_b, option_c, option_d, option_e,
         correct_index, explanation, rationale_map, difficulty, exam_style, status, created_at, updated_at, asset_id,
-        medical_image_assets!inner(image_type, diagnosis, image_url, specialty)
+        medical_image_assets!inner(image_type, diagnosis, image_url, specialty, asset_origin, source_domain)
       `, { count: "exact" })
       .order("updated_at", { ascending: false })
       .order("created_at", { ascending: false })
@@ -149,6 +152,8 @@ const AdminImageQuestionReviewPanel = () => {
         diagnosis: q.medical_image_assets?.diagnosis,
         image_url: q.medical_image_assets?.image_url,
         specialty: q.medical_image_assets?.specialty,
+        asset_origin: q.medical_image_assets?.asset_origin,
+        source_domain: q.medical_image_assets?.source_domain,
       })));
       setTotal(count || 0);
     } else if (error) {
@@ -227,6 +232,30 @@ const AdminImageQuestionReviewPanel = () => {
     const opts = [q.option_a, q.option_b, q.option_c, q.option_d];
     if (q.option_e) opts.push(q.option_e);
     return opts;
+  };
+
+  const handleSearchReal = async (q: ImageReviewQuestion) => {
+    if (!q.image_type || !q.diagnosis) {
+      toast({ title: "Erro", description: "Asset sem tipo ou diagnóstico", variant: "destructive" });
+      return;
+    }
+    setSearchingReal(q.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("search-real-medical-images", {
+        body: { asset_id: q.asset_id, image_type: q.image_type, diagnosis: q.diagnosis },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.status === "found") {
+        toast({ title: "🟢 Imagem real encontrada!", description: `Fonte: ${data.source_domain}` });
+        fetchQuestions();
+        fetchCounts();
+      } else {
+        toast({ title: "Nenhuma imagem real encontrada", description: "Mantendo imagem IA atual", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Erro na busca", description: err.message, variant: "destructive" });
+    }
+    setSearchingReal(null);
   };
 
   return (
@@ -362,11 +391,31 @@ const AdminImageQuestionReviewPanel = () => {
                       <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">{q.diagnosis}</span>
                     )}
                     <span className="text-[10px] text-muted-foreground">{q.statement.length}c</span>
+                    {/* Origin badge */}
+                    {q.asset_origin === "real_clinical" ? (
+                      <Badge variant="outline" className="text-[10px] h-4 bg-emerald-500/10 text-emerald-700 border-emerald-500/30">
+                        <Globe className="h-2.5 w-2.5 mr-0.5" />Real
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] h-4 bg-yellow-500/10 text-yellow-700 border-yellow-500/30">
+                        IA
+                      </Badge>
+                    )}
+                    {q.source_domain && (
+                      <span className="text-[10px] text-muted-foreground">{q.source_domain}</span>
+                    )}
                   </div>
                 </div>
 
                 {/* Actions */}
                 <div className="flex gap-1 flex-shrink-0">
+                  {/* Search real image button */}
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
+                    disabled={!!actionLoading || searchingReal === q.id}
+                    onClick={() => handleSearchReal(q)}
+                    title="Buscar imagem real">
+                    {searchingReal === q.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+                  </Button>
                   {q.status !== "published" && (
                     <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10"
                       disabled={!!actionLoading} onClick={() => handleAction(q.id, "published")}

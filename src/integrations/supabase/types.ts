@@ -2761,10 +2761,13 @@ export type Database = {
           incidence_weight: number
           integrity_status: string | null
           is_active: boolean
+          license_type: string
           review_status: Database["public"]["Enums"]["image_review_status"]
           reviewed_at: string | null
           reviewed_by: string | null
+          source_domain: string | null
           source_reference: string | null
+          source_url: string | null
           specialty: string
           subtopic: string
           thumbnail_url: string | null
@@ -2794,10 +2797,13 @@ export type Database = {
           incidence_weight?: number
           integrity_status?: string | null
           is_active?: boolean
+          license_type?: string
           review_status?: Database["public"]["Enums"]["image_review_status"]
           reviewed_at?: string | null
           reviewed_by?: string | null
+          source_domain?: string | null
           source_reference?: string | null
+          source_url?: string | null
           specialty: string
           subtopic: string
           thumbnail_url?: string | null
@@ -2827,10 +2833,13 @@ export type Database = {
           incidence_weight?: number
           integrity_status?: string | null
           is_active?: boolean
+          license_type?: string
           review_status?: Database["public"]["Enums"]["image_review_status"]
           reviewed_at?: string | null
           reviewed_by?: string | null
+          source_domain?: string | null
           source_reference?: string | null
+          source_url?: string | null
           specialty?: string
           subtopic?: string
           thumbnail_url?: string | null

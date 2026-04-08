@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Play, CheckCircle2, AlertTriangle, BarChart3, RefreshCw, RotateCcw } from "lucide-react";
+import { Loader2, Play, CheckCircle2, AlertTriangle, BarChart3, RefreshCw, RotateCcw, Globe } from "lucide-react";
 import { toast } from "sonner";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -29,6 +29,7 @@ export default function ImageQuestionUpgradePanel() {
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isSearchingReal, setIsSearchingReal] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
 
   const { data: stats, isLoading, isError, error: statsError } = useQuery({
@@ -103,6 +104,29 @@ export default function ImageQuestionUpgradePanel() {
       toast.error(`Erro: ${err.message}`);
     }
     setIsRetrying(false);
+    refresh();
+  };
+
+  const handleSearchRealImages = async (imageType: string) => {
+    setIsSearchingReal(true);
+    setLastError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("search-real-medical-images", {
+        body: { image_type: imageType, batch_mode: true, batch_size: 3 },
+      });
+      if (error) throw new Error(error.message);
+      const found = data?.results?.filter((r: any) => r.status === "found").length || 0;
+      const notFound = data?.results?.filter((r: any) => r.status === "not_found").length || 0;
+      if (found > 0) {
+        toast.success(`🟢 ${found} imagens reais encontradas! ${notFound > 0 ? `(${notFound} sem resultado)` : ""}`);
+      } else {
+        toast.warning("Nenhuma imagem real encontrada neste lote");
+      }
+    } catch (err: any) {
+      setLastError(err.message);
+      toast.error(`Erro na busca: ${err.message}`);
+    }
+    setIsSearchingReal(false);
     refresh();
   };
 
@@ -214,6 +238,27 @@ export default function ImageQuestionUpgradePanel() {
                 )}
               </Button>
             )}
+            {/* Buscar Imagens Reais */}
+            <div className="pt-2 border-t border-border/50">
+              <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                <Globe className="h-3 w-3" /> Buscar Imagens Reais por Modalidade
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                {["dermatology", "pathology", "ophthalmology", "xray", "ct", "us"].map(mod => (
+                  <Button
+                    key={mod}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7"
+                    disabled={isSearchingReal}
+                    onClick={() => handleSearchRealImages(mod)}
+                  >
+                    {isSearchingReal ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Globe className="h-3 w-3 mr-1" />}
+                    {mod === "dermatology" ? "Dermato" : mod === "pathology" ? "Patologia" : mod === "ophthalmology" ? "Oftalmo" : mod.toUpperCase()}
+                  </Button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {stats?.recent_errors && stats.recent_errors.length > 0 && (
