@@ -98,13 +98,17 @@ export async function selectImageQuestions(
       query = query.not("id", "in", `(${excludeIds.join(",")})`);
     }
 
+    // Priorizar excellent para simulados, good para treino
+    query = query.order("senior_audit_score", { ascending: false, nullsFirst: false });
     query = query.limit(5);
 
     const { data, error } = await query;
     if (error || !data || data.length === 0) continue;
 
-    // Selecionar aleatoriamente uma das disponíveis
-    const pick = data[Math.floor(Math.random() * data.length)] as any;
+    // Preferir questões excellent quando disponíveis
+    const excellent = (data as any[]).filter((d: any) => d.editorial_grade === "excellent");
+    const pool = excellent.length > 0 ? excellent : data;
+    const pick = pool[Math.floor(Math.random() * pool.length)] as any;
     const asset = pick.medical_image_assets;
 
     results.push({
