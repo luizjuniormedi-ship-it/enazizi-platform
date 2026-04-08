@@ -391,6 +391,19 @@ const AdminImageQuestionReviewPanel = () => {
                       <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">{q.diagnosis}</span>
                     )}
                     <span className="text-[10px] text-muted-foreground">{q.statement.length}c</span>
+                    {/* Origin badge */}
+                    {q.asset_origin === "real_clinical" ? (
+                      <Badge variant="outline" className="text-[10px] h-4 bg-emerald-500/10 text-emerald-700 border-emerald-500/30">
+                        <Globe className="h-2.5 w-2.5 mr-0.5" />Real
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] h-4 bg-yellow-500/10 text-yellow-700 border-yellow-500/30">
+                        IA
+                      </Badge>
+                    )}
+                    {q.source_domain && (
+                      <span className="text-[10px] text-muted-foreground">{q.source_domain}</span>
+                    )}
                   </div>
                 </div>
 
