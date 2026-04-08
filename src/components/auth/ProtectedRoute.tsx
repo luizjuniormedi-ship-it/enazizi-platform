@@ -2,6 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { LogOut, Clock, Save, Loader2, GraduationCap, Building, Phone, User, Stethoscope } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -13,125 +14,9 @@ import FaculdadeCombobox from "@/components/FaculdadeCombobox";
 import { isValidPhone, isValidName, isProfileComplete } from "@/lib/profileValidation";
 import WelcomeBackScreen from "@/components/onboarding/WelcomeBackScreen";
 import OnboardingV2Flow from "@/components/onboarding/OnboardingV2Flow";
-
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading, signOut } = useAuth();
-  const { toast } = useToast();
-  const [profileStatus, setProfileStatus] = useState<string | null>(null);
-  const [profileIncomplete, setProfileIncomplete] = useState(false);
-  const [checkingProfile, setCheckingProfile] = useState(true);
-  const [onboardingVersion, setOnboardingVersion] = useState<number>(2);
-  const [showWelcome, setShowWelcome] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-
-  // Onboarding form state
-  const [formName, setFormName] = useState("");
-  const [formPhone, setFormPhone] = useState("");
-  const [formPeriodo, setFormPeriodo] = useState("");
-  const [formFaculdade, setFormFaculdade] = useState("");
-  const [formUserType, setFormUserType] = useState("estudante");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    // Version-based localStorage reset
-    const RESET_VERSION = "4";
-    if (localStorage.getItem("enazizi_onboarding_reset_v") !== RESET_VERSION) {
-      localStorage.removeItem("enazizi_v2_welcome_seen");
-      localStorage.removeItem("enazizi_v2_onboarding_done");
-      localStorage.removeItem("enazizi_exam_setup_skipped");
-      localStorage.setItem("enazizi_onboarding_reset_v", RESET_VERSION);
-    }
-    if (!user) { setCheckingProfile(false); return; }
-    const check = async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("is_blocked, status, display_name, phone, periodo, faculdade, onboarding_version, user_type")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (data?.is_blocked) {
-        setProfileStatus("blocked");
-      } else {
-        const userType = data?.user_type || "estudante";
-        const profileComplete = isProfileComplete({
-          phone: data?.phone,
-          display_name: data?.display_name,
-          periodo: data?.periodo,
-          faculdade: data?.faculdade,
-          user_type: userType,
-        });
-
-        // Auto-activate professors who have complete profiles
-        if (userType === "professor" && profileComplete && data?.status === "pending") {
-          await supabase.from("profiles").update({ status: "active" }).eq("user_id", user.id);
-          setProfileStatus("active");
-        } else {
-          setProfileStatus(data?.status || "pending");
-        }
-      }
-      // Check if profile is incomplete or has invalid data
-      const userType = data?.user_type || "estudante";
-      const incomplete = !isProfileComplete({
-        phone: data?.phone,
-        display_name: data?.display_name,
-        periodo: data?.periodo,
-        faculdade: data?.faculdade,
-        user_type: userType,
-      });
-      setProfileIncomplete(incomplete);
-      if (incomplete) {
-        setFormName(data?.display_name || "");
-        setFormPhone(data?.phone || "");
-        setFormPeriodo(data?.periodo ? String(data.periodo) : "");
-        setFormFaculdade(data?.faculdade || "");
-        setFormUserType(userType);
-      }
-      // Check onboarding version for v2 flow
-      const obVersion = (data as any)?.onboarding_version ?? 1;
-      setOnboardingVersion(obVersion);
-      const effectiveStatus = userType === "professor" && !incomplete && data?.status === "pending" ? "active" : data?.status;
-      if (obVersion < 2 && !incomplete && effectiveStatus === "active") {
-        const welcomeSeen = localStorage.getItem("enazizi_v2_welcome_seen") === "true";
-        const onboardingDone = localStorage.getItem("enazizi_v2_onboarding_done") === "true";
-        if (!welcomeSeen) setShowWelcome(true);
-        else if (!onboardingDone) setShowOnboarding(true);
-      }
-      setCheckingProfile(false);
-    };
-    check();
-  }, [user]);
-
-  const handleOnboardingSave = async () => {
-    if (!user) return;
-    const trimmedName = formName.trim();
-    const isStudent = formUserType === "estudante";
-    const isProfessor = formUserType === "professor";
-
-    const nameCheck = isValidName(trimmedName);
-    if (!nameCheck.valid) {
-      toast({ title: nameCheck.message || "Nome inválido", variant: "destructive" });
-      return;
-    }
-
-    const phoneCheck = isValidPhone(formPhone);
-    if (!phoneCheck.valid) {
-      toast({ title: phoneCheck.message || "Telefone inválido", variant: "destructive" });
-      return;
-    }
-
-    if (isStudent && (!formPeriodo || !formFaculdade)) {
-      toast({ title: "Selecione período e faculdade", variant: "destructive" });
-      return;
-    }
-
-    if (isProfessor && !formFaculdade) {
-      toast({ title: "Selecione sua universidade", variant: "destructive" });
-      return;
-    }
-
-    const cleanPhone = formPhone.replace(/\D/g, "");
-    setSaving(true);
+...
     try {
-      const updateData: Record<string, any> = {
+      const updateData: TablesUpdate<"profiles"> = {
         display_name: trimmedName,
         phone: cleanPhone,
         user_type: formUserType,
@@ -151,7 +36,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       }
       const { error } = await supabase
         .from("profiles")
-        .update(updateData as any)
+        .update(updateData)
         .eq("user_id", user.id);
       if (error) throw error;
       setProfileIncomplete(false);
