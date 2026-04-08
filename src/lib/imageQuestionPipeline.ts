@@ -69,6 +69,7 @@ export async function selectImageQuestions(
         option_a, option_b, option_c, option_d, option_e,
         correct_index, explanation, difficulty, 
         tri_a, tri_b, tri_c, exam_style,
+        senior_audit_score, editorial_grade,
         medical_image_assets!inner(image_url, image_type, clinical_confidence, review_status)
       `)
       .eq("status", "published")
@@ -77,7 +78,9 @@ export async function selectImageQuestions(
       .eq("medical_image_assets.is_active", true)
       .eq("medical_image_assets.review_status", "published")
       .eq("medical_image_assets.integrity_status", "ok")
-      .gte("medical_image_assets.clinical_confidence", 0.80);
+      .gte("medical_image_assets.clinical_confidence", 0.80)
+      // BLOQUEIO EDITORIAL: nunca servir questões fracas
+      .neq("editorial_grade", "weak");
 
     if (slot.difficulty) {
       query = query.eq("difficulty", slot.difficulty);
@@ -95,13 +98,17 @@ export async function selectImageQuestions(
       query = query.not("id", "in", `(${excludeIds.join(",")})`);
     }
 
+    // Priorizar excellent para simulados, good para treino
+    query = query.order("senior_audit_score", { ascending: false, nullsFirst: false });
     query = query.limit(5);
 
     const { data, error } = await query;
     if (error || !data || data.length === 0) continue;
 
-    // Selecionar aleatoriamente uma das disponíveis
-    const pick = data[Math.floor(Math.random() * data.length)] as any;
+    // Preferir questões excellent quando disponíveis
+    const excellent = (data as any[]).filter((d: any) => d.editorial_grade === "excellent");
+    const pool = excellent.length > 0 ? excellent : data;
+    const pick = pool[Math.floor(Math.random() * pool.length)] as any;
     const asset = pick.medical_image_assets;
 
     results.push({
