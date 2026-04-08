@@ -32,7 +32,7 @@ const EXAM_BOARDS = [
   { value: "SANTA_CASA", label: "Santa Casa SP" },
 ];
 
-export type SimuladoMode = "prova" | "estudo" | "extremo" | "prova_real" | "tri";
+export type SimuladoMode = "prova" | "estudo" | "extremo" | "prova_real" | "tri" | "adaptativo";
 
 interface SimuladoSetupProps {
   onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string; realExamProfile?: string }) => void;
