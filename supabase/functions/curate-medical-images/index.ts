@@ -7,56 +7,134 @@ const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-// ===== PRIORITY SOURCES =====
-interface SourceConfig {
-  name: string;
-  searchUrl: (query: string) => string;
-  license: string;
-  trusted: boolean;
-  requiresCredential: boolean;
-}
-
-const PRIORITY_SOURCES: Record<string, SourceConfig[]> = {
-  xray: [
-    { name: "Open-i NIH", searchUrl: (q) => `https://openi.nlm.nih.gov/api/search?query=${encodeURIComponent(q + " chest xray")}&m=1&n=5&it=xg`, license: "public_domain_nih", trusted: true, requiresCredential: false },
-    { name: "Radiopaedia", searchUrl: (q) => `https://radiopaedia.org/search?utf8=%E2%9C%93&q=${encodeURIComponent(q)}&scope=cases`, license: "cc_by_nc_sa", trusted: true, requiresCredential: false },
-  ],
-  ct: [
-    { name: "Open-i NIH", searchUrl: (q) => `https://openi.nlm.nih.gov/api/search?query=${encodeURIComponent(q + " CT scan")}&m=1&n=5&it=xg`, license: "public_domain_nih", trusted: true, requiresCredential: false },
-    { name: "Radiopaedia", searchUrl: (q) => `https://radiopaedia.org/search?utf8=%E2%9C%93&q=${encodeURIComponent(q + " CT")}&scope=cases`, license: "cc_by_nc_sa", trusted: true, requiresCredential: false },
-  ],
-  ecg: [
-    { name: "LITFL ECG Library", searchUrl: (q) => `https://litfl.com/ecg-library/${encodeURIComponent(q.toLowerCase().replace(/\s+/g, "-"))}/`, license: "cc_by_nc_sa", trusted: true, requiresCredential: false },
-    { name: "ECGpedia", searchUrl: (q) => `https://en.ecgpedia.org/wiki/${encodeURIComponent(q.replace(/\s+/g, "_"))}`, license: "cc_by_nc_sa", trusted: true, requiresCredential: false },
-  ],
-  dermatology: [
-    { name: "DermNet NZ", searchUrl: (q) => `https://dermnetnz.org/topics/${encodeURIComponent(q.toLowerCase().replace(/\s+/g, "-"))}`, license: "cc_by_nc_nd", trusted: true, requiresCredential: false },
-    { name: "Open-i NIH", searchUrl: (q) => `https://openi.nlm.nih.gov/api/search?query=${encodeURIComponent(q + " dermatology clinical photo")}&m=1&n=5`, license: "public_domain_nih", trusted: true, requiresCredential: false },
-  ],
-  pathology: [
-    { name: "PathologyOutlines", searchUrl: (q) => `https://www.pathologyoutlines.com/search?searchterm=${encodeURIComponent(q)}`, license: "educational_fair_use", trusted: true, requiresCredential: false },
-    { name: "Open-i NIH", searchUrl: (q) => `https://openi.nlm.nih.gov/api/search?query=${encodeURIComponent(q + " histopathology")}&m=1&n=5`, license: "public_domain_nih", trusted: true, requiresCredential: false },
-  ],
-  ophthalmology: [
-    { name: "EyeWiki AAO", searchUrl: (q) => `https://eyewiki.aao.org/w/index.php?search=${encodeURIComponent(q)}`, license: "cc_by_nc_nd", trusted: true, requiresCredential: false },
-    { name: "Open-i NIH", searchUrl: (q) => `https://openi.nlm.nih.gov/api/search?query=${encodeURIComponent(q + " fundoscopy ophthalmology")}&m=1&n=5`, license: "public_domain_nih", trusted: true, requiresCredential: false },
-  ],
-  us: [
-    { name: "Open-i NIH", searchUrl: (q) => `https://openi.nlm.nih.gov/api/search?query=${encodeURIComponent(q + " ultrasound")}&m=1&n=5&it=xg`, license: "public_domain_nih", trusted: true, requiresCredential: false },
-    { name: "Radiopaedia", searchUrl: (q) => `https://radiopaedia.org/search?utf8=%E2%9C%93&q=${encodeURIComponent(q + " ultrasound")}&scope=cases`, license: "cc_by_nc_sa", trusted: true, requiresCredential: false },
-  ],
+// ===== PT→EN DIAGNOSIS MAP =====
+const DIAGNOSIS_EN: Record<string, string> = {
+  "fibrilação atrial": "atrial fibrillation",
+  "flutter atrial": "atrial flutter",
+  "infarto agudo do miocárdio com supra de st": "ST elevation myocardial infarction STEMI",
+  "bloqueio de ramo esquerdo": "left bundle branch block LBBB",
+  "bloqueio de ramo direito": "right bundle branch block RBBB",
+  "taquicardia ventricular": "ventricular tachycardia",
+  "bav 2º grau mobitz ii": "second degree heart block Mobitz type II",
+  "bav total": "complete heart block third degree AV block",
+  "síndrome de wolff-parkinson-white": "Wolff-Parkinson-White syndrome WPW",
+  "hipercalemia": "hyperkalemia ECG",
+  "pneumotórax": "pneumothorax",
+  "derrame pleural": "pleural effusion",
+  "pneumonia lobar": "lobar pneumonia",
+  "edema agudo de pulmão": "pulmonary edema",
+  "fratura de clavícula": "clavicle fracture",
+  "tuberculose pulmonar": "pulmonary tuberculosis",
+  "cardiomegalia": "cardiomegaly",
+  "atelectasia": "atelectasis",
+  "apendicite aguda": "acute appendicitis",
+  "diverticulite aguda": "acute diverticulitis",
+  "embolia pulmonar": "pulmonary embolism CT",
+  "avc isquêmico agudo": "acute ischemic stroke CT",
+  "hemorragia subaracnóidea": "subarachnoid hemorrhage CT",
+  "hidrocefalia": "hydrocephalus CT",
+  "pancreatite aguda": "acute pancreatitis CT",
+  "dissecção de aorta": "aortic dissection CT",
+  "trombose venosa profunda": "deep vein thrombosis ultrasound",
+  "colecistite aguda": "acute cholecystitis ultrasound",
+  "estenose de artéria renal": "renal artery stenosis doppler",
+  "apendicite - ultrassom": "appendicitis ultrasound",
+  "derrame pericárdico": "pericardial effusion echocardiogram",
+  "esteatose hepática": "hepatic steatosis ultrasound fatty liver",
+  "psoríase em placas": "plaque psoriasis",
+  "dermatite atópica": "atopic dermatitis eczema",
+  "melanoma": "melanoma dermoscopy",
+  "carcinoma basocelular": "basal cell carcinoma",
+  "herpes zóster": "herpes zoster shingles",
+  "lúpus eritematoso sistêmico": "systemic lupus erythematosus skin",
+  "escabiose": "scabies",
+  "urticária": "urticaria hives",
+  "vitiligo": "vitiligo",
+  "hanseníase": "leprosy Hansen disease",
+  "pênfigo vulgar": "pemphigus vulgaris",
+  "líquen plano": "lichen planus",
+  "eritema multiforme": "erythema multiforme",
+  "molusco contagioso": "molluscum contagiosum",
+  "impetigo": "impetigo",
+  "celulite": "cellulitis",
+  "erisipela": "erysipelas",
+  "tinea corporis": "tinea corporis ringworm",
+  "tinea capitis": "tinea capitis",
+  "pitiríase versicolor": "pityriasis versicolor",
+  "acne vulgar": "acne vulgaris",
+  "rosácea": "rosacea",
+  "dermatite seborreica": "seborrheic dermatitis",
+  "dermatite de contato": "contact dermatitis",
+  "alopecia areata": "alopecia areata",
+  "queratose actínica": "actinic keratosis",
+  "carcinoma espinocelular": "squamous cell carcinoma skin",
+  "sarcoma de kaposi": "Kaposi sarcoma",
+  "micose fungóide": "mycosis fungoides",
+  "pênfigo foliáceo": "pemphigus foliaceus",
+  "dermatite herpetiforme": "dermatitis herpetiformis",
+  "eritema nodoso": "erythema nodosum",
+  "granuloma anular": "granuloma annulare",
+  "xantoma": "xanthoma",
+  "necrobiose lipoídica": "necrobiosis lipoidica",
+  "sarcoidose cutânea": "cutaneous sarcoidosis",
+  "pitiríase rósea": "pityriasis rosea",
+  "síndrome de stevens-johnson": "Stevens-Johnson syndrome",
+  "necrólise epidérmica tóxica": "toxic epidermal necrolysis",
+  "adenocarcinoma gástrico": "gastric adenocarcinoma histopathology",
+  "carcinoma ductal invasivo de mama": "invasive ductal carcinoma breast histopathology",
+  "linfoma de hodgkin": "Hodgkin lymphoma histopathology Reed-Sternberg",
+  "linfoma não-hodgkin difuso de grandes células b": "diffuse large B-cell lymphoma histopathology",
+  "adenocarcinoma colorretal": "colorectal adenocarcinoma histopathology",
+  "carcinoma de células escamosas de esôfago": "esophageal squamous cell carcinoma histopathology",
+  "carcinoma hepatocelular": "hepatocellular carcinoma histopathology",
+  "doença celíaca": "celiac disease histopathology",
+  "glomerulonefrite membranosa": "membranous glomerulonephritis histopathology",
+  "tuberculose ganglionar": "tuberculous lymphadenitis histopathology",
+  "carcinoma papilífero de tireoide": "papillary thyroid carcinoma histopathology",
+  "doença de crohn": "Crohn disease histopathology",
+  "retinite por cmv": "CMV retinitis",
+  "retinopatia diabética": "diabetic retinopathy fundoscopy",
+  "glaucoma": "glaucoma optic disc",
+  "descolamento de retina": "retinal detachment",
+  "edema macular": "macular edema OCT",
+  "oclusão de veia central da retina": "central retinal vein occlusion",
+  "neurite óptica": "optic neuritis",
+  "melanoma de coroide": "choroidal melanoma",
+  "papiledema": "papilledema fundoscopy",
+  "adenocarcinoma de pulmão": "lung adenocarcinoma histopathology",
+  "meningioma": "meningioma histopathology",
+  "glioblastoma": "glioblastoma histopathology",
+  "carcinoma de células renais": "renal cell carcinoma histopathology",
 };
 
-// ===== MODALITY SEARCH TERMS =====
+function translateDiagnosis(ptDiagnosis: string): string {
+  const key = ptDiagnosis.toLowerCase().trim();
+  return DIAGNOSIS_EN[key] || ptDiagnosis;
+}
+
+// ===== MODALITY TERMS =====
 const MODALITY_TERMS: Record<string, string> = {
   ecg: "ECG electrocardiogram",
-  xray: "X-ray radiograph chest",
+  xray: "X-ray chest radiograph",
   ct: "CT computed tomography",
   us: "ultrasound sonography",
   dermatology: "dermatology clinical photo skin",
-  pathology: "histopathology microscopy H&E",
+  pathology: "histopathology microscopy",
   ophthalmology: "ophthalmology fundoscopy retina",
 };
+
+// ===== SAFETY FILTER =====
+function safetyFilter(imageUrl: string): { safe: boolean; reason?: string } {
+  const url = imageUrl.toLowerCase();
+  const blocked = ["shutterstock", "gettyimages", "istockphoto", "dreamstime", "pinterest", "instagram", "facebook", "twitter"];
+  for (const d of blocked) {
+    if (url.includes(d)) return { safe: false, reason: `Blocked source: ${d}` };
+  }
+  if (url.includes("patient") && url.includes("photo") && !url.includes("pathology")) {
+    return { safe: false, reason: "Potential PHI risk" };
+  }
+  return { safe: true };
+}
 
 // ===== IMAGE EXTRACTION =====
 function extractImageUrls(html: string): string[] {
@@ -67,15 +145,9 @@ function extractImageUrls(html: string): string[] {
     const src = match[1];
     if (
       src.startsWith("http") &&
-      !src.includes("logo") &&
-      !src.includes("icon") &&
-      !src.includes("avatar") &&
-      !src.includes("banner") &&
-      !src.includes("favicon") &&
-      !src.includes("tracking") &&
-      !src.includes("ad-") &&
-      !src.includes("pixel") &&
-      !src.includes("analytics") &&
+      !src.includes("logo") && !src.includes("icon") && !src.includes("avatar") &&
+      !src.includes("banner") && !src.includes("favicon") && !src.includes("tracking") &&
+      !src.includes("ad-") && !src.includes("pixel") && !src.includes("analytics") &&
       (src.endsWith(".jpg") || src.endsWith(".jpeg") || src.endsWith(".png") || src.endsWith(".webp") || src.includes("/images/"))
     ) {
       urls.push(src);
@@ -84,421 +156,247 @@ function extractImageUrls(html: string): string[] {
   return urls;
 }
 
-// ===== OPEN-I NIH API SEARCH =====
-async function searchOpenI(query: string): Promise<{ images: string[]; pageUrl: string }> {
-  try {
-    const apiUrl = `https://openi.nlm.nih.gov/api/search?query=${encodeURIComponent(query)}&m=1&n=5`;
-    console.log(`[Open-i] Searching: ${apiUrl}`);
-    const resp = await fetch(apiUrl, { headers: { "Accept": "application/json" } });
-    if (!resp.ok) return { images: [], pageUrl: apiUrl };
-
-    const data = await resp.json();
-    const images: string[] = [];
-    if (data?.list) {
-      for (const item of data.list) {
-        if (item.imgLarge) images.push(`https://openi.nlm.nih.gov${item.imgLarge}`);
-        else if (item.imgThumb) images.push(`https://openi.nlm.nih.gov${item.imgThumb}`);
-      }
-    }
-    return { images, pageUrl: apiUrl };
-  } catch (err) {
-    console.error("[Open-i] Error:", err);
-    return { images: [], pageUrl: "" };
-  }
-}
-
 // ===== FIRECRAWL SCRAPE =====
-async function scrapeWithFirecrawl(url: string): Promise<{ images: string[]; sourceUrl: string }> {
-  if (!FIRECRAWL_API_KEY) return { images: [], sourceUrl: url };
-
+async function scrapeWithFirecrawl(url: string): Promise<string[]> {
+  if (!FIRECRAWL_API_KEY) return [];
   try {
-    const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
+    const resp = await fetch("https://api.firecrawl.dev/v1/scrape", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ url, formats: ["html", "links"], onlyMainContent: true, waitFor: 3000 }),
+      headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ url, formats: ["html"], onlyMainContent: true, waitFor: 2000 }),
     });
-
-    if (!response.ok) return { images: [], sourceUrl: url };
-    const data = await response.json();
-    const html = data?.data?.html || data?.html || "";
-    return { images: extractImageUrls(html), sourceUrl: url };
-  } catch {
-    return { images: [], sourceUrl: url };
-  }
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    return extractImageUrls(data?.data?.html || data?.html || "");
+  } catch { return []; }
 }
 
-// ===== FIRECRAWL WEB SEARCH FALLBACK =====
-async function webSearchFallback(diagnosis: string, imageType: string): Promise<{ images: string[]; sourceUrl: string; sourceName: string }> {
+// ===== FIRECRAWL WEB SEARCH =====
+async function webSearchImages(query: string): Promise<{ images: string[]; sourceUrl: string; sourceName: string }> {
   if (!FIRECRAWL_API_KEY) return { images: [], sourceUrl: "", sourceName: "" };
-
-  const modalityTerm = MODALITY_TERMS[imageType] || imageType;
-  const searchQuery = `${diagnosis} ${modalityTerm} real clinical image site:radiopaedia.org OR site:openi.nlm.nih.gov OR site:dermnetnz.org OR site:pathologyoutlines.com OR site:litfl.com`;
-
   try {
     const resp = await fetch("https://api.firecrawl.dev/v1/search", {
       method: "POST",
       headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ query: searchQuery, limit: 3, scrapeOptions: { formats: ["html"] } }),
+      body: JSON.stringify({
+        query: query + " site:radiopaedia.org OR site:dermnetnz.org OR site:pathologyoutlines.com OR site:litfl.com OR site:eyewiki.aao.org",
+        limit: 3,
+        scrapeOptions: { formats: ["html"] },
+      }),
     });
-
     if (!resp.ok) return { images: [], sourceUrl: "", sourceName: "" };
     const data = await resp.json();
-    const results = data?.data || [];
-
-    for (const result of results) {
-      const html = result?.html || "";
-      const images = extractImageUrls(html);
-      if (images.length > 0) {
-        let sourceName = "web_search";
-        try { sourceName = new URL(result?.url || "").hostname; } catch {}
-        return { images, sourceUrl: result?.url || "", sourceName };
+    for (const r of data?.data || []) {
+      const imgs = extractImageUrls(r?.html || "");
+      if (imgs.length > 0) {
+        let name = "web"; try { name = new URL(r?.url || "").hostname; } catch {}
+        return { images: imgs, sourceUrl: r?.url || "", sourceName: name };
       }
     }
-  } catch (err) {
-    console.error("[WebSearch] Error:", err);
-  }
+  } catch {}
   return { images: [], sourceUrl: "", sourceName: "" };
 }
 
 // ===== DOWNLOAD & UPLOAD =====
 async function downloadAndUpload(imageUrl: string, imageType: string, assetCode: string): Promise<string | null> {
   try {
-    const imgResp = await fetch(imageUrl);
-    if (!imgResp.ok) return null;
-
-    const contentType = imgResp.headers.get("content-type") || "image/jpeg";
-    const buffer = new Uint8Array(await imgResp.arrayBuffer());
-    if (buffer.length < 5000) return null;
-
-    const ext = contentType.includes("png") ? "png" : "jpg";
-    const safeCode = assetCode.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9_-]/g, "_").replace(/_+/g, "_");
-    const filePath = `${imageType}/${safeCode}_curated_${Date.now()}.${ext}`;
-
-    const { error } = await supabase.storage.from("question-images").upload(filePath, buffer, { contentType, upsert: true });
-    if (error) { console.error("Upload error:", error); return null; }
-
-    const { data: urlData } = supabase.storage.from("question-images").getPublicUrl(filePath);
-    return urlData.publicUrl;
-  } catch (err) {
-    console.error("Download/upload error:", err);
-    return null;
-  }
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    const resp = await fetch(imageUrl, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!resp.ok) return null;
+    const ct = resp.headers.get("content-type") || "image/jpeg";
+    const buf = new Uint8Array(await resp.arrayBuffer());
+    if (buf.length < 5000) return null;
+    const ext = ct.includes("png") ? "png" : "jpg";
+    const safe = assetCode.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9_-]/g, "_").replace(/_+/g, "_");
+    const path = `${imageType}/${safe}_curated_${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("question-images").upload(path, buf, { contentType: ct, upsert: true });
+    if (error) { console.error("Upload err:", error); return null; }
+    const { data } = supabase.storage.from("question-images").getPublicUrl(path);
+    return data.publicUrl;
+  } catch { return null; }
 }
 
-// ===== SAFETY FILTER =====
-function safetyFilter(imageUrl: string, imageType: string, sourceName: string): { safe: boolean; reason?: string } {
-  const url = imageUrl.toLowerCase();
+// ===== TRUSTED SOURCES =====
+const TRUSTED = ["openi.nlm.nih.gov", "radiopaedia.org", "dermnetnz.org", "litfl.com", "ecgpedia.org", "pathologyoutlines.com", "eyewiki.aao.org", "medpix.nlm.nih.gov"];
 
-  // Block patient-identifiable content indicators
-  if (url.includes("patient") && url.includes("photo") && !url.includes("pathology")) {
-    return { safe: false, reason: "Potential PHI risk" };
-  }
-
-  // Block non-medical sources
-  const untrustedDomains = ["shutterstock", "gettyimages", "istockphoto", "dreamstime", "stock", "pinterest", "instagram"];
-  for (const d of untrustedDomains) {
-    if (url.includes(d)) return { safe: false, reason: `Untrusted source: ${d}` };
-  }
-
-  // Basic modality cross-check
-  const modalityKeywords: Record<string, string[]> = {
-    ecg: ["ecg", "electrocardiogram", "ekg"],
-    xray: ["xray", "x-ray", "radiograph", "chest"],
-    ct: ["ct", "computed", "tomography"],
-    us: ["ultrasound", "sonograph", "echo"],
-    dermatology: ["derm", "skin", "cutaneous", "lesion"],
-    pathology: ["pathology", "histology", "microscop", "h&e", "biopsy"],
-    ophthalmology: ["eye", "retina", "fundus", "optic"],
-  };
-
-  // We don't block based on URL keywords alone — rely on source trust
-  return { safe: true };
-}
-
-// ===== CLASSIFICATION =====
-function classifyAsset(
-  downloaded: boolean,
-  sourceName: string,
-  accessType: string,
-  imageType: string
-): { asset_origin: string; validation_level: string; visual_coherence_score: number; diagnostic_confidence_score: number; multimodal_ready: boolean } {
-  const trustedSources = ["openi.nlm.nih.gov", "radiopaedia.org", "dermnetnz.org", "litfl.com", "ecgpedia.org", "pathologyoutlines.com", "eyewiki.aao.org", "medpix.nlm.nih.gov"];
-  const isTrusted = trustedSources.some(s => sourceName.includes(s));
-
-  if (!downloaded) {
-    if (accessType === "credential_required") {
-      return { asset_origin: "real_medical", validation_level: "bronze", visual_coherence_score: 0, diagnostic_confidence_score: 0, multimodal_ready: false };
-    }
-    return { asset_origin: "unknown", validation_level: "blocked", visual_coherence_score: 0, diagnostic_confidence_score: 0, multimodal_ready: false };
-  }
-
-  if (isTrusted) {
-    return {
-      asset_origin: "real_medical",
-      validation_level: "silver",
-      visual_coherence_score: 80,
-      diagnostic_confidence_score: 75,
-      multimodal_ready: false, // Never auto-approve — requires review
-    };
-  }
-
-  return {
-    asset_origin: "real_medical",
-    validation_level: "bronze",
-    visual_coherence_score: 60,
-    diagnostic_confidence_score: 50,
-    multimodal_ready: false,
-  };
-}
+// ===== SOURCE URLS =====
+const SOURCE_URLS: Record<string, { name: string; url: (q: string) => string; license: string }[]> = {
+  ecg: [
+    { name: "LITFL", url: (q) => `https://litfl.com/ecg-library/${q.toLowerCase().replace(/\s+/g, "-")}/`, license: "cc_by_nc_sa" },
+  ],
+  xray: [
+    { name: "Radiopaedia", url: (q) => `https://radiopaedia.org/search?q=${encodeURIComponent(q)}&scope=cases`, license: "cc_by_nc_sa" },
+  ],
+  ct: [
+    { name: "Radiopaedia", url: (q) => `https://radiopaedia.org/search?q=${encodeURIComponent(q + " CT")}&scope=cases`, license: "cc_by_nc_sa" },
+  ],
+  us: [
+    { name: "Radiopaedia", url: (q) => `https://radiopaedia.org/search?q=${encodeURIComponent(q + " ultrasound")}&scope=cases`, license: "cc_by_nc_sa" },
+  ],
+  dermatology: [
+    { name: "DermNet NZ", url: (q) => `https://dermnetnz.org/topics/${q.toLowerCase().replace(/\s+/g, "-")}`, license: "cc_by_nc_nd" },
+  ],
+  pathology: [
+    { name: "PathologyOutlines", url: (q) => `https://www.pathologyoutlines.com/search?searchterm=${encodeURIComponent(q)}`, license: "educational_fair_use" },
+  ],
+  ophthalmology: [
+    { name: "EyeWiki", url: (q) => `https://eyewiki.aao.org/w/index.php?search=${encodeURIComponent(q)}`, license: "cc_by_nc_nd" },
+  ],
+};
 
 // ===== PROCESS SINGLE ASSET =====
-async function processAsset(asset: {
-  id: string;
-  asset_code: string;
-  image_type: string;
-  diagnosis: string;
-  specialty?: string;
-  subtopic?: string;
-  clinical_findings?: string[];
-}) {
-  const searchQueries: string[] = [];
-  const issues: string[] = [];
-  let selectedSource: { name: string; page_url: string; image_url: string; access_type: string } | null = null;
-  let downloadStatus = "pending";
-  let storagePath = "";
-  let bestImageUrl = "";
-
+async function processAsset(asset: { id: string; asset_code: string; image_type: string; diagnosis: string }) {
   const { id, asset_code, image_type, diagnosis } = asset;
-  const sources = PRIORITY_SOURCES[image_type] || PRIORITY_SOURCES["xray"];
+  const diagnosisEn = translateDiagnosis(diagnosis);
+  const modality = MODALITY_TERMS[image_type] || image_type;
+  const queries: string[] = [];
+  const issues: string[] = [];
+  let bestUrl = "";
+  let sourceName = "";
+  let sourcePageUrl = "";
+  let license = "unknown";
 
-  // Build search queries
-  const baseQuery = diagnosis;
-  const findingsQuery = asset.clinical_findings?.length ? `${diagnosis} ${asset.clinical_findings.slice(0, 2).join(" ")}` : "";
-  const queries = [baseQuery, findingsQuery].filter(Boolean);
+  console.log(`[Asset] ${asset_code}: "${diagnosis}" → "${diagnosisEn}" (${image_type})`);
 
-  // STEP 1: Try Open-i NIH first (direct API)
-  for (const q of queries) {
-    const nihQuery = `${q} ${MODALITY_TERMS[image_type] || image_type}`;
-    searchQueries.push(`[Open-i] ${nihQuery}`);
-    const { images, pageUrl } = await searchOpenI(nihQuery);
-
-    if (images.length > 0) {
-      for (const imgUrl of images.slice(0, 5)) {
-        const safety = safetyFilter(imgUrl, image_type, "openi.nlm.nih.gov");
-        if (!safety.safe) { issues.push(`Filtered: ${safety.reason}`); continue; }
-
-        const uploaded = await downloadAndUpload(imgUrl, image_type, asset_code);
-        if (uploaded) {
-          bestImageUrl = uploaded;
-          selectedSource = { name: "Open-i NIH", page_url: pageUrl, image_url: imgUrl, access_type: "open" };
-          downloadStatus = "downloaded";
-          break;
-        }
-      }
-      if (bestImageUrl) break;
+  // STEP 1: Firecrawl web search (fastest, most reliable)
+  if (FIRECRAWL_API_KEY) {
+    const wsq = `${diagnosisEn} ${modality} real clinical image`;
+    queries.push(`[WebSearch] ${wsq}`);
+    const ws = await webSearchImages(wsq);
+    for (const img of ws.images.slice(0, 5)) {
+      const s = safetyFilter(img);
+      if (!s.safe) { issues.push(s.reason!); continue; }
+      const up = await downloadAndUpload(img, image_type, asset_code);
+      if (up) { bestUrl = up; sourceName = ws.sourceName; sourcePageUrl = ws.sourceUrl; license = "cc_by_nc_sa"; break; }
     }
   }
 
-  // STEP 2: Try priority sources via Firecrawl scrape
-  if (!bestImageUrl && FIRECRAWL_API_KEY) {
-    for (const source of sources) {
-      if (source.name === "Open-i NIH") continue; // Already tried
-      for (const q of queries) {
-        const searchUrl = source.searchUrl(q);
-        searchQueries.push(`[${source.name}] ${searchUrl}`);
-
-        if (source.requiresCredential) {
-          selectedSource = { name: source.name, page_url: searchUrl, image_url: "", access_type: "credential_required" };
-          downloadStatus = "pending_manual_access";
-          issues.push(`Source ${source.name} requires credentials`);
-          continue;
-        }
-
-        const { images } = await scrapeWithFirecrawl(searchUrl);
-        for (const imgUrl of images.slice(0, 5)) {
-          const safety = safetyFilter(imgUrl, image_type, source.name);
-          if (!safety.safe) { issues.push(`Filtered: ${safety.reason}`); continue; }
-
-          const uploaded = await downloadAndUpload(imgUrl, image_type, asset_code);
-          if (uploaded) {
-            bestImageUrl = uploaded;
-            selectedSource = { name: source.name, page_url: searchUrl, image_url: imgUrl, access_type: "open" };
-            downloadStatus = "downloaded";
-            break;
-          }
-        }
-        if (bestImageUrl) break;
-        await new Promise(r => setTimeout(r, 1000));
+  // STEP 2: Firecrawl scrape trusted sites directly
+  if (!bestUrl && FIRECRAWL_API_KEY) {
+    const srcList = SOURCE_URLS[image_type] || [];
+    for (const src of srcList) {
+      const url = src.url(diagnosisEn);
+      queries.push(`[${src.name}] ${url}`);
+      const imgs = await scrapeWithFirecrawl(url);
+      for (const img of imgs.slice(0, 5)) {
+        const s = safetyFilter(img);
+        if (!s.safe) { issues.push(s.reason!); continue; }
+        const up = await downloadAndUpload(img, image_type, asset_code);
+        if (up) { bestUrl = up; sourceName = src.name; sourcePageUrl = url; license = src.license; break; }
       }
-      if (bestImageUrl) break;
+      if (bestUrl) break;
+      await new Promise(r => setTimeout(r, 500));
     }
   }
 
-  // STEP 3: Web search fallback
-  if (!bestImageUrl && FIRECRAWL_API_KEY) {
-    searchQueries.push(`[WebSearch] ${diagnosis} ${MODALITY_TERMS[image_type] || image_type}`);
-    const { images, sourceUrl, sourceName } = await webSearchFallback(diagnosis, image_type);
+  // Classify
+  const isTrusted = TRUSTED.some(t => sourceName.includes(t));
+  const downloaded = !!bestUrl;
+  const validationLevel = downloaded ? (isTrusted ? "silver" : "bronze") : "blocked";
+  const coherence = downloaded ? (isTrusted ? 80 : 60) : 0;
+  const confidence = downloaded ? (isTrusted ? 75 : 50) : 0;
 
-    for (const imgUrl of images.slice(0, 5)) {
-      const safety = safetyFilter(imgUrl, image_type, sourceName);
-      if (!safety.safe) { issues.push(`Filtered: ${safety.reason}`); continue; }
-
-      const uploaded = await downloadAndUpload(imgUrl, image_type, asset_code);
-      if (uploaded) {
-        bestImageUrl = uploaded;
-        selectedSource = { name: sourceName, page_url: sourceUrl, image_url: imgUrl, access_type: "open" };
-        downloadStatus = "downloaded";
-        break;
-      }
-    }
-  }
-
-  // STEP 4: Classify
-  const sourceName = selectedSource?.name || "";
-  const accessType = selectedSource?.access_type || "blocked";
-  const classification = classifyAsset(downloadStatus === "downloaded", sourceName, accessType, image_type);
-
-  if (downloadStatus !== "downloaded") {
-    downloadStatus = downloadStatus === "pending_manual_access" ? "pending_manual_access" : "skipped";
-    issues.push("No suitable real clinical image found");
-  }
-
-  // STEP 5: Update asset in DB
-  if (downloadStatus === "downloaded" && bestImageUrl) {
+  // Update DB
+  if (downloaded) {
     await supabase.from("medical_image_assets").update({
-      image_url: bestImageUrl,
-      thumbnail_url: bestImageUrl,
-      asset_origin: classification.asset_origin,
+      image_url: bestUrl,
+      thumbnail_url: bestUrl,
+      asset_origin: "real_medical",
       review_status: "needs_review",
       integrity_status: "pending",
-      clinical_confidence: classification.diagnostic_confidence_score / 100,
-      source_url: selectedSource?.page_url || "",
+      clinical_confidence: confidence / 100,
+      source_url: sourcePageUrl,
       source_domain: sourceName,
-      license_type: sources.find(s => s.name === sourceName)?.license || "unknown",
-      validation_level: classification.validation_level,
+      license_type: license,
+      validation_level: validationLevel,
       multimodal_ready: false,
-      visual_coherence_score: classification.visual_coherence_score,
-      diagnostic_confidence_score: classification.diagnostic_confidence_score,
+      visual_coherence_score: coherence,
+      diagnostic_confidence_score: confidence,
       access_type: "open",
-      curation_notes: `Curated from ${sourceName} on ${new Date().toISOString()}. Requires manual review.`,
+      curation_notes: `Curated from ${sourceName} on ${new Date().toISOString()}. EN: "${diagnosisEn}". Requires review.`,
     }).eq("id", id);
   } else {
     await supabase.from("medical_image_assets").update({
-      validation_level: classification.validation_level,
+      validation_level: "blocked",
       multimodal_ready: false,
-      access_type: accessType,
-      curation_notes: `No image found. Status: ${downloadStatus}. Issues: ${issues.join("; ")}`,
+      curation_notes: `No open-access image found. Queries: ${queries.join("; ")}. Issues: ${issues.join("; ")}`,
     }).eq("id", id);
   }
 
-  // STEP 6: Log curation
-  const logEntry = {
-    asset_id: id,
-    asset_code,
-    image_type,
-    diagnosis,
-    search_queries: searchQueries,
-    selected_source: selectedSource,
-    download_status: downloadStatus,
-    storage_path: storagePath,
-    classification,
+  // Log
+  await supabase.from("image_curation_log").insert({
+    asset_id: id, asset_code, image_type, diagnosis,
+    search_queries: queries,
+    selected_source: downloaded ? { name: sourceName, page_url: sourcePageUrl, image_url: bestUrl, access_type: "open" } : null,
+    download_status: downloaded ? "downloaded" : "skipped",
+    storage_path: "",
+    classification: { asset_origin: "real_medical", validation_level: validationLevel, visual_coherence_score: coherence, diagnostic_confidence_score: confidence, multimodal_ready: false },
     issues,
-    notes: `Processed ${diagnosis} (${image_type}) — ${downloadStatus}`,
-  };
-  await supabase.from("image_curation_log").insert(logEntry);
+    notes: `${diagnosis} (${image_type}) → ${downloaded ? "downloaded" : "not_found"}`,
+  });
 
-  return {
-    asset_id: id,
-    asset_code,
-    search_queries: searchQueries,
-    selected_source: selectedSource,
-    download: { status: downloadStatus, storage_path: storagePath },
-    classification,
-    issues,
-    notes: logEntry.notes,
-  };
+  return { asset_id: id, asset_code, diagnosis, diagnosis_en: diagnosisEn, status: downloaded ? "downloaded" : "not_found", source: sourceName, validation_level: validationLevel };
 }
 
-// ===== MAIN HANDLER =====
+// ===== MAIN =====
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
     const body = await req.json();
-    const { image_type, batch_size = 3, offset = 0, asset_id } = body;
+    const { image_type, batch_size = 3, offset = 0, asset_id, reprocess_all = false } = body;
 
-    // Single asset mode
+    // Single asset
     if (asset_id) {
       const { data: asset } = await supabase.from("medical_image_assets")
-        .select("id, asset_code, image_type, diagnosis, specialty, subtopic, clinical_findings")
-        .eq("id", asset_id).single();
-
-      if (!asset) {
-        return new Response(JSON.stringify({ error: "Asset not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-
+        .select("id, asset_code, image_type, diagnosis").eq("id", asset_id).single();
+      if (!asset) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       const result = await processAsset(asset);
       return new Response(JSON.stringify(result), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Batch mode
-    if (!image_type) {
-      return new Response(JSON.stringify({ error: "image_type is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+    // Batch
+    if (!image_type) return new Response(JSON.stringify({ error: "image_type required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     const size = Math.min(batch_size, 5);
-    const { data: assets } = await supabase.from("medical_image_assets")
-      .select("id, asset_code, image_type, diagnosis, specialty, subtopic, clinical_findings")
-      .eq("image_type", image_type)
-      .eq("is_active", true)
-      .or("asset_origin.eq.educational_ai,asset_origin.is.null,asset_origin.eq.generic_ai,asset_origin.eq.unknown,validation_level.eq.blocked")
-      .order("diagnosis")
-      .range(offset, offset + size - 1);
+    let query = supabase.from("medical_image_assets")
+      .select("id, asset_code, image_type, diagnosis")
+      .eq("image_type", image_type).eq("is_active", true);
 
-    if (!assets || assets.length === 0) {
-      return new Response(JSON.stringify({ message: "No eligible assets", results: [], summary: { processed: 0, downloaded: 0, pending_manual_access: 0, blocked: 0, multimodal_ready: 0 } }),
+    if (!reprocess_all) {
+      query = query.or("validation_level.eq.blocked,validation_level.eq.bronze,validation_level.is.null,multimodal_ready.eq.false");
+    }
+
+    const { data: assets } = await query.order("diagnosis").range(offset, offset + size - 1);
+
+    if (!assets?.length) {
+      return new Response(JSON.stringify({ message: "No assets", results: [], summary: { processed: 0 } }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const results = [];
-    const summary = { processed: 0, downloaded: 0, pending_manual_access: 0, blocked: 0, skipped: 0, multimodal_ready: 0, by_modality: {} as Record<string, number>, by_source: {} as Record<string, number> };
+    const summary = { processed: 0, downloaded: 0, not_found: 0, by_source: {} as Record<string, number> };
 
     for (const asset of assets) {
-      const result = await processAsset(asset);
-      results.push(result);
+      const r = await processAsset(asset);
+      results.push(r);
       summary.processed++;
-
-      if (result.download.status === "downloaded") {
+      if (r.status === "downloaded") {
         summary.downloaded++;
-        const src = result.selected_source?.name || "unknown";
-        summary.by_source[src] = (summary.by_source[src] || 0) + 1;
-      } else if (result.download.status === "pending_manual_access") {
-        summary.pending_manual_access++;
-      } else if (result.download.status === "skipped") {
-        summary.skipped++;
+        summary.by_source[r.source] = (summary.by_source[r.source] || 0) + 1;
       } else {
-        summary.blocked++;
+        summary.not_found++;
       }
-
-      summary.by_modality[image_type] = (summary.by_modality[image_type] || 0) + 1;
-      if (result.classification.multimodal_ready) summary.multimodal_ready++;
-
-      // Rate limiting between assets
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(res => setTimeout(res, 1500));
     }
 
-    const has_more = assets.length === size;
-
-    return new Response(JSON.stringify({ results, summary, has_more, next_offset: offset + assets.length }), {
+    return new Response(JSON.stringify({ results, summary, has_more: assets.length === size, next_offset: offset + assets.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("Curation error:", err);
+    console.error("Error:", err);
     return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
