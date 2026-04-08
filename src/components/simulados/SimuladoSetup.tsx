@@ -322,9 +322,9 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             </div>
           )}
 
-
+          {/* ── Prova Real Configuration ── */}
+          {mode === "prova_real" && (
             <>
-              <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 space-y-3">
                 <p className="text-sm font-semibold text-amber-600 flex items-center gap-2">
                   <Trophy className="h-4 w-4" /> Simulado Prova Real
                 </p>
