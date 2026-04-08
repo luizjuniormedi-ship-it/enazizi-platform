@@ -147,7 +147,7 @@ const Profile = () => {
 
     setSaving(true);
     try {
-      const updateData: Record<string, any> = {
+      const updateData: Record<string, unknown> = {
         display_name: trimmed,
         phone: phone.replace(/\D/g, "") || null,
         user_type: userType,

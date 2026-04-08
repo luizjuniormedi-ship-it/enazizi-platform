@@ -131,7 +131,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const cleanPhone = formPhone.replace(/\D/g, "");
     setSaving(true);
     try {
-      const updateData: Record<string, any> = {
+      const updateData: Record<string, unknown> = {
         display_name: trimmedName,
         phone: cleanPhone,
         user_type: formUserType,

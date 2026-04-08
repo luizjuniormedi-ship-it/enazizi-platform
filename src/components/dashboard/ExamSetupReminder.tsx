@@ -41,7 +41,7 @@ export default function ExamSetupReminder() {
     }
     setSaving(true);
     try {
-      const updates: Record<string, any> = {
+      const updates: Record<string, unknown> = {
         exam_date: examDate,
         daily_study_hours: parseFloat(dailyHours) || 4,
       };
