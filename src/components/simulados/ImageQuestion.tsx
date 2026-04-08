@@ -30,10 +30,26 @@ const IMAGE_TYPE_LABELS: Record<string, string> = {
 
 const ImageQuestionViewer = ({ imageUrl, imageType, altText }: ImageQuestionViewerProps) => {
   const [loaded, setLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [zoom, setZoom] = useState(1);
 
   const typeLabel = imageType ? IMAGE_TYPE_LABELS[imageType] || imageType : "Imagem";
+
+  // If no valid URL or error loading
+  if (!imageUrl || hasError) {
+    return (
+      <div className="rounded-lg border border-border bg-muted/30 p-6 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+        <Badge variant="secondary" className="text-xs font-medium">{typeLabel}</Badge>
+        <span className="text-sm">📷 Imagem indisponível para esta questão</span>
+        {hasError && (
+          <Button variant="ghost" size="sm" onClick={() => { setHasError(false); setLoaded(false); }}>
+            Tentar novamente
+          </Button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <>
@@ -66,6 +82,7 @@ const ImageQuestionViewer = ({ imageUrl, imageType, altText }: ImageQuestionView
           alt={altText || `Imagem médica - ${typeLabel}`}
           className={`w-full object-contain max-h-[300px] md:max-h-[400px] cursor-pointer transition-opacity ${loaded ? "opacity-100" : "opacity-0 absolute"}`}
           onLoad={() => setLoaded(true)}
+          onError={() => setHasError(true)}
           onClick={() => setExpanded(true)}
           loading="lazy"
         />
