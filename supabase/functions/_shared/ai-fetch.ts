@@ -288,22 +288,56 @@ export function cleanQuestionText(text: string): string {
  * Extract and parse JSON from AI response content.
  * Handles markdown code blocks and control character sanitization.
  */
+function tryParse(text: string): any {
+  try {
+    return JSON.parse(text);
+  } catch {
+    // Fix common AI JSON issues: trailing commas, control chars
+    const fixed = text
+      .replace(/,\s*}/g, "}")
+      .replace(/,\s*]/g, "]")
+      .replace(/[\x00-\x1F\x7F]/g, (ch: string) =>
+        ch === '\n' || ch === '\r' || ch === '\t' ? ch : ''
+      );
+    try {
+      return JSON.parse(fixed);
+    } catch {
+      // Try repairing unbalanced braces/brackets
+      let braces = 0, brackets = 0;
+      for (const c of fixed) {
+        if (c === '{') braces++;
+        if (c === '}') braces--;
+        if (c === '[') brackets++;
+        if (c === ']') brackets--;
+      }
+      let repaired = fixed;
+      while (brackets > 0) { repaired += ']'; brackets--; }
+      while (braces > 0) { repaired += '}'; braces--; }
+      return JSON.parse(repaired);
+    }
+  }
+}
+
 export function parseAiJson(rawContent: string): any {
   const content = sanitizeAiContent(rawContent);
   
   // Try markdown code block first
   const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (codeBlockMatch) {
-    return JSON.parse(codeBlockMatch[1].trim());
+    return tryParse(codeBlockMatch[1].trim());
   }
   
   // Try extracting JSON object
   const objMatch = content.match(/\{[\s\S]*\}/);
-  if (objMatch) return JSON.parse(objMatch[0]);
+  if (objMatch) {
+    return tryParse(objMatch[0]);
+  }
   
   // Try extracting JSON array
   const arrMatch = content.match(/\[[\s\S]*\]/);
-  if (arrMatch) return JSON.parse(arrMatch[0]);
+  if (arrMatch) {
+    return tryParse(arrMatch[0]);
+  }
   
   throw new Error("No valid JSON found in AI response");
 }
