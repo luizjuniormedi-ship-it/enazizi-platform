@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
       .from("medical_image_questions")
       .select("asset_id")
       .in("asset_id", assetIds)
-      .not("status", "eq", "rejected");
+      .neq("status", "rejected");
 
     const existingAssetIds = new Set((existingQ || []).map(q => q.asset_id));
     const needsQuestions = assets.filter(a => !existingAssetIds.has(a.id));
