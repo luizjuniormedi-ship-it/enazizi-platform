@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { CheckCircle2, XCircle, ArrowRight, ArrowLeft, GraduationCap } from "lucide-react";
+import { CheckCircle2, XCircle, ArrowRight, ArrowLeft, GraduationCap, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import ecgWpw from "@/assets/ecg-wpw.jpg";
+import ecgAesp from "@/assets/ecg-aesp.jpg";
+import rxSinalVela from "@/assets/rx-sinal-vela.jpg";
 
 const IMAGE_TYPE_LABELS: Record<string, string> = {
   ecg: "🫀 ECG",
@@ -20,7 +23,14 @@ interface DemoQuestion {
   examStyle: string;
   imageType: string;
   diagnosis: string;
+  imageUrl?: string;
 }
+
+const QUESTION_IMAGES: Record<string, string> = {
+  Q_ECG_002: ecgWpw,
+  Q_ECG_003: ecgAesp,
+  Q_IMG_RX_001: rxSinalVela,
+};
 
 const DEMO_QUESTIONS: DemoQuestion[] = [
   {
@@ -105,13 +115,25 @@ const DemoImageQuestions = () => {
 
         {/* Question card */}
         <div className="rounded-xl border border-border bg-card p-5 shadow-sm space-y-4">
-          {/* Image type badge */}
-          <div className="flex items-center gap-2 p-3 rounded-lg border border-border bg-muted/30">
-            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
-              {IMAGE_TYPE_LABELS[q.imageType] || q.imageType}
-            </span>
-            <span className="text-xs text-muted-foreground">Questão baseada em imagem médica</span>
-          </div>
+          {/* Medical image */}
+          {QUESTION_IMAGES[q.code] && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
+                  {IMAGE_TYPE_LABELS[q.imageType] || q.imageType}
+                </span>
+                <span className="text-xs text-muted-foreground">{q.diagnosis}</span>
+              </div>
+              <div className="rounded-lg overflow-hidden border border-border bg-black/5">
+                <img
+                  src={QUESTION_IMAGES[q.code]}
+                  alt={`Imagem médica - ${q.imageType}`}
+                  className="w-full h-auto object-contain max-h-[350px]"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Statement */}
           <p className="text-sm md:text-base font-medium leading-relaxed">{q.statement}</p>
