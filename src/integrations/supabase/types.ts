@@ -3354,6 +3354,53 @@ export type Database = {
         }
         Relationships: []
       }
+      multimodal_safety_log: {
+        Row: {
+          asset_code: string | null
+          asset_id: string | null
+          asset_origin: string | null
+          block_reason: string
+          clinical_confidence: number | null
+          created_at: string
+          fallback_used: boolean | null
+          id: string
+          integrity_status: string | null
+          review_status: string | null
+        }
+        Insert: {
+          asset_code?: string | null
+          asset_id?: string | null
+          asset_origin?: string | null
+          block_reason: string
+          clinical_confidence?: number | null
+          created_at?: string
+          fallback_used?: boolean | null
+          id?: string
+          integrity_status?: string | null
+          review_status?: string | null
+        }
+        Update: {
+          asset_code?: string | null
+          asset_id?: string | null
+          asset_origin?: string | null
+          block_reason?: string
+          clinical_confidence?: number | null
+          created_at?: string
+          fallback_used?: boolean | null
+          id?: string
+          integrity_status?: string | null
+          review_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "multimodal_safety_log_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "medical_image_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
