@@ -2313,6 +2313,65 @@ export type Database = {
         }
         Relationships: []
       }
+      image_curation_log: {
+        Row: {
+          asset_code: string | null
+          asset_id: string | null
+          classification: Json | null
+          created_at: string
+          diagnosis: string
+          download_status: string | null
+          id: string
+          image_type: string
+          issues: Json | null
+          notes: string | null
+          search_queries: Json | null
+          selected_source: Json | null
+          storage_path: string | null
+          thumbnail_path: string | null
+        }
+        Insert: {
+          asset_code?: string | null
+          asset_id?: string | null
+          classification?: Json | null
+          created_at?: string
+          diagnosis: string
+          download_status?: string | null
+          id?: string
+          image_type: string
+          issues?: Json | null
+          notes?: string | null
+          search_queries?: Json | null
+          selected_source?: Json | null
+          storage_path?: string | null
+          thumbnail_path?: string | null
+        }
+        Update: {
+          asset_code?: string | null
+          asset_id?: string | null
+          classification?: Json | null
+          created_at?: string
+          diagnosis?: string
+          download_status?: string | null
+          id?: string
+          image_type?: string
+          issues?: Json | null
+          notes?: string | null
+          search_queries?: Json | null
+          selected_source?: Json | null
+          storage_path?: string | null
+          thumbnail_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "image_curation_log_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "medical_image_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       image_question_audit_log: {
         Row: {
           created_at: string
@@ -2744,13 +2803,16 @@ export type Database = {
       }
       medical_image_assets: {
         Row: {
+          access_type: string | null
           asset_code: string
           asset_origin: string
           clinical_confidence: number
           clinical_findings: Json
           clinical_validation_notes: string | null
           created_at: string
+          curation_notes: string | null
           diagnosis: string
+          diagnostic_confidence_score: number | null
           difficulty: Database["public"]["Enums"]["difficulty_level"]
           distractors: Json
           duplicate_group_key: string | null
@@ -2762,6 +2824,7 @@ export type Database = {
           integrity_status: string | null
           is_active: boolean
           license_type: string
+          multimodal_ready: boolean | null
           review_status: Database["public"]["Enums"]["image_review_status"]
           reviewed_at: string | null
           reviewed_by: string | null
@@ -2777,16 +2840,21 @@ export type Database = {
           updated_at: string
           validated_at: string | null
           validated_by: string | null
+          validation_level: string | null
           version: number
+          visual_coherence_score: number | null
         }
         Insert: {
+          access_type?: string | null
           asset_code: string
           asset_origin?: string
           clinical_confidence?: number
           clinical_findings?: Json
           clinical_validation_notes?: string | null
           created_at?: string
+          curation_notes?: string | null
           diagnosis: string
+          diagnostic_confidence_score?: number | null
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
           distractors?: Json
           duplicate_group_key?: string | null
@@ -2798,6 +2866,7 @@ export type Database = {
           integrity_status?: string | null
           is_active?: boolean
           license_type?: string
+          multimodal_ready?: boolean | null
           review_status?: Database["public"]["Enums"]["image_review_status"]
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -2813,16 +2882,21 @@ export type Database = {
           updated_at?: string
           validated_at?: string | null
           validated_by?: string | null
+          validation_level?: string | null
           version?: number
+          visual_coherence_score?: number | null
         }
         Update: {
+          access_type?: string | null
           asset_code?: string
           asset_origin?: string
           clinical_confidence?: number
           clinical_findings?: Json
           clinical_validation_notes?: string | null
           created_at?: string
+          curation_notes?: string | null
           diagnosis?: string
+          diagnostic_confidence_score?: number | null
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
           distractors?: Json
           duplicate_group_key?: string | null
@@ -2834,6 +2908,7 @@ export type Database = {
           integrity_status?: string | null
           is_active?: boolean
           license_type?: string
+          multimodal_ready?: boolean | null
           review_status?: Database["public"]["Enums"]["image_review_status"]
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -2849,7 +2924,9 @@ export type Database = {
           updated_at?: string
           validated_at?: string | null
           validated_by?: string | null
+          validation_level?: string | null
           version?: number
+          visual_coherence_score?: number | null
         }
         Relationships: []
       }
