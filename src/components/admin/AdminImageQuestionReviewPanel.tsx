@@ -234,6 +234,30 @@ const AdminImageQuestionReviewPanel = () => {
     return opts;
   };
 
+  const handleSearchReal = async (q: ImageReviewQuestion) => {
+    if (!q.image_type || !q.diagnosis) {
+      toast({ title: "Erro", description: "Asset sem tipo ou diagnóstico", variant: "destructive" });
+      return;
+    }
+    setSearchingReal(q.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("search-real-medical-images", {
+        body: { asset_id: q.asset_id, image_type: q.image_type, diagnosis: q.diagnosis },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.status === "found") {
+        toast({ title: "🟢 Imagem real encontrada!", description: `Fonte: ${data.source_domain}` });
+        fetchQuestions();
+        fetchCounts();
+      } else {
+        toast({ title: "Nenhuma imagem real encontrada", description: "Mantendo imagem IA atual", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Erro na busca", description: err.message, variant: "destructive" });
+    }
+    setSearchingReal(null);
+  };
+
   return (
     <div className="glass-card p-4 sm:p-5 border border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
       {/* Header */}
