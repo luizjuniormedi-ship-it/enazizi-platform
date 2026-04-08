@@ -2,6 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { LogOut, Clock, Save, Loader2, GraduationCap, Building, Phone, User, Stethoscope } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -24,7 +25,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [showWelcome, setShowWelcome] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Onboarding form state
   const [formName, setFormName] = useState("");
   const [formPhone, setFormPhone] = useState("");
   const [formPeriodo, setFormPeriodo] = useState("");
@@ -33,7 +33,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    // Version-based localStorage reset
     const RESET_VERSION = "4";
     if (localStorage.getItem("enazizi_onboarding_reset_v") !== RESET_VERSION) {
       localStorage.removeItem("enazizi_v2_welcome_seen");
@@ -41,13 +40,19 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       localStorage.removeItem("enazizi_exam_setup_skipped");
       localStorage.setItem("enazizi_onboarding_reset_v", RESET_VERSION);
     }
-    if (!user) { setCheckingProfile(false); return; }
+
+    if (!user) {
+      setCheckingProfile(false);
+      return;
+    }
+
     const check = async () => {
       const { data } = await supabase
         .from("profiles")
         .select("is_blocked, status, display_name, phone, periodo, faculdade, onboarding_version, user_type")
         .eq("user_id", user.id)
         .maybeSingle();
+
       if (data?.is_blocked) {
         setProfileStatus("blocked");
       } else {
@@ -60,7 +65,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
           user_type: userType,
         });
 
-        // Auto-activate professors who have complete profiles
         if (userType === "professor" && profileComplete && data?.status === "pending") {
           await supabase.from("profiles").update({ status: "active" }).eq("user_id", user.id);
           setProfileStatus("active");
@@ -68,7 +72,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
           setProfileStatus(data?.status || "pending");
         }
       }
-      // Check if profile is incomplete or has invalid data
+
       const userType = data?.user_type || "estudante";
       const incomplete = !isProfileComplete({
         phone: data?.phone,
@@ -77,6 +81,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         faculdade: data?.faculdade,
         user_type: userType,
       });
+
       setProfileIncomplete(incomplete);
       if (incomplete) {
         setFormName(data?.display_name || "");
@@ -85,23 +90,28 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         setFormFaculdade(data?.faculdade || "");
         setFormUserType(userType);
       }
-      // Check onboarding version for v2 flow
+
       const obVersion = (data as any)?.onboarding_version ?? 1;
       setOnboardingVersion(obVersion);
-      const effectiveStatus = userType === "professor" && !incomplete && data?.status === "pending" ? "active" : data?.status;
+      const effectiveStatus =
+        userType === "professor" && !incomplete && data?.status === "pending" ? "active" : data?.status;
+
       if (obVersion < 2 && !incomplete && effectiveStatus === "active") {
         const welcomeSeen = localStorage.getItem("enazizi_v2_welcome_seen") === "true";
         const onboardingDone = localStorage.getItem("enazizi_v2_onboarding_done") === "true";
         if (!welcomeSeen) setShowWelcome(true);
         else if (!onboardingDone) setShowOnboarding(true);
       }
+
       setCheckingProfile(false);
     };
+
     check();
   }, [user]);
 
   const handleOnboardingSave = async () => {
     if (!user) return;
+
     const trimmedName = formName.trim();
     const isStudent = formUserType === "estudante";
     const isProfessor = formUserType === "professor";
@@ -130,33 +140,36 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
     const cleanPhone = formPhone.replace(/\D/g, "");
     setSaving(true);
+
     try {
-      const updateData: Record<string, any> = {
+      const updateData: TablesUpdate<"profiles"> = {
         display_name: trimmedName,
         phone: cleanPhone,
         user_type: formUserType,
       };
+
       if (isStudent) {
         updateData.periodo = parseInt(formPeriodo);
         updateData.faculdade = formFaculdade;
       }
+
       if (isProfessor) {
         updateData.faculdade = formFaculdade;
-        updateData.status = "active"; // Auto-activate professors
-        // Insert professor role
+        updateData.status = "active";
         await supabase.from("user_roles").upsert(
           { user_id: user.id, role: "professor" as any },
           { onConflict: "user_id,role" }
         );
       }
+
       const { error } = await supabase
         .from("profiles")
-        .update(updateData as any)
+        .update(updateData)
         .eq("user_id", user.id);
+
       if (error) throw error;
       setProfileIncomplete(false);
       toast({ title: "Cadastro completo! 🎉" });
-      // Re-check activity assignments after completing registration
       supabase.functions.invoke("auto-assign-simulados").catch(() => {});
     } catch (err: any) {
       toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });

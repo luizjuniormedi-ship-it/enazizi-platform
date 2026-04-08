@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import FaculdadeCombobox from "@/components/FaculdadeCombobox";
 import { isValidPhone, isValidName } from "@/lib/profileValidation";
@@ -58,6 +59,7 @@ const Profile = () => {
 
   useEffect(() => {
     if (!user) return;
+
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
@@ -83,8 +85,10 @@ const Profile = () => {
           setTargetExams([(data as any).target_exam]);
         }
       }
+
       setLoading(false);
     };
+
     load();
   }, [user]);
 
@@ -96,12 +100,14 @@ const Profile = () => {
       toast({ title: "Formato inválido", description: "Envie uma imagem (JPG, PNG, etc.)", variant: "destructive" });
       return;
     }
+
     if (file.size > 2 * 1024 * 1024) {
       toast({ title: "Arquivo muito grande", description: "Máximo de 2MB.", variant: "destructive" });
       return;
     }
 
     setUploading(true);
+
     try {
       const ext = file.name.split(".").pop();
       const path = `${user.id}/avatar.${ext}`;
@@ -111,7 +117,9 @@ const Profile = () => {
       const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("avatars").getPublicUrl(path);
       const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
 
       const { error: updateError } = await supabase
@@ -132,6 +140,7 @@ const Profile = () => {
 
   const handleSave = async () => {
     if (!user) return;
+
     const trimmed = displayName.trim();
     const nameCheck = isValidName(trimmed);
     if (!nameCheck.valid) {
@@ -146,8 +155,9 @@ const Profile = () => {
     }
 
     setSaving(true);
+
     try {
-      const updateData: Record<string, any> = {
+      const updateData: TablesUpdate<"profiles"> = {
         display_name: trimmed,
         phone: phone.replace(/\D/g, "") || null,
         user_type: userType,
@@ -157,22 +167,25 @@ const Profile = () => {
         target_exams: targetExams,
         target_exam: targetExams[0] || null,
       };
+
       if (userType === "estudante") {
         updateData.periodo = periodo ? parseInt(periodo) : null;
         updateData.faculdade = faculdade || null;
       }
+
       if (userType === "medico") {
         updateData.target_specialty = targetSpecialty || null;
         updateData.faculdade = faculdade || null;
       }
+
       const { error } = await supabase
         .from("profiles")
-        .update(updateData as any)
+        .update(updateData)
         .eq("user_id", user.id);
+
       if (error) throw error;
       toast({ title: "Perfil atualizado!" });
       invalidateAll();
-      // Re-check activity assignments after profile update
       supabase.functions.invoke("auto-assign-simulados").catch(() => {});
     } catch (err: any) {
       toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
