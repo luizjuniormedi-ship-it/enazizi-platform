@@ -23,7 +23,14 @@ interface DemoQuestion {
   examStyle: string;
   imageType: string;
   diagnosis: string;
+  imageUrl: string;
 }
+
+const QUESTION_IMAGES: Record<string, string> = {
+  Q_ECG_002: ecgWpw,
+  Q_ECG_003: ecgAesp,
+  Q_IMG_RX_001: rxSinalVela,
+};
 
 const DEMO_QUESTIONS: DemoQuestion[] = [
   {
