@@ -49,6 +49,9 @@ export default function ImageQuestionUpgradePanel() {
   const refresh = () => {
     setLastError(null);
     queryClient.invalidateQueries({ queryKey: ["image-question-stats"] });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("image-pipeline-updated"));
+    }
   };
 
   const invokeAction = async (action: string, body: Record<string, unknown> = {}) => {
