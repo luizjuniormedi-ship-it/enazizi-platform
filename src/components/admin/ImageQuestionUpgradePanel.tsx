@@ -238,6 +238,27 @@ export default function ImageQuestionUpgradePanel() {
                 )}
               </Button>
             )}
+            {/* Buscar Imagens Reais */}
+            <div className="pt-2 border-t border-border/50">
+              <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                <Globe className="h-3 w-3" /> Buscar Imagens Reais por Modalidade
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                {["dermatology", "pathology", "ophthalmology", "xray", "ct", "us"].map(mod => (
+                  <Button
+                    key={mod}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7"
+                    disabled={isSearchingReal}
+                    onClick={() => handleSearchRealImages(mod)}
+                  >
+                    {isSearchingReal ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Globe className="h-3 w-3 mr-1" />}
+                    {mod === "dermatology" ? "Dermato" : mod === "pathology" ? "Patologia" : mod === "ophthalmology" ? "Oftalmo" : mod.toUpperCase()}
+                  </Button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {stats?.recent_errors && stats.recent_errors.length > 0 && (
