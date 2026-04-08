@@ -374,6 +374,11 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
         </div>
       )}
 
+      {/* Modality Analytics */}
+      <Suspense fallback={null}>
+        <ModalityAnalyticsPanel />
+      </Suspense>
+
       <TaskCompletionCard
         title={isProvaReal ? "Prova Real concluída!" : "Simulado concluído!"}
         subtitle={`Você acertou ${correctCount} de ${questions.length} questões (${pct}%). ${isProvaReal && gradeInfo ? (gradeInfo.approved ? "Parabéns, aprovado!" : "Continue estudando!") : "Seu progresso foi atualizado."}`}
