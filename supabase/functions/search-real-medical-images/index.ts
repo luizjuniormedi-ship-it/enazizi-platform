@@ -167,6 +167,8 @@ interface SearchRequest {
   asset_code?: string;
   batch_mode?: boolean;
   batch_size?: number;
+  reprocess_all?: boolean;
+  offset?: number;
 }
 
 Deno.serve(async (req) => {
