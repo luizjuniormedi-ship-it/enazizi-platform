@@ -151,6 +151,8 @@ const AdminImageQuestionReviewPanel = () => {
         diagnosis: q.medical_image_assets?.diagnosis,
         image_url: q.medical_image_assets?.image_url,
         specialty: q.medical_image_assets?.specialty,
+        asset_origin: q.medical_image_assets?.asset_origin,
+        source_domain: q.medical_image_assets?.source_domain,
       })));
       setTotal(count || 0);
     } else if (error) {
