@@ -69,10 +69,13 @@ export async function selectImageQuestions(
         option_a, option_b, option_c, option_d, option_e,
         correct_index, explanation, difficulty, 
         tri_a, tri_b, tri_c, exam_style,
-        medical_image_assets!inner(image_url, image_type)
+        medical_image_assets!inner(image_url, image_type, clinical_confidence, review_status)
       `)
       .eq("status", "published")
-      .eq("language_code", "pt-BR");
+      .eq("language_code", "pt-BR")
+      // BLOQUEIO CLÍNICO: apenas assets com confiança >= 0.80 e status published
+      .eq("medical_image_assets.is_active", true)
+      .gte("medical_image_assets.clinical_confidence", 0.80);
 
     if (slot.difficulty) {
       query = query.eq("difficulty", slot.difficulty);
