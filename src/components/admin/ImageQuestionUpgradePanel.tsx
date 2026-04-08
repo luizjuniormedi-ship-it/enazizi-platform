@@ -29,6 +29,7 @@ export default function ImageQuestionUpgradePanel() {
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isSearchingReal, setIsSearchingReal] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
 
   const { data: stats, isLoading, isError, error: statsError } = useQuery({
