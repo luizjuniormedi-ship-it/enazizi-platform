@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { CheckCircle2, XCircle, ArrowRight, ArrowLeft, GraduationCap } from "lucide-react";
+import { CheckCircle2, XCircle, ArrowRight, ArrowLeft, GraduationCap, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import ecgWpw from "@/assets/ecg-wpw.jpg";
+import ecgAesp from "@/assets/ecg-aesp.jpg";
+import rxSinalVela from "@/assets/rx-sinal-vela.jpg";
 
 const IMAGE_TYPE_LABELS: Record<string, string> = {
   ecg: "🫀 ECG",
