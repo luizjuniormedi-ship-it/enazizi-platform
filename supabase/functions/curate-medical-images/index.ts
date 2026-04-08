@@ -251,6 +251,7 @@ const SOURCE_URLS: Record<string, { name: string; url: (q: string) => string; li
   ],
   ophthalmology: [
     { name: "EyeWiki", url: (q) => `https://eyewiki.aao.org/w/index.php?search=${encodeURIComponent(q)}`, license: "cc_by_nc_nd" },
+    { name: "Radiopaedia", url: (q) => `https://radiopaedia.org/search?q=${encodeURIComponent(q + " eye fundus")}&scope=cases`, license: "cc_by_nc_sa" },
   ],
 };
 
