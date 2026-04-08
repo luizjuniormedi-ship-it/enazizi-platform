@@ -120,7 +120,7 @@ const AdminImageQuestionReviewPanel = () => {
       query = query.eq("difficulty", difficultyFilter as any);
     }
     if (modalityFilter !== "all") {
-      query = query.eq("medical_image_assets.image_type", modalityFilter);
+      query = query.eq("medical_image_assets.image_type", modalityFilter as any);
     }
 
     const { data, count, error } = await query;
