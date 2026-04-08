@@ -232,12 +232,97 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                   <span className="font-semibold text-sm">Modo Extremo</span>
                 </div>
                 <p className="text-xs text-muted-foreground">Prova real. 50+ questões. Dificuldade alta. Pressão máxima.</p>
+               </button>
+              <button
+                onClick={() => {
+                  setMode("adaptativo");
+                  onFetchAdaptivePreview?.();
+                }}
+                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  mode === "adaptativo"
+                    ? "border-emerald-500 bg-emerald-500/10"
+                    : "border-border bg-secondary/30 hover:border-emerald-500/30"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <Zap className="h-5 w-5 text-emerald-500" />
+                  <span className="font-semibold text-sm">Adaptativo</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Baseado no seu desempenho. Foco em fraquezas. Com imagem.</p>
               </button>
             </div>
           </div>
 
-          {/* ── Prova Real Configuration ── */}
-          {mode === "prova_real" && (
+          {/* ── Adaptive Mode Configuration ── */}
+          {mode === "adaptativo" && (
+            <div className="space-y-4">
+              <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4 space-y-3">
+                <p className="text-sm font-semibold text-emerald-600 flex items-center gap-2">
+                  <Zap className="h-4 w-4" /> Simulado Adaptativo Inteligente
+                </p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• Analisa seu <strong>desempenho real</strong> por modalidade de imagem</li>
+                  <li>• Prioriza <strong>fraquezas críticas</strong> automaticamente</li>
+                  <li>• Mistura questões do banco + geradas por IA sob demanda</li>
+                  <li>• Distribuição inteligente de dificuldade e banca</li>
+                </ul>
+              </div>
+
+              {adaptiveLoading && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="h-4 w-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                  Analisando seu desempenho...
+                </div>
+              )}
+
+              {adaptiveMeta && !adaptiveLoading && (
+                <div className="bg-secondary/30 rounded-xl p-4 space-y-3">
+                  <p className="text-sm font-semibold flex items-center gap-2">
+                    <Target className="h-4 w-4 text-emerald-500" /> Estratégia do Motor
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <p className="text-muted-foreground mb-1">Foco principal</p>
+                      <p className="font-semibold capitalize">{adaptiveMeta.focus}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Fraquezas alvo</p>
+                      <p className="font-semibold">{adaptiveMeta.weakness_targeted || "Nenhuma crítica"}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{adaptiveMeta.strategy}</p>
+
+                  {Object.keys(adaptiveMeta.distribution.modalities).length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">Distribuição por modalidade</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.entries(adaptiveMeta.distribution.modalities).map(([mod, count]) => (
+                          <span key={mod} className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 text-[10px] font-medium">
+                            {mod.toUpperCase()}: {count}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {Object.keys(adaptiveMeta.distribution.difficulty).length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">Distribuição por dificuldade</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.entries(adaptiveMeta.distribution.difficulty).map(([diff, count]) => (
+                          <span key={diff} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium">
+                            {diff}: {count}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+
             <>
               <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 space-y-3">
                 <p className="text-sm font-semibold text-amber-600 flex items-center gap-2">
