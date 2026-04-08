@@ -598,12 +598,12 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
 
           <Button
             size="lg"
-            className={`w-full ${mode === "extremo" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : mode === "prova_real" ? "bg-amber-600 hover:bg-amber-700 text-white" : mode === "tri" ? "bg-violet-600 hover:bg-violet-700 text-white" : ""}`}
+            className={`w-full ${mode === "extremo" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : mode === "prova_real" ? "bg-amber-600 hover:bg-amber-700 text-white" : mode === "tri" ? "bg-violet-600 hover:bg-violet-700 text-white" : mode === "adaptativo" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}`}
             onClick={handleStart}
-            disabled={mode !== "prova_real" && mode !== "tri" && selectedTopics.length === 0}
+            disabled={mode !== "prova_real" && mode !== "tri" && mode !== "adaptativo" && selectedTopics.length === 0}
           >
-            {mode === "extremo" ? <Skull className="h-4 w-4 mr-2" /> : mode === "prova_real" ? <Trophy className="h-4 w-4 mr-2" /> : mode === "tri" ? <Brain className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-            {mode === "estudo" ? "Iniciar Modo Estudo" : mode === "extremo" ? "Iniciar Prova Extrema" : mode === "prova_real" ? `Iniciar Prova Real ${selectedProfile.name}` : mode === "tri" ? `Iniciar TRI ${selectedProfile.name}` : "Iniciar Simulado"} ({mode === "prova_real" || mode === "tri" ? selectedProfile.totalQuestions : (customCount || questionCount)} questões)
+            {mode === "extremo" ? <Skull className="h-4 w-4 mr-2" /> : mode === "prova_real" ? <Trophy className="h-4 w-4 mr-2" /> : mode === "tri" ? <Brain className="h-4 w-4 mr-2" /> : mode === "adaptativo" ? <Zap className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+            {mode === "adaptativo" ? `Iniciar Simulado Adaptativo (${customCount || questionCount} questões)` : mode === "estudo" ? "Iniciar Modo Estudo" : mode === "extremo" ? "Iniciar Prova Extrema" : mode === "prova_real" ? `Iniciar Prova Real ${selectedProfile.name}` : mode === "tri" ? `Iniciar TRI ${selectedProfile.name}` : "Iniciar Simulado"} {mode !== "adaptativo" ? `(${mode === "prova_real" || mode === "tri" ? selectedProfile.totalQuestions : (customCount || questionCount)} questões)` : ""}
           </Button>
         </div>
       )}
