@@ -10,6 +10,7 @@ import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { filterValidQuestions } from "@/lib/aiOutputValidation";
 import { EXAM_PROFILES, calculateTopicDistribution, calculateDifficultySlots } from "@/lib/realExamDistribution";
 import { selectImageQuestions, imageQuestionToSimQuestion, calculateImageSlots } from "@/lib/imageQuestionPipeline";
+import { generateAdaptiveBlueprint, type AdaptiveBlueprint } from "@/lib/adaptiveModalityEngine";
 import {
   type TRIParams,
   type TRIQuestionResult,
@@ -318,6 +319,15 @@ const Simulados = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
 
+      // ── Motor Adaptativo: gerar blueprint baseado nos analytics do aluno ──
+      let adaptiveBlueprint: AdaptiveBlueprint | null = null;
+      try {
+        if (user?.id) {
+          adaptiveBlueprint = await generateAdaptiveBlueprint(user.id);
+          console.info("[Adaptive] Blueprint gerado:", adaptiveBlueprint.imagePercent + "% imagem, insights:", adaptiveBlueprint.insights.length);
+        }
+      } catch { /* sem adaptação — fluxo segue normal */ }
+
       // ── Prova Real / TRI: generate per-topic with real distribution ──
       if ((config.mode === "prova_real" || config.mode === "tri") && config.realExamProfile) {
         const profile = EXAM_PROFILES[config.realExamProfile] || EXAM_PROFILES.GERAL;
@@ -360,9 +370,11 @@ const Simulados = () => {
           }
         }
 
-        // Inject image questions into prova real/TRI
+        // Inject image questions into prova real/TRI (adaptativo)
         try {
-          const { slots: imgSlots } = calculateImageSlots(config.count, 15, { ecg: 0.40, xray: 0.30, dermatology: 0.30 });
+          const adaptiveImgPct = adaptiveBlueprint?.imagePercent ?? 15;
+          const adaptiveDist = adaptiveBlueprint?.imageTypeDistribution ?? { ecg: 0.40, xray: 0.30, dermatology: 0.30 };
+          const { slots: imgSlots } = calculateImageSlots(config.count, adaptiveImgPct, adaptiveDist);
           if (imgSlots.length > 0) {
             const imgQs = await selectImageQuestions(imgSlots);
             const imgSim = imgQs.map(iq => {
@@ -446,13 +458,12 @@ const Simulados = () => {
       const selectedFromBank = bankQuestions.slice(0, bankCount);
       let deficit = config.count - selectedFromBank.length;
 
-      // ── Step 2.5: Inject image questions (up to 20% of total or available) ──
+      // ── Step 2.5: Inject image questions (adaptive or default 20%) ──
       let imageSimQuestions: SimQuestion[] = [];
       try {
-        const IMAGE_PERCENT = 20; // 20% do total
-        const { slots, fallbackCount } = calculateImageSlots(config.count, IMAGE_PERCENT, {
-          ecg: 0.40, xray: 0.30, dermatology: 0.30,
-        });
+        const IMAGE_PERCENT = adaptiveBlueprint?.imagePercent ?? 20;
+        const imgDist = adaptiveBlueprint?.imageTypeDistribution ?? { ecg: 0.40, xray: 0.30, dermatology: 0.30 };
+        const { slots, fallbackCount } = calculateImageSlots(config.count, IMAGE_PERCENT, imgDist);
         if (fallbackCount > 0) {
           console.info(`[Simulados] ${fallbackCount} questões de imagem substituídas por fallback textual`);
         }
