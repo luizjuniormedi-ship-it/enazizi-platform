@@ -126,7 +126,10 @@ Retorne APENAS um array JSON válido:
 
         const cleanText = (t: string) => t
           .replace(/\*\*/g, "").replace(/##/g, "").replace(/\\n/g, " ")
-          .replace(/[#*_~`]/g, "").replace(/\s{2,}/g, " ").trim();
+          .replace(/[#*_~`]/g, "").replace(/\s{2,}/g, " ")
+          .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, " ")
+          .replace(/[^\p{L}\p{N}\p{P}\p{Z}]/gu, "")
+          .trim();
 
         let inserted = 0;
         for (const q of questions) {
