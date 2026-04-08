@@ -23,9 +23,11 @@ function checkAssetSafety(asset: {
   clinical_confidence: number;
   is_active: boolean;
   image_url: string | null;
+  multimodal_ready?: boolean;
 }): AssetSafetyResult {
   if (!asset.image_url) return { safe: false, reason: "no_image_url" };
   if (!asset.is_active) return { safe: false, reason: "asset_inactive" };
+  if (asset.multimodal_ready === false) return { safe: false, reason: "multimodal_ready=false" };
   if (!MULTIMODAL_ALLOWED_ORIGINS.has(asset.asset_origin))
     return { safe: false, reason: `origin_blocked:${asset.asset_origin}` };
   if (asset.review_status !== "published")
