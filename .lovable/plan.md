@@ -1,43 +1,85 @@
 
-# Sistema de Questões com Imagem Médica — Plano de Implementação
 
-## Fase 1 — Banco de Dados (esta mensagem)
-1. **Migration**: Criar 4 tabelas (`medical_image_assets`, `medical_image_questions`, `medical_image_question_audit`, `exam_question_usage`) com enums, índices, FKs e RLS
-2. **Feature flag**: Adicionar `image_questions_enabled` ao sistema de flags
-3. **Seed**: Inserir 220 assets curados (ECG, RX, TC, Dermato, Oftalmo, Patologia, US) com metadados clínicos estruturados + 220 questões publicadas
+# Plano: Busca de Imagens Médicas Reais para o Pipeline Multimodal
 
-## Fase 2 — Validação e Pipeline (mesma mensagem)
-4. **Validação clínica** (`src/lib/imageQuestionValidation.ts`): Checagem de idioma, alternativas, diagnóstico, coerência
-5. **Pipeline de geração** (`src/lib/imageQuestionPipeline.ts`): Seleção de asset → carregamento de metadados → geração determinística → validação → publicação
+## Problema
+Todas as imagens do banco multimodal atualmente são geradas por IA (Gemini), resultando em imagens com aparencia de animacao/ilustracao. Para dermatologia, TC, patologia e outras modalidades visuais, imagens reais clinicas sao essenciais para realismo e valor pedagogico.
 
-## Fase 3 — Frontend e UI (mesma mensagem)
-6. **Componente de questão com imagem** (`src/components/simulados/ImageQuestion.tsx`): Zoom, expand, skeleton, mobile-friendly
-7. **Integração com simulados**: Permitir mix de questões textuais + imagem com percentual configurável
-8. **Fallback seguro**: Se faltar asset, usar questão textual do mesmo tema
+## Solucao
 
-## Fase 4 — Integração e Testes
-9. **Integração com SimuladoSetup**: Slider para % de questões com imagem
-10. **Auditoria automática**: Trigger para registrar mudanças
-11. **Validação final**: Testar ECG, RX, TC, Dermato, Oftalmo, Patologia, US
+### 1. Nova Edge Function: `search-real-medical-images`
+Criar uma edge function que usa **Firecrawl** (ja conectado) para buscar imagens medicas reais em fontes abertas e confiáveis:
 
-## O que NÃO muda
-- Fluxo atual de simulados textuais (continua funcionando igual)
-- Missão, plano diário, Study Engine
-- Edge functions existentes
-- Feature flag garante rollout seguro (desabilitado por padrão)
+- **Fontes priorizadas**: DermNet NZ, Radiopaedia, OpenI NIH, Wikimedia Commons Medical, atlases universitarios abertos
+- **Fluxo**: Recebe `image_type` + `diagnosis` → busca via Firecrawl scrape com formato screenshot/html → extrai URLs de imagens clinicas → filtra por qualidade (tamanho minimo, formato) → faz download e upload no storage `question-images` → atualiza o asset com `asset_origin = 'real_clinical'`
+- **Seguranca**: Apenas fontes CC/open-access, registra `source_url` e `license_type` no asset
 
-## Arquivos alterados/criados
-- 1 migration SQL (tabelas + enums + índices + RLS)
-- `src/lib/imageQuestionValidation.ts`
-- `src/lib/imageQuestionPipeline.ts`
-- `src/components/simulados/ImageQuestion.tsx`
-- `src/components/simulados/SimuladoSetup.tsx` (adicionar config de imagem)
-- `src/pages/Simulados.tsx` (integrar questões com imagem)
-- `src/hooks/useFeatureFlags.ts` (adicionar flag)
-- Seed de 220 assets + 220 questões
+### 2. Migração de banco: campos de rastreabilidade
+Adicionar colunas na tabela `medical_image_assets`:
+- `source_url TEXT` — URL original da imagem
+- `license_type TEXT DEFAULT 'ai_generated'` — tipo de licenca (`cc_by`, `cc_by_sa`, `public_domain`, `educational_fair_use`, `ai_generated`)
+- `source_domain TEXT` — dominio de origem para auditoria
 
-## Riscos mitigados
-- Feature flag desabilitada por padrão = zero impacto em produção
-- Fallback textual = simulado nunca quebra
-- Validação clínica = nunca publica questão inválida
-- Audit trail = rastreabilidade completa
+### 3. Botao no painel admin: "Buscar Imagem Real"
+No `ImageQuestionUpgradePanel` ou `AdminImageQuestionReviewPanel`:
+- Botao por asset ou em lote por modalidade
+- Ao clicar, chama a edge function com o diagnóstico do asset
+- Mostra preview da imagem encontrada para aprovacao manual antes de substituir
+- Prioridade: **dermatologia > patologia > oftalmologia > RX > TC**
+
+### 4. Modo hibrido no `generate-medical-images`
+Atualizar a edge function existente para:
+- **Primeiro**: tentar buscar imagem real via Firecrawl
+- **Fallback**: se nao encontrar imagem real adequada, gerar via IA
+- Registrar `asset_origin` como `real_clinical` ou `ai_generated_v2`
+
+### 5. Painel de curadoria visual
+No review panel, exibir badge indicando a origem da imagem:
+- 🟢 "Imagem Real" (real_clinical)
+- 🟡 "Gerada por IA" (ai_generated)
+- Filtro por origem para facilitar auditoria
+
+## Fontes medicas abertas a serem buscadas
+
+```text
+Dermatologia:  dermnet.com, dermnetnz.org, atlasdermatologico.com.br
+Radiologia:    radiopaedia.org, openi.nlm.nih.gov
+Patologia:     pathologyoutlines.com, webpathology.com
+Oftalmologia:  eyewiki.aao.org
+Geral:         commons.wikimedia.org (categoria Medical)
+```
+
+## Fluxo tecnico
+
+```text
+Admin clica "Buscar Imagem Real"
+       ↓
+Edge Function recebe {asset_id, diagnosis, image_type}
+       ↓
+Firecrawl scrape em fonte especifica por modalidade
+       ↓
+Extrai URLs de imagem da pagina (filtra por tamanho > 200px)
+       ↓
+Download da melhor imagem → upload no storage
+       ↓
+Atualiza asset: image_url, asset_origin='real_clinical', source_url, license_type
+       ↓
+Asset fica com review_status='needs_review' para aprovacao visual
+```
+
+## Arquivos a criar/editar
+
+| Arquivo | Acao |
+|---------|------|
+| `supabase/functions/search-real-medical-images/index.ts` | Nova edge function |
+| `supabase/migrations/xxx_add_image_source_fields.sql` | Novos campos no banco |
+| `src/components/admin/AdminImageQuestionReviewPanel.tsx` | Botao "Buscar Real" + badge origem |
+| `src/components/admin/ImageQuestionUpgradePanel.tsx` | Botao lote "Buscar Reais" por modalidade |
+| `supabase/functions/generate-medical-images/index.ts` | Modo hibrido (real-first, AI-fallback) |
+
+## Seguranca e compliance
+- Apenas fontes com licenca aberta (CC, public domain, educational)
+- Imagem real sempre passa por revisao manual antes de publicacao
+- `source_url` registrada para auditoria
+- Nenhuma imagem de paciente identificavel (filtro por contexto da fonte)
+
