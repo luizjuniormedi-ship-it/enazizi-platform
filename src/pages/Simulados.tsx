@@ -4,6 +4,7 @@ import { useRefreshUserState } from "@/hooks/useRefreshUserState";
 import { completeStudyAction } from "@/lib/completeStudyAction";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
+import { recordQuestionAnalyticsBatch, classifyQuestionMode, type QuestionAnalyticsEvent } from "@/lib/modalityAnalytics";
 import { NON_MEDICAL_CONTENT_REGEX } from "@/lib/medicalValidation";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { filterValidQuestions } from "@/lib/aiOutputValidation";
