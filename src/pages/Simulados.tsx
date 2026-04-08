@@ -304,8 +304,68 @@ const Simulados = () => {
     }
   };
 
+  const handleFetchAdaptivePreview = useCallback(async () => {
+    if (!user?.id) return;
+    setAdaptivePreviewLoading(true);
+    try {
+      const perf = await adaptive.fetchPerformance(user.id);
+      // Do a quick dry-run to get meta
+      const { data } = await supabase.functions.invoke("generate-adaptive-simulado", {
+        body: { target_question_count: 5, performance: perf },
+      });
+      if (data?.meta) setAdaptivePreviewMeta(data.meta);
+    } catch { /* silent */ }
+    setAdaptivePreviewLoading(false);
+  }, [user?.id, adaptive]);
+
   const handleStart = async (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string; realExamProfile?: string }) => {
-    if (config.topics.length === 0) {
+    // ── Adaptive mode: delegate to edge function ──
+    if (config.mode === "adaptativo") {
+      setMode("adaptativo");
+      setTargetCount(config.count);
+      configRef.current = config;
+      setPhase("loading");
+      setLoadingProgress("Motor adaptativo analisando seu desempenho...");
+      setLoadingPercent(20);
+
+      try {
+        if (user?.id && !adaptive.performance) {
+          await adaptive.fetchPerformance(user.id);
+        }
+        setLoadingProgress("Gerando simulado personalizado...");
+        setLoadingPercent(50);
+        await adaptive.generateAdaptive(config.count);
+
+        const adaptiveQs: SimQuestion[] = adaptive.questions.map(q => ({
+          statement: q.statement,
+          options: q.options,
+          correct: q.correct,
+          topic: q.topic,
+          explanation: q.explanation,
+          image_url: q.image_url,
+          image_type: q.image_type,
+          _isImageQuestion: q._isImageQuestion,
+          difficulty: q.difficulty,
+          exam_style: q.exam_style,
+          _source: q._source,
+        } as SimQuestion));
+
+        if (adaptiveQs.length === 0) {
+          toast({ title: "Nenhuma questão adaptativa disponível. Tente outro modo.", variant: "destructive" });
+          setPhase("setup");
+          return;
+        }
+
+        setLoadingPercent(100);
+        startExamWithQuestions(adaptiveQs, config);
+        return;
+      } catch {
+        toast({ title: "Erro no motor adaptativo. Usando modo padrão.", variant: "destructive" });
+        config = { ...config, mode: "estudo", topics: ["Clínica Médica", "Cirurgia", "Pediatria"], difficulty: "misto" };
+      }
+    }
+
+    if (config.mode !== "adaptativo" && config.topics.length === 0) {
       toast({ title: "Selecione pelo menos um assunto", variant: "destructive" });
       return;
     }
