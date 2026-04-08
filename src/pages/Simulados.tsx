@@ -319,6 +319,15 @@ const Simulados = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
 
+      // ── Motor Adaptativo: gerar blueprint baseado nos analytics do aluno ──
+      let adaptiveBlueprint: AdaptiveBlueprint | null = null;
+      try {
+        if (user?.id) {
+          adaptiveBlueprint = await generateAdaptiveBlueprint(user.id);
+          console.info("[Adaptive] Blueprint gerado:", adaptiveBlueprint.imagePercent + "% imagem, insights:", adaptiveBlueprint.insights.length);
+        }
+      } catch { /* sem adaptação — fluxo segue normal */ }
+
       // ── Prova Real / TRI: generate per-topic with real distribution ──
       if ((config.mode === "prova_real" || config.mode === "tri") && config.realExamProfile) {
         const profile = EXAM_PROFILES[config.realExamProfile] || EXAM_PROFILES.GERAL;
