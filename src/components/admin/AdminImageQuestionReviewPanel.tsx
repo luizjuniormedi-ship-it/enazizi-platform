@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CheckCircle2, XCircle, Eye, ChevronLeft, ChevronRight, Loader2, Filter, Image, Trash2, ZoomIn } from "lucide-react";
+import { CheckCircle2, XCircle, Eye, ChevronLeft, ChevronRight, Loader2, Filter, Image, Trash2, ZoomIn, Search, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
