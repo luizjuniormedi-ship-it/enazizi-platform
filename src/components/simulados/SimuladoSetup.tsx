@@ -74,6 +74,11 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
   const selectedProfile = EXAM_PROFILES[realExamBoard] || EXAM_PROFILES.GERAL;
 
   const handleStart = () => {
+    if (mode === "adaptativo") {
+      const count = customCount ? parseInt(customCount) : questionCount;
+      onStart({ topics: [], count, difficulty: "adaptativo", timePerQuestion: 3, mode: "adaptativo" });
+      return;
+    }
     if (mode === "prova_real" || mode === "tri") {
       const profile = selectedProfile;
       const topicsFromProfile = profile.topicWeights.map(tw => tw.topic);
