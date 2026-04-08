@@ -245,6 +245,11 @@ const Simulados = () => {
   const [triResults, setTriResults] = useState<TRIQuestionResult[]>([]);
   const triParamsRef = useRef<TRIParams[]>([]);
 
+  // ── Adaptive engine ──
+  const adaptive = useAdaptiveSimulado();
+  const [adaptivePreviewMeta, setAdaptivePreviewMeta] = useState<AdaptiveMeta | null>(null);
+  const [adaptivePreviewLoading, setAdaptivePreviewLoading] = useState(false);
+
   const { pendingSession, checked, saveSession, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "simulados" });
 
   const examStateRef = useRef<any>(null);
