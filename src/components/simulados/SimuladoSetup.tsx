@@ -424,7 +424,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
           )}
 
           {/* ── Standard modes: Topic selection ── */}
-          {mode !== "prova_real" && mode !== "tri" && (
+          {mode !== "prova_real" && mode !== "tri" && mode !== "adaptativo" && (
             <>
               {/* Topic selection grouped by cycle */}
               <div>
