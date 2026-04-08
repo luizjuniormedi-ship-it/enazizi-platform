@@ -110,13 +110,13 @@ const AdminImageQuestionReviewPanel = () => {
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
     if (statusFilter !== "all") {
-      query = query.eq("status", statusFilter);
+      query = query.eq("status", statusFilter as any);
     }
     if (difficultyFilter !== "all") {
-      query = query.eq("difficulty", difficultyFilter);
+      query = query.eq("difficulty", difficultyFilter as any);
     }
     if (modalityFilter !== "all") {
-      query = query.eq("medical_image_assets.image_type", modalityFilter);
+      query = query.eq("medical_image_assets.image_type", modalityFilter as any);
     }
 
     const { data, count, error } = await query;
