@@ -23,6 +23,7 @@ interface ImageReviewQuestion {
   exam_style: string;
   status: string;
   created_at: string;
+  updated_at: string;
   asset_id: string;
   image_type?: string;
   diagnosis?: string;
@@ -107,9 +108,10 @@ const AdminImageQuestionReviewPanel = () => {
       .from("medical_image_questions")
       .select(`
         id, question_code, statement, option_a, option_b, option_c, option_d, option_e,
-        correct_index, explanation, rationale_map, difficulty, exam_style, status, created_at, asset_id,
+        correct_index, explanation, rationale_map, difficulty, exam_style, status, created_at, updated_at, asset_id,
         medical_image_assets!inner(image_type, diagnosis, image_url, specialty)
       `, { count: "exact" })
+      .order("updated_at", { ascending: false })
       .order("created_at", { ascending: false })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
@@ -141,6 +143,7 @@ const AdminImageQuestionReviewPanel = () => {
         exam_style: q.exam_style,
         status: q.status,
         created_at: q.created_at,
+        updated_at: q.updated_at,
         asset_id: q.asset_id,
         image_type: q.medical_image_assets?.image_type,
         diagnosis: q.medical_image_assets?.diagnosis,
