@@ -48,6 +48,8 @@ const SOURCE_MAP: Record<string, { urls: string[]; license: string }> = {
   ecg: {
     urls: [
       "https://litfl.com/ecg-library/{query}/",
+      "https://en.ecgpedia.org/wiki/{query}",
+      "https://www.wikidoc.org/index.php/{query}_ECG",
     ],
     license: "cc_by_nc_sa",
   },
