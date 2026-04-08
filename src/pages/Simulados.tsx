@@ -4,6 +4,7 @@ import { useRefreshUserState } from "@/hooks/useRefreshUserState";
 import { completeStudyAction } from "@/lib/completeStudyAction";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
+import { recordQuestionAnalyticsBatch, classifyQuestionMode, type QuestionAnalyticsEvent } from "@/lib/modalityAnalytics";
 import { NON_MEDICAL_CONTENT_REGEX } from "@/lib/medicalValidation";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { filterValidQuestions } from "@/lib/aiOutputValidation";
@@ -694,6 +695,34 @@ const Simulados = () => {
         originModule: "simulados",
       });
     }
+
+    // ── Modality Analytics (passive) ──
+    if (user) {
+      try {
+        const analyticsEvents: QuestionAnalyticsEvent[] = questions.map((q, i) => {
+          const { mode, imageType } = classifyQuestionMode(q);
+          return {
+            userId: user.id,
+            questionIndex: i,
+            questionId: (q as any).bankId || (q as any)._imageQuestionId || undefined,
+            bankQuestionId: (q as any).bankId || undefined,
+            imageQuestionId: (q as any)._imageQuestionId || undefined,
+            mode,
+            imageType,
+            specialty: q.topic || undefined,
+            difficulty: (q as any)._triDifficulty || (q as any).difficulty || undefined,
+            examStyle: (q as any).exam_style || undefined,
+            selectedAnswer: answers[i] ?? undefined,
+            correctAnswer: q.correct,
+            isCorrect: answers[i] === q.correct,
+          };
+        });
+        recordQuestionAnalyticsBatch(analyticsEvents).catch(console.error);
+      } catch (analyticsErr) {
+        console.warn("[ModalityAnalytics] Non-blocking error:", analyticsErr);
+      }
+    }
+
     refreshAll();
     setPhase("finished");
   // eslint-disable-next-line react-hooks/exhaustive-deps
