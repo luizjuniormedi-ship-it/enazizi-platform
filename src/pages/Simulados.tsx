@@ -370,9 +370,11 @@ const Simulados = () => {
           }
         }
 
-        // Inject image questions into prova real/TRI
+        // Inject image questions into prova real/TRI (adaptativo)
         try {
-          const { slots: imgSlots } = calculateImageSlots(config.count, 15, { ecg: 0.40, xray: 0.30, dermatology: 0.30 });
+          const adaptiveImgPct = adaptiveBlueprint?.imagePercent ?? 15;
+          const adaptiveDist = adaptiveBlueprint?.imageTypeDistribution ?? { ecg: 0.40, xray: 0.30, dermatology: 0.30 };
+          const { slots: imgSlots } = calculateImageSlots(config.count, adaptiveImgPct, adaptiveDist);
           if (imgSlots.length > 0) {
             const imgQs = await selectImageQuestions(imgSlots);
             const imgSim = imgQs.map(iq => {
