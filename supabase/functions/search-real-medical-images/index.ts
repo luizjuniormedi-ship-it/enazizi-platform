@@ -219,7 +219,9 @@ Deno.serve(async (req) => {
         await new Promise((r) => setTimeout(r, 1500));
       }
 
-      return new Response(JSON.stringify({ results, total: results.length }), {
+      const found = results.filter(r => r.status === "found").length;
+      const has_more = assets.length === Math.min(batch_size, 10);
+      return new Response(JSON.stringify({ results, total: results.length, found, has_more, next_offset: offset + assets.length }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
