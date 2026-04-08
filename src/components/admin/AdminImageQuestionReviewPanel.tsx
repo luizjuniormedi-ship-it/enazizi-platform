@@ -29,6 +29,8 @@ interface ImageReviewQuestion {
   diagnosis?: string;
   image_url?: string;
   specialty?: string;
+  asset_origin?: string;
+  source_domain?: string;
 }
 
 const STATUS_COLORS: Record<string, string> = {
