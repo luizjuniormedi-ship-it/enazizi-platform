@@ -134,8 +134,10 @@ Retorne APENAS um array JSON válido:
           const opts = q.options || [];
           const cleanOpt = (o: string) => cleanText(o).replace(/^[A-E]\)\s*/, "");
 
+          const qCode = `IMG-${asset.image_type.toUpperCase()}-${Date.now()}-${inserted}`;
           const { error: insErr } = await supabase.from("medical_image_questions").insert({
             asset_id: asset.id,
+            question_code: qCode,
             statement: cleanText(q.statement),
             option_a: cleanOpt(opts[0] || ""),
             option_b: cleanOpt(opts[1] || ""),
