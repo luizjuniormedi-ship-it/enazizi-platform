@@ -188,17 +188,20 @@ Deno.serve(async (req) => {
 
     // Batch mode: search for multiple assets of a given type
     if (body.batch_mode) {
-      const { image_type, batch_size = 3 } = body;
+      const { image_type, batch_size = 3, reprocess_all = false, offset = 0 } = body;
 
-      const { data: assets, error: fetchErr } = await supabase
+      let query = supabase
         .from("medical_image_assets")
         .select("id, asset_code, diagnosis, image_type")
         .eq("image_type", image_type)
         .or("license_type.eq.ai_generated,license_type.is.null")
-        .eq("is_active", false)
-        .in("review_status", ["blocked_clinical", "needs_review", "validated"])
         .order("diagnosis")
-        .limit(Math.min(batch_size, 5));
+        .range(offset, offset + Math.min(batch_size, 10) - 1);
+
+      if (!reprocess_all) {
+        query = query.eq("is_active", false)
+          .in("review_status", ["blocked_clinical", "needs_review", "validated"]);
+      }
 
       if (fetchErr || !assets || assets.length === 0) {
         return new Response(
