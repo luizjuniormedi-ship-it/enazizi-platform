@@ -102,16 +102,23 @@ Retorne APENAS um array JSON válido:
         const aiData = await aiResp.json();
         const content = aiData?.choices?.[0]?.message?.content || "";
 
-        const jsonMatch = content.match(/\[[\s\S]*?\]/);
+        const jsonMatch = content.match(/\[[\s\S]*\]/);
         if (!jsonMatch) {
-          console.error("No JSON found for:", asset.diagnosis);
+          console.error("No JSON found for:", asset.diagnosis, "content:", content.substring(0, 200));
           results.push({ asset: asset.diagnosis, error: "No JSON" });
           continue;
         }
 
         let questions;
-        try { questions = JSON.parse(jsonMatch[0]); } catch {
-          console.error("JSON parse error for:", asset.diagnosis);
+        try { 
+          // Clean common issues
+          let cleaned = jsonMatch[0]
+            .replace(/```json/g, "").replace(/```/g, "")
+            .replace(/,\s*]/g, "]").replace(/,\s*}/g, "}")
+            .replace(/[\x00-\x1F\x7F]/g, " ");
+          questions = JSON.parse(cleaned); 
+        } catch (parseErr) {
+          console.error("JSON parse error for:", asset.diagnosis, "raw:", jsonMatch[0].substring(0, 300));
           results.push({ asset: asset.diagnosis, error: "Parse error" });
           continue;
         }
