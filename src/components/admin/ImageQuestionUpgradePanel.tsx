@@ -17,65 +17,89 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   rejected: { label: "Rejeitada", color: "bg-destructive/20 text-destructive" },
 };
 
+interface StatsData {
+  counts: Record<string, number>;
+  total: number;
+  fail_rate_pct: string;
+  recent_errors: Array<{ question_id: string; reason: string; created_at: string }>;
+}
+
 export default function ImageQuestionUpgradePanel() {
   const queryClient = useQueryClient();
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
 
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading, isError, error: statsError } = useQuery({
     queryKey: ["image-question-stats"],
-    queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("upgrade-image-questions", {
-        body: { action: "stats" },
-      });
-      if (error) throw error;
-      return data as {
-        counts: Record<string, number>;
-        total: number;
-        fail_rate_pct: string;
-        recent_errors: Array<{ question_id: string; reason: string; created_at: string }>;
-      };
+    queryFn: async (): Promise<StatsData> => {
+      try {
+        const { data, error } = await supabase.functions.invoke("upgrade-image-questions", {
+          body: { action: "stats" },
+        });
+        if (error) throw new Error(error.message || "Erro ao buscar estatísticas");
+        if (!data || !data.counts) throw new Error("Resposta inválida do servidor");
+        return data as StatsData;
+      } catch (e: any) {
+        console.warn("[ImageQuestionUpgradePanel] Stats error:", e);
+        throw e;
+      }
     },
     refetchInterval: isUpgrading ? 5000 : 30000,
+    retry: 2,
+    retryDelay: 3000,
   });
 
   const upgradeMutation = useMutation({
     mutationFn: async () => {
       setIsUpgrading(true);
+      setLastError(null);
       const { data, error } = await supabase.functions.invoke("upgrade-image-questions", {
         body: { action: "upgrade", batch_size: 3 },
       });
-      if (error) throw error;
+      if (error) throw new Error(error.message || "Erro na chamada da função");
+      if (!data) throw new Error("Resposta vazia do servidor");
       return data;
     },
     onSuccess: (data) => {
       setIsUpgrading(false);
       queryClient.invalidateQueries({ queryKey: ["image-question-stats"] });
-      toast.success(`Lote processado: ${data.upgraded} upgraded, ${data.failed} rejeitadas, ${data.errors || 0} erros`);
+      const msg = `Lote processado: ${data.upgraded || 0} aprovadas, ${data.rejected || 0} rejeitadas, ${data.failed || 0} falhas`;
+      if ((data.failed || 0) > 0) {
+        toast.warning(msg);
+      } else {
+        toast.success(msg);
+      }
     },
     onError: (err: any) => {
       setIsUpgrading(false);
-      toast.error(`Erro no upgrade: ${err.message}`);
+      const msg = err?.message || "Erro desconhecido no upgrade";
+      setLastError(msg);
+      toast.error(`Erro no upgrade: ${msg}`);
     },
   });
 
   const publishAllMutation = useMutation({
     mutationFn: async () => {
       setIsPublishing(true);
+      setLastError(null);
       const { data, error } = await supabase.functions.invoke("upgrade-image-questions", {
         body: { action: "publish_all" },
       });
-      if (error) throw error;
+      if (error) throw new Error(error.message || "Erro na publicação");
+      if (!data) throw new Error("Resposta vazia do servidor");
       return data;
     },
     onSuccess: (data) => {
       setIsPublishing(false);
       queryClient.invalidateQueries({ queryKey: ["image-question-stats"] });
-      toast.success(`Publicação: ${data.published} publicadas, ${data.rejected} rejeitadas`);
+      toast.success(`Publicação: ${data.published || 0} publicadas, ${data.rejected || 0} rejeitadas`);
     },
     onError: (err: any) => {
       setIsPublishing(false);
-      toast.error(`Erro na publicação: ${err.message}`);
+      const msg = err?.message || "Erro desconhecido na publicação";
+      setLastError(msg);
+      toast.error(`Erro na publicação: ${msg}`);
     },
   });
 
@@ -92,11 +116,40 @@ export default function ImageQuestionUpgradePanel() {
         </h2>
         <Button
           variant="ghost" size="sm"
-          onClick={() => queryClient.invalidateQueries({ queryKey: ["image-question-stats"] })}
+          onClick={() => {
+            setLastError(null);
+            queryClient.invalidateQueries({ queryKey: ["image-question-stats"] });
+          }}
         >
           <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Error banner */}
+      {(isError || lastError) && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="p-3 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm text-destructive font-medium">
+                {lastError || (statsError as Error)?.message || "Erro ao carregar dados"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                O painel continua funcional. Tente novamente.
+              </p>
+            </div>
+            <Button
+              variant="outline" size="sm"
+              onClick={() => {
+                setLastError(null);
+                queryClient.invalidateQueries({ queryKey: ["image-question-stats"] });
+              }}
+            >
+              Tentar novamente
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {isLoading ? (
         <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
