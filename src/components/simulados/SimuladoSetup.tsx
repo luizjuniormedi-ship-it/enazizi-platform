@@ -542,7 +542,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
           )}
 
           {/* Difficulty — locked in extremo and prova_real */}
-          {mode !== "extremo" && mode !== "prova_real" && mode !== "tri" && (
+          {mode !== "extremo" && mode !== "prova_real" && mode !== "tri" && mode !== "adaptativo" && (
             <div>
               <label className="text-sm font-semibold mb-3 block">Nível de dificuldade</label>
               <div className="flex gap-2 flex-wrap">
