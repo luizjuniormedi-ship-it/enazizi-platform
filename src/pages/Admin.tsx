@@ -438,6 +438,10 @@ const Admin = () => {
             <AdminFeatureFlags />
           </TabsContent>
 
+          <TabsContent value="multimodal">
+            <AdminModalityPanel />
+          </TabsContent>
+
           <TabsContent value={activeTab === "whatsapp" || activeTab === "telegram" || activeTab === "feedbacks" || activeTab === "messages" || activeTab === "bi" || activeTab === "uploads" || activeTab === "qa" || activeTab === "flags" ? "__none__" : activeTab}>
             {loading ? (
               <div className="flex justify-center py-12">
