@@ -11,12 +11,14 @@ interface ReviewQuestion {
   statement: string;
   options: string[];
   correct_index: number;
+  explanation: string | null;
   topic: string;
+  subtopic: string | null;
   source: string;
   review_status: string;
   quality_tier: string;
-  source_type: string;
-  permission_type: string;
+  source_type: string | null;
+  permission_type: string | null;
   created_at: string;
 }
 
@@ -32,23 +34,47 @@ const QUALITY_LABELS: Record<string, string> = {
   needs_upgrade: "Precisa Enriquecer",
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pendentes",
+  approved: "Aprovadas",
+  rejected: "Rejeitadas",
+  needs_upgrade: "Enriquecer",
+  needs_review: "Revisão",
+};
+
 const AdminQuestionReviewPanel = () => {
   const { toast } = useToast();
   const [questions, setQuestions] = useState<ReviewQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
-  const [statusFilter, setStatusFilter] = useState("pending");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [qualityFilter, setQualityFilter] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [counts, setCounts] = useState<Record<string, number>>({});
   const PAGE_SIZE = 20;
+
+  const fetchCounts = async () => {
+    const { data } = await supabase
+      .from("questions_bank")
+      .select("review_status");
+
+    if (data) {
+      const c: Record<string, number> = {};
+      data.forEach((q) => {
+        const s = q.review_status || "unknown";
+        c[s] = (c[s] || 0) + 1;
+      });
+      setCounts(c);
+    }
+  };
 
   const fetchQuestions = async () => {
     setLoading(true);
     let query = supabase.from("questions_bank")
-      .select("id, statement, options, correct_index, topic, subtopic, source, review_status, quality_tier, created_at", { count: "exact" })
+      .select("id, statement, options, correct_index, explanation, topic, subtopic, source, review_status, quality_tier, source_type, permission_type, created_at", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
@@ -61,19 +87,29 @@ const AdminQuestionReviewPanel = () => {
 
     const { data, count, error } = await query;
     if (!error && data) {
-      setQuestions(data.map((q: any) => ({
-        ...q,
-        options: Array.isArray(q.options) ? q.options : [],
+      setQuestions(data.map((q) => ({
+        id: q.id,
+        statement: q.statement,
+        options: Array.isArray(q.options) ? q.options as string[] : [],
+        correct_index: q.correct_index ?? 0,
+        explanation: q.explanation,
+        topic: q.topic || "",
+        subtopic: q.subtopic,
+        source: q.source || "",
+        review_status: q.review_status || "pending",
         quality_tier: q.quality_tier || "basic",
-        source_type: (q as any).source_type || "unknown",
-        permission_type: (q as any).permission_type || "unknown",
+        source_type: q.source_type,
+        permission_type: q.permission_type,
+        created_at: q.created_at,
       })));
       setTotal(count || 0);
+    } else if (error) {
+      console.error("Fetch error:", error);
     }
     setLoading(false);
   };
 
-  useEffect(() => { fetchQuestions(); }, [page, statusFilter, qualityFilter]);
+  useEffect(() => { fetchQuestions(); fetchCounts(); }, [page, statusFilter, qualityFilter]);
 
   const handleAction = async (id: string, action: "approved" | "rejected") => {
     setActionLoading(id);
@@ -86,6 +122,7 @@ const AdminQuestionReviewPanel = () => {
       toast({ title: action === "approved" ? "Aprovada" : "Rejeitada" });
       setQuestions(prev => prev.filter(q => q.id !== id));
       setTotal(prev => prev - 1);
+      fetchCounts();
     }
     setActionLoading(null);
   };
@@ -101,6 +138,7 @@ const AdminQuestionReviewPanel = () => {
     } else {
       toast({ title: `${ids.length} questões aprovadas` });
       fetchQuestions();
+      fetchCounts();
     }
     setActionLoading(null);
   };
@@ -126,11 +164,14 @@ const AdminQuestionReviewPanel = () => {
       if (error) throw error;
       toast({ title: `${data?.upgraded || 0} questões enriquecidas` });
       fetchQuestions();
+      fetchCounts();
     } catch (e: any) {
       toast({ title: "Erro ao enriquecer", description: e.message, variant: "destructive" });
     }
     setUpgradeLoading(false);
   };
+
+  const isActionableStatus = statusFilter === "pending" || statusFilter === "needs_upgrade" || statusFilter === "needs_review";
 
   return (
     <div className="glass-card p-4 sm:p-5 border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-transparent">
@@ -142,49 +183,65 @@ const AdminQuestionReviewPanel = () => {
           <h2 className="text-sm sm:text-base font-semibold">Revisão de Questões</h2>
           <Badge variant="secondary" className="text-xs">{total}</Badge>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}>
-            <SelectTrigger className="h-7 text-xs w-28">
-              <Filter className="h-3 w-3 mr-1" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pending">Pendentes</SelectItem>
-              <SelectItem value="approved">Aprovadas</SelectItem>
-              <SelectItem value="rejected">Rejeitadas</SelectItem>
-              <SelectItem value="needs_upgrade">Enriquecer</SelectItem>
-              <SelectItem value="all">Todas</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={qualityFilter} onValueChange={v => { setQualityFilter(v); setPage(0); }}>
-            <SelectTrigger className="h-7 text-xs w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Qualidade: Todas</SelectItem>
-              <SelectItem value="exam_standard">Padrão Prova</SelectItem>
-              <SelectItem value="basic">Básica</SelectItem>
-              <SelectItem value="needs_upgrade">Precisa Enriquecer</SelectItem>
-            </SelectContent>
-          </Select>
-          {statusFilter === "pending" && questions.length > 0 && (
-            <Button size="sm" variant="outline" className="text-xs h-7"
-              disabled={actionLoading === "bulk"} onClick={handleBulkApprove}>
-              {actionLoading === "bulk" ? <Loader2 className="h-3 w-3 animate-spin" /> : "Aprovar Todas"}
-            </Button>
-          )}
-          <Button size="sm" variant="outline" className="text-xs h-7 border-purple-500/30 text-purple-600 hover:bg-purple-500/10"
-            disabled={upgradeLoading} onClick={handleUpgrade}>
-            {upgradeLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Sparkles className="h-3 w-3 mr-1" />}
-            Enriquecer
+      </div>
+
+      {/* Status summary badges */}
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        {Object.entries(counts).map(([status, count]) => (
+          <Badge
+            key={status}
+            variant="outline"
+            className={`text-[10px] cursor-pointer ${statusFilter === status ? 'ring-1 ring-primary' : ''}`}
+            onClick={() => { setStatusFilter(statusFilter === status ? "all" : status); setPage(0); }}
+          >
+            {STATUS_LABELS[status] || status}: {count}
+          </Badge>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap mb-3">
+        <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}>
+          <SelectTrigger className="h-7 text-xs w-28">
+            <Filter className="h-3 w-3 mr-1" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas</SelectItem>
+            <SelectItem value="pending">Pendentes</SelectItem>
+            <SelectItem value="approved">Aprovadas</SelectItem>
+            <SelectItem value="rejected">Rejeitadas</SelectItem>
+            <SelectItem value="needs_upgrade">Enriquecer</SelectItem>
+            <SelectItem value="needs_review">Revisão</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={qualityFilter} onValueChange={v => { setQualityFilter(v); setPage(0); }}>
+          <SelectTrigger className="h-7 text-xs w-32">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Qualidade: Todas</SelectItem>
+            <SelectItem value="exam_standard">Padrão Prova</SelectItem>
+            <SelectItem value="basic">Básica</SelectItem>
+            <SelectItem value="needs_upgrade">Precisa Enriquecer</SelectItem>
+          </SelectContent>
+        </Select>
+        {isActionableStatus && questions.length > 0 && (
+          <Button size="sm" variant="outline" className="text-xs h-7"
+            disabled={actionLoading === "bulk"} onClick={handleBulkApprove}>
+            {actionLoading === "bulk" ? <Loader2 className="h-3 w-3 animate-spin" /> : "Aprovar Todas"}
           </Button>
-        </div>
+        )}
+        <Button size="sm" variant="outline" className="text-xs h-7 border-purple-500/30 text-purple-600 hover:bg-purple-500/10"
+          disabled={upgradeLoading} onClick={handleUpgrade}>
+          {upgradeLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Sparkles className="h-3 w-3 mr-1" />}
+          Enriquecer
+        </Button>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : questions.length === 0 ? (
-        <p className="text-xs text-muted-foreground text-center py-6">Nenhuma questão {statusFilter === "pending" ? "pendente" : ""} encontrada.</p>
+        <p className="text-xs text-muted-foreground text-center py-6">Nenhuma questão encontrada com os filtros selecionados.</p>
       ) : (
         <div className="space-y-2">
           {questions.map(q => (
@@ -194,16 +251,17 @@ const AdminQuestionReviewPanel = () => {
                   <p className="text-xs font-medium line-clamp-2">{q.statement.slice(0, 200)}...</p>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                     <Badge variant="secondary" className="text-[10px] h-4">{q.topic || "—"}</Badge>
-                    {(q as any).subtopic && <Badge variant="outline" className="text-[10px] h-4 border-primary/30 text-primary">{(q as any).subtopic}</Badge>}
+                    {q.subtopic && <Badge variant="outline" className="text-[10px] h-4 border-primary/30 text-primary">{q.subtopic}</Badge>}
                     <Badge variant="outline" className="text-[10px] h-4">{q.source || "—"}</Badge>
                     <Badge variant="outline" className={`text-[10px] h-4 ${QUALITY_COLORS[q.quality_tier] || ""}`}>
                       {QUALITY_LABELS[q.quality_tier] || q.quality_tier}
                     </Badge>
+                    {q.source_type && <Badge variant="outline" className="text-[10px] h-4">{q.source_type}</Badge>}
                     <span className="text-[10px] text-muted-foreground">{q.statement.length} chars</span>
                     <span className="text-[10px] text-muted-foreground">{q.options.length} alt</span>
                   </div>
                 </div>
-                {(statusFilter === "pending" || statusFilter === "needs_upgrade") && (
+                {(isActionableStatus || statusFilter === "all") && q.review_status !== "approved" && (
                   <div className="flex gap-1 flex-shrink-0">
                     <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-emerald-500 hover:text-emerald-600"
                       disabled={!!actionLoading} onClick={() => handleAction(q.id, "approved")}>
@@ -217,12 +275,27 @@ const AdminQuestionReviewPanel = () => {
                 )}
               </div>
               {expanded === q.id && (
-                <div className="mt-2 pt-2 border-t border-border/50 space-y-1">
+                <div className="mt-2 pt-2 border-t border-border/50 space-y-2">
+                  {/* Full statement */}
+                  <div className="bg-muted/30 rounded p-2">
+                    <p className="text-xs font-medium mb-1 text-muted-foreground">Enunciado ({q.statement.length} caracteres)</p>
+                    <p className="text-xs leading-relaxed">{q.statement}</p>
+                  </div>
+
+                  {/* Options */}
                   {q.options.map((opt, i) => (
                     <div key={i} className={`text-xs px-2 py-1 rounded ${i === q.correct_index ? "bg-emerald-500/10 text-emerald-700 font-medium" : "text-muted-foreground"}`}>
                       {String.fromCharCode(65 + i)}) {typeof opt === "string" ? opt : JSON.stringify(opt)}
                     </div>
                   ))}
+
+                  {/* Explanation */}
+                  {q.explanation && (
+                    <div className="bg-blue-500/5 rounded p-2">
+                      <p className="text-xs font-medium mb-1 text-blue-600">Explicação</p>
+                      <p className="text-xs leading-relaxed">{q.explanation}</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

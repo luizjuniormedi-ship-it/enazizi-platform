@@ -15,7 +15,7 @@ interface ImageReviewQuestion {
   option_b: string;
   option_c: string;
   option_d: string;
-  option_e: string;
+  option_e: string | null;
   correct_index: number;
   explanation: string;
   rationale_map: Record<string, string>;
@@ -82,23 +82,27 @@ const AdminImageQuestionReviewPanel = () => {
   const PAGE_SIZE = 15;
 
   const fetchCounts = async () => {
-    const { data } = await supabase
-      .from("medical_image_questions")
-      .select("status", { count: "exact" });
-    
-    if (data) {
-      const c: Record<string, number> = {};
-      data.forEach((q: any) => {
-        c[q.status] = (c[q.status] || 0) + 1;
-      });
-      setCounts(c);
-    }
+    // Fetch counts per status efficiently using separate count queries
+    const statuses = ["published", "draft", "needs_review", "rejected", "upgraded", "upgrading"];
+    const results: Record<string, number> = {};
+
+    const promises = statuses.map(async (status) => {
+      const { count } = await supabase
+        .from("medical_image_questions")
+        .select("id", { count: "exact", head: true })
+        .eq("status", status as any);
+      if (count && count > 0) {
+        results[status] = count;
+      }
+    });
+
+    await Promise.all(promises);
+    setCounts(results);
   };
 
   const fetchQuestions = async () => {
     setLoading(true);
 
-    // Build query - we need to join with assets for image info
     let query = supabase
       .from("medical_image_questions")
       .select(`
@@ -116,22 +120,37 @@ const AdminImageQuestionReviewPanel = () => {
       query = query.eq("difficulty", difficultyFilter as any);
     }
     if (modalityFilter !== "all") {
-      query = query.eq("medical_image_assets.image_type", modalityFilter as any);
+      query = query.eq("medical_image_assets.image_type", modalityFilter);
     }
 
     const { data, count, error } = await query;
     if (!error && data) {
       setQuestions(data.map((q: any) => ({
-        ...q,
+        id: q.id,
+        question_code: q.question_code,
+        statement: q.statement,
+        option_a: q.option_a,
+        option_b: q.option_b,
+        option_c: q.option_c,
+        option_d: q.option_d,
+        option_e: q.option_e,
+        correct_index: q.correct_index,
+        explanation: q.explanation,
+        rationale_map: q.rationale_map || {},
+        difficulty: q.difficulty,
+        exam_style: q.exam_style,
+        status: q.status,
+        created_at: q.created_at,
+        asset_id: q.asset_id,
         image_type: q.medical_image_assets?.image_type,
         diagnosis: q.medical_image_assets?.diagnosis,
         image_url: q.medical_image_assets?.image_url,
         specialty: q.medical_image_assets?.specialty,
-        rationale_map: q.rationale_map || {},
       })));
       setTotal(count || 0);
     } else if (error) {
       console.error("Fetch error:", error);
+      toast({ title: "Erro ao carregar", description: error.message, variant: "destructive" });
     }
     setLoading(false);
   };
@@ -190,7 +209,11 @@ const AdminImageQuestionReviewPanel = () => {
     setActionLoading(null);
   };
 
-  const options = (q: ImageReviewQuestion) => [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e];
+  const getOptions = (q: ImageReviewQuestion) => {
+    const opts = [q.option_a, q.option_b, q.option_c, q.option_d];
+    if (q.option_e) opts.push(q.option_e);
+    return opts;
+  };
 
   return (
     <div className="glass-card p-4 sm:p-5 border border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
@@ -378,7 +401,7 @@ const AdminImageQuestionReviewPanel = () => {
 
                   {/* Options */}
                   <div className="space-y-1">
-                    {options(q).map((opt, i) => (
+                    {getOptions(q).map((opt, i) => (
                       <div key={i} className={`text-xs px-2 py-1.5 rounded ${i === q.correct_index
                         ? "bg-emerald-500/10 text-emerald-700 font-medium border border-emerald-500/30"
                         : "text-muted-foreground bg-muted/20"
@@ -426,7 +449,7 @@ const AdminImageQuestionReviewPanel = () => {
               <ChevronLeft className="h-3 w-3 mr-1" />Anterior
             </Button>
             <span className="text-[10px] text-muted-foreground">
-              {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, total)} de {total}
+              {total > 0 ? `${page * PAGE_SIZE + 1}-${Math.min((page + 1) * PAGE_SIZE, total)} de ${total}` : "0 questões"}
             </span>
             <Button size="sm" variant="outline" className="h-7 text-xs" disabled={(page + 1) * PAGE_SIZE >= total} onClick={() => setPage(p => p + 1)}>
               Próxima<ChevronRight className="h-3 w-3 ml-1" />
