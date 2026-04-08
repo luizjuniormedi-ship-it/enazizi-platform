@@ -7,20 +7,25 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-/** Prompts otimizados por tipo de imagem médica */
 const IMAGE_PROMPTS: Record<string, (diagnosis: string, findings: string[]) => string> = {
   ecg: (diagnosis, findings) =>
     `High-quality 12-lead ECG strip on white graph paper showing ${diagnosis}. Clinical findings: ${findings.join(", ")}. Clear grid lines, proper lead labels (I, II, III, aVR, aVL, aVF, V1-V6), realistic waveform morphology. Medical textbook quality, clean white background, no text annotations except lead labels. Horizontal format.`,
-  
   xray: (diagnosis, findings) =>
     `High-quality PA chest X-ray radiograph showing ${diagnosis}. Findings: ${findings.join(", ")}. Proper radiographic density, clear lung fields, visible cardiac silhouette, proper bone contrast. Medical textbook quality, standard radiographic appearance on black background. Portrait format.`,
-  
   dermatology: (diagnosis, findings) =>
     `Clinical dermatology photograph showing ${diagnosis}. Visible findings: ${findings.join(", ")}. Well-lit clinical photograph, appropriate skin area visible, diagnostic morphology clearly shown. Medical textbook quality, neutral background, proper clinical photography lighting. Close-up view.`,
+  ct: (diagnosis, findings) =>
+    `High-quality axial CT scan image showing ${diagnosis}. Findings: ${findings.join(", ")}. Proper Hounsfield unit windowing, clear anatomical structures, appropriate soft tissue or bone window. Medical textbook quality, standard DICOM-style grayscale appearance on black background. Axial cross-section view with proper anatomical orientation markers.`,
+  us: (diagnosis, findings) =>
+    `High-quality ultrasound image showing ${diagnosis}. Findings: ${findings.join(", ")}. Proper grayscale echotexture, appropriate gain settings, visible anatomical landmarks, sector or linear probe appearance. Medical textbook quality, standard ultrasound display with depth markers on dark background.`,
+  pathology: (diagnosis, findings) =>
+    `High-quality histopathology microscope image showing ${diagnosis}. Findings: ${findings.join(", ")}. H&E staining, proper magnification showing cellular detail, clear tissue architecture. Medical textbook quality, bright field microscopy appearance with proper color balance. High resolution detail.`,
+  ophthalmology: (diagnosis, findings) =>
+    `High-quality fundoscopy image showing ${diagnosis}. Findings: ${findings.join(", ")}. Clear view of optic disc, macula and retinal vessels, proper red reflex background, diagnostic features clearly visible. Medical textbook quality, standard ophthalmoscopic circular field view.`,
 };
 
 interface GenerateRequest {
-  image_type: "ecg" | "xray" | "dermatology";
+  image_type: string;
   batch_size?: number;
   asset_ids?: string[];
 }
@@ -60,11 +65,9 @@ async function uploadToStorage(
   assetCode: string
 ): Promise<string | null> {
   try {
-    // Remove prefix "data:image/png;base64," if present
     const base64Clean = base64Data.replace(/^data:image\/\w+;base64,/, "");
     const bytes = Uint8Array.from(atob(base64Clean), (c) => c.charCodeAt(0));
 
-    // Sanitize filename: remove accents and special chars
     const safeCode = assetCode
       .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-zA-Z0-9_-]/g, "_")
@@ -101,16 +104,15 @@ Deno.serve(async (req) => {
 
   try {
     const body: GenerateRequest = await req.json();
-    const { image_type, batch_size = 3, asset_ids } = body;
+    const { image_type, batch_size = 2, asset_ids } = body;
 
     if (!image_type || !IMAGE_PROMPTS[image_type]) {
       return new Response(
-        JSON.stringify({ error: "image_type inválido. Use: ecg, xray, dermatology" }),
+        JSON.stringify({ error: `image_type inválido. Use: ${Object.keys(IMAGE_PROMPTS).join(", ")}` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Buscar assets bloqueados
     let query = supabase
       .from("medical_image_assets")
       .select("id, asset_code, diagnosis, clinical_findings, distractors, integrity_status")
@@ -142,41 +144,38 @@ Deno.serve(async (req) => {
 
     for (const asset of assets) {
       try {
-        const findings = Array.isArray(asset.clinical_findings) 
-          ? asset.clinical_findings 
+        const findings = Array.isArray(asset.clinical_findings)
+          ? asset.clinical_findings
           : [];
-        
+
         const promptFn = IMAGE_PROMPTS[image_type];
         const prompt = promptFn(asset.diagnosis, findings as string[]);
 
         console.log(`Generating image for: ${asset.diagnosis} (${asset.asset_code})`);
 
-        // Gerar imagem via AI
         const base64Image = await generateMedicalImage(prompt);
         if (!base64Image) {
           results.push({ asset_id: asset.id, diagnosis: asset.diagnosis, status: "failed", error: "AI generation returned null" });
           continue;
         }
 
-        // Upload para storage
         const publicUrl = await uploadToStorage(base64Image, image_type, asset.asset_code);
         if (!publicUrl) {
           results.push({ asset_id: asset.id, diagnosis: asset.diagnosis, status: "failed", error: "Storage upload failed" });
           continue;
         }
 
-        // Atualizar asset
         const { error: updateErr } = await supabase
           .from("medical_image_assets")
           .update({
             image_url: publicUrl,
             thumbnail_url: publicUrl,
-            clinical_confidence: 0.75, // needs_review threshold
+            clinical_confidence: 0.75,
             review_status: "needs_review",
             integrity_status: "pending",
-            is_active: false, // só ativa após revisão
+            is_active: false,
             asset_origin: "ai_generated_v2",
-            clinical_validation_notes: `Imagem gerada por IA (gemini-flash-image) em ${new Date().toISOString()}. Requer validação visual.`,
+            clinical_validation_notes: `Imagem ${image_type.toUpperCase()} gerada por IA em ${new Date().toISOString()}. Requer validação visual.`,
           })
           .eq("id", asset.id);
 
@@ -186,8 +185,7 @@ Deno.serve(async (req) => {
           results.push({ asset_id: asset.id, diagnosis: asset.diagnosis, status: "success", image_url: publicUrl });
         }
 
-        // Delay entre gerações para evitar rate limit
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, 1000));
       } catch (assetErr) {
         results.push({
           asset_id: asset.id,
