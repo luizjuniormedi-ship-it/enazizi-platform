@@ -82,6 +82,7 @@ const AdminImageQuestionReviewPanel = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [searchingReal, setSearchingReal] = useState<string | null>(null);
   const PAGE_SIZE = 15;
 
   const fetchCounts = async () => {
