@@ -171,11 +171,11 @@ export default function ImageQuestionUpgradePanel() {
 
           {/* Actions */}
           <div className="flex flex-col gap-2">
-            <div className="flex gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Button
                 onClick={handleUpgrade}
                 disabled={isUpgrading || !hasDrafts}
-                className="flex-1"
+                className="w-full"
               >
                 {isUpgrading ? (
                   <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Processando...</>
@@ -187,7 +187,7 @@ export default function ImageQuestionUpgradePanel() {
                 variant="outline"
                 onClick={handlePublishAll}
                 disabled={isPublishing || !hasNeedsReview}
-                className="flex-1"
+                className="w-full"
               >
                 {isPublishing ? (
                   <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Publicando...</>
