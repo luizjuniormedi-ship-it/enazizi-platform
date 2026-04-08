@@ -402,7 +402,7 @@ const Admin = () => {
               <ToggleLeft className="h-3.5 w-3.5" /> Flags
             </TabsTrigger>
             <TabsTrigger value="multimodal" className="gap-1.5">
-              <Image className="h-3.5 w-3.5" /> Multimodal
+              <ImageIcon className="h-3.5 w-3.5" /> Multimodal
             </TabsTrigger>
           </TabsList>
 
