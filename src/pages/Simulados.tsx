@@ -458,13 +458,12 @@ const Simulados = () => {
       const selectedFromBank = bankQuestions.slice(0, bankCount);
       let deficit = config.count - selectedFromBank.length;
 
-      // ── Step 2.5: Inject image questions (up to 20% of total or available) ──
+      // ── Step 2.5: Inject image questions (adaptive or default 20%) ──
       let imageSimQuestions: SimQuestion[] = [];
       try {
-        const IMAGE_PERCENT = 20; // 20% do total
-        const { slots, fallbackCount } = calculateImageSlots(config.count, IMAGE_PERCENT, {
-          ecg: 0.40, xray: 0.30, dermatology: 0.30,
-        });
+        const IMAGE_PERCENT = adaptiveBlueprint?.imagePercent ?? 20;
+        const imgDist = adaptiveBlueprint?.imageTypeDistribution ?? { ecg: 0.40, xray: 0.30, dermatology: 0.30 };
+        const { slots, fallbackCount } = calculateImageSlots(config.count, IMAGE_PERCENT, imgDist);
         if (fallbackCount > 0) {
           console.info(`[Simulados] ${fallbackCount} questões de imagem substituídas por fallback textual`);
         }
