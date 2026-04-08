@@ -42,6 +42,9 @@ interface SimuladoSetupProps {
   pendingSession: any;
   checkedSession: boolean;
   userId?: string;
+  adaptiveMeta?: { focus: string; strategy: string; weakness_targeted: string; distribution: { modalities: Record<string, number>; difficulty: Record<string, number>; exam_style: Record<string, number> } } | null;
+  adaptiveLoading?: boolean;
+  onFetchAdaptivePreview?: () => void;
 }
 
 const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErrors, pendingSession, checkedSession, userId }: SimuladoSetupProps) => {
