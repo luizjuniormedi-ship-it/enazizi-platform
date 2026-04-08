@@ -76,7 +76,7 @@ const AdminWebScrapingPanel = () => {
   const searchSingle = useCallback(async (spec: string, bancaVal: string | null): Promise<ScrapeResult | null> => {
     if (!session) return null;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000);
+    const timeoutId = setTimeout(() => controller.abort(), 180000);
     try {
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-real-questions`,
