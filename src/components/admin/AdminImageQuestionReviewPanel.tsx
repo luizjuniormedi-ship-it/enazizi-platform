@@ -111,7 +111,7 @@ const AdminImageQuestionReviewPanel = () => {
       .select(`
         id, question_code, statement, option_a, option_b, option_c, option_d, option_e,
         correct_index, explanation, rationale_map, difficulty, exam_style, status, created_at, updated_at, asset_id,
-        medical_image_assets!inner(image_type, diagnosis, image_url, specialty)
+        medical_image_assets!inner(image_type, diagnosis, image_url, specialty, asset_origin, source_domain)
       `, { count: "exact" })
       .order("updated_at", { ascending: false })
       .order("created_at", { ascending: false })
