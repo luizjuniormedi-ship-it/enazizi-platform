@@ -377,4 +377,3 @@ async function processAsset(
     source_domain: bestSourceDomain,
   };
 }
-}
