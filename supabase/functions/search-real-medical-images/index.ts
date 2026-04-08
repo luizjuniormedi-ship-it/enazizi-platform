@@ -194,13 +194,12 @@ Deno.serve(async (req) => {
         .from("medical_image_assets")
         .select("id, asset_code, diagnosis, image_type")
         .eq("image_type", image_type)
-        .or("license_type.eq.ai_generated,license_type.is.null")
+        .or("license_type.eq.ai_generated,license_type.is.null,license_type.eq.pending,asset_origin.eq.pending_real")
         .order("diagnosis")
         .range(offset, offset + Math.min(batch_size, 10) - 1);
 
       if (!reprocess_all) {
-        query = query.eq("is_active", false)
-          .in("review_status", ["blocked_clinical", "needs_review", "validated"]);
+        query = query.neq("asset_origin", "real_clinical");
       }
 
       const { data: assets, error: fetchErr } = await query;
