@@ -2266,6 +2266,39 @@ export type Database = {
         }
         Relationships: []
       }
+      image_question_audit_log: {
+        Row: {
+          created_at: string
+          id: string
+          new_status: string
+          payload_summary: Json | null
+          previous_status: string | null
+          question_id: string
+          reason: string | null
+          triggered_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          new_status: string
+          payload_summary?: Json | null
+          previous_status?: string | null
+          question_id: string
+          reason?: string | null
+          triggered_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          new_status?: string
+          payload_summary?: Json | null
+          previous_status?: string | null
+          question_id?: string
+          reason?: string | null
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       ingestion_log: {
         Row: {
           banca: string | null
