@@ -271,11 +271,15 @@ Deno.serve(async (req) => {
       await new Promise(r => setTimeout(r, 2000));
     }
 
+    const has_more = assets.length === batchSize;
     return new Response(JSON.stringify({
       status: "completed",
+      image_type: imageType,
       total_assets: assets.length,
       images_found: totalFound,
       questions_generated: totalQuestions,
+      has_more,
+      next_offset: offset + assets.length,
       summary,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
