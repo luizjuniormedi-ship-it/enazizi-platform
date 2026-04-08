@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
-import { FileText, Play, History, BookOpen, Timer, Skull, Trophy, Brain } from "lucide-react";
+import { FileText, Play, History, BookOpen, Timer, Skull, Trophy, Brain, Zap, Target, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,7 +32,7 @@ const EXAM_BOARDS = [
   { value: "SANTA_CASA", label: "Santa Casa SP" },
 ];
 
-export type SimuladoMode = "prova" | "estudo" | "extremo" | "prova_real" | "tri";
+export type SimuladoMode = "prova" | "estudo" | "extremo" | "prova_real" | "tri" | "adaptativo";
 
 interface SimuladoSetupProps {
   onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string; realExamProfile?: string }) => void;
@@ -42,9 +42,12 @@ interface SimuladoSetupProps {
   pendingSession: any;
   checkedSession: boolean;
   userId?: string;
+  adaptiveMeta?: { focus: string; strategy: string; weakness_targeted: string; distribution: { modalities: Record<string, number>; difficulty: Record<string, number>; exam_style: Record<string, number> } } | null;
+  adaptiveLoading?: boolean;
+  onFetchAdaptivePreview?: () => void;
 }
 
-const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErrors, pendingSession, checkedSession, userId }: SimuladoSetupProps) => {
+const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErrors, pendingSession, checkedSession, userId, adaptiveMeta, adaptiveLoading, onFetchAdaptivePreview }: SimuladoSetupProps) => {
   const studyCtx = useStudyContext();
   const [tab, setTab] = useState<"novo" | "historico">("novo");
   const [selectedTopics, setSelectedTopics] = useState<string[]>(() => {
@@ -71,6 +74,11 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
   const selectedProfile = EXAM_PROFILES[realExamBoard] || EXAM_PROFILES.GERAL;
 
   const handleStart = () => {
+    if (mode === "adaptativo") {
+      const count = customCount ? parseInt(customCount) : questionCount;
+      onStart({ topics: [], count, difficulty: "adaptativo", timePerQuestion: 3, mode: "adaptativo" });
+      return;
+    }
     if (mode === "prova_real" || mode === "tri") {
       const profile = selectedProfile;
       const topicsFromProfile = profile.topicWeights.map(tw => tw.topic);
@@ -229,9 +237,95 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                   <span className="font-semibold text-sm">Modo Extremo</span>
                 </div>
                 <p className="text-xs text-muted-foreground">Prova real. 50+ questões. Dificuldade alta. Pressão máxima.</p>
+               </button>
+              <button
+                onClick={() => {
+                  setMode("adaptativo");
+                  onFetchAdaptivePreview?.();
+                }}
+                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  mode === "adaptativo"
+                    ? "border-emerald-500 bg-emerald-500/10"
+                    : "border-border bg-secondary/30 hover:border-emerald-500/30"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <Zap className="h-5 w-5 text-emerald-500" />
+                  <span className="font-semibold text-sm">Adaptativo</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Baseado no seu desempenho. Foco em fraquezas. Com imagem.</p>
               </button>
             </div>
           </div>
+
+          {/* ── Adaptive Mode Configuration ── */}
+          {mode === "adaptativo" && (
+            <div className="space-y-4">
+              <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4 space-y-3">
+                <p className="text-sm font-semibold text-emerald-600 flex items-center gap-2">
+                  <Zap className="h-4 w-4" /> Simulado Adaptativo Inteligente
+                </p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• Analisa seu <strong>desempenho real</strong> por modalidade de imagem</li>
+                  <li>• Prioriza <strong>fraquezas críticas</strong> automaticamente</li>
+                  <li>• Mistura questões do banco + geradas por IA sob demanda</li>
+                  <li>• Distribuição inteligente de dificuldade e banca</li>
+                </ul>
+              </div>
+
+              {adaptiveLoading && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="h-4 w-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                  Analisando seu desempenho...
+                </div>
+              )}
+
+              {adaptiveMeta && !adaptiveLoading && (
+                <div className="bg-secondary/30 rounded-xl p-4 space-y-3">
+                  <p className="text-sm font-semibold flex items-center gap-2">
+                    <Target className="h-4 w-4 text-emerald-500" /> Estratégia do Motor
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <p className="text-muted-foreground mb-1">Foco principal</p>
+                      <p className="font-semibold capitalize">{adaptiveMeta.focus}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Fraquezas alvo</p>
+                      <p className="font-semibold">{adaptiveMeta.weakness_targeted || "Nenhuma crítica"}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{adaptiveMeta.strategy}</p>
+
+                  {Object.keys(adaptiveMeta.distribution.modalities).length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">Distribuição por modalidade</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.entries(adaptiveMeta.distribution.modalities).map(([mod, count]) => (
+                          <span key={mod} className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 text-[10px] font-medium">
+                            {mod.toUpperCase()}: {count}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {Object.keys(adaptiveMeta.distribution.difficulty).length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">Distribuição por dificuldade</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.entries(adaptiveMeta.distribution.difficulty).map(([diff, count]) => (
+                          <span key={diff} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium">
+                            {diff}: {count}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* ── Prova Real Configuration ── */}
           {mode === "prova_real" && (
@@ -335,7 +429,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
           )}
 
           {/* ── Standard modes: Topic selection ── */}
-          {mode !== "prova_real" && mode !== "tri" && (
+          {mode !== "prova_real" && mode !== "tri" && mode !== "adaptativo" && (
             <>
               {/* Topic selection grouped by cycle */}
               <div>
@@ -453,7 +547,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
           )}
 
           {/* Difficulty — locked in extremo and prova_real */}
-          {mode !== "extremo" && mode !== "prova_real" && mode !== "tri" && (
+          {mode !== "extremo" && mode !== "prova_real" && mode !== "tri" && mode !== "adaptativo" && (
             <div>
               <label className="text-sm font-semibold mb-3 block">Nível de dificuldade</label>
               <div className="flex gap-2 flex-wrap">
@@ -509,12 +603,12 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
 
           <Button
             size="lg"
-            className={`w-full ${mode === "extremo" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : mode === "prova_real" ? "bg-amber-600 hover:bg-amber-700 text-white" : mode === "tri" ? "bg-violet-600 hover:bg-violet-700 text-white" : ""}`}
+            className={`w-full ${mode === "extremo" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : mode === "prova_real" ? "bg-amber-600 hover:bg-amber-700 text-white" : mode === "tri" ? "bg-violet-600 hover:bg-violet-700 text-white" : mode === "adaptativo" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}`}
             onClick={handleStart}
-            disabled={mode !== "prova_real" && mode !== "tri" && selectedTopics.length === 0}
+            disabled={mode !== "prova_real" && mode !== "tri" && mode !== "adaptativo" && selectedTopics.length === 0}
           >
-            {mode === "extremo" ? <Skull className="h-4 w-4 mr-2" /> : mode === "prova_real" ? <Trophy className="h-4 w-4 mr-2" /> : mode === "tri" ? <Brain className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-            {mode === "estudo" ? "Iniciar Modo Estudo" : mode === "extremo" ? "Iniciar Prova Extrema" : mode === "prova_real" ? `Iniciar Prova Real ${selectedProfile.name}` : mode === "tri" ? `Iniciar TRI ${selectedProfile.name}` : "Iniciar Simulado"} ({mode === "prova_real" || mode === "tri" ? selectedProfile.totalQuestions : (customCount || questionCount)} questões)
+            {mode === "extremo" ? <Skull className="h-4 w-4 mr-2" /> : mode === "prova_real" ? <Trophy className="h-4 w-4 mr-2" /> : mode === "tri" ? <Brain className="h-4 w-4 mr-2" /> : mode === "adaptativo" ? <Zap className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+            {mode === "adaptativo" ? `Iniciar Simulado Adaptativo (${customCount || questionCount} questões)` : mode === "estudo" ? "Iniciar Modo Estudo" : mode === "extremo" ? "Iniciar Prova Extrema" : mode === "prova_real" ? `Iniciar Prova Real ${selectedProfile.name}` : mode === "tri" ? `Iniciar TRI ${selectedProfile.name}` : "Iniciar Simulado"} {mode !== "adaptativo" ? `(${mode === "prova_real" || mode === "tri" ? selectedProfile.totalQuestions : (customCount || questionCount)} questões)` : ""}
           </Button>
         </div>
       )}
