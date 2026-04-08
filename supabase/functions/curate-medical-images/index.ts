@@ -156,31 +156,6 @@ function extractImageUrls(html: string): string[] {
   return urls;
 }
 
-// ===== OPEN-I NIH API =====
-async function searchOpenI(query: string): Promise<{ images: string[]; pageUrl: string }> {
-  try {
-    const apiUrl = `https://openi.nlm.nih.gov/api/search?query=${encodeURIComponent(query)}&m=1&n=5`;
-    console.log(`[Open-i] ${query}`);
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 10000);
-    const resp = await fetch(apiUrl, { headers: { Accept: "application/json" }, signal: ctrl.signal });
-    clearTimeout(timer);
-    if (!resp.ok) return { images: [], pageUrl: apiUrl };
-    const data = await resp.json();
-    const images: string[] = [];
-    if (data?.list) {
-      for (const item of data.list) {
-        if (item.imgLarge) images.push(`https://openi.nlm.nih.gov${item.imgLarge}`);
-        else if (item.imgThumb) images.push(`https://openi.nlm.nih.gov${item.imgThumb}`);
-      }
-    }
-    return { images, pageUrl: apiUrl };
-  } catch (err) {
-    console.error("[Open-i] Error:", err);
-    return { images: [], pageUrl: "" };
-  }
-}
-
 // ===== FIRECRAWL SCRAPE =====
 async function scrapeWithFirecrawl(url: string): Promise<string[]> {
   if (!FIRECRAWL_API_KEY) return [];
