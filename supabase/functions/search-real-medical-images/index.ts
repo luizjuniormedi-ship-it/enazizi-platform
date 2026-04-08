@@ -203,9 +203,11 @@ Deno.serve(async (req) => {
           .in("review_status", ["blocked_clinical", "needs_review", "validated"]);
       }
 
+      const { data: assets, error: fetchErr } = await query;
+
       if (fetchErr || !assets || assets.length === 0) {
         return new Response(
-          JSON.stringify({ message: "Nenhum asset elegível encontrado", results: [] }),
+          JSON.stringify({ message: "Nenhum asset elegível encontrado", results: [], has_more: false }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
