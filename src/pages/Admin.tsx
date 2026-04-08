@@ -401,6 +401,9 @@ const Admin = () => {
             <TabsTrigger value="flags" className="gap-1.5">
               <ToggleLeft className="h-3.5 w-3.5" /> Flags
             </TabsTrigger>
+            <TabsTrigger value="multimodal" className="gap-1.5">
+              <Image className="h-3.5 w-3.5" /> Multimodal
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="whatsapp">
