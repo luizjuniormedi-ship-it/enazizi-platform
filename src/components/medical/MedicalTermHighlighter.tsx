@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { MEDICAL_TERMS } from "@/lib/medicalTerms";
 import { useMedicalTerm } from "@/contexts/MedicalTermContext";
+import { cleanLatex } from "@/lib/cleanLatex";
 
 interface Props {
   text: string;
