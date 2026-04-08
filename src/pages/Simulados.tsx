@@ -466,7 +466,7 @@ const Simulados = () => {
       setLoadingProgress(`${selectedFromBank.length} questões do banco${imageLabel}. ${deficit > 0 ? `Gerando ${deficit} via IA...` : "Pronto!"}`);
 
       // ── Step 3: Generate remaining via AI if needed ──
-      let allQuestions: SimQuestion[] = [...selectedFromBank];
+      let allQuestions: SimQuestion[] = [...selectedFromBank, ...imageSimQuestions];
 
       if (deficit > 0) {
         const requestCount = Math.ceil(deficit * 1.8);
