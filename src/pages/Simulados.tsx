@@ -359,6 +359,19 @@ const Simulados = () => {
           }
         }
 
+        // Inject image questions into prova real/TRI
+        try {
+          const imgSlots = calculateImageSlots(config.count, 15, { ecg: 0.40, xray: 0.30, dermatology: 0.30 });
+          if (imgSlots.length > 0) {
+            const imgQs = await selectImageQuestions(imgSlots);
+            const imgSim = imgQs.map(iq => {
+              const sim = imageQuestionToSimQuestion(iq);
+              return { statement: sim.statement, options: sim.options, correct: sim.correct_index, topic: sim.topic, explanation: sim.explanation, image_url: sim.image_url, image_type: sim.image_type, _isImageQuestion: sim._isImageQuestion, _imageQuestionId: sim._imageQuestionId } as SimQuestion;
+            });
+            allQuestions.push(...imgSim);
+          }
+        } catch { /* fallback sem imagem */ }
+
         setLoadingPercent(90);
         setLoadingProgress("Validando questões...");
         allQuestions = deduplicateQuestions(allQuestions);
