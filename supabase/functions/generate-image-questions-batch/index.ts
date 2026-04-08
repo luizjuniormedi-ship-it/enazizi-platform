@@ -144,7 +144,7 @@ Retorne APENAS um array JSON válido:
             option_e: cleanOpt(opts[4] || ""),
             correct_index: q.correct_index ?? 0,
             explanation: cleanText(q.explanation || ""),
-            difficulty: q.difficulty || 3,
+            difficulty: q.difficulty <= 2 ? "easy" : q.difficulty >= 4 ? "hard" : "medium",
             exam_style: q.exam_style || "USP",
             status: "needs_review",
           });
