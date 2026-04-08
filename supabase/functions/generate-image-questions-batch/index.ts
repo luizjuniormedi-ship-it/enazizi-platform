@@ -130,6 +130,20 @@ const cleanText = (t: string) =>
 
 const cleanOpt = (o: string) => cleanText(o).replace(/^[A-E]\)\s*/, "");
 
+// ── Post-generation multimodal audit ───────────────────────────
+const FAKE_PATTERNS = [
+  /logo\b/i, /símbolo\b/i, /\bamerican academy\b/i, /\bsociedade brasileira\b/i,
+  /emblema\b/i, /\binsígnia\b/i, /\bmetaforiza\b/i, /\bsimboliza\b/i,
+  /\bvisualmente sugerido\b/i, /\bvisualmente metaforizada\b/i,
+  /\bcírculo.*roxo\b/i, /\braios.*partindo\b/i, /\bse assemelha\b.*\bfundo de olho\b/i,
+  /\bpadrão de cores.*formas\b/i, /\bconforme ilustrado\b.*\blogo\b/i,
+];
+
+function isFakeMultimodal(statement: string, explanation: string): boolean {
+  const allText = `${statement} ${explanation}`;
+  return FAKE_PATTERNS.some(p => p.test(allText));
+}
+
 // ── Main handler ───────────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
