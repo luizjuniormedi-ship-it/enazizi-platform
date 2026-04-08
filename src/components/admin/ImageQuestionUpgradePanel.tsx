@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Play, CheckCircle2, AlertTriangle, BarChart3, RefreshCw, RotateCcw } from "lucide-react";
+import { Loader2, Play, CheckCircle2, AlertTriangle, BarChart3, RefreshCw, RotateCcw, Globe } from "lucide-react";
 import { toast } from "sonner";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
