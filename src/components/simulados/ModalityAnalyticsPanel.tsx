@@ -1,6 +1,7 @@
 /**
  * Painel de analytics por modalidade — visão do aluno.
- * Mostra desempenho imagem vs texto, acerto por modalidade, insights automáticos.
+ * Mostra desempenho imagem vs texto, acerto por modalidade, insights automáticos
+ * e prioridades adaptativas do próximo simulado.
  */
 
 import { useEffect, useState } from "react";
@@ -11,15 +12,22 @@ import {
   type ModalityStats,
   type ModalityInsight,
 } from "@/lib/modalityAnalytics";
+import {
+  generateAdaptiveBlueprint,
+  getBlueprintSummary,
+  type AdaptiveBlueprint,
+  type AdaptiveInsight,
+} from "@/lib/adaptiveModalityEngine";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie, Legend,
+  PieChart, Pie,
 } from "recharts";
 import {
   Eye, Image, FileText, TrendingUp, TrendingDown, AlertTriangle, Info,
-  Zap, Clock, Target,
+  Zap, Clock, Target, Brain, Crosshair,
 } from "lucide-react";
 
 const MODALITY_LABELS: Record<string, string> = {
@@ -43,6 +51,9 @@ const INSIGHT_ICONS: Record<string, any> = {
   weakness: TrendingDown,
   info: Info,
   alert: AlertTriangle,
+  priority: Crosshair,
+  reduction: TrendingDown,
+  format: Image,
 };
 
 const INSIGHT_COLORS: Record<string, string> = {
@@ -50,21 +61,29 @@ const INSIGHT_COLORS: Record<string, string> = {
   weakness: "text-red-600 bg-red-50 border-red-200",
   info: "text-blue-600 bg-blue-50 border-blue-200",
   alert: "text-amber-600 bg-amber-50 border-amber-200",
+  priority: "text-purple-600 bg-purple-50 border-purple-200",
+  reduction: "text-emerald-600 bg-emerald-50 border-emerald-200",
+  format: "text-indigo-600 bg-indigo-50 border-indigo-200",
 };
 
 export default function ModalityAnalyticsPanel() {
   const { user } = useAuth();
   const [stats, setStats] = useState<ModalityStats[]>([]);
   const [insights, setInsights] = useState<ModalityInsight[]>([]);
+  const [blueprint, setBlueprint] = useState<AdaptiveBlueprint | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user?.id) return;
     (async () => {
       setLoading(true);
-      const data = await fetchUserModalityStats(user.id);
+      const [data, bp] = await Promise.all([
+        fetchUserModalityStats(user.id),
+        generateAdaptiveBlueprint(user.id),
+      ]);
       setStats(data);
       setInsights(generateModalityInsights(data));
+      setBlueprint(bp);
       setLoading(false);
     })();
   }, [user?.id]);
@@ -105,7 +124,6 @@ export default function ModalityAnalyticsPanel() {
   const imageAcc = imageTotal > 0 ? Math.round((imageCorrect / imageTotal) * 100) : 0;
   const textAcc = textTotal > 0 ? Math.round((textCorrect / textTotal) * 100) : 0;
 
-  // Bar chart data: accuracy by modality
   const barData = imageStats
     .filter(s => s.totalQuestions >= 1)
     .map(s => ({
@@ -117,12 +135,19 @@ export default function ModalityAnalyticsPanel() {
     }))
     .sort((a, b) => b.acerto - a.acerto);
 
-  // Pie chart data: mode distribution
   const pieData = [
     { name: "Com Imagem", value: imageTotal, color: MODE_COLORS.image },
     { name: "Textual", value: textTotal, color: MODE_COLORS.text },
     ...(fallbackTotal > 0 ? [{ name: "Fallback", value: fallbackTotal, color: MODE_COLORS.fallback_text }] : []),
   ].filter(d => d.value > 0);
+
+  const bpSummary = blueprint ? getBlueprintSummary(blueprint) : null;
+
+  // Merge insights from analytics + adaptive engine
+  const allInsights: { type: string; message: string }[] = [
+    ...insights.map(i => ({ type: i.type, message: i.message })),
+    ...(blueprint?.insights || []).map(i => ({ type: i.type, message: i.message })),
+  ];
 
   return (
     <div className="space-y-4">
@@ -152,15 +177,43 @@ export default function ModalityAnalyticsPanel() {
         <Card>
           <CardContent className="p-4 text-center">
             <Zap className="h-5 w-5 mx-auto mb-1 text-amber-500" />
-            <p className="text-2xl font-bold">{totalAll > 0 ? Math.round((imageTotal / totalAll) * 100) : 0}%</p>
-            <p className="text-xs text-muted-foreground">Uso de Imagem</p>
+            <p className="text-2xl font-bold">{bpSummary?.imagePercent ?? 20}%</p>
+            <p className="text-xs text-muted-foreground">Imagem Adaptativo</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Adaptive Priority Card */}
+      {bpSummary && bpSummary.topPriorities.length > 0 && (
+        <Card className="border-purple-200 bg-purple-50/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Brain className="h-4 w-4 text-purple-600" />
+              Motor Adaptativo — Próximo Simulado
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {bpSummary.topPriorities.map((p) => (
+                <Badge
+                  key={p.modality}
+                  variant="outline"
+                  className="text-xs"
+                  style={{ borderColor: MODALITY_COLORS[p.modality] || "#6b7280" }}
+                >
+                  {p.label}: {Math.round(p.score * 100)}%
+                </Badge>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              O motor adaptativo ajusta automaticamente a composição do simulado com base no seu desempenho por modalidade.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Charts Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Accuracy by Modality */}
         {barData.length > 0 && (
           <Card>
             <CardHeader className="pb-2">
@@ -172,12 +225,7 @@ export default function ModalityAnalyticsPanel() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
                   <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 12 }} />
-                  <Tooltip
-                    formatter={(value: number, name: string) => {
-                      if (name === "acerto") return [`${value}%`, "Acerto"];
-                      return [value, name];
-                    }}
-                  />
+                  <Tooltip formatter={(value: number, name: string) => name === "acerto" ? [`${value}%`, "Acerto"] : [value, name]} />
                   <Bar dataKey="acerto" radius={[0, 4, 4, 0]}>
                     {barData.map((entry, idx) => (
                       <Cell key={idx} fill={entry.color} />
@@ -189,7 +237,6 @@ export default function ModalityAnalyticsPanel() {
           </Card>
         )}
 
-        {/* Distribution Pie */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Distribuição Imagem vs Texto</CardTitle>
@@ -233,15 +280,20 @@ export default function ModalityAnalyticsPanel() {
                 .map((s) => {
                   const label = MODALITY_LABELS[s.imageType || ""] || s.imageType || "Outro";
                   const color = MODALITY_COLORS[s.imageType || ""] || "#6b7280";
+                  const priority = blueprint?.modalitiesPriority[s.imageType || ""];
                   return (
                     <div key={s.imageType} className="flex items-center gap-3">
-                      <div
-                        className="w-3 h-3 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: color }}
-                      />
+                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm font-medium">{label}</span>
+                          <span className="text-sm font-medium">
+                            {label}
+                            {priority && priority.difficultyAdjustment && (
+                              <Badge variant="outline" className="ml-2 text-[10px] py-0">
+                                {priority.difficultyAdjustment === "dificil" ? "↑ difícil" : priority.difficultyAdjustment === "intermediario" ? "→ médio" : ""}
+                              </Badge>
+                            )}
+                          </span>
                           <span className="text-xs text-muted-foreground">
                             {s.correctCount}/{s.totalQuestions} ({s.accuracyPercent}%) · {s.avgResponseTime}s
                           </span>
@@ -257,7 +309,7 @@ export default function ModalityAnalyticsPanel() {
       )}
 
       {/* Insights */}
-      {insights.length > 0 && (
+      {allInsights.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -266,7 +318,7 @@ export default function ModalityAnalyticsPanel() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {insights.map((insight, idx) => {
+              {allInsights.map((insight, idx) => {
                 const Icon = INSIGHT_ICONS[insight.type] || Info;
                 const colorClass = INSIGHT_COLORS[insight.type] || INSIGHT_COLORS.info;
                 return (
