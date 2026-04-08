@@ -2698,6 +2698,8 @@ export type Database = {
       medical_image_assets: {
         Row: {
           asset_code: string
+          asset_origin: string
+          clinical_confidence: number
           clinical_findings: Json
           created_at: string
           diagnosis: string
@@ -2724,6 +2726,8 @@ export type Database = {
         }
         Insert: {
           asset_code: string
+          asset_origin?: string
+          clinical_confidence?: number
           clinical_findings?: Json
           created_at?: string
           diagnosis: string
@@ -2750,6 +2754,8 @@ export type Database = {
         }
         Update: {
           asset_code?: string
+          asset_origin?: string
+          clinical_confidence?: number
           clinical_findings?: Json
           created_at?: string
           diagnosis?: string
