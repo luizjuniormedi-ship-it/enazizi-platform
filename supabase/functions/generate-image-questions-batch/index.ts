@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
     // Fetch candidate assets (no origin filter — safety check decides)
     let query = supabase
       .from("medical_image_assets")
-      .select("id, asset_code, diagnosis, image_type, clinical_findings, image_url, asset_origin, review_status, integrity_status, clinical_confidence, is_active")
+      .select("id, asset_code, diagnosis, image_type, clinical_findings, image_url, asset_origin, review_status, integrity_status, clinical_confidence, is_active, multimodal_ready")
       .not("image_url", "is", null)
       .limit(200);
 
