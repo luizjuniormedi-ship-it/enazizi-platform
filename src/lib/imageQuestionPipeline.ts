@@ -69,6 +69,7 @@ export async function selectImageQuestions(
         option_a, option_b, option_c, option_d, option_e,
         correct_index, explanation, difficulty, 
         tri_a, tri_b, tri_c, exam_style,
+        senior_audit_score, editorial_grade,
         medical_image_assets!inner(image_url, image_type, clinical_confidence, review_status)
       `)
       .eq("status", "published")
@@ -77,7 +78,9 @@ export async function selectImageQuestions(
       .eq("medical_image_assets.is_active", true)
       .eq("medical_image_assets.review_status", "published")
       .eq("medical_image_assets.integrity_status", "ok")
-      .gte("medical_image_assets.clinical_confidence", 0.80);
+      .gte("medical_image_assets.clinical_confidence", 0.80)
+      // BLOQUEIO EDITORIAL: nunca servir questões fracas
+      .neq("editorial_grade", "weak");
 
     if (slot.difficulty) {
       query = query.eq("difficulty", slot.difficulty);
