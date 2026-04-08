@@ -131,18 +131,22 @@ Retorne APENAS um array JSON válido:
         for (const q of questions) {
           if (!q.statement || q.statement.length < 200 || !q.options || q.options.length < 5) continue;
 
+          const opts = q.options || [];
+          const cleanOpt = (o: string) => cleanText(o).replace(/^[A-E]\)\s*/, "");
+
           const { error: insErr } = await supabase.from("medical_image_questions").insert({
             asset_id: asset.id,
             statement: cleanText(q.statement),
-            options: q.options.map((o: string) => cleanText(o)),
+            option_a: cleanOpt(opts[0] || ""),
+            option_b: cleanOpt(opts[1] || ""),
+            option_c: cleanOpt(opts[2] || ""),
+            option_d: cleanOpt(opts[3] || ""),
+            option_e: cleanOpt(opts[4] || ""),
             correct_index: q.correct_index ?? 0,
             explanation: cleanText(q.explanation || ""),
             difficulty: q.difficulty || 3,
             exam_style: q.exam_style || "USP",
-            topic: q.topic || asset.diagnosis,
-            subtopic: q.subtopic || asset.image_type,
             status: "needs_review",
-            question_origin: "ai_generated_v3",
           });
 
           if (!insErr) inserted++;
