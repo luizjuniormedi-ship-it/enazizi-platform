@@ -187,7 +187,7 @@ Deno.serve(async (req) => {
         }
 
         // Delay entre gerações para evitar rate limit
-        await new Promise((r) => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, 500));
       } catch (assetErr) {
         results.push({
           asset_id: asset.id,
