@@ -1715,6 +1715,53 @@ export type Database = {
         }
         Relationships: []
       }
+      editorial_audit_trail: {
+        Row: {
+          batch_id: string | null
+          corrected_at: string
+          correction_type: string
+          created_at: string
+          editorial_score: number | null
+          id: string
+          question_id: string
+          reason: string
+          version_after: Json | null
+          version_before: Json | null
+        }
+        Insert: {
+          batch_id?: string | null
+          corrected_at?: string
+          correction_type: string
+          created_at?: string
+          editorial_score?: number | null
+          id?: string
+          question_id: string
+          reason: string
+          version_after?: Json | null
+          version_before?: Json | null
+        }
+        Update: {
+          batch_id?: string | null
+          corrected_at?: string
+          correction_type?: string
+          created_at?: string
+          editorial_score?: number | null
+          id?: string
+          question_id?: string
+          reason?: string
+          version_after?: Json | null
+          version_before?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editorial_audit_trail_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "multimodal_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -2889,12 +2936,15 @@ export type Database = {
       medical_image_questions: {
         Row: {
           asset_id: string
+          batch_id: string | null
           correct_index: number
           created_at: string
           difficulty: Database["public"]["Enums"]["difficulty_level"]
+          editorial_score: number | null
           exam_style: string
           explanation: string
           id: string
+          is_batch_protected: boolean | null
           language_code: string
           option_a: string
           option_b: string
@@ -2914,12 +2964,15 @@ export type Database = {
         }
         Insert: {
           asset_id: string
+          batch_id?: string | null
           correct_index: number
           created_at?: string
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
+          editorial_score?: number | null
           exam_style?: string
           explanation: string
           id?: string
+          is_batch_protected?: boolean | null
           language_code?: string
           option_a: string
           option_b: string
@@ -2939,12 +2992,15 @@ export type Database = {
         }
         Update: {
           asset_id?: string
+          batch_id?: string | null
           correct_index?: number
           created_at?: string
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
+          editorial_score?: number | null
           exam_style?: string
           explanation?: string
           id?: string
+          is_batch_protected?: boolean | null
           language_code?: string
           option_a?: string
           option_b?: string
@@ -2968,6 +3024,13 @@ export type Database = {
             columns: ["asset_id"]
             isOneToOne: false
             referencedRelation: "medical_image_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medical_image_questions_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "multimodal_batches"
             referencedColumns: ["id"]
           },
         ]
@@ -3237,6 +3300,48 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      multimodal_batches: {
+        Row: {
+          avg_editorial_score: number | null
+          batch_code: string
+          consolidated_at: string
+          created_at: string
+          id: string
+          modalities_covered: string[] | null
+          notes: string | null
+          status: string
+          total_auto_corrected: number
+          total_questions: number
+          updated_at: string
+        }
+        Insert: {
+          avg_editorial_score?: number | null
+          batch_code: string
+          consolidated_at?: string
+          created_at?: string
+          id?: string
+          modalities_covered?: string[] | null
+          notes?: string | null
+          status?: string
+          total_auto_corrected?: number
+          total_questions?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_editorial_score?: number | null
+          batch_code?: string
+          consolidated_at?: string
+          created_at?: string
+          id?: string
+          modalities_covered?: string[] | null
+          notes?: string | null
+          status?: string
+          total_auto_corrected?: number
+          total_questions?: number
+          updated_at?: string
         }
         Relationships: []
       }
