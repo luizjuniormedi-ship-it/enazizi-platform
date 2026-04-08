@@ -93,8 +93,7 @@ serve(async (req) => {
 
     // --- ACTION: stats ---
     if (action === "stats") {
-      const { data: stats } = await sb.rpc("", {}).catch(() => ({ data: null }));
-      // Manual query for stats
+      // Query stats per status
       const counts: Record<string, number> = {};
       for (const status of ["draft", "upgrading", "upgraded", "needs_review", "published", "rejected"]) {
         const { count } = await sb.from("medical_image_questions").select("id", { count: "exact", head: true }).eq("status", status);
