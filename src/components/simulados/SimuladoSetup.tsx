@@ -581,7 +581,34 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             </div>
           )}
 
-          {/* Timer — prova and extremo */}
+          {/* Image questions percentage */}
+          {mode !== "adaptativo" && (
+            <div>
+              <label className="text-sm font-semibold mb-3 block flex items-center gap-2">
+                <Image className="h-4 w-4 text-primary" />
+                Questões com imagem médica
+              </label>
+              <div className="flex gap-2 flex-wrap">
+                {[0, 10, 20, 30, 50].map(pct => (
+                  <Button
+                    key={pct}
+                    variant={imagePercent === pct ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setImagePercent(pct)}
+                  >
+                    {pct === 0 ? "Nenhuma" : `${pct}%`}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {imagePercent === 0
+                  ? "Apenas questões textuais"
+                  : `~${Math.round((customCount ? parseInt(customCount) || questionCount : questionCount) * imagePercent / 100)} questões com ECG, RX, dermato, TC e mais`}
+              </p>
+            </div>
+          )}
+
+
           {(mode === "prova" || mode === "extremo") && (
             <div>
               <label className="text-sm font-semibold mb-2 block">Tempo por questão</label>
