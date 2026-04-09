@@ -4,6 +4,7 @@ import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -151,9 +152,27 @@ const MODALITY_TERMS: Record<string, string> = {
 // ===== SAFETY FILTER =====
 function safetyFilter(imageUrl: string): { safe: boolean; reason?: string } {
   const url = imageUrl.toLowerCase();
-  const blocked = ["shutterstock", "gettyimages", "istockphoto", "dreamstime", "pinterest", "instagram", "facebook", "twitter"];
-  for (const d of blocked) {
+  // Block commercial stock sites
+  const blockedSources = ["shutterstock", "gettyimages", "istockphoto", "dreamstime", "pinterest", "instagram", "facebook", "twitter"];
+  for (const d of blockedSources) {
     if (url.includes(d)) return { safe: false, reason: `Blocked source: ${d}` };
+  }
+  // Block non-clinical content patterns
+  const blockedPatterns = [
+    "screenshot", "chart", "graph", "infographic", "diagram", "flowchart",
+    "quality-index", "quality_index", "questionnaire", "survey", "score-card",
+    "life-quality", "life_quality", "dlqi", "qol-", "qol_",
+    "header-image", "hero-image", "feature-image", "thumbnail-small",
+    "widget", "sidebar", "navbar", "footer", "sponsor", "advertisement",
+    "social-media", "share-button", "play-button", "video-thumb",
+    "certificate", "badge", "award", "trophy",
+  ];
+  for (const p of blockedPatterns) {
+    if (url.includes(p)) return { safe: false, reason: `Non-clinical pattern: ${p}` };
+  }
+  // Block images that are clearly UI/web elements by dimensions in URL
+  if (/[_-](16|24|32|48|64|96|128)x\1/.test(url)) {
+    return { safe: false, reason: "Icon-sized image" };
   }
   if (url.includes("patient") && url.includes("photo") && !url.includes("pathology")) {
     return { safe: false, reason: "Potential PHI risk" };
@@ -166,19 +185,71 @@ function extractImageUrls(html: string): string[] {
   const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
   const urls: string[] = [];
   let match;
+  // Non-clinical keywords in URL or alt text
+  const blockedUrlParts = [
+    "logo", "icon", "avatar", "banner", "favicon", "tracking",
+    "ad-", "pixel", "analytics", "sprite", "placeholder",
+    "social", "share", "button", "arrow", "caret", "chevron",
+    "loading", "spinner", "skeleton", "gradient", "overlay",
+    "watermark", "stamp", "badge", "ribbon", "star-rating",
+    "thumb-small", "thumb-tiny", "emoji", "smiley",
+    "screenshot", "mockup", "wireframe", "ui-", "ux-",
+  ];
   while ((match = imgRegex.exec(html)) !== null) {
     const src = match[1];
-    if (
-      src.startsWith("http") &&
-      !src.includes("logo") && !src.includes("icon") && !src.includes("avatar") &&
-      !src.includes("banner") && !src.includes("favicon") && !src.includes("tracking") &&
-      !src.includes("ad-") && !src.includes("pixel") && !src.includes("analytics") &&
-      (src.endsWith(".jpg") || src.endsWith(".jpeg") || src.endsWith(".png") || src.endsWith(".webp") || src.includes("/images/"))
-    ) {
-      urls.push(src);
-    }
+    const fullTag = match[0].toLowerCase();
+    if (!src.startsWith("http")) continue;
+    const srcLower = src.toLowerCase();
+    // Check URL blocked parts
+    if (blockedUrlParts.some(p => srcLower.includes(p))) continue;
+    // Must be a valid image extension or /images/ path
+    if (!(srcLower.endsWith(".jpg") || srcLower.endsWith(".jpeg") || srcLower.endsWith(".png") || srcLower.endsWith(".webp") || srcLower.includes("/images/"))) continue;
+    // Check alt text for non-clinical markers
+    const altMatch = fullTag.match(/alt=["']([^"']*)["']/i);
+    const alt = altMatch?.[1]?.toLowerCase() || "";
+    if (alt.includes("logo") || alt.includes("icon") || alt.includes("chart") || alt.includes("graph") || alt.includes("screenshot") || alt.includes("infographic")) continue;
+    // Prefer images with clinical alt text
+    urls.push(src);
   }
   return urls;
+}
+
+// ===== AI VISION VALIDATION =====
+async function validateImageWithVision(imageUrl: string, expectedDiagnosis: string, imageType: string): Promise<{ valid: boolean; reason: string }> {
+  if (!LOVABLE_API_KEY) return { valid: true, reason: "No API key, skipping vision check" };
+  try {
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: `You are a medical image quality auditor. Analyze this image and answer in JSON ONLY:
+1. Is this a REAL clinical/medical image (not a screenshot, website, chart, infographic, illustration, or stock photo)?
+2. Is it consistent with the expected diagnosis: "${expectedDiagnosis}" (modality: ${imageType})?
+
+Return ONLY: {"is_clinical": true/false, "matches_diagnosis": true/false, "reason": "brief explanation"}` },
+            { type: "image_url", image_url: { url: imageUrl } }
+          ]
+        }],
+        max_tokens: 200,
+      }),
+    });
+    if (!resp.ok) return { valid: true, reason: "Vision API error, allowing" };
+    const data = await resp.json();
+    const content = data.choices?.[0]?.message?.content || "";
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return { valid: true, reason: "Could not parse vision response" };
+    const result = JSON.parse(jsonMatch[0]);
+    if (!result.is_clinical) return { valid: false, reason: `Not a clinical image: ${result.reason || "screenshot/chart/illustration"}` };
+    if (!result.matches_diagnosis) return { valid: false, reason: `Does not match ${expectedDiagnosis}: ${result.reason}` };
+    return { valid: true, reason: result.reason || "Validated" };
+  } catch (e) {
+    console.error("Vision validation error:", e);
+    return { valid: true, reason: "Vision check failed, allowing" };
+  }
 }
 
 // ===== FIRECRAWL SCRAPE =====
@@ -317,6 +388,21 @@ async function processAsset(asset: { id: string; asset_code: string; image_type:
     }
   }
 
+  // STEP 3: AI Vision validation — reject screenshots, charts, non-clinical images
+  if (bestUrl) {
+    console.log(`[Vision Check] Validating ${bestUrl} for "${diagnosis}" (${image_type})`);
+    const visionResult = await validateImageWithVision(bestUrl, diagnosis, image_type);
+    if (!visionResult.valid) {
+      console.warn(`[Vision REJECTED] ${asset_code}: ${visionResult.reason}`);
+      issues.push(`Vision rejected: ${visionResult.reason}`);
+      bestUrl = ""; // Clear — this image is not clinical
+      sourceName = "";
+      sourcePageUrl = "";
+    } else {
+      console.log(`[Vision OK] ${asset_code}: ${visionResult.reason}`);
+    }
+  }
+
   // Classify
   const isTrusted = TRUSTED.some(t => sourceName.includes(t));
   const downloaded = !!bestUrl;
@@ -341,7 +427,7 @@ async function processAsset(asset: { id: string; asset_code: string; image_type:
       visual_coherence_score: coherence,
       diagnostic_confidence_score: confidence,
       access_type: "open",
-      curation_notes: `Curated from ${sourceName} on ${new Date().toISOString()}. EN: "${diagnosisEn}". Requires review.`,
+      curation_notes: `Curated from ${sourceName} on ${new Date().toISOString()}. EN: "${diagnosisEn}". Vision-validated. Requires review.`,
     }).eq("id", id);
   } else {
     await supabase.from("medical_image_assets").update({
