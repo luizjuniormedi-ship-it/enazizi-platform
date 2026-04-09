@@ -173,6 +173,39 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
             {avgTimePerQuestion > 300 && <span className="text-yellow-600 text-xs">(muito lento)</span>}
           </div>
         )}
+
+        {/* Question composition summary */}
+        {(() => {
+          const imageQs = questions.filter(q => q._isImageQuestion);
+          const textQs = questions.filter(q => !q._isImageQuestion);
+          const excellentCount = questions.filter(q => q._editorialGrade === "excellent").length;
+          const goodCount = questions.filter(q => q._editorialGrade === "good").length;
+          if (imageQs.length === 0 && excellentCount === 0) return null;
+          return (
+            <div className="flex flex-wrap justify-center gap-2 mt-3">
+              {imageQs.length > 0 && (
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                  🖼️ {imageQs.length} multimodal
+                </span>
+              )}
+              {textQs.length > 0 && (
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                  📝 {textQs.length} textual
+                </span>
+              )}
+              {excellentCount > 0 && (
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700">
+                  ⭐ {excellentCount} excellent
+                </span>
+              )}
+              {goodCount > 0 && (
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700">
+                  ✅ {goodCount} good
+                </span>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* ── Prova Real: Competitive Analysis ── */}
