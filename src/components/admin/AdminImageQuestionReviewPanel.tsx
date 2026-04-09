@@ -126,6 +126,31 @@ const AdminImageQuestionReviewPanel = () => {
     });
 
     setCounts({ queue: queueCount, ...results });
+
+    // Fetch editorial grade counts
+    const editorialGrades = ["excellent", "good", "weak"];
+    const editorialResults = await Promise.all(
+      editorialGrades.map(async (grade) => {
+        const { count } = await supabase
+          .from("medical_image_questions")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "published" as any)
+          .eq("editorial_grade", grade as any);
+        return { grade, count: count || 0 };
+      })
+    );
+    const eCounts: Record<string, number> = {};
+    editorialResults.forEach(({ grade, count }) => { if (count > 0) eCounts[grade] = count; });
+
+    // Count multimodal vs text_only
+    const { count: multimodalCount } = await supabase
+      .from("medical_image_questions")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "published" as any)
+      .not("senior_audit_score", "is", null);
+    eCounts["multimodal"] = multimodalCount || 0;
+
+    setEditorialCounts(eCounts);
   };
 
   const fetchQuestions = async () => {
@@ -136,6 +161,7 @@ const AdminImageQuestionReviewPanel = () => {
       .select(`
         id, question_code, statement, option_a, option_b, option_c, option_d, option_e,
         correct_index, explanation, rationale_map, difficulty, exam_style, status, created_at, updated_at, asset_id,
+        senior_audit_score, editorial_grade,
         medical_image_assets!inner(image_type, diagnosis, image_url, specialty, asset_origin, source_domain)
       `, { count: "exact" })
       .order("updated_at", { ascending: false })
@@ -154,6 +180,10 @@ const AdminImageQuestionReviewPanel = () => {
 
     if (modalityFilter !== "all") {
       query = query.eq("medical_image_assets.image_type", modalityFilter as any);
+    }
+
+    if (editorialFilter !== "all") {
+      query = query.eq("editorial_grade", editorialFilter as any);
     }
 
     const { data, count, error } = await query;
