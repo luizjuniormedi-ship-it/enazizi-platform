@@ -913,6 +913,7 @@ const Simulados = () => {
         mode={mode}
         elapsedSeconds={elapsedSecondsRef.current}
         realExamProfile={configRef.current?.realExamProfile}
+        adaptiveMeta={adaptive.meta}
       />
     );
   }
