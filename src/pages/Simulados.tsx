@@ -445,7 +445,7 @@ const Simulados = () => {
             const imgQs = await selectImageQuestions(imgSlots, [], "simulado");
             const imgSim = imgQs.map(iq => {
               const sim = imageQuestionToSimQuestion(iq);
-              return { statement: sim.statement, options: sim.options, correct: sim.correct_index, topic: sim.topic, explanation: sim.explanation, image_url: sim.image_url, image_type: sim.image_type, _isImageQuestion: sim._isImageQuestion, _imageQuestionId: sim._imageQuestionId } as SimQuestion;
+              return { statement: sim.statement, options: sim.options, correct: sim.correct_index, topic: sim.topic, explanation: sim.explanation, image_url: sim.image_url, image_type: sim.image_type, _isImageQuestion: sim._isImageQuestion, _imageQuestionId: sim._imageQuestionId, _editorialGrade: sim._editorialGrade } as SimQuestion;
             });
             allQuestions.push(...imgSim);
           }
@@ -548,6 +548,7 @@ const Simulados = () => {
               image_type: sim.image_type,
               _isImageQuestion: sim._isImageQuestion,
               _imageQuestionId: sim._imageQuestionId,
+              _editorialGrade: sim._editorialGrade,
             };
           });
           deficit = Math.max(0, deficit - imageSimQuestions.length);
