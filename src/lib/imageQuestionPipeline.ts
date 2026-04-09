@@ -59,12 +59,12 @@ export type ServingMode = "simulado" | "treino";
  */
 export async function selectImageQuestions(
   slots: ImageQuestionSlot[],
-  excludeIds: string[] = []
+  excludeIds: string[] = [],
+  mode: ServingMode = "simulado"
 ): Promise<ImageQuestion[]> {
   const results: ImageQuestion[] = [];
 
   for (const slot of slots) {
-    // Query usando RPC ou raw para tabelas não tipadas ainda
     let query = (supabase as any)
       .from("medical_image_questions")
       .select(`
@@ -84,8 +84,16 @@ export async function selectImageQuestions(
       .gte("medical_image_assets.clinical_confidence", 0.90)
       .in("medical_image_assets.validation_level", ["gold", "silver"])
       .in("medical_image_assets.asset_origin", ["real_medical", "validated_medical"])
-      // BLOQUEIO EDITORIAL: nunca servir questões fracas
-      .neq("editorial_grade", "weak");
+      // BLOQUEIO EDITORIAL: nunca servir questões fracas ou não auditadas
+      .neq("editorial_grade", "weak")
+      .not("senior_audit_score", "is", null);
+
+    // SERVING POR QUALIDADE: simulado = só excellent, treino = excellent + good
+    if (mode === "simulado") {
+      query = query.eq("editorial_grade", "excellent");
+    } else {
+      query = query.in("editorial_grade", ["excellent", "good"]);
+    }
 
     if (slot.difficulty) {
       query = query.eq("difficulty", slot.difficulty);
