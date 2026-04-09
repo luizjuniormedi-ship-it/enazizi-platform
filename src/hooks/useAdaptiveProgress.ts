@@ -237,12 +237,14 @@ async function fetchAdaptiveProgress(userId: string): Promise<AdaptiveProgressDa
 
   // ── 6. Next focus ──
   const worstMod = weaknesses[0];
+  const hasDecisionErr = errorTopics["conduta"] || errorTopics["tratamento"];
+  const focusType = hasDecisionErr ? "decisão clínica" : "diagnóstico diferencial";
   const nextFocus: NextFocus = worstMod
     ? {
         modality: worstMod.modality,
-        questionType: "diagnóstico diferencial",
+        questionType: focusType,
         level: worstMod.accuracy < 50 ? "médio" : "alto",
-        message: `Próximo simulado focará em ${label(worstMod.modality)} com questões de diagnóstico diferencial em nível ${worstMod.accuracy < 50 ? "médio" : "alto"}.`,
+        message: `Próximo simulado focará em ${label(worstMod.modality)} com questões de ${focusType} em nível ${worstMod.accuracy < 50 ? "médio" : "alto"}.`,
       }
     : {
         modality: "geral",
@@ -251,41 +253,86 @@ async function fetchAdaptiveProgress(userId: string): Promise<AdaptiveProgressDa
         message: "Continue praticando para gerar recomendações personalizadas.",
       };
 
-  // ── 7. Insights ──
+  // ── 7. Priority weaknesses (composite score) ──
+  const priority_weaknesses: PriorityWeakness[] = weaknesses
+    .map(w => {
+      const rt = modTimes[w.modality]
+        ? Math.round(modTimes[w.modality].reduce((a, b) => a + b, 0) / modTimes[w.modality].length)
+        : 0;
+      const inErr = !!(errorTopics[w.modality] && errorTopics[w.modality] > 0);
+      const composite = Math.round((100 - w.accuracy) * 0.5 + Math.min(rt / 3, 50) * 0.3 + (inErr ? 20 : 0));
+      return { modality: w.modality, accuracy: w.accuracy, responseTime: rt, inErrorPatterns: inErr, compositeScore: composite };
+    })
+    .sort((a, b) => b.compositeScore - a.compositeScore)
+    .slice(0, 3);
+
+  // ── 8. Slow modalities ──
+  const slow_modalities: SlowModality[] = responseTimes
+    .map(rt => ({
+      modality: rt.modality,
+      seconds: rt.avgSeconds,
+      alertLevel: rt.avgSeconds > 180 ? "critico" as const : rt.avgSeconds > 150 ? "moderado" as const : "normal" as const,
+    }))
+    .sort((a, b) => b.seconds - a.seconds);
+
+  // ── 9. Error pattern detection ──
+  const errorPatternStrings = Object.keys(errorTopics);
+  const error_patterns_detected: ErrorPatternDetection[] = errorPatternStrings.map(p => {
+    const lower = p.toLowerCase();
+    if (["ecg", "rx", "xray", "ct", "us", "derma", "oftalm", "pato", "imagem"].some(k => lower.includes(k)))
+      return { pattern: p, category: "visual" as const, label: "Dificuldade em interpretação visual" };
+    if (["conduta", "tratamento"].some(k => lower.includes(k)))
+      return { pattern: p, category: "decisorio" as const, label: "Erro em decisão clínica" };
+    if (["diagnóstico", "diagnos", "diferencial"].some(k => lower.includes(k)))
+      return { pattern: p, category: "raciocinio" as const, label: "Falha de raciocínio diagnóstico" };
+    return { pattern: p, category: "outro" as const, label: "Padrão de erro identificado" };
+  });
+
+  // ── 10. Insights ──
   const insights: AdaptiveInsight[] = [];
 
-  // Improvements
   for (const t of trends) {
     if (t.trend === "melhorando") {
       insights.push({ type: "strength", message: `Você melhorou significativamente em ${label(t.modality)}.` });
     }
   }
 
-  // Worst modality
   if (worstMod && worstMod.accuracy < 60) {
     insights.push({ type: "weakness", message: `Seu maior ponto fraco atual é ${label(worstMod.modality)} (${worstMod.accuracy}%).` });
   }
 
-  // Slow times
   for (const rt of responseTimes) {
     if (rt.isAlert) {
       insights.push({ type: "alert", message: `Seu tempo de resposta está alto em ${label(rt.modality)} (${rt.avgSeconds}s).` });
     }
   }
 
-  // Declining trends
+  if (error_patterns_detected.some(e => e.category === "visual")) {
+    insights.push({ type: "weakness", message: "Você precisa focar mais em interpretação de imagens." });
+  }
+  if (error_patterns_detected.some(e => e.category === "decisorio")) {
+    insights.push({ type: "weakness", message: "Você precisa focar mais em decisões clínicas." });
+  }
+
   for (const t of trends) {
     if (t.trend === "piorando") {
       insights.push({ type: "weakness", message: `Atenção: desempenho em ${label(t.modality)} está caindo.` });
     }
   }
 
-  // Consistency
   if (overallAcc >= 70 && trends.every(t => t.trend !== "piorando")) {
     insights.push({ type: "info", message: "Você está evoluindo de forma consistente." });
   }
 
-  return { weaknesses, trends, responseTimes, quality, profile, nextFocus, insights };
+  const hardAcc = diffStats["hard"];
+  if (hardAcc && hardAcc.total >= 3) {
+    const hardRate = Math.round((hardAcc.correct / hardAcc.total) * 100);
+    if (hardRate < 40) {
+      insights.push({ type: "alert", message: "Seu desempenho em questões difíceis precisa de atenção." });
+    }
+  }
+
+  return { weaknesses, priority_weaknesses, trends, responseTimes, slow_modalities, error_patterns_detected, quality, profile, nextFocus, insights };
 }
 
 // ── Hook ──
