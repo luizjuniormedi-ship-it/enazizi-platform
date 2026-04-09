@@ -345,6 +345,7 @@ const Simulados = () => {
           image_url: q.image_url,
           image_type: q.image_type,
           _isImageQuestion: q._isImageQuestion,
+          _editorialGrade: q._editorialGrade,
           difficulty: q.difficulty,
           exam_style: q.exam_style,
           _source: q._source,
