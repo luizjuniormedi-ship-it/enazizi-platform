@@ -319,17 +319,15 @@ serve(async (req) => {
       const assetCode = asset.asset_code || asset.id;
 
       try {
-        // Enrich asset with exam_style for prompt
         asset.exam_style = exam_style;
+        const prompt = buildPrompt(asset, student_performance);
 
-        const prompt = buildPrompt(asset);
-
-        // AI call
+        // AI call with higher token limit for 3 questions
         const response = await aiFetch({
           messages: [{ role: "user", content: prompt }],
           model: "google/gemini-2.5-flash",
-          maxTokens: 8192,
-          timeoutMs: 60000,
+          maxTokens: 16384,
+          timeoutMs: 90000,
         });
 
         if (!response.ok) {
@@ -340,73 +338,105 @@ serve(async (req) => {
         const aiData = await response.json();
         const rawContent = aiData.choices?.[0]?.message?.content || "";
 
-        // Parse
-        const parsed = parseAiJson(rawContent);
+        // Parse — expect array of 3 questions or single object
+        let parsedArr = parseAiJson(rawContent);
 
-        // AI self-rejection
-        if (parsed.invalid) {
-          console.warn(`[generate][${assetCode}] IA rejeitou: ${parsed.reason}`);
-          results.push({ asset_id: asset.id, asset_code: assetCode, status: "rejected", stage: "ai_invalid", error: parsed.reason });
+        // Handle AI self-rejection
+        if (parsedArr && !Array.isArray(parsedArr) && parsedArr.invalid) {
+          console.warn(`[generate][${assetCode}] IA rejeitou: ${parsedArr.reason}`);
+          results.push({ asset_id: asset.id, asset_code: assetCode, status: "rejected", stage: "ai_invalid", error: parsedArr.reason });
           continue;
         }
 
-        // Clean text
-        for (const f of ["statement", "option_a", "option_b", "option_c", "option_d", "option_e", "explanation", "image_description"]) {
-          if (typeof parsed[f] === "string") parsed[f] = cleanQuestionText(parsed[f]);
+        // Normalize to array
+        const questions = Array.isArray(parsedArr) ? parsedArr : [parsedArr];
+
+        // Track correct_index distribution for duplicate detection
+        const usedIndexes = new Set<number>();
+        let questionsCreated = 0;
+
+        for (let qi = 0; qi < questions.length; qi++) {
+          const q = questions[qi];
+          if (!q || !q.statement) continue;
+
+          // Clean text
+          for (const f of ["statement", "option_a", "option_b", "option_c", "option_d", "option_e", "explanation", "image_description"]) {
+            if (typeof q[f] === "string") q[f] = cleanQuestionText(q[f]);
+          }
+
+          // Defaults
+          if (!q.difficulty) q.difficulty = ["medium", "hard", "hard"][qi] || "medium";
+          if (!q.exam_style) q.exam_style = ["ENARE", "USP", "SUS-SP"][qi] || examStyle;
+
+          // Validate structure
+          const validation = validateGenerated(q);
+          if (!validation.valid) {
+            console.warn(`[generate][${assetCode}][Q${qi + 1}] Validação falhou: ${validation.errors.join("; ")}`);
+            results.push({ asset_id: asset.id, asset_code: assetCode, status: "rejected", stage: "validation", error: `Q${qi + 1}: ${validation.errors.join("; ")}` });
+            continue;
+          }
+
+          // Clinical contradiction check
+          const contradiction = detectContradictions(q.statement, asset.diagnosis || "", q.explanation);
+          if (contradiction.has_contradiction && contradiction.severity === "grave") {
+            console.warn(`[generate][${assetCode}][Q${qi + 1}] ❌ Contradição GRAVE: ${contradiction.issues.join("; ")}`);
+            results.push({ asset_id: asset.id, asset_code: assetCode, status: "rejected", stage: "clinical_contradiction", error: `Q${qi + 1}: ${contradiction.issues.join("; ")}` });
+            continue;
+          }
+
+          // Duplicate correct_index detection within trio
+          if (usedIndexes.has(q.correct_index) && usedIndexes.size >= 2) {
+            console.warn(`[generate][${assetCode}][Q${qi + 1}] correct_index ${q.correct_index} repetido no trio`);
+            // Allow but log — not a hard block
+          }
+          usedIndexes.add(q.correct_index);
+
+          // Internal score check (if AI provided it)
+          const internalScore = q.internal_score || 0;
+          const status = internalScore >= 90 ? "needs_review" : internalScore >= 75 ? "needs_review" : "needs_review";
+
+          // Generate unique question code
+          const qCode = `IMG-${asset.image_type?.toUpperCase() || "GEN"}-${Date.now().toString(36).toUpperCase()}-Q${qi + 1}`;
+
+          const { data: inserted, error: insertErr } = await sb.from("medical_image_questions").insert({
+            asset_id: asset.id,
+            question_code: qCode,
+            statement: q.statement,
+            image_description: q.image_description || "",
+            option_a: q.option_a,
+            option_b: q.option_b,
+            option_c: q.option_c,
+            option_d: q.option_d,
+            option_e: q.option_e,
+            correct_index: q.correct_index,
+            explanation: q.explanation,
+            rationale_map: q.rationale_map,
+            difficulty: q.difficulty,
+            exam_style: q.exam_style,
+            status,
+          }).select("id").single();
+
+          if (insertErr) {
+            console.error(`[generate][${assetCode}][Q${qi + 1}] Insert error:`, insertErr);
+            results.push({ asset_id: asset.id, asset_code: assetCode, status: "failed", stage: "insert", error: insertErr.message });
+            continue;
+          }
+
+          questionsCreated++;
+          results.push({
+            asset_id: asset.id,
+            asset_code: assetCode,
+            status: "created",
+            question_id: inserted?.id,
+            stage: `Q${qi + 1}`,
+          });
+
+          console.log(`[generate][${assetCode}] ✅ Q${qi + 1} criada: ${qCode} (score: ${internalScore}, strength: ${q.multimodal_strength || "N/A"})`);
         }
 
-        // Defaults
-        if (!parsed.difficulty) parsed.difficulty = asset.difficulty || "medium";
-        if (!parsed.exam_style) parsed.exam_style = exam_style;
-
-        // Validate structure
-        const validation = validateGenerated(parsed);
-        if (!validation.valid) {
-          console.warn(`[generate][${assetCode}] Validação falhou: ${validation.errors.join("; ")}`);
-          results.push({ asset_id: asset.id, asset_code: assetCode, status: "rejected", stage: "validation", error: validation.errors.join("; ") });
-          continue;
+        if (questionsCreated === 0) {
+          console.warn(`[generate][${assetCode}] Nenhuma questão aprovada do trio`);
         }
-
-        // Clinical contradiction check
-        const contradiction = detectContradictions(parsed.statement, asset.diagnosis || "", parsed.explanation);
-        if (contradiction.has_contradiction && contradiction.severity === "grave") {
-          console.warn(`[generate][${assetCode}] ❌ Contradição clínica GRAVE: ${contradiction.issues.join("; ")}`);
-          results.push({ asset_id: asset.id, asset_code: assetCode, status: "rejected", stage: "clinical_contradiction", error: `Contradição grave: ${contradiction.issues.join("; ")}` });
-          continue;
-        }
-
-        // Generate question code
-        const qCode = `IMG-${asset.image_type?.toUpperCase() || "GEN"}-${Date.now().toString(36).toUpperCase()}`;
-
-        // Insert into medical_image_questions
-        const { data: inserted, error: insertErr } = await sb.from("medical_image_questions").insert({
-          asset_id: asset.id,
-          question_code: qCode,
-          statement: parsed.statement,
-          image_description: parsed.image_description || "",
-          option_a: parsed.option_a,
-          option_b: parsed.option_b,
-          option_c: parsed.option_c,
-          option_d: parsed.option_d,
-          option_e: parsed.option_e,
-          correct_index: parsed.correct_index,
-          explanation: parsed.explanation,
-          rationale_map: parsed.rationale_map,
-          difficulty: parsed.difficulty,
-          exam_style: parsed.exam_style,
-          status: "needs_review",
-        }).select("id").single();
-
-        if (insertErr) throw insertErr;
-
-        results.push({
-          asset_id: asset.id,
-          asset_code: assetCode,
-          status: "created",
-          question_id: inserted?.id,
-        });
-
-        console.log(`[generate][${assetCode}] ✅ Questão criada: ${qCode}`);
 
       } catch (e) {
         console.error(`[generate][${assetCode}] Erro:`, e);
