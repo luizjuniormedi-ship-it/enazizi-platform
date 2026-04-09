@@ -18,6 +18,7 @@ export interface SimQuestion {
   image_type?: string;
   _isImageQuestion?: boolean;
   _imageQuestionId?: string;
+  _editorialGrade?: string;
 }
 
 interface SimuladoExamProps {

@@ -31,7 +31,15 @@ interface ImageReviewQuestion {
   specialty?: string;
   asset_origin?: string;
   source_domain?: string;
+  editorial_grade?: string;
+  senior_audit_score?: number;
 }
+
+const EDITORIAL_COLORS: Record<string, string> = {
+  excellent: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30",
+  good: "bg-blue-500/10 text-blue-700 border-blue-500/30",
+  weak: "bg-red-500/10 text-red-700 border-red-500/30",
+};
 
 const REVIEW_QUEUE_STATUSES = ["draft", "needs_review", "upgraded", "upgrading"];
 
