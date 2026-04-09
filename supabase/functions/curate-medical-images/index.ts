@@ -388,6 +388,21 @@ async function processAsset(asset: { id: string; asset_code: string; image_type:
     }
   }
 
+  // STEP 3: AI Vision validation — reject screenshots, charts, non-clinical images
+  if (bestUrl) {
+    console.log(`[Vision Check] Validating ${bestUrl} for "${diagnosis}" (${image_type})`);
+    const visionResult = await validateImageWithVision(bestUrl, diagnosis, image_type);
+    if (!visionResult.valid) {
+      console.warn(`[Vision REJECTED] ${asset_code}: ${visionResult.reason}`);
+      issues.push(`Vision rejected: ${visionResult.reason}`);
+      bestUrl = ""; // Clear — this image is not clinical
+      sourceName = "";
+      sourcePageUrl = "";
+    } else {
+      console.log(`[Vision OK] ${asset_code}: ${visionResult.reason}`);
+    }
+  }
+
   // Classify
   const isTrusted = TRUSTED.some(t => sourceName.includes(t));
   const downloaded = !!bestUrl;
@@ -412,7 +427,7 @@ async function processAsset(asset: { id: string; asset_code: string; image_type:
       visual_coherence_score: coherence,
       diagnostic_confidence_score: confidence,
       access_type: "open",
-      curation_notes: `Curated from ${sourceName} on ${new Date().toISOString()}. EN: "${diagnosisEn}". Requires review.`,
+      curation_notes: `Curated from ${sourceName} on ${new Date().toISOString()}. EN: "${diagnosisEn}". Vision-validated. Requires review.`,
     }).eq("id", id);
   } else {
     await supabase.from("medical_image_assets").update({
