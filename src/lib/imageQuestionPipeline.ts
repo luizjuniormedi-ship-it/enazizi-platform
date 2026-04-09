@@ -146,9 +146,10 @@ export async function selectImageQuestions(
         tri_b: pick.tri_b,
         tri_c: pick.tri_c,
         exam_style: pick.exam_style,
-        image_url: undefined, // Hide suspicious image
+        image_url: undefined,
         image_type: asset?.image_type,
-      });
+        editorial_grade: pick.editorial_grade,
+      } as any);
     } else {
       results.push({
         id: pick.id,
@@ -169,7 +170,8 @@ export async function selectImageQuestions(
         exam_style: pick.exam_style,
         image_url: imgUrl,
         image_type: asset?.image_type,
-      });
+        editorial_grade: pick.editorial_grade,
+      } as any);
     }
 
     excludeIds.push(pick.id);
