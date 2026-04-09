@@ -523,6 +523,14 @@ const AdminImageQuestionReviewPanel = () => {
                     <Badge variant="outline" className={`text-[10px] h-4 ${STATUS_COLORS[q.status] || ''}`}>
                       {STATUS_LABELS[q.status] || q.status}
                     </Badge>
+                    {q.editorial_grade && (
+                      <Badge variant="outline" className={`text-[10px] h-4 ${EDITORIAL_COLORS[q.editorial_grade] || ''}`}>
+                        {q.editorial_grade === 'excellent' ? '⭐' : q.editorial_grade === 'good' ? '✅' : '❌'} {q.editorial_grade}
+                      </Badge>
+                    )}
+                    {q.senior_audit_score != null && (
+                      <span className="text-[10px] text-muted-foreground">Score: {q.senior_audit_score}</span>
+                    )}
                     {q.diagnosis && (
                       <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">{q.diagnosis}</span>
                     )}
