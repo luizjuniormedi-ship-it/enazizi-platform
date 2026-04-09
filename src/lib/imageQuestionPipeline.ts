@@ -186,6 +186,8 @@ export function imageQuestionToSimQuestion(iq: ImageQuestion): {
   const options = [iq.option_a, iq.option_b, iq.option_c, iq.option_d];
   if (iq.option_e) options.push(iq.option_e);
 
+  const hasValidImage = isImageUrlClinical(iq.image_url);
+
   return {
     statement: iq.statement,
     options,
@@ -193,9 +195,9 @@ export function imageQuestionToSimQuestion(iq: ImageQuestion): {
     explanation: iq.explanation,
     topic: iq.image_type || "Imagem Médica",
     difficulty: iq.difficulty,
-    image_url: iq.image_url,
+    image_url: hasValidImage ? iq.image_url : undefined,
     image_type: iq.image_type,
-    _isImageQuestion: true,
+    _isImageQuestion: hasValidImage,
     _imageQuestionId: iq.id,
   };
 }
