@@ -119,6 +119,7 @@ const App = () => (
                 <Route path="agentes" element={<AgentsHub />} />
                 <Route path="questoes" element={<Navigate to="/dashboard/simulados" replace />} />
                 <Route path="banco-questoes" element={<Navigate to="/dashboard/simulados" replace />} />
+                <Route path="gerador-questoes" element={<QuestionGenerator />} />
                 <Route path="resumos" element={<ContentSummarizer />} />
                 <Route path="apostilas" element={<StudyGuides />} />
                 
