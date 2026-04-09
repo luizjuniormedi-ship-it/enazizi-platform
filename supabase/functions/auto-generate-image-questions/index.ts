@@ -8,13 +8,22 @@ const corsHeaders = {
 };
 
 const MAX_QUESTIONS_PER_ASSET = 3;
-const BATCH_SIZE = 3; // assets per invocation
+const BATCH_SIZE = 3;
 const MIN_STATEMENT = 400;
 const MIN_EXPLANATION = 120;
+const EXECUTION_TIMEOUT_MS = 120_000; // 2 min hard limit
+const STALE_RUN_MINUTES = 30;
 const ENGLISH_PATTERN = /\b(the|is|are|was|were|this|that|which|what|patient|diagnosis|treatment|clinical|history)\b/gi;
 
 function ok(data: unknown) {
   return new Response(JSON.stringify(data), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function errorResponse(msg: string, status = 500) {
+  return new Response(JSON.stringify({ success: false, error: msg }), {
+    status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
@@ -44,84 +53,130 @@ function validateQuestion(q: any): string[] {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const executionStart = Date.now();
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const sb = createClient(supabaseUrl, serviceKey);
+
+  // ── FAIL-SAFE 1: Auto-fail stale runs ──
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const sb = createClient(supabaseUrl, serviceKey);
+    const { data: staleRuns } = await sb
+      .from("question_generation_runs")
+      .select("id")
+      .eq("status", "running")
+      .lt("started_at", new Date(Date.now() - STALE_RUN_MINUTES * 60_000).toISOString());
 
-    // Find assets that have < 3 published questions and are active+validated
-    const { data: assets, error: assetErr } = await sb.rpc("get_assets_needing_questions", {
-      max_q: MAX_QUESTIONS_PER_ASSET,
-      lim: BATCH_SIZE,
-    });
+    if (staleRuns && staleRuns.length > 0) {
+      const ids = staleRuns.map(r => r.id);
+      await sb.from("question_generation_runs").update({
+        status: "failed",
+        finished_at: new Date().toISOString(),
+        notes: `Auto-fail: sem progresso por ${STALE_RUN_MINUTES}min`,
+      }).in("id", ids);
+      console.log(`[auto-gen] Auto-failed ${ids.length} stale runs`);
+    }
+  } catch (e) {
+    console.warn("[auto-gen] Stale run cleanup error:", e);
+  }
 
-    // Fallback: if RPC doesn't exist, do a manual query
-    let targetAssets: any[] = [];
-    if (assetErr || !assets) {
-      console.log("[auto-gen] RPC not available, using manual query");
-      // Get active published assets with high confidence
-      const { data: allAssets } = await sb
-        .from("medical_image_assets")
-        .select("id, asset_code, image_type, specialty, subtopic, diagnosis, clinical_findings, distractors, difficulty, image_url")
-        .eq("is_active", true)
-        .eq("review_status", "published")
-        .gte("clinical_confidence", 0.9)
-        .in("validation_level", ["gold", "silver"])
-        .limit(50);
+  // ── Main pipeline in try/catch ──
+  let runId: string | null = null;
 
-      if (!allAssets || allAssets.length === 0) {
-        return ok({ success: true, message: "Nenhum asset elegível", generated: 0 });
+  try {
+    // Find eligible assets
+    console.log("[auto-gen] Step 1: Finding eligible assets...");
+
+    const { data: allAssets, error: assetErr } = await sb
+      .from("medical_image_assets")
+      .select("id, asset_code, image_type, specialty, subtopic, diagnosis, clinical_findings, distractors, difficulty, image_url")
+      .eq("is_active", true)
+      .eq("review_status", "published")
+      .gte("clinical_confidence", 0.9)
+      .in("validation_level", ["gold", "silver"])
+      .limit(50);
+
+    if (assetErr) {
+      console.error("[auto-gen] Asset query error:", assetErr);
+      return errorResponse(`Asset query failed: ${assetErr.message}`);
+    }
+
+    if (!allAssets || allAssets.length === 0) {
+      console.log("[auto-gen] No eligible assets found");
+      return ok({ success: true, message: "Nenhum asset elegível", generated: 0 });
+    }
+
+    console.log(`[auto-gen] Step 2: Checking question counts for ${allAssets.length} assets...`);
+
+    const targetAssets: any[] = [];
+    for (const asset of allAssets) {
+      // Timeout check
+      if (Date.now() - executionStart > EXECUTION_TIMEOUT_MS) {
+        console.warn("[auto-gen] Execution timeout during asset selection");
+        break;
       }
 
-      // Check how many published questions each has
-      for (const asset of allAssets) {
-        const { count } = await sb
-          .from("medical_image_questions")
-          .select("id", { count: "exact", head: true })
-          .eq("asset_id", asset.id)
-          .in("status", ["published", "needs_review", "draft", "upgrading"]);
+      const { count } = await sb
+        .from("medical_image_questions")
+        .select("id", { count: "exact", head: true })
+        .eq("asset_id", asset.id)
+        .in("status", ["published", "needs_review", "draft", "upgrading"]);
 
-        if ((count || 0) < MAX_QUESTIONS_PER_ASSET) {
-          targetAssets.push({ ...asset, existing_count: count || 0 });
-        }
-        if (targetAssets.length >= BATCH_SIZE) break;
+      if ((count || 0) < MAX_QUESTIONS_PER_ASSET) {
+        targetAssets.push({ ...asset, existing_count: count || 0 });
       }
-    } else {
-      targetAssets = assets;
+      if (targetAssets.length >= BATCH_SIZE) break;
     }
 
     if (targetAssets.length === 0) {
+      console.log("[auto-gen] All assets already have enough questions");
       return ok({ success: true, message: "Todos os assets já têm 3 questões", generated: 0 });
     }
 
-    console.log(`[auto-gen] Processing ${targetAssets.length} assets`);
+    console.log(`[auto-gen] Step 3: Creating run for ${targetAssets.length} assets...`);
 
-    // Create a generation run record
-    const { data: run } = await sb
+    // Create run record
+    const { data: run, error: runErr } = await sb
       .from("question_generation_runs")
       .insert({
         run_type: "auto_image_batch",
         status: "running",
         target_assets: targetAssets.length,
+        processed_assets: 0,
+        generated_questions: 0,
+        failed_assets: 0,
         started_at: new Date().toISOString(),
       })
       .select("id")
       .single();
 
-    const runId = run?.id;
+    if (runErr) {
+      console.error("[auto-gen] Run creation error:", runErr);
+      return errorResponse(`Run creation failed: ${runErr.message}`);
+    }
+
+    runId = run.id;
     let totalGenerated = 0;
     let totalFailed = 0;
+    let processedAssets = 0;
     const results: any[] = [];
 
     for (const asset of targetAssets) {
+      // ── FAIL-SAFE 2: Timeout per iteration ──
+      if (Date.now() - executionStart > EXECUTION_TIMEOUT_MS) {
+        console.warn("[auto-gen] Execution timeout reached, stopping batch");
+        break;
+      }
+
       const needed = MAX_QUESTIONS_PER_ASSET - (asset.existing_count || 0);
       if (needed <= 0) continue;
+
+      console.log(`[auto-gen] Step 4: Generating ${needed} questions for ${asset.asset_code}...`);
 
       try {
         const findings = Array.isArray(asset.clinical_findings) ? asset.clinical_findings.join(", ") : String(asset.clinical_findings || "");
         const distractors = Array.isArray(asset.distractors) ? asset.distractors.join(", ") : String(asset.distractors || "");
 
-        // Generate trio (or remaining needed)
         const difficulties = ["medium", "hard", "hard"].slice(0, needed);
         const types = [
           "diagnóstico direto (caso clássico)",
@@ -166,6 +221,7 @@ Retorne APENAS um JSON array válido (sem markdown):
           messages: [{ role: "user", content: prompt }],
           model: "google/gemini-2.5-flash",
           maxTokens: 8192,
+          timeoutMs: 60000,
         });
 
         if (!response.ok) {
@@ -176,8 +232,6 @@ Retorne APENAS um JSON array válido (sem markdown):
         const aiData = await response.json();
         const rawContent = aiData.choices?.[0]?.message?.content || "";
         let parsed = parseAiJson(rawContent);
-
-        // Normalize to array
         if (!Array.isArray(parsed)) parsed = [parsed];
 
         let assetGenerated = 0;
@@ -187,7 +241,6 @@ Retorne APENAS um JSON array válido (sem markdown):
             continue;
           }
 
-          // Clean text
           for (const f of ["statement", "option_a", "option_b", "option_c", "option_d", "option_e", "explanation"]) {
             if (typeof q[f] === "string") q[f] = cleanQuestionText(q[f]);
           }
@@ -202,7 +255,6 @@ Retorne APENAS um JSON array válido (sem markdown):
             continue;
           }
 
-          // Generate question code
           const prefix = (asset.image_type || "img").toUpperCase().slice(0, 4);
           const seq = Date.now().toString().slice(-6) + Math.random().toString(36).slice(2, 5);
           const questionCode = `${prefix}-AUTO-${seq}`;
@@ -233,7 +285,15 @@ Retorne APENAS um JSON array válido (sem markdown):
           }
         }
 
+        processedAssets++;
         results.push({ asset: asset.asset_code, needed, generated: assetGenerated });
+
+        // ── FAIL-SAFE 3: Heartbeat — update run progress after each asset ──
+        await sb.from("question_generation_runs").update({
+          processed_assets: processedAssets,
+          generated_questions: totalGenerated,
+          failed_assets: totalFailed,
+        }).eq("id", runId);
 
         // Rate limit between assets
         await new Promise(r => setTimeout(r, 1000));
@@ -241,37 +301,51 @@ Retorne APENAS um JSON array válido (sem markdown):
       } catch (e) {
         console.error(`[auto-gen] Error processing ${asset.asset_code}:`, e);
         totalFailed++;
+        processedAssets++;
         results.push({ asset: asset.asset_code, error: (e as Error).message });
+
+        // Update progress even on failure
+        await sb.from("question_generation_runs").update({
+          processed_assets: processedAssets,
+          failed_assets: totalFailed,
+        }).eq("id", runId).catch(() => {});
       }
     }
 
-    // Update run
-    if (runId) {
-      await sb.from("question_generation_runs").update({
-        status: totalGenerated > 0 ? "completed" : "failed",
-        processed_assets: targetAssets.length,
-        generated_questions: totalGenerated,
-        failed_assets: totalFailed,
-        finished_at: new Date().toISOString(),
-        notes: `Auto-batch: ${totalGenerated} geradas, ${totalFailed} falharam`,
-      }).eq("id", runId);
-    }
+    // ── Final run update ──
+    const finalStatus = totalGenerated > 0 ? (totalFailed > 0 ? "partial" : "completed") : "failed";
+    await sb.from("question_generation_runs").update({
+      status: finalStatus,
+      processed_assets: processedAssets,
+      generated_questions: totalGenerated,
+      failed_assets: totalFailed,
+      finished_at: new Date().toISOString(),
+      notes: `Auto-batch: ${totalGenerated} geradas, ${totalFailed} falharam (${Date.now() - executionStart}ms)`,
+    }).eq("id", runId);
 
-    console.log(`[auto-gen] Done: ${totalGenerated} generated, ${totalFailed} failed`);
+    console.log(`[auto-gen] Done: ${totalGenerated} generated, ${totalFailed} failed in ${Date.now() - executionStart}ms`);
 
     return ok({
       success: true,
       generated: totalGenerated,
       failed: totalFailed,
-      assets_processed: targetAssets.length,
+      assets_processed: processedAssets,
+      execution_ms: Date.now() - executionStart,
       results,
     });
 
   } catch (e) {
+    // ── FAIL-SAFE 4: Global catch persists error ──
     console.error("[auto-gen] FATAL:", e);
-    return new Response(JSON.stringify({ success: false, error: (e as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+
+    if (runId) {
+      await sb.from("question_generation_runs").update({
+        status: "failed",
+        finished_at: new Date().toISOString(),
+        notes: `FATAL: ${(e as Error).message?.slice(0, 200)}`,
+      }).eq("id", runId).catch(() => {});
+    }
+
+    return errorResponse((e as Error).message);
   }
 });
