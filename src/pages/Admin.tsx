@@ -305,6 +305,7 @@ const Admin = () => {
         <ImageQuestionUpgradePanel />
       </div>
       <AdminImageQuestionReviewPanel />
+      <AdminHygieneDashboard />
 
       {/* Users with tabs */}
       <div className="glass-card p-6">
