@@ -74,6 +74,17 @@ serve(async (req) => {
         finished_at: new Date().toISOString(),
         notes: `Auto-fail: sem progresso por ${STALE_RUN_MINUTES}min`,
       }).in("id", ids);
+
+      // Register alert for each stale run
+      const staleAlerts = ids.map(id => ({
+        run_id: id,
+        alert_type: "run_failed",
+        severity: "critical",
+        message: `Run ${id} auto-failed: sem progresso por ${STALE_RUN_MINUTES} minutos`,
+        details: { auto_failed: true, stale_minutes: STALE_RUN_MINUTES },
+      }));
+      await sb.from("pipeline_alerts").insert(staleAlerts).catch(() => {});
+
       console.log(`[auto-gen] Auto-failed ${ids.length} stale runs`);
     }
   } catch (e) {
