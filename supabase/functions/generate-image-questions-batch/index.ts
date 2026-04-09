@@ -101,28 +101,34 @@ SAÍDA - APENAS array JSON válido:
 }
 
 function buildTextFallbackMessages(asset: any) {
-  const text = `Você é um professor de medicina especialista criando questões para residência médica.
+  const findings = JSON.stringify(asset.clinical_findings || {});
+  const text = `IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês.
 
-CONTEXTO (questão TEXTUAL, sem imagem):
-- Tipo de exame: ${asset.image_type.toUpperCase()}
+Você é um elaborador + auditor médico nível USP/ENARE.
+Questão PURAMENTE TEXTUAL (sem imagem) - descreva achados por texto.
+
+ASSET:
+- Tipo: ${asset.image_type.toUpperCase()}
 - Diagnóstico: ${asset.diagnosis}
-- Achados clínicos: ${JSON.stringify(asset.clinical_findings || {})}
+- Achados: ${findings}
 
-Gere EXATAMENTE 3 questões de múltipla escolha sobre este diagnóstico.
-A questão deve ser PURAMENTE TEXTUAL - descreva achados clínicos e de exames sem referenciar imagens.
+GERE EXATAMENTE 3 QUESTÕES:
+Q1: diagnóstico direto, difficulty: medium
+Q2: diagnóstico diferencial, difficulty: hard
+Q3: conduta clínica, difficulty: hard
 
 REGRAS:
-1. Enunciado com contexto clínico realista, MÍNIMO 400 caracteres
-2. Paciente com idade, sexo, queixa principal, história
-3. Descreva achados de exames POR TEXTO (ex: "ECG evidencia supradesnivelamento de ST em V1-V4")
-4. EXATAMENTE 5 alternativas (A a E), cada uma com 80+ caracteres
-5. Explicação detalhada MÍNIMO 200 caracteres
-6. Dificuldade variada: 1 fácil (2), 1 média (3), 1 difícil (4)
-7. Estilo de prova USP/UNIFESP/ENARE
-8. Português brasileiro, sem markdown, sem caracteres especiais
-9. NUNCA mencione imagens, figuras, fotografias ou elementos visuais
+1. Enunciado >= 400 chars, caso clínico completo (idade, sexo, contexto, HDA, EF, exames descritos POR TEXTO)
+2. 5 alternativas plausíveis, 80+ chars cada, sem duplicidade
+3. Explicação >= 200 chars, raciocínio completo
+4. correct_index bate com explanation, apenas UMA correta
+5. As 3 questões DEVEM diferir em contexto, pergunta e raciocínio
+6. NUNCA mencione imagens, figuras, fotografias ou elementos visuais
+7. Português brasileiro, sem markdown
 
-Retorne APENAS um array JSON válido:
+AUTO-VALIDAÇÃO: contradição clínica, múltiplas respostas, alternativas vagas → REGERAR.
+
+SAÍDA - APENAS array JSON:
 [{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","difficulty":3,"exam_style":"USP","topic":"...","subtopic":"..."}]`;
 
   return [{ role: "user", content: text }];
