@@ -379,6 +379,36 @@ const AdminImageQuestionReviewPanel = () => {
         ))}
       </div>
 
+      {/* Editorial quality summary */}
+      {Object.keys(editorialCounts).length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          <span className="text-[10px] text-muted-foreground font-medium mr-1">Editorial:</span>
+          {editorialCounts.excellent && (
+            <Badge variant="outline" className={`text-[10px] cursor-pointer ${editorialFilter === 'excellent' ? 'ring-1 ring-primary' : ''} ${EDITORIAL_COLORS.excellent}`}
+              onClick={() => { setEditorialFilter(editorialFilter === 'excellent' ? 'all' : 'excellent'); setPage(0); }}>
+              ⭐ Excellent: {editorialCounts.excellent}
+            </Badge>
+          )}
+          {editorialCounts.good && (
+            <Badge variant="outline" className={`text-[10px] cursor-pointer ${editorialFilter === 'good' ? 'ring-1 ring-primary' : ''} ${EDITORIAL_COLORS.good}`}
+              onClick={() => { setEditorialFilter(editorialFilter === 'good' ? 'all' : 'good'); setPage(0); }}>
+              ✅ Good: {editorialCounts.good}
+            </Badge>
+          )}
+          {editorialCounts.weak && (
+            <Badge variant="outline" className={`text-[10px] cursor-pointer ${editorialFilter === 'weak' ? 'ring-1 ring-primary' : ''} ${EDITORIAL_COLORS.weak}`}
+              onClick={() => { setEditorialFilter(editorialFilter === 'weak' ? 'all' : 'weak'); setPage(0); }}>
+              ❌ Weak: {editorialCounts.weak}
+            </Badge>
+          )}
+          {editorialCounts.multimodal && (
+            <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">
+              🖼️ Multimodal: {editorialCounts.multimodal}
+            </Badge>
+          )}
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex items-center gap-2 flex-wrap mb-3">
         <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}>
