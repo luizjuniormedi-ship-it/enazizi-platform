@@ -4,6 +4,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { isImageUrlClinical } from "@/lib/multimodalSafetyGate";
 
 export interface ImageAsset {
   id: string;
@@ -70,15 +71,17 @@ export async function selectImageQuestions(
         correct_index, explanation, difficulty, 
         tri_a, tri_b, tri_c, exam_style,
         senior_audit_score, editorial_grade,
-        medical_image_assets!inner(image_url, image_type, clinical_confidence, review_status)
+        medical_image_assets!inner(image_url, image_type, clinical_confidence, review_status, integrity_status, validation_level, asset_origin, is_active)
       `)
       .eq("status", "published")
       .eq("language_code", "pt-BR")
-      // BLOQUEIO CLÍNICO: apenas assets publicados, ativos e com confiança >= 0.80
+      // BLOQUEIO CLÍNICO: somente assets gold/silver, publicados, com confiança >= 0.90
       .eq("medical_image_assets.is_active", true)
       .eq("medical_image_assets.review_status", "published")
       .eq("medical_image_assets.integrity_status", "ok")
-      .gte("medical_image_assets.clinical_confidence", 0.80)
+      .gte("medical_image_assets.clinical_confidence", 0.90)
+      .in("medical_image_assets.validation_level", ["gold", "silver"])
+      .in("medical_image_assets.asset_origin", ["real_medical", "validated_medical"])
       // BLOQUEIO EDITORIAL: nunca servir questões fracas
       .neq("editorial_grade", "weak");
 
