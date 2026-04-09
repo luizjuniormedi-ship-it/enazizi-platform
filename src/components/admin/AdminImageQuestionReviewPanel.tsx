@@ -212,6 +212,8 @@ const AdminImageQuestionReviewPanel = () => {
         specialty: q.medical_image_assets?.specialty,
         asset_origin: q.medical_image_assets?.asset_origin,
         source_domain: q.medical_image_assets?.source_domain,
+        editorial_grade: q.editorial_grade,
+        senior_audit_score: q.senior_audit_score,
       })));
       setTotal(count || 0);
     } else if (error) {
@@ -221,7 +223,7 @@ const AdminImageQuestionReviewPanel = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchQuestions(); fetchCounts(); }, [page, statusFilter, modalityFilter, difficultyFilter]);
+  useEffect(() => { fetchQuestions(); fetchCounts(); }, [page, statusFilter, modalityFilter, difficultyFilter, editorialFilter]);
 
   useEffect(() => {
     const handlePipelineUpdated = () => {
