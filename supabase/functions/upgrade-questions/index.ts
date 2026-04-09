@@ -59,7 +59,12 @@ Retorne APENAS JSON: {"statement": "caso clínico expandido completo terminando 
     const data = await res.json();
     const raw = (data.choices?.[0]?.message?.content || "").replace(/```json\n?/g, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(raw);
-    const newStatement = parsed.statement?.trim();
+    // Strip any alternatives that leaked into the statement
+    let newStatement = (parsed.statement || "").trim();
+    // Remove patterns like "A) ...\nB) ...\nC) ..." or "a) ..." at the end
+    newStatement = newStatement.replace(/\n\s*[A-Ea-e]\)\s+.+$/gms, "").trim();
+    // Remove patterns like "\nA. ...\nB. ..." 
+    newStatement = newStatement.replace(/\n\s*[A-Ea-e]\.\s+.+$/gms, "").trim();
 
     if (!newStatement || newStatement.length < 350) {
       console.warn(`Upgraded statement too short for ${q.id}: ${newStatement?.length}`);
