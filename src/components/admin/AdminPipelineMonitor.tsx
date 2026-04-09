@@ -1,10 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, CheckCircle2, XCircle, Clock, Zap, Activity } from "lucide-react";
+import { AlertTriangle, CheckCircle2, XCircle, Clock, Zap, Activity, Eye, EyeOff } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 interface PipelineRun {
   id: string;
@@ -27,6 +30,8 @@ interface PipelineAlert {
   message: string;
   details: any;
   acknowledged: boolean;
+  acknowledged_at: string | null;
+  acknowledged_by: string | null;
   created_at: string;
 }
 
@@ -50,6 +55,9 @@ const alertTypeLabels: Record<string, string> = {
 };
 
 export default function AdminPipelineMonitor() {
+  const queryClient = useQueryClient();
+  const [showAcknowledged, setShowAcknowledged] = useState(false);
+
   const { data: runs } = useQuery<PipelineRun[]>({
     queryKey: ["pipeline-runs"],
     queryFn: async () => {
@@ -70,41 +78,105 @@ export default function AdminPipelineMonitor() {
         .from("pipeline_alerts" as any)
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(30);
       return (data as any) || [];
     },
     refetchInterval: 30_000,
   });
 
-  const unacknowledged = alerts?.filter(a => !a.acknowledged).length || 0;
+  const ackMutation = useMutation({
+    mutationFn: async (alertId: string) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const email = session?.user?.email || "admin";
+      const { error } = await supabase
+        .from("pipeline_alerts" as any)
+        .update({
+          acknowledged: true,
+          acknowledged_at: new Date().toISOString(),
+          acknowledged_by: email,
+        } as any)
+        .eq("id", alertId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pipeline-alerts"] });
+      toast.success("Alerta reconhecido");
+    },
+  });
+
+  const newAlerts = alerts?.filter(a => !a.acknowledged) || [];
+  const ackedAlerts = alerts?.filter(a => a.acknowledged) || [];
 
   return (
     <div className="space-y-4">
-      {/* Alerts Section */}
-      {alerts && alerts.length > 0 && (
+      {/* New Alerts */}
+      {newAlerts.length > 0 && (
         <Card className="border-destructive/30">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-destructive" />
-              Alertas Operacionais
-              {unacknowledged > 0 && (
-                <Badge variant="destructive" className="text-[10px] h-4 px-1.5">{unacknowledged}</Badge>
-              )}
+              Alertas Novos
+              <Badge variant="destructive" className="text-[10px] h-4 px-1.5">{newAlerts.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {alerts.slice(0, 5).map(alert => (
-              <div key={alert.id} className="flex items-start gap-2 p-2 rounded-lg bg-muted/50 text-xs">
+            {newAlerts.map(alert => (
+              <div key={alert.id} className="flex items-start gap-2 p-2 rounded-lg bg-destructive/5 text-xs">
                 <Badge className={`${severityConfig[alert.severity] || severityConfig.info} text-[10px] shrink-0`}>
                   {alertTypeLabels[alert.alert_type] || alert.alert_type}
                 </Badge>
                 <span className="text-muted-foreground flex-1">{alert.message}</span>
-                <span className="text-muted-foreground/60 shrink-0">
-                  {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true, locale: ptBR })}
+                <span className="text-muted-foreground/60 shrink-0 text-[10px]">
+                  {formatDistanceToNow(new Date(alert.created_at!), { addSuffix: true, locale: ptBR })}
                 </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 w-5 p-0 shrink-0"
+                  onClick={() => ackMutation.mutate(alert.id)}
+                  disabled={ackMutation.isPending}
+                  title="Reconhecer"
+                >
+                  <Eye className="h-3 w-3" />
+                </Button>
               </div>
             ))}
           </CardContent>
+        </Card>
+      )}
+
+      {/* Acknowledged Alerts */}
+      {ackedAlerts.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                Alertas Reconhecidos
+                <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{ackedAlerts.length}</Badge>
+              </span>
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1" onClick={() => setShowAcknowledged(!showAcknowledged)}>
+                {showAcknowledged ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                {showAcknowledged ? "Ocultar" : "Mostrar"}
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          {showAcknowledged && (
+            <CardContent className="space-y-1.5">
+              {ackedAlerts.map(alert => (
+                <div key={alert.id} className="flex items-start gap-2 p-2 rounded-lg bg-muted/30 text-xs opacity-70">
+                  <Badge className={`${severityConfig[alert.severity] || severityConfig.info} text-[10px] shrink-0`}>
+                    {alertTypeLabels[alert.alert_type] || alert.alert_type}
+                  </Badge>
+                  <span className="text-muted-foreground flex-1">{alert.message}</span>
+                  <span className="text-muted-foreground/60 shrink-0 text-[10px]">
+                    {alert.acknowledged_by && `${alert.acknowledged_by.split("@")[0]} · `}
+                    {alert.acknowledged_at && formatDistanceToNow(new Date(alert.acknowledged_at), { addSuffix: true, locale: ptBR })}
+                  </span>
+                </div>
+              ))}
+            </CardContent>
+          )}
         </Card>
       )}
 

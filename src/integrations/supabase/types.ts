@@ -3586,6 +3586,8 @@ export type Database = {
       pipeline_alerts: {
         Row: {
           acknowledged: boolean | null
+          acknowledged_at: string | null
+          acknowledged_by: string | null
           alert_type: string
           created_at: string | null
           details: Json | null
@@ -3596,6 +3598,8 @@ export type Database = {
         }
         Insert: {
           acknowledged?: boolean | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           alert_type: string
           created_at?: string | null
           details?: Json | null
@@ -3606,6 +3610,8 @@ export type Database = {
         }
         Update: {
           acknowledged?: boolean | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           alert_type?: string
           created_at?: string | null
           details?: Json | null
