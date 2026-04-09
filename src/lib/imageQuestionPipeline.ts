@@ -122,11 +122,9 @@ export async function selectImageQuestions(
     // Preferir questões excellent quando disponíveis
     const excellent = (data as any[]).filter((d: any) => d.editorial_grade === "excellent");
     const pool = excellent.length > 0 ? excellent : data;
-    const pick = enforceEditorialGrade(
-      pool[Math.floor(Math.random() * pool.length)] as any,
-      { source: "imageQuestionPipeline" }
-    );
-    const asset = pick.medical_image_assets;
+    const rawPick = pool[Math.floor(Math.random() * pool.length)] as any;
+    const pick = enforceEditorialGrade(rawPick, { source: "imageQuestionPipeline" });
+    const asset = (rawPick as any).medical_image_assets as { image_url?: string; image_type?: string } | undefined;
 
     // Final URL safety check — skip if image URL is suspicious
     const imgUrl = asset?.image_url;
