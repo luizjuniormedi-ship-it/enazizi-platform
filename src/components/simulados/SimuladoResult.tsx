@@ -2,6 +2,7 @@ import { useState, lazy, Suspense } from "react";
 import type { AdaptiveMeta } from "@/hooks/useAdaptiveSimulado";
 import { useNavigate } from "react-router-dom";
 const ModalityAnalyticsPanel = lazy(() => import("@/components/simulados/ModalityAnalyticsPanel"));
+const AdaptiveProgressDashboard = lazy(() => import("@/components/dashboard/AdaptiveProgressDashboard"));
 import { Award, BarChart3, AlertTriangle, GraduationCap, RotateCcw, Bookmark, BookOpen, Loader2, TrendingUp, Clock, Skull, Target, Trophy, Users } from "lucide-react";
 import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { Button } from "@/components/ui/button";
@@ -457,6 +458,10 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
       {/* Modality Analytics */}
       <Suspense fallback={null}>
         <ModalityAnalyticsPanel />
+      </Suspense>
+
+      <Suspense fallback={<div className="flex justify-center p-4"><Loader2 className="h-4 w-4 animate-spin" /></div>}>
+        <AdaptiveProgressDashboard />
       </Suspense>
 
       <TaskCompletionCard

@@ -39,6 +39,7 @@ import PreparationIndexCard from "@/components/dashboard/PreparationIndexCard";
 import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
 import DailyPlanWidget from "@/components/dashboard/DailyPlanWidget";
 import DailyGoalWidget from "@/components/dashboard/DailyGoalWidget";
+import AdaptiveProgressDashboard from "@/components/dashboard/AdaptiveProgressDashboard";
 
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useMessageDelivery } from "@/hooks/useMessageDelivery";
@@ -365,6 +366,7 @@ const Dashboard = () => {
           </SheetHeader>
           <div className="space-y-6 mt-4">
             <Suspense fallback={<ChartFallback />}>
+              <SafeCard name="AdaptiveProgress"><AdaptiveProgressDashboard /></SafeCard>
               <SafeCard name="SheetCharts"><DashboardCharts stats={stats} metrics={metrics} /></SafeCard>
               <SafeCard name="SheetSpecialty"><SpecialtyProgressCard /></SafeCard>
               <SafeCard name="SheetTopicEvo"><TopicEvolution /></SafeCard>
