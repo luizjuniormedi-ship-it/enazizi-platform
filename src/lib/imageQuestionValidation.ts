@@ -3,6 +3,8 @@
  * Garante que nenhuma questão inválida seja publicada.
  */
 
+import { detectClinicalContradictions } from "./clinicalContradictionDetector";
+
 const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice)\b/i;
 
 export interface ImageQuestionData {
@@ -115,9 +117,16 @@ export function validateImageQuestion(
     }
   }
 
-  // 8. Sem menção a achados não listados (heurística)
-  // Checagem básica — buscar achados comuns no statement que não estejam em clinical_findings
-  // Implementação conservadora para evitar falsos positivos
+  // 8. Detecção de contradições clínicas
+  const contradiction = detectClinicalContradictions(question.statement, asset.diagnosis, question.explanation);
+  if (contradiction.has_contradiction) {
+    if (contradiction.severity === "grave") {
+      errors.push(`Contradição clínica GRAVE: ${contradiction.issues.join("; ")}`);
+    } else {
+      // Moderado/leve — aviso mas não bloqueia
+      errors.push(`Contradição clínica (${contradiction.severity}): ${contradiction.issues.join("; ")}`);
+    }
+  }
 
   // 9. Sem contradição entre alternativas e explicação
   if (question.explanation.length < 50) {

@@ -73,6 +73,49 @@ function validateGenerated(q: any): { valid: boolean; errors: string[] } {
   return { valid: errors.length === 0, errors };
 }
 
+// ── Clinical Contradiction Detector (inline for edge function) ──
+const CLINICAL_CONTRADICTION_RULES: Array<{
+  diag: RegExp;
+  required: RegExp[];
+  label: string;
+  severity: "grave" | "moderado" | "leve";
+}> = [
+  { diag: /\b(dpoc|doença pulmonar obstrutiva crônica|enfisema)\b/i, required: [/\b(tabag|fumo|fumante|ex-fumante|ex-tabagista|cigarro|maços?[- ]?ano|carga tabág)/i], label: "DPOC sem tabagismo", severity: "grave" },
+  { diag: /\b(pneumonia|broncopneumonia|pnm)\b/i, required: [/\b(tosse|dispneia|febre|taqui[pn]|estertores?|crepitações?|expectoração)\b/i], label: "Pneumonia sem sintomas respiratórios", severity: "grave" },
+  { diag: /\b(iam|infarto agudo|infarto do miocárdio|sca|síndrome coronariana aguda)\b/i, required: [/\b(dor|precordial|retroesternal|opressão|angina|troponina|supra|infra|ECG|eletrocardiograma)\b/i], label: "IAM sem dor/ECG/marcadores", severity: "grave" },
+  { diag: /\b(avc|acidente vascular cerebral)\b/i, required: [/\b(déficit|paresia|plégia|afasia|disartria|hemipar|hemipleg|desvio|anisocoria|rebaixamento)\b/i], label: "AVC sem déficit neurológico", severity: "grave" },
+  { diag: /\b(meningite)\b/i, required: [/\b(febre|rigidez de nuca|cefaleia|kernig|brudzinski|fotofobia|líquor)\b/i], label: "Meningite sem sinais meníngeos", severity: "grave" },
+  { diag: /\b(tep|tromboembolismo pulmonar|embolia pulmonar)\b/i, required: [/\b(dispneia|taquicardia|dor torác|hemoptise|hipoxemia|d-?dímero)\b/i], label: "TEP sem dispneia/taquicardia", severity: "grave" },
+  { diag: /\b(cetoacidose diabética|cad)\b/i, required: [/\b(glicemia|glicose|acidose|pH|bicarbonato|kussmaul|cetonúria|cetona)\b/i], label: "CAD sem hiperglicemia/acidose", severity: "grave" },
+  { diag: /\b(apendicite)\b/i, required: [/\b(dor abdominal|FID|fossa ilíaca|blumberg|rovsing|mcburney)\b/i], label: "Apendicite sem dor em FID", severity: "grave" },
+  { diag: /\b(tuberculose|tb pulmonar)\b/i, required: [/\b(tosse|febre|sudorese noturna|emagrecimento|hemoptise|BAAR|escarro)\b/i], label: "TB sem tosse ou sintomas constitucionais", severity: "grave" },
+  { diag: /\b(insuficiência cardíaca|ic descompensada|icc)\b/i, required: [/\b(dispneia|edema|jugular|ortopneia|B3|crepitações?|congestão|BNP)\b/i], label: "IC sem congestão ou dispneia", severity: "grave" },
+  { diag: /\b(melanoma)\b/i, required: [/\b(lesão|nevo|assimetria|borda|cor|diâmetro|ABCDE|pigmentad)\b/i], label: "Melanoma sem lesão cutânea", severity: "grave" },
+  { diag: /\b(eclâmpsia|pré-eclâmpsia)\b/i, required: [/\b(hipertensão|PA |pressão arterial|proteinúria|gestante|grávida|semanas)\b/i], label: "Pré-eclâmpsia sem HAS em gestante", severity: "grave" },
+  { diag: /\b(retinopatia diabética)\b/i, required: [/\b(diabetes|diabétic|microaneurisma|exsudato|hemorragia|fundoscopia)\b/i], label: "Retinopatia diabética sem diabetes", severity: "grave" },
+  { diag: /\b(glaucoma)\b/i, required: [/\b(pressão intraocular|PIO|campo visual|escavação|disco óptico|tonometria)\b/i], label: "Glaucoma sem PIO ou alteração de disco", severity: "moderado" },
+  { diag: /\b(dengue)\b/i, required: [/\b(febre|mialgia|cefaleia|retro-?orbit|plaquetopenia|prova do laço)\b/i], label: "Dengue sem febre ou mialgia", severity: "grave" },
+  { diag: /\b(pancreatite aguda)\b/i, required: [/\b(dor abdominal|epigástr|amilase|lipase|irradiação para dorso)\b/i], label: "Pancreatite sem dor/marcadores", severity: "grave" },
+  { diag: /\b(bronquiolite)\b/i, required: [/\b(lactente|meses|sibil|taqui[pn]|dispneia|tiragem|VSR)\b/i], label: "Bronquiolite sem lactente/sintomas", severity: "grave" },
+];
+
+function detectContradictions(statement: string, diagnosis: string, explanation?: string): { has_contradiction: boolean; severity: string; issues: string[] } {
+  const issues: string[] = [];
+  let worst = "none";
+  const text = `${statement} ${explanation || ""}`.toLowerCase();
+  const severityRank: Record<string, number> = { none: 0, leve: 1, moderado: 2, grave: 3 };
+
+  for (const rule of CLINICAL_CONTRADICTION_RULES) {
+    if (!rule.diag.test(diagnosis)) continue;
+    const hasRequired = rule.required.some(p => p.test(text));
+    if (!hasRequired) {
+      issues.push(rule.label);
+      if (severityRank[rule.severity] > severityRank[worst]) worst = rule.severity;
+    }
+  }
+  return { has_contradiction: issues.length > 0, severity: worst, issues };
+}
+
 function buildPrompt(asset: any): string {
   const findings = Array.isArray(asset.clinical_findings) ? asset.clinical_findings.join(", ") : String(asset.clinical_findings || "");
   const distractors = Array.isArray(asset.distractors) ? asset.distractors.join(", ") : String(asset.distractors || "");
@@ -284,11 +327,19 @@ serve(async (req) => {
         if (!parsed.difficulty) parsed.difficulty = asset.difficulty || "medium";
         if (!parsed.exam_style) parsed.exam_style = exam_style;
 
-        // Validate
+        // Validate structure
         const validation = validateGenerated(parsed);
         if (!validation.valid) {
           console.warn(`[generate][${assetCode}] Validação falhou: ${validation.errors.join("; ")}`);
           results.push({ asset_id: asset.id, asset_code: assetCode, status: "rejected", stage: "validation", error: validation.errors.join("; ") });
+          continue;
+        }
+
+        // Clinical contradiction check
+        const contradiction = detectContradictions(parsed.statement, asset.diagnosis || "", parsed.explanation);
+        if (contradiction.has_contradiction && contradiction.severity === "grave") {
+          console.warn(`[generate][${assetCode}] ❌ Contradição clínica GRAVE: ${contradiction.issues.join("; ")}`);
+          results.push({ asset_id: asset.id, asset_code: assetCode, status: "rejected", stage: "clinical_contradiction", error: `Contradição grave: ${contradiction.issues.join("; ")}` });
           continue;
         }
 
