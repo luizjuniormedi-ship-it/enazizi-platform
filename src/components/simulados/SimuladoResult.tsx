@@ -1,4 +1,5 @@
 import { useState, lazy, Suspense } from "react";
+import type { AdaptiveMeta } from "@/hooks/useAdaptiveSimulado";
 import { useNavigate } from "react-router-dom";
 const ModalityAnalyticsPanel = lazy(() => import("@/components/simulados/ModalityAnalyticsPanel"));
 import { Award, BarChart3, AlertTriangle, GraduationCap, RotateCcw, Bookmark, BookOpen, Loader2, TrendingUp, Clock, Skull, Target, Trophy, Users } from "lucide-react";
@@ -20,9 +21,10 @@ interface SimuladoResultProps {
   mode: SimuladoMode;
   elapsedSeconds?: number;
   realExamProfile?: string;
+  adaptiveMeta?: AdaptiveMeta | null;
 }
 
-const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErrors, flaggedQuestions, mode, elapsedSeconds, realExamProfile }: SimuladoResultProps) => {
+const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErrors, flaggedQuestions, mode, elapsedSeconds, realExamProfile, adaptiveMeta }: SimuladoResultProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [generatingGuide, setGeneratingGuide] = useState<string | null>(null);
@@ -206,6 +208,50 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
             </div>
           );
         })()}
+
+        {/* Adaptive strategy summary */}
+        {adaptiveMeta && (
+          <div className="mt-4 glass-card p-4 text-left text-sm space-y-2 max-w-md mx-auto">
+            <h4 className="font-semibold flex items-center gap-1.5 text-primary">
+              <Target className="h-4 w-4" /> Estratégia Adaptativa
+            </h4>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+              <span className="text-muted-foreground">Foco:</span>
+              <span className="font-medium">{adaptiveMeta.focus}</span>
+              <span className="text-muted-foreground">Fraqueza alvo:</span>
+              <span className="font-medium">{adaptiveMeta.weakness_targeted}</span>
+              <span className="text-muted-foreground">Estratégia:</span>
+              <span className="font-medium">{adaptiveMeta.strategy}</span>
+            </div>
+            {adaptiveMeta.distribution && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {Object.entries(adaptiveMeta.distribution.difficulty || {}).map(([k, v]) => (
+                  <span key={k} className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">
+                    {k}: {v}
+                  </span>
+                ))}
+              </div>
+            )}
+            {(() => {
+              const imageQs = questions.filter(q => q._isImageQuestion).length;
+              const textQs = questions.length - imageQs;
+              const excellent = questions.filter(q => q._editorialGrade === "excellent").length;
+              const good = questions.filter(q => q._editorialGrade === "good").length;
+              const fromBank = questions.filter(q => (q as any)._source === "bank").length;
+              const generated = questions.length - fromBank;
+              return (
+                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[11px] text-muted-foreground pt-1 border-t border-border">
+                  <span>🖼️ Multimodal: <strong className="text-foreground">{imageQs}</strong></span>
+                  <span>📝 Textual: <strong className="text-foreground">{textQs}</strong></span>
+                  <span>⭐ Excellent: <strong className="text-foreground">{excellent}</strong></span>
+                  <span>✅ Good: <strong className="text-foreground">{good}</strong></span>
+                  <span>🏦 Do banco: <strong className="text-foreground">{fromBank}</strong></span>
+                  <span>🤖 Geradas: <strong className="text-foreground">{generated}</strong></span>
+                </div>
+              );
+            })()}
+          </div>
+        )}
       </div>
 
       {/* ── Prova Real: Competitive Analysis ── */}
