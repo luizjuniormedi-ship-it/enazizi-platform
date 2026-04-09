@@ -251,22 +251,38 @@ serve(async (req) => {
       distribution: { modalities: {} as Record<string, number>, difficulty: {} as Record<string, number>, exam_style: {} as Record<string, number> },
     };
 
-    // Try to serve from existing published questions first
+    // Try to serve from existing published questions first (editorial quality gated)
     for (const alloc of allocations) {
       const { data: existing } = await sb
         .from("medical_image_questions")
         .select(`
           id, statement, option_a, option_b, option_c, option_d, option_e,
           correct_index, explanation, rationale_map, difficulty, exam_style,
-          medical_image_assets!inner(image_url, image_type, diagnosis, specialty, subtopic)
+          senior_audit_score, editorial_grade,
+          medical_image_assets!inner(image_url, image_type, diagnosis, specialty, subtopic, clinical_confidence, is_active, review_status, integrity_status, validation_level, asset_origin)
         `)
         .eq("status", "published")
         .eq("medical_image_assets.image_type", alloc.modality)
-        .order("created_at", { ascending: false })
-        .limit(alloc.count);
+        .eq("medical_image_assets.is_active", true)
+        .eq("medical_image_assets.review_status", "published")
+        .eq("medical_image_assets.integrity_status", "ok")
+        .gte("medical_image_assets.clinical_confidence", 0.90)
+        .in("medical_image_assets.validation_level", ["gold", "silver"])
+        .in("medical_image_assets.asset_origin", ["real_medical", "validated_medical"])
+        // Editorial quality gate: prefer excellent, allow good
+        .neq("editorial_grade", "weak")
+        .not("senior_audit_score", "is", null)
+        .in("editorial_grade", ["excellent", "good"])
+        .order("senior_audit_score", { ascending: false })
+        .limit(alloc.count * 2); // fetch extra to prioritize excellent
 
       if (existing && existing.length > 0) {
-        for (const q of existing) {
+        // Prioritize excellent over good
+        const excellent = existing.filter((q: any) => q.editorial_grade === "excellent");
+        const good = existing.filter((q: any) => q.editorial_grade === "good");
+        const prioritized = [...excellent, ...good].slice(0, alloc.count);
+
+        for (const q of prioritized) {
           const asset = (q as any).medical_image_assets;
           questions.push({
             statement: q.statement,
@@ -282,6 +298,7 @@ serve(async (req) => {
             exam_style: q.exam_style,
             _isImageQuestion: true,
             _source: "bank",
+            _editorialGrade: q.editorial_grade,
           });
 
           // Track distribution
@@ -309,7 +326,9 @@ serve(async (req) => {
           .eq("is_active", true)
           .eq("review_status", "published")
           .eq("integrity_status", "ok")
-          .gte("clinical_confidence", 0.80)
+          .gte("clinical_confidence", 0.90)
+          .in("validation_level", ["gold", "silver"])
+          .in("asset_origin", ["real_medical", "validated_medical"])
           .in("image_type", priorityModalities)
           .limit(Math.min(deficit, 5));
 
