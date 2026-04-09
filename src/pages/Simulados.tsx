@@ -442,7 +442,7 @@ const Simulados = () => {
           const adaptiveDist = adaptiveBlueprint?.imageTypeDistribution ?? { ecg: 0.40, xray: 0.30, dermatology: 0.30 };
           const { slots: imgSlots } = calculateImageSlots(config.count, adaptiveImgPct, adaptiveDist);
           if (imgSlots.length > 0) {
-            const imgQs = await selectImageQuestions(imgSlots);
+            const imgQs = await selectImageQuestions(imgSlots, [], "simulado");
             const imgSim = imgQs.map(iq => {
               const sim = imageQuestionToSimQuestion(iq);
               return { statement: sim.statement, options: sim.options, correct: sim.correct_index, topic: sim.topic, explanation: sim.explanation, image_url: sim.image_url, image_type: sim.image_type, _isImageQuestion: sim._isImageQuestion, _imageQuestionId: sim._imageQuestionId } as SimQuestion;
@@ -535,7 +535,7 @@ const Simulados = () => {
         }
         if (slots.length > 0) {
           setLoadingProgress("Buscando questões com imagem...");
-          const imageQuestions = await selectImageQuestions(slots);
+          const imageQuestions = await selectImageQuestions(slots, [], "treino");
           imageSimQuestions = imageQuestions.map(iq => {
             const sim = imageQuestionToSimQuestion(iq);
             return {
