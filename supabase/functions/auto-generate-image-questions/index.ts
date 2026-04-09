@@ -367,6 +367,16 @@ Retorne APENAS um JSON array válido (sem markdown):
             continue;
           }
 
+          // ── HARD DETERMINISTIC VALIDATION ──
+          const hardResult = validateQuestionHard(asset, q);
+          console.log(`[auto-gen] Hard validation for ${asset.asset_code}: score=${hardResult.score} mode=${hardResult.mode} approved=${hardResult.approved} reasons=${hardResult.reasons.join(",")}`);
+
+          if (hardResult.blocked || !hardResult.approved) {
+            console.warn(`[auto-gen] ❌ BLOCKED by hard validation: ${asset.asset_code} (score=${hardResult.score}, reasons=${hardResult.reasons.join(",")})`);
+            totalFailed++;
+            continue;
+          }
+
           const prefix = (asset.image_type || "img").toUpperCase().slice(0, 4);
           const seq = Date.now().toString().slice(-6) + Math.random().toString(36).slice(2, 5);
           const questionCode = `${prefix}-AUTO-${seq}`;
@@ -386,6 +396,9 @@ Retorne APENAS um JSON array válido (sem markdown):
             difficulty: q.difficulty,
             exam_style: q.exam_style,
             status: "needs_review",
+            question_mode: hardResult.mode,
+            hard_validation_score: hardResult.score,
+            hard_validation_reasons: hardResult.reasons,
           });
 
           if (insertErr) {
