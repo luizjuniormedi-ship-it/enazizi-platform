@@ -454,7 +454,18 @@ const AdminImageQuestionReviewPanel = () => {
           </SelectContent>
         </Select>
 
-        {statusFilter !== "published" && questions.length > 0 && (
+        <Select value={editorialFilter} onValueChange={v => { setEditorialFilter(v); setPage(0); }}>
+          <SelectTrigger className="h-7 text-xs w-28">
+            <SelectValue placeholder="Editorial" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos grades</SelectItem>
+            <SelectItem value="excellent">⭐ Excellent</SelectItem>
+            <SelectItem value="good">✅ Good</SelectItem>
+            <SelectItem value="weak">❌ Weak</SelectItem>
+          </SelectContent>
+        </Select>
+
           <>
             <Button size="sm" variant="outline" className="text-xs h-7 text-emerald-600 border-emerald-500/30"
               disabled={actionLoading === "bulk"} onClick={() => handleBulkAction("published")}>
