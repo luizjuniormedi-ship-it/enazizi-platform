@@ -223,7 +223,7 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
                   {isRevealed && i === userAnswer && i !== q.correct && <XCircle className="h-4 w-4 text-destructive shrink-0" />}
                   <span>
                     <span className="font-semibold mr-2">{String.fromCharCode(65 + i)})</span>
-                    {opt}
+                    {opt.replace(/^[A-Ea-e]\)\s*/, '')}
                   </span>
                 </div>
               </button>
