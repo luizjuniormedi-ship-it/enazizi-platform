@@ -74,6 +74,17 @@ serve(async (req) => {
         finished_at: new Date().toISOString(),
         notes: `Auto-fail: sem progresso por ${STALE_RUN_MINUTES}min`,
       }).in("id", ids);
+
+      // Register alert for each stale run
+      const staleAlerts = ids.map(id => ({
+        run_id: id,
+        alert_type: "run_failed",
+        severity: "critical",
+        message: `Run ${id} auto-failed: sem progresso por ${STALE_RUN_MINUTES} minutos`,
+        details: { auto_failed: true, stale_minutes: STALE_RUN_MINUTES },
+      }));
+      await sb.from("pipeline_alerts").insert(staleAlerts).catch(() => {});
+
       console.log(`[auto-gen] Auto-failed ${ids.length} stale runs`);
     }
   } catch (e) {
@@ -313,6 +324,7 @@ Retorne APENAS um JSON array válido (sem markdown):
     }
 
     // ── Final run update ──
+    const durationMs = Date.now() - executionStart;
     const finalStatus = totalGenerated > 0 ? (totalFailed > 0 ? "partial" : "completed") : "failed";
     await sb.from("question_generation_runs").update({
       status: finalStatus,
@@ -320,10 +332,45 @@ Retorne APENAS um JSON array válido (sem markdown):
       generated_questions: totalGenerated,
       failed_assets: totalFailed,
       finished_at: new Date().toISOString(),
-      notes: `Auto-batch: ${totalGenerated} geradas, ${totalFailed} falharam (${Date.now() - executionStart}ms)`,
+      notes: `Auto-batch: ${totalGenerated} geradas, ${totalFailed} falharam (${durationMs}ms)`,
     }).eq("id", runId);
 
-    console.log(`[auto-gen] Done: ${totalGenerated} generated, ${totalFailed} failed in ${Date.now() - executionStart}ms`);
+    // ── OPERATIONAL ALERTS ──
+    const alerts: { alert_type: string; severity: string; message: string; details: any }[] = [];
+
+    if (finalStatus === "failed") {
+      alerts.push({
+        alert_type: "run_failed",
+        severity: "critical",
+        message: `Run ${runId} falhou: 0 questões geradas de ${processedAssets} assets processados`,
+        details: { run_id: runId, processed: processedAssets, duration_ms: durationMs },
+      });
+    }
+
+    if (totalGenerated === 0 && finalStatus !== "failed") {
+      alerts.push({
+        alert_type: "run_sterile",
+        severity: "warning",
+        message: `Run ${runId} concluída sem gerar questões (${processedAssets} assets processados)`,
+        details: { run_id: runId, processed: processedAssets, duration_ms: durationMs },
+      });
+    }
+
+    if (totalFailed > 0) {
+      alerts.push({
+        alert_type: "partial_failure",
+        severity: "warning",
+        message: `Run ${runId}: ${totalFailed} asset(s) falharam durante geração`,
+        details: { run_id: runId, failed: totalFailed, generated: totalGenerated, duration_ms: durationMs },
+      });
+    }
+
+    if (alerts.length > 0) {
+      const rows = alerts.map(a => ({ ...a, run_id: runId }));
+      await sb.from("pipeline_alerts").insert(rows).catch(e => console.warn("[auto-gen] Alert insert error:", e));
+    }
+
+    console.log(`[auto-gen] Done: ${totalGenerated} generated, ${totalFailed} failed in ${durationMs}ms, ${alerts.length} alerts`);
 
     return ok({
       success: true,

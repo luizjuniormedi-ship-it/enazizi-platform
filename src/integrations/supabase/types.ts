@@ -3583,6 +3583,39 @@ export type Database = {
         }
         Relationships: []
       }
+      pipeline_alerts: {
+        Row: {
+          acknowledged: boolean | null
+          alert_type: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          message: string
+          run_id: string | null
+          severity: string
+        }
+        Insert: {
+          acknowledged?: boolean | null
+          alert_type: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          message: string
+          run_id?: string | null
+          severity?: string
+        }
+        Update: {
+          acknowledged?: boolean | null
+          alert_type?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          message?: string
+          run_id?: string | null
+          severity?: string
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           created_at: string
