@@ -96,6 +96,8 @@ const AdminImageQuestionReviewPanel = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [searchingReal, setSearchingReal] = useState<string | null>(null);
+  const [editorialFilter, setEditorialFilter] = useState("all");
+  const [editorialCounts, setEditorialCounts] = useState<Record<string, number>>({});
   const PAGE_SIZE = 15;
 
   const fetchCounts = async () => {
