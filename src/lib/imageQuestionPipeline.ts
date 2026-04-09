@@ -189,9 +189,13 @@ export function calculateImageSlots(
   if (imageCount === 0) return { slots: [], fallbackCount: 0 };
 
   const defaultDistribution: Record<string, number> = {
-    ecg: 0.40,
-    xray: 0.35,
-    dermatology: 0.25,
+    ecg: 0.20,
+    xray: 0.20,
+    dermatology: 0.15,
+    ct: 0.15,
+    us: 0.10,
+    pathology: 0.10,
+    ophthalmology: 0.10,
   };
 
   const dist = imageTypeDistribution || defaultDistribution;
