@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Loader2, Brain, TrendingUp, Clock, Target, Star, AlertTriangle, Zap } from "lucide-react";
-import { useAdaptiveProgress, type ModalityAccuracy, type ModalityTrend, type ResponseTimeAlert, type AdaptiveInsight } from "@/hooks/useAdaptiveProgress";
+import { useAdaptiveProgress, type ModalityAccuracy, type ModalityTrend, type ResponseTimeAlert, type AdaptiveInsight, type PriorityWeakness, type ErrorPatternDetection } from "@/hooks/useAdaptiveProgress";
 
 const MODALITY_LABELS: Record<string, string> = {
   ecg: "ECG", xray: "RX", dermatology: "Dermatologia",
@@ -112,7 +112,7 @@ export default function AdaptiveProgressDashboard() {
     );
   }
 
-  const { weaknesses, trends, responseTimes, quality, profile, nextFocus, insights } = data;
+  const { weaknesses, priority_weaknesses, trends, responseTimes, slow_modalities, error_patterns_detected, quality, profile, nextFocus, insights } = data;
 
   return (
     <div className="space-y-4">
@@ -141,12 +141,39 @@ export default function AdaptiveProgressDashboard() {
         </CardContent>
       </Card>
 
-      {/* Weaknesses */}
+      {/* Priority Weaknesses */}
+      {priority_weaknesses.length > 0 && (
+        <Card className="border-border/40 border-red-500/20">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <AlertTriangle className="h-4 w-4 text-red-500" />
+              Fraquezas Prioritárias
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 space-y-1.5">
+            {priority_weaknesses.map((pw, i) => (
+              <div key={pw.modality} className="flex items-center justify-between p-2.5 rounded-xl bg-red-500/5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-red-600">#{i + 1}</span>
+                  <span className="text-sm font-medium">{ml(pw.modality)}</span>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="font-bold text-red-600">{pw.accuracy}%</span>
+                  {pw.responseTime > 0 && <span>{pw.responseTime}s</span>}
+                  {pw.inErrorPatterns && <span className="text-red-500">⚠️</span>}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* All Weaknesses */}
       <Card className="border-border/40">
         <CardHeader className="pb-2 pt-4 px-4">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold">
             <Target className="h-4 w-4 text-red-500" />
-            Fraquezas Atuais
+            Desempenho por Modalidade
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4 space-y-1.5">
@@ -155,6 +182,26 @@ export default function AdaptiveProgressDashboard() {
           ))}
         </CardContent>
       </Card>
+
+      {/* Error Patterns */}
+      {error_patterns_detected.length > 0 && (
+        <Card className="border-border/40">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <AlertTriangle className="h-4 w-4 text-orange-500" />
+              Padrões de Erro
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 space-y-1.5">
+            {error_patterns_detected.slice(0, 4).map((ep, i) => (
+              <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-orange-500/5">
+                <span className="text-sm">{ml(ep.pattern)}</span>
+                <Badge variant="outline" className="text-[10px]">{ep.label}</Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Trends */}
       {trends.length > 0 && (
