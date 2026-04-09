@@ -14,6 +14,7 @@ import AdminStatsCards from "@/components/admin/AdminStatsCards";
 import AdminOnlineUsers from "@/components/admin/AdminOnlineUsers";
 import AdminPlanDistribution from "@/components/admin/AdminPlanDistribution";
 import AdminDailyGenerationAlert from "@/components/admin/AdminDailyGenerationAlert";
+import AdminPipelineMonitor from "@/components/admin/AdminPipelineMonitor";
 import AdminWebScrapingPanel from "@/components/admin/AdminWebScrapingPanel";
 import AdminIngestionPanel from "@/components/admin/AdminIngestionPanel";
 import AdminQuestionReviewPanel from "@/components/admin/AdminQuestionReviewPanel";
