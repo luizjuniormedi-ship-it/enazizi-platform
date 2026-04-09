@@ -114,26 +114,53 @@ export async function selectImageQuestions(
     const pick = pool[Math.floor(Math.random() * pool.length)] as any;
     const asset = pick.medical_image_assets;
 
-    results.push({
-      id: pick.id,
-      asset_id: pick.asset_id,
-      question_code: pick.question_code,
-      statement: pick.statement,
-      option_a: pick.option_a,
-      option_b: pick.option_b,
-      option_c: pick.option_c,
-      option_d: pick.option_d,
-      option_e: pick.option_e,
-      correct_index: pick.correct_index,
-      explanation: pick.explanation,
-      difficulty: pick.difficulty,
-      tri_a: pick.tri_a,
-      tri_b: pick.tri_b,
-      tri_c: pick.tri_c,
-      exam_style: pick.exam_style,
-      image_url: asset?.image_url,
-      image_type: asset?.image_type,
-    });
+    // Final URL safety check — skip if image URL is suspicious
+    const imgUrl = asset?.image_url;
+    if (!isImageUrlClinical(imgUrl)) {
+      console.warn(`[ImagePipeline] URL suspeita detectada para ${pick.question_code}, servindo como textual`);
+      // Still include question but without image (text fallback)
+      results.push({
+        id: pick.id,
+        asset_id: pick.asset_id,
+        question_code: pick.question_code,
+        statement: pick.statement,
+        option_a: pick.option_a,
+        option_b: pick.option_b,
+        option_c: pick.option_c,
+        option_d: pick.option_d,
+        option_e: pick.option_e,
+        correct_index: pick.correct_index,
+        explanation: pick.explanation,
+        difficulty: pick.difficulty,
+        tri_a: pick.tri_a,
+        tri_b: pick.tri_b,
+        tri_c: pick.tri_c,
+        exam_style: pick.exam_style,
+        image_url: undefined, // Hide suspicious image
+        image_type: asset?.image_type,
+      });
+    } else {
+      results.push({
+        id: pick.id,
+        asset_id: pick.asset_id,
+        question_code: pick.question_code,
+        statement: pick.statement,
+        option_a: pick.option_a,
+        option_b: pick.option_b,
+        option_c: pick.option_c,
+        option_d: pick.option_d,
+        option_e: pick.option_e,
+        correct_index: pick.correct_index,
+        explanation: pick.explanation,
+        difficulty: pick.difficulty,
+        tri_a: pick.tri_a,
+        tri_b: pick.tri_b,
+        tri_c: pick.tri_c,
+        exam_style: pick.exam_style,
+        image_url: imgUrl,
+        image_type: asset?.image_type,
+      });
+    }
 
     excludeIds.push(pick.id);
   }
