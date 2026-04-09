@@ -19,6 +19,7 @@ export interface SimQuestion {
   _isImageQuestion?: boolean;
   _imageQuestionId?: string;
   _editorialGrade?: string;
+  _questionMode?: string;
 }
 
 interface SimuladoExamProps {
@@ -184,7 +185,7 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
           </button>
         </div>
         {/* Imagem médica se disponível (ignora placeholders) */}
-        {q.image_url && isImageUrlClinical(q.image_url) && (
+        {q.image_url && q._questionMode !== "text_only" && isImageUrlClinical(q.image_url) && (
           <div className="mb-4">
             <ImageQuestionViewer
               imageUrl={q.image_url}
