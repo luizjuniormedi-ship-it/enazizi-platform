@@ -381,6 +381,12 @@ Retorne APENAS um JSON array válido (sem markdown):
           const seq = Date.now().toString().slice(-6) + Math.random().toString(36).slice(2, 5);
           const questionCode = `${prefix}-AUTO-${seq}`;
 
+          // ── ENFORCE EDITORIAL GRADE ──
+          if (!q.editorial_grade || !["excellent", "good"].includes(q.editorial_grade)) {
+            console.warn(`[auto-gen] editorial_grade missing/invalid for ${asset.asset_code}, defaulting to "good"`);
+            q.editorial_grade = "good";
+          }
+
           const { error: insertErr } = await sb.from("medical_image_questions").insert({
             asset_id: asset.id,
             question_code: questionCode,
@@ -395,6 +401,7 @@ Retorne APENAS um JSON array válido (sem markdown):
             rationale_map: q.rationale_map,
             difficulty: q.difficulty,
             exam_style: q.exam_style,
+            editorial_grade: q.editorial_grade,
             status: "needs_review",
             question_mode: hardResult.mode,
             hard_validation_score: hardResult.score,

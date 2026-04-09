@@ -457,6 +457,12 @@ serve(async (req) => {
           // Generate unique question code
           const qCode = `IMG-${asset.image_type?.toUpperCase() || "GEN"}-${Date.now().toString(36).toUpperCase()}-Q${qi + 1}`;
 
+          // ── ENFORCE EDITORIAL GRADE ──
+          if (!q.editorial_grade || !["excellent", "good"].includes(q.editorial_grade)) {
+            console.warn(`[generate][${assetCode}][Q${qi + 1}] editorial_grade missing/invalid, defaulting to "good"`);
+            q.editorial_grade = "good";
+          }
+
           const { data: inserted, error: insertErr } = await sb.from("medical_image_questions").insert({
             asset_id: asset.id,
             question_code: qCode,
@@ -472,6 +478,7 @@ serve(async (req) => {
             rationale_map: q.rationale_map,
             difficulty: q.difficulty,
             exam_style: q.exam_style,
+            editorial_grade: q.editorial_grade,
             status,
           }).select("id").single();
 
