@@ -5,6 +5,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { isImageUrlClinical } from "@/lib/multimodalSafetyGate";
+import { enforceEditorialGrade } from "@/lib/enforceEditorialGrade";
 
 export interface ImageAsset {
   id: string;
@@ -121,7 +122,10 @@ export async function selectImageQuestions(
     // Preferir questões excellent quando disponíveis
     const excellent = (data as any[]).filter((d: any) => d.editorial_grade === "excellent");
     const pool = excellent.length > 0 ? excellent : data;
-    const pick = pool[Math.floor(Math.random() * pool.length)] as any;
+    const pick = enforceEditorialGrade(
+      pool[Math.floor(Math.random() * pool.length)] as any,
+      { source: "imageQuestionPipeline" }
+    );
     const asset = pick.medical_image_assets;
 
     // Final URL safety check — skip if image URL is suspicious
