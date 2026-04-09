@@ -437,13 +437,22 @@ serve(async (req) => {
           // Duplicate correct_index detection within trio
           if (usedIndexes.has(q.correct_index) && usedIndexes.size >= 2) {
             console.warn(`[generate][${assetCode}][Q${qi + 1}] correct_index ${q.correct_index} repetido no trio`);
-            // Allow but log — not a hard block
           }
           usedIndexes.add(q.correct_index);
 
+          // ── FAKE MULTIMODAL CHECK ──
+          const multimodalStrength = q.multimodal_strength || "unknown";
+          if (multimodalStrength === "weak") {
+            console.warn(`[generate][${assetCode}][Q${qi + 1}] ⚠️ Fake multimodal detectado (strength: weak) → rebaixando para text_only`);
+            // Don't block — but mark as text_only so it won't be served with image
+            q._question_mode = "text_only";
+          } else {
+            q._question_mode = "multimodal";
+          }
+
           // Internal score check (if AI provided it)
           const internalScore = q.internal_score || 0;
-          const status = internalScore >= 90 ? "needs_review" : internalScore >= 75 ? "needs_review" : "needs_review";
+          const status = internalScore >= 90 ? "needs_review" : "needs_review";
 
           // Generate unique question code
           const qCode = `IMG-${asset.image_type?.toUpperCase() || "GEN"}-${Date.now().toString(36).toUpperCase()}-Q${qi + 1}`;
