@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
-import { FileText, Play, History, BookOpen, Timer, Skull, Trophy, Brain, Zap, Target, TrendingDown } from "lucide-react";
+import { FileText, Play, History, BookOpen, Timer, Skull, Trophy, Brain, Zap, Target, TrendingDown, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -35,7 +35,7 @@ const EXAM_BOARDS = [
 export type SimuladoMode = "prova" | "estudo" | "extremo" | "prova_real" | "tri" | "adaptativo";
 
 interface SimuladoSetupProps {
-  onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string; realExamProfile?: string }) => void;
+  onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string; realExamProfile?: string; imagePercent?: number }) => void;
   onResumeSession: () => void;
   onDiscardSession: () => void;
   onRetryErrors: (sessionId: string) => void;
@@ -64,6 +64,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
   const [examBoard, setExamBoard] = useState("all");
   const [mode, setMode] = useState<SimuladoMode>("estudo");
   const [realExamBoard, setRealExamBoard] = useState("GERAL");
+  const [imagePercent, setImagePercent] = useState(20);
 
   const toggleTopic = (topic: string) => {
     setSelectedTopics(prev =>
@@ -96,7 +97,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
       return;
     }
     const count = customCount ? parseInt(customCount) : questionCount;
-    onStart({ topics: selectedTopics, count, difficulty, timePerQuestion, mode, specificTopic: specificTopic.trim() || undefined, examBoard: examBoard !== "all" ? examBoard : undefined });
+    onStart({ topics: selectedTopics, count, difficulty, timePerQuestion, mode, specificTopic: specificTopic.trim() || undefined, examBoard: examBoard !== "all" ? examBoard : undefined, imagePercent });
   };
 
   const totalTime = mode === "prova_real" || mode === "tri"
@@ -580,7 +581,34 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             </div>
           )}
 
-          {/* Timer — prova and extremo */}
+          {/* Image questions percentage */}
+          {mode !== "adaptativo" && (
+            <div>
+              <label className="text-sm font-semibold mb-3 block flex items-center gap-2">
+                <Image className="h-4 w-4 text-primary" />
+                Questões com imagem médica
+              </label>
+              <div className="flex gap-2 flex-wrap">
+                {[0, 10, 20, 30, 50].map(pct => (
+                  <Button
+                    key={pct}
+                    variant={imagePercent === pct ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setImagePercent(pct)}
+                  >
+                    {pct === 0 ? "Nenhuma" : `${pct}%`}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {imagePercent === 0
+                  ? "Apenas questões textuais"
+                  : `~${Math.round((customCount ? parseInt(customCount) || questionCount : questionCount) * imagePercent / 100)} questões com ECG, RX, dermato, TC e mais`}
+              </p>
+            </div>
+          )}
+
+
           {(mode === "prova" || mode === "extremo") && (
             <div>
               <label className="text-sm font-semibold mb-2 block">Tempo por questão</label>

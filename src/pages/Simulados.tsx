@@ -527,8 +527,8 @@ const Simulados = () => {
       // ── Step 2.5: Inject image questions (adaptive or default 20%) ──
       let imageSimQuestions: SimQuestion[] = [];
       try {
-        const IMAGE_PERCENT = adaptiveBlueprint?.imagePercent ?? 20;
-        const imgDist = adaptiveBlueprint?.imageTypeDistribution ?? { ecg: 0.40, xray: 0.30, dermatology: 0.30 };
+        const IMAGE_PERCENT = (config as any).imagePercent ?? adaptiveBlueprint?.imagePercent ?? 20;
+        const imgDist = adaptiveBlueprint?.imageTypeDistribution ?? { ecg: 0.20, xray: 0.20, dermatology: 0.15, ct: 0.15, us: 0.10, pathology: 0.10, ophthalmology: 0.10 };
         const { slots, fallbackCount } = calculateImageSlots(config.count, IMAGE_PERCENT, imgDist);
         if (fallbackCount > 0) {
           console.info(`[Simulados] ${fallbackCount} questões de imagem substituídas por fallback textual`);
