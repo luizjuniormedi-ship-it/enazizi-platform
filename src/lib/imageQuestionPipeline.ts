@@ -181,7 +181,7 @@ export async function selectImageQuestions(
 /**
  * Converter ImageQuestion para formato SimQuestion compatível com o simulado.
  */
-export function imageQuestionToSimQuestion(iq: ImageQuestion): {
+export function imageQuestionToSimQuestion(iq: ImageQuestion & { editorial_grade?: string }): {
   statement: string;
   options: string[];
   correct_index: number;
@@ -192,6 +192,7 @@ export function imageQuestionToSimQuestion(iq: ImageQuestion): {
   image_type?: string;
   _isImageQuestion: boolean;
   _imageQuestionId: string;
+  _editorialGrade?: string;
 } {
   const options = [iq.option_a, iq.option_b, iq.option_c, iq.option_d];
   if (iq.option_e) options.push(iq.option_e);
@@ -209,6 +210,7 @@ export function imageQuestionToSimQuestion(iq: ImageQuestion): {
     image_type: iq.image_type,
     _isImageQuestion: hasValidImage,
     _imageQuestionId: iq.id,
+    _editorialGrade: (iq as any).editorial_grade,
   };
 }
 
