@@ -3,6 +3,8 @@
  * Garante que nenhuma questão inválida seja publicada.
  */
 
+import { detectClinicalContradictions } from "./clinicalContradictionDetector";
+
 const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice)\b/i;
 
 export interface ImageQuestionData {
