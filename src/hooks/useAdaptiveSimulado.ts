@@ -18,6 +18,7 @@ export interface AdaptiveQuestion {
   exam_style: string;
   _isImageQuestion: boolean;
   _source?: string;
+  _editorialGrade?: string;
 }
 
 export interface AdaptiveMeta {
