@@ -281,6 +281,7 @@ serve(async (req) => {
       difficulty,
       exam_style = "ENARE",
       asset_ids,
+      student_performance,
     } = body;
 
     const limit = Math.min(batch_size, 5);
