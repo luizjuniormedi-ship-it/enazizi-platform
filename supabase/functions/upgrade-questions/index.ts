@@ -32,8 +32,10 @@ REGRAS OBRIGATÓRIAS:
 8. NÃO referencie imagens, figuras ou gráficos
 9. TUDO em PORTUGUÊS BRASILEIRO
 10. Mantenha a pergunta objetiva no final do caso
+11. 🚨 CRÍTICO: O campo "statement" deve conter APENAS o caso clínico e a pergunta final. NÃO inclua as alternativas (A, B, C, D, E) dentro do statement. As alternativas já existem separadamente e serão mantidas como estão.
+12. NÃO repita, liste ou mencione as alternativas dentro do enunciado de forma alguma.
 
-Retorne APENAS JSON: {"statement": "caso clínico expandido completo terminando com a pergunta"}`;
+Retorne APENAS JSON: {"statement": "caso clínico expandido completo terminando APENAS com a pergunta, SEM listar alternativas"}`;
 
   try {
     const res = await fetch(LOVABLE_GATEWAY, {
@@ -57,7 +59,12 @@ Retorne APENAS JSON: {"statement": "caso clínico expandido completo terminando 
     const data = await res.json();
     const raw = (data.choices?.[0]?.message?.content || "").replace(/```json\n?/g, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(raw);
-    const newStatement = parsed.statement?.trim();
+    // Strip any alternatives that leaked into the statement
+    let newStatement = (parsed.statement || "").trim();
+    // Remove patterns like "A) ...\nB) ...\nC) ..." or "a) ..." at the end
+    newStatement = newStatement.replace(/\n\s*[A-Ea-e]\)\s+.+$/gms, "").trim();
+    // Remove patterns like "\nA. ...\nB. ..." 
+    newStatement = newStatement.replace(/\n\s*[A-Ea-e]\.\s+.+$/gms, "").trim();
 
     if (!newStatement || newStatement.length < 350) {
       console.warn(`Upgraded statement too short for ${q.id}: ${newStatement?.length}`);
