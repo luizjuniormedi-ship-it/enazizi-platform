@@ -298,6 +298,7 @@ const Admin = () => {
       }} />
       <AdminPlanDistribution stats={stats} />
       <AdminDailyGenerationAlert />
+      <AdminPipelineMonitor />
       <AdminWebScrapingPanel />
       <AdminIngestionPanel />
       <AdminQuestionReviewPanel />
