@@ -124,6 +124,8 @@ async function fetchAdaptiveProgress(userId: string): Promise<AdaptiveProgressDa
   // ── 1. Weaknesses ──
   const modStats: Record<string, { correct: number; total: number }> = {};
   const modTimes: Record<string, number[]> = {};
+  const diffStats: Record<string, { correct: number; total: number }> = {};
+  const errorTopics: Record<string, number> = {};
 
   for (const r of analytics) {
     const mod = r.image_type || "text";
@@ -133,6 +135,15 @@ async function fetchAdaptiveProgress(userId: string): Promise<AdaptiveProgressDa
     if (r.response_time_seconds && r.response_time_seconds > 0) {
       if (!modTimes[mod]) modTimes[mod] = [];
       modTimes[mod].push(r.response_time_seconds);
+    }
+
+    const diff = r.difficulty || "medium";
+    if (!diffStats[diff]) diffStats[diff] = { correct: 0, total: 0 };
+    diffStats[diff].total++;
+    if (r.is_correct) diffStats[diff].correct++;
+
+    if (!r.is_correct) {
+      errorTopics[mod] = (errorTopics[mod] || 0) + 1;
     }
   }
 
