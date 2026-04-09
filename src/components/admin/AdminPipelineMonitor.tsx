@@ -8,6 +8,7 @@ import { AlertTriangle, CheckCircle2, XCircle, Clock, Zap, Activity, Eye, EyeOff
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import AlertActions from "./pipeline/AlertActions";
 
 interface PipelineRun {
   id: string;
@@ -121,24 +122,27 @@ export default function AdminPipelineMonitor() {
           </CardHeader>
           <CardContent className="space-y-2">
             {newAlerts.map(alert => (
-              <div key={alert.id} className="flex items-start gap-2 p-2 rounded-lg bg-destructive/5 text-xs">
-                <Badge className={`${severityConfig[alert.severity] || severityConfig.info} text-[10px] shrink-0`}>
-                  {alertTypeLabels[alert.alert_type] || alert.alert_type}
-                </Badge>
-                <span className="text-muted-foreground flex-1">{alert.message}</span>
-                <span className="text-muted-foreground/60 shrink-0 text-[10px]">
-                  {formatDistanceToNow(new Date(alert.created_at!), { addSuffix: true, locale: ptBR })}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-5 w-5 p-0 shrink-0"
-                  onClick={() => ackMutation.mutate(alert.id)}
-                  disabled={ackMutation.isPending}
-                  title="Reconhecer"
-                >
-                  <Eye className="h-3 w-3" />
-                </Button>
+              <div key={alert.id} className="p-2 rounded-lg bg-destructive/5 text-xs">
+                <div className="flex items-start gap-2">
+                  <Badge className={`${severityConfig[alert.severity] || severityConfig.info} text-[10px] shrink-0`}>
+                    {alertTypeLabels[alert.alert_type] || alert.alert_type}
+                  </Badge>
+                  <span className="text-muted-foreground flex-1">{alert.message}</span>
+                  <span className="text-muted-foreground/60 shrink-0 text-[10px]">
+                    {formatDistanceToNow(new Date(alert.created_at!), { addSuffix: true, locale: ptBR })}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 w-5 p-0 shrink-0"
+                    onClick={() => ackMutation.mutate(alert.id)}
+                    disabled={ackMutation.isPending}
+                    title="Reconhecer"
+                  >
+                    <Eye className="h-3 w-3" />
+                  </Button>
+                </div>
+                <AlertActions alertType={alert.alert_type} runId={alert.run_id} details={alert.details} />
               </div>
             ))}
           </CardContent>
