@@ -466,6 +466,7 @@ const AdminImageQuestionReviewPanel = () => {
           </SelectContent>
         </Select>
 
+        {statusFilter !== "published" && questions.length > 0 && (
           <>
             <Button size="sm" variant="outline" className="text-xs h-7 text-emerald-600 border-emerald-500/30"
               disabled={actionLoading === "bulk"} onClick={() => handleBulkAction("published")}>
