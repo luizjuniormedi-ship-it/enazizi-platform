@@ -4,6 +4,7 @@ import { Clock, ArrowRight, ArrowLeft, Flag, Bookmark, GraduationCap, CheckCircl
 import { Button } from "@/components/ui/button";
 import type { SimuladoMode } from "./SimuladoSetup";
 import ImageQuestionViewer from "./ImageQuestion";
+import { isImageUrlClinical } from "@/lib/multimodalSafetyGate";
 
 export interface SimQuestion {
   statement: string;
@@ -182,7 +183,7 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
           </button>
         </div>
         {/* Imagem médica se disponível (ignora placeholders) */}
-        {q.image_url && !q.image_url.includes('placeholder') && (
+        {q.image_url && isImageUrlClinical(q.image_url) && (
           <div className="mb-4">
             <ImageQuestionViewer
               imageUrl={q.image_url}
