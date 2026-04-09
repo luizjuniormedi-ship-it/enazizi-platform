@@ -11,9 +11,110 @@ const MAX_QUESTIONS_PER_ASSET = 3;
 const BATCH_SIZE = 3;
 const MIN_STATEMENT = 400;
 const MIN_EXPLANATION = 120;
-const EXECUTION_TIMEOUT_MS = 120_000; // 2 min hard limit
+const EXECUTION_TIMEOUT_MS = 120_000;
 const STALE_RUN_MINUTES = 30;
 const ENGLISH_PATTERN = /\b(the|is|are|was|were|this|that|which|what|patient|diagnosis|treatment|clinical|history)\b/gi;
+
+// ── HARD DETERMINISTIC VALIDATION (inlined for edge function) ──
+const BLOCK_PATTERNS = [
+  "laptop","notebook","dashboard","screen","ui","interface","website",
+  "landing-page","mockup","placeholder","shutterstock","unsplash","stock",
+  "portrait","selfie","avatar","person","office","room","illustration",
+  "vector","cartoon","clipart","diagram","drawing"
+];
+const ENGLISH_WORDS_HARD = [
+  "however","therefore","management","patient presents","follow-up",
+  "rash","history of present illness","chief complaint","because",
+  "imaging findings","treatment"
+];
+
+function normalizeText(v: unknown): string { return typeof v === "string" ? v.trim() : ""; }
+function wordCount(t: string): number { return t.split(/\s+/).filter(Boolean).length; }
+function hasBlockedUrl(url?: string | null): boolean {
+  if (!url) return true;
+  const u = url.toLowerCase();
+  return BLOCK_PATTERNS.some(p => u.includes(p));
+}
+function isSafeAsset(asset: any): boolean {
+  return (
+    asset.is_active === true &&
+    ["real_medical","validated_medical"].includes(asset.asset_origin || "") &&
+    ["gold","silver"].includes(asset.validation_level || "") &&
+    asset.review_status === "published" &&
+    asset.integrity_status === "ok" &&
+    Number(asset.clinical_confidence || 0) >= 0.9 &&
+    !hasBlockedUrl(asset.image_url)
+  );
+}
+function mentionsImageDependence(text: string): boolean {
+  const t = text.toLowerCase();
+  return ["achados do exame","exame realizado","ultrassonografia","radiografia","tomografia",
+    "eletrocardiograma","dermatoscopia","fundo de olho","lâmina histológica","ao exame de imagem"
+  ].some(x => t.includes(x));
+}
+function fakeMultimodalByContent(asset: any, q: any): boolean {
+  const statement = normalizeText(q.statement).toLowerCase();
+  const diagnosis = normalizeText(asset.diagnosis).toLowerCase();
+  if (!mentionsImageDependence(statement)) return true;
+  const textOnlySignals = [
+    ["amenorreia","beta-hcg","sangramento vaginal"],
+    ["prurido","escamas","couro cabeludo"],
+    ["dor torácica","dispneia","sudorese"],
+    ["palpitações","taquicardia","síncope"]
+  ];
+  if (textOnlySignals.some(g => g.every(t => statement.includes(t))) && !statement.includes("achado visual")) return true;
+  const findingsText = Array.isArray(asset.clinical_findings)
+    ? asset.clinical_findings.join(" ").toLowerCase()
+    : normalizeText(asset.clinical_findings).toLowerCase();
+  const someFindingReferenced = findingsText.length > 0 &&
+    findingsText.split(/[;,]/).map((s:string)=>s.trim()).filter(Boolean)
+      .some((f:string) => f.length >= 6 && statement.includes(f.slice(0, Math.min(f.length, 20)).trim()));
+  if (!someFindingReferenced && diagnosis.length > 0 && !statement.includes(diagnosis.split(" ")[0])) return true;
+  return false;
+}
+function validateQuestionHard(asset: any, q: any): { approved: boolean; blocked: boolean; score: number; mode: string; reasons: string[] } {
+  const reasons: string[] = [];
+  let structure = 0, image = 0, multimodal = 0, pedagogy = 0;
+
+  if (!isSafeAsset(asset)) return { approved: false, blocked: true, score: 0, mode: "blocked", reasons: ["asset_inseguro"] };
+
+  const opts = ["option_a","option_b","option_c","option_d","option_e"];
+  if (!opts.every(k => normalizeText(q[k]).length > 0)) return { approved: false, blocked: true, score: 0, mode: "blocked", reasons: ["alternativas_incompletas"] };
+  if (typeof q.correct_index !== "number" || q.correct_index < 0 || q.correct_index > 4) return { approved: false, blocked: true, score: 0, mode: "blocked", reasons: ["correct_index_invalido"] };
+
+  const st = normalizeText(q.statement), ex = normalizeText(q.explanation);
+  if (st.length >= 400) structure += 10; else reasons.push("enunciado_curto");
+  if (ex.length >= 120) structure += 5; else reasons.push("explicacao_curta");
+  if (["easy","medium","hard"].includes(normalizeText(q.difficulty))) structure += 3;
+  if (normalizeText(q.exam_style).length >= 3) structure += 2;
+  const rm = q.rationale_map || {};
+  if (["A","B","C","D","E"].every(k => normalizeText(rm[k]).length >= 10)) structure += 5; else reasons.push("rationale_incompleto");
+
+  if (!hasBlockedUrl(asset.image_url)) image += 10;
+  if (["gold","silver"].includes(asset.validation_level || "")) image += 5;
+  if (["real_medical","validated_medical"].includes(asset.asset_origin || "")) image += 5;
+  if (Number(asset.clinical_confidence || 0) >= 0.95) image += 5; else if (Number(asset.clinical_confidence || 0) >= 0.9) image += 3;
+
+  if (mentionsImageDependence(st)) multimodal += 10; else reasons.push("nao_depende_de_imagem");
+  if (!fakeMultimodalByContent(asset, q)) multimodal += 15; else reasons.push("fake_multimodal");
+
+  const optVals = opts.map(k => normalizeText(q[k]).toLowerCase());
+  if (new Set(optVals).size < 5) reasons.push("alternativas_repetidas");
+  if (wordCount(st) < 65) reasons.push("caso_pouco_desenvolvido");
+  const engCount = ENGLISH_WORDS_HARD.filter(w => `${st} ${ex}`.toLowerCase().includes(w)).length;
+  if (engCount >= 2) reasons.push("vazamento_ingles");
+
+  const pWeakCount = reasons.filter(r => ["enunciado_curto","explicacao_curta","caso_pouco_desenvolvido","alternativas_repetidas","rationale_incompleto","vazamento_ingles"].includes(r)).length;
+  pedagogy = Math.max(0, 25 - pWeakCount * 5);
+
+  const score = structure + image + multimodal + pedagogy;
+
+  if (reasons.includes("fake_multimodal") || reasons.includes("nao_depende_de_imagem")) {
+    return { approved: score >= 70, blocked: false, score, mode: "text_only", reasons };
+  }
+  if (score < 70) return { approved: false, blocked: true, score, mode: "blocked", reasons };
+  return { approved: true, blocked: false, score, mode: "multimodal", reasons };
+}
 
 function ok(data: unknown) {
   return new Response(JSON.stringify(data), {
@@ -100,7 +201,7 @@ serve(async (req) => {
 
     const { data: allAssets, error: assetErr } = await sb
       .from("medical_image_assets")
-      .select("id, asset_code, image_type, specialty, subtopic, diagnosis, clinical_findings, distractors, difficulty, image_url")
+      .select("id, asset_code, image_type, specialty, subtopic, diagnosis, clinical_findings, distractors, difficulty, image_url, asset_origin, validation_level, review_status, integrity_status, clinical_confidence, is_active")
       .eq("is_active", true)
       .eq("review_status", "published")
       .gte("clinical_confidence", 0.9)
@@ -266,6 +367,16 @@ Retorne APENAS um JSON array válido (sem markdown):
             continue;
           }
 
+          // ── HARD DETERMINISTIC VALIDATION ──
+          const hardResult = validateQuestionHard(asset, q);
+          console.log(`[auto-gen] Hard validation for ${asset.asset_code}: score=${hardResult.score} mode=${hardResult.mode} approved=${hardResult.approved} reasons=${hardResult.reasons.join(",")}`);
+
+          if (hardResult.blocked || !hardResult.approved) {
+            console.warn(`[auto-gen] ❌ BLOCKED by hard validation: ${asset.asset_code} (score=${hardResult.score}, reasons=${hardResult.reasons.join(",")})`);
+            totalFailed++;
+            continue;
+          }
+
           const prefix = (asset.image_type || "img").toUpperCase().slice(0, 4);
           const seq = Date.now().toString().slice(-6) + Math.random().toString(36).slice(2, 5);
           const questionCode = `${prefix}-AUTO-${seq}`;
@@ -285,6 +396,9 @@ Retorne APENAS um JSON array válido (sem markdown):
             difficulty: q.difficulty,
             exam_style: q.exam_style,
             status: "needs_review",
+            question_mode: hardResult.mode,
+            hard_validation_score: hardResult.score,
+            hard_validation_reasons: hardResult.reasons,
           });
 
           if (insertErr) {

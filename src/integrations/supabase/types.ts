@@ -3030,6 +3030,8 @@ export type Database = {
           editorial_score: number | null
           exam_style: string
           explanation: string
+          hard_validation_reasons: string[] | null
+          hard_validation_score: number | null
           id: string
           is_batch_protected: boolean | null
           language_code: string
@@ -3039,6 +3041,7 @@ export type Database = {
           option_d: string
           option_e: string | null
           question_code: string
+          question_mode: string | null
           rationale_map: Json | null
           senior_audit_score: number | null
           statement: string
@@ -3060,6 +3063,8 @@ export type Database = {
           editorial_score?: number | null
           exam_style?: string
           explanation: string
+          hard_validation_reasons?: string[] | null
+          hard_validation_score?: number | null
           id?: string
           is_batch_protected?: boolean | null
           language_code?: string
@@ -3069,6 +3074,7 @@ export type Database = {
           option_d: string
           option_e?: string | null
           question_code: string
+          question_mode?: string | null
           rationale_map?: Json | null
           senior_audit_score?: number | null
           statement: string
@@ -3090,6 +3096,8 @@ export type Database = {
           editorial_score?: number | null
           exam_style?: string
           explanation?: string
+          hard_validation_reasons?: string[] | null
+          hard_validation_score?: number | null
           id?: string
           is_batch_protected?: boolean | null
           language_code?: string
@@ -3099,6 +3107,7 @@ export type Database = {
           option_d?: string
           option_e?: string | null
           question_code?: string
+          question_mode?: string | null
           rationale_map?: Json | null
           senior_audit_score?: number | null
           statement?: string
