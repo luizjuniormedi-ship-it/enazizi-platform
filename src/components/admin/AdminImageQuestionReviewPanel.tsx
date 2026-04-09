@@ -31,7 +31,15 @@ interface ImageReviewQuestion {
   specialty?: string;
   asset_origin?: string;
   source_domain?: string;
+  editorial_grade?: string;
+  senior_audit_score?: number;
 }
+
+const EDITORIAL_COLORS: Record<string, string> = {
+  excellent: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30",
+  good: "bg-blue-500/10 text-blue-700 border-blue-500/30",
+  weak: "bg-red-500/10 text-red-700 border-red-500/30",
+};
 
 const REVIEW_QUEUE_STATUSES = ["draft", "needs_review", "upgraded", "upgrading"];
 
@@ -88,6 +96,8 @@ const AdminImageQuestionReviewPanel = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [searchingReal, setSearchingReal] = useState<string | null>(null);
+  const [editorialFilter, setEditorialFilter] = useState("all");
+  const [editorialCounts, setEditorialCounts] = useState<Record<string, number>>({});
   const PAGE_SIZE = 15;
 
   const fetchCounts = async () => {
@@ -116,6 +126,31 @@ const AdminImageQuestionReviewPanel = () => {
     });
 
     setCounts({ queue: queueCount, ...results });
+
+    // Fetch editorial grade counts
+    const editorialGrades = ["excellent", "good", "weak"];
+    const editorialResults = await Promise.all(
+      editorialGrades.map(async (grade) => {
+        const { count } = await supabase
+          .from("medical_image_questions")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "published" as any)
+          .eq("editorial_grade", grade as any);
+        return { grade, count: count || 0 };
+      })
+    );
+    const eCounts: Record<string, number> = {};
+    editorialResults.forEach(({ grade, count }) => { if (count > 0) eCounts[grade] = count; });
+
+    // Count multimodal vs text_only
+    const { count: multimodalCount } = await supabase
+      .from("medical_image_questions")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "published" as any)
+      .not("senior_audit_score", "is", null);
+    eCounts["multimodal"] = multimodalCount || 0;
+
+    setEditorialCounts(eCounts);
   };
 
   const fetchQuestions = async () => {
@@ -126,6 +161,7 @@ const AdminImageQuestionReviewPanel = () => {
       .select(`
         id, question_code, statement, option_a, option_b, option_c, option_d, option_e,
         correct_index, explanation, rationale_map, difficulty, exam_style, status, created_at, updated_at, asset_id,
+        senior_audit_score, editorial_grade,
         medical_image_assets!inner(image_type, diagnosis, image_url, specialty, asset_origin, source_domain)
       `, { count: "exact" })
       .order("updated_at", { ascending: false })
@@ -144,6 +180,10 @@ const AdminImageQuestionReviewPanel = () => {
 
     if (modalityFilter !== "all") {
       query = query.eq("medical_image_assets.image_type", modalityFilter as any);
+    }
+
+    if (editorialFilter !== "all") {
+      query = query.eq("editorial_grade", editorialFilter as any);
     }
 
     const { data, count, error } = await query;
@@ -172,6 +212,8 @@ const AdminImageQuestionReviewPanel = () => {
         specialty: q.medical_image_assets?.specialty,
         asset_origin: q.medical_image_assets?.asset_origin,
         source_domain: q.medical_image_assets?.source_domain,
+        editorial_grade: q.editorial_grade,
+        senior_audit_score: q.senior_audit_score,
       })));
       setTotal(count || 0);
     } else if (error) {
@@ -181,7 +223,7 @@ const AdminImageQuestionReviewPanel = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchQuestions(); fetchCounts(); }, [page, statusFilter, modalityFilter, difficultyFilter]);
+  useEffect(() => { fetchQuestions(); fetchCounts(); }, [page, statusFilter, modalityFilter, difficultyFilter, editorialFilter]);
 
   useEffect(() => {
     const handlePipelineUpdated = () => {
@@ -337,6 +379,36 @@ const AdminImageQuestionReviewPanel = () => {
         ))}
       </div>
 
+      {/* Editorial quality summary */}
+      {Object.keys(editorialCounts).length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          <span className="text-[10px] text-muted-foreground font-medium mr-1">Editorial:</span>
+          {editorialCounts.excellent && (
+            <Badge variant="outline" className={`text-[10px] cursor-pointer ${editorialFilter === 'excellent' ? 'ring-1 ring-primary' : ''} ${EDITORIAL_COLORS.excellent}`}
+              onClick={() => { setEditorialFilter(editorialFilter === 'excellent' ? 'all' : 'excellent'); setPage(0); }}>
+              ⭐ Excellent: {editorialCounts.excellent}
+            </Badge>
+          )}
+          {editorialCounts.good && (
+            <Badge variant="outline" className={`text-[10px] cursor-pointer ${editorialFilter === 'good' ? 'ring-1 ring-primary' : ''} ${EDITORIAL_COLORS.good}`}
+              onClick={() => { setEditorialFilter(editorialFilter === 'good' ? 'all' : 'good'); setPage(0); }}>
+              ✅ Good: {editorialCounts.good}
+            </Badge>
+          )}
+          {editorialCounts.weak && (
+            <Badge variant="outline" className={`text-[10px] cursor-pointer ${editorialFilter === 'weak' ? 'ring-1 ring-primary' : ''} ${EDITORIAL_COLORS.weak}`}
+              onClick={() => { setEditorialFilter(editorialFilter === 'weak' ? 'all' : 'weak'); setPage(0); }}>
+              ❌ Weak: {editorialCounts.weak}
+            </Badge>
+          )}
+          {editorialCounts.multimodal && (
+            <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">
+              🖼️ Multimodal: {editorialCounts.multimodal}
+            </Badge>
+          )}
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex items-center gap-2 flex-wrap mb-3">
         <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}>
@@ -379,6 +451,18 @@ const AdminImageQuestionReviewPanel = () => {
             <SelectItem value="easy">Fácil</SelectItem>
             <SelectItem value="medium">Média</SelectItem>
             <SelectItem value="hard">Difícil</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={editorialFilter} onValueChange={v => { setEditorialFilter(v); setPage(0); }}>
+          <SelectTrigger className="h-7 text-xs w-28">
+            <SelectValue placeholder="Editorial" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos grades</SelectItem>
+            <SelectItem value="excellent">⭐ Excellent</SelectItem>
+            <SelectItem value="good">✅ Good</SelectItem>
+            <SelectItem value="weak">❌ Weak</SelectItem>
           </SelectContent>
         </Select>
 
@@ -439,6 +523,14 @@ const AdminImageQuestionReviewPanel = () => {
                     <Badge variant="outline" className={`text-[10px] h-4 ${STATUS_COLORS[q.status] || ''}`}>
                       {STATUS_LABELS[q.status] || q.status}
                     </Badge>
+                    {q.editorial_grade && (
+                      <Badge variant="outline" className={`text-[10px] h-4 ${EDITORIAL_COLORS[q.editorial_grade] || ''}`}>
+                        {q.editorial_grade === 'excellent' ? '⭐' : q.editorial_grade === 'good' ? '✅' : '❌'} {q.editorial_grade}
+                      </Badge>
+                    )}
+                    {q.senior_audit_score != null && (
+                      <span className="text-[10px] text-muted-foreground">Score: {q.senior_audit_score}</span>
+                    )}
                     {q.diagnosis && (
                       <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">{q.diagnosis}</span>
                     )}
