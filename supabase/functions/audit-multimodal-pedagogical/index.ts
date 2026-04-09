@@ -79,7 +79,8 @@ async function auditSingle(asset: any, question: any) {
   const jsonMatch = raw.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error("No JSON in AI response");
 
-  return JSON.parse(jsonMatch[0]);
+  const parsed = JSON.parse(jsonMatch[0]);
+  return normalizeAuditResult(parsed);
 }
 
 async function auditBatch(supabase: any) {
