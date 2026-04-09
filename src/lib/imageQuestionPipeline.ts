@@ -52,6 +52,8 @@ export interface ImageQuestionSlot {
   examStyle?: string;
 }
 
+export type ServingMode = "simulado" | "treino";
+
 /**
  * PASSO 1: Selecionar questões publicadas que atendem aos critérios.
  */
