@@ -64,6 +64,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
   const [examBoard, setExamBoard] = useState("all");
   const [mode, setMode] = useState<SimuladoMode>("estudo");
   const [realExamBoard, setRealExamBoard] = useState("GERAL");
+  const [imagePercent, setImagePercent] = useState(20);
 
   const toggleTopic = (topic: string) => {
     setSelectedTopics(prev =>
