@@ -81,7 +81,10 @@ function buildPrompt(asset: any): string {
 
   return `IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês em nenhum campo.
 
-Você é um elaborador sênior de questões médicas de alta concorrência, especializado em ENARE, USP, UNIFESP e provas de residência médica brasileiras.
+Você é um elaborador + auditor médico nível USP/ENARE.
+Sua missão NÃO é apenas gerar questões. Sua missão é gerar questões PERFEITAS e VALIDAR antes de retornar.
+
+🚨 REGRA ABSOLUTA: Se houver QUALQUER erro → NÃO retorne a questão. Reescreva até ficar correta.
 
 == DADOS DO ASSET DE IMAGEM ==
 Tipo de imagem: ${asset.image_type || "N/A"}
@@ -96,53 +99,76 @@ ${asset.tri_a !== undefined ? `TRI a (discriminação): ${asset.tri_a}` : ""}
 ${asset.tri_b !== undefined ? `TRI b (dificuldade): ${asset.tri_b}` : ""}
 ${asset.tri_c !== undefined ? `TRI c (acerto ao acaso): ${asset.tri_c}` : ""}
 
-== REGRAS DO ENUNCIADO (400-900 caracteres) ==
-O enunciado DEVE conter:
-1. Idade e sexo do paciente
-2. Contexto assistencial real (PS, ambulatório, enfermaria, UBS)
-3. HDA detalhada (queixa, tempo de evolução, fatores associados)
-4. Pelo menos 1 dado de exame físico OU exame complementar
-5. Menção natural ao exame de imagem ("Diante do ECG realizado...", "A radiografia de tórax evidencia...")
-6. Pergunta objetiva ao final
+== GERE EXATAMENTE 3 QUESTÕES ==
+Q1: diagnóstico direto, difficulty: medium
+Q2: diagnóstico diferencial, difficulty: hard
+Q3: conduta clínica, difficulty: hard
 
-PROIBIDO no enunciado:
-- "Qual o diagnóstico desta imagem?" (pergunta seca)
-- Enunciado telegráfico ou superficial
-- Texto resolvível sem analisar a imagem
-- Qualquer texto em inglês
+== REGRAS OBRIGATÓRIAS (ANTI-ERRO) ==
 
-== REGRAS DAS ALTERNATIVAS ==
-- 5 alternativas obrigatórias (A-E)
-- Apenas 1 correta
-- Distratores plausíveis e do mesmo universo clínico
-- PROIBIDO: alternativas absurdas, brincadeiras, duas corretas parciais
+1. COERÊNCIA CLÍNICA
+- O caso deve ser compatível com o diagnóstico
+- NÃO usar dados que contradizem o diagnóstico (ex: DPOC sem tabagismo)
+
+2. COERÊNCIA COM IMAGEM
+- O enunciado deve usar achados reais do exame (clinical_findings)
+- NÃO inventar achados além do asset
+- Menção natural ao exame ("Diante do ECG realizado...", "A radiografia evidencia...")
+
+3. PERGUNTA CLARA
+- Deve perguntar algo OBJETIVO, sem dupla interpretação
+
+4. ALTERNATIVAS
+- 5 alternativas plausíveis, mesmo nível técnico
+- Sem resposta óbvia, sem duplicidade
 - Use os distratores clínicos fornecidos quando possível
 
-== REGRAS DA EXPLICAÇÃO (mínimo 150 caracteres) ==
-- Justificar por que a correta está certa
+5. GABARITO
+- correct_index deve bater com explanation
+- Apenas UMA resposta correta
+
+6. EXPLICAÇÃO (mínimo 150 caracteres)
+- Explicar o raciocínio clínico completo
 - Justificar por que CADA errada está errada
 - Citar achados relevantes da imagem
-- Explicar o raciocínio clínico completo
 
-== REGRAS DA DESCRIÇÃO DA IMAGEM ==
-- Usar SOMENTE os achados presentes em clinical_findings
-- NÃO inventar detalhes além do asset
-- NÃO extrapolar achados
+7. DIVERSIDADE ENTRE AS 3 QUESTÕES
+- Contexto clínico diferente (idade, sexo, cenário)
+- Pergunta final diferente
+- Raciocínio diferente
+- NÃO reescrever a mesma questão
+
+8. FORMATAÇÃO
+- statement >= 400 caracteres (caso clínico completo com ID, HDA, EF, EC)
+- explanation >= 150 caracteres
+- Português brasileiro, sem markdown, sem texto extra
 
 == AJUSTE POR BANCA ==
-${examStyle === "ENARE" ? "ENARE: mais objetivo, forte correlação clínico-prática, alta incidência" : ""}
-${examStyle === "USP" ? "USP: mais interpretação, distratores refinados, maior integração fisiopatológica" : ""}
+${examStyle === "ENARE" ? "ENARE: objetivo, correlação clínico-prática, alta incidência" : ""}
+${examStyle === "USP" ? "USP: interpretação, distratores refinados, integração fisiopatológica" : ""}
 ${examStyle === "UNIFESP" ? "UNIFESP: clínica + diagnóstico diferencial aprofundado" : ""}
 ${examStyle === "SUS-SP" ? "SUS-SP: foco em conduta e raciocínio aplicado" : ""}
 
-== CONTROLE DE DIFICULDADE ==
-${difficulty === "easy" ? "EASY: achado mais evidente, menor ambiguidade, menos etapas de raciocínio" : ""}
-${difficulty === "medium" ? "MEDIUM: interpretação moderada, 1 diferencial forte" : ""}
-${difficulty === "hard" ? "HARD: achado sutil exigindo integração, distratores fortes, alta discriminação" : ""}
+== CONTEXTO ASSISTENCIAL ==
+1. Idade e sexo do paciente
+2. Contexto real (PS, ambulatório, enfermaria, UBS)
+3. HDA detalhada (queixa, tempo de evolução, fatores associados)
+4. Pelo menos 1 dado de exame físico OU exame complementar
+5. Pergunta objetiva ao final
+
+PROIBIDO: "Qual o diagnóstico desta imagem?", enunciado telegráfico, texto resolvível sem imagem, qualquer texto em inglês, expressões como "imagem abaixo" ou "observe a figura"
+
+== AUTO-VALIDAÇÃO OBRIGATÓRIA ==
+Antes de retornar, verifique internamente:
+- Existe contradição clínica? → corrigir
+- Existe mais de uma resposta possível? → corrigir
+- Alternativas estão vagas? → corrigir
+- Questões são parecidas demais? → reescrever
+- SE QUALQUER ERRO EXISTIR → REGERAR TUDO
 
 == SAÍDA ==
-Retorne APENAS um JSON válido (sem markdown, sem comentários):
-{"statement":"...","image_description":"...","option_a":"...","option_b":"...","option_c":"...","option_d":"...","option_e":"...","correct_index":0,"explanation":"...","rationale_map":{"A":"...","B":"...","C":"...","D":"...","E":"..."},"difficulty":"${difficulty}","exam_style":"${examStyle}"}
+Retorne APENAS um JSON array válido (sem markdown, sem comentários):
+[{"statement":"...","image_description":"...","option_a":"...","option_b":"...","option_c":"...","option_d":"...","option_e":"...","correct_index":0,"explanation":"...","rationale_map":{"A":"...","B":"...","C":"...","D":"...","E":"..."},"difficulty":"medium","exam_style":"${examStyle}"}]
 
 Se NÃO conseguir atingir o padrão de qualidade, retorne:
 {"invalid":true,"reason":"..."}`;

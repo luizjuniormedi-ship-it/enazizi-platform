@@ -55,29 +55,38 @@ async function logSafetyBlock(asset: any, reason: string) {
 
 // ── Prompt builders ────────────────────────────────────────────
 function buildMultimodalMessages(asset: any) {
-  const text = `Você é um professor de medicina especialista criando questões para residência médica.
+  const findings = JSON.stringify(asset.clinical_findings || {});
+  const text = `IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês.
 
-IMPORTANTE: Analise DETALHADAMENTE a imagem clínica fornecida. Suas questões devem ser baseadas nos achados VISÍVEIS na imagem.
+Você é um elaborador + auditor médico nível USP/ENARE.
+Sua missão é gerar questões PERFEITAS e VALIDAR antes de retornar.
+🚨 REGRA ABSOLUTA: Se houver QUALQUER erro → NÃO retorne. Reescreva até ficar correta.
 
-CONTEXTO:
-- Tipo de exame: ${asset.image_type.toUpperCase()}
+ASSET:
+- Tipo: ${asset.image_type.toUpperCase()}
 - Diagnóstico: ${asset.diagnosis}
-- Achados clínicos: ${JSON.stringify(asset.clinical_findings || {})}
+- Achados: ${findings}
 
-Gere EXATAMENTE 3 questões de múltipla escolha sobre esta imagem clínica real.
+GERE EXATAMENTE 3 QUESTÕES:
+Q1: diagnóstico direto, difficulty: medium
+Q2: diagnóstico diferencial, difficulty: hard
+Q3: conduta clínica, difficulty: hard
 
-REGRAS:
-1. Descreva achados visíveis na imagem no enunciado (ex: "O ECG mostra supradesnivelamento de ST em derivações V1-V4")
-2. Enunciado com contexto clínico realista, MÍNIMO 400 caracteres
-3. Paciente com idade, sexo, queixa principal, história
-4. EXATAMENTE 5 alternativas (A a E), cada uma com 80+ caracteres
-5. Explicação detalhada MÍNIMO 200 caracteres, referenciando achados da imagem
-6. Dificuldade variada: 1 fácil (2), 1 média (3), 1 difícil (4)
-7. Estilo de prova USP/UNIFESP/ENARE
-8. Português brasileiro, sem markdown, sem caracteres especiais
-9. NÃO use expressões como "imagem abaixo" ou "observe a figura" - descreva os achados diretamente
+REGRAS OBRIGATÓRIAS (ANTI-ERRO):
+1. COERÊNCIA CLÍNICA - caso compatível com diagnóstico, NÃO contradizer (ex: DPOC sem tabagismo)
+2. COERÊNCIA COM IMAGEM - usar achados VISÍVEIS na imagem, descrever diretamente no enunciado (ex: "O ECG mostra supradesnivelamento de ST em V1-V4"), NÃO inventar achados
+3. PERGUNTA CLARA - objetiva, sem dupla interpretação
+4. ALTERNATIVAS - 5 plausíveis, mesmo nível técnico, sem óbvia, sem duplicidade, cada uma 80+ chars
+5. GABARITO - correct_index bate com explanation, apenas UMA correta
+6. EXPLICAÇÃO - mínimo 200 chars, raciocínio completo, por que cada errada está errada, referenciar achados da imagem
+7. DIVERSIDADE - as 3 questões DEVEM diferir em contexto, pergunta, raciocínio. NÃO reescrever a mesma
+8. FORMATAÇÃO - statement >= 400 chars (caso clínico: idade, sexo, contexto, HDA, EF/EC), português brasileiro, sem markdown
 
-Retorne APENAS um array JSON válido:
+PROIBIDO: "imagem abaixo", "observe a figura", enunciado telegráfico, texto em inglês, questão resolvível sem imagem
+
+AUTO-VALIDAÇÃO: Antes de retornar verifique contradição clínica, múltiplas respostas possíveis, alternativas vagas, questões parecidas. SE ERRO → REGERAR.
+
+SAÍDA - APENAS array JSON válido:
 [{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","difficulty":3,"exam_style":"USP","topic":"...","subtopic":"..."}]`;
 
   return [
@@ -92,28 +101,34 @@ Retorne APENAS um array JSON válido:
 }
 
 function buildTextFallbackMessages(asset: any) {
-  const text = `Você é um professor de medicina especialista criando questões para residência médica.
+  const findings = JSON.stringify(asset.clinical_findings || {});
+  const text = `IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês.
 
-CONTEXTO (questão TEXTUAL, sem imagem):
-- Tipo de exame: ${asset.image_type.toUpperCase()}
+Você é um elaborador + auditor médico nível USP/ENARE.
+Questão PURAMENTE TEXTUAL (sem imagem) - descreva achados por texto.
+
+ASSET:
+- Tipo: ${asset.image_type.toUpperCase()}
 - Diagnóstico: ${asset.diagnosis}
-- Achados clínicos: ${JSON.stringify(asset.clinical_findings || {})}
+- Achados: ${findings}
 
-Gere EXATAMENTE 3 questões de múltipla escolha sobre este diagnóstico.
-A questão deve ser PURAMENTE TEXTUAL - descreva achados clínicos e de exames sem referenciar imagens.
+GERE EXATAMENTE 3 QUESTÕES:
+Q1: diagnóstico direto, difficulty: medium
+Q2: diagnóstico diferencial, difficulty: hard
+Q3: conduta clínica, difficulty: hard
 
 REGRAS:
-1. Enunciado com contexto clínico realista, MÍNIMO 400 caracteres
-2. Paciente com idade, sexo, queixa principal, história
-3. Descreva achados de exames POR TEXTO (ex: "ECG evidencia supradesnivelamento de ST em V1-V4")
-4. EXATAMENTE 5 alternativas (A a E), cada uma com 80+ caracteres
-5. Explicação detalhada MÍNIMO 200 caracteres
-6. Dificuldade variada: 1 fácil (2), 1 média (3), 1 difícil (4)
-7. Estilo de prova USP/UNIFESP/ENARE
-8. Português brasileiro, sem markdown, sem caracteres especiais
-9. NUNCA mencione imagens, figuras, fotografias ou elementos visuais
+1. Enunciado >= 400 chars, caso clínico completo (idade, sexo, contexto, HDA, EF, exames descritos POR TEXTO)
+2. 5 alternativas plausíveis, 80+ chars cada, sem duplicidade
+3. Explicação >= 200 chars, raciocínio completo
+4. correct_index bate com explanation, apenas UMA correta
+5. As 3 questões DEVEM diferir em contexto, pergunta e raciocínio
+6. NUNCA mencione imagens, figuras, fotografias ou elementos visuais
+7. Português brasileiro, sem markdown
 
-Retorne APENAS um array JSON válido:
+AUTO-VALIDAÇÃO: contradição clínica, múltiplas respostas, alternativas vagas → REGERAR.
+
+SAÍDA - APENAS array JSON:
 [{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","difficulty":3,"exam_style":"USP","topic":"...","subtopic":"..."}]`;
 
   return [{ role: "user", content: text }];
