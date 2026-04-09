@@ -97,7 +97,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
       return;
     }
     const count = customCount ? parseInt(customCount) : questionCount;
-    onStart({ topics: selectedTopics, count, difficulty, timePerQuestion, mode, specificTopic: specificTopic.trim() || undefined, examBoard: examBoard !== "all" ? examBoard : undefined });
+    onStart({ topics: selectedTopics, count, difficulty, timePerQuestion, mode, specificTopic: specificTopic.trim() || undefined, examBoard: examBoard !== "all" ? examBoard : undefined, imagePercent });
   };
 
   const totalTime = mode === "prova_real" || mode === "tri"
