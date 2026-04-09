@@ -353,6 +353,21 @@ serve(async (req) => {
       const asset = assets[i];
       const assetCode = asset.asset_code || asset.id;
 
+      // ── SAFETY GATE: check if asset is multimodal-safe ──
+      const safetyCheck = isMultimodalSafe(asset);
+      if (!safetyCheck.safe) {
+        console.warn(`[generate][${assetCode}] ⛔ Asset BLOQUEADO para multimodal: ${safetyCheck.reason}`);
+        // Mark as text_only fallback — generate textual question instead
+        results.push({
+          asset_id: asset.id,
+          asset_code: assetCode,
+          status: "rejected",
+          stage: "safety_gate",
+          error: `Fallback textual: ${safetyCheck.reason}`,
+        });
+        continue;
+      }
+
       try {
         asset.exam_style = exam_style;
         const prompt = buildPrompt(asset, student_performance);
