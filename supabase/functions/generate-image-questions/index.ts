@@ -327,11 +327,19 @@ serve(async (req) => {
         if (!parsed.difficulty) parsed.difficulty = asset.difficulty || "medium";
         if (!parsed.exam_style) parsed.exam_style = exam_style;
 
-        // Validate
+        // Validate structure
         const validation = validateGenerated(parsed);
         if (!validation.valid) {
           console.warn(`[generate][${assetCode}] Validação falhou: ${validation.errors.join("; ")}`);
           results.push({ asset_id: asset.id, asset_code: assetCode, status: "rejected", stage: "validation", error: validation.errors.join("; ") });
+          continue;
+        }
+
+        // Clinical contradiction check
+        const contradiction = detectContradictions(parsed.statement, asset.diagnosis || "", parsed.explanation);
+        if (contradiction.has_contradiction && contradiction.severity === "grave") {
+          console.warn(`[generate][${assetCode}] ❌ Contradição clínica GRAVE: ${contradiction.issues.join("; ")}`);
+          results.push({ asset_id: asset.id, asset_code: assetCode, status: "rejected", stage: "clinical_contradiction", error: `Contradição grave: ${contradiction.issues.join("; ")}` });
           continue;
         }
 
