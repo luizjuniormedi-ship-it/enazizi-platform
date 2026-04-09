@@ -201,7 +201,7 @@ serve(async (req) => {
 
     const { data: allAssets, error: assetErr } = await sb
       .from("medical_image_assets")
-      .select("id, asset_code, image_type, specialty, subtopic, diagnosis, clinical_findings, distractors, difficulty, image_url")
+      .select("id, asset_code, image_type, specialty, subtopic, diagnosis, clinical_findings, distractors, difficulty, image_url, asset_origin, validation_level, review_status, integrity_status, clinical_confidence, is_active")
       .eq("is_active", true)
       .eq("review_status", "published")
       .gte("clinical_confidence", 0.9)
