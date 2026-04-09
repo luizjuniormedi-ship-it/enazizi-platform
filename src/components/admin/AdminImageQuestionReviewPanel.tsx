@@ -493,8 +493,8 @@ const AdminImageQuestionReviewPanel = () => {
           {questions.map(q => (
             <div key={q.id} className="p-2.5 rounded-lg bg-background/50 border border-border/50 hover:border-border transition-colors">
               <div className="flex items-start justify-between gap-2">
-                {/* Thumbnail */}
-                {q.image_url && (
+                {/* Thumbnail - with safety gate */}
+                {q.image_url && isImageUrlClinical(q.image_url) ? (
                   <div
                     className="w-12 h-12 rounded overflow-hidden flex-shrink-0 cursor-pointer border border-border/50 bg-muted"
                     onClick={() => setImagePreview(q.image_url || null)}
@@ -506,7 +506,11 @@ const AdminImageQuestionReviewPanel = () => {
                       onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                     />
                   </div>
-                )}
+                ) : q.image_url ? (
+                  <div className="w-12 h-12 rounded flex-shrink-0 border border-destructive/30 bg-destructive/5 flex items-center justify-center" title="Imagem bloqueada pelo safety gate">
+                    <ShieldAlert className="h-4 w-4 text-destructive" />
+                  </div>
+                ) : null}
 
                 {/* Content */}
                 <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpanded(expanded === q.id ? null : q.id)}>
@@ -586,8 +590,8 @@ const AdminImageQuestionReviewPanel = () => {
               {/* Expanded view */}
               {expanded === q.id && (
                 <div className="mt-3 pt-3 border-t border-border/50 space-y-3">
-                  {/* Image */}
-                  {q.image_url && (
+                  {/* Image - with safety gate */}
+                  {q.image_url && isImageUrlClinical(q.image_url) ? (
                     <div className="flex justify-center">
                       <div
                         className="relative max-w-xs rounded-lg overflow-hidden border border-border cursor-pointer group"
@@ -599,7 +603,14 @@ const AdminImageQuestionReviewPanel = () => {
                         </div>
                       </div>
                     </div>
-                  )}
+                  ) : q.image_url ? (
+                    <div className="flex justify-center">
+                      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 flex items-center gap-2">
+                        <ShieldAlert className="h-4 w-4 text-destructive" />
+                        <span className="text-xs text-destructive font-medium">Imagem bloqueada — URL suspeita ou não clínica</span>
+                      </div>
+                    </div>
+                  ) : null}
 
                   {/* Full statement */}
                   <div className="bg-muted/30 rounded p-2">
