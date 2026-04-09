@@ -32,8 +32,10 @@ REGRAS OBRIGATÓRIAS:
 8. NÃO referencie imagens, figuras ou gráficos
 9. TUDO em PORTUGUÊS BRASILEIRO
 10. Mantenha a pergunta objetiva no final do caso
+11. 🚨 CRÍTICO: O campo "statement" deve conter APENAS o caso clínico e a pergunta final. NÃO inclua as alternativas (A, B, C, D, E) dentro do statement. As alternativas já existem separadamente e serão mantidas como estão.
+12. NÃO repita, liste ou mencione as alternativas dentro do enunciado de forma alguma.
 
-Retorne APENAS JSON: {"statement": "caso clínico expandido completo terminando com a pergunta"}`;
+Retorne APENAS JSON: {"statement": "caso clínico expandido completo terminando APENAS com a pergunta, SEM listar alternativas"}`;
 
   try {
     const res = await fetch(LOVABLE_GATEWAY, {
