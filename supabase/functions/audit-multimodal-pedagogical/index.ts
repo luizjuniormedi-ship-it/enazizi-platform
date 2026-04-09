@@ -83,6 +83,57 @@ async function auditSingle(asset: any, question: any) {
   return normalizeAuditResult(parsed);
 }
 
+function normalizeAuditResult(p: any): any {
+  // Extract score from nested or flat structures
+  const score = typeof p.final_score === "number" ? p.final_score
+    : typeof p["ETAPA 6 — SCORE FINAL"] === "number" ? p["ETAPA 6 — SCORE FINAL"]
+    : extractNestedScore(p);
+
+  const strength = p.multimodal_strength || p["ETAPA 1 — FORÇA MULTIMODAL"]
+    || p.step_1_force_multimodal?.classification || "unknown";
+  const pedValue = p.pedagogical_value || p["ETAPA 2 — VALOR PEDAGÓGICO"]
+    || p.step_2_valor_pedagogico?.classification || "unknown";
+  const examLevel = p.exam_level || p["ETAPA 3 — NÍVEL DE PROVA"]
+    || p.step_3_nivel_de_prova?.classification || "unknown";
+  const explQuality = p.explanation_quality || p["ETAPA 5 — QUALIDADE DA EXPLICAÇÃO"]
+    || p.step_5_qualidade_da_explicacao?.classification || "unknown";
+
+  let status = p.status || p["ETAPA 7 — DECISÃO"] || "unknown";
+  // Derive status from score if AI didn't provide it cleanly
+  if (!["approved", "needs_improvement", "rejected"].includes(status)) {
+    if (score >= 90 && strength === "strong") status = "approved";
+    else if (score >= 75) status = "needs_improvement";
+    else status = "rejected";
+  }
+
+  const action = p.recommended_action || p["ETAPA 8 — SUGESTÃO DE AÇÃO"]
+    || (status === "approved" ? "keep_multimodal" : status === "rejected" ? "regenerate" : "improve");
+
+  return {
+    status,
+    multimodal_strength: strength,
+    pedagogical_value: pedValue,
+    exam_level: examLevel,
+    explanation_quality: explQuality,
+    final_score: score,
+    critical_flags: p.critical_flags || [],
+    issues: p.issues || [],
+    recommended_action: action,
+    suggested_fix: p.suggested_fix || "",
+  };
+}
+
+function extractNestedScore(p: any): number {
+  let total = 0;
+  for (const key of Object.keys(p)) {
+    const val = p[key];
+    if (val && typeof val === "object" && typeof val.score === "number") {
+      total += val.score;
+    }
+  }
+  return total || 50;
+}
+
 async function auditBatch(supabase: any) {
   // Get published multimodal questions without recent audit
   const { data: questions, error } = await supabase
