@@ -6,6 +6,7 @@
 
 /** URL patterns that indicate non-clinical images */
 const SUSPICIOUS_URL_PATTERNS = [
+  // UI/tech artifacts
   "mockup", "screenshot", "placeholder", "laptop", "dashboard",
   "notebook", "landing-page", "landing_page", "wireframe",
   "ui-design", "ui_design", "template", "stock-photo", "stockphoto",
@@ -13,10 +14,22 @@ const SUSPICIOUS_URL_PATTERNS = [
   "life-quality", "life_quality", "questionnaire", "survey",
   "hero-image", "feature-image", "banner-image",
   "certificate", "badge-image", "award-image",
+  // Social media / stock
   "social-media", "facebook", "twitter", "instagram",
   "shutterstock", "gettyimages", "istockphoto", "dreamstime",
   "unsplash.com", "pexels.com", "pixabay.com",
   "youtube.com/", "vimeo.com/",
+  // Human face / portrait / selfie
+  "portrait", "selfie", "headshot", "face-photo", "face_photo",
+  "profile-photo", "profile_photo", "profile-pic", "profile_pic",
+  "avatar", "person-photo", "person_photo", "people-photo",
+  // Institutional / marketing
+  "logo", "branding", "institutional", "team-photo", "team_photo",
+  "about-us", "about_us", "staff-photo", "staff_photo",
+  "corporate", "company-photo", "company_photo",
+  // Non-clinical visuals
+  "icon-", "icon_", "emoji", "sticker", "clipart", "cartoon",
+  "illustration", "vector", "flat-design", "flat_design",
 ];
 
 export interface SafetyCheckResult {

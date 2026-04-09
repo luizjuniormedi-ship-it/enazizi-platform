@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { CheckCircle2, XCircle, Eye, ChevronLeft, ChevronRight, Loader2, Filter, Image, Trash2, ZoomIn, Search, Globe } from "lucide-react";
+import { CheckCircle2, XCircle, Eye, ChevronLeft, ChevronRight, Loader2, Filter, Image, Trash2, ZoomIn, Search, Globe, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { isImageUrlClinical } from "@/lib/multimodalSafetyGate";
 
 interface ImageReviewQuestion {
   id: string;
