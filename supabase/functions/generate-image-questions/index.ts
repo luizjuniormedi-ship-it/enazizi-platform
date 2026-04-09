@@ -116,105 +116,136 @@ function detectContradictions(statement: string, diagnosis: string, explanation?
   return { has_contradiction: issues.length > 0, severity: worst, issues };
 }
 
-function buildPrompt(asset: any): string {
+function buildPrompt(asset: any, studentPerf?: any): string {
   const findings = Array.isArray(asset.clinical_findings) ? asset.clinical_findings.join(", ") : String(asset.clinical_findings || "");
   const distractors = Array.isArray(asset.distractors) ? asset.distractors.join(", ") : String(asset.distractors || "");
   const examStyle = asset.exam_style || "ENARE";
-  const difficulty = asset.difficulty || "medium";
 
-  return `IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês em nenhum campo.
+  // Adaptive strategy block
+  let adaptiveBlock = "";
+  if (studentPerf) {
+    const weakMods = Object.entries(studentPerf.by_modality || {})
+      .filter(([, v]: any) => (v as any).accuracy < 0.5)
+      .map(([k]) => k);
+    const errorFocus = studentPerf.error_patterns?.top_category || "";
+    adaptiveBlock = `
+== ESTRATÉGIA ADAPTATIVA (baseada no aluno) ==
+Modalidades fracas: ${weakMods.join(", ") || "nenhuma"}
+Padrão de erro dominante: ${errorFocus || "não identificado"}
+Tempo médio de resposta: ${studentPerf.response_time || "N/A"}s
+→ Priorizar: ${weakMods.length > 0 ? "questões HARD + estilo USP/ENARE" : "distribuição equilibrada"}
+→ Foco: ${errorFocus === "conduta" ? "conduta terapêutica" : errorFocus === "imagem" ? "interpretação visual obrigatória" : "diagnóstico diferencial"}
+`;
+  }
 
-Você é um elaborador + auditor médico nível USP/ENARE.
-Sua missão NÃO é apenas gerar questões. Sua missão é gerar questões PERFEITAS e VALIDAR antes de retornar.
+  return `IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês.
 
-🚨 REGRA ABSOLUTA: Se houver QUALQUER erro → NÃO retorne a questão. Reescreva até ficar correta.
+Você é um SISTEMA INTELIGENTE COMPLETO DE TREINAMENTO MÉDICO.
+Você atua simultaneamente como: banca examinadora (USP, SUS-SP, ENARE, UNIFESP), auditor clínico, auditor pedagógico e motor de melhoria contínua.
 
-== DADOS DO ASSET DE IMAGEM ==
+MISSÃO: Gerar 3 questões PERFEITAS, validar internamente e retornar APENAS as aprovadas.
+Se QUALQUER erro existir → REESCREVER até ficar correta. NUNCA retorne questão com erro.
+
+== ASSET ==
 Tipo de imagem: ${asset.image_type || "N/A"}
 Especialidade: ${asset.specialty || "N/A"}
 Subtema: ${asset.subtopic || "N/A"}
 Diagnóstico correto: ${asset.diagnosis || "N/A"}
-Achados clínicos na imagem: ${findings || "N/A"}
-Distratores clínicos: ${distractors || "N/A"}
-Dificuldade alvo: ${difficulty}
+Achados clínicos: ${findings || "N/A"}
+Distratores: ${distractors || "N/A"}
 Estilo da banca: ${examStyle}
-${asset.tri_a !== undefined ? `TRI a (discriminação): ${asset.tri_a}` : ""}
-${asset.tri_b !== undefined ? `TRI b (dificuldade): ${asset.tri_b}` : ""}
-${asset.tri_c !== undefined ? `TRI c (acerto ao acaso): ${asset.tri_c}` : ""}
+${asset.tri_a !== undefined ? `TRI a: ${asset.tri_a}` : ""}
+${asset.tri_b !== undefined ? `TRI b: ${asset.tri_b}` : ""}
+${asset.tri_c !== undefined ? `TRI c: ${asset.tri_c}` : ""}
+${adaptiveBlock}
 
 == GERE EXATAMENTE 3 QUESTÕES ==
-Q1: diagnóstico direto, difficulty: medium
-Q2: diagnóstico diferencial, difficulty: hard
-Q3: conduta clínica, difficulty: hard
+Q1: diagnóstico direto, difficulty: medium, exam_style: ENARE
+Q2: diagnóstico diferencial, difficulty: hard, exam_style: USP
+Q3: conduta clínica, difficulty: hard, exam_style: SUS-SP
 
-== REGRAS OBRIGATÓRIAS (ANTI-ERRO) ==
+== REGRAS ANTI-ERRO ==
 
-1. COERÊNCIA CLÍNICA
-- O caso deve ser compatível com o diagnóstico
-- NÃO usar dados que contradizem o diagnóstico (ex: DPOC sem tabagismo)
+1. COERÊNCIA CLÍNICA ABSOLUTA
+- Caso DEVE ser compatível com o diagnóstico
+- DPOC EXIGE tabagismo. IAM EXIGE dor/ECG/marcador. AVC EXIGE déficit focal. Pneumonia EXIGE sintoma respiratório.
+- Se o diagnóstico exigir um achado obrigatório e ele estiver ausente → REESCREVER
 
 2. COERÊNCIA COM IMAGEM
-- O enunciado deve usar achados reais do exame (clinical_findings)
-- NÃO inventar achados além do asset
-- Menção natural ao exame ("Diante do ECG realizado...", "A radiografia evidencia...")
+- Usar achados REAIS do asset (clinical_findings)
+- NÃO inventar achados
+- Menção natural: "O ECG evidencia...", "A radiografia mostra..."
+- PROIBIDO: "observe a imagem abaixo", "veja a figura", "imagem apresentada"
 
-3. PERGUNTA CLARA
-- Deve perguntar algo OBJETIVO, sem dupla interpretação
+3. ESSENCIALIDADE DA IMAGEM
+- A questão NÃO PODE ser respondida sem ver a imagem
+- Se for possível responder só com o enunciado → REESCREVER
+- A imagem deve conter a informação-chave para o diagnóstico
 
-4. ALTERNATIVAS
-- 5 alternativas plausíveis, mesmo nível técnico
-- Sem resposta óbvia, sem duplicidade
-- Use os distratores clínicos fornecidos quando possível
+4. ALTERNATIVAS (5 opções A-E)
+- Plausíveis, mesmo nível técnico, sem resposta óbvia
+- correct_index DIFERENTE nas 3 questões (distribuir A-E)
+- Usar distratores clínicos fornecidos quando possível
 
-5. GABARITO
-- correct_index deve bater com explanation
-- Apenas UMA resposta correta
-
-6. EXPLICAÇÃO (mínimo 150 caracteres)
-- Explicar o raciocínio clínico completo
+5. EXPLICAÇÃO (>= 200 caracteres)
+- Raciocínio clínico completo
 - Justificar por que CADA errada está errada
-- Citar achados relevantes da imagem
+- Citar achados da imagem
 
-7. DIVERSIDADE ENTRE AS 3 QUESTÕES
+6. DIVERSIDADE OBRIGATÓRIA
 - Contexto clínico diferente (idade, sexo, cenário)
 - Pergunta final diferente
 - Raciocínio diferente
 - NÃO reescrever a mesma questão
+- Sobreposição > 70% → REJEITAR e REFAZER
 
-8. FORMATAÇÃO
-- statement >= 400 caracteres (caso clínico completo com ID, HDA, EF, EC)
-- explanation >= 150 caracteres
-- Português brasileiro, sem markdown, sem texto extra
+7. ENUNCIADO (>= 400 caracteres)
+- Caso clínico completo: idade, sexo, HDA, exame físico, contexto real (PS, ambulatório, UBS)
+- Pelo menos 1 dado de exame complementar quando pertinente
 
 == AJUSTE POR BANCA ==
-${examStyle === "ENARE" ? "ENARE: objetivo, correlação clínico-prática, alta incidência" : ""}
-${examStyle === "USP" ? "USP: interpretação, distratores refinados, integração fisiopatológica" : ""}
-${examStyle === "UNIFESP" ? "UNIFESP: clínica + diagnóstico diferencial aprofundado" : ""}
-${examStyle === "SUS-SP" ? "SUS-SP: foco em conduta e raciocínio aplicado" : ""}
+${examStyle === "ENARE" ? "ENARE: objetivo, alta incidência, correlação clínico-prática" : ""}
+${examStyle === "USP" ? "USP: distratores refinados, integração fisiopatológica profunda" : ""}
+${examStyle === "UNIFESP" ? "UNIFESP: diagnóstico diferencial aprofundado" : ""}
+${examStyle === "SUS-SP" ? "SUS-SP: conduta e raciocínio aplicado" : ""}
 
-== CONTEXTO ASSISTENCIAL ==
-1. Idade e sexo do paciente
-2. Contexto real (PS, ambulatório, enfermaria, UBS)
-3. HDA detalhada (queixa, tempo de evolução, fatores associados)
-4. Pelo menos 1 dado de exame físico OU exame complementar
-5. Pergunta objetiva ao final
+== AUTO-VALIDAÇÃO INTERNA (OBRIGATÓRIA ANTES DE RETORNAR) ==
+Para CADA questão, verificar internamente:
+1. Contradição clínica? → corrigir
+2. Possível responder sem imagem? → reescrever
+3. Mais de uma resposta possível? → corrigir
+4. Alternativas vagas? → corrigir
+5. Questões parecidas? → reescrever
+6. Explicação rasa (< 200 chars)? → expandir
+7. Enunciado curto (< 400 chars)? → expandir
 
-PROIBIDO: "Qual o diagnóstico desta imagem?", enunciado telegráfico, texto resolvível sem imagem, qualquer texto em inglês, expressões como "imagem abaixo" ou "observe a figura"
-
-== AUTO-VALIDAÇÃO OBRIGATÓRIA ==
-Antes de retornar, verifique internamente:
-- Existe contradição clínica? → corrigir
-- Existe mais de uma resposta possível? → corrigir
-- Alternativas estão vagas? → corrigir
-- Questões são parecidas demais? → reescrever
-- SE QUALQUER ERRO EXISTIR → REGERAR TUDO
+== SCORE INTERNO (calcular para cada questão) ==
+- coerência clínica: 0-25
+- uso da imagem: 0-20
+- nível de prova: 0-20
+- alternativas: 0-15
+- explicação: 0-10
+- valor pedagógico: 0-10
+Se score < 75 → NÃO retornar essa questão. Reescrever.
 
 == SAÍDA ==
-Retorne APENAS um JSON array válido (sem markdown, sem comentários):
-[{"statement":"...","image_description":"...","option_a":"...","option_b":"...","option_c":"...","option_d":"...","option_e":"...","correct_index":0,"explanation":"...","rationale_map":{"A":"...","B":"...","C":"...","D":"...","E":"..."},"difficulty":"medium","exam_style":"${examStyle}"}]
+Retorne APENAS JSON array válido (sem markdown, sem comentários):
+[
+  {
+    "statement": "...",
+    "image_description": "...",
+    "option_a": "...", "option_b": "...", "option_c": "...", "option_d": "...", "option_e": "...",
+    "correct_index": 0,
+    "explanation": "...",
+    "rationale_map": {"A":"...","B":"...","C":"...","D":"...","E":"..."},
+    "difficulty": "medium",
+    "exam_style": "${examStyle}",
+    "internal_score": 90,
+    "multimodal_strength": "strong"
+  }
+]
 
-Se NÃO conseguir atingir o padrão de qualidade, retorne:
-{"invalid":true,"reason":"..."}`;
+Se NÃO conseguir atingir qualidade → retorne: {"invalid":true,"reason":"..."}`;
 }
 
 serve(async (req) => {
@@ -250,6 +281,7 @@ serve(async (req) => {
       difficulty,
       exam_style = "ENARE",
       asset_ids,
+      student_performance,
     } = body;
 
     const limit = Math.min(batch_size, 5);
@@ -287,17 +319,15 @@ serve(async (req) => {
       const assetCode = asset.asset_code || asset.id;
 
       try {
-        // Enrich asset with exam_style for prompt
         asset.exam_style = exam_style;
+        const prompt = buildPrompt(asset, student_performance);
 
-        const prompt = buildPrompt(asset);
-
-        // AI call
+        // AI call with higher token limit for 3 questions
         const response = await aiFetch({
           messages: [{ role: "user", content: prompt }],
           model: "google/gemini-2.5-flash",
-          maxTokens: 8192,
-          timeoutMs: 60000,
+          maxTokens: 16384,
+          timeoutMs: 90000,
         });
 
         if (!response.ok) {
@@ -308,73 +338,105 @@ serve(async (req) => {
         const aiData = await response.json();
         const rawContent = aiData.choices?.[0]?.message?.content || "";
 
-        // Parse
-        const parsed = parseAiJson(rawContent);
+        // Parse — expect array of 3 questions or single object
+        let parsedArr = parseAiJson(rawContent);
 
-        // AI self-rejection
-        if (parsed.invalid) {
-          console.warn(`[generate][${assetCode}] IA rejeitou: ${parsed.reason}`);
-          results.push({ asset_id: asset.id, asset_code: assetCode, status: "rejected", stage: "ai_invalid", error: parsed.reason });
+        // Handle AI self-rejection
+        if (parsedArr && !Array.isArray(parsedArr) && parsedArr.invalid) {
+          console.warn(`[generate][${assetCode}] IA rejeitou: ${parsedArr.reason}`);
+          results.push({ asset_id: asset.id, asset_code: assetCode, status: "rejected", stage: "ai_invalid", error: parsedArr.reason });
           continue;
         }
 
-        // Clean text
-        for (const f of ["statement", "option_a", "option_b", "option_c", "option_d", "option_e", "explanation", "image_description"]) {
-          if (typeof parsed[f] === "string") parsed[f] = cleanQuestionText(parsed[f]);
+        // Normalize to array
+        const questions = Array.isArray(parsedArr) ? parsedArr : [parsedArr];
+
+        // Track correct_index distribution for duplicate detection
+        const usedIndexes = new Set<number>();
+        let questionsCreated = 0;
+
+        for (let qi = 0; qi < questions.length; qi++) {
+          const q = questions[qi];
+          if (!q || !q.statement) continue;
+
+          // Clean text
+          for (const f of ["statement", "option_a", "option_b", "option_c", "option_d", "option_e", "explanation", "image_description"]) {
+            if (typeof q[f] === "string") q[f] = cleanQuestionText(q[f]);
+          }
+
+          // Defaults
+          if (!q.difficulty) q.difficulty = ["medium", "hard", "hard"][qi] || "medium";
+          if (!q.exam_style) q.exam_style = ["ENARE", "USP", "SUS-SP"][qi] || examStyle;
+
+          // Validate structure
+          const validation = validateGenerated(q);
+          if (!validation.valid) {
+            console.warn(`[generate][${assetCode}][Q${qi + 1}] Validação falhou: ${validation.errors.join("; ")}`);
+            results.push({ asset_id: asset.id, asset_code: assetCode, status: "rejected", stage: "validation", error: `Q${qi + 1}: ${validation.errors.join("; ")}` });
+            continue;
+          }
+
+          // Clinical contradiction check
+          const contradiction = detectContradictions(q.statement, asset.diagnosis || "", q.explanation);
+          if (contradiction.has_contradiction && contradiction.severity === "grave") {
+            console.warn(`[generate][${assetCode}][Q${qi + 1}] ❌ Contradição GRAVE: ${contradiction.issues.join("; ")}`);
+            results.push({ asset_id: asset.id, asset_code: assetCode, status: "rejected", stage: "clinical_contradiction", error: `Q${qi + 1}: ${contradiction.issues.join("; ")}` });
+            continue;
+          }
+
+          // Duplicate correct_index detection within trio
+          if (usedIndexes.has(q.correct_index) && usedIndexes.size >= 2) {
+            console.warn(`[generate][${assetCode}][Q${qi + 1}] correct_index ${q.correct_index} repetido no trio`);
+            // Allow but log — not a hard block
+          }
+          usedIndexes.add(q.correct_index);
+
+          // Internal score check (if AI provided it)
+          const internalScore = q.internal_score || 0;
+          const status = internalScore >= 90 ? "needs_review" : internalScore >= 75 ? "needs_review" : "needs_review";
+
+          // Generate unique question code
+          const qCode = `IMG-${asset.image_type?.toUpperCase() || "GEN"}-${Date.now().toString(36).toUpperCase()}-Q${qi + 1}`;
+
+          const { data: inserted, error: insertErr } = await sb.from("medical_image_questions").insert({
+            asset_id: asset.id,
+            question_code: qCode,
+            statement: q.statement,
+            image_description: q.image_description || "",
+            option_a: q.option_a,
+            option_b: q.option_b,
+            option_c: q.option_c,
+            option_d: q.option_d,
+            option_e: q.option_e,
+            correct_index: q.correct_index,
+            explanation: q.explanation,
+            rationale_map: q.rationale_map,
+            difficulty: q.difficulty,
+            exam_style: q.exam_style,
+            status,
+          }).select("id").single();
+
+          if (insertErr) {
+            console.error(`[generate][${assetCode}][Q${qi + 1}] Insert error:`, insertErr);
+            results.push({ asset_id: asset.id, asset_code: assetCode, status: "failed", stage: "insert", error: insertErr.message });
+            continue;
+          }
+
+          questionsCreated++;
+          results.push({
+            asset_id: asset.id,
+            asset_code: assetCode,
+            status: "created",
+            question_id: inserted?.id,
+            stage: `Q${qi + 1}`,
+          });
+
+          console.log(`[generate][${assetCode}] ✅ Q${qi + 1} criada: ${qCode} (score: ${internalScore}, strength: ${q.multimodal_strength || "N/A"})`);
         }
 
-        // Defaults
-        if (!parsed.difficulty) parsed.difficulty = asset.difficulty || "medium";
-        if (!parsed.exam_style) parsed.exam_style = exam_style;
-
-        // Validate structure
-        const validation = validateGenerated(parsed);
-        if (!validation.valid) {
-          console.warn(`[generate][${assetCode}] Validação falhou: ${validation.errors.join("; ")}`);
-          results.push({ asset_id: asset.id, asset_code: assetCode, status: "rejected", stage: "validation", error: validation.errors.join("; ") });
-          continue;
+        if (questionsCreated === 0) {
+          console.warn(`[generate][${assetCode}] Nenhuma questão aprovada do trio`);
         }
-
-        // Clinical contradiction check
-        const contradiction = detectContradictions(parsed.statement, asset.diagnosis || "", parsed.explanation);
-        if (contradiction.has_contradiction && contradiction.severity === "grave") {
-          console.warn(`[generate][${assetCode}] ❌ Contradição clínica GRAVE: ${contradiction.issues.join("; ")}`);
-          results.push({ asset_id: asset.id, asset_code: assetCode, status: "rejected", stage: "clinical_contradiction", error: `Contradição grave: ${contradiction.issues.join("; ")}` });
-          continue;
-        }
-
-        // Generate question code
-        const qCode = `IMG-${asset.image_type?.toUpperCase() || "GEN"}-${Date.now().toString(36).toUpperCase()}`;
-
-        // Insert into medical_image_questions
-        const { data: inserted, error: insertErr } = await sb.from("medical_image_questions").insert({
-          asset_id: asset.id,
-          question_code: qCode,
-          statement: parsed.statement,
-          image_description: parsed.image_description || "",
-          option_a: parsed.option_a,
-          option_b: parsed.option_b,
-          option_c: parsed.option_c,
-          option_d: parsed.option_d,
-          option_e: parsed.option_e,
-          correct_index: parsed.correct_index,
-          explanation: parsed.explanation,
-          rationale_map: parsed.rationale_map,
-          difficulty: parsed.difficulty,
-          exam_style: parsed.exam_style,
-          status: "needs_review",
-        }).select("id").single();
-
-        if (insertErr) throw insertErr;
-
-        results.push({
-          asset_id: asset.id,
-          asset_code: assetCode,
-          status: "created",
-          question_id: inserted?.id,
-        });
-
-        console.log(`[generate][${assetCode}] ✅ Questão criada: ${qCode}`);
 
       } catch (e) {
         console.error(`[generate][${assetCode}] Erro:`, e);
