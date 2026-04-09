@@ -286,11 +286,46 @@ serve(async (req) => {
 
     const limit = Math.min(batch_size, 5);
 
-    // Fetch assets to generate from
+    // ── isMultimodalSafe — central safety gate ──
+    const SUSPICIOUS_URL_PATTERNS = [
+      "mockup", "screenshot", "placeholder", "laptop", "dashboard",
+      "notebook", "landing-page", "landing_page", "wireframe",
+      "ui-design", "template", "stock-photo", "infographic",
+      "quality-index", "life-quality", "questionnaire", "survey",
+      "hero-image", "feature-image", "banner-image",
+      "shutterstock", "gettyimages", "istockphoto", "dreamstime",
+      "unsplash.com", "pexels.com", "pixabay.com",
+    ];
+
+    function isMultimodalSafe(asset: any): { safe: boolean; reason: string } {
+      const validOrigins = ["real_medical", "validated_medical"];
+      if (!asset.asset_origin || !validOrigins.includes(asset.asset_origin))
+        return { safe: false, reason: `Origem inválida: ${asset.asset_origin}` };
+      const validLevels = ["gold", "silver"];
+      if (!asset.validation_level || !validLevels.includes(asset.validation_level))
+        return { safe: false, reason: `Nível de validação insuficiente: ${asset.validation_level}` };
+      if (asset.review_status !== "published")
+        return { safe: false, reason: `Status de revisão: ${asset.review_status}` };
+      if (asset.integrity_status !== "ok")
+        return { safe: false, reason: `Integridade: ${asset.integrity_status}` };
+      if (typeof asset.clinical_confidence !== "number" || asset.clinical_confidence < 0.90)
+        return { safe: false, reason: `Confiança clínica baixa: ${asset.clinical_confidence}` };
+      if (!asset.is_active)
+        return { safe: false, reason: "Asset inativo" };
+      if (!asset.image_url || typeof asset.image_url !== "string" || asset.image_url.trim().length < 10)
+        return { safe: false, reason: "URL de imagem ausente ou inválida" };
+      const urlLower = asset.image_url.toLowerCase();
+      for (const p of SUSPICIOUS_URL_PATTERNS) {
+        if (urlLower.includes(p)) return { safe: false, reason: `URL suspeita: contém "${p}"` };
+      }
+      return { safe: true, reason: "ok" };
+    }
+
+    // Fetch assets to generate from — now with full safety fields
     let assets: any[] = [];
     try {
       let query = sb.from("medical_image_assets")
-        .select("id, asset_code, image_type, specialty, subtopic, diagnosis, clinical_findings, distractors, difficulty, tri_a, tri_b, tri_c, image_url")
+        .select("id, asset_code, image_type, specialty, subtopic, diagnosis, clinical_findings, distractors, difficulty, tri_a, tri_b, tri_c, image_url, asset_origin, validation_level, review_status, integrity_status, clinical_confidence, is_active")
         .eq("is_active", true);
 
       if (asset_ids && Array.isArray(asset_ids) && asset_ids.length > 0) {
@@ -317,6 +352,21 @@ serve(async (req) => {
     for (let i = 0; i < assets.length; i++) {
       const asset = assets[i];
       const assetCode = asset.asset_code || asset.id;
+
+      // ── SAFETY GATE: check if asset is multimodal-safe ──
+      const safetyCheck = isMultimodalSafe(asset);
+      if (!safetyCheck.safe) {
+        console.warn(`[generate][${assetCode}] ⛔ Asset BLOQUEADO para multimodal: ${safetyCheck.reason}`);
+        // Mark as text_only fallback — generate textual question instead
+        results.push({
+          asset_id: asset.id,
+          asset_code: assetCode,
+          status: "rejected",
+          stage: "safety_gate",
+          error: `Fallback textual: ${safetyCheck.reason}`,
+        });
+        continue;
+      }
 
       try {
         asset.exam_style = exam_style;
@@ -387,13 +437,22 @@ serve(async (req) => {
           // Duplicate correct_index detection within trio
           if (usedIndexes.has(q.correct_index) && usedIndexes.size >= 2) {
             console.warn(`[generate][${assetCode}][Q${qi + 1}] correct_index ${q.correct_index} repetido no trio`);
-            // Allow but log — not a hard block
           }
           usedIndexes.add(q.correct_index);
 
+          // ── FAKE MULTIMODAL CHECK ──
+          const multimodalStrength = q.multimodal_strength || "unknown";
+          if (multimodalStrength === "weak") {
+            console.warn(`[generate][${assetCode}][Q${qi + 1}] ⚠️ Fake multimodal detectado (strength: weak) → rebaixando para text_only`);
+            // Don't block — but mark as text_only so it won't be served with image
+            q._question_mode = "text_only";
+          } else {
+            q._question_mode = "multimodal";
+          }
+
           // Internal score check (if AI provided it)
           const internalScore = q.internal_score || 0;
-          const status = internalScore >= 90 ? "needs_review" : internalScore >= 75 ? "needs_review" : "needs_review";
+          const status = internalScore >= 90 ? "needs_review" : "needs_review";
 
           // Generate unique question code
           const qCode = `IMG-${asset.image_type?.toUpperCase() || "GEN"}-${Date.now().toString(36).toUpperCase()}-Q${qi + 1}`;

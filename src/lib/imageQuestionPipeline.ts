@@ -4,6 +4,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { isImageUrlClinical } from "@/lib/multimodalSafetyGate";
 
 export interface ImageAsset {
   id: string;
@@ -70,15 +71,17 @@ export async function selectImageQuestions(
         correct_index, explanation, difficulty, 
         tri_a, tri_b, tri_c, exam_style,
         senior_audit_score, editorial_grade,
-        medical_image_assets!inner(image_url, image_type, clinical_confidence, review_status)
+        medical_image_assets!inner(image_url, image_type, clinical_confidence, review_status, integrity_status, validation_level, asset_origin, is_active)
       `)
       .eq("status", "published")
       .eq("language_code", "pt-BR")
-      // BLOQUEIO CLÍNICO: apenas assets publicados, ativos e com confiança >= 0.80
+      // BLOQUEIO CLÍNICO: somente assets gold/silver, publicados, com confiança >= 0.90
       .eq("medical_image_assets.is_active", true)
       .eq("medical_image_assets.review_status", "published")
       .eq("medical_image_assets.integrity_status", "ok")
-      .gte("medical_image_assets.clinical_confidence", 0.80)
+      .gte("medical_image_assets.clinical_confidence", 0.90)
+      .in("medical_image_assets.validation_level", ["gold", "silver"])
+      .in("medical_image_assets.asset_origin", ["real_medical", "validated_medical"])
       // BLOQUEIO EDITORIAL: nunca servir questões fracas
       .neq("editorial_grade", "weak");
 
@@ -111,26 +114,53 @@ export async function selectImageQuestions(
     const pick = pool[Math.floor(Math.random() * pool.length)] as any;
     const asset = pick.medical_image_assets;
 
-    results.push({
-      id: pick.id,
-      asset_id: pick.asset_id,
-      question_code: pick.question_code,
-      statement: pick.statement,
-      option_a: pick.option_a,
-      option_b: pick.option_b,
-      option_c: pick.option_c,
-      option_d: pick.option_d,
-      option_e: pick.option_e,
-      correct_index: pick.correct_index,
-      explanation: pick.explanation,
-      difficulty: pick.difficulty,
-      tri_a: pick.tri_a,
-      tri_b: pick.tri_b,
-      tri_c: pick.tri_c,
-      exam_style: pick.exam_style,
-      image_url: asset?.image_url,
-      image_type: asset?.image_type,
-    });
+    // Final URL safety check — skip if image URL is suspicious
+    const imgUrl = asset?.image_url;
+    if (!isImageUrlClinical(imgUrl)) {
+      console.warn(`[ImagePipeline] URL suspeita detectada para ${pick.question_code}, servindo como textual`);
+      // Still include question but without image (text fallback)
+      results.push({
+        id: pick.id,
+        asset_id: pick.asset_id,
+        question_code: pick.question_code,
+        statement: pick.statement,
+        option_a: pick.option_a,
+        option_b: pick.option_b,
+        option_c: pick.option_c,
+        option_d: pick.option_d,
+        option_e: pick.option_e,
+        correct_index: pick.correct_index,
+        explanation: pick.explanation,
+        difficulty: pick.difficulty,
+        tri_a: pick.tri_a,
+        tri_b: pick.tri_b,
+        tri_c: pick.tri_c,
+        exam_style: pick.exam_style,
+        image_url: undefined, // Hide suspicious image
+        image_type: asset?.image_type,
+      });
+    } else {
+      results.push({
+        id: pick.id,
+        asset_id: pick.asset_id,
+        question_code: pick.question_code,
+        statement: pick.statement,
+        option_a: pick.option_a,
+        option_b: pick.option_b,
+        option_c: pick.option_c,
+        option_d: pick.option_d,
+        option_e: pick.option_e,
+        correct_index: pick.correct_index,
+        explanation: pick.explanation,
+        difficulty: pick.difficulty,
+        tri_a: pick.tri_a,
+        tri_b: pick.tri_b,
+        tri_c: pick.tri_c,
+        exam_style: pick.exam_style,
+        image_url: imgUrl,
+        image_type: asset?.image_type,
+      });
+    }
 
     excludeIds.push(pick.id);
   }
@@ -156,6 +186,8 @@ export function imageQuestionToSimQuestion(iq: ImageQuestion): {
   const options = [iq.option_a, iq.option_b, iq.option_c, iq.option_d];
   if (iq.option_e) options.push(iq.option_e);
 
+  const hasValidImage = isImageUrlClinical(iq.image_url);
+
   return {
     statement: iq.statement,
     options,
@@ -163,9 +195,9 @@ export function imageQuestionToSimQuestion(iq: ImageQuestion): {
     explanation: iq.explanation,
     topic: iq.image_type || "Imagem Médica",
     difficulty: iq.difficulty,
-    image_url: iq.image_url,
+    image_url: hasValidImage ? iq.image_url : undefined,
     image_type: iq.image_type,
-    _isImageQuestion: true,
+    _isImageQuestion: hasValidImage,
     _imageQuestionId: iq.id,
   };
 }
