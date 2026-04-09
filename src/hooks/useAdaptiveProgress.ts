@@ -48,10 +48,33 @@ export interface AdaptiveInsight {
   message: string;
 }
 
+export interface PriorityWeakness {
+  modality: string;
+  accuracy: number;
+  responseTime: number;
+  inErrorPatterns: boolean;
+  compositeScore: number;
+}
+
+export interface SlowModality {
+  modality: string;
+  seconds: number;
+  alertLevel: "critico" | "moderado" | "normal";
+}
+
+export interface ErrorPatternDetection {
+  pattern: string;
+  category: "visual" | "decisorio" | "raciocinio" | "outro";
+  label: string;
+}
+
 export interface AdaptiveProgressData {
   weaknesses: ModalityAccuracy[];
+  priority_weaknesses: PriorityWeakness[];
   trends: ModalityTrend[];
   responseTimes: ResponseTimeAlert[];
+  slow_modalities: SlowModality[];
+  error_patterns_detected: ErrorPatternDetection[];
   quality: SimuladoQuality;
   profile: StudentProfile;
   nextFocus: NextFocus;
