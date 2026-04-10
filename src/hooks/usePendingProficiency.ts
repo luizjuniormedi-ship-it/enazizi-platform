@@ -9,18 +9,35 @@ export function usePendingProficiency() {
   const { user } = useAuth();
   const [hasVisited, setHasVisited] = useState(() => sessionStorage.getItem(SESSION_KEY) === "true");
 
-  // Check if user is staff (professor/admin)
+  // Check if user is pure staff (admin only — médicos with professor role should still see proficiency)
   const { data: isStaff = false } = useQuery({
-    queryKey: ["is-staff-role", user?.id],
+    queryKey: ["is-staff-proficiency", user?.id],
     enabled: !!user?.id,
     staleTime: 10 * 60 * 1000,
     queryFn: async () => {
-      const { data } = await supabase
+      // Check if user is admin
+      const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", user!.id)
-        .in("role", ["admin", "professor"]);
-      return (data || []).length > 0;
+        .eq("role", "admin");
+      if ((roles || []).length > 0) return true;
+
+      // Professors who are NOT médicos are staff (skip proficiency)
+      const { data: profRoles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "professor");
+      if ((profRoles || []).length === 0) return false;
+
+      // Has professor role — check if user_type is medico (médicos should NOT be skipped)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("user_type")
+        .eq("user_id", user!.id)
+        .single();
+      return profile?.user_type !== "medico";
     },
   });
 

@@ -122,7 +122,7 @@ const MentorThemePlans = () => {
     let query = supabase
       .from("profiles")
       .select("user_id, display_name, email, faculdade, periodo")
-      .eq("user_type", "estudante")
+      .in("user_type", ["estudante", "medico"])
       .limit(20);
 
     if (studentSearch.length >= 2) {
