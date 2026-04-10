@@ -444,6 +444,7 @@ const ProfessorDashboard = () => {
     setExpandedQuestion(null);
     setTopicDistribution({});
     setUseDistribution(false);
+    setExamBoard("all");
   };
 
   const addManualQuestion = () => {
