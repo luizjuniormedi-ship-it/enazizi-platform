@@ -315,6 +315,14 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(10), "practical_exams"),
+    // Response time per topic (for priority boost)
+    safe(() => supabase
+      .from("desempenho_questoes")
+      .select("tempo_gasto, temas_estudados(tema)")
+      .eq("user_id", userId)
+      .not("tempo_gasto", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(200), "response_times"),
     // Conditional: only fetch if no coreData
     ...(cd ? [] : [
       safe(() => supabase
