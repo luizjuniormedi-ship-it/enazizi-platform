@@ -31,6 +31,13 @@ const SUSPICIOUS_URL_PATTERNS = [
   "icon-", "icon_", "emoji", "sticker", "clipart", "cartoon",
   "illustration", "vector", "flat-design", "flat_design",
 ];
+// Additional portrait/person patterns
+const PORTRAIT_URL_PATTERNS = [
+  "author", "doctor-photo", "physician", "nurse", "speaker",
+  "editor", "faculty", "contributor", "member", "bio-photo",
+  "bio_photo", "person", "people", "team",
+];
+const ALL_SUSPICIOUS_URL_PATTERNS = [...SUSPICIOUS_URL_PATTERNS, ...PORTRAIT_URL_PATTERNS];
 
 export interface SafetyCheckResult {
   safe: boolean;
@@ -91,7 +98,7 @@ export function isMultimodalSafe(asset: {
 
   // 8. Image URL not suspicious
   const urlLower = asset.image_url.toLowerCase();
-  for (const pattern of SUSPICIOUS_URL_PATTERNS) {
+  for (const pattern of ALL_SUSPICIOUS_URL_PATTERNS) {
     if (urlLower.includes(pattern)) {
       return { safe: false, reason: `URL suspeita: contém "${pattern}"`, gate: "suspicious_url" };
     }
@@ -108,7 +115,7 @@ export function isImageUrlClinical(url: string | null | undefined): boolean {
   if (!url || typeof url !== "string" || url.trim().length < 10) return false;
   const lower = url.toLowerCase();
   // Block suspicious patterns
-  for (const pattern of SUSPICIOUS_URL_PATTERNS) {
+  for (const pattern of ALL_SUSPICIOUS_URL_PATTERNS) {
     if (lower.includes(pattern)) return false;
   }
   // Must be an image URL
