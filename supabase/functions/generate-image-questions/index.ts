@@ -11,6 +11,7 @@ const corsHeaders = {
 const MIN_STATEMENT = 400;
 const MIN_EXPLANATION = 150;
 const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
+import { isUrlSuspicious, validateImageVision } from "../_shared/vision-gate.ts";
 
 interface GenerationResult {
   asset_id: string;
@@ -296,6 +297,12 @@ serve(async (req) => {
       "shutterstock", "gettyimages", "istockphoto", "dreamstime",
       "unsplash.com", "pexels.com", "pixabay.com",
     ];
+    // Also check shared blocklist
+    function isMultimodalSafeExtended(asset: any): { safe: boolean; reason: string } {
+      const urlCheck = isUrlSuspicious(asset.image_url);
+      if (urlCheck.suspicious) return { safe: false, reason: urlCheck.reason! };
+      return isMultimodalSafe(asset);
+    }
 
     function isMultimodalSafe(asset: any): { safe: boolean; reason: string } {
       const validOrigins = ["real_medical", "validated_medical"];
@@ -354,7 +361,7 @@ serve(async (req) => {
       const assetCode = asset.asset_code || asset.id;
 
       // ── SAFETY GATE: check if asset is multimodal-safe ──
-      const safetyCheck = isMultimodalSafe(asset);
+      const safetyCheck = isMultimodalSafeExtended(asset);
       if (!safetyCheck.safe) {
         console.warn(`[generate][${assetCode}] ⛔ Asset BLOQUEADO para multimodal: ${safetyCheck.reason}`);
         // Mark as text_only fallback — generate textual question instead
@@ -364,6 +371,21 @@ serve(async (req) => {
           status: "rejected",
           stage: "safety_gate",
           error: `Fallback textual: ${safetyCheck.reason}`,
+        });
+        continue;
+      }
+
+      // ── VISION GATE: fail-closed ──
+      const LOVABLE_KEY = Deno.env.get("LOVABLE_API_KEY");
+      const visionCheck = await validateImageVision(asset.image_url, asset.diagnosis || "", asset.image_type || "", LOVABLE_KEY);
+      if (!visionCheck.valid) {
+        console.warn(`[generate][${assetCode}] ⛔ Vision gate REJEITOU: ${visionCheck.reason}`);
+        results.push({
+          asset_id: asset.id,
+          asset_code: assetCode,
+          status: "rejected",
+          stage: "vision_gate",
+          error: visionCheck.reason,
         });
         continue;
       }

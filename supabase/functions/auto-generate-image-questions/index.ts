@@ -14,12 +14,16 @@ const MIN_EXPLANATION = 120;
 const EXECUTION_TIMEOUT_MS = 120_000;
 const STALE_RUN_MINUTES = 30;
 const ENGLISH_PATTERN = /\b(the|is|are|was|were|this|that|which|what|patient|diagnosis|treatment|clinical|history)\b/gi;
+import { isUrlSuspicious, validateImageVision } from "../_shared/vision-gate.ts";
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 // ── HARD DETERMINISTIC VALIDATION (inlined for edge function) ──
 const BLOCK_PATTERNS = [
   "laptop","notebook","dashboard","screen","ui","interface","website",
   "landing-page","mockup","placeholder","shutterstock","unsplash","stock",
-  "portrait","selfie","avatar","person","office","room","illustration",
+  "portrait","selfie","avatar","person","author","profile","headshot",
+  "doctor","physician","nurse","team","staff","contributor",
+  "office","room","illustration",
   "vector","cartoon","clipart","diagram","drawing"
 ];
 const ENGLISH_WORDS_HARD = [
@@ -282,6 +286,27 @@ serve(async (req) => {
 
       const needed = MAX_QUESTIONS_PER_ASSET - (asset.existing_count || 0);
       if (needed <= 0) continue;
+
+      // ── VISION GATE: fail-closed — retrato/não-clínico = rejeitado ──
+      const urlCheck = isUrlSuspicious(asset.image_url);
+      if (urlCheck.suspicious) {
+        console.warn(`[auto-gen] ⛔ URL suspeita ${asset.asset_code}: ${urlCheck.reason}`);
+        totalFailed++;
+        processedAssets++;
+        results.push({ asset: asset.asset_code, error: `url_suspicious:${urlCheck.reason}` });
+        await sb.from("question_generation_runs").update({ processed_assets: processedAssets, failed_assets: totalFailed }).eq("id", runId).catch(() => {});
+        continue;
+      }
+
+      const visionCheck = await validateImageVision(asset.image_url, asset.diagnosis || "", asset.image_type || "", LOVABLE_API_KEY);
+      if (!visionCheck.valid) {
+        console.warn(`[auto-gen] ⛔ Vision gate rejeitou ${asset.asset_code}: ${visionCheck.reason}`);
+        totalFailed++;
+        processedAssets++;
+        results.push({ asset: asset.asset_code, error: `vision_gate:${visionCheck.reason}` });
+        await sb.from("question_generation_runs").update({ processed_assets: processedAssets, failed_assets: totalFailed }).eq("id", runId).catch(() => {});
+        continue;
+      }
 
       console.log(`[auto-gen] Step 4: Generating ${needed} questions for ${asset.asset_code}...`);
 
