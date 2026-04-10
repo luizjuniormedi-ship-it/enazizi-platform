@@ -267,6 +267,7 @@ const ProfessorDashboard = () => {
                 difficulty,
                 difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
                 previousStatements: previousStatements.length > 0 ? previousStatements : undefined,
+                examBoard: examBoard !== "all" ? examBoard : undefined,
               });
               if (res.source === "cache") {
                 toast({ title: "📦 Questões do banco", description: "Todas as questões vieram do banco existente (sem custo de IA)." });
@@ -309,6 +310,7 @@ const ProfessorDashboard = () => {
               difficulty,
               difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
               previousStatements: previousStatements.length > 0 ? previousStatements : undefined,
+              examBoard: examBoard !== "all" ? examBoard : undefined,
             });
             if (res.source === "cache") {
               toast({ title: "📦 Questões do banco", description: "Todas as questões vieram do banco existente (sem custo de IA)." });
@@ -344,6 +346,7 @@ const ProfessorDashboard = () => {
             count: deficit,
             difficulty,
             previousStatements: prevStmts,
+            examBoard: examBoard !== "all" ? examBoard : undefined,
           });
           allQuestions = [...allQuestions, ...(res.questions || [])];
           setGeneratedQuestions([...allQuestions]);
