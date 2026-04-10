@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Brain, Mail, Lock, User, GraduationCap, Building, Phone } from "lucide-react";
+import { Brain, Mail, Lock, User, GraduationCap, Building, Phone, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +21,7 @@ const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [userType, setUserType] = useState<"estudante" | "professor">("estudante");
+  const [userType, setUserType] = useState<"estudante" | "professor" | "medico">("estudante");
   const [faculdade, setFaculdade] = useState("");
   const [phone, setPhone] = useState("");
   const [periodo, setPeriodo] = useState("");
@@ -60,13 +60,21 @@ const Register = () => {
       return;
     }
 
+    if (userType === "medico") {
+      const phoneCheck = isValidPhone(phone);
+      if (!phoneCheck.valid) {
+        toast({ title: phoneCheck.message, variant: "destructive" });
+        return;
+      }
+    }
+
     setLoading(true);
     const phoneDigits = phone.replace(/\D/g, "");
     const { error } = await signUp(email, password, {
       displayName: name,
       userType,
-      faculdade,
-      phone: userType === "estudante" ? phoneDigits : undefined,
+      faculdade: userType !== "medico" ? faculdade : undefined,
+      phone: userType !== "professor" ? phoneDigits : undefined,
       periodo: userType === "estudante" ? parseInt(periodo) : undefined,
     });
     setLoading(false);
@@ -95,7 +103,7 @@ const Register = () => {
         <form onSubmit={handleRegister} className="glass-card p-8 space-y-4">
           <div className="space-y-2">
             <Label>Eu sou</Label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setUserType("estudante")}
@@ -111,6 +119,14 @@ const Register = () => {
               >
                 <Building className="h-4 w-4" />
                 Professor
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserType("medico")}
+                className={`flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors ${userType === "medico" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground hover:bg-accent"}`}
+              >
+                <Stethoscope className="h-4 w-4" />
+                Médico
               </button>
             </div>
           </div>
