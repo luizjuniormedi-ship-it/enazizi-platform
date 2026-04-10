@@ -1,41 +1,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { isUrlSuspicious } from "../_shared/vision-gate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SUSPICIOUS_URL_PATTERNS = [
-  "mockup", "screenshot", "placeholder", "laptop", "dashboard",
-  "notebook", "landing-page", "landing_page", "wireframe",
-  "ui-design", "ui_design", "template", "stock-photo", "stockphoto",
-  "infographic", "chart-image", "graph-image",
-  "hero-image", "feature-image", "banner-image",
-  "certificate", "badge-image", "award-image",
-  "social-media", "facebook", "twitter", "instagram",
-  "shutterstock", "gettyimages", "istockphoto", "dreamstime",
-  "unsplash.com", "pexels.com", "pixabay.com",
-  "youtube.com/", "vimeo.com/",
-  "portrait", "selfie", "headshot", "face-photo", "face_photo",
-  "profile-photo", "profile_photo", "profile-pic", "profile_pic",
-  "avatar", "person-photo", "person_photo",
-  "logo", "branding", "institutional", "team-photo", "team_photo",
-  "corporate", "company-photo", "company_photo",
-  "icon-", "icon_", "emoji", "sticker", "clipart", "cartoon",
-  "illustration", "vector", "flat-design", "flat_design",
-];
-
-function isUrlSuspicious(url: string | null): boolean {
-  if (!url) return true;
-  const lower = url.toLowerCase();
-  for (const p of SUSPICIOUS_URL_PATTERNS) {
-    if (lower.includes(p)) return true;
-  }
-  // Must look like an image URL
-  if (!lower.match(/\.(jpg|jpeg|png|webp|gif|svg)(\?|$)/i) && !lower.includes("/storage/") && !lower.includes("/question-images/")) {
-    return true;
-  }
-  return false;
+function isUrlSuspiciousLegacy(url: string | null): boolean {
+  return isUrlSuspicious(url).suspicious;
 }
 
 Deno.serve(async (req) => {
@@ -63,7 +35,7 @@ Deno.serve(async (req) => {
       let blockReason = "";
 
       // Check suspicious URL
-      if (isUrlSuspicious(asset.image_url)) {
+      if (isUrlSuspiciousLegacy(asset.image_url)) {
         blockReason = "URL suspeita ou não clínica";
       }
 
