@@ -31,6 +31,7 @@ const SPECIALTIES = [
   "Clínica Médica", "Cardiologia", "Pneumologia", "Gastroenterologia", "Neurologia",
   "Nefrologia", "Infectologia", "Pediatria", "Cirurgia", "Ginecologia e Obstetrícia",
   "Ortopedia", "Psiquiatria", "Emergência", "Dermatologia", "Angiologia",
+  "Oftalmologia", "Oncologia", "Otorrinolaringologia", "Terapia Intensiva", "Urologia",
 ];
 
 import { FACULDADES } from "@/constants/faculdades";
