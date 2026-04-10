@@ -382,6 +382,7 @@ const ProfessorDashboard = () => {
         student_ids: selectedStudentIds.length > 0 ? selectedStudentIds : null,
         scheduled_at: scheduledAt || null,
         auto_assign: autoAssign,
+        exam_board: examBoard !== "all" ? examBoard : null,
       });
       toast({ title: "Simulado criado!", description: `Atribuído a ${res.students_assigned} aluno(s).` });
       setShowCreate(false);
