@@ -93,7 +93,7 @@ const ImageQuestionViewer = ({ imageUrl, imageType, altText }: ImageQuestionView
           src={imageUrl}
           alt={altText || `Imagem médica - ${typeLabel}`}
           className={`w-full object-contain max-h-[300px] md:max-h-[400px] cursor-pointer transition-opacity ${loaded ? "opacity-100" : "opacity-0 absolute"}`}
-          onLoad={() => setLoaded(true)}
+          onLoad={handleLoad}
           onError={() => setHasError(true)}
           onClick={() => setExpanded(true)}
           loading="lazy"
