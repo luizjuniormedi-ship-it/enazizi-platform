@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { HelpCircle, BookOpen, Heart, ArrowRight, Sparkles, Activity, FlipVertical, MessageCircle, ImageIcon } from "lucide-react";
+import { HelpCircle, BookOpen, Heart, ArrowRight, Sparkles, Activity, FlipVertical, MessageCircle, ImageIcon, Brain } from "lucide-react";
 
 const agents = [
   {
@@ -59,6 +59,15 @@ const agents = [
     description: "Aprenda medicina através de narrativas clínicas imersivas. Você é o médico no plantão — raciocine, decida e aprenda com casos cinematográficos.",
     color: "text-amber-400",
     bgColor: "bg-amber-500/10",
+    isNew: true,
+  },
+  {
+    to: "/dashboard/mnemonico",
+    icon: Brain,
+    title: "🧠 Mnemônico Visual",
+    description: "Gere mnemônicos com imagem para memorizar listas médicas de prova. Pipeline com auditoria pedagógica e visual.",
+    color: "text-violet-400",
+    bgColor: "bg-violet-500/10",
     isNew: true,
   },
   {
