@@ -33,17 +33,29 @@ const ImageQuestionViewer = ({ imageUrl, imageType, altText }: ImageQuestionView
   const [hasError, setHasError] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [tooSmall, setTooSmall] = useState(false);
+
+  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    // Reject tiny images (thumbnails/placeholders/avatars disguised as clinical)
+    if (img.naturalWidth < 200 || img.naturalHeight < 200) {
+      console.warn(`[ImageQuestion] Imagem muito pequena (${img.naturalWidth}x${img.naturalHeight}), exibindo fallback`);
+      setTooSmall(true);
+      return;
+    }
+    setLoaded(true);
+  };
 
   const typeLabel = imageType ? IMAGE_TYPE_LABELS[imageType] || imageType : "Imagem";
 
   // If no valid URL or error loading
-  if (!imageUrl || hasError) {
+  if (!imageUrl || hasError || tooSmall) {
     return (
       <div className="rounded-lg border border-border bg-muted/30 p-6 flex flex-col items-center justify-center gap-2 text-muted-foreground">
         <Badge variant="secondary" className="text-xs font-medium">{typeLabel}</Badge>
         <span className="text-sm">📷 Imagem indisponível para esta questão</span>
-        {hasError && (
-          <Button variant="ghost" size="sm" onClick={() => { setHasError(false); setLoaded(false); }}>
+        {(hasError || tooSmall) && (
+          <Button variant="ghost" size="sm" onClick={() => { setHasError(false); setTooSmall(false); setLoaded(false); }}>
             Tentar novamente
           </Button>
         )}
@@ -81,7 +93,7 @@ const ImageQuestionViewer = ({ imageUrl, imageType, altText }: ImageQuestionView
           src={imageUrl}
           alt={altText || `Imagem médica - ${typeLabel}`}
           className={`w-full object-contain max-h-[300px] md:max-h-[400px] cursor-pointer transition-opacity ${loaded ? "opacity-100" : "opacity-0 absolute"}`}
-          onLoad={() => setLoaded(true)}
+          onLoad={handleLoad}
           onError={() => setHasError(true)}
           onClick={() => setExpanded(true)}
           loading="lazy"
