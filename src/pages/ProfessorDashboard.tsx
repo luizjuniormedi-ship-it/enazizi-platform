@@ -1007,12 +1007,12 @@ const ProfessorDashboard = () => {
                   </div>
                   <Select value={examBoard} onValueChange={(val) => {
                     setExamBoard(val);
+                    const keyMap: Record<string, string> = {
+                      "ENARE": "enare", "REVALIDA": "revalida", "USP-SP": "usp",
+                      "UNIFESP": "unifesp", "SUS-SP": "sus-sp", "UNICAMP": "unicamp",
+                      "SANTA_CASA": "santa-casa-sp",
+                    };
                     if (val !== "all") {
-                      const keyMap: Record<string, string> = {
-                        "ENARE": "enare", "REVALIDA": "revalida", "USP-SP": "usp",
-                        "UNIFESP": "unifesp", "SUS-SP": "sus-sp", "UNICAMP": "unicamp",
-                        "SANTA_CASA": "santa-casa-sp",
-                      };
                       const profile = EXAM_PROFILES[keyMap[val] || "outra"];
                       if (profile?.specialtyWeights) {
                         const bancaTopics = Object.keys(profile.specialtyWeights);
@@ -1020,6 +1020,18 @@ const ProfessorDashboard = () => {
                         if (newTopics.length > 0) {
                           setSelectedTopics(prev => [...prev, ...newTopics]);
                         }
+                      }
+                    } else {
+                      // "Todas as bancas": add all specialties from all profiles
+                      const allBancaTopics = new Set<string>();
+                      Object.values(EXAM_PROFILES).forEach(profile => {
+                        if (profile?.specialtyWeights) {
+                          Object.keys(profile.specialtyWeights).forEach(t => allBancaTopics.add(t));
+                        }
+                      });
+                      const newTopics = [...allBancaTopics].filter(t => !selectedTopics.includes(t));
+                      if (newTopics.length > 0) {
+                        setSelectedTopics(prev => [...prev, ...newTopics]);
                       }
                     }
                   }}>
