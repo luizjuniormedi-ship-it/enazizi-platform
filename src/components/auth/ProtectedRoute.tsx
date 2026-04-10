@@ -65,7 +65,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
           user_type: userType,
         });
 
-        if ((userType === "professor" || userType === "medico") && profileComplete && data?.status === "pending") {
+        if (userType === "professor" && profileComplete && data?.status === "pending") {
           await supabase.from("profiles").update({ status: "active" }).eq("user_id", user.id);
           setProfileStatus("active");
         } else {
@@ -94,9 +94,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       const obVersion = (data as any)?.onboarding_version ?? 1;
       setOnboardingVersion(obVersion);
       const effectiveStatus =
-        userType === "professor" && !incomplete && data?.status === "pending" ? "active" :
-        userType === "medico" && !incomplete && data?.status === "pending" ? "active" :
-        data?.status;
+        userType === "professor" && !incomplete && data?.status === "pending" ? "active" : data?.status;
 
       if (obVersion < 2 && !incomplete && effectiveStatus === "active") {
         const welcomeSeen = localStorage.getItem("enazizi_v2_welcome_seen") === "true";
@@ -155,8 +153,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         updateData.faculdade = formFaculdade;
       }
 
-      if (isProfessor || formUserType === "medico") {
-        updateData.faculdade = isProfessor ? formFaculdade : undefined;
+      if (isProfessor) {
+        updateData.faculdade = formFaculdade;
         updateData.status = "active";
         await supabase.from("user_roles").upsert(
           { user_id: user.id, role: "professor" as any },
