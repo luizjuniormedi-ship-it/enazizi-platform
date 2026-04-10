@@ -768,7 +768,7 @@ REGRAS INVIOLÁVEIS:
         const { data: found } = await sb.from("profiles")
           .select("user_id, display_name, email, faculdade, periodo")
           .eq("status", "active")
-          .eq("user_type", "estudante")
+          .in("user_type", ["estudante", "medico"])
           .or(`display_name.ilike.${searchTerm},email.ilike.${searchTerm}`)
           .order("display_name")
           .limit(20);
