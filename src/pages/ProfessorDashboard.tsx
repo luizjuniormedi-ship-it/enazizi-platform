@@ -129,7 +129,20 @@ const ProfessorDashboard = () => {
     }
   }, [session, callAPI, toast]);
 
+  const allExamTopics = useMemo(() => {
+    const topics = new Set<string>();
+    Object.values(EXAM_PROFILES).forEach((profile) => {
+      Object.keys(profile.specialtyWeights || {}).forEach((topic) => topics.add(topic));
+    });
+    return [...topics];
+  }, []);
+
   useEffect(() => { loadSimulados(); }, [loadSimulados]);
+
+  useEffect(() => {
+    if (!showCreate || questionMode !== "ai" || examBoard !== "all") return;
+    setSelectedTopics((prev) => (prev.length > 0 ? prev : allExamTopics));
+  }, [allExamTopics, examBoard, questionMode, showCreate]);
 
   const previewMatchingStudents = async () => {
     setPreviewLoading(true);
