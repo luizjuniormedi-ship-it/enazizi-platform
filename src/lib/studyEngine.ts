@@ -368,6 +368,18 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     ? { exam_date: cd.profile.exam_date, target_exam: cd.profile.target_exam, target_exams: cd.profile.target_exams }
     : conditionalResults[4];
 
+  // ── Compute avg response time per topic (for priority boost) ──
+  const responseTimeRows = (responseTimeData || []) as any[];
+  const responseTimeByTopic = new Map<string, { total: number; count: number }>();
+  for (const row of responseTimeRows) {
+    const tema = row.temas_estudados?.tema;
+    if (!tema || !row.tempo_gasto) continue;
+    const entry = responseTimeByTopic.get(tema) || { total: 0, count: 0 };
+    entry.total += row.tempo_gasto;
+    entry.count += 1;
+    responseTimeByTopic.set(tema, entry);
+  }
+
   // ── Load mentor topics & exam dates if any active mentorships ──
   let mentorTopics: string[] = [];
   let mentorExamDate: Date | null = null;
