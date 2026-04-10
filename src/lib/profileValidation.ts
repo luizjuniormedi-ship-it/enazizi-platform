@@ -83,7 +83,7 @@ export function isProfileComplete(data: {
   user_type?: string;
 }): boolean {
   const userType = data.user_type || "estudante";
-  const isStudent = userType === "estudante";
+  const isStudent = userType === "estudante" || userType === "medico";
   const isProfessor = userType === "professor";
 
   const nameCheck = isValidName(data.display_name || "");

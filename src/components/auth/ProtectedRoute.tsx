@@ -113,7 +113,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (!user) return;
 
     const trimmedName = formName.trim();
-    const isStudent = formUserType === "estudante";
+    const isMedico = formUserType === "medico";
+    const isStudent = formUserType === "estudante" || isMedico;
     const isProfessor = formUserType === "professor";
 
     const nameCheck = isValidName(trimmedName);
