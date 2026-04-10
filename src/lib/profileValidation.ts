@@ -85,11 +85,16 @@ export function isProfileComplete(data: {
   const userType = data.user_type || "estudante";
   const isStudent = userType === "estudante";
   const isProfessor = userType === "professor";
+  const isMedico = userType === "medico";
 
   const nameCheck = isValidName(data.display_name || "");
-  const phoneCheck = isValidPhone(data.phone || "");
+  if (!nameCheck.valid) return false;
 
-  if (!nameCheck.valid || !phoneCheck.valid) return false;
+  // Médico and student need phone; professor doesn't
+  if ((isStudent || isMedico) && !isValidPhone(data.phone || "").valid) return false;
+  // Professor needs phone validation too (already required in onboarding)
+  if (isProfessor && data.phone && !isValidPhone(data.phone).valid) return false;
+
   if (isStudent && (!data.periodo || !data.faculdade)) return false;
   if (isProfessor && !data.faculdade) return false;
   if (data.faculdade && !FACULDADES.includes(data.faculdade)) return false;
