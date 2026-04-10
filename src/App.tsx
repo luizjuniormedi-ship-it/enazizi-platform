@@ -26,6 +26,7 @@ const Register = lazyWithRetry(() => import("./pages/Register"), "Register");
 const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"), "Dashboard");
 const Flashcards = lazyWithRetry(() => import("./pages/Flashcards"), "Flashcards");
 const FlashcardGenerator = lazyWithRetry(() => import("./pages/FlashcardGenerator"), "FlashcardGenerator");
+const MnemonicGenerator = lazyWithRetry(() => import("./pages/MnemonicGenerator"), "MnemonicGenerator");
 const CronogramaInteligente = lazyWithRetry(() => import("./pages/CronogramaInteligente"), "CronogramaInteligente");
 const Simulados = lazyWithRetry(() => import("./pages/Simulados"), "Simulados");
 const Uploads = lazyWithRetry(() => import("./pages/Uploads"), "Uploads");
@@ -150,6 +151,7 @@ const App = () => (
                 <Route path="image-quiz" element={<MedicalImageQuiz />} />
                 <Route path="rankings" element={<Rankings />} />
                 <Route path="prova-pratica" element={<PracticalExam />} />
+                <Route path="mnemonico" element={<MnemonicGenerator />} />
               </Route>
               <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />
