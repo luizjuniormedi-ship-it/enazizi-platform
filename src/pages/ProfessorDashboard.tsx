@@ -1005,7 +1005,24 @@ const ProfessorDashboard = () => {
                     <FileText className="h-4 w-4 text-primary" />
                     <Label className="text-sm font-semibold">Estilo de Banca</Label>
                   </div>
-                  <Select value={examBoard} onValueChange={setExamBoard}>
+                  <Select value={examBoard} onValueChange={(val) => {
+                    setExamBoard(val);
+                    if (val !== "all") {
+                      const keyMap: Record<string, string> = {
+                        "ENARE": "enare", "REVALIDA": "revalida", "USP-SP": "usp",
+                        "UNIFESP": "unifesp", "SUS-SP": "sus-sp", "UNICAMP": "unicamp",
+                        "SANTA_CASA": "santa-casa-sp",
+                      };
+                      const profile = EXAM_PROFILES[keyMap[val] || "outra"];
+                      if (profile?.specialtyWeights) {
+                        const bancaTopics = Object.keys(profile.specialtyWeights);
+                        const newTopics = bancaTopics.filter(t => !selectedTopics.includes(t));
+                        if (newTopics.length > 0) {
+                          setSelectedTopics(prev => [...prev, ...newTopics]);
+                        }
+                      }
+                    }
+                  }}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todas as bancas</SelectItem>
@@ -1018,8 +1035,30 @@ const ProfessorDashboard = () => {
                       <SelectItem value="SANTA_CASA">Santa Casa SP</SelectItem>
                     </SelectContent>
                   </Select>
+                  {examBoard !== "all" && (() => {
+                    const keyMap: Record<string, string> = {
+                      "ENARE": "enare", "REVALIDA": "revalida", "USP-SP": "usp",
+                      "UNIFESP": "unifesp", "SUS-SP": "sus-sp", "UNICAMP": "unicamp",
+                      "SANTA_CASA": "santa-casa-sp",
+                    };
+                    const profile = EXAM_PROFILES[keyMap[examBoard] || "outra"];
+                    if (!profile) return null;
+                    const weights = Object.entries(profile.specialtyWeights).sort((a, b) => b[1] - a[1]);
+                    return (
+                      <div className="space-y-1.5 mt-1">
+                        <p className="text-xs font-medium text-muted-foreground">Distribuição da {examBoard}:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {weights.map(([spec, w]) => (
+                            <Badge key={spec} variant={selectedTopics.includes(spec) ? "default" : "outline"} className="text-[10px]">
+                              {spec} ({w}%)
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                   <p className="text-xs text-muted-foreground">
-                    {examBoard === "all" ? "Questões com estilo genérico." : `Questões no estilo da banca ${examBoard}.`}
+                    {examBoard === "all" ? "Questões com estilo genérico." : "Temas da banca adicionados automaticamente."}
                   </p>
                 </div>
               )}
