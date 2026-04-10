@@ -270,9 +270,9 @@ function generateEscalation(event: QAEvent) {
     },
     FSRS_SUBUTILIZADO: {
       report: "Sistema FSRS com poucos cards criados.",
-      hypothesis_primary: "update-performance não cria cards automaticamente",
+      hypothesis_primary: "completeStudyAction não cria cards automaticamente",
       hypothesis_secondary: "Poucos usuários atingem condição de criação",
-      recommended_action: "Verificar lógica de criação de cards no update-performance",
+      recommended_action: "Verificar lógica de criação de cards no fsrsAutoCreate",
     },
   };
 

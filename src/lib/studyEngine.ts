@@ -260,6 +260,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     fsrsDueData,
     mentorTargets,
     practicalExamData,
+    responseTimeData,
     // Only query these if coreData not provided
     ...conditionalResults
   ] = await Promise.all([
@@ -314,6 +315,14 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(10), "practical_exams"),
+    // Response time per topic (for priority boost)
+    safe(() => supabase
+      .from("desempenho_questoes")
+      .select("tempo_gasto, temas_estudados(tema)")
+      .eq("user_id", userId)
+      .not("tempo_gasto", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(200), "response_times"),
     // Conditional: only fetch if no coreData
     ...(cd ? [] : [
       safe(() => supabase
@@ -358,6 +367,18 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
   const profileData = cd
     ? { exam_date: cd.profile.exam_date, target_exam: cd.profile.target_exam, target_exams: cd.profile.target_exams }
     : conditionalResults[4];
+
+  // ── Compute avg response time per topic (for priority boost) ──
+  const responseTimeRows = (responseTimeData || []) as any[];
+  const responseTimeByTopic = new Map<string, { total: number; count: number }>();
+  for (const row of responseTimeRows) {
+    const tema = row.temas_estudados?.tema;
+    if (!tema || !row.tempo_gasto) continue;
+    const entry = responseTimeByTopic.get(tema) || { total: 0, count: 0 };
+    entry.total += row.tempo_gasto;
+    entry.count += 1;
+    responseTimeByTopic.set(tema, entry);
+  }
 
   // ── Load mentor topics & exam dates if any active mentorships ──
   let mentorTopics: string[] = [];
@@ -681,6 +702,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       targetPath: "/dashboard/chatgpt",
       estimatedMinutes: 10,
       objective: "correction",
+      difficulty: err.vezes_errado >= 5 ? "facil" : "intermediario",
       _groupKey: `error:${err.tema}`,
       sourceTable: "error_bank",
       sourceRecordId: err.id,
@@ -705,6 +727,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       targetPath: "/dashboard/simulados",
       estimatedMinutes: 20,
       objective: "reinforcement",
+      difficulty: w.taxa_acerto < 40 ? "facil" : "intermediario",
       _groupKey: `practice:${tema}`,
     });
   }
@@ -1100,6 +1123,22 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     }
   } catch {
     // dailyPlanTaskId enrichment is best-effort
+  }
+
+  // ── Response time priority boost ──────────────────────────────
+  for (const rec of recs) {
+    const timeEntry = responseTimeByTopic.get(rec.topic);
+    if (timeEntry && timeEntry.count >= 2) {
+      const avgTime = timeEntry.total / timeEntry.count;
+      if (avgTime > 180) {
+        rec.priority = cap(rec.priority + 10);
+        if (!rec.reason.includes("⏱")) {
+          rec.reason = `⏱ ${rec.reason}`;
+        }
+      } else if (avgTime > 150) {
+        rec.priority = cap(rec.priority + 5);
+      }
+    }
   }
 
   // ── Sort by priority then apply weight-based slot limits ─────
