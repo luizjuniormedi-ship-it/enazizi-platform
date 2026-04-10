@@ -752,31 +752,6 @@ const ProfessorDashboard = () => {
               </div>
             </div>
 
-              {/* Banca selector */}
-              {questionMode === "ai" && (
-                <div className="space-y-2 border border-border rounded-lg p-3 bg-muted/20">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <Label className="text-sm font-semibold">Estilo de Banca</Label>
-                  </div>
-                  <Select value={examBoard} onValueChange={setExamBoard}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas as bancas</SelectItem>
-                      <SelectItem value="ENARE">ENARE</SelectItem>
-                      <SelectItem value="REVALIDA">REVALIDA</SelectItem>
-                      <SelectItem value="USP-SP">USP-SP</SelectItem>
-                      <SelectItem value="UNIFESP">UNIFESP</SelectItem>
-                      <SelectItem value="SUS-SP">SUS-SP</SelectItem>
-                      <SelectItem value="UNICAMP">UNICAMP</SelectItem>
-                      <SelectItem value="SANTA_CASA">Santa Casa SP</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    {examBoard === "all" ? "Questões com estilo genérico." : `Questões no estilo da banca ${examBoard}.`}
-                  </p>
-                </div>
-              )}
 
             <div className="space-y-3">
               <Label className="text-base font-semibold">Temas ({selectedTopics.length} selecionados)</Label>
