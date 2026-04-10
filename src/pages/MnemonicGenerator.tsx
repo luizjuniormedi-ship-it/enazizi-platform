@@ -36,6 +36,13 @@ interface MnemonicResult {
   quality_score: number;
   warning: string | null;
   review_question: string;
+  audit?: {
+    medical_score: number;
+    pedagogical_score: number;
+    medical_summary: string;
+    pedagogical_summary: string;
+    verdict: string;
+  };
 }
 
 const MnemonicGenerator = () => {
@@ -124,7 +131,7 @@ const MnemonicGenerator = () => {
 
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              Itens (um por linha, 3-8 itens)
+              Itens (um por linha, 3-7 itens)
             </label>
             <Textarea
               placeholder={`Ex:\nFebre\nArtrite\nCardite\nCoreia\nNódulos subcutâneos`}
@@ -136,14 +143,14 @@ const MnemonicGenerator = () => {
             <p className="text-xs text-muted-foreground">
               {items.length} item(ns) detectado(s)
               {items.length > 0 && items.length < 3 && " — mínimo 3"}
-              {items.length > 8 && " — máximo 8"}
+              {items.length > 7 && " — máximo 7"}
             </p>
           </div>
 
           <Button
             className="w-full gap-2"
             onClick={handleGenerate}
-            disabled={loading || items.length < 3 || items.length > 8 || !topic.trim()}
+            disabled={loading || items.length < 3 || items.length > 7 || !topic.trim()}
           >
             {loading ? (
               <>
@@ -247,6 +254,37 @@ const MnemonicGenerator = () => {
                     className="w-full h-auto"
                     loading="lazy"
                   />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Audit Details */}
+          {result.audit && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  🔍 Auditoria Dupla
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-lg bg-secondary/50 space-y-1">
+                    <p className="text-xs font-medium">🩺 Auditor Médico</p>
+                    <p className="text-lg font-bold">{result.audit.medical_score}/100</p>
+                    <p className="text-xs text-muted-foreground">{result.audit.medical_summary}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-secondary/50 space-y-1">
+                    <p className="text-xs font-medium">📚 Auditor Pedagógico</p>
+                    <p className="text-lg font-bold">{result.audit.pedagogical_score}/100</p>
+                    <p className="text-xs text-muted-foreground">{result.audit.pedagogical_summary}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <Badge variant={result.audit.verdict === "approve" ? "default" : "destructive"}>
+                    {result.audit.verdict === "approve" ? "✅ Aprovado" : "❌ Rejeitado"}
+                  </Badge>
+                  <span className="text-muted-foreground">Score combinado: {result.quality_score}/100</span>
                 </div>
               </CardContent>
             </Card>
