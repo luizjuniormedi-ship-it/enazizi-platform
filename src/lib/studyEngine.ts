@@ -1123,6 +1123,22 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     // dailyPlanTaskId enrichment is best-effort
   }
 
+  // ── Response time priority boost ──────────────────────────────
+  for (const rec of recs) {
+    const timeEntry = responseTimeByTopic.get(rec.topic);
+    if (timeEntry && timeEntry.count >= 2) {
+      const avgTime = timeEntry.total / timeEntry.count;
+      if (avgTime > 180) {
+        rec.priority = cap(rec.priority + 10);
+        if (!rec.reason.includes("⏱")) {
+          rec.reason = `⏱ ${rec.reason}`;
+        }
+      } else if (avgTime > 150) {
+        rec.priority = cap(rec.priority + 5);
+      }
+    }
+  }
+
   // ── Sort by priority then apply weight-based slot limits ─────
   recs.sort((a, b) => b.priority - a.priority);
 
