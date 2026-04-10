@@ -702,6 +702,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       targetPath: "/dashboard/chatgpt",
       estimatedMinutes: 10,
       objective: "correction",
+      difficulty: err.vezes_errado >= 5 ? "facil" : "intermediario",
       _groupKey: `error:${err.tema}`,
       sourceTable: "error_bank",
       sourceRecordId: err.id,
@@ -726,6 +727,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       targetPath: "/dashboard/simulados",
       estimatedMinutes: 20,
       objective: "reinforcement",
+      difficulty: w.taxa_acerto < 40 ? "facil" : "intermediario",
       _groupKey: `practice:${tema}`,
     });
   }
