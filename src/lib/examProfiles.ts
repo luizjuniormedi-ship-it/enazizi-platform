@@ -104,7 +104,7 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
   },
   amrigs: {
     key: "amrigs", label: "AMRIGS", difficulty: 3, practicalFocus: 0.3, osceEmphasis: false,
-    specialtyWeights: { "Clínica Médica": 25, "Cirurgia": 20, "Pediatria": 15, "Ginecologia e Obstetrícia": 15, "Medicina Preventiva": 15, "Medicina de Emergência": 10 },
+    specialtyWeights: { "Clínica Médica": 20, "Cirurgia": 15, "Pediatria": 12, "Ginecologia e Obstetrícia": 12, "Medicina Preventiva": 12, "Medicina de Emergência": 8, "Terapia Intensiva": 4, "Ortopedia": 4, "Oncologia": 4, "Angiologia": 3, "Urologia": 3, "Oftalmologia": 2, "Otorrinolaringologia": 1 },
     style: "Questões de múltipla escolha com casos clínicos. Padrão consolidado e previsível. Boa distribuição entre especialidades.",
     engineModifiers: { reviewWeightMod: 0, questionsWeightMod: 0, practicalWeightMod: 0, theoryWeightMod: 0 },
     tutorGuidance: "Explicações objetivas e diretas. A AMRIGS cobra conteúdo clássico com boa distribuição.",
@@ -112,7 +112,7 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
   },
   "ses-df": {
     key: "ses-df", label: "SES-DF", difficulty: 4, practicalFocus: 0.3, osceEmphasis: false,
-    specialtyWeights: { "Clínica Médica": 25, "Cirurgia": 20, "Pediatria": 15, "Ginecologia e Obstetrícia": 15, "Medicina Preventiva": 15, "Medicina de Emergência": 10 },
+    specialtyWeights: { "Clínica Médica": 20, "Cirurgia": 15, "Pediatria": 12, "Ginecologia e Obstetrícia": 12, "Medicina Preventiva": 12, "Medicina de Emergência": 8, "Terapia Intensiva": 4, "Ortopedia": 4, "Oncologia": 4, "Angiologia": 3, "Urologia": 3, "Oftalmologia": 2, "Otorrinolaringologia": 1 },
     style: "Questões elaboradas com casos clínicos detalhados. Nível elevado de dificuldade. Cobra detalhes de conduta e diagnóstico.",
     engineModifiers: { reviewWeightMod: 0, questionsWeightMod: 0.05, practicalWeightMod: 0, theoryWeightMod: -0.05 },
     tutorGuidance: "Aprofundar condutas e critérios diagnósticos. A SES-DF cobra detalhes que diferenciam alternativas próximas.",
@@ -120,7 +120,7 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
   },
   "psu-mg": {
     key: "psu-mg", label: "PSU-MG", difficulty: 3, practicalFocus: 0.25, osceEmphasis: false,
-    specialtyWeights: { "Clínica Médica": 25, "Cirurgia": 20, "Pediatria": 15, "Ginecologia e Obstetrícia": 15, "Medicina Preventiva": 15, "Medicina de Emergência": 10 },
+    specialtyWeights: { "Clínica Médica": 20, "Cirurgia": 15, "Pediatria": 12, "Ginecologia e Obstetrícia": 12, "Medicina Preventiva": 12, "Medicina de Emergência": 8, "Terapia Intensiva": 4, "Ortopedia": 4, "Oncologia": 4, "Angiologia": 3, "Urologia": 3, "Oftalmologia": 2, "Otorrinolaringologia": 1 },
     style: "Questões de múltipla escolha com casos clínicos. Foco em protocolos e diretrizes nacionais.",
     engineModifiers: { reviewWeightMod: 0, questionsWeightMod: 0, practicalWeightMod: 0, theoryWeightMod: 0 },
     tutorGuidance: "Explicações claras com foco em diretrizes nacionais e protocolos atualizados.",
@@ -128,7 +128,7 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
   },
   hcpa: {
     key: "hcpa", label: "HCPA", difficulty: 4, practicalFocus: 0.35, osceEmphasis: true,
-    specialtyWeights: { "Clínica Médica": 25, "Cirurgia": 20, "Pediatria": 20, "Ginecologia e Obstetrícia": 15, "Medicina de Emergência": 10, "Medicina Preventiva": 10 },
+    specialtyWeights: { "Clínica Médica": 20, "Cirurgia": 15, "Pediatria": 15, "Ginecologia e Obstetrícia": 12, "Medicina de Emergência": 8, "Medicina Preventiva": 8, "Terapia Intensiva": 5, "Ortopedia": 4, "Oncologia": 4, "Angiologia": 3, "Urologia": 2, "Oftalmologia": 2, "Otorrinolaringologia": 2 },
     style: "Questões de alto nível com casos complexos. Prova prática com estações OSCE. Foco em raciocínio clínico.",
     engineModifiers: { reviewWeightMod: -0.05, questionsWeightMod: 0.05, practicalWeightMod: 0.05, theoryWeightMod: -0.05 },
     tutorGuidance: "Aprofundar raciocínio clínico e preparar para estações OSCE. O HCPA cobra excelência em abordagem clínica.",
@@ -136,7 +136,7 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
   },
   "santa-casa-sp": {
     key: "santa-casa-sp", label: "Santa Casa SP", difficulty: 4, practicalFocus: 0.3, osceEmphasis: false,
-    specialtyWeights: { "Clínica Médica": 25, "Cirurgia": 25, "Pediatria": 15, "Ginecologia e Obstetrícia": 15, "Medicina de Emergência": 10, "Medicina Preventiva": 10 },
+    specialtyWeights: { "Clínica Médica": 20, "Cirurgia": 20, "Pediatria": 12, "Ginecologia e Obstetrícia": 12, "Medicina de Emergência": 8, "Medicina Preventiva": 8, "Terapia Intensiva": 4, "Ortopedia": 4, "Oncologia": 4, "Angiologia": 3, "Urologia": 2, "Oftalmologia": 2, "Otorrinolaringologia": 1 },
     style: "Questões com casos clínicos detalhados. Forte ênfase em Cirurgia. Pegadinhas baseadas em detalhes anatômicos e técnicos.",
     engineModifiers: { reviewWeightMod: 0, questionsWeightMod: 0.05, practicalWeightMod: 0, theoryWeightMod: -0.05 },
     tutorGuidance: "A Santa Casa SP tem forte ênfase cirúrgica. Incluir detalhes técnicos e anatômicos nas explicações.",
@@ -144,7 +144,7 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
   },
   einstein: {
     key: "einstein", label: "Einstein", difficulty: 5, practicalFocus: 0.4, osceEmphasis: true,
-    specialtyWeights: { "Clínica Médica": 30, "Cirurgia": 20, "Pediatria": 15, "Ginecologia e Obstetrícia": 15, "Medicina de Emergência": 10, "Medicina Preventiva": 10 },
+    specialtyWeights: { "Clínica Médica": 22, "Cirurgia": 15, "Pediatria": 12, "Ginecologia e Obstetrícia": 12, "Medicina de Emergência": 8, "Medicina Preventiva": 8, "Terapia Intensiva": 5, "Ortopedia": 4, "Oncologia": 4, "Angiologia": 3, "Urologia": 3, "Oftalmologia": 2, "Otorrinolaringologia": 2 },
     style: "Questões de altíssima complexidade. Casos com múltiplas comorbidades e decisões em cenário complexo. Prova prática OSCE sofisticada.",
     engineModifiers: { reviewWeightMod: -0.05, questionsWeightMod: 0.10, practicalWeightMod: 0.05, theoryWeightMod: -0.10 },
     tutorGuidance: "O Einstein cobra excelência. Incluir evidências de alto nível, guidelines internacionais e abordagem de casos complexos com comorbidades.",
@@ -152,7 +152,7 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
   },
   "sirio-libanes": {
     key: "sirio-libanes", label: "Sírio-Libanês", difficulty: 5, practicalFocus: 0.4, osceEmphasis: true,
-    specialtyWeights: { "Clínica Médica": 30, "Cirurgia": 20, "Pediatria": 15, "Ginecologia e Obstetrícia": 15, "Medicina de Emergência": 10, "Medicina Preventiva": 10 },
+    specialtyWeights: { "Clínica Médica": 22, "Cirurgia": 15, "Pediatria": 12, "Ginecologia e Obstetrícia": 12, "Medicina de Emergência": 8, "Medicina Preventiva": 8, "Terapia Intensiva": 5, "Ortopedia": 4, "Oncologia": 4, "Angiologia": 3, "Urologia": 3, "Oftalmologia": 2, "Otorrinolaringologia": 2 },
     style: "Questões de altíssima complexidade, similar ao Einstein. Forte componente prático. Casos raros e atípicos.",
     engineModifiers: { reviewWeightMod: -0.05, questionsWeightMod: 0.10, practicalWeightMod: 0.05, theoryWeightMod: -0.10 },
     tutorGuidance: "O Sírio-Libanês cobra casos atípicos e raros. Incluir apresentações incomuns e diagnósticos diferenciais amplos.",
@@ -160,7 +160,7 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
   },
   outra: {
     key: "outra", label: "Outra prova de residência", difficulty: 3, practicalFocus: 0.3, osceEmphasis: false,
-    specialtyWeights: { "Clínica Médica": 25, "Cirurgia": 20, "Pediatria": 15, "Ginecologia e Obstetrícia": 15, "Medicina Preventiva": 15, "Medicina de Emergência": 10 },
+    specialtyWeights: { "Clínica Médica": 20, "Cirurgia": 15, "Pediatria": 12, "Ginecologia e Obstetrícia": 12, "Medicina Preventiva": 12, "Medicina de Emergência": 8, "Terapia Intensiva": 4, "Ortopedia": 4, "Oncologia": 4, "Angiologia": 3, "Urologia": 3, "Oftalmologia": 2, "Otorrinolaringologia": 1 },
     style: "Questões de múltipla escolha com caso clínico padrão residência médica.",
     engineModifiers: { reviewWeightMod: 0, questionsWeightMod: 0, practicalWeightMod: 0, theoryWeightMod: 0 },
     tutorGuidance: "Explicações completas no padrão de residência médica brasileira.",
