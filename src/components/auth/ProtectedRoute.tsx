@@ -154,9 +154,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         updateData.faculdade = formFaculdade;
       }
 
-      if (isProfessor) {
+      if (isProfessor || isMedico) {
         updateData.faculdade = formFaculdade;
-        updateData.status = "active";
+        if (isProfessor) updateData.status = "active";
         await supabase.from("user_roles").upsert(
           { user_id: user.id, role: "professor" as any },
           { onConflict: "user_id,role" }
