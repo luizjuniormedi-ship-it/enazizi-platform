@@ -661,7 +661,7 @@ const Simulados = () => {
     handleStart({
       topics: [studyCtx.specialty || "Clínica Médica"],
       count: 20,
-      difficulty: "misto",
+      difficulty: studyCtx.difficulty || "misto",
       timePerQuestion: 3,
       mode: "estudo",
       specificTopic: studyCtx.topic,

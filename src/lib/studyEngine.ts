@@ -260,6 +260,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     fsrsDueData,
     mentorTargets,
     practicalExamData,
+    responseTimeData,
     // Only query these if coreData not provided
     ...conditionalResults
   ] = await Promise.all([
