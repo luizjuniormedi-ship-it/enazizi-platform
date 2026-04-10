@@ -210,9 +210,27 @@ const Register = () => {
             </div>
           )}
 
+          {userType === "medico" && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                WhatsApp
+              </Label>
+              <Input
+                placeholder="(11) 99999-9999"
+                className="bg-secondary border-border"
+                value={phone}
+                onChange={(e) => setPhone(formatPhone(e.target.value))}
+                required
+              />
+            </div>
+          )}
+
           <p className="text-xs text-muted-foreground">
             {userType === "professor"
               ? "Após o cadastro, você terá acesso ao painel do professor com seus alunos da universidade selecionada."
+              : userType === "medico"
+              ? "Você terá acesso ao painel do professor e a todas as funcionalidades de estudo da plataforma."
               : "Ao criar sua conta, você terá acesso imediato à plataforma após confirmar seu email."}
           </p>
 
