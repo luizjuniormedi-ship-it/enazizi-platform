@@ -33,6 +33,10 @@ const SPECIALTY_COLORS: Record<string, string> = {
   "Reumatologia": "bg-indigo-500",
   "Urologia": "bg-blue-600",
   "Otorrinolaringologia": "bg-green-600",
+  "Angiologia": "bg-rose-600",
+  "Oftalmologia": "bg-sky-600",
+  "Terapia Intensiva": "bg-slate-600",
+  "Medicina de Emergência": "bg-orange-600",
 };
 
 const getBarColor = (score: number) => {
