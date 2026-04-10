@@ -1,0 +1,296 @@
+import { useState, useCallback } from "react";
+import { Brain, Sparkles, AlertTriangle, CheckCircle2, Lightbulb, Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+const CONTENT_TYPES = [
+  { value: "criterios", label: "Critérios diagnósticos" },
+  { value: "causas", label: "Causas / Etiologias" },
+  { value: "sinais_classicos", label: "Sinais clássicos" },
+  { value: "classificacao", label: "Classificação" },
+  { value: "efeitos_adversos", label: "Efeitos adversos" },
+  { value: "fatores_de_risco", label: "Fatores de risco" },
+  { value: "lista", label: "Lista geral" },
+  { value: "componentes", label: "Componentes / Elementos" },
+];
+
+interface MnemonicResult {
+  topic: string;
+  mnemonic: string;
+  phrase: string;
+  items_map: Array<{
+    letter: string;
+    word: string;
+    original_item: string;
+    symbol: string | null;
+    symbol_reason: string | null;
+  }>;
+  scene_description: string;
+  image_url: string | null;
+  quality_score: number;
+  warning: string | null;
+  review_question: string;
+}
+
+const MnemonicGenerator = () => {
+  const [topic, setTopic] = useState("");
+  const [contentType, setContentType] = useState("criterios");
+  const [itemsText, setItemsText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<MnemonicResult | null>(null);
+  const [showReview, setShowReview] = useState(false);
+
+  const items = itemsText
+    .split("\n")
+    .map((l) => l.replace(/^\d+[\.\)\-]\s*/, "").trim())
+    .filter(Boolean);
+
+  const handleGenerate = useCallback(async () => {
+    if (!topic.trim()) return toast.error("Informe o tema.");
+    if (items.length < 3) return toast.error("Informe pelo menos 3 itens (um por linha).");
+    if (items.length > 8) return toast.error("Máximo de 8 itens para mnemônico visual.");
+
+    setLoading(true);
+    setResult(null);
+    setShowReview(false);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-mnemonic", {
+        body: { topic: topic.trim(), items, contentType },
+      });
+
+      if (error) throw new Error(error.message);
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      setResult(data as MnemonicResult);
+      toast.success("Mnemônico gerado com sucesso! 🧠");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao gerar mnemônico.");
+    } finally {
+      setLoading(false);
+    }
+  }, [topic, items, contentType]);
+
+  return (
+    <div className="space-y-6 animate-fade-in max-w-3xl mx-auto pb-20">
+      {/* Header */}
+      <div>
+        <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
+          <Brain className="h-6 w-6 text-primary" />
+          Mnemônico Visual
+        </h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">
+          Gere mnemônicos com imagem para memorizar listas médicas de prova.
+        </p>
+      </div>
+
+      {/* Input Form */}
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Tema</label>
+            <Input
+              placeholder="Ex: Critérios de Jones, Sinais de Ranson..."
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Tipo de conteúdo</label>
+            <Select value={contentType} onValueChange={setContentType} disabled={loading}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CONTENT_TYPES.map((ct) => (
+                  <SelectItem key={ct.value} value={ct.value}>
+                    {ct.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Itens (um por linha, 3-8 itens)
+            </label>
+            <Textarea
+              placeholder={`Ex:\nFebre\nArtrite\nCardite\nCoreia\nNódulos subcutâneos`}
+              value={itemsText}
+              onChange={(e) => setItemsText(e.target.value)}
+              rows={6}
+              disabled={loading}
+            />
+            <p className="text-xs text-muted-foreground">
+              {items.length} item(ns) detectado(s)
+              {items.length > 0 && items.length < 3 && " — mínimo 3"}
+              {items.length > 8 && " — máximo 8"}
+            </p>
+          </div>
+
+          <Button
+            className="w-full gap-2"
+            onClick={handleGenerate}
+            disabled={loading || items.length < 3 || items.length > 8 || !topic.trim()}
+          >
+            {loading ? (
+              <>
+                <Sparkles className="h-4 w-4 animate-spin" />
+                Gerando mnemônico...
+              </>
+            ) : (
+              <>
+                <Brain className="h-4 w-4" />
+                Gerar Mnemônico Visual
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Result */}
+      {result && (
+        <div className="space-y-4 animate-fade-in">
+          {/* Warning */}
+          {result.warning && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm">
+              <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+              <span>{result.warning}</span>
+            </div>
+          )}
+
+          {/* Mnemonic Text */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4 text-primary" />
+                  {result.topic}
+                </span>
+                <Badge
+                  variant={result.quality_score >= 80 ? "default" : "destructive"}
+                  className="text-xs"
+                >
+                  Score: {result.quality_score}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-center py-4">
+                <p className="text-2xl font-bold text-primary tracking-wider">
+                  {result.mnemonic}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1 italic">
+                  "{result.phrase}"
+                </p>
+              </div>
+
+              {/* Items Map */}
+              <div className="space-y-2">
+                {result.items_map.map((item, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-3 p-2 rounded-lg bg-secondary/50"
+                  >
+                    <span className="font-bold text-primary text-lg w-6 text-center shrink-0">
+                      {item.letter}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{item.original_item}</p>
+                      <p className="text-xs text-muted-foreground">
+                        → {item.word}
+                        {item.symbol && (
+                          <span className="ml-2">
+                            | 🎨 {item.symbol}
+                            {item.symbol_reason && (
+                              <span className="italic"> ({item.symbol_reason})</span>
+                            )}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Visual Image */}
+          {result.image_url && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-primary" />
+                  Cena Visual
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground mb-3">
+                  {result.scene_description}
+                </p>
+                <div className="rounded-lg overflow-hidden border">
+                  <img
+                    src={result.image_url}
+                    alt={`Mnemônico visual: ${result.topic}`}
+                    className="w-full h-auto"
+                    loading="lazy"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Reference List */}
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-xs font-medium text-muted-foreground mb-2">
+                📋 Lista textual de referência (sempre confira com a fonte original):
+              </p>
+              <ol className="text-sm space-y-1 list-decimal list-inside">
+                {items.map((it, i) => (
+                  <li key={i}>{it}</li>
+                ))}
+              </ol>
+            </CardContent>
+          </Card>
+
+          {/* Self-test */}
+          <Card>
+            <CardContent className="pt-4 space-y-3">
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => setShowReview(!showReview)}
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                {showReview ? "Ocultar auto-teste" : "Auto-teste: você lembra?"}
+              </Button>
+              {showReview && (
+                <div className="p-3 rounded-lg bg-secondary/50 text-sm">
+                  <p className="font-medium mb-2">❓ {result.review_question}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Tente lembrar todos os itens antes de rolar para cima e conferir!
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default MnemonicGenerator;
