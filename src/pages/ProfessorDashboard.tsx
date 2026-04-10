@@ -54,6 +54,7 @@ const ProfessorDashboard = () => {
   const [difficultyMix, setDifficultyMix] = useState({ facil: 20, intermediario: 40, dificil: 40 });
   const [scheduledAt, setScheduledAt] = useState("");
   const [autoAssign, setAutoAssign] = useState(true);
+  const [examBoard, setExamBoard] = useState("all");
 
   // Manual question form
   const [manualStatement, setManualStatement] = useState("");
