@@ -5,6 +5,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+import { isUrlSuspicious, extractCleanImageUrls, validateImageVision } from "../_shared/vision-gate.ts";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -152,6 +153,8 @@ const MODALITY_TERMS: Record<string, string> = {
 // ===== SAFETY FILTER =====
 function safetyFilter(imageUrl: string): { safe: boolean; reason?: string } {
   const url = imageUrl.toLowerCase();
+  const urlCheck = isUrlSuspicious(imageUrl);
+  if (urlCheck.suspicious) return { safe: false, reason: urlCheck.reason };
   // Block commercial stock sites
   const blockedSources = ["shutterstock", "gettyimages", "istockphoto", "dreamstime", "pinterest", "instagram", "facebook", "twitter"];
   for (const d of blockedSources) {
@@ -216,40 +219,7 @@ function extractImageUrls(html: string): string[] {
 
 // ===== AI VISION VALIDATION =====
 async function validateImageWithVision(imageUrl: string, expectedDiagnosis: string, imageType: string): Promise<{ valid: boolean; reason: string }> {
-  if (!LOVABLE_API_KEY) return { valid: true, reason: "No API key, skipping vision check" };
-  try {
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{
-          role: "user",
-          content: [
-            { type: "text", text: `You are a medical image quality auditor. Analyze this image and answer in JSON ONLY:
-1. Is this a REAL clinical/medical image (not a screenshot, website, chart, infographic, illustration, or stock photo)?
-2. Is it consistent with the expected diagnosis: "${expectedDiagnosis}" (modality: ${imageType})?
-
-Return ONLY: {"is_clinical": true/false, "matches_diagnosis": true/false, "reason": "brief explanation"}` },
-            { type: "image_url", image_url: { url: imageUrl } }
-          ]
-        }],
-        max_tokens: 200,
-      }),
-    });
-    if (!resp.ok) return { valid: true, reason: "Vision API error, allowing" };
-    const data = await resp.json();
-    const content = data.choices?.[0]?.message?.content || "";
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return { valid: true, reason: "Could not parse vision response" };
-    const result = JSON.parse(jsonMatch[0]);
-    if (!result.is_clinical) return { valid: false, reason: `Not a clinical image: ${result.reason || "screenshot/chart/illustration"}` };
-    if (!result.matches_diagnosis) return { valid: false, reason: `Does not match ${expectedDiagnosis}: ${result.reason}` };
-    return { valid: true, reason: result.reason || "Validated" };
-  } catch (e) {
-    console.error("Vision validation error:", e);
-    return { valid: true, reason: "Vision check failed, allowing" };
-  }
+  return validateImageVision(imageUrl, expectedDiagnosis, imageType, LOVABLE_API_KEY);
 }
 
 // ===== FIRECRAWL SCRAPE =====

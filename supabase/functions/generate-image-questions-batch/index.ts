@@ -4,6 +4,7 @@ import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+import { isUrlSuspicious, validateImageVision } from "../_shared/vision-gate.ts";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -36,6 +37,12 @@ function checkAssetSafety(asset: {
     return { safe: false, reason: `integrity:${asset.integrity_status}` };
   if ((asset.clinical_confidence ?? 0) < MIN_CONFIDENCE)
     return { safe: false, reason: `low_confidence:${asset.clinical_confidence}` };
+  return { safe: true };
+}
+
+function checkUrlSuspicious(asset: any): AssetSafetyResult {
+  const urlCheck = isUrlSuspicious(asset.image_url);
+  if (urlCheck.suspicious) return { safe: false, reason: urlCheck.reason };
   return { safe: true };
 }
 
@@ -212,12 +219,28 @@ Deno.serve(async (req) => {
 
     for (const asset of needsQuestions) {
       // ── SAFETY CHECK ──
+      const urlSafety = checkUrlSuspicious(asset);
+      if (!urlSafety.safe) {
+        console.warn(`⛔ URL BLOCKED [${asset.asset_code}]: ${urlSafety.reason}`);
+        await logSafetyBlock(asset, urlSafety.reason!);
+        results.push({ asset: asset.diagnosis, type: asset.image_type, mode: "blocked", generated: 0, safety_reason: urlSafety.reason });
+        continue;
+      }
       const safety = checkAssetSafety(asset);
       const useMultimodal = safety.safe;
 
       if (!useMultimodal) {
         console.warn(`⛔ BLOCKED multimodal for [${asset.asset_code}] ${asset.diagnosis}: ${safety.reason}`);
         await logSafetyBlock(asset, safety.reason!);
+      } else {
+        // ── VISION GATE: fail-closed ──
+        const visionCheck = await validateImageVision(asset.image_url, asset.diagnosis, asset.image_type, LOVABLE_API_KEY);
+        if (!visionCheck.valid) {
+          console.warn(`⛔ VISION REJECTED [${asset.asset_code}]: ${visionCheck.reason}`);
+          await logSafetyBlock(asset, visionCheck.reason);
+          results.push({ asset: asset.diagnosis, type: asset.image_type, mode: "blocked", generated: 0, safety_reason: visionCheck.reason });
+          continue;
+        }
       }
 
       const mode = useMultimodal ? "multimodal" : "text_fallback";

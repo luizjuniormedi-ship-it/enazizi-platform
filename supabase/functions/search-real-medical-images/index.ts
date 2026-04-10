@@ -4,6 +4,8 @@ import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+import { isUrlSuspicious, extractCleanImageUrls, validateImageVision } from "../_shared/vision-gate.ts";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -66,26 +68,7 @@ function buildSearchUrl(template: string, query: string): string {
 }
 
 function extractImageUrls(html: string): string[] {
-  const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
-  const urls: string[] = [];
-  let match;
-  while ((match = imgRegex.exec(html)) !== null) {
-    const src = match[1];
-    if (
-      src.startsWith("http") &&
-      !src.includes("logo") &&
-      !src.includes("icon") &&
-      !src.includes("avatar") &&
-      !src.includes("banner") &&
-      !src.includes("favicon") &&
-      !src.includes("ad") &&
-      !src.includes("tracking") &&
-      (src.endsWith(".jpg") || src.endsWith(".jpeg") || src.endsWith(".png") || src.endsWith(".webp") || src.includes("/images/"))
-    ) {
-      urls.push(src);
-    }
-  }
-  return urls;
+  return extractCleanImageUrls(html);
 }
 
 async function scrapeForImages(url: string): Promise<{ images: string[]; sourceUrl: string }> {
@@ -271,6 +254,11 @@ async function processAsset(
         for (const imgUrl of images.slice(0, 5)) {
           const uploaded = await downloadAndUpload(imgUrl, imageType, assetCode);
           if (uploaded) {
+            const vision = await validateImageVision(uploaded, diagnosis, imageType, LOVABLE_API_KEY);
+            if (!vision.valid) {
+              console.warn(`[Vision REJECTED] ${imgUrl}: ${vision.reason}`);
+              continue;
+            }
             bestImageUrl = uploaded;
             bestSourceUrl = sourceUrl;
             try {
@@ -326,6 +314,11 @@ async function processAsset(
           for (const imgUrl of images.slice(0, 3)) {
             const uploaded = await downloadAndUpload(imgUrl, imageType, assetCode);
             if (uploaded) {
+              const vision = await validateImageVision(uploaded, diagnosis, imageType, LOVABLE_API_KEY);
+              if (!vision.valid) {
+                console.warn(`[Vision REJECTED] ${imgUrl}: ${vision.reason}`);
+                continue;
+              }
               bestImageUrl = uploaded;
               bestSourceUrl = result?.url || "";
               try {
