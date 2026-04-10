@@ -208,7 +208,7 @@ serve(async (req) => {
 
     switch (action) {
       case "generate_questions": {
-        const { topics, count = 10, difficulty = "intermediario", difficultyMix, previousStatements } = params;
+        const { topics, count = 10, difficulty = "intermediario", difficultyMix, previousStatements, examBoard } = params;
         if (!topics || !topics.length) throw new Error("Selecione pelo menos um tema");
 
         const requestedCount = Math.min(count, 100);
@@ -274,9 +274,12 @@ serve(async (req) => {
           : "";
 
         // ── Strict prompt builder per slot ──
+        const examBoardContext = examBoard
+          ? `\nESTILO DE BANCA OBRIGATÓRIO: ${examBoard}. Elabore questões no estilo e formato desta banca examinadora. Reproduza o nível de complexidade, a forma de cobrança e o perfil de alternativas típicos da ${examBoard}.`
+          : "";
         const buildSlotPrompt = (batchSize: number, level: DifficultyLevel, prevStatements: string[]) => {
           const perTopic = Math.max(1, Math.floor(batchSize / topics.length));
-          let prompt = `Gere exatamente ${batchSize} questões objetivas de múltipla escolha (A-E) para residência médica sobre: ${topicList}.${priorityBlock}
+          let prompt = `Gere exatamente ${batchSize} questões objetivas de múltipla escolha (A-E) para residência médica sobre: ${topicList}.${priorityBlock}${examBoardContext}
 
 IDIOMA OBRIGATÓRIO: TUDO deve ser escrito em PORTUGUÊS BRASILEIRO (pt-BR). Enunciados, alternativas, explicações — absolutamente TUDO em português. NUNCA use inglês em nenhum campo.
 

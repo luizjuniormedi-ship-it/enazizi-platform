@@ -54,6 +54,7 @@ const ProfessorDashboard = () => {
   const [difficultyMix, setDifficultyMix] = useState({ facil: 20, intermediario: 40, dificil: 40 });
   const [scheduledAt, setScheduledAt] = useState("");
   const [autoAssign, setAutoAssign] = useState(true);
+  const [examBoard, setExamBoard] = useState("all");
 
   // Manual question form
   const [manualStatement, setManualStatement] = useState("");
@@ -266,6 +267,7 @@ const ProfessorDashboard = () => {
                 difficulty,
                 difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
                 previousStatements: previousStatements.length > 0 ? previousStatements : undefined,
+                examBoard: examBoard !== "all" ? examBoard : undefined,
               });
               if (res.source === "cache") {
                 toast({ title: "📦 Questões do banco", description: "Todas as questões vieram do banco existente (sem custo de IA)." });
@@ -308,6 +310,7 @@ const ProfessorDashboard = () => {
               difficulty,
               difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
               previousStatements: previousStatements.length > 0 ? previousStatements : undefined,
+              examBoard: examBoard !== "all" ? examBoard : undefined,
             });
             if (res.source === "cache") {
               toast({ title: "📦 Questões do banco", description: "Todas as questões vieram do banco existente (sem custo de IA)." });
@@ -343,6 +346,7 @@ const ProfessorDashboard = () => {
             count: deficit,
             difficulty,
             previousStatements: prevStmts,
+            examBoard: examBoard !== "all" ? examBoard : undefined,
           });
           allQuestions = [...allQuestions, ...(res.questions || [])];
           setGeneratedQuestions([...allQuestions]);
@@ -378,6 +382,7 @@ const ProfessorDashboard = () => {
         student_ids: selectedStudentIds.length > 0 ? selectedStudentIds : null,
         scheduled_at: scheduledAt || null,
         auto_assign: autoAssign,
+        exam_board: examBoard !== "all" ? examBoard : null,
       });
       toast({ title: "Simulado criado!", description: `Atribuído a ${res.students_assigned} aluno(s).` });
       setShowCreate(false);
@@ -439,6 +444,7 @@ const ProfessorDashboard = () => {
     setExpandedQuestion(null);
     setTopicDistribution({});
     setUseDistribution(false);
+    setExamBoard("all");
   };
 
   const addManualQuestion = () => {
@@ -988,6 +994,32 @@ const ProfessorDashboard = () => {
                       Todas as {questionCount} questões serão de nível {difficulty === "facil" ? "fácil" : difficulty === "intermediario" ? "intermediário" : "difícil"}.
                     </p>
                   )}
+                </div>
+              )}
+
+              {/* Banca selector */}
+              {questionMode === "ai" && (
+                <div className="space-y-2 border border-border rounded-lg p-3 bg-muted/20">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <Label className="text-sm font-semibold">Estilo de Banca</Label>
+                  </div>
+                  <Select value={examBoard} onValueChange={setExamBoard}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as bancas</SelectItem>
+                      <SelectItem value="ENARE">ENARE</SelectItem>
+                      <SelectItem value="REVALIDA">REVALIDA</SelectItem>
+                      <SelectItem value="USP-SP">USP-SP</SelectItem>
+                      <SelectItem value="UNIFESP">UNIFESP</SelectItem>
+                      <SelectItem value="SUS-SP">SUS-SP</SelectItem>
+                      <SelectItem value="UNICAMP">UNICAMP</SelectItem>
+                      <SelectItem value="SANTA_CASA">Santa Casa SP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {examBoard === "all" ? "Questões com estilo genérico." : `Questões no estilo da banca ${examBoard}.`}
+                  </p>
                 </div>
               )}
 
