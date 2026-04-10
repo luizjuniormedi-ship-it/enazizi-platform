@@ -33,6 +33,18 @@ const ImageQuestionViewer = ({ imageUrl, imageType, altText }: ImageQuestionView
   const [hasError, setHasError] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [tooSmall, setTooSmall] = useState(false);
+
+  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    // Reject tiny images (thumbnails/placeholders/avatars disguised as clinical)
+    if (img.naturalWidth < 200 || img.naturalHeight < 200) {
+      console.warn(`[ImageQuestion] Imagem muito pequena (${img.naturalWidth}x${img.naturalHeight}), exibindo fallback`);
+      setTooSmall(true);
+      return;
+    }
+    setLoaded(true);
+  };
 
   const typeLabel = imageType ? IMAGE_TYPE_LABELS[imageType] || imageType : "Imagem";
 
