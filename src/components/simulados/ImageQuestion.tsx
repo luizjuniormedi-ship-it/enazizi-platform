@@ -49,13 +49,13 @@ const ImageQuestionViewer = ({ imageUrl, imageType, altText }: ImageQuestionView
   const typeLabel = imageType ? IMAGE_TYPE_LABELS[imageType] || imageType : "Imagem";
 
   // If no valid URL or error loading
-  if (!imageUrl || hasError) {
+  if (!imageUrl || hasError || tooSmall) {
     return (
       <div className="rounded-lg border border-border bg-muted/30 p-6 flex flex-col items-center justify-center gap-2 text-muted-foreground">
         <Badge variant="secondary" className="text-xs font-medium">{typeLabel}</Badge>
         <span className="text-sm">📷 Imagem indisponível para esta questão</span>
-        {hasError && (
-          <Button variant="ghost" size="sm" onClick={() => { setHasError(false); setLoaded(false); }}>
+        {(hasError || tooSmall) && (
+          <Button variant="ghost" size="sm" onClick={() => { setHasError(false); setTooSmall(false); setLoaded(false); }}>
             Tentar novamente
           </Button>
         )}
