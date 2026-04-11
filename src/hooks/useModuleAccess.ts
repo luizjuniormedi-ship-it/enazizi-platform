@@ -43,12 +43,13 @@ export type ModuleKey = typeof ALL_MODULES[number]["key"];
 
 export const useModuleAccess = () => {
   const { user } = useAuth();
-  const [enabledModules, setEnabledModules] = useState<Set<string>>(new Set(ALL_MODULES.map(m => m.key)));
+  const [enabledModules, setEnabledModules] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
-      setEnabledModules(new Set(ALL_MODULES.map(m => m.key)));
+      // No user = no access (except dashboard via route guard)
+      setEnabledModules(new Set());
       setLoading(false);
       return;
     }
@@ -60,7 +61,7 @@ export const useModuleAccess = () => {
         .eq("user_id", user.id);
 
       if (error || !data || data.length === 0) {
-        // No records = all modules enabled (default)
+        // No records = all modules enabled (default for existing users)
         setEnabledModules(new Set(ALL_MODULES.map(m => m.key)));
       } else {
         const enabled = new Set(
@@ -76,7 +77,10 @@ export const useModuleAccess = () => {
     load();
   }, [user]);
 
-  const isModuleEnabled = (key: string) => enabledModules.has(key);
+  const isModuleEnabled = (key: string) => {
+    if (!user) return false;
+    return enabledModules.has(key);
+  };
 
   return { enabledModules, isModuleEnabled, loading };
 };
