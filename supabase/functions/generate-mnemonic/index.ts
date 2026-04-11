@@ -68,18 +68,20 @@ function extractJSON(raw: string): any | null {
 }
 
 // ══════════════════════════════════════════════════
-// HASH GENERATOR
+// HASH GENERATOR (SHA-256, deterministic)
 // ══════════════════════════════════════════════════
 
-function generateHash(topic: string, items: string[]): string {
-  const normalized = [topic.toLowerCase().trim(), ...items.map(i => i.toLowerCase().trim()).sort()].join("|");
-  let hash = 0;
-  for (let i = 0; i < normalized.length; i++) {
-    const chr = normalized.charCodeAt(i);
-    hash = ((hash << 5) - hash) + chr;
-    hash |= 0;
-  }
-  return `mn_${Math.abs(hash).toString(36)}`;
+async function generateHash(topic: string, items: string[], contentType: string): Promise<string> {
+  const normalized = [
+    topic.toLowerCase().trim(),
+    contentType.toLowerCase().trim(),
+    ...items.map(i => i.toLowerCase().trim()).sort(),
+  ].join("|");
+  const data = new TextEncoder().encode(normalized);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  return `mn_${hex.substring(0, 16)}`;
 }
 
 // ══════════════════════════════════════════════════
@@ -269,7 +271,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceKey);
 
     // ── HASH & CACHE CHECK ──
-    const hash = clientHash || generateHash(topic, items);
+    const hash = clientHash || await generateHash(topic, items, contentType);
 
     const { data: existing } = await supabase
       .from("mnemonic_assets")
@@ -420,10 +422,19 @@ Regras visuais:
       console.warn("Image generation error:", e);
     }
 
-    const assetVerdict = imageUrl ? "approved_visual" : "approved_text_map_only";
+    // FIX #7: Image is MANDATORY for visual mnemonics — reject if missing
+    if (!imageUrl) {
+      console.error("Image generation failed — rejecting (visual mnemonic requires image)");
+      return new Response(JSON.stringify({
+        rejected: true,
+        error: "Falha na geração da imagem. Mnemônico visual requer imagem. Tente novamente.",
+      }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const assetVerdict = "approved_visual";
     const reviewQuestion = `Usando o mnemônico "${generated.mnemonic_word}", quais são os ${items.length} itens de "${topic}"?`;
 
-    // ── STEP 7: PERSIST TO mnemonic_assets ──
+    // ── STEP 7: PERSIST TO mnemonic_assets (FAIL-CLOSED) ──
     const { data: inserted, error: insertErr } = await supabase
       .from("mnemonic_assets")
       .insert({
@@ -446,12 +457,16 @@ Regras visuais:
       .select("id")
       .single();
 
-    if (insertErr) {
-      console.error("Insert failed:", insertErr);
-      // Still return the result even if persistence fails (fail-open for UX, asset is approved)
+    // FIX #1: FAIL-CLOSED — if persistence fails, reject entirely
+    if (insertErr || !inserted?.id) {
+      console.error("Insert failed (fail-closed):", insertErr);
+      return new Response(JSON.stringify({
+        rejected: true,
+        error: "Falha ao salvar mnemônico no banco. Tente novamente.",
+      }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const assetId = inserted?.id || null;
+    const assetId = inserted.id;
 
     // ── BUILD OUTPUT ──
     const warning = verdict.score < 80

@@ -46,14 +46,26 @@ export interface InterventionDecision {
 // ══════════════════════════════════════════════════
 
 export async function calculateCLS(userId: string, topic: string): Promise<CLSResult> {
-  // Fetch recent performance data
+  // FIX #3: Fetch performance data ONLY for the current topic
+  // First resolve tema_id for the topic
+  const { data: temaRows } = await supabase
+    .from("temas_estudados")
+    .select("id")
+    .eq("user_id", userId)
+    .ilike("tema", `%${topic}%`);
+
+  const temaIds = temaRows?.map(r => r.id) || [];
+
   const [perfResult, errResult, sessionResult] = await Promise.all([
-    supabase
-      .from("desempenho_questoes")
-      .select("tempo_gasto, taxa_acerto, created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(10),
+    temaIds.length > 0
+      ? supabase
+          .from("desempenho_questoes")
+          .select("tempo_gasto, taxa_acerto, created_at")
+          .eq("user_id", userId)
+          .in("tema_id", temaIds)
+          .order("created_at", { ascending: false })
+          .limit(10)
+      : Promise.resolve({ data: [], error: null }),
     supabase
       .from("error_bank")
       .select("vezes_errado, dificuldade")
@@ -112,13 +124,25 @@ export async function calculateCLS(userId: string, topic: string): Promise<CLSRe
 // ══════════════════════════════════════════════════
 
 export async function calculateRiskScore(userId: string, topic: string): Promise<RFSResult> {
+  // FIX #4: Filter ALL queries by the current topic only
+  const { data: temaRows } = await supabase
+    .from("temas_estudados")
+    .select("id")
+    .eq("user_id", userId)
+    .ilike("tema", `%${topic}%`);
+
+  const temaIds = temaRows?.map(r => r.id) || [];
+
   const [perfResult, errResult, fsrsResult, clsResult] = await Promise.all([
-    supabase
-      .from("desempenho_questoes")
-      .select("taxa_acerto, tempo_gasto, created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(20),
+    temaIds.length > 0
+      ? supabase
+          .from("desempenho_questoes")
+          .select("taxa_acerto, tempo_gasto, created_at")
+          .eq("user_id", userId)
+          .in("tema_id", temaIds)
+          .order("created_at", { ascending: false })
+          .limit(20)
+      : Promise.resolve({ data: [], error: null }),
     supabase
       .from("error_bank")
       .select("vezes_errado, updated_at, dificuldade")
@@ -129,6 +153,8 @@ export async function calculateRiskScore(userId: string, topic: string): Promise
       .from("fsrs_cards")
       .select("due, stability, lapses")
       .eq("user_id", userId)
+      .eq("card_type", "tema")
+      .ilike("card_ref_id", `%${topic}%`)
       .limit(5),
     calculateCLS(userId, topic),
   ]);
