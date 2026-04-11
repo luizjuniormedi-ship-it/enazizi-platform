@@ -16,7 +16,7 @@ serve(async (req) => {
   const sb = createClient(supabaseUrl, serviceKey);
 
   const body = await req.json().catch(() => ({}));
-  const dryRun = body.dry_run !== false; // default: dry_run = true
+  const dryRun = body.dry_run !== false;
   const batchSize = body.batch_size || 20;
 
   // Get all active published assets
@@ -42,63 +42,57 @@ serve(async (req) => {
   for (const asset of assets || []) {
     // Step 1: URL check
     const urlCheck = isUrlSuspicious(asset.image_url);
+    let shouldBlock = false;
+    let blockReason = "";
+
     if (urlCheck.suspicious) {
-      results.push({ asset_code: asset.asset_code, status: "blocked", reason: `URL: ${urlCheck.reason}` });
+      shouldBlock = true;
+      blockReason = `URL: ${urlCheck.reason}`;
+    } else {
+      // Step 2: Vision gate
+      const visionResult = await validateImageVision(
+        asset.image_url, asset.diagnosis || "", asset.image_type || "", LOVABLE_API_KEY
+      );
+      if (!visionResult.valid) {
+        shouldBlock = true;
+        blockReason = `Vision: ${visionResult.reason}`;
+      } else {
+        results.push({ asset_code: asset.asset_code, status: "passed", reason: visionResult.reason });
+        passed++;
+      }
+    }
+
+    if (shouldBlock) {
+      results.push({ asset_code: asset.asset_code, status: "blocked", reason: blockReason });
       if (!dryRun) {
-        await sb.from("medical_image_assets").update({
-          is_active: false,
-          review_status: "rejected",
-          integrity_status: "contaminated",
-          curation_notes: `Bloqueado pelo cleanup: ${urlCheck.reason}`,
-        }).eq("id", asset.id);
+        // Update asset
+        const { error: updateErr, data: updateData } = await sb
+          .from("medical_image_assets")
+          .update({
+            is_active: false,
+            review_status: "rejected",
+            curation_notes: `Cleanup: ${blockReason}`,
+          })
+          .eq("id", asset.id)
+          .select("id");
+
+        console.log(`[cleanup] Asset ${asset.asset_code} update:`, updateErr ? `ERROR: ${updateErr.message}` : `OK (${updateData?.length} rows)`);
 
         // Block linked questions
-        const { count } = await sb.from("medical_image_questions")
+        const { data: linkedQs, error: qErr } = await sb
+          .from("medical_image_questions")
           .update({ status: "rejected" } as any)
           .eq("asset_id", asset.id)
           .neq("status", "rejected")
-          .select("id", { count: "exact", head: true });
-        questionsBlocked += count || 0;
+          .select("id");
+
+        const qCount = linkedQs?.length || 0;
+        console.log(`[cleanup] Questions for ${asset.asset_code}: ${qCount} blocked`, qErr ? `ERROR: ${qErr.message}` : "");
+        questionsBlocked += qCount;
       }
       blocked++;
-      continue;
     }
 
-    // Step 2: Vision gate re-validation
-    const visionResult = await validateImageVision(
-      asset.image_url, asset.diagnosis || "", asset.image_type || "", LOVABLE_API_KEY
-    );
-
-    if (!visionResult.valid) {
-      results.push({ asset_code: asset.asset_code, status: "blocked", reason: `Vision: ${visionResult.reason}` });
-      if (!dryRun) {
-        await sb.from("medical_image_assets").update({
-          is_active: false,
-          review_status: "rejected",
-          integrity_status: "contaminated",
-          curation_notes: `Bloqueado pelo cleanup vision: ${visionResult.reason}`,
-        }).eq("id", asset.id);
-
-        // Block linked questions
-        const { data: linkedQs } = await sb.from("medical_image_questions")
-          .select("id")
-          .eq("asset_id", asset.id)
-          .neq("status", "rejected");
-        
-        if (linkedQs && linkedQs.length > 0) {
-          await sb.from("medical_image_questions")
-            .update({ status: "rejected" } as any)
-            .in("id", linkedQs.map(q => q.id));
-          questionsBlocked += linkedQs.length;
-        }
-      }
-      blocked++;
-    } else {
-      results.push({ asset_code: asset.asset_code, status: "passed", reason: visionResult.reason });
-      passed++;
-    }
-
-    // Rate limit
     await new Promise(r => setTimeout(r, 500));
   }
 
