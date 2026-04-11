@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MNEMONIC_PIPELINE_VERSION = "2026-04-11-v2";
+const MNEMONIC_PIPELINE_VERSION = "2026-04-11-v3";
 
 // ══════════════════════════════════════════════════
 // STEP 1 — ELIGIBILITY GATE
