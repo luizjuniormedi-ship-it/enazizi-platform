@@ -7,7 +7,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MNEMONIC_PIPELINE_VERSION = "2026-04-11-v4";
+const MNEMONIC_PIPELINE_VERSION = "2026-04-11-v5";
+
+const STRICT_COVERAGE_TYPES = new Set([
+  "criterios", "classificacao", "sinais_classicos",
+  "diagnostico_diferencial_curto", "componentes",
+]);
 
 // ══════════════════════════════════════════════════
 // STEP 1 — ELIGIBILITY GATE
@@ -434,9 +439,20 @@ FORMATO:
 - NÃO invente itens que não estão na lista
 - O campo original_item deve repetir o item original com fidelidade máxima
 
+REGRA CRÍTICA DE COBERTURA:
+- A sigla (mnemonic_word) DEVE ter EXATAMENTE ${items.length} letras — uma para cada item
+- NUNCA omita um item da sigla. Se a lista tem ${items.length} itens, a sigla tem ${items.length} letras
+- NUNCA compense item faltante só no items_map — se não está na sigla, está ERRADO
+
+FORMATO:
+- A frase deve ter NO MÁXIMO 12 palavras
+- Deve ser fácil de falar e memorável
+- NÃO invente itens que não estão na lista
+- O campo original_item deve repetir o item original com fidelidade máxima
+
 Responda APENAS em JSON válido:
 {
-  "mnemonic_word": "SIGLA ou palavra formada",
+  "mnemonic_word": "SIGLA com EXATAMENTE ${items.length} letras",
   "phrase": "Frase mnemônica completa",
   "items_mapped": [
     {"letter": "A", "word": "palavra do mnemônico", "original_item": "item original COMPLETO", "symbol": "objeto visual concreto", "symbol_reason": "por que esse símbolo representa o conceito COMPLETO"}
@@ -461,12 +477,16 @@ MNEMÔNICO GERADO:
 - Frase: ${generated.phrase}
 - Mapeamento: ${JSON.stringify(generated.items_mapped)}
 
-VERIFIQUE:
-1. OMISSÃO: Algum item da lista original foi omitido ou mal representado?
-2. DISTORÇÃO: Algum conceito médico foi simplificado de forma que mude seu significado clínico?
-3. ASSOCIAÇÃO FALSA: Algum símbolo visual pode induzir associação médica incorreta?
-4. RISCO CLÍNICO: O mnemônico pode levar alguém a memorizar algo errado que cause erro clínico?
-5. FIDELIDADE: Cada item do mnemônico corresponde fielmente ao item original?
+VERIFIQUE COM RIGOR:
+1. COBERTURA OBRIGATÓRIA: Cada item da lista original DEVE estar representado na sigla (mnemonic_word). Se algum item não tem sua letra correspondente na sigla, é OMISSÃO CRÍTICA — reprove imediatamente.
+2. OMISSÃO: Algum item da lista original foi omitido ou mal representado? Não basta aparecer apenas no items_map — o item deve estar no NÚCLEO do mnemônico (sigla + frase).
+3. DISTORÇÃO: Algum conceito médico foi simplificado de forma que mude seu significado clínico?
+4. ASSOCIAÇÃO FALSA: Algum símbolo visual pode induzir associação médica incorreta?
+5. RISCO CLÍNICO: O mnemônico pode levar alguém a memorizar algo errado que cause erro clínico?
+6. FIDELIDADE: Cada item do mnemônico corresponde fielmente ao item original?
+
+REGRA ABSOLUTA: Se a sigla "${generated.mnemonic_word}" tem MENOS letras do que a lista original (${items.length} itens), é OMISSÃO — reprove com critical_risk = true.
+REGRA ABSOLUTA: O items_map NÃO substitui a sigla. Um item que aparece só no mapeamento mas não na sigla é considerado OMITIDO.
 
 Responda APENAS em JSON válido:
 {
@@ -474,7 +494,7 @@ Responda APENAS em JSON válido:
   "score": 0-100,
   "critical_risk": true/false,
   "issues": [
-    {"type": "omission|distortion|false_association|clinical_risk|fidelity", "item": "qual item", "description": "descrição do problema", "severity": "low|medium|high|critical"}
+    {"type": "omission|distortion|false_association|clinical_risk|fidelity|coverage_gap", "item": "qual item", "description": "descrição do problema", "severity": "low|medium|high|critical"}
   ],
   "summary": "resumo da avaliação médica"
 }`;
@@ -498,19 +518,21 @@ MNEMÔNICO GERADO:
 - Símbolos: ${JSON.stringify(generated.items_mapped?.map((m: any) => ({ item: m.original_item, symbol: m.symbol })))}
 
 AVALIE:
-1. CLAREZA: Um aluno consegue entender a cena visual em menos de 10 segundos?
-2. REVISABILIDADE: Serve para revisão rápida pré-prova?
-3. MEMORABILIDADE: A frase é fácil de lembrar e falar?
-4. POLUIÇÃO VISUAL: A cena tem elementos demais ou sobrepostos?
-5. AMBIGUIDADE: Dois símbolos podem ser confundidos entre si?
-6. UTILIDADE REAL: Isso ajuda a decorar para prova ou é só efeito visual?
+1. COBERTURA NA SIGLA: A sigla "${generated.mnemonic_word}" tem ${String(generated.mnemonic_word || "").replace(/[^A-Za-z]/g, "").length} letras para ${items.length} itens. Se a sigla tem MENOS letras do que itens, reprove — o aluno não conseguirá lembrar todos os itens pela sigla.
+2. CLAREZA: Um aluno consegue entender a cena visual em menos de 10 segundos?
+3. REVISABILIDADE: Serve para revisão rápida pré-prova?
+4. MEMORABILIDADE: A frase é fácil de lembrar e falar?
+5. POLUIÇÃO VISUAL: A cena tem elementos demais ou sobrepostos?
+6. AMBIGUIDADE: Dois símbolos podem ser confundidos entre si?
+7. UTILIDADE REAL: Isso ajuda a decorar para prova ou é só efeito visual?
+8. COMPLETUDE: A sigla + frase carregam TODOS os itens da lista, ou dão falsa sensação de completude?
 
 Responda APENAS em JSON válido:
 {
   "approved": true/false,
   "score": 0-100,
   "issues": [
-    {"type": "clarity|revisability|memorability|visual_pollution|ambiguity|low_utility", "description": "descrição do problema", "severity": "low|medium|high"}
+    {"type": "clarity|revisability|memorability|visual_pollution|ambiguity|low_utility|incomplete_coverage", "description": "descrição do problema", "severity": "low|medium|high"}
   ],
   "summary": "resumo da avaliação pedagógica"
 }`;
@@ -541,7 +563,7 @@ function extractInitialLettersFromPhrase(phrase: string): string[] {
   return words.map((word) => word.charAt(0).toUpperCase()).filter(Boolean);
 }
 
-function validateGeneratedMnemonicDeterministically(items: string[], generated: any): DeterministicMnemonicValidationResult {
+function validateGeneratedMnemonicDeterministically(items: string[], generated: any, contentType?: string): DeterministicMnemonicValidationResult {
   if (!generated || !Array.isArray(generated.items_mapped)) {
     return { ok: false, reason: "JSON inválido ou items_mapped ausente." };
   }
@@ -590,6 +612,7 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
     return { ok: false, reason: "Há itens duplicados ou omitidos no mapeamento final." };
   }
 
+  // ── COVERAGE CHECK: sigla must contain ALL expected letters ──
   const mnemonicLetters = String(generated.mnemonic_word || "")
     .toUpperCase()
     .replace(/[^A-Z]/g, "")
@@ -597,12 +620,26 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
     .filter(Boolean);
   const phraseLetters = extractInitialLettersFromPhrase(String(generated.phrase || ""));
 
-  const coversExpectedLetters = (letters: string[]) => expectedLetters.every((letter) => letters.includes(letter));
-  if (!coversExpectedLetters(mnemonicLetters) && !coversExpectedLetters(phraseLetters)) {
-    return {
-      ok: false,
-      reason: `A palavra/frase mnemônica não cobre todas as letras obrigatórias (${expectedLetters.join("-")}).`,
-    };
+  const isStrict = contentType ? STRICT_COVERAGE_TYPES.has(contentType) : false;
+
+  if (isStrict) {
+    // For clinical content: the sigla MUST contain every expected letter
+    const missingInSigla = expectedLetters.filter((letter) => !mnemonicLetters.includes(letter));
+    if (missingInSigla.length > 0) {
+      return {
+        ok: false,
+        reason: `Cobertura incompleta na sigla "${generated.mnemonic_word}": faltam letras ${missingInSigla.join(", ")} (itens obrigatórios omitidos). Para conteúdo clínico, TODOS os itens devem estar na sigla.`,
+      };
+    }
+  } else {
+    // Relaxed: sigla OR phrase must cover all letters
+    const coversExpectedLetters = (letters: string[]) => expectedLetters.every((letter) => letters.includes(letter));
+    if (!coversExpectedLetters(mnemonicLetters) && !coversExpectedLetters(phraseLetters)) {
+      return {
+        ok: false,
+        reason: `A palavra/frase mnemônica não cobre todas as letras obrigatórias (${expectedLetters.join("-")}).`,
+      };
+    }
   }
 
   return { ok: true };
@@ -750,7 +787,7 @@ serve(async (req) => {
         continue;
       }
 
-      const deterministicValidation = validateGeneratedMnemonicDeterministically(cleanedItems, generated);
+      const deterministicValidation = validateGeneratedMnemonicDeterministically(cleanedItems, generated, contentType);
       if (!deterministicValidation.ok) {
         console.warn(`Attempt ${attempt}: Deterministic validation failed — ${deterministicValidation.reason}`);
         previousFeedback = deterministicValidation.reason;
