@@ -36,6 +36,7 @@ export const ALL_MODULES = [
   { key: "image-quiz", label: "🖼️ Quiz de Imagens" },
   { key: "revisor", label: "📋 Revisor Médico" },
   { key: "sessao-estudo", label: "📖 Sessão de Estudo" },
+  { key: "mnemonico", label: "🧠 Mnemônico" },
 ] as const;
 
 export type ModuleKey = typeof ALL_MODULES[number]["key"];
