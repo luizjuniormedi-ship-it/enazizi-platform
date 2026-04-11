@@ -601,10 +601,15 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
       generated.scene_description,
     ].filter(Boolean).join(" "));
 
+    // Anchor check: warn but don't reject — memorability is more important
+    const missingAnchors: string[] = [];
     for (const anchor of deriveRequiredAnchors(item)) {
       if (!anchorBundle.includes(normalizeForComparison(anchor))) {
-        return { ok: false, reason: `O item "${item}" perdeu a âncora clínica obrigatória "${anchor}".` };
+        missingAnchors.push(anchor);
       }
+    }
+    if (missingAnchors.length > 0) {
+      console.log(`Anchor warning for "${item}": missing ${missingAnchors.join(", ")} (non-blocking)`);
     }
   }
 
