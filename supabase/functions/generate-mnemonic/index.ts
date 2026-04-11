@@ -43,6 +43,111 @@ function validateMnemonicEligibility(
 }
 
 // ══════════════════════════════════════════════════
+// STEP 1.5 — CONCEPT UNIQUENESS VALIDATION
+// ══════════════════════════════════════════════════
+
+interface UniquenessResult {
+  ok: boolean;
+  cleanedItems?: string[];
+  error?: string;
+  redundancies?: Array<{ kept: string; removed: string; reason: string }>;
+}
+
+async function validateConceptUniqueness(
+  items: string[], apiKey: string
+): Promise<UniquenessResult> {
+  // Skip if 3 or fewer items — not enough to have meaningful redundancy
+  if (items.length <= 3) return { ok: true, cleanedItems: items };
+
+  const prompt = `Você é um especialista médico. Analise esta lista e identifique itens que são conceitualmente equivalentes ou redundantes (um é definição do outro, ou descrevem o mesmo conceito clínico).
+
+LISTA:
+${items.map((it, i) => `${i + 1}. ${it}`).join("\n")}
+
+REGRAS:
+- "PR prolongado" e "BAV de 1º grau" = REDUNDANTES (um define o outro)
+- "Hiperglicemia" e "glicose elevada" = REDUNDANTES
+- "IAM com supra" e "STEMI" = REDUNDANTES
+- Itens que são SUBTIPOS diferentes NÃO são redundantes (ex: Mobitz I e Mobitz II)
+
+Responda APENAS em JSON:
+{
+  "has_redundancy": true/false,
+  "redundancies": [
+    {"item_a": "item 1", "item_b": "item 2", "keep": "qual manter (mais técnico/usado em prova)", "reason": "por que são equivalentes"}
+  ]
+}
+
+Se não houver redundância, retorne: {"has_redundancy": false, "redundancies": []}`;
+
+  try {
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.1,
+      }),
+    });
+
+    if (!resp.ok) {
+      // FAIL-CLOSED: if AI call fails, block generation
+      console.error("Concept uniqueness AI call failed:", resp.status);
+      return { ok: false, error: "Falha na validação de unicidade conceitual. Tente novamente." };
+    }
+
+    const data = await resp.json();
+    const text = data.choices?.[0]?.message?.content || "";
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) {
+      // FAIL-CLOSED: can't parse = block
+      console.error("Concept uniqueness parse failed");
+      return { ok: false, error: "Falha ao processar validação de unicidade. Tente novamente." };
+    }
+
+    const parsed = JSON.parse(match[0]);
+
+    if (!parsed.has_redundancy || !Array.isArray(parsed.redundancies) || parsed.redundancies.length === 0) {
+      return { ok: true, cleanedItems: items };
+    }
+
+    // Build set of items to remove
+    const toRemove = new Set<string>();
+    const redundancyLog: Array<{ kept: string; removed: string; reason: string }> = [];
+
+    for (const r of parsed.redundancies) {
+      const kept = r.keep?.trim();
+      const itemA = r.item_a?.trim();
+      const itemB = r.item_b?.trim();
+      if (!kept || !itemA || !itemB) continue;
+
+      const removed = kept.toLowerCase() === itemA.toLowerCase() ? itemB : itemA;
+      toRemove.add(removed.toLowerCase());
+      redundancyLog.push({ kept, removed, reason: r.reason || "" });
+    }
+
+    const cleaned = items.filter(it => !toRemove.has(it.toLowerCase().trim()));
+
+    // If cleaning drops below minimum, block instead
+    if (cleaned.length < 3) {
+      return {
+        ok: false,
+        error: "Lista contém itens conceitualmente redundantes demais. Após remoção, restam menos de 3 itens únicos. Revise a lista.",
+        redundancies: redundancyLog,
+      };
+    }
+
+    console.log("Concept uniqueness: removed redundancies", redundancyLog);
+    return { ok: true, cleanedItems: cleaned, redundancies: redundancyLog };
+  } catch (e) {
+    // FAIL-CLOSED
+    console.error("Concept uniqueness error:", e);
+    return { ok: false, error: "Erro na validação de unicidade conceitual. Tente novamente." };
+  }
+}
+
+// ══════════════════════════════════════════════════
 // AI CALL HELPER
 // ══════════════════════════════════════════════════
 
