@@ -436,8 +436,8 @@ serve(async (req) => {
 
     // ── STEPS 3+4: DUAL AUDIT (parallel) ──
     const [medicalResult, pedagogicalResult] = await Promise.all([
-      callAI(LOVABLE_API_KEY, buildMedicalAuditorPrompt(topic, items, generated)),
-      callAI(LOVABLE_API_KEY, buildPedagogicalAuditorPrompt(topic, items, generated)),
+      callAI(LOVABLE_API_KEY, buildMedicalAuditorPrompt(topic, cleanedItems, generated)),
+      callAI(LOVABLE_API_KEY, buildPedagogicalAuditorPrompt(topic, cleanedItems, generated)),
     ]);
 
     // FAIL-CLOSED: if either auditor call fails, reject
