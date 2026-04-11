@@ -7,6 +7,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const MNEMONIC_PIPELINE_VERSION = "2026-04-11-v2";
+
 // ══════════════════════════════════════════════════
 // STEP 1 — ELIGIBILITY GATE
 // ══════════════════════════════════════════════════
@@ -317,6 +319,7 @@ function extractJSON(raw: string): any | null {
 
 async function generateHash(topic: string, items: string[], contentType: string): Promise<string> {
   const normalized = [
+    MNEMONIC_PIPELINE_VERSION,
     topic.toLowerCase().trim(),
     contentType.toLowerCase().trim(),
     ...items.map(i => i.toLowerCase().trim()).sort(),
@@ -542,7 +545,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceKey);
 
     // ── HASH & CACHE CHECK ──
-    const hash = clientHash || await generateHash(topic, cleanedItems, contentType);
+    const hash = await generateHash(topic, cleanedItems, contentType);
 
     const { data: existing } = await supabase
       .from("mnemonic_assets")
