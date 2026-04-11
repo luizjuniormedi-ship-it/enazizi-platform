@@ -81,7 +81,7 @@ export async function checkMnemonicTrigger(
 
   const { data: errors } = await supabase
     .from("error_bank")
-    .select("id, vezes_errado, conteudo, subtema")
+    .select("id, vezes_errado, conteudo, subtema, dificuldade")
     .eq("user_id", userId)
     .eq("tema", topic)
     .eq("dominado", false)
@@ -89,7 +89,29 @@ export async function checkMnemonicTrigger(
     .limit(5);
 
   const totalErrors = errors?.reduce((sum, e) => sum + (e.vezes_errado || 1), 0) || 0;
-  if (totalErrors < MIN_ERRORS_TRIGGER) return { shouldTrigger: false };
+
+  // Fetch recent performance for mastery/time checks
+  const { data: perf } = await supabase
+    .from("desempenho_questoes")
+    .select("taxa_acerto, tempo_gasto")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  const avgAccuracy = perf && perf.length > 0
+    ? perf.reduce((s, p) => s + (p.taxa_acerto || 0), 0) / perf.length / 100
+    : 1;
+  const avgTime = perf && perf.length > 0
+    ? perf.reduce((s, p) => s + (p.tempo_gasto || 0), 0) / perf.length
+    : 0;
+
+  // Trigger if: errors >= 2 OR mastery < 0.6 OR avg time > 180s
+  const meetsThreshold =
+    totalErrors >= MIN_ERRORS_TRIGGER ||
+    avgAccuracy < 0.6 ||
+    avgTime > 180;
+
+  if (!meetsThreshold) return { shouldTrigger: false };
 
   const { count: activeCount } = await supabase
     .from("user_mnemonic_links")
@@ -110,7 +132,13 @@ export async function checkMnemonicTrigger(
 
   if (recentLink && recentLink.length > 0) return { shouldTrigger: false };
 
-  return { shouldTrigger: true, reason: `${totalErrors} erros no tema "${topic}"`, topic };
+  const reason = totalErrors >= MIN_ERRORS_TRIGGER
+    ? `${totalErrors} erros no tema "${topic}"`
+    : avgAccuracy < 0.6
+    ? `Mastery baixo (${Math.round(avgAccuracy * 100)}%) no tema "${topic}"`
+    : `Tempo de resposta alto (${Math.round(avgTime)}s) no tema "${topic}"`;
+
+  return { shouldTrigger: true, reason, topic };
 }
 
 // ══════════════════════════════════════════════════
