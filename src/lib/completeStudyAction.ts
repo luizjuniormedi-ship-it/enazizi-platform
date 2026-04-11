@@ -10,7 +10,8 @@
  *  5. Disparar refreshAll (via callback)
  */
 import { supabase } from "@/integrations/supabase/client";
-import { updateMnemonicEfficacy } from "@/lib/mnemonicAdaptiveService";
+import { updateMnemonicEfficacy, triggerAdaptiveMnemonicCheck } from "@/lib/mnemonicAdaptiveService";
+import { decideIntervention } from "@/lib/mnemonicIntelligence";
 
 /* ── Mapa central de tipos ── */
 export type StudyActionType =
@@ -406,6 +407,16 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
   if (topic) {
     const wasCorrect = taskType === "error_review" && tablesUpdated.includes("error_bank");
     updateMnemonicEfficacy(userId, topic, wasCorrect).catch(() => {});
+  }
+
+  // 5c. Orchestrator: CLS + RFS → decide intervention (fire-and-forget)
+  if (topic && userId) {
+    decideIntervention(userId, topic).then((decision) => {
+      if (decision.action === "mnemonic") {
+        console.log(`[Orchestrator] ${decision.reason}`);
+        triggerAdaptiveMnemonicCheck(userId, topic);
+      }
+    }).catch(() => {});
   }
 
   // 6. Auditoria persistente
