@@ -164,6 +164,7 @@ export async function autoRepairMnemonic(
           userId,
           source,
           sourceContext,
+          forceRegenerate: true,
         },
       });
 

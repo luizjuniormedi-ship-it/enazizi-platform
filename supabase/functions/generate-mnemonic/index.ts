@@ -697,10 +697,12 @@ serve(async (req) => {
       // Adaptive/unified fields (optional for backward compat)
       userId, hash: clientHash, source,
       sourceContext,
+      forceRegenerate,
     } = body as {
       topic: string; items: string[]; contentType: string;
       userId?: string; hash?: string; source?: "manual" | "adaptive";
       sourceContext?: { topicId?: string; questionId?: string; attemptId?: string };
+      forceRegenerate?: boolean;
     };
 
     if (!topic || !items || !Array.isArray(items) || !contentType) {
@@ -751,16 +753,22 @@ serve(async (req) => {
 
     if (existing) {
       if (existing.verdict === "rejected") {
-        return new Response(JSON.stringify({ rejected: true, error: "Mnemônico previamente rejeitado para estes itens." }), {
-          status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        if (forceRegenerate) {
+          // Auto-repair: delete rejected cache entry so we can retry
+          await supabase.from("mnemonic_assets").delete().eq("id", existing.id);
+          console.log("forceRegenerate: cleared rejected cache for hash", hash);
+        } else {
+          return new Response(JSON.stringify({ rejected: true, error: "Mnemônico previamente rejeitado para estes itens." }), {
+            status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      } else {
+        // Cache hit — return existing approved asset
+        const output = buildOutputFromAsset(existing);
+        return new Response(JSON.stringify({ ...output, assetId: existing.id, cached: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
-      // Cache hit — return existing approved asset
-      const output = buildOutputFromAsset(existing);
-      return new Response(JSON.stringify({ ...output, assetId: existing.id, cached: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
 
     // ── STEPS 2-5: GENERATE + AUDIT WITH RETRY ──
