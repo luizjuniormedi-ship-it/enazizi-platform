@@ -184,12 +184,17 @@ const MnemonicGenerator = () => {
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Itens (um por linha, 3-7 itens)</label>
+            {loadingItems && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" /> Sugerindo itens...
+              </div>
+            )}
             <Textarea
               placeholder={`Ex:\nFebre\nArtrite\nCardite\nCoreia\nNódulos subcutâneos`}
               value={itemsText}
               onChange={(e) => setItemsText(e.target.value)}
               rows={6}
-              disabled={loading}
+              disabled={loading || loadingItems}
             />
             <p className="text-xs text-muted-foreground">
               {items.length} item(ns) detectado(s)
