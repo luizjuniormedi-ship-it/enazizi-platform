@@ -439,9 +439,20 @@ FORMATO:
 - NÃO invente itens que não estão na lista
 - O campo original_item deve repetir o item original com fidelidade máxima
 
+REGRA CRÍTICA DE COBERTURA:
+- A sigla (mnemonic_word) DEVE ter EXATAMENTE ${items.length} letras — uma para cada item
+- NUNCA omita um item da sigla. Se a lista tem ${items.length} itens, a sigla tem ${items.length} letras
+- NUNCA compense item faltante só no items_map — se não está na sigla, está ERRADO
+
+FORMATO:
+- A frase deve ter NO MÁXIMO 12 palavras
+- Deve ser fácil de falar e memorável
+- NÃO invente itens que não estão na lista
+- O campo original_item deve repetir o item original com fidelidade máxima
+
 Responda APENAS em JSON válido:
 {
-  "mnemonic_word": "SIGLA ou palavra formada",
+  "mnemonic_word": "SIGLA com EXATAMENTE ${items.length} letras",
   "phrase": "Frase mnemônica completa",
   "items_mapped": [
     {"letter": "A", "word": "palavra do mnemônico", "original_item": "item original COMPLETO", "symbol": "objeto visual concreto", "symbol_reason": "por que esse símbolo representa o conceito COMPLETO"}
