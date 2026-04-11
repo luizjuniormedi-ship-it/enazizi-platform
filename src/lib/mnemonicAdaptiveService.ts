@@ -35,6 +35,7 @@ interface UserMnemonicLink {
   next_review_at: string;
   times_shown: number;
   helped_after_error: boolean | null;
+  improvement_delta: number | null;
   mnemonic_not_helping: boolean;
   mnemonic_assets?: MnemonicAsset;
 }
