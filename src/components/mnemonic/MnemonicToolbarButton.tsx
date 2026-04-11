@@ -10,6 +10,7 @@ import { generateOrReuseMnemonicForUser, type MnemonicResult, type MnemonicRespo
 import { validateMnemonicInputBeforeGeneration } from "@/lib/mnemonicPreValidation";
 import { autoCompleteMnemonicItems } from "@/lib/mnemonicAutoComplete";
 import { optimizeMnemonicItems } from "@/lib/mnemonicOptimizer";
+import { autoRepairMnemonic } from "@/lib/mnemonicAutoRepair";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -192,6 +193,24 @@ export const MnemonicToolbarButton = () => {
       }).then(() => {});
       if (!response.success) {
         if (response.rejected) {
+          // AUTO-REPAIR: try to fix and regenerate
+          const repair = await autoRepairMnemonic({
+            topic: effectiveTopic,
+            items: optimized.optimizedItems,
+            contentType,
+            auditError: response.error || "Rejeitado pelos auditores.",
+            audit: response.audit,
+            userId: user.id,
+            source: "manual",
+          });
+          if (repair.repaired && repair.response.success) {
+            toast.info("Ajustamos automaticamente após validação clínica.");
+            if (repair.response.result) {
+              setResult(repair.response.result);
+              toast.success("Mnemônico gerado com sucesso! 🧠");
+            }
+            return;
+          }
           setRejection({ error: response.error || "Rejeitado pelos auditores.", audit: response.audit });
         } else {
           toast.error(response.error || "Erro ao gerar mnemônico.");
