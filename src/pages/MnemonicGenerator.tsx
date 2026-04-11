@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { generateOrReuseMnemonicForUser, type MnemonicResult, type MnemonicResponse } from "@/lib/mnemonicUnifiedService";
+import { validateMnemonicInputBeforeGeneration } from "@/lib/mnemonicPreValidation";
 import { useSubtopicSuggestions } from "@/hooks/useSubtopicSuggestions";
 import { toast } from "sonner";
 
@@ -82,16 +83,23 @@ const MnemonicGenerator = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return toast.error("Faça login para gerar mnemônicos.");
 
+    const effectiveTopic = subtopic.trim()
+      ? `${topic.trim()} - ${subtopic.trim()}`
+      : topic.trim();
+
+    // Pre-validation — catch predictable rejections before calling AI
+    const preCheck = validateMnemonicInputBeforeGeneration({ topic: effectiveTopic, items, contentType });
+    if (!preCheck.valid) {
+      toast.error(preCheck.error || "Lista inválida.", { description: preCheck.suggestion });
+      return;
+    }
+
     setLoading(true);
     setResult(null);
     setRejection(null);
     setShowReview(false);
 
     try {
-      const effectiveTopic = subtopic.trim()
-        ? `${topic.trim()} - ${subtopic.trim()}`
-        : topic.trim();
-
       const response = await generateOrReuseMnemonicForUser({
         userId: user.id,
         topic: effectiveTopic,
