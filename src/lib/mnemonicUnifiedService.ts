@@ -110,6 +110,31 @@ async function extractFunctionErrorMessage(error: unknown): Promise<string> {
   return "Erro ao gerar mnemônico.";
 }
 
+async function extractRejectionPayload(
+  error: unknown
+): Promise<{ rejected: true; error: string; audit?: { medical_score: number; pedagogical_score: number; combined_score?: number } } | null> {
+  const response =
+    typeof error === "object" && error !== null && "context" in error
+      ? (error as { context?: Response }).context
+      : undefined;
+
+  if (!response) return null;
+
+  try {
+    const payload = await response.clone().json();
+    if (payload && typeof payload === "object" && payload.rejected === true) {
+      return {
+        rejected: true,
+        error: typeof payload.error === "string" ? payload.error : "Rejeitado pelos auditores.",
+        audit: payload.audit && typeof payload.audit === "object" ? payload.audit : undefined,
+      };
+    }
+  } catch {
+    // not JSON or not rejection
+  }
+  return null;
+}
+
 // ══════════════════════════════════════════════════
 // CENTRAL FUNCTION — generateOrReuseMnemonicForUser
 // Used by: manual button, adaptive trigger, MnemonicGenerator page
