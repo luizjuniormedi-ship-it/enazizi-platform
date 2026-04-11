@@ -67,6 +67,7 @@ const mobileNavGroups: MobileNavGroup[] = [
       { to: "/dashboard/proficiencia", label: "🎓 Proficiência" },
       { to: "/dashboard/coach", label: "💪 Coach" },
       { to: "/dashboard/planner", label: "📅 Plano Estratégico" },
+      { to: "/dashboard/mnemonico", label: "🧠 Mnemônico" },
     ],
   },
 ];
