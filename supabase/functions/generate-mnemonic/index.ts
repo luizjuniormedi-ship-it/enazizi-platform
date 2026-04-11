@@ -369,7 +369,7 @@ serve(async (req) => {
         medical_score: medical.score,
         pedagogical_score: pedagogical.score,
         verdict: "rejected",
-        source: source || "manual",
+        source_reference: source || "manual",
         review_question: `Quais são os ${items.length} itens de "${topic}"?`,
       }).then(() => {}).catch(e => console.warn("Failed to save rejected:", e));
 
@@ -440,7 +440,7 @@ Regras visuais:
         medical_score: medical.score,
         pedagogical_score: pedagogical.score,
         verdict: assetVerdict,
-        source: source || "manual",
+        source_reference: source || "manual",
         review_question: reviewQuestion,
       })
       .select("id")
