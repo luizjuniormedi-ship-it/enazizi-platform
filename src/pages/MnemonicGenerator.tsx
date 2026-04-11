@@ -11,6 +11,7 @@ import { generateOrReuseMnemonicForUser, type MnemonicResult, type MnemonicRespo
 import { validateMnemonicInputBeforeGeneration } from "@/lib/mnemonicPreValidation";
 import { autoCompleteMnemonicItems } from "@/lib/mnemonicAutoComplete";
 import { optimizeMnemonicItems } from "@/lib/mnemonicOptimizer";
+import { autoRepairMnemonic } from "@/lib/mnemonicAutoRepair";
 import { useSubtopicSuggestions } from "@/hooks/useSubtopicSuggestions";
 import { toast } from "sonner";
 
@@ -130,6 +131,25 @@ const MnemonicGenerator = () => {
 
       if (!response.success) {
         if (response.rejected) {
+          // AUTO-REPAIR: try to fix and regenerate before showing error
+          const repair = await autoRepairMnemonic({
+            topic: effectiveTopic,
+            items: optimized.optimizedItems,
+            contentType,
+            auditError: response.error || "Rejeitado pelos auditores.",
+            audit: response.audit,
+            userId: user.id,
+            source: "manual",
+          });
+          if (repair.repaired && repair.response.success) {
+            toast.info("Ajustamos automaticamente após validação clínica.");
+            if (repair.response.result) {
+              setResult(repair.response.result);
+              toast.success("Mnemônico gerado com sucesso! 🧠");
+            }
+            return;
+          }
+          // Repair failed — show rejection
           setRejection({ error: response.error || "Rejeitado pelos auditores.", audit: response.audit });
         } else {
           toast.error(response.error || "Erro ao gerar mnemônico.");
