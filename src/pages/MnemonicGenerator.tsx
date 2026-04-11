@@ -51,9 +51,13 @@ const MnemonicGenerator = () => {
     setShowReview(false);
 
     try {
+      const effectiveTopic = subtopic.trim()
+        ? `${topic.trim()} - ${subtopic.trim()}`
+        : topic.trim();
+
       const response = await generateOrReuseMnemonicForUser({
         userId: user.id,
-        topic: topic.trim(),
+        topic: effectiveTopic,
         contentType,
         items,
         source: "manual",
