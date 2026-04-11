@@ -204,6 +204,27 @@ function detectIncompleteness(
 }
 
 // ══════════════════════════════════════════════════
+// GENERIC ITEMS DETECTION
+// ══════════════════════════════════════════════════
+
+const GENERIC_TERMS = new Set([
+  "alteracao", "problema", "doenca", "grave", "leve", "moderado",
+  "outro", "outros", "etc", "geral", "diverso", "varios", "variado",
+  "coisa", "algo", "situacao", "quadro", "caso",
+]);
+
+function detectGenericItems(normalizedItems: string[]): string | null {
+  for (const item of normalizedItems) {
+    const tokens = item.split(" ").filter(Boolean);
+    // If entire item is a single generic word
+    if (tokens.length === 1 && GENERIC_TERMS.has(tokens[0])) {
+      return `O item "${item}" é genérico demais para gerar um mnemônico útil.`;
+    }
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════════════
 // CONFLICT DETECTION — lightweight heuristic
 // ══════════════════════════════════════════════════
 
