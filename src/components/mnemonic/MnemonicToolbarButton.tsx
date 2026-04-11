@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { generateOrReuseMnemonicForUser, type MnemonicResult, type MnemonicResponse } from "@/lib/mnemonicUnifiedService";
+import { validateMnemonicInputBeforeGeneration } from "@/lib/mnemonicPreValidation";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -150,6 +151,15 @@ export const MnemonicToolbarButton = () => {
       setResult(null);
       const startTime = Date.now();
       const effectiveTopic = subtopic ? `${topic.trim()} - ${subtopic}` : topic.trim();
+
+      // Pre-validation
+      const preCheck = validateMnemonicInputBeforeGeneration({ topic: effectiveTopic, items, contentType });
+      if (!preCheck.valid) {
+        toast.error(preCheck.error || "Lista inválida.", { description: preCheck.suggestion });
+        setLoading(false);
+        return;
+      }
+
       const response = await generateOrReuseMnemonicForUser({
         userId: user.id, topic: effectiveTopic, contentType, items, source: "manual",
       });
