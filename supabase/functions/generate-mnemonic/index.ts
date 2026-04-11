@@ -369,6 +369,7 @@ Responda APENAS em JSON válido:
   ],
   "scene_description": "Descrição curta da cena visual unificada (1-2 frases)"
 }`;
+}
 
 // ══════════════════════════════════════════════════
 // STEP 3 — MEDICAL AUDITOR PROMPT
