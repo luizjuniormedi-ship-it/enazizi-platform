@@ -174,8 +174,14 @@ export const MnemonicToolbarButton = () => {
         toast.info("Itens importantes adicionados automaticamente.", { description: `Adicionados: ${autoComplete.addedItems.join(", ")}` });
       }
 
+      // Optimize — shorten, deduplicate, reorder for stronger mnemonics
+      const optimized = optimizeMnemonicItems({ topic: effectiveTopic, subtopic, items: finalItems });
+      if (optimized.changes.length > 0) {
+        toast.info("Otimizamos os itens para melhorar o mnemônico.");
+      }
+
       const response = await generateOrReuseMnemonicForUser({
-        userId: user.id, topic: effectiveTopic, contentType, items: finalItems, source: "manual",
+        userId: user.id, topic: effectiveTopic, contentType, items: optimized.optimizedItems, source: "manual",
       });
       const elapsed = Date.now() - startTime;
       supabase.from("ai_usage_logs").insert({

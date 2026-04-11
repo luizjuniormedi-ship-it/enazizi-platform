@@ -114,11 +114,17 @@ const MnemonicGenerator = () => {
         toast.info("Adicionamos itens importantes automaticamente para melhorar a qualidade do seu mnemônico.", { description: `Itens adicionados: ${autoComplete.addedItems.join(", ")}` });
       }
 
+      // Optimize — shorten, deduplicate, reorder for stronger mnemonics
+      const optimized = optimizeMnemonicItems({ topic: effectiveTopic, subtopic: subtopic.trim() || undefined, items: finalItems });
+      if (optimized.changes.length > 0) {
+        toast.info("Otimizamos os itens para melhorar o mnemônico.");
+      }
+
       const response = await generateOrReuseMnemonicForUser({
         userId: user.id,
         topic: effectiveTopic,
         contentType,
-        items: finalItems,
+        items: optimized.optimizedItems,
         source: "manual",
       });
 
