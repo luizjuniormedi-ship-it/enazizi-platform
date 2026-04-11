@@ -1136,6 +1136,11 @@ Responda APENAS em JSON válido:
         verdict: assetVerdict,
         source_reference: source || "manual",
         review_question: reviewQuestion,
+        image_prompt_original: imagePromptOriginal,
+        image_prompt_refined: imagePromptRefined || null,
+        visual_score: visualScore,
+        visual_audit_summary: visualSummary || null,
+        visual_regeneration_count: visualRegenCount,
       })
       .select("id")
       .single();
