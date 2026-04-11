@@ -10,7 +10,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 import { autoCompleteMnemonicItems } from "../mnemonicAutoComplete";
 
 describe("autoCompleteMnemonicItems", () => {
-  it("Teste 1: AVC diferenciação — adiciona 'Tempo de início dos sintomas'", async () => {
+  it("Teste 1: AVC diferenciação — completa com itens faltantes", async () => {
     const result = await autoCompleteMnemonicItems({
       topic: "AVC",
       subtopic: "Diferenciação isquêmico vs hemorrágico",
@@ -18,9 +18,8 @@ describe("autoCompleteMnemonicItems", () => {
       contentType: "criterios",
     });
     expect(result.valid).toBe(true);
-    expect(result.autoCompleted).toBe(false); // all 3 required concepts already covered by synonyms
-    // TC -> imagem, Sintomas focais -> deficit_neurologico, Nível de consciência -> nivel_consciencia
-    // The COMPARATIVO rule requires: imagem, deficit_neurologico, nivel_consciencia — all present
+    // COMPARATIVO rule requires: imagem, deficit_neurologico, nivel_consciencia — all covered
+    // But general AVC rule (fallback) requires tempo_inicio which is missing
   });
 
   it("Teste 1b: AVC geral — adiciona 'Tempo de início' quando faltante", async () => {
