@@ -1114,7 +1114,7 @@ Responda APENAS em JSON válido:
       console.warn(`Image failed after ${visualRegenCount + 1} attempts — fallback to text-only (score: ${visualScore})`);
     }
 
-    const assetVerdict = "approved_visual";
+    // assetVerdict already set in visual audit loop above
     const reviewQuestion = `Usando o mnemônico "${generated.mnemonic_word}", quais são os ${cleanedItems.length} itens de "${topic}"?`;
 
     // ── STEP 7: PERSIST TO mnemonic_assets (FAIL-CLOSED) ──
