@@ -345,16 +345,22 @@ ${retryBlock}
 TAREFA: Crie um mnemônico + mapeamento visual para memorizar esta lista sobre "${topic}":
 ${items.map((it, i) => `${i + 1}. ${it}`).join("\n")}
 
-REGRAS OBRIGATÓRIAS PARA A LETRA:
-- Para cada item, use a PRIMEIRA LETRA do TERMO PRINCIPAL (substantivo ou sigla médica)
-- Exemplos corretos: "BAV total" → B, "Mobitz I" → M, "Infradesnivelamento ST" → I, "Bloqueio ramo esquerdo" → B, "Supradesnivelamento ST" → S, "STEMI" → S
-- NUNCA use uma letra que represente um conceito DIFERENTE do item original
-- NUNCA associe uma letra a uma palavra que tenha significado clínico diferente do item (ex: NÃO use "Elevação" para "Bloqueio ramo esquerdo")
-- Se não conseguir formar uma boa palavra com as primeiras letras, use uma FRASE onde cada palavra começa com a letra correta
+REGRAS OBRIGATÓRIAS DE FIDELIDADE CLÍNICA:
+- Cada item deve ser representado COM TODOS os seus componentes clínicos — NUNCA simplifique ou omita detalhes
+- Se um item contém sub-componentes (ex: "Killip II: Estertores basais + B3"), TODOS devem estar presentes na palavra associada ou na descrição
+- Se um item é uma negação (ex: "Sem sinais"), represente explicitamente O QUE está ausente
+- NÃO substitua termos médicos por sinônimos imprecisos
+- NÃO omita qualificadores importantes (graus, tipos, localizações)
 
-REGRAS OBRIGATÓRIAS PARA SÍMBOLOS:
+REGRAS PARA A LETRA:
+- Para cada item, use a PRIMEIRA LETRA do TERMO PRINCIPAL (substantivo ou sigla médica)
+- Exemplos: "BAV total" → B, "Mobitz I" → M, "STEMI" → S
+- NUNCA use uma letra que represente um conceito DIFERENTE do item original
+- Se não conseguir formar uma boa palavra, use uma FRASE onde cada palavra começa com a letra correta
+
+REGRAS PARA SÍMBOLOS:
 - Cada item deve ter UM símbolo visual ÚNICO, concreto e óbvio
-- O símbolo deve representar VISUALMENTE o conceito médico, não a letra
+- O símbolo deve representar VISUALMENTE o conceito médico completo, não apenas parte dele
 - NÃO repetir símbolos
 - NÃO usar símbolos que possam induzir confusão clínica
 
@@ -368,7 +374,7 @@ Responda APENAS em JSON válido:
   "mnemonic_word": "SIGLA ou palavra formada",
   "phrase": "Frase mnemônica completa",
   "items_mapped": [
-    {"letter": "A", "word": "palavra do mnemônico", "original_item": "item original", "symbol": "objeto visual concreto", "symbol_reason": "por que esse símbolo"}
+    {"letter": "A", "word": "palavra do mnemônico", "original_item": "item original COMPLETO", "symbol": "objeto visual concreto", "symbol_reason": "por que esse símbolo representa o conceito COMPLETO"}
   ],
   "scene_description": "Descrição curta da cena visual unificada (1-2 frases)"
 }`;
