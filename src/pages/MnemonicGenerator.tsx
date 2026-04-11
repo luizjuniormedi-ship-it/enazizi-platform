@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { generateOrReuseMnemonicForUser, type MnemonicResult, type MnemonicResponse } from "@/lib/mnemonicUnifiedService";
 import { validateMnemonicInputBeforeGeneration } from "@/lib/mnemonicPreValidation";
+import { autoCompleteMnemonicItems } from "@/lib/mnemonicAutoComplete";
 import { useSubtopicSuggestions } from "@/hooks/useSubtopicSuggestions";
 import { toast } from "sonner";
 
@@ -100,11 +101,23 @@ const MnemonicGenerator = () => {
     setShowReview(false);
 
     try {
+      // Auto-complete — fill missing critical items before generation
+      const autoComplete = await autoCompleteMnemonicItems({ topic: effectiveTopic, subtopic: subtopic.trim() || undefined, items, contentType });
+      if (!autoComplete.valid) {
+        toast.error(autoComplete.suggestion || autoComplete.reason || "Não foi possível completar a lista com segurança.");
+        setLoading(false);
+        return;
+      }
+      const finalItems = autoComplete.finalItems;
+      if (autoComplete.autoCompleted) {
+        toast.info("Adicionamos itens importantes automaticamente para melhorar a qualidade do seu mnemônico.", { description: `Itens adicionados: ${autoComplete.addedItems.join(", ")}` });
+      }
+
       const response = await generateOrReuseMnemonicForUser({
         userId: user.id,
         topic: effectiveTopic,
         contentType,
-        items,
+        items: finalItems,
         source: "manual",
       });
 

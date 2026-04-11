@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { generateOrReuseMnemonicForUser, type MnemonicResult, type MnemonicResponse } from "@/lib/mnemonicUnifiedService";
 import { validateMnemonicInputBeforeGeneration } from "@/lib/mnemonicPreValidation";
+import { autoCompleteMnemonicItems } from "@/lib/mnemonicAutoComplete";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -160,8 +161,20 @@ export const MnemonicToolbarButton = () => {
         return;
       }
 
+      // Auto-complete — fill missing critical items before generation
+      const autoComplete = await autoCompleteMnemonicItems({ topic: effectiveTopic, subtopic, items, contentType });
+      if (!autoComplete.valid) {
+        toast.error(autoComplete.suggestion || autoComplete.reason || "Não foi possível completar a lista com segurança.");
+        setLoading(false);
+        return;
+      }
+      const finalItems = autoComplete.finalItems;
+      if (autoComplete.autoCompleted) {
+        toast.info("Itens importantes adicionados automaticamente.", { description: `Adicionados: ${autoComplete.addedItems.join(", ")}` });
+      }
+
       const response = await generateOrReuseMnemonicForUser({
-        userId: user.id, topic: effectiveTopic, contentType, items, source: "manual",
+        userId: user.id, topic: effectiveTopic, contentType, items: finalItems, source: "manual",
       });
       const elapsed = Date.now() - startTime;
       supabase.from("ai_usage_logs").insert({
