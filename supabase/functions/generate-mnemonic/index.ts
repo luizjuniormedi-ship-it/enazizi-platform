@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,6 +65,21 @@ function extractJSON(raw: string): any | null {
   const match = raw.match(/\{[\s\S]*\}/);
   if (!match) return null;
   try { return JSON.parse(match[0]); } catch { return null; }
+}
+
+// ══════════════════════════════════════════════════
+// HASH GENERATOR
+// ══════════════════════════════════════════════════
+
+function generateHash(topic: string, items: string[]): string {
+  const normalized = [topic.toLowerCase().trim(), ...items.map(i => i.toLowerCase().trim()).sort()].join("|");
+  let hash = 0;
+  for (let i = 0; i < normalized.length; i++) {
+    const chr = normalized.charCodeAt(i);
+    hash = ((hash << 5) - hash) + chr;
+    hash |= 0;
+  }
+  return `mn_${Math.abs(hash).toString(36)}`;
 }
 
 // ══════════════════════════════════════════════════
@@ -133,7 +149,7 @@ Responda APENAS em JSON válido:
 }
 
 // ══════════════════════════════════════════════════
-// STEP 4 — PEDAGOGICAL/VISUAL AUDITOR PROMPT
+// STEP 4 — PEDAGOGICAL AUDITOR PROMPT
 // ══════════════════════════════════════════════════
 
 function buildPedagogicalAuditorPrompt(topic: string, items: string[], generated: any): string {
@@ -183,34 +199,22 @@ interface AuditResult {
 function reconcileMnemonicAudit(
   medical: AuditResult, pedagogical: AuditResult
 ): { verdict: "approve" | "reject" | "regenerate"; score: number; reason: string } {
-  // RULE 1: Critical medical risk → always reject
   if (medical.critical_risk) {
     return { verdict: "reject", score: 0, reason: `Risco clínico crítico: ${medical.summary}` };
   }
-
-  // RULE 2: Both reject → reject
   if (!medical.approved && !pedagogical.approved) {
     return { verdict: "reject", score: Math.round((medical.score + pedagogical.score) / 2), reason: "Reprovado por ambos auditores." };
   }
-
   const avgScore = Math.round((medical.score + pedagogical.score) / 2);
-
-  // RULE 3: Medical reject → reject (medical always has veto)
   if (!medical.approved) {
     return { verdict: "reject", score: avgScore, reason: `Auditor médico reprovou: ${medical.summary}` };
   }
-
-  // RULE 4: Pedagogical reject with low score → regenerate
   if (!pedagogical.approved && avgScore < 60) {
     return { verdict: "regenerate", score: avgScore, reason: `Qualidade pedagógica insuficiente: ${pedagogical.summary}` };
   }
-
-  // RULE 5: Both approve but low combined score → regenerate
   if (avgScore < 65) {
     return { verdict: "regenerate", score: avgScore, reason: "Score combinado abaixo do mínimo (65)." };
   }
-
-  // RULE 6: High-severity issues from either → regenerate
   const criticalIssues = [
     ...medical.issues.filter(i => i.severity === "high" || i.severity === "critical"),
     ...pedagogical.issues.filter(i => i.severity === "high"),
@@ -218,13 +222,12 @@ function reconcileMnemonicAudit(
   if (criticalIssues.length >= 2) {
     return { verdict: "regenerate", score: avgScore, reason: `${criticalIssues.length} problemas graves detectados.` };
   }
-
-  // RULE 7: Approved
   return { verdict: "approve", score: avgScore, reason: "Aprovado por ambos auditores." };
 }
 
 // ══════════════════════════════════════════════════
-// MAIN HANDLER
+// MAIN HANDLER — UNIFIED PIPELINE
+// Supports both manual (source=manual) and adaptive (source=adaptive) flows.
 // ══════════════════════════════════════════════════
 
 serve(async (req) => {
@@ -232,8 +235,15 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { topic, items, contentType } = body as {
+    const {
+      topic, items, contentType,
+      // Adaptive/unified fields (optional for backward compat)
+      userId, hash: clientHash, source,
+      sourceContext,
+    } = body as {
       topic: string; items: string[]; contentType: string;
+      userId?: string; hash?: string; source?: "manual" | "adaptive";
+      sourceContext?: { topicId?: string; questionId?: string; attemptId?: string };
     };
 
     if (!topic || !items || !Array.isArray(items) || !contentType) {
@@ -245,7 +255,7 @@ serve(async (req) => {
     // ── STEP 1: ELIGIBILITY ──
     const elig = validateMnemonicEligibility(items, contentType, topic);
     if (!elig.ok) {
-      return new Response(JSON.stringify({ error: elig.reason, blocked: true }), {
+      return new Response(JSON.stringify({ error: elig.reason, blocked: true, rejected: true }), {
         status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -253,23 +263,49 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    // Init Supabase client for persistence
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceKey);
+
+    // ── HASH & CACHE CHECK ──
+    const hash = clientHash || generateHash(topic, items);
+
+    const { data: existing } = await supabase
+      .from("mnemonic_assets")
+      .select("id, verdict, topic, mnemonic, phrase, items_map_json, scene_description, image_url, quality_score, review_question, medical_score, pedagogical_score")
+      .eq("hash", hash)
+      .single();
+
+    if (existing) {
+      if (existing.verdict === "rejected") {
+        return new Response(JSON.stringify({ rejected: true, error: "Mnemônico previamente rejeitado para estes itens." }), {
+          status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Cache hit — return existing approved asset
+      const output = buildOutputFromAsset(existing);
+      return new Response(JSON.stringify({ ...output, assetId: existing.id, cached: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ── STEP 2: GENERATE MNEMONIC ──
     const genResult = await callAI(LOVABLE_API_KEY, buildGeneratorPrompt(topic, items));
     if (!genResult.ok) {
-      if (genResult.status === 429) return new Response(JSON.stringify({ error: "Limite de requisições atingido. Tente novamente em alguns segundos." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (genResult.status === 402) return new Response(JSON.stringify({ error: "Créditos de IA esgotados." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (genResult.status === 429) return new Response(JSON.stringify({ error: "Limite de requisições atingido. Tente novamente em alguns segundos.", rejected: true }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (genResult.status === 402) return new Response(JSON.stringify({ error: "Créditos de IA esgotados.", rejected: true }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       throw new Error("Generator AI error");
     }
 
     const generated = extractJSON(genResult.text || "");
     if (!generated || !generated.items_mapped) {
-      // FAIL-CLOSED: parser failure = reject
       return new Response(JSON.stringify({ error: "Falha ao interpretar resposta do gerador. Tente novamente.", rejected: true }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Basic structural check before auditors
     if (generated.items_mapped.length !== items.length) {
       return new Response(JSON.stringify({ error: `Gerador produziu ${generated.items_mapped.length} itens, esperado ${items.length}. Tente novamente.`, rejected: true }), {
         status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -301,7 +337,6 @@ serve(async (req) => {
       });
     }
 
-    // Normalize audit results
     const medical: AuditResult = {
       approved: !!medicalAudit.approved,
       score: Number(medicalAudit.score) || 0,
@@ -319,18 +354,32 @@ serve(async (req) => {
     // ── STEP 5: RECONCILE ──
     const verdict = reconcileMnemonicAudit(medical, pedagogical);
 
-    if (verdict.verdict === "reject") {
-      return new Response(JSON.stringify({
-        rejected: true,
-        error: verdict.reason,
-        audit: { medical_score: medical.score, pedagogical_score: pedagogical.score, combined_score: verdict.score },
-      }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+    if (verdict.verdict === "reject" || verdict.verdict === "regenerate") {
+      // Save rejected to prevent retries
+      await supabase.from("mnemonic_assets").insert({
+        hash,
+        topic,
+        content_type: contentType,
+        items_json: items,
+        mnemonic: generated.mnemonic_word || "",
+        phrase: generated.phrase || "",
+        items_map_json: generated.items_mapped || [],
+        scene_description: generated.scene_description,
+        quality_score: verdict.score,
+        medical_score: medical.score,
+        pedagogical_score: pedagogical.score,
+        verdict: "rejected",
+        source: source || "manual",
+        review_question: `Quais são os ${items.length} itens de "${topic}"?`,
+      }).then(() => {}).catch(e => console.warn("Failed to save rejected:", e));
 
-    if (verdict.verdict === "regenerate") {
+      const errorMsg = verdict.verdict === "regenerate"
+        ? `Qualidade insuficiente (${verdict.score}/100): ${verdict.reason}. Tente novamente.`
+        : verdict.reason;
+
       return new Response(JSON.stringify({
         rejected: true,
-        error: `Qualidade insuficiente (${verdict.score}/100): ${verdict.reason}. Tente novamente.`,
+        error: errorMsg,
         audit: { medical_score: medical.score, pedagogical_score: pedagogical.score, combined_score: verdict.score },
       }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -371,6 +420,39 @@ Regras visuais:
       console.warn("Image generation error:", e);
     }
 
+    const assetVerdict = imageUrl ? "approved_visual" : "approved_text_map_only";
+    const reviewQuestion = `Usando o mnemônico "${generated.mnemonic_word}", quais são os ${items.length} itens de "${topic}"?`;
+
+    // ── STEP 7: PERSIST TO mnemonic_assets ──
+    const { data: inserted, error: insertErr } = await supabase
+      .from("mnemonic_assets")
+      .insert({
+        hash,
+        topic,
+        content_type: contentType,
+        items_json: items,
+        mnemonic: generated.mnemonic_word,
+        phrase: generated.phrase,
+        items_map_json: generated.items_mapped,
+        scene_description: generated.scene_description,
+        image_url: imageUrl,
+        quality_score: verdict.score,
+        medical_score: medical.score,
+        pedagogical_score: pedagogical.score,
+        verdict: assetVerdict,
+        source: source || "manual",
+        review_question: reviewQuestion,
+      })
+      .select("id")
+      .single();
+
+    if (insertErr) {
+      console.error("Insert failed:", insertErr);
+      // Still return the result even if persistence fails (fail-open for UX, asset is approved)
+    }
+
+    const assetId = inserted?.id || null;
+
     // ── BUILD OUTPUT ──
     const warning = verdict.score < 80
       ? "⚠️ Mnemônico aprovado com ressalvas. Revise antes de usar."
@@ -391,7 +473,7 @@ Regras visuais:
       image_url: imageUrl,
       quality_score: verdict.score,
       warning,
-      review_question: `Usando o mnemônico "${generated.mnemonic_word}", quais são os ${items.length} itens de "${topic}"?`,
+      review_question: reviewQuestion,
       audit: {
         medical_score: medical.score,
         pedagogical_score: pedagogical.score,
@@ -399,6 +481,8 @@ Regras visuais:
         pedagogical_summary: pedagogical.summary,
         verdict: verdict.verdict,
       },
+      assetId,
+      cached: false,
     };
 
     return new Response(JSON.stringify(output), {
@@ -411,3 +495,35 @@ Regras visuais:
     });
   }
 });
+
+// ══════════════════════════════════════════════════
+// HELPER: Build output from cached asset
+// ══════════════════════════════════════════════════
+
+function buildOutputFromAsset(asset: any) {
+  const itemsMap = Array.isArray(asset.items_map_json) ? asset.items_map_json : [];
+  return {
+    topic: asset.topic,
+    mnemonic: asset.mnemonic,
+    phrase: asset.phrase,
+    items_map: itemsMap.map((im: any) => ({
+      letter: im.letter,
+      word: im.word,
+      original_item: im.original_item,
+      symbol: im.symbol || null,
+      symbol_reason: im.symbol_reason || null,
+    })),
+    scene_description: asset.scene_description || "",
+    image_url: asset.image_url,
+    quality_score: asset.quality_score,
+    warning: asset.quality_score < 80 ? "⚠️ Mnemônico aprovado com ressalvas." : null,
+    review_question: asset.review_question,
+    audit: {
+      medical_score: asset.medical_score,
+      pedagogical_score: asset.pedagogical_score,
+      medical_summary: "",
+      pedagogical_summary: "",
+      verdict: "approve",
+    },
+  };
+}

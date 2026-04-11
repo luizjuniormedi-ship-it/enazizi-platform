@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { generateOrReuseMnemonicForUser, type MnemonicResult } from "@/lib/mnemonicUnifiedService";
 import { toast } from "sonner";
 
 const CONTENT_TYPES = [
@@ -19,31 +20,6 @@ const CONTENT_TYPES = [
   { value: "lista", label: "Lista geral" },
   { value: "componentes", label: "Componentes / Elementos" },
 ];
-
-interface MnemonicResult {
-  topic: string;
-  mnemonic: string;
-  phrase: string;
-  items_map: Array<{
-    letter: string;
-    word: string;
-    original_item: string;
-    symbol: string | null;
-    symbol_reason: string | null;
-  }>;
-  scene_description: string;
-  image_url: string | null;
-  quality_score: number;
-  warning: string | null;
-  review_question: string;
-  audit?: {
-    medical_score: number;
-    pedagogical_score: number;
-    medical_summary: string;
-    pedagogical_summary: string;
-    verdict: string;
-  };
-}
 
 const MnemonicGenerator = () => {
   const [topic, setTopic] = useState("");
@@ -61,25 +37,31 @@ const MnemonicGenerator = () => {
   const handleGenerate = useCallback(async () => {
     if (!topic.trim()) return toast.error("Informe o tema.");
     if (items.length < 3) return toast.error("Informe pelo menos 3 itens (um por linha).");
-    if (items.length > 8) return toast.error("Máximo de 8 itens para mnemônico visual.");
+    if (items.length > 7) return toast.error("Máximo de 7 itens para mnemônico visual.");
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return toast.error("Faça login para gerar mnemônicos.");
 
     setLoading(true);
     setResult(null);
     setShowReview(false);
 
     try {
-      const { data, error } = await supabase.functions.invoke("generate-mnemonic", {
-        body: { topic: topic.trim(), items, contentType },
+      const response = await generateOrReuseMnemonicForUser({
+        userId: user.id,
+        topic: topic.trim(),
+        contentType,
+        items,
+        source: "manual",
       });
 
-      if (error) throw new Error(error.message);
-      if (data?.error) {
-        toast.error(data.error);
+      if (!response.success) {
+        toast.error(response.error || "Erro ao gerar mnemônico.");
         return;
       }
 
-      setResult(data as MnemonicResult);
-      toast.success("Mnemônico gerado com sucesso! 🧠");
+      setResult(response.result!);
+      toast.success(response.result?.cached ? "Mnemônico recuperado do cache! 🧠" : "Mnemônico gerado com sucesso! 🧠");
     } catch (e: any) {
       toast.error(e.message || "Erro ao gerar mnemônico.");
     } finally {
@@ -89,7 +71,6 @@ const MnemonicGenerator = () => {
 
   return (
     <div className="space-y-6 animate-fade-in max-w-3xl mx-auto pb-20">
-      {/* Header */}
       <div>
         <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
           <Brain className="h-6 w-6 text-primary" />
@@ -100,7 +81,6 @@ const MnemonicGenerator = () => {
         </p>
       </div>
 
-      {/* Input Form */}
       <Card>
         <CardContent className="pt-6 space-y-4">
           <div className="space-y-2">
@@ -130,9 +110,7 @@ const MnemonicGenerator = () => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Itens (um por linha, 3-7 itens)
-            </label>
+            <label className="text-sm font-medium">Itens (um por linha, 3-7 itens)</label>
             <Textarea
               placeholder={`Ex:\nFebre\nArtrite\nCardite\nCoreia\nNódulos subcutâneos`}
               value={itemsText}
@@ -155,7 +133,7 @@ const MnemonicGenerator = () => {
             {loading ? (
               <>
                 <Sparkles className="h-4 w-4 animate-spin" />
-                Gerando mnemônico...
+                Gerando mnemônico (auditoria dupla)...
               </>
             ) : (
               <>
@@ -167,168 +145,146 @@ const MnemonicGenerator = () => {
         </CardContent>
       </Card>
 
-      {/* Result */}
       {result && (
-        <div className="space-y-4 animate-fade-in">
-          {/* Warning */}
-          {result.warning && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm">
-              <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-              <span>{result.warning}</span>
-            </div>
-          )}
-
-          {/* Mnemonic Text */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4 text-primary" />
-                  {result.topic}
-                </span>
-                <Badge
-                  variant={result.quality_score >= 80 ? "default" : "destructive"}
-                  className="text-xs"
-                >
-                  Score: {result.quality_score}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center py-4">
-                <p className="text-2xl font-bold text-primary tracking-wider">
-                  {result.mnemonic}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1 italic">
-                  "{result.phrase}"
-                </p>
-              </div>
-
-              {/* Items Map */}
-              <div className="space-y-2">
-                {result.items_map.map((item, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-3 p-2 rounded-lg bg-secondary/50"
-                  >
-                    <span className="font-bold text-primary text-lg w-6 text-center shrink-0">
-                      {item.letter}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{item.original_item}</p>
-                      <p className="text-xs text-muted-foreground">
-                        → {item.word}
-                        {item.symbol && (
-                          <span className="ml-2">
-                            | 🎨 {item.symbol}
-                            {item.symbol_reason && (
-                              <span className="italic"> ({item.symbol_reason})</span>
-                            )}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Visual Image */}
-          {result.image_url && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Eye className="h-4 w-4 text-primary" />
-                  Cena Visual
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground mb-3">
-                  {result.scene_description}
-                </p>
-                <div className="rounded-lg overflow-hidden border">
-                  <img
-                    src={result.image_url}
-                    alt={`Mnemônico visual: ${result.topic}`}
-                    className="w-full h-auto"
-                    loading="lazy"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Audit Details */}
-          {result.audit && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  🔍 Auditoria Dupla
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-lg bg-secondary/50 space-y-1">
-                    <p className="text-xs font-medium">🩺 Auditor Médico</p>
-                    <p className="text-lg font-bold">{result.audit.medical_score}/100</p>
-                    <p className="text-xs text-muted-foreground">{result.audit.medical_summary}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-secondary/50 space-y-1">
-                    <p className="text-xs font-medium">📚 Auditor Pedagógico</p>
-                    <p className="text-lg font-bold">{result.audit.pedagogical_score}/100</p>
-                    <p className="text-xs text-muted-foreground">{result.audit.pedagogical_summary}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <Badge variant={result.audit.verdict === "approve" ? "default" : "destructive"}>
-                    {result.audit.verdict === "approve" ? "✅ Aprovado" : "❌ Rejeitado"}
-                  </Badge>
-                  <span className="text-muted-foreground">Score combinado: {result.quality_score}/100</span>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Reference List */}
-          <Card>
-            <CardContent className="pt-4">
-              <p className="text-xs font-medium text-muted-foreground mb-2">
-                📋 Lista textual de referência (sempre confira com a fonte original):
-              </p>
-              <ol className="text-sm space-y-1 list-decimal list-inside">
-                {items.map((it, i) => (
-                  <li key={i}>{it}</li>
-                ))}
-              </ol>
-            </CardContent>
-          </Card>
-
-          {/* Self-test */}
-          <Card>
-            <CardContent className="pt-4 space-y-3">
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                onClick={() => setShowReview(!showReview)}
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                {showReview ? "Ocultar auto-teste" : "Auto-teste: você lembra?"}
-              </Button>
-              {showReview && (
-                <div className="p-3 rounded-lg bg-secondary/50 text-sm">
-                  <p className="font-medium mb-2">❓ {result.review_question}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Tente lembrar todos os itens antes de rolar para cima e conferir!
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        <MnemonicResultDisplay result={result} items={items} showReview={showReview} setShowReview={setShowReview} />
       )}
     </div>
   );
 };
+
+// ══════════════════════════════════════════════════
+// RESULT DISPLAY (extracted component)
+// ══════════════════════════════════════════════════
+
+function MnemonicResultDisplay({
+  result, items, showReview, setShowReview,
+}: {
+  result: MnemonicResult;
+  items: string[];
+  showReview: boolean;
+  setShowReview: (v: boolean) => void;
+}) {
+  return (
+    <div className="space-y-4 animate-fade-in">
+      {result.warning && (
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm">
+          <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+          <span>{result.warning}</span>
+        </div>
+      )}
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Lightbulb className="h-4 w-4 text-primary" />
+              {result.topic}
+            </span>
+            <div className="flex items-center gap-2">
+              {result.cached && <Badge variant="outline" className="text-xs">Cache</Badge>}
+              <Badge variant={result.quality_score >= 80 ? "default" : "destructive"} className="text-xs">
+                Score: {result.quality_score}
+              </Badge>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="text-center py-4">
+            <p className="text-2xl font-bold text-primary tracking-wider">{result.mnemonic}</p>
+            <p className="text-sm text-muted-foreground mt-1 italic">"{result.phrase}"</p>
+          </div>
+
+          <div className="space-y-2">
+            {result.items_map.map((item, i) => (
+              <div key={i} className="flex items-start gap-3 p-2 rounded-lg bg-secondary/50">
+                <span className="font-bold text-primary text-lg w-6 text-center shrink-0">{item.letter}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{item.original_item}</p>
+                  <p className="text-xs text-muted-foreground">
+                    → {item.word}
+                    {item.symbol && (
+                      <span className="ml-2">| 🎨 {item.symbol}
+                        {item.symbol_reason && <span className="italic"> ({item.symbol_reason})</span>}
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {result.image_url && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Eye className="h-4 w-4 text-primary" />
+              Cena Visual
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground mb-3">{result.scene_description}</p>
+            <div className="rounded-lg overflow-hidden border">
+              <img src={result.image_url} alt={`Mnemônico visual: ${result.topic}`} className="w-full h-auto" loading="lazy" />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {result.audit && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">🔍 Auditoria Dupla</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-secondary/50 space-y-1">
+                <p className="text-xs font-medium">🩺 Auditor Médico</p>
+                <p className="text-lg font-bold">{result.audit.medical_score}/100</p>
+                <p className="text-xs text-muted-foreground">{result.audit.medical_summary}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-secondary/50 space-y-1">
+                <p className="text-xs font-medium">📚 Auditor Pedagógico</p>
+                <p className="text-lg font-bold">{result.audit.pedagogical_score}/100</p>
+                <p className="text-xs text-muted-foreground">{result.audit.pedagogical_summary}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <Badge variant={result.audit.verdict === "approve" ? "default" : "destructive"}>
+                {result.audit.verdict === "approve" ? "✅ Aprovado" : "❌ Rejeitado"}
+              </Badge>
+              <span className="text-muted-foreground">Score combinado: {result.quality_score}/100</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardContent className="pt-4">
+          <p className="text-xs font-medium text-muted-foreground mb-2">📋 Lista textual de referência:</p>
+          <ol className="text-sm space-y-1 list-decimal list-inside">
+            {items.map((it, i) => <li key={i}>{it}</li>)}
+          </ol>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-4 space-y-3">
+          <Button variant="outline" className="w-full gap-2" onClick={() => setShowReview(!showReview)}>
+            <CheckCircle2 className="h-4 w-4" />
+            {showReview ? "Ocultar auto-teste" : "Auto-teste: você lembra?"}
+          </Button>
+          {showReview && (
+            <div className="p-3 rounded-lg bg-secondary/50 text-sm">
+              <p className="font-medium mb-2">❓ {result.review_question}</p>
+              <p className="text-xs text-muted-foreground">Tente lembrar todos os itens antes de rolar para cima e conferir!</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default MnemonicGenerator;
