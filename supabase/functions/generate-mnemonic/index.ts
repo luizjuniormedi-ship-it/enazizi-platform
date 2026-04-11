@@ -887,23 +887,51 @@ serve(async (req) => {
       }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // ── STEP 6: IMAGE GENERATION (only if approved) ──
-    const symbols = (generated.items_mapped || []).map((v: any) => 
-      `- ${v.symbol}: representa "${v.original_item}" — ${v.symbol_reason || "associação visual direta"}`
-    ).join("\n");
-    
+    // ── STEP 6: IMAGE GENERATION WITH VISUAL AUDIT LOOP ──
+    const MAX_IMAGE_ATTEMPTS = 3; // 1 initial + 2 regenerations
     const sceneDesc = generated.scene_description || "cena médica didática";
     const mnemonicWord = generated.mnemonic_word || "";
     const phrase = generated.phrase || "";
-    
-    const imagePrompt = `Create a single cohesive medical mnemonic illustration for the topic "${topic}".
+
+    function buildImagePrompt(itemsMapped: any[], scene: string, issues?: any[]): string {
+      const symbols = itemsMapped.map((v: any) =>
+        `- ${v.symbol}: representa "${v.original_item}" — ${v.symbol_reason || "associação visual direta"}`
+      ).join("\n");
+
+      let issuesFix = "";
+      if (issues && issues.length > 0) {
+        const fixes: string[] = [];
+        for (const issue of issues) {
+          switch (issue.type) {
+            case "missing_item":
+              fixes.push(`- OBRIGATÓRIO: adicione explicitamente o elemento visual para "${issue.description}" — ele FALTOU na versão anterior`);
+              break;
+            case "weak_symbol":
+              fixes.push(`- MELHORE: troque o símbolo abstrato por um objeto físico concreto e reconhecível para "${issue.description}"`);
+              break;
+            case "visual_confusion":
+              fixes.push(`- SEPARE MELHOR: os elementos estão sobrepostos ou confusos — cada símbolo deve ocupar seu próprio espaço claro`);
+              break;
+            case "scene_mismatch":
+              fixes.push(`- CORRIJA A CENA: a imagem não corresponde à descrição "${scene}" — recrie seguindo fielmente o conceito`);
+              break;
+            case "generic_image":
+              fixes.push(`- ESPECIFIQUE: a imagem está genérica/decorativa — cada símbolo deve ter relação visual DIRETA com o item médico`);
+              break;
+          }
+        }
+        issuesFix = `\n\nCORREÇÕES OBRIGATÓRIAS (a versão anterior falhou nestes pontos):\n${fixes.join("\n")}`;
+      }
+
+      return `Create a single cohesive medical mnemonic illustration for the topic "${topic}".
 
 MNEMONIC: "${mnemonicWord}" — "${phrase}"
 
-SCENE CONCEPT: ${sceneDesc}
+SCENE CONCEPT: ${scene}
 
 VISUAL ELEMENTS (each must be clearly visible and identifiable):
 ${symbols}
+${issuesFix}
 
 MANDATORY VISUAL RULES:
 1. SINGLE UNIFIED SCENE — all elements interact in ONE coherent composition, not separate panels
@@ -916,35 +944,174 @@ MANDATORY VISUAL RULES:
 8. Anatomical/medical elements should be stylized but recognizable (not photorealistic)
 9. The composition should tell a visual story that links all elements together
 10. High contrast between elements and background for clarity`;
-
-    let imageUrl: string | null = null;
-    try {
-      const imgResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "google/gemini-3.1-flash-image-preview",
-          messages: [{ role: "user", content: imagePrompt }],
-          modalities: ["image", "text"],
-        }),
-      });
-      if (imgResp.ok) {
-        const imgData = await imgResp.json();
-        imageUrl = imgData.choices?.[0]?.message?.images?.[0]?.image_url?.url || null;
-      } else {
-        console.warn("Image generation failed:", imgResp.status);
-      }
-    } catch (e) {
-      console.warn("Image generation error:", e);
     }
 
-    // FIX #7: Image is MANDATORY for visual mnemonics — reject if missing
+    async function generateImage(prompt: string): Promise<string | null> {
+      try {
+        const imgResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-3.1-flash-image-preview",
+            messages: [{ role: "user", content: prompt }],
+            modalities: ["image", "text"],
+          }),
+        });
+        if (imgResp.ok) {
+          const imgData = await imgResp.json();
+          return imgData.choices?.[0]?.message?.images?.[0]?.image_url?.url || null;
+        }
+        console.warn("Image generation failed:", imgResp.status);
+        return null;
+      } catch (e) {
+        console.warn("Image generation error:", e);
+        return null;
+      }
+    }
+
+    interface VisualAuditResult {
+      approved: boolean;
+      score: number;
+      issues: Array<{ type: string; description: string }>;
+      summary: string;
+    }
+
+    async function auditImageVisually(itemsMapped: any[], scene: string, imgUrl: string): Promise<VisualAuditResult | null> {
+      const itemsList = itemsMapped.map((v: any) =>
+        `- Símbolo esperado: "${v.symbol}" para o item "${v.original_item}"`
+      ).join("\n");
+
+      const auditPrompt = `Você é um especialista em ensino visual médico e design instrucional.
+
+Avalie se esta imagem representa corretamente o mnemônico descrito abaixo.
+
+CENA ESPERADA: ${scene}
+
+ELEMENTOS VISUAIS ESPERADOS:
+${itemsList}
+
+CRITÉRIOS DE AVALIAÇÃO:
+1. COBERTURA: Todos os itens/símbolos esperados estão representados visualmente?
+2. UNICIDADE: Cada item tem um símbolo visualmente distinto e diferenciado?
+3. CORRESPONDÊNCIA: A imagem corresponde à descrição da cena?
+4. CLAREZA: Elementos separados, sem poluição visual, sem sobreposição forte?
+5. FORÇA PEDAGÓGICA: Os símbolos ajudam na memorização ou são genéricos/decorativos?
+
+Responda APENAS em JSON válido:
+{
+  "approved": true ou false,
+  "score": 0 a 100,
+  "issues": [
+    {"type": "missing_item|weak_symbol|visual_confusion|scene_mismatch|generic_image", "description": "descrição curta do problema"}
+  ],
+  "summary": "resumo curto da avaliação"
+}`;
+
+      try {
+        const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [{
+              role: "user",
+              content: [
+                { type: "text", text: auditPrompt },
+                { type: "image_url", image_url: { url: imgUrl } },
+              ],
+            }],
+            temperature: 0.2,
+          }),
+        });
+
+        if (!resp.ok) {
+          console.warn("Visual audit call failed:", resp.status);
+          return null;
+        }
+
+        const data = await resp.json();
+        const text = data.choices?.[0]?.message?.content || "";
+        const parsed = extractJSON(text);
+        if (!parsed) {
+          console.warn("Visual audit JSON parse failed");
+          return null;
+        }
+
+        return {
+          approved: !!parsed.approved,
+          score: Number(parsed.score) || 0,
+          issues: Array.isArray(parsed.issues) ? parsed.issues : [],
+          summary: parsed.summary || "",
+        };
+      } catch (e) {
+        console.warn("Visual audit error:", e);
+        return null;
+      }
+    }
+
+    // ── Visual audit loop ──
+    let imageUrl: string | null = null;
+    let visualScore: number | null = null;
+    let visualSummary = "";
+    let visualRegenCount = 0;
+    let imagePromptOriginal = "";
+    let imagePromptRefined = "";
+    let assetVerdict = "approved_visual";
+
+    const initialPrompt = buildImagePrompt(generated.items_mapped || [], sceneDesc);
+    imagePromptOriginal = initialPrompt;
+
+    for (let imgAttempt = 0; imgAttempt < MAX_IMAGE_ATTEMPTS; imgAttempt++) {
+      const currentPrompt = imgAttempt === 0 ? initialPrompt : imagePromptRefined;
+      
+      console.log(`Image attempt ${imgAttempt + 1}/${MAX_IMAGE_ATTEMPTS}`);
+      const generatedImage = await generateImage(currentPrompt);
+
+      if (!generatedImage) {
+        console.warn(`Image attempt ${imgAttempt + 1}: generation returned null`);
+        if (imgAttempt < MAX_IMAGE_ATTEMPTS - 1) {
+          visualRegenCount++;
+          continue;
+        }
+        break;
+      }
+
+      // Audit the image
+      const audit = await auditImageVisually(generated.items_mapped || [], sceneDesc, generatedImage);
+
+      if (!audit) {
+        // Audit infra failure — fail-closed: don't use this image
+        console.warn(`Image attempt ${imgAttempt + 1}: audit failed (infra) — discarding`);
+        if (imgAttempt < MAX_IMAGE_ATTEMPTS - 1) {
+          visualRegenCount++;
+          continue;
+        }
+        break;
+      }
+
+      visualScore = audit.score;
+      visualSummary = audit.summary;
+
+      console.log(`Image attempt ${imgAttempt + 1}: visual_score=${audit.score}, approved=${audit.approved}`);
+
+      if (audit.score >= 70) {
+        imageUrl = generatedImage;
+        console.log(`Image approved (score ${audit.score})`);
+        break;
+      }
+
+      // Image not good enough — prepare improved prompt for next attempt
+      if (imgAttempt < MAX_IMAGE_ATTEMPTS - 1) {
+        visualRegenCount++;
+        imagePromptRefined = buildImagePrompt(generated.items_mapped || [], sceneDesc, audit.issues);
+        console.warn(`Image regenerating: issues=${JSON.stringify(audit.issues.map(i => i.type))}`);
+      }
+    }
+
+    // Decision: if no approved image after all attempts → text-only fallback
     if (!imageUrl) {
-      console.error("Image generation failed — rejecting (visual mnemonic requires image)");
-      return new Response(JSON.stringify({
-        rejected: true,
-        error: "Falha na geração da imagem. Mnemônico visual requer imagem. Tente novamente.",
-      }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      assetVerdict = "approved_text_map_only";
+      console.warn(`Image failed after ${visualRegenCount + 1} attempts — fallback to text-only (score: ${visualScore})`);
     }
 
     const assetVerdict = "approved_visual";
