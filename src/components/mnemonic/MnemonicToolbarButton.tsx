@@ -30,6 +30,7 @@ export const MnemonicToolbarButton = () => {
   const [suggesting, setSuggesting] = useState(false);
   const [suggestion, setSuggestion] = useState<{ explanation: string } | null>(null);
   const [result, setResult] = useState<MnemonicResult | null>(null);
+  const generatingRef = useRef(false); // dedup lock
 
   const items = itemsText
     .split("\n")
@@ -71,14 +72,20 @@ export const MnemonicToolbarButton = () => {
   };
 
   const handleGenerate = async () => {
+    // Dedup: prevent concurrent generation
+    if (generatingRef.current) return;
+    generatingRef.current = true;
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast.error("Faça login para gerar mnemônicos.");
+      generatingRef.current = false;
       return;
     }
 
     setLoading(true);
     setResult(null);
+    const startTime = Date.now();
 
     const response = await generateOrReuseMnemonicForUser({
       userId: user.id,
@@ -88,7 +95,21 @@ export const MnemonicToolbarButton = () => {
       source: "manual",
     });
 
+    const elapsed = Date.now() - startTime;
     setLoading(false);
+    generatingRef.current = false;
+
+    // Telemetry (fire-and-forget)
+    supabase.from("ai_usage_logs").insert({
+      user_id: user.id,
+      function_name: "generate-mnemonic",
+      actor_type: "user",
+      success: response.success,
+      response_time_ms: elapsed,
+      cache_hit: response.result?.cached ?? false,
+      error_message: response.error || null,
+      model_tier: "mnemonic_manual",
+    }).then(() => {});
 
     if (!response.success) {
       toast.error(response.error || "Erro ao gerar mnemônico.");
