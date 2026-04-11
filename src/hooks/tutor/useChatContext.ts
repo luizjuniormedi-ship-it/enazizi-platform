@@ -75,7 +75,6 @@ export function useChatContext(userId: string | undefined, currentTopic: string)
         .from("user_mnemonic_links")
         .select("mnemonic_asset_id, topic")
         .eq("user_id", userId)
-        .eq("is_active", true)
         .eq("mnemonic_not_helping", false)
         .order("last_seen_at", { ascending: false })
         .limit(10);
