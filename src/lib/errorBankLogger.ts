@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 import { ensureFsrsCard } from "@/lib/fsrsAutoCreate";
-import { triggerAdaptiveMnemonicCheck } from "@/lib/mnemonicAdaptiveService";
 
 interface LogErrorParams {
   userId: string;
@@ -15,7 +14,7 @@ interface LogErrorParams {
 
 /**
  * Logs a wrong answer to the error_bank table.
- * If a similar error (same tema + conteudo) already exists, increments vezes_errado.
+ * Invisible mnemonic triggering now happens only inside the central adaptive orchestrator.
  */
 export async function logErrorToBank(params: LogErrorParams): Promise<void> {
   const {
@@ -30,7 +29,6 @@ export async function logErrorToBank(params: LogErrorParams): Promise<void> {
   } = params;
 
   try {
-    // Check for existing similar error
     let query = supabase
       .from("error_bank")
       .select("id, vezes_errado")
@@ -53,11 +51,6 @@ export async function logErrorToBank(params: LogErrorParams): Promise<void> {
           motivo_erro: motivoErro || undefined,
         })
         .eq("id", existing.id);
-
-      // Check if repeated errors should trigger adaptive mnemonic
-      if ((existing.vezes_errado || 1) + 1 >= 2) {
-        triggerAdaptiveMnemonicCheck(userId, tema);
-      }
     } else {
       const { data: inserted } = await supabase.from("error_bank").insert({
         user_id: userId,
@@ -71,7 +64,6 @@ export async function logErrorToBank(params: LogErrorParams): Promise<void> {
         vezes_errado: 1,
       }).select("id").single();
 
-      // Auto-create FSRS card for new errors
       if (inserted) {
         ensureFsrsCard(userId, "erro", inserted.id);
       }

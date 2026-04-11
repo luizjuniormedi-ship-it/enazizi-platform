@@ -1,7 +1,3 @@
-/**
- * Adaptive Mnemonic Service — Error-based trigger layer.
- * Delegates ALL generation to the unified service (generateOrReuseMnemonicForUser).
- */
 import { supabase } from "@/integrations/supabase/client";
 import { generateOrReuseMnemonicForUser } from "./mnemonicUnifiedService";
 
@@ -36,6 +32,8 @@ interface UserMnemonicLink {
   helped_after_error: boolean | null;
   improvement_delta: number | null;
   mnemonic_not_helping: boolean;
+  accuracy_before?: number | null;
+  accuracy_after?: number | null;
   mnemonic_assets?: MnemonicAsset;
 }
 
@@ -90,7 +88,6 @@ export async function checkMnemonicTrigger(
 
   const totalErrors = errors?.reduce((sum, e) => sum + (e.vezes_errado || 1), 0) || 0;
 
-  // Fetch recent performance for mastery/time checks
   const { data: perf } = await supabase
     .from("desempenho_questoes")
     .select("taxa_acerto, tempo_gasto")
@@ -105,7 +102,6 @@ export async function checkMnemonicTrigger(
     ? perf.reduce((s, p) => s + (p.tempo_gasto || 0), 0) / perf.length
     : 0;
 
-  // Trigger if: errors >= 2 OR mastery < 0.6 OR avg time > 180s
   const meetsThreshold =
     totalErrors >= MIN_ERRORS_TRIGGER ||
     avgAccuracy < 0.6 ||
@@ -270,18 +266,14 @@ export async function recordBaselineAccuracy(
 }
 
 // ══════════════════════════════════════════════════
-// FIRE-AND-FORGET TRIGGER (called from completeStudyAction)
-// Uses unified pipeline via generateOrReuseMnemonicForUser
+// FIRE-AND-FORGET TRIGGER (legacy compatibility)
 // ══════════════════════════════════════════════════
 
-// FIX #5: Only trigger adaptive mnemonic with canonical structured lists,
-// NEVER from free-text error_bank.conteudo
 export function triggerAdaptiveMnemonicCheck(userId: string, topic: string) {
   checkMnemonicTrigger(userId, topic).then(async (result) => {
     if (!result.shouldTrigger) return;
     console.log(`[MnemonicAdaptive] Triggering for "${topic}":`, result.reason);
 
-    // Search for a canonical structured list from curriculum_matrix
     const { data: matrixRows } = await supabase
       .from("curriculum_matrix")
       .select("gatilhos_clinicos, palavras_chave, subtema, tipo_cobranca")
@@ -295,7 +287,6 @@ export function triggerAdaptiveMnemonicCheck(userId: string, topic: string) {
     }
 
     const matrix = matrixRows[0];
-    // Use gatilhos_clinicos as the canonical item list (structured array from curriculum)
     const canonicalItems = Array.isArray(matrix.gatilhos_clinicos) ? matrix.gatilhos_clinicos : [];
 
     if (canonicalItems.length < 3 || canonicalItems.length > 7) {
@@ -303,7 +294,6 @@ export function triggerAdaptiveMnemonicCheck(userId: string, topic: string) {
       return;
     }
 
-    // Determine best contentType from curriculum
     const tipoCobranca = Array.isArray(matrix.tipo_cobranca) ? matrix.tipo_cobranca : [];
     const contentType = tipoCobranca.includes("criterios") ? "criterios"
       : tipoCobranca.includes("causas") ? "causas"

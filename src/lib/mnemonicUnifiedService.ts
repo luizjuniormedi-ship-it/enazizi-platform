@@ -54,13 +54,38 @@ async function extractFunctionErrorMessage(error: unknown): Promise<string> {
       ? (error as { context?: Response }).context
       : undefined;
 
+  const extractFromPayload = (payload: unknown): string | null => {
+    if (!payload || typeof payload !== "object") return null;
+
+    const maybePayload = payload as {
+      error?: unknown;
+      message?: unknown;
+      rejected?: unknown;
+      audit?: { medical_score?: unknown; pedagogical_score?: unknown; combined_score?: unknown };
+    };
+
+    const baseMessage = typeof maybePayload.error === "string"
+      ? maybePayload.error
+      : typeof maybePayload.message === "string"
+      ? maybePayload.message
+      : null;
+
+    if (!baseMessage) return null;
+
+    const audit = maybePayload.audit;
+    const suffix = audit && typeof audit === "object"
+      ? [audit.medical_score, audit.pedagogical_score, audit.combined_score].some((value) => typeof value === "number")
+        ? ` (auditoria: médico ${audit.medical_score ?? "-"}, pedagógico ${audit.pedagogical_score ?? "-"}, combinado ${audit.combined_score ?? "-"})`
+        : ""
+      : "";
+
+    return `${baseMessage}${suffix}`;
+  };
+
   if (response) {
     try {
       const payload = await response.clone().json();
-      if (payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string") {
-        return payload.error;
-      }
-      return JSON.stringify(payload);
+      return extractFromPayload(payload) || JSON.stringify(payload);
     } catch {
       try {
         const text = await response.text();
@@ -68,14 +93,10 @@ async function extractFunctionErrorMessage(error: unknown): Promise<string> {
 
         try {
           const payload = JSON.parse(text);
-          if (payload && typeof payload.error === "string") {
-            return payload.error;
-          }
+          return extractFromPayload(payload) || text;
         } catch {
-          // Keep raw text fallback below
+          return text;
         }
-
-        return text;
       } catch {
         // Fall through to generic message
       }
