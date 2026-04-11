@@ -140,7 +140,7 @@ const MnemonicGenerator = () => {
                   <button
                     key={s.name}
                     type="button"
-                    onClick={() => setSubtopic(s.name)}
+                    onClick={() => handleSubtopicSelect(s.name)}
                     className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                       subtopic === s.name
                         ? "bg-primary text-primary-foreground border-primary"
