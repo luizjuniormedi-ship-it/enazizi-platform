@@ -211,7 +211,31 @@ export const MnemonicToolbarButton = () => {
           </DialogTitle>
         </DialogHeader>
 
-        {!result ? (
+        {rejection ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-destructive">
+              <ShieldAlert className="h-5 w-5" />
+              <p className="font-semibold text-sm">Mnemônico reprovado pela auditoria</p>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {rejection.error.length > 250 ? rejection.error.slice(0, 250) + "…" : rejection.error}
+            </p>
+            {rejection.audit && (
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2 rounded bg-secondary/50"><p className="font-medium">🩺 Médico: {rejection.audit.medical_score}/100</p></div>
+                <div className="p-2 rounded bg-secondary/50"><p className="font-medium">📚 Pedagógico: {rejection.audit.pedagogical_score}/100</p></div>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1 gap-1.5" size="sm" onClick={() => setRejection(null)}>
+                <Pencil className="h-3.5 w-3.5" /> Ajustar itens
+              </Button>
+              <Button className="flex-1 gap-1.5" size="sm" onClick={() => { setRejection(null); handleGenerate(); }}>
+                <RotateCcw className="h-3.5 w-3.5" /> Tentar novamente
+              </Button>
+            </div>
+          </div>
+        ) : !result ? (
           <div className="space-y-4">
             {/* TEMA */}
             <div className="space-y-2">
