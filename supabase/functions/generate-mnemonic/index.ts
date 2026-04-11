@@ -482,7 +482,7 @@ serve(async (req) => {
         hash,
         topic,
         content_type: contentType,
-        items_json: items,
+        items_json: cleanedItems,
         mnemonic: generated.mnemonic_word || "",
         phrase: generated.phrase || "",
         items_map_json: generated.items_mapped || [],
@@ -492,7 +492,7 @@ serve(async (req) => {
         pedagogical_score: pedagogical.score,
         verdict: "rejected",
         source_reference: source || "manual",
-        review_question: `Quais são os ${items.length} itens de "${topic}"?`,
+        review_question: `Quais são os ${cleanedItems.length} itens de "${topic}"?`,
       }).then(() => {}).catch(e => console.warn("Failed to save rejected:", e));
 
       const errorMsg = verdict.verdict === "regenerate"
