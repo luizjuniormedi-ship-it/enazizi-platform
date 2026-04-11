@@ -10,7 +10,9 @@
 export interface PreValidationResult {
   valid: boolean;
   error?: string;
+  reason?: "tamanho" | "redundancia" | "incompleto" | "conflito" | "generico" | "duplicado";
   suggestion?: string;
+  cleanedItems?: string[];
 }
 
 // ══════════════════════════════════════════════════
@@ -93,48 +95,56 @@ export function validateMnemonicInputBeforeGeneration(params: {
 }): PreValidationResult {
   const { topic, items, contentType } = params;
 
-  // 1. SIZE
+  // 1. SIZE (pre-dedup)
   if (items.length < 3) {
-    return { valid: false, error: "Informe pelo menos 3 itens (um por linha).", suggestion: "Adicione mais itens à lista." };
+    return { valid: false, reason: "tamanho", error: "Informe pelo menos 3 itens (um por linha).", suggestion: "Adicione mais itens à lista." };
   }
   if (items.length > 7) {
-    return { valid: false, error: "Máximo de 7 itens para mnemônico visual.", suggestion: "Reduza a lista para no máximo 7 itens principais." };
+    return { valid: false, reason: "tamanho", error: "Máximo de 7 itens para mnemônico visual.", suggestion: "Reduza a lista para no máximo 7 itens principais." };
   }
 
-  // 2. REDUNDANCY
+  // 2. NORMALIZE + DEDUP
   const normalizedItems = items.map(normalize);
-  const redundancyCheck = detectRedundancy(normalizedItems);
-  if (redundancyCheck) {
-    return {
-      valid: false,
-      error: `Sua lista contém itens equivalentes: ${redundancyCheck}.`,
-      suggestion: "Remova um dos itens redundantes antes de gerar o mnemônico.",
-    };
+  const seen = new Set<string>();
+  const deduped: string[] = [];
+  const dedupedOriginal: string[] = [];
+  for (let i = 0; i < normalizedItems.length; i++) {
+    if (seen.has(normalizedItems[i])) continue;
+    seen.add(normalizedItems[i]);
+    deduped.push(normalizedItems[i]);
+    dedupedOriginal.push(items[i]);
+  }
+  if (deduped.length < items.length && deduped.length < 3) {
+    return { valid: false, reason: "duplicado", error: "Itens duplicados detectados. Após remoção, restam menos de 3.", suggestion: "Remova duplicatas e adicione itens distintos." };
   }
 
-  // 3. COMPLETENESS (only for strict clinical content types)
+  // 3. GENERIC ITEMS
+  const genericCheck = detectGenericItems(deduped);
+  if (genericCheck) {
+    return { valid: false, reason: "generico", error: genericCheck, suggestion: "Substitua por termos clínicos específicos." };
+  }
+
+  // 4. REDUNDANCY
+  const redundancyCheck = detectRedundancy(deduped);
+  if (redundancyCheck) {
+    return { valid: false, reason: "redundancia", error: `Itens redundantes detectados: ${redundancyCheck}.`, suggestion: "Remova um dos itens equivalentes." };
+  }
+
+  // 5. COMPLETENESS (strict clinical types)
   if (STRICT_CONTENT_TYPES.has(contentType)) {
-    const completenessCheck = detectIncompleteness(normalize(topic), normalizedItems);
+    const completenessCheck = detectIncompleteness(normalize(topic), deduped);
     if (completenessCheck) {
-      return {
-        valid: false,
-        error: completenessCheck.error,
-        suggestion: completenessCheck.suggestion,
-      };
+      return { valid: false, reason: "incompleto", error: completenessCheck.error, suggestion: completenessCheck.suggestion };
     }
   }
 
-  // 4. CONCEPTUAL CONFLICT — lightweight heuristic
-  const conflictCheck = detectConflict(normalizedItems);
+  // 6. CONCEPTUAL CONFLICT
+  const conflictCheck = detectConflict(deduped);
   if (conflictCheck) {
-    return {
-      valid: false,
-      error: conflictCheck,
-      suggestion: "Mantenha itens do mesmo nível conceitual (todos critérios, todos sinais, etc.).",
-    };
+    return { valid: false, reason: "conflito", error: conflictCheck, suggestion: "Mantenha itens do mesmo nível conceitual." };
   }
 
-  return { valid: true };
+  return { valid: true, cleanedItems: dedupedOriginal };
 }
 
 // ══════════════════════════════════════════════════
