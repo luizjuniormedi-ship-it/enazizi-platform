@@ -21,15 +21,15 @@ describe("optimizeMnemonicItems", () => {
     expect(result.score).toBeGreaterThanOrEqual(60);
   });
 
-  it("Teste 3: Lista ruim — remove itens genéricos", () => {
+  it("Teste 3: Lista ruim — remove itens genéricos quando possível", () => {
     const result = optimizeMnemonicItems({
       topic: "Sepse",
-      items: ["Lactato elevado", "Hipotensão", "exame", "avaliar", "investigar"],
+      items: ["Lactato elevado", "Hipotensão", "Disfunção orgânica", "exame", "avaliar"],
     });
-    // Should remove weak items but keep >= 3
+    // 3 good + 2 weak => removing weak leaves 3, which is >= 3 => removes
     expect(result.optimizedItems).not.toContain("exame");
     expect(result.optimizedItems).not.toContain("avaliar");
-    expect(result.optimizedItems.length).toBeGreaterThanOrEqual(2);
+    expect(result.optimizedItems.length).toBe(3);
     expect(result.changes.some((c) => c.includes("genérico"))).toBe(true);
   });
 
