@@ -170,7 +170,7 @@ const AdminQuestionReviewPanel = () => {
     setUpgradeLoading(false);
   };
 
-  const isActionableStatus = statusFilter === "pending" || statusFilter === "needs_upgrade" || statusFilter === "needs_review";
+  const isActionableStatus = statusFilter === "all" || statusFilter === "pending" || statusFilter === "needs_upgrade" || statusFilter === "needs_review";
 
   return (
     <div className="glass-card p-4 sm:p-5 border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-transparent">
