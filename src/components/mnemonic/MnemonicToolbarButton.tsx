@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Brain, Sparkles, Lightbulb, Loader2 } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Brain, Sparkles, Lightbulb, Loader2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,13 +24,91 @@ const CONTENT_TYPES = [
 export const MnemonicToolbarButton = () => {
   const [open, setOpen] = useState(false);
   const [topic, setTopic] = useState("");
+  const [subtopic, setSubtopic] = useState("");
+  const [subtopicSuggestions, setSubtopicSuggestions] = useState<string[]>([]);
+  const [subtopicSource, setSubtopicSource] = useState<string>("");
+  const [loadingSubtopics, setLoadingSubtopics] = useState(false);
+  const [showSubtopicDropdown, setShowSubtopicDropdown] = useState(false);
   const [contentType, setContentType] = useState("criterios");
   const [itemsText, setItemsText] = useState("");
   const [loading, setLoading] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
   const [suggestion, setSuggestion] = useState<{ explanation: string } | null>(null);
   const [result, setResult] = useState<MnemonicResult | null>(null);
-  const generatingRef = useRef(false); // dedup lock
+  const generatingRef = useRef(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Debounced subtopic fetch
+  const fetchSubtopics = useCallback(async (themeTopic: string) => {
+    if (themeTopic.trim().length < 3) {
+      setSubtopicSuggestions([]);
+      setSubtopicSource("");
+      return;
+    }
+
+    setLoadingSubtopics(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("suggest-mnemonic-subtopics", {
+        body: { topic: themeTopic.trim() },
+      });
+
+      if (!error && data?.subtopics?.length > 0) {
+        setSubtopicSuggestions(data.subtopics);
+        setSubtopicSource(data.source || "");
+        setShowSubtopicDropdown(true);
+      } else {
+        setSubtopicSuggestions([]);
+        setSubtopicSource("");
+      }
+    } catch {
+      setSubtopicSuggestions([]);
+    }
+    setLoadingSubtopics(false);
+  }, []);
+
+  const handleTopicChange = (value: string) => {
+    setTopic(value);
+    setSuggestion(null);
+    setSubtopic("");
+    setShowSubtopicDropdown(false);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (value.trim().length >= 3) {
+      debounceRef.current = setTimeout(() => fetchSubtopics(value), 400);
+    } else {
+      setSubtopicSuggestions([]);
+    }
+  };
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowSubtopicDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleSelectSubtopic = (sub: string) => {
+    setSubtopic(sub);
+    setShowSubtopicDropdown(false);
+
+    // Telemetry
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from("ai_usage_logs").insert({
+        user_id: user.id,
+        function_name: "mnemonic_subtopic_selected",
+        actor_type: "user",
+        success: true,
+        model_tier: subtopicSource,
+      }).then(() => {});
+    });
+  };
 
   const items = itemsText
     .split("\n")
@@ -47,8 +125,9 @@ export const MnemonicToolbarButton = () => {
     setSuggestion(null);
 
     try {
+      const effectiveTopic = subtopic ? `${topic.trim()} - ${subtopic}` : topic.trim();
       const { data, error } = await supabase.functions.invoke("suggest-mnemonic-items", {
-        body: { topic: topic.trim(), contentType },
+        body: { topic: effectiveTopic, contentType },
       });
 
       if (error || !data) {
@@ -72,7 +151,6 @@ export const MnemonicToolbarButton = () => {
   };
 
   const handleGenerate = async () => {
-    // Dedup: prevent concurrent generation
     if (generatingRef.current) return;
     generatingRef.current = true;
 
@@ -87,9 +165,11 @@ export const MnemonicToolbarButton = () => {
     setResult(null);
     const startTime = Date.now();
 
+    const effectiveTopic = subtopic ? `${topic.trim()} - ${subtopic}` : topic.trim();
+
     const response = await generateOrReuseMnemonicForUser({
       userId: user.id,
-      topic: topic.trim(),
+      topic: effectiveTopic,
       contentType,
       items,
       source: "manual",
@@ -99,7 +179,7 @@ export const MnemonicToolbarButton = () => {
     setLoading(false);
     generatingRef.current = false;
 
-    // Telemetry (fire-and-forget)
+    // Telemetry
     supabase.from("ai_usage_logs").insert({
       user_id: user.id,
       function_name: "generate-mnemonic",
@@ -108,7 +188,7 @@ export const MnemonicToolbarButton = () => {
       response_time_ms: elapsed,
       cache_hit: response.result?.cached ?? false,
       error_message: response.error || null,
-      model_tier: "mnemonic_manual",
+      model_tier: subtopic ? "mnemonic_manual_subtopic" : "mnemonic_manual",
     }).then(() => {});
 
     if (!response.success) {
@@ -124,8 +204,11 @@ export const MnemonicToolbarButton = () => {
     setOpen(false);
     setResult(null);
     setTopic("");
+    setSubtopic("");
+    setSubtopicSuggestions([]);
     setItemsText("");
     setSuggestion(null);
+    setShowSubtopicDropdown(false);
   };
 
   const canSuggest = !suggesting && !loading && topic.trim().length >= 2;
@@ -152,11 +235,60 @@ export const MnemonicToolbarButton = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium">Tema</label>
               <Input
-                placeholder="Ex: Critérios de Jones, Sinais de Ranson..."
+                placeholder="Ex: ECG, Sepse, Insuficiência cardíaca..."
                 value={topic}
-                onChange={(e) => { setTopic(e.target.value); setSuggestion(null); }}
+                onChange={(e) => handleTopicChange(e.target.value)}
                 disabled={loading || suggesting}
               />
+            </div>
+
+            {/* Subtopic field with suggestions */}
+            <div className="space-y-2 relative" ref={dropdownRef}>
+              <label className="text-sm font-medium flex items-center gap-2">
+                Subtema
+                {loadingSubtopics && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                {subtopicSuggestions.length > 0 && !loadingSubtopics && (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                    {subtopicSuggestions.length} sugestões
+                  </Badge>
+                )}
+              </label>
+              <div className="relative">
+                <Input
+                  placeholder={subtopicSuggestions.length > 0 ? "Clique para ver sugestões ou digite..." : "Opcional — digite ou aguarde sugestões"}
+                  value={subtopic}
+                  onChange={(e) => setSubtopic(e.target.value)}
+                  onFocus={() => { if (subtopicSuggestions.length > 0) setShowSubtopicDropdown(true); }}
+                  disabled={loading || suggesting}
+                />
+                {subtopicSuggestions.length > 0 && (
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowSubtopicDropdown(!showSubtopicDropdown)}
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {showSubtopicDropdown && subtopicSuggestions.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                  {subtopicSuggestions.map((sub, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                      onClick={() => handleSelectSubtopic(sub)}
+                    >
+                      {sub}
+                    </button>
+                  ))}
+                  <div className="px-3 py-1.5 text-[10px] text-muted-foreground border-t">
+                    Fonte: {subtopicSource === "curriculum" || subtopicSource === "matrix" ? "currículo estruturado" : "IA"}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

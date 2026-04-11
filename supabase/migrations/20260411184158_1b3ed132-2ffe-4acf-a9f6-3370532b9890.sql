@@ -1,0 +1,1 @@
+ALTER TABLE public.mnemonic_assets ADD COLUMN IF NOT EXISTS subtopic text;
