@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Brain, Sparkles, Lightbulb, Loader2, ChevronDown, Flame, Zap, Pin } from "lucide-react";
+import { Brain, Sparkles, Lightbulb, Loader2, ChevronDown, Flame, Zap, Pin, ShieldAlert, RotateCcw, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { generateOrReuseMnemonicForUser, type MnemonicResult } from "@/lib/mnemonicUnifiedService";
+import { generateOrReuseMnemonicForUser, type MnemonicResult, type MnemonicResponse } from "@/lib/mnemonicUnifiedService";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -137,34 +137,51 @@ export const MnemonicToolbarButton = () => {
     setSuggesting(false);
   };
 
+  const [rejection, setRejection] = useState<{ error: string; audit?: { medical_score: number; pedagogical_score: number } } | null>(null);
+
   const handleGenerate = async () => {
     if (generatingRef.current) return;
     generatingRef.current = true;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { toast.error("Faça login para gerar mnemônicos."); generatingRef.current = false; return; }
-    setLoading(true);
-    setResult(null);
-    const startTime = Date.now();
-    const effectiveTopic = subtopic ? `${topic.trim()} - ${subtopic}` : topic.trim();
-    const response = await generateOrReuseMnemonicForUser({
-      userId: user.id, topic: effectiveTopic, contentType, items, source: "manual",
-    });
-    const elapsed = Date.now() - startTime;
-    setLoading(false);
-    generatingRef.current = false;
-    supabase.from("ai_usage_logs").insert({
-      user_id: user.id, function_name: "generate-mnemonic", actor_type: "user",
-      success: response.success, response_time_ms: elapsed,
-      cache_hit: response.result?.cached ?? false, error_message: response.error || null,
-      model_tier: subtopic ? "mnemonic_manual_subtopic" : "mnemonic_manual",
-    }).then(() => {});
-    if (!response.success) { toast.error(response.error || "Erro ao gerar mnemônico."); return; }
-    setResult(response.result!);
-    toast.success(response.result?.cached ? "Mnemônico recuperado do cache! 🧠" : "Mnemônico gerado com sucesso! 🧠");
+    setRejection(null);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Faça login para gerar mnemônicos."); return; }
+      setLoading(true);
+      setResult(null);
+      const startTime = Date.now();
+      const effectiveTopic = subtopic ? `${topic.trim()} - ${subtopic}` : topic.trim();
+      const response = await generateOrReuseMnemonicForUser({
+        userId: user.id, topic: effectiveTopic, contentType, items, source: "manual",
+      });
+      const elapsed = Date.now() - startTime;
+      supabase.from("ai_usage_logs").insert({
+        user_id: user.id, function_name: "generate-mnemonic", actor_type: "user",
+        success: response.success, response_time_ms: elapsed,
+        cache_hit: response.result?.cached ?? false, error_message: response.error || null,
+        model_tier: response.rejected ? "mnemonic_rejected" : subtopic ? "mnemonic_manual_subtopic" : "mnemonic_manual",
+      }).then(() => {});
+      if (!response.success) {
+        if (response.rejected) {
+          setRejection({ error: response.error || "Rejeitado pelos auditores.", audit: response.audit });
+        } else {
+          toast.error(response.error || "Erro ao gerar mnemônico.");
+        }
+        return;
+      }
+      if (response.result) {
+        setResult(response.result);
+        toast.success(response.result.cached ? "Mnemônico recuperado do cache! 🧠" : "Mnemônico gerado com sucesso! 🧠");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao gerar mnemônico.");
+    } finally {
+      setLoading(false);
+      generatingRef.current = false;
+    }
   };
 
   const handleClose = () => {
-    setOpen(false); setResult(null); setTopic(""); setSubtopic("");
+    setOpen(false); setResult(null); setRejection(null); setTopic(""); setSubtopic("");
     setSubtopicSuggestions([]); setItemsText(""); setSuggestion(null); setShowSubtopicDropdown(false);
   };
 
@@ -194,7 +211,31 @@ export const MnemonicToolbarButton = () => {
           </DialogTitle>
         </DialogHeader>
 
-        {!result ? (
+        {rejection ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-destructive">
+              <ShieldAlert className="h-5 w-5" />
+              <p className="font-semibold text-sm">Mnemônico reprovado pela auditoria</p>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {rejection.error.length > 250 ? rejection.error.slice(0, 250) + "…" : rejection.error}
+            </p>
+            {rejection.audit && (
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2 rounded bg-secondary/50"><p className="font-medium">🩺 Médico: {rejection.audit.medical_score}/100</p></div>
+                <div className="p-2 rounded bg-secondary/50"><p className="font-medium">📚 Pedagógico: {rejection.audit.pedagogical_score}/100</p></div>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1 gap-1.5" size="sm" onClick={() => setRejection(null)}>
+                <Pencil className="h-3.5 w-3.5" /> Ajustar itens
+              </Button>
+              <Button className="flex-1 gap-1.5" size="sm" onClick={() => { setRejection(null); handleGenerate(); }}>
+                <RotateCcw className="h-3.5 w-3.5" /> Tentar novamente
+              </Button>
+            </div>
+          </div>
+        ) : !result ? (
           <div className="space-y-4">
             {/* TEMA */}
             <div className="space-y-2">

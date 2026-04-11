@@ -110,14 +110,51 @@ async function extractFunctionErrorMessage(error: unknown): Promise<string> {
   return "Erro ao gerar mnemônico.";
 }
 
+async function extractRejectionPayload(
+  error: unknown
+): Promise<{ rejected: true; error: string; audit?: { medical_score: number; pedagogical_score: number; combined_score?: number } } | null> {
+  const response =
+    typeof error === "object" && error !== null && "context" in error
+      ? (error as { context?: Response }).context
+      : undefined;
+
+  if (!response) return null;
+
+  try {
+    const payload = await response.clone().json();
+    if (payload && typeof payload === "object" && payload.rejected === true) {
+      return {
+        rejected: true,
+        error: typeof payload.error === "string" ? payload.error : "Rejeitado pelos auditores.",
+        audit: payload.audit && typeof payload.audit === "object" ? payload.audit : undefined,
+      };
+    }
+  } catch {
+    // not JSON or not rejection
+  }
+  return null;
+}
+
 // ══════════════════════════════════════════════════
 // CENTRAL FUNCTION — generateOrReuseMnemonicForUser
 // Used by: manual button, adaptive trigger, MnemonicGenerator page
 // ══════════════════════════════════════════════════
 
+export interface MnemonicResponse {
+  success: boolean;
+  result?: MnemonicResult;
+  error?: string;
+  rejected?: boolean;
+  audit?: {
+    medical_score: number;
+    pedagogical_score: number;
+    combined_score?: number;
+  };
+}
+
 export async function generateOrReuseMnemonicForUser(
   params: GenerateMnemonicParams
-): Promise<{ success: boolean; result?: MnemonicResult; error?: string }> {
+): Promise<MnemonicResponse> {
   const { userId, topic, contentType, items, source, sourceContext } = params;
 
   if (items.length < 3 || items.length > 7) {
@@ -140,20 +177,37 @@ export async function generateOrReuseMnemonicForUser(
     invokeError = response.error;
   } catch (error) {
     const message = await extractFunctionErrorMessage(error);
-    console.error("[MnemonicUnified] Edge function threw:", message);
+    console.warn("[MnemonicUnified] Edge function threw:", message);
     return { success: false, error: message };
   }
 
+  // When the edge function returns 422, supabase-js puts the body in error.context
+  // We need to extract the rejection payload from it
   if (invokeError) {
+    const rejectionPayload = await extractRejectionPayload(invokeError);
+    if (rejectionPayload) {
+      console.warn("[MnemonicUnified] Mnemonic rejected by audit:", rejectionPayload.error);
+      return {
+        success: false,
+        rejected: true,
+        error: rejectionPayload.error || "Rejeitado pelos auditores.",
+        audit: rejectionPayload.audit,
+      };
+    }
     const message = await extractFunctionErrorMessage(invokeError);
-    console.error("[MnemonicUnified] Edge function error:", message);
+    console.warn("[MnemonicUnified] Edge function error:", message);
     return { success: false, error: message };
   }
 
-  const payload = data as (Partial<MnemonicResult> & { rejected?: boolean; error?: string }) | null;
+  const payload = data as (Partial<MnemonicResult> & { rejected?: boolean; error?: string; audit?: any }) | null;
 
   if (payload?.rejected) {
-    return { success: false, error: payload.error || "Rejeitado pelos auditores." };
+    return {
+      success: false,
+      rejected: true,
+      error: payload.error || "Rejeitado pelos auditores.",
+      audit: payload.audit,
+    };
   }
 
   if (!payload) {
