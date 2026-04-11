@@ -3381,6 +3381,7 @@ export type Database = {
           hash: string
           id: string
           image_url: string | null
+          impact_score: number | null
           items_json: Json
           items_map_json: Json
           medical_score: number
@@ -3401,6 +3402,7 @@ export type Database = {
           hash: string
           id?: string
           image_url?: string | null
+          impact_score?: number | null
           items_json: Json
           items_map_json: Json
           medical_score?: number
@@ -3421,6 +3423,7 @@ export type Database = {
           hash?: string
           id?: string
           image_url?: string | null
+          impact_score?: number | null
           items_json?: Json
           items_map_json?: Json
           medical_score?: number
