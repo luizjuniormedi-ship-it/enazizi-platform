@@ -332,21 +332,33 @@ async function generateHash(topic: string, items: string[], contentType: string)
 // STEP 2 — GENERATOR PROMPT
 // ══════════════════════════════════════════════════
 
-function buildGeneratorPrompt(topic: string, items: string[]): string {
-  return `Você é um especialista em mnemônicos médicos para residência.
+function buildGeneratorPrompt(topic: string, items: string[], attempt = 1, previousFeedback?: string): string {
+  const retryBlock = attempt > 1 && previousFeedback
+    ? `\n⚠️ TENTATIVA ${attempt} — O mnemônico anterior foi REJEITADO pelo auditor médico:\n"${previousFeedback}"\nVocê DEVE corrigir os problemas apontados. Gere um mnemônico DIFERENTE.\n`
+    : "";
 
+  return `Você é um especialista em mnemônicos médicos para residência.
+${retryBlock}
 TAREFA: Crie um mnemônico + mapeamento visual para memorizar esta lista sobre "${topic}":
 ${items.map((it, i) => `${i + 1}. ${it}`).join("\n")}
 
-REGRAS OBRIGATÓRIAS:
-- Use a PRIMEIRA LETRA de cada item para formar uma palavra ou frase
+REGRAS OBRIGATÓRIAS PARA A LETRA:
+- Para cada item, use a PRIMEIRA LETRA do TERMO PRINCIPAL (substantivo ou sigla médica)
+- Exemplos corretos: "BAV total" → B, "Mobitz I" → M, "Infradesnivelamento ST" → I, "Bloqueio ramo esquerdo" → B, "Supradesnivelamento ST" → S, "STEMI" → S
+- NUNCA use uma letra que represente um conceito DIFERENTE do item original
+- NUNCA associe uma letra a uma palavra que tenha significado clínico diferente do item (ex: NÃO use "Elevação" para "Bloqueio ramo esquerdo")
+- Se não conseguir formar uma boa palavra com as primeiras letras, use uma FRASE onde cada palavra começa com a letra correta
+
+REGRAS OBRIGATÓRIAS PARA SÍMBOLOS:
+- Cada item deve ter UM símbolo visual ÚNICO, concreto e óbvio
+- O símbolo deve representar VISUALMENTE o conceito médico, não a letra
+- NÃO repetir símbolos
+- NÃO usar símbolos que possam induzir confusão clínica
+
+FORMATO:
 - A frase deve ter NO MÁXIMO 12 palavras
 - Deve ser fácil de falar e memorável
 - NÃO invente itens que não estão na lista
-- NÃO force letras incorretas
-- Cada item deve ter UM símbolo visual ÚNICO, concreto e óbvio
-- NÃO repetir símbolos
-- Cada símbolo deve ter razão lógica de associação
 
 Responda APENAS em JSON válido:
 {
@@ -552,68 +564,98 @@ serve(async (req) => {
       });
     }
 
-    // ── STEP 2: GENERATE MNEMONIC ──
-    const genResult = await callAI(LOVABLE_API_KEY, buildGeneratorPrompt(topic, cleanedItems));
-    if (!genResult.ok) {
-      if (genResult.status === 429) return new Response(JSON.stringify({ error: "Limite de requisições atingido. Tente novamente em alguns segundos.", rejected: true }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (genResult.status === 402) return new Response(JSON.stringify({ error: "Créditos de IA esgotados.", rejected: true }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      throw new Error("Generator AI error");
+    // ── STEPS 2-5: GENERATE + AUDIT WITH RETRY ──
+    const MAX_ATTEMPTS = 3;
+    let lastVerdict: any = null;
+    let lastGenerated: any = null;
+    let lastMedical: AuditResult | null = null;
+    let lastPedagogical: AuditResult | null = null;
+    let previousFeedback: string | undefined;
+
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      // ── STEP 2: GENERATE MNEMONIC ──
+      const genResult = await callAI(LOVABLE_API_KEY, buildGeneratorPrompt(topic, cleanedItems, attempt, previousFeedback));
+      if (!genResult.ok) {
+        if (genResult.status === 429) return new Response(JSON.stringify({ error: "Limite de requisições atingido. Tente novamente em alguns segundos.", rejected: true }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (genResult.status === 402) return new Response(JSON.stringify({ error: "Créditos de IA esgotados.", rejected: true }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        throw new Error("Generator AI error");
+      }
+
+      const generated = extractJSON(genResult.text || "");
+      if (!generated || !generated.items_mapped) {
+        console.warn(`Attempt ${attempt}: Failed to parse generator output`);
+        previousFeedback = "Resposta do gerador inválida. Gere um JSON válido.";
+        continue;
+      }
+
+      if (generated.items_mapped.length !== cleanedItems.length) {
+        console.warn(`Attempt ${attempt}: Item count mismatch (${generated.items_mapped.length} vs ${cleanedItems.length})`);
+        previousFeedback = `Número de itens incorreto: gerou ${generated.items_mapped.length}, esperado ${cleanedItems.length}.`;
+        continue;
+      }
+
+      // ── STEPS 3+4: DUAL AUDIT (parallel) ──
+      const [medicalResult, pedagogicalResult] = await Promise.all([
+        callAI(LOVABLE_API_KEY, buildMedicalAuditorPrompt(topic, cleanedItems, generated)),
+        callAI(LOVABLE_API_KEY, buildPedagogicalAuditorPrompt(topic, cleanedItems, generated)),
+      ]);
+
+      if (!medicalResult.ok || !pedagogicalResult.ok) {
+        console.error(`Attempt ${attempt}: Auditor call failed`);
+        break; // Don't retry on infra failure
+      }
+
+      const medicalAudit = extractJSON(medicalResult.text || "");
+      const pedagogicalAudit = extractJSON(pedagogicalResult.text || "");
+
+      if (!medicalAudit || !pedagogicalAudit) {
+        console.error(`Attempt ${attempt}: Audit JSON parse failed`);
+        break;
+      }
+
+      const medical: AuditResult = {
+        approved: !!medicalAudit.approved,
+        score: Number(medicalAudit.score) || 0,
+        critical_risk: !!medicalAudit.critical_risk,
+        issues: Array.isArray(medicalAudit.issues) ? medicalAudit.issues : [],
+        summary: medicalAudit.summary || "",
+      };
+      const pedagogical: AuditResult = {
+        approved: !!pedagogicalAudit.approved,
+        score: Number(pedagogicalAudit.score) || 0,
+        issues: Array.isArray(pedagogicalAudit.issues) ? pedagogicalAudit.issues : [],
+        summary: pedagogicalAudit.summary || "",
+      };
+
+      const verdict = reconcileMnemonicAudit(medical, pedagogical);
+      lastVerdict = verdict;
+      lastGenerated = generated;
+      lastMedical = medical;
+      lastPedagogical = pedagogical;
+
+      if (verdict.verdict === "approve") {
+        console.log(`Attempt ${attempt}: Approved with score ${verdict.score}`);
+        break; // Success!
+      }
+
+      // Feed rejection reason back for next attempt
+      previousFeedback = verdict.reason;
+      console.warn(`Attempt ${attempt}: ${verdict.verdict} — ${verdict.reason}`);
+
+      if (attempt === MAX_ATTEMPTS) break;
     }
 
-    const generated = extractJSON(genResult.text || "");
-    if (!generated || !generated.items_mapped) {
-      return new Response(JSON.stringify({ error: "Falha ao interpretar resposta do gerador. Tente novamente.", rejected: true }), {
+    // If no verdict or all attempts failed
+    if (!lastVerdict || !lastGenerated || !lastMedical || !lastPedagogical) {
+      return new Response(JSON.stringify({ error: "Falha na geração após múltiplas tentativas. Tente novamente.", rejected: true }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (generated.items_mapped.length !== cleanedItems.length) {
-      return new Response(JSON.stringify({ error: `Gerador produziu ${generated.items_mapped.length} itens, esperado ${cleanedItems.length}. Tente novamente.`, rejected: true }), {
-        status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // ── STEPS 3+4: DUAL AUDIT (parallel) ──
-    const [medicalResult, pedagogicalResult] = await Promise.all([
-      callAI(LOVABLE_API_KEY, buildMedicalAuditorPrompt(topic, cleanedItems, generated)),
-      callAI(LOVABLE_API_KEY, buildPedagogicalAuditorPrompt(topic, cleanedItems, generated)),
-    ]);
-
-    // FAIL-CLOSED: if either auditor call fails, reject
-    if (!medicalResult.ok || !pedagogicalResult.ok) {
-      console.error("Auditor call failed", { medical: medicalResult.status, pedagogical: pedagogicalResult.status });
-      return new Response(JSON.stringify({ error: "Falha na auditoria. Tente novamente.", rejected: true }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const medicalAudit = extractJSON(medicalResult.text || "");
-    const pedagogicalAudit = extractJSON(pedagogicalResult.text || "");
-
-    // FAIL-CLOSED: if either audit JSON parse fails, reject
-    if (!medicalAudit || !pedagogicalAudit) {
-      console.error("Audit JSON parse failed");
-      return new Response(JSON.stringify({ error: "Falha ao processar auditorias. Tente novamente.", rejected: true }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const medical: AuditResult = {
-      approved: !!medicalAudit.approved,
-      score: Number(medicalAudit.score) || 0,
-      critical_risk: !!medicalAudit.critical_risk,
-      issues: Array.isArray(medicalAudit.issues) ? medicalAudit.issues : [],
-      summary: medicalAudit.summary || "",
-    };
-    const pedagogical: AuditResult = {
-      approved: !!pedagogicalAudit.approved,
-      score: Number(pedagogicalAudit.score) || 0,
-      issues: Array.isArray(pedagogicalAudit.issues) ? pedagogicalAudit.issues : [],
-      summary: pedagogicalAudit.summary || "",
-    };
-
-    // ── STEP 5: RECONCILE ──
-    const verdict = reconcileMnemonicAudit(medical, pedagogical);
+    const generated = lastGenerated;
+    const medical = lastMedical;
+    const pedagogical = lastPedagogical;
+    const verdict = lastVerdict;
 
     if (verdict.verdict === "reject" || verdict.verdict === "regenerate") {
       // Save rejected to prevent retries
@@ -635,7 +677,7 @@ serve(async (req) => {
       }).then(() => {}).catch(e => console.warn("Failed to save rejected:", e));
 
       const errorMsg = verdict.verdict === "regenerate"
-        ? `Qualidade insuficiente (${verdict.score}/100): ${verdict.reason}. Tente novamente.`
+        ? `Qualidade insuficiente após ${MAX_ATTEMPTS} tentativas (${verdict.score}/100): ${verdict.reason}`
         : verdict.reason;
 
       return new Response(JSON.stringify({
