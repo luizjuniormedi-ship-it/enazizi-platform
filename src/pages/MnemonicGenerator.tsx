@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Brain, Sparkles, AlertTriangle, CheckCircle2, Lightbulb, Eye, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,10 +28,40 @@ const MnemonicGenerator = () => {
   const [contentType, setContentType] = useState("criterios");
   const [itemsText, setItemsText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingItems, setLoadingItems] = useState(false);
   const [result, setResult] = useState<MnemonicResult | null>(null);
   const [showReview, setShowReview] = useState(false);
 
   const { suggestions, loading: loadingSuggestions } = useSubtopicSuggestions(topic);
+
+  const fetchItemsForSubtopic = useCallback(async (selectedSubtopic: string) => {
+    if (!topic.trim() || !selectedSubtopic.trim()) return;
+    setLoadingItems(true);
+    try {
+      const effectiveTopic = `${topic.trim()} - ${selectedSubtopic.trim()}`;
+      const { data, error } = await supabase.functions.invoke("suggest-mnemonic-items", {
+        body: { topic: effectiveTopic, contentType },
+      });
+      if (!error && Array.isArray(data?.items) && data.items.length > 0) {
+        const itemNames = data.items.map((it: any) => typeof it === "string" ? it : it.name || it.item || "").filter(Boolean);
+        if (itemNames.length >= 3) {
+          setItemsText(itemNames.join("\n"));
+          toast.success(`${itemNames.length} itens sugeridos automaticamente`);
+        }
+      }
+    } catch {
+      // silent - user can fill manually
+    } finally {
+      setLoadingItems(false);
+    }
+  }, [topic, contentType]);
+
+  const handleSubtopicSelect = useCallback((name: string) => {
+    setSubtopic(name);
+    if (!itemsText.trim()) {
+      fetchItemsForSubtopic(name);
+    }
+  }, [fetchItemsForSubtopic, itemsText]);
 
   const items = itemsText
     .split("\n")
@@ -110,7 +140,7 @@ const MnemonicGenerator = () => {
                   <button
                     key={s.name}
                     type="button"
-                    onClick={() => setSubtopic(s.name)}
+                    onClick={() => handleSubtopicSelect(s.name)}
                     className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                       subtopic === s.name
                         ? "bg-primary text-primary-foreground border-primary"
@@ -154,12 +184,17 @@ const MnemonicGenerator = () => {
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Itens (um por linha, 3-7 itens)</label>
+            {loadingItems && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" /> Sugerindo itens...
+              </div>
+            )}
             <Textarea
               placeholder={`Ex:\nFebre\nArtrite\nCardite\nCoreia\nNódulos subcutâneos`}
               value={itemsText}
               onChange={(e) => setItemsText(e.target.value)}
               rows={6}
-              disabled={loading}
+              disabled={loading || loadingItems}
             />
             <p className="text-xs text-muted-foreground">
               {items.length} item(ns) detectado(s)
