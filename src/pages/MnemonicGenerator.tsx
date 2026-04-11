@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateOrReuseMnemonicForUser, type MnemonicResult, type MnemonicResponse } from "@/lib/mnemonicUnifiedService";
 import { validateMnemonicInputBeforeGeneration } from "@/lib/mnemonicPreValidation";
 import { autoCompleteMnemonicItems } from "@/lib/mnemonicAutoComplete";
+import { optimizeMnemonicItems } from "@/lib/mnemonicOptimizer";
 import { useSubtopicSuggestions } from "@/hooks/useSubtopicSuggestions";
 import { toast } from "sonner";
 

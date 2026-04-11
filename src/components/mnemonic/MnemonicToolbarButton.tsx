@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { generateOrReuseMnemonicForUser, type MnemonicResult, type MnemonicResponse } from "@/lib/mnemonicUnifiedService";
 import { validateMnemonicInputBeforeGeneration } from "@/lib/mnemonicPreValidation";
 import { autoCompleteMnemonicItems } from "@/lib/mnemonicAutoComplete";
+import { optimizeMnemonicItems } from "@/lib/mnemonicOptimizer";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
