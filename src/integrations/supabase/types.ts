@@ -3392,6 +3392,7 @@ export type Database = {
           review_question: string | null
           scene_description: string | null
           source_reference: string | null
+          subtopic: string | null
           topic: string
           updated_at: string
           verdict: string
@@ -3413,6 +3414,7 @@ export type Database = {
           review_question?: string | null
           scene_description?: string | null
           source_reference?: string | null
+          subtopic?: string | null
           topic: string
           updated_at?: string
           verdict?: string
@@ -3434,6 +3436,7 @@ export type Database = {
           review_question?: string | null
           scene_description?: string | null
           source_reference?: string | null
+          subtopic?: string | null
           topic?: string
           updated_at?: string
           verdict?: string
