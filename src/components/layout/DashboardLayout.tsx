@@ -289,6 +289,13 @@ const DashboardLayout = () => {
         )}>
           <Outlet />
         </div>
+        {invisibleMnemonic && (
+          <InvisibleMnemonicOverlay
+            mnemonic={invisibleMnemonic}
+            onDismiss={dismissMnemonic}
+            onShown={markShown}
+          />
+        )}
       </main>
       {!isMissionLocked && <BottomTabBar />}
     </div>
