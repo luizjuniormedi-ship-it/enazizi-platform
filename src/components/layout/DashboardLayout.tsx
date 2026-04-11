@@ -226,6 +226,11 @@ const DashboardLayout = () => {
   useLandscapeTablet();
   const { theme, toggle: toggleTheme } = useTheme();
   const location = useLocation();
+  const studyCtx = useStudyContext();
+  const { mnemonic: invisibleMnemonic, dismiss: dismissMnemonic, markShown } = useInvisibleMnemonic({
+    currentTopic: studyCtx?.topic,
+    enabled: true,
+  });
 
   // Hide all navigation chrome when mission is actively executing
   const isMissionLocked = (() => {
