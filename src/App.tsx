@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AdminRoute from "@/components/auth/AdminRoute";
 import ProfessorRoute from "@/components/auth/ProfessorRoute";
 import InstitutionalRoute from "@/components/auth/InstitutionalRoute";
+import { ModuleGuard } from "@/components/guards/ModuleGuard";
 import { Suspense } from "react";
 import { Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
@@ -151,7 +152,7 @@ const App = () => (
                 <Route path="image-quiz" element={<MedicalImageQuiz />} />
                 <Route path="rankings" element={<Rankings />} />
                 <Route path="prova-pratica" element={<PracticalExam />} />
-                <Route path="mnemonico" element={<MnemonicGenerator />} />
+                <Route path="mnemonico" element={<ModuleGuard moduleKey="mnemonico"><MnemonicGenerator /></ModuleGuard>} />
               </Route>
               <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />
