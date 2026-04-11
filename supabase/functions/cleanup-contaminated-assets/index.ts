@@ -70,7 +70,7 @@ serve(async (req) => {
           .from("medical_image_assets")
           .update({
             is_active: false,
-            review_status: "rejected",
+            review_status: "blocked_clinical",
             curation_notes: `Cleanup: ${blockReason}`,
           })
           .eq("id", asset.id)
