@@ -20,26 +20,27 @@ export interface PreValidationResult {
 // ══════════════════════════════════════════════════
 
 const EQUIVALENCE_PAIRS: Array<[string[], string]> = [
-  [["pr prolongado", "bav 1 grau", "bav de 1o grau", "bloqueio av de primeiro grau", "bav primeiro grau", "bloqueio av 1o grau"], "BAV 1º grau / PR prolongado"],
+  [["pr prolongado", "bav 1 grau", "bav de 1 grau", "bav de 1o grau", "bloqueio av de primeiro grau", "bav primeiro grau", "bloqueio av 1o grau"], "BAV 1º grau / PR prolongado"],
   [["hiperglicemia", "glicose elevada", "glicemia elevada"], "hiperglicemia / glicose elevada"],
   [["hipoglicemia", "glicose baixa", "glicemia baixa"], "hipoglicemia / glicose baixa"],
   [["stemi", "iam com supra", "infarto com supra", "iam com supra de st", "infarto com supradesnivelamento de st"], "STEMI / IAM com supra"],
   [["nstemi", "iam sem supra", "infarto sem supra"], "NSTEMI / IAM sem supra"],
-  [["fibrilação atrial", "fa"], "FA / fibrilação atrial"],
-  [["fibrilação ventricular", "fv"], "FV / fibrilação ventricular"],
+  [["fibrilacao atrial", "fa"], "FA / fibrilação atrial"],
+  [["fibrilacao ventricular", "fv"], "FV / fibrilação ventricular"],
   [["taquicardia ventricular", "tv"], "TV / taquicardia ventricular"],
   [["taquicardia supraventricular", "tsv", "tsvp"], "TSV / taquicardia supraventricular"],
   [["flutter atrial", "fla"], "Flutter atrial"],
-  [["edema agudo de pulmão", "eap", "edema pulmonar agudo"], "EAP / edema agudo de pulmão"],
-  [["insuficiência cardíaca congestiva", "insuficiencia cardiaca congestiva", "icc"], "ICC"],
+  [["edema agudo de pulmao", "eap", "edema pulmonar agudo"], "EAP / edema agudo de pulmão"],
+  [["insuficiencia cardiaca congestiva", "icc"], "ICC"],
   [["tromboembolismo pulmonar", "tep", "embolia pulmonar"], "TEP / tromboembolismo pulmonar"],
   [["acidente vascular cerebral", "avc", "ave", "acidente vascular encefalico"], "AVC"],
-  [["doença pulmonar obstrutiva crônica", "doenca pulmonar obstrutiva cronica", "dpoc"], "DPOC"],
-  [["síndrome coronariana aguda", "sindrome coronariana aguda", "sca"], "SCA"],
-  [["pressão arterial elevada", "pa elevada", "pressão alta", "has", "hipertensão", "hipertensao"], "HAS / hipertensão"],
+  [["doenca pulmonar obstrutiva cronica", "dpoc"], "DPOC"],
+  [["sindrome coronariana aguda", "sca"], "SCA"],
+  [["pressao arterial elevada", "pa elevada", "pressao alta", "has", "hipertensao"], "HAS / hipertensão"],
   [["wenckebach", "mobitz i", "bav mobitz i", "bloqueio av mobitz i"], "Mobitz I / Wenckebach"],
   [["bavt", "bav total", "bav 3 grau", "bav de 3o grau", "bav terceiro grau", "bloqueio av total"], "BAV total"],
   [["bloqueio av mobitz ii", "bav mobitz ii", "mobitz ii"], "Mobitz II"],
+  [["hipertensao", "pressao alta"], "hipertensão / pressão alta"],
 ];
 
 function normalize(value: string): string {
@@ -64,8 +65,8 @@ interface TopicMinimum {
 
 const CLINICAL_MINIMUMS: TopicMinimum[] = [
   {
-    topicPatterns: [/\biam\b.*\b(ecg|eletro|supra)\b/, /\becg\b.*\biam\b/, /\biam com supra\b/],
-    requiredAnchors: ["supra|supradesnivelamento", "onda q|q patologic", "bloqueio.*ramo.*esquerdo|bre"],
+    topicPatterns: [/\biam\b.*\b(ecg|eletro|supra)\b/, /\becg\b.*\biam\b/, /\biam com supra\b/, /\biam\b.*\bno\b.*\becg\b/],
+    requiredAnchors: ["supra|supradesnivelamento", "onda q|q patologic", "inversao.*t|inversao de t|onda t invertida"],
     label: "IAM / ECG",
   },
   {
@@ -78,10 +79,20 @@ const CLINICAL_MINIMUMS: TopicMinimum[] = [
     requiredAnchors: ["cardite", "artrite|poliartrite", "coreia", "eritema|nodulos"],
     label: "Critérios de Jones",
   },
+  {
+    topicPatterns: [/\bsepse\b/, /\bsepsis\b/],
+    requiredAnchors: ["lactato", "hipotensao|choque", "disfuncao.*organ|disfuncao organica"],
+    label: "Sepse",
+  },
+  {
+    topicPatterns: [/\bavc\b/, /\bacidente vascular\b/],
+    requiredAnchors: ["deficit.*neurologic|hemiparesia|hemiplegia", "tempo|janela terapeutic|golden hour", "imagem|tomografia|tc|ressonancia"],
+    label: "AVC",
+  },
 ];
 
 const STRICT_CONTENT_TYPES = new Set([
-  "criterios", "classificacao", "sinais_classicos", "diagnostico_diferencial_curto", "componentes",
+  "criterios", "classificacao", "sinais_classicos", "diagnostico_diferencial_curto", "componentes", "diagnostico",
 ]);
 
 // ══════════════════════════════════════════════════
