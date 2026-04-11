@@ -87,14 +87,15 @@ function logInvisibleEvent(evt: InvisibleMnemonicEvent) {
     .from("study_action_events")
     .insert({
       user_id: evt.userId,
-      action_type: `invisible_mnemonic_${evt.event}`,
+      task_type: `invisible_mnemonic_${evt.event}`,
+      origin_module: "mnemonic_invisible",
       topic: evt.topic,
-      metadata: {
-        subtopic: evt.subtopic,
+      subtopic: evt.subtopic || null,
+      status: evt.success === false ? "error" : "success",
+      payload_json: {
         trigger_reason: evt.triggerReason,
         cls: evt.cls,
         rfs: evt.rfs,
-        success: evt.success,
         cached: evt.cached,
         response_time_ms: evt.responseTimeMs,
       },
