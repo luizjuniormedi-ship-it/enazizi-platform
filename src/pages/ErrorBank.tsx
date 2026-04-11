@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { AlertTriangle, BookOpen, BarChart3, RefreshCw, ArrowRight, Brain, HelpCircle, Stethoscope, ListChecks, FlipVertical, Loader2, CheckCircle2, TrendingDown, TrendingUp, Filter, X, SortAsc, SortDesc, ChevronDown, ChevronRight, Trash2, Target, MoreVertical } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { AlertTriangle, BookOpen, BarChart3, RefreshCw, ArrowRight, Brain, HelpCircle, Stethoscope, ListChecks, FlipVertical, Loader2, CheckCircle2, TrendingDown, TrendingUp, Filter, X, SortAsc, SortDesc, ChevronDown, ChevronRight, Trash2, Target, MoreVertical, Sparkles } from "lucide-react";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,7 @@ const REVIEW_MODES = [
   { id: "questoes", label: "Questões dos erros", icon: HelpCircle, description: "Questões objetivas dos temas com mais erros", color: "text-amber-400" },
   { id: "casos", label: "Casos clínicos", icon: Stethoscope, description: "Mini casos para treinar raciocínio", color: "text-emerald-400" },
   { id: "completa", label: "Revisão completa", icon: ListChecks, description: "Revisa todos os temas fracos sequencialmente", color: "text-accent" },
+  { id: "mnemonico", label: "Gerar Mnemônico", icon: Sparkles, description: "Mnemônico visual para fixar os pontos fracos", color: "text-violet-400" },
 ];
 
 function getSeverityColor(count: number) {
@@ -193,6 +194,18 @@ const ErrorBank = () => {
   };
 
   const startReviewMode = (mode: string, tema?: string) => {
+    if (mode === "mnemonico") {
+      // Navigate to mnemonic generator with error bank context
+      const relevantErrors = tema ? errors.filter((e) => e.tema === tema) : errors.slice(0, 5);
+      const topTema = tema || relevantErrors[0]?.tema || "";
+      const items = relevantErrors
+        .filter((e) => e.tema === topTema)
+        .map((e) => e.subtema || e.categoria_erro || e.motivo_erro || e.tema)
+        .filter((v, i, a) => v && a.indexOf(v) === i)
+        .slice(0, 7);
+      navigate("/dashboard/mnemonico", { state: { prefillTopic: topTema, prefillItems: items, fromErrorBank: true } });
+      return;
+    }
     const context = buildErrorContext(mode, tema);
     navigate("/dashboard/chatgpt", { state: { initialMessage: context, fromErrorBank: true } });
   };
@@ -489,6 +502,10 @@ const ErrorBank = () => {
                   </Button>
                   <Button variant="outline" size="sm" className="w-full justify-between text-xs h-8" onClick={() => startReviewMode("casos", selectedTema)}>
                     Casos <ArrowRight className="h-3 w-3" />
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full justify-between text-xs h-8 text-violet-500 border-violet-500/30 hover:bg-violet-500/10" onClick={() => startReviewMode("mnemonico", selectedTema)}>
+                    <span className="flex items-center gap-1"><Sparkles className="h-3 w-3" /> Mnemônico</span>
+                    <ArrowRight className="h-3 w-3" />
                   </Button>
                 </CardContent>
               </Card>
