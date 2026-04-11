@@ -770,7 +770,7 @@ serve(async (req) => {
         continue;
       }
 
-      const deterministicValidation = validateGeneratedMnemonicDeterministically(cleanedItems, generated);
+      const deterministicValidation = validateGeneratedMnemonicDeterministically(cleanedItems, generated, contentType);
       if (!deterministicValidation.ok) {
         console.warn(`Attempt ${attempt}: Deterministic validation failed — ${deterministicValidation.reason}`);
         previousFeedback = deterministicValidation.reason;
