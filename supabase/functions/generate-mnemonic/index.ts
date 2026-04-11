@@ -394,70 +394,70 @@ function deriveRequiredAnchors(item: string): string[] {
 
 function buildGeneratorPrompt(topic: string, items: string[], attempt = 1, previousFeedback?: string): string {
   const retryBlock = attempt > 1 && previousFeedback
-    ? `\n⚠️ TENTATIVA ${attempt} — O mnemônico anterior foi REJEITADO:\n"${previousFeedback}"\nVocê DEVE corrigir os problemas apontados. Gere um mnemônico DIFERENTE e mais fiel.\n`
+    ? `\n⚠️ TENTATIVA ${attempt} — O mnemônico anterior foi REJEITADO:\n"${previousFeedback}"\nVocê DEVE corrigir os problemas apontados. Gere um mnemônico COMPLETAMENTE DIFERENTE.\n`
     : "";
 
-  const deterministicHints = items
+  const letterHints = items
     .map((item, index) => {
       const letter = deriveExpectedLetter(item);
-      const anchors = deriveRequiredAnchors(item);
-      return `${index + 1}. ${item} → letra obrigatória: ${letter}${anchors.length ? ` | âncoras obrigatórias: ${anchors.join(", ")}` : ""}`;
+      return `${index + 1}. ${item} → letra: ${letter}`;
     })
     .join("\n");
 
-  return `Você é um especialista em mnemônicos médicos para residência.
+  return `Você é um criador de mnemônicos médicos MEMORÁVEIS para estudantes de residência.
 ${retryBlock}
-TAREFA: Crie um mnemônico + mapeamento visual para memorizar esta lista sobre "${topic}":
-${items.map((it, i) => `${i + 1}. ${it}`).join("\n")}
+TEMA: "${topic}"
+ITENS PARA MEMORIZAR:
+${letterHints}
 
-ÂNCORAS DETERMINÍSTICAS OBRIGATÓRIAS:
-${deterministicHints}
+═══ PRIORIDADE #1: O MNEMÔNICO DEVE FAZER SENTIDO ═══
 
-REGRAS OBRIGATÓRIAS DE FIDELIDADE CLÍNICA:
-- Cada item deve ser representado COM TODOS os seus componentes clínicos — NUNCA simplifique ou omita detalhes
-- Se um item contém sub-componentes (ex: "Killip II: Estertores basais + B3"), TODOS devem estar presentes na palavra associada ou na descrição
-- Se um item é uma negação (ex: "Sem sinais"), represente explicitamente O QUE está ausente
-- NÃO substitua termos médicos por sinônimos imprecisos
+O objetivo principal é criar uma PALAVRA ou FRASE CURTA que:
+1. Faça sentido em português (uma palavra real, nome próprio, sigla conhecida, ou frase que conta uma mini-história)
+2. Seja FÁCIL DE LEMBRAR — algo que grude na memória
+3. Cada letra remeta claramente ao item correspondente
+
+EXEMPLOS DE MNEMÔNICOS BOM vs RUIM:
+
+✅ BOM: "SOQI" → Supra ST, Onda Q, Inversão T (parece "Soqui" — fácil de falar)
+✅ BOM: "SALVA" → para 5 itens de tratamento (palavra real, memorável)
+✅ BOM: "MICO" → para 4 critérios (palavra engraçada, gruda na cabeça)
+✅ BOM: "DOR" → Déficit focal, Onset (tempo), Ressonância/TC
+❌ RUIM: "STIQB" → letras sem sentido, impossível lembrar
+❌ RUIM: "XZWTK" → não forma nada reconhecível
+❌ RUIM: Frase de 15 palavras rebuscadas que ninguém lembra
+
+═══ TÉCNICAS PERMITIDAS ═══
+
+- Formar uma PALAVRA REAL em português (melhor opção)
+- Formar um NOME PRÓPRIO que soe natural (ex: "SARA", "DAVI")
+- Criar uma FRASE CURTA memorável (máx 6-8 palavras) onde as iniciais das palavras-chave correspondem aos itens
+- Usar humor leve ou imagens absurdas (técnica de memória comprovada)
+- Inverter a ordem dos itens se isso criar uma palavra melhor (indique a ordem no mapeamento)
+
+═══ REGRAS DE QUALIDADE ═══
+
+- A sigla DEVE ter EXATAMENTE ${items.length} letras (uma por item)
+- Cada letter em items_mapped deve corresponder à letra indicada acima
+- Cada item original deve aparecer fielmente no mapeamento
+- NÃO invente itens que não estão na lista
+- Os símbolos visuais devem ser concretos e distintos entre si
+- A cena visual deve ser uma imagem mental única e vívida
+
+═══ REGRAS CLÍNICAS ═══
+
+- NÃO distorça conceitos médicos
 - NÃO omita qualificadores importantes (graus, tipos, localizações)
-- Para itens eletrocardiográficos nomeados, preserve o marcador discriminativo exato (ex: Onda Q patológica = Q; supra/infra de ST = ST; bloqueio de ramo esquerdo novo = novo)
-
-REGRAS PARA A LETRA:
-- Para cada item, use EXATAMENTE a letra obrigatória indicada acima
-- NÃO troque uma letra obrigatória por uma letra “mais bonita” ou “mais fácil”
-- O campo items_mapped[].letter deve bater com a letra obrigatória do item correspondente
-- Se não conseguir formar uma boa palavra, use uma FRASE onde cada palavra começa com a letra correta
-
-REGRAS PARA SÍMBOLOS:
-- Cada item deve ter UM símbolo visual ÚNICO, concreto e óbvio
-- O símbolo deve representar VISUALMENTE o conceito médico completo, não apenas parte dele
-- NÃO repetir símbolos
-- NÃO usar símbolos que possam induzir confusão clínica
-
-FORMATO:
-- A frase deve ter NO MÁXIMO 12 palavras
-- Deve ser fácil de falar e memorável
-- NÃO invente itens que não estão na lista
-- O campo original_item deve repetir o item original com fidelidade máxima
-
-REGRA CRÍTICA DE COBERTURA:
-- A sigla (mnemonic_word) DEVE ter EXATAMENTE ${items.length} letras — uma para cada item
-- NUNCA omita um item da sigla. Se a lista tem ${items.length} itens, a sigla tem ${items.length} letras
-- NUNCA compense item faltante só no items_map — se não está na sigla, está ERRADO
-
-FORMATO:
-- A frase deve ter NO MÁXIMO 12 palavras
-- Deve ser fácil de falar e memorável
-- NÃO invente itens que não estão na lista
 - O campo original_item deve repetir o item original com fidelidade máxima
 
 Responda APENAS em JSON válido:
 {
-  "mnemonic_word": "SIGLA com EXATAMENTE ${items.length} letras",
-  "phrase": "Frase mnemônica completa",
+  "mnemonic_word": "PALAVRA/SIGLA memorável com ${items.length} letras",
+  "phrase": "Frase curta e memorável que ajuda a lembrar a sigla",
   "items_mapped": [
-    {"letter": "A", "word": "palavra do mnemônico", "original_item": "item original COMPLETO", "symbol": "objeto visual concreto", "symbol_reason": "por que esse símbolo representa o conceito COMPLETO"}
+    {"letter": "X", "word": "palavra associada ao item", "original_item": "item original completo", "symbol": "objeto visual concreto", "symbol_reason": "por que esse símbolo representa o conceito"}
   ],
-  "scene_description": "Descrição curta da cena visual unificada (1-2 frases)"
+  "scene_description": "Cena visual única e vívida (1-2 frases)"
 }`;
 }
 
