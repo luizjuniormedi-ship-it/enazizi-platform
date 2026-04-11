@@ -332,21 +332,33 @@ async function generateHash(topic: string, items: string[], contentType: string)
 // STEP 2 — GENERATOR PROMPT
 // ══════════════════════════════════════════════════
 
-function buildGeneratorPrompt(topic: string, items: string[]): string {
-  return `Você é um especialista em mnemônicos médicos para residência.
+function buildGeneratorPrompt(topic: string, items: string[], attempt = 1, previousFeedback?: string): string {
+  const retryBlock = attempt > 1 && previousFeedback
+    ? `\n⚠️ TENTATIVA ${attempt} — O mnemônico anterior foi REJEITADO pelo auditor médico:\n"${previousFeedback}"\nVocê DEVE corrigir os problemas apontados. Gere um mnemônico DIFERENTE.\n`
+    : "";
 
+  return `Você é um especialista em mnemônicos médicos para residência.
+${retryBlock}
 TAREFA: Crie um mnemônico + mapeamento visual para memorizar esta lista sobre "${topic}":
 ${items.map((it, i) => `${i + 1}. ${it}`).join("\n")}
 
-REGRAS OBRIGATÓRIAS:
-- Use a PRIMEIRA LETRA de cada item para formar uma palavra ou frase
+REGRAS OBRIGATÓRIAS PARA A LETRA:
+- Para cada item, use a PRIMEIRA LETRA do TERMO PRINCIPAL (substantivo ou sigla médica)
+- Exemplos corretos: "BAV total" → B, "Mobitz I" → M, "Infradesnivelamento ST" → I, "Bloqueio ramo esquerdo" → B, "Supradesnivelamento ST" → S, "STEMI" → S
+- NUNCA use uma letra que represente um conceito DIFERENTE do item original
+- NUNCA associe uma letra a uma palavra que tenha significado clínico diferente do item (ex: NÃO use "Elevação" para "Bloqueio ramo esquerdo")
+- Se não conseguir formar uma boa palavra com as primeiras letras, use uma FRASE onde cada palavra começa com a letra correta
+
+REGRAS OBRIGATÓRIAS PARA SÍMBOLOS:
+- Cada item deve ter UM símbolo visual ÚNICO, concreto e óbvio
+- O símbolo deve representar VISUALMENTE o conceito médico, não a letra
+- NÃO repetir símbolos
+- NÃO usar símbolos que possam induzir confusão clínica
+
+FORMATO:
 - A frase deve ter NO MÁXIMO 12 palavras
 - Deve ser fácil de falar e memorável
 - NÃO invente itens que não estão na lista
-- NÃO force letras incorretas
-- Cada item deve ter UM símbolo visual ÚNICO, concreto e óbvio
-- NÃO repetir símbolos
-- Cada símbolo deve ter razão lógica de associação
 
 Responda APENAS em JSON válido:
 {
@@ -357,7 +369,6 @@ Responda APENAS em JSON válido:
   ],
   "scene_description": "Descrição curta da cena visual unificada (1-2 frases)"
 }`;
-}
 
 // ══════════════════════════════════════════════════
 // STEP 3 — MEDICAL AUDITOR PROMPT
