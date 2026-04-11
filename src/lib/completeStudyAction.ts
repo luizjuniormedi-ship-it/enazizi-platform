@@ -10,6 +10,7 @@
  *  5. Disparar refreshAll (via callback)
  */
 import { supabase } from "@/integrations/supabase/client";
+import { updateMnemonicEfficacy } from "@/lib/mnemonicAdaptiveService";
 
 /* ── Mapa central de tipos ── */
 export type StudyActionType =
