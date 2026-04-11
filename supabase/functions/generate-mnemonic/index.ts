@@ -7,7 +7,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MNEMONIC_PIPELINE_VERSION = "2026-04-11-v4";
+const MNEMONIC_PIPELINE_VERSION = "2026-04-11-v5";
+
+const STRICT_COVERAGE_TYPES = new Set([
+  "criterios", "classificacao", "sinais_classicos",
+  "diagnostico_diferencial_curto", "componentes",
+]);
 
 // ══════════════════════════════════════════════════
 // STEP 1 — ELIGIBILITY GATE
@@ -541,7 +546,7 @@ function extractInitialLettersFromPhrase(phrase: string): string[] {
   return words.map((word) => word.charAt(0).toUpperCase()).filter(Boolean);
 }
 
-function validateGeneratedMnemonicDeterministically(items: string[], generated: any): DeterministicMnemonicValidationResult {
+function validateGeneratedMnemonicDeterministically(items: string[], generated: any, contentType?: string): DeterministicMnemonicValidationResult {
   if (!generated || !Array.isArray(generated.items_mapped)) {
     return { ok: false, reason: "JSON inválido ou items_mapped ausente." };
   }
@@ -590,6 +595,7 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
     return { ok: false, reason: "Há itens duplicados ou omitidos no mapeamento final." };
   }
 
+  // ── COVERAGE CHECK: sigla must contain ALL expected letters ──
   const mnemonicLetters = String(generated.mnemonic_word || "")
     .toUpperCase()
     .replace(/[^A-Z]/g, "")
@@ -597,12 +603,26 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
     .filter(Boolean);
   const phraseLetters = extractInitialLettersFromPhrase(String(generated.phrase || ""));
 
-  const coversExpectedLetters = (letters: string[]) => expectedLetters.every((letter) => letters.includes(letter));
-  if (!coversExpectedLetters(mnemonicLetters) && !coversExpectedLetters(phraseLetters)) {
-    return {
-      ok: false,
-      reason: `A palavra/frase mnemônica não cobre todas as letras obrigatórias (${expectedLetters.join("-")}).`,
-    };
+  const isStrict = contentType ? STRICT_COVERAGE_TYPES.has(contentType) : false;
+
+  if (isStrict) {
+    // For clinical content: the sigla MUST contain every expected letter
+    const missingInSigla = expectedLetters.filter((letter) => !mnemonicLetters.includes(letter));
+    if (missingInSigla.length > 0) {
+      return {
+        ok: false,
+        reason: `Cobertura incompleta na sigla "${generated.mnemonic_word}": faltam letras ${missingInSigla.join(", ")} (itens obrigatórios omitidos). Para conteúdo clínico, TODOS os itens devem estar na sigla.`,
+      };
+    }
+  } else {
+    // Relaxed: sigla OR phrase must cover all letters
+    const coversExpectedLetters = (letters: string[]) => expectedLetters.every((letter) => letters.includes(letter));
+    if (!coversExpectedLetters(mnemonicLetters) && !coversExpectedLetters(phraseLetters)) {
+      return {
+        ok: false,
+        reason: `A palavra/frase mnemônica não cobre todas as letras obrigatórias (${expectedLetters.join("-")}).`,
+      };
+    }
   }
 
   return { ok: true };
