@@ -165,7 +165,13 @@ export function validateMnemonicInputBeforeGeneration(params: {
 function detectRedundancy(normalizedItems: string[]): string | null {
   for (const [synonyms, label] of EQUIVALENCE_PAIRS) {
     const matches = normalizedItems.filter((item) =>
-      synonyms.some((syn) => item === syn || item.includes(syn) || syn.includes(item))
+      synonyms.some((syn) => {
+        if (item === syn) return true;
+        // Use word-boundary check to prevent "mobitz ii" matching "mobitz i"
+        const synRegex = new RegExp(`\\b${syn.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
+        const itemRegex = new RegExp(`\\b${item.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
+        return synRegex.test(item) || itemRegex.test(syn);
+      })
     );
     if (matches.length >= 2) {
       return label;
