@@ -404,8 +404,11 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
   logTelemetry(payload, tablesUpdated, errors);
 
   // 5b. Mnemonic efficacy tracking (fire-and-forget)
+  // FIX #6: wasCorrect uses real result from metadata, not heuristic
   if (topic) {
-    const wasCorrect = taskType === "error_review" && tablesUpdated.includes("error_bank");
+    const wasCorrect = payload.metadata?.wasCorrect === true
+      || payload.metadata?.acertou === true
+      || payload.metadata?.correct === true;
     updateMnemonicEfficacy(userId, topic, wasCorrect).catch(() => {});
   }
 

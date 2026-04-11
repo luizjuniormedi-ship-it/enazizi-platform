@@ -11,7 +11,7 @@ import { generateOrReuseMnemonicForUser } from "./mnemonicUnifiedService";
 
 export type { MnemonicResult } from "./mnemonicUnifiedService";
 
-type MnemonicStatus = "approved_visual" | "approved_text_map_only" | "rejected";
+type MnemonicStatus = "approved_visual" | "rejected";
 
 interface MnemonicAsset {
   id: string;
@@ -274,35 +274,47 @@ export async function recordBaselineAccuracy(
 // Uses unified pipeline via generateOrReuseMnemonicForUser
 // ══════════════════════════════════════════════════
 
+// FIX #5: Only trigger adaptive mnemonic with canonical structured lists,
+// NEVER from free-text error_bank.conteudo
 export function triggerAdaptiveMnemonicCheck(userId: string, topic: string) {
   checkMnemonicTrigger(userId, topic).then(async (result) => {
     if (!result.shouldTrigger) return;
     console.log(`[MnemonicAdaptive] Triggering for "${topic}":`, result.reason);
 
-    const { data: errors } = await supabase
-      .from("error_bank")
-      .select("conteudo")
-      .eq("user_id", userId)
-      .eq("tema", topic)
-      .eq("dominado", false)
-      .not("conteudo", "is", null)
-      .limit(5);
+    // Search for a canonical structured list from curriculum_matrix
+    const { data: matrixRows } = await supabase
+      .from("curriculum_matrix")
+      .select("gatilhos_clinicos, palavras_chave, subtema, tipo_cobranca")
+      .ilike("tema", `%${topic}%`)
+      .eq("ativo", true)
+      .limit(1);
 
-    if (!errors || errors.length === 0) return;
+    if (!matrixRows || matrixRows.length === 0) {
+      console.log(`[MnemonicAdaptive] No canonical list found for "${topic}" — skipping generation`);
+      return;
+    }
 
-    const items = errors
-      .map(e => e.conteudo?.trim())
-      .filter(Boolean)
-      .slice(0, 7) as string[];
+    const matrix = matrixRows[0];
+    // Use gatilhos_clinicos as the canonical item list (structured array from curriculum)
+    const canonicalItems = Array.isArray(matrix.gatilhos_clinicos) ? matrix.gatilhos_clinicos : [];
 
-    if (items.length < 3) return;
+    if (canonicalItems.length < 3 || canonicalItems.length > 7) {
+      console.log(`[MnemonicAdaptive] Canonical list has ${canonicalItems.length} items — not in valid range (3-7)`);
+      return;
+    }
 
-    // Uses the SAME unified pipeline as manual generation
+    // Determine best contentType from curriculum
+    const tipoCobranca = Array.isArray(matrix.tipo_cobranca) ? matrix.tipo_cobranca : [];
+    const contentType = tipoCobranca.includes("criterios") ? "criterios"
+      : tipoCobranca.includes("causas") ? "causas"
+      : tipoCobranca.includes("classificacao") ? "classificacao"
+      : "lista";
+
     await generateOrReuseMnemonicForUser({
       userId,
       topic,
-      contentType: "criterios",
-      items,
+      contentType,
+      items: canonicalItems,
       source: "adaptive",
     });
   }).catch(err => {

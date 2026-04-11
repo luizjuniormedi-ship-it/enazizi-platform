@@ -52,15 +52,17 @@ export interface GenerateMnemonicParams {
 // HASH (mirrors edge function)
 // ══════════════════════════════════════════════════
 
-function generateMnemonicHash(topic: string, items: string[]): string {
-  const normalized = [topic.toLowerCase().trim(), ...items.map(i => i.toLowerCase().trim()).sort()].join("|");
-  let hash = 0;
-  for (let i = 0; i < normalized.length; i++) {
-    const chr = normalized.charCodeAt(i);
-    hash = ((hash << 5) - hash) + chr;
-    hash |= 0;
-  }
-  return `mn_${Math.abs(hash).toString(36)}`;
+async function generateMnemonicHash(topic: string, items: string[], contentType: string): Promise<string> {
+  const normalized = [
+    topic.toLowerCase().trim(),
+    contentType.toLowerCase().trim(),
+    ...items.map(i => i.toLowerCase().trim()).sort(),
+  ].join("|");
+  const data = new TextEncoder().encode(normalized);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  return `mn_${hex.substring(0, 16)}`;
 }
 
 // ══════════════════════════════════════════════════
@@ -80,7 +82,7 @@ export async function generateOrReuseMnemonicForUser(
     return { success: false, error: "Informe o tema." };
   }
 
-  const hash = generateMnemonicHash(topic, items);
+  const hash = await generateMnemonicHash(topic, items, contentType);
 
   // Call unified edge function
   const { data, error } = await supabase.functions.invoke("generate-mnemonic", {
