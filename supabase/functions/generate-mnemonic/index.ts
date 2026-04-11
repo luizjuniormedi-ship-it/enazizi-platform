@@ -428,8 +428,8 @@ serve(async (req) => {
       });
     }
 
-    if (generated.items_mapped.length !== items.length) {
-      return new Response(JSON.stringify({ error: `Gerador produziu ${generated.items_mapped.length} itens, esperado ${items.length}. Tente novamente.`, rejected: true }), {
+    if (generated.items_mapped.length !== cleanedItems.length) {
+      return new Response(JSON.stringify({ error: `Gerador produziu ${generated.items_mapped.length} itens, esperado ${cleanedItems.length}. Tente novamente.`, rejected: true }), {
         status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
