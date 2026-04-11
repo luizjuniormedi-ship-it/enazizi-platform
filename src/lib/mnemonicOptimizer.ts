@@ -78,7 +78,8 @@ const SHORTENING_RULES: Array<[RegExp, string]> = [
 const WEAK_ITEMS = new Set([
   "exame", "exame fisico", "avaliar", "avaliacao", "avaliacao clinica",
   "investigar", "investigacao", "conduta", "tratamento", "acompanhamento",
-  "observar", "monitorizar", "verificar", "checar",
+  "observar", "monitorizar", "verificar", "checar", "examinar",
+  "analisar", "revisar", "pesquisar",
 ]);
 
 // ══════════════════════════════════════════════════
