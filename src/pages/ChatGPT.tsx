@@ -343,6 +343,24 @@ const ChatGPT = () => {
               } else {
                 await supabase.from("error_bank").insert(errorData);
               }
+              // Suggest mnemonic if ≥2 errors on same topic
+              const errorCount = existing ? (existing.vezes_errado || 1) + 1 : 1;
+              if (errorCount >= 2) {
+                toast({
+                  title: "🧠 Dica: Gerar Mnemônico",
+                  description: `Você já errou ${errorCount}x em "${currentTopic}". Um mnemônico pode ajudar a fixar!`,
+                  action: (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 gap-1"
+                      onClick={() => navigate("/dashboard/mnemonico", { state: { prefillTopic: currentTopic, fromErrorBank: true } })}
+                    >
+                      Gerar
+                    </Button>
+                  ),
+                });
+              }
             }
           }
         }
