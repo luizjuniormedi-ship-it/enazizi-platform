@@ -3,7 +3,7 @@ import {
   LayoutDashboard, CalendarDays, FlipVertical,
   FileText, Upload, BarChart3, LogOut, Shield, User,
   HelpCircle, BookOpen, Heart, Database, Zap, TrendingUp, Stethoscope, Award, Sparkles, AlertTriangle, Map, GraduationCap, PenLine, Activity, Trophy, Crown,
-  ChevronDown, MessageCircle, Scroll, Lightbulb, Building2
+  ChevronDown, MessageCircle, Scroll, Lightbulb, Building2, Brain
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
@@ -68,6 +68,7 @@ const navGroups: NavGroup[] = [
       { to: "/dashboard/proficiencia", icon: GraduationCap, label: "Proficiência" },
       { to: "/dashboard/coach", icon: Heart, label: "Coach" },
       { to: "/dashboard/planner", icon: CalendarDays, label: "Plano Estratégico" },
+      { to: "/dashboard/mnemonico", icon: Brain, label: "Mnemônico" },
     ],
   },
 ];
