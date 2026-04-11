@@ -100,8 +100,7 @@ function logInvisibleEvent(evt: InvisibleMnemonicEvent) {
         response_time_ms: evt.responseTimeMs,
       },
     })
-    .then(() => {})
-    .catch(() => {});
+    .then(() => {});
 }
 
 // ══════════════════════════════════════════════════
@@ -135,7 +134,7 @@ async function passesAntiSpam(userId: string, topic: string): Promise<boolean> {
     .from("study_action_events")
     .select("id")
     .eq("user_id", userId)
-    .eq("action_type", "invisible_mnemonic_shown")
+    .eq("task_type", "invisible_mnemonic_shown")
     .gte("created_at", new Date(Date.now() - 30 * 60000).toISOString())
     .limit(1);
 
