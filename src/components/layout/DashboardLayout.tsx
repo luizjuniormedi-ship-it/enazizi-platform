@@ -24,6 +24,9 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { cn } from "@/lib/utils";
 import ActiveVideoRoomPopup from "@/components/dashboard/ActiveVideoRoomPopup";
 import ProficiencyGate from "@/components/dashboard/ProficiencyGate";
+import { useInvisibleMnemonic } from "@/hooks/useInvisibleMnemonic";
+import { InvisibleMnemonicOverlay } from "@/components/mnemonic/InvisibleMnemonicOverlay";
+import { useStudyContext } from "@/lib/studyContext";
 
 interface MobileNavGroup {
   title: string;
@@ -223,6 +226,11 @@ const DashboardLayout = () => {
   useLandscapeTablet();
   const { theme, toggle: toggleTheme } = useTheme();
   const location = useLocation();
+  const studyCtx = useStudyContext();
+  const { mnemonic: invisibleMnemonic, dismiss: dismissMnemonic, markShown } = useInvisibleMnemonic({
+    currentTopic: studyCtx?.topic,
+    enabled: true,
+  });
 
   // Hide all navigation chrome when mission is actively executing
   const isMissionLocked = (() => {
@@ -281,6 +289,13 @@ const DashboardLayout = () => {
         )}>
           <Outlet />
         </div>
+        {invisibleMnemonic && (
+          <InvisibleMnemonicOverlay
+            mnemonic={invisibleMnemonic}
+            onDismiss={dismissMnemonic}
+            onShown={markShown}
+          />
+        )}
       </main>
       {!isMissionLocked && <BottomTabBar />}
     </div>
