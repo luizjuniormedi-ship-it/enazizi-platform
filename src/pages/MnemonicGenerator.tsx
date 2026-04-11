@@ -92,7 +92,42 @@ const MnemonicGenerator = () => {
             <Input
               placeholder="Ex: Critérios de Jones, Sinais de Ranson..."
               value={topic}
-              onChange={(e) => setTopic(e.target.value)}
+              onChange={(e) => { setTopic(e.target.value); setSubtopic(""); }}
+              disabled={loading}
+            />
+            {loadingSuggestions && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" /> Buscando subtemas...
+              </div>
+            )}
+            {!loadingSuggestions && suggestions.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {suggestions.map((s) => (
+                  <button
+                    key={s.name}
+                    type="button"
+                    onClick={() => setSubtopic(s.name)}
+                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                      subtopic === s.name
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-secondary/50 text-foreground border-border hover:bg-secondary"
+                    }`}
+                    disabled={loading}
+                  >
+                    {s.name}
+                    {s.priority === "high" && " 🔥"}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Subtema (opcional)</label>
+            <Input
+              placeholder="Ex: Taquiarritmias, Choque séptico..."
+              value={subtopic}
+              onChange={(e) => setSubtopic(e.target.value)}
               disabled={loading}
             />
           </div>
