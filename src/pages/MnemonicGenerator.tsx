@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Brain, Sparkles, AlertTriangle, CheckCircle2, Lightbulb, Eye } from "lucide-react";
+import { Brain, Sparkles, AlertTriangle, CheckCircle2, Lightbulb, Eye, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { generateOrReuseMnemonicForUser, type MnemonicResult } from "@/lib/mnemonicUnifiedService";
+import { useSubtopicSuggestions } from "@/hooks/useSubtopicSuggestions";
 import { toast } from "sonner";
 
 const CONTENT_TYPES = [
