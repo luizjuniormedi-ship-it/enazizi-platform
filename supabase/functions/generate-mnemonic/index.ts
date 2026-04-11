@@ -888,19 +888,34 @@ serve(async (req) => {
     }
 
     // ── STEP 6: IMAGE GENERATION (only if approved) ──
-    const symbols = (generated.items_mapped || []).map((v: any) => `- ${v.symbol} (representando ${v.original_item})`).join("\n");
-    const imagePrompt = `Crie uma ilustração médica didática, estilo limpo e colorido, fundo branco.
+    const symbols = (generated.items_mapped || []).map((v: any) => 
+      `- ${v.symbol}: representa "${v.original_item}" — ${v.symbol_reason || "associação visual direta"}`
+    ).join("\n");
+    
+    const sceneDesc = generated.scene_description || "cena médica didática";
+    const mnemonicWord = generated.mnemonic_word || "";
+    const phrase = generated.phrase || "";
+    
+    const imagePrompt = `Create a single cohesive medical mnemonic illustration for the topic "${topic}".
 
-Cena única contendo:
+MNEMONIC: "${mnemonicWord}" — "${phrase}"
+
+SCENE CONCEPT: ${sceneDesc}
+
+VISUAL ELEMENTS (each must be clearly visible and identifiable):
 ${symbols}
 
-Regras visuais:
-- Cada elemento deve estar SEPARADO e claramente identificável
-- Sem sobreposição de elementos
-- Estilo cartoon/infográfico médico
-- Cores vibrantes e distintas para cada elemento
-- Sem texto na imagem
-- Fundo limpo e claro`;
+MANDATORY VISUAL RULES:
+1. SINGLE UNIFIED SCENE — all elements interact in ONE coherent composition, not separate panels
+2. Each symbol must be LARGE, clearly drawn, and visually distinct from the others
+3. Use bright, saturated colors — each element gets its own dominant color
+4. Style: clean medical infographic / cartoon illustration — professional and educational
+5. White or very light background — no gradients, no dark backgrounds
+6. NO TEXT, NO LETTERS, NO LABELS, NO NUMBERS anywhere in the image
+7. NO overlapping elements — each symbol occupies its own clear space
+8. Anatomical/medical elements should be stylized but recognizable (not photorealistic)
+9. The composition should tell a visual story that links all elements together
+10. High contrast between elements and background for clarity`;
 
     let imageUrl: string | null = null;
     try {
@@ -908,7 +923,7 @@ Regras visuais:
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image",
+          model: "google/gemini-3.1-flash-image-preview",
           messages: [{ role: "user", content: imagePrompt }],
           modalities: ["image", "text"],
         }),
