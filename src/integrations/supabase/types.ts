@@ -3380,6 +3380,8 @@ export type Database = {
           created_at: string
           hash: string
           id: string
+          image_prompt_original: string | null
+          image_prompt_refined: string | null
           image_url: string | null
           impact_score: number | null
           items_json: Json
@@ -3396,12 +3398,17 @@ export type Database = {
           topic: string
           updated_at: string
           verdict: string
+          visual_audit_summary: string | null
+          visual_regeneration_count: number | null
+          visual_score: number | null
         }
         Insert: {
           content_type: string
           created_at?: string
           hash: string
           id?: string
+          image_prompt_original?: string | null
+          image_prompt_refined?: string | null
           image_url?: string | null
           impact_score?: number | null
           items_json: Json
@@ -3418,12 +3425,17 @@ export type Database = {
           topic: string
           updated_at?: string
           verdict?: string
+          visual_audit_summary?: string | null
+          visual_regeneration_count?: number | null
+          visual_score?: number | null
         }
         Update: {
           content_type?: string
           created_at?: string
           hash?: string
           id?: string
+          image_prompt_original?: string | null
+          image_prompt_refined?: string | null
           image_url?: string | null
           impact_score?: number | null
           items_json?: Json
@@ -3440,6 +3452,9 @@ export type Database = {
           topic?: string
           updated_at?: string
           verdict?: string
+          visual_audit_summary?: string | null
+          visual_regeneration_count?: number | null
+          visual_score?: number | null
         }
         Relationships: []
       }
