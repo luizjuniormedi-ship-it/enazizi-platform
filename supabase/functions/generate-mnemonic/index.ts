@@ -697,10 +697,12 @@ serve(async (req) => {
       // Adaptive/unified fields (optional for backward compat)
       userId, hash: clientHash, source,
       sourceContext,
+      forceRegenerate,
     } = body as {
       topic: string; items: string[]; contentType: string;
       userId?: string; hash?: string; source?: "manual" | "adaptive";
       sourceContext?: { topicId?: string; questionId?: string; attemptId?: string };
+      forceRegenerate?: boolean;
     };
 
     if (!topic || !items || !Array.isArray(items) || !contentType) {
