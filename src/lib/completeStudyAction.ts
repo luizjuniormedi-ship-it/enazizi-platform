@@ -10,8 +10,9 @@
  *  5. Disparar refreshAll (via callback)
  */
 import { supabase } from "@/integrations/supabase/client";
-import { updateMnemonicEfficacy, triggerAdaptiveMnemonicCheck } from "@/lib/mnemonicAdaptiveService";
-import { decideIntervention } from "@/lib/mnemonicIntelligence";
+import { updateMnemonicEfficacy } from "@/lib/mnemonicAdaptiveService";
+import { decideIntervention, calculateCLS, calculateRiskScore } from "@/lib/mnemonicIntelligence";
+import { triggerInvisibleMnemonic } from "@/lib/mnemonicInvisibleService";
 
 /* ── Mapa central de tipos ── */
 export type StudyActionType =
@@ -412,12 +413,25 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
     updateMnemonicEfficacy(userId, topic, wasCorrect).catch(() => {});
   }
 
-  // 5c. Orchestrator: CLS + RFS → decide intervention (fire-and-forget)
+  // 5c. Orchestrator: CLS + RFS → decide intervention → invisible mnemonic (fire-and-forget)
   if (topic && userId) {
-    decideIntervention(userId, topic).then((decision) => {
+    Promise.all([
+      decideIntervention(userId, topic),
+      calculateCLS(userId, topic),
+      calculateRiskScore(userId, topic),
+    ]).then(([decision, cls, rfs]) => {
       if (decision.action === "mnemonic") {
         console.log(`[Orchestrator] ${decision.reason}`);
-        triggerAdaptiveMnemonicCheck(userId, topic);
+        triggerInvisibleMnemonic({
+          userId,
+          topic,
+          decision,
+          cls,
+          rfs,
+          sourceContext: {
+            triggerReason: decision.reason,
+          },
+        });
       }
     }).catch(() => {});
   }
