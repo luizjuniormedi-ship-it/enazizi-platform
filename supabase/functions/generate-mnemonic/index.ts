@@ -763,12 +763,12 @@ serve(async (req) => {
           });
         }
       } else {
-
-      // Cache hit — return existing approved asset
-      const output = buildOutputFromAsset(existing);
-      return new Response(JSON.stringify({ ...output, assetId: existing.id, cached: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+        // Cache hit — return existing approved asset
+        const output = buildOutputFromAsset(existing);
+        return new Response(JSON.stringify({ ...output, assetId: existing.id, cached: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // ── STEPS 2-5: GENERATE + AUDIT WITH RETRY ──
