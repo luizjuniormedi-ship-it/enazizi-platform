@@ -1,6 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Brain, Sparkles, Lightbulb, Loader2, ChevronDown, Flame, Zap, Pin } from "lucide-react";
+import { Brain, Sparkles, Lightbulb, Loader2, ChevronDown, Flame, Zap, Pin, ShieldAlert, RotateCcw, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { generateOrReuseMnemonicForUser, type MnemonicResult, type MnemonicResponse } from "@/lib/mnemonicUnifiedService";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -137,30 +145,47 @@ export const MnemonicToolbarButton = () => {
     setSuggesting(false);
   };
 
+  const [rejection, setRejection] = useState<{ error: string; audit?: { medical_score: number; pedagogical_score: number } } | null>(null);
+
   const handleGenerate = async () => {
     if (generatingRef.current) return;
     generatingRef.current = true;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { toast.error("Faça login para gerar mnemônicos."); generatingRef.current = false; return; }
-    setLoading(true);
-    setResult(null);
-    const startTime = Date.now();
-    const effectiveTopic = subtopic ? `${topic.trim()} - ${subtopic}` : topic.trim();
-    const response = await generateOrReuseMnemonicForUser({
-      userId: user.id, topic: effectiveTopic, contentType, items, source: "manual",
-    });
-    const elapsed = Date.now() - startTime;
-    setLoading(false);
-    generatingRef.current = false;
-    supabase.from("ai_usage_logs").insert({
-      user_id: user.id, function_name: "generate-mnemonic", actor_type: "user",
-      success: response.success, response_time_ms: elapsed,
-      cache_hit: response.result?.cached ?? false, error_message: response.error || null,
-      model_tier: subtopic ? "mnemonic_manual_subtopic" : "mnemonic_manual",
-    }).then(() => {});
-    if (!response.success) { toast.error(response.error || "Erro ao gerar mnemônico."); return; }
-    setResult(response.result!);
-    toast.success(response.result?.cached ? "Mnemônico recuperado do cache! 🧠" : "Mnemônico gerado com sucesso! 🧠");
+    setRejection(null);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Faça login para gerar mnemônicos."); return; }
+      setLoading(true);
+      setResult(null);
+      const startTime = Date.now();
+      const effectiveTopic = subtopic ? `${topic.trim()} - ${subtopic}` : topic.trim();
+      const response = await generateOrReuseMnemonicForUser({
+        userId: user.id, topic: effectiveTopic, contentType, items, source: "manual",
+      });
+      const elapsed = Date.now() - startTime;
+      supabase.from("ai_usage_logs").insert({
+        user_id: user.id, function_name: "generate-mnemonic", actor_type: "user",
+        success: response.success, response_time_ms: elapsed,
+        cache_hit: response.result?.cached ?? false, error_message: response.error || null,
+        model_tier: response.rejected ? "mnemonic_rejected" : subtopic ? "mnemonic_manual_subtopic" : "mnemonic_manual",
+      }).then(() => {});
+      if (!response.success) {
+        if (response.rejected) {
+          setRejection({ error: response.error || "Rejeitado pelos auditores.", audit: response.audit });
+        } else {
+          toast.error(response.error || "Erro ao gerar mnemônico.");
+        }
+        return;
+      }
+      if (response.result) {
+        setResult(response.result);
+        toast.success(response.result.cached ? "Mnemônico recuperado do cache! 🧠" : "Mnemônico gerado com sucesso! 🧠");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao gerar mnemônico.");
+    } finally {
+      setLoading(false);
+      generatingRef.current = false;
+    }
   };
 
   const handleClose = () => {

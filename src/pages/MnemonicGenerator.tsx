@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { Brain, Sparkles, AlertTriangle, CheckCircle2, Lightbulb, Eye, Loader2 } from "lucide-react";
+import { Brain, Sparkles, AlertTriangle, CheckCircle2, Lightbulb, Eye, Loader2, ShieldAlert, RotateCcw, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { generateOrReuseMnemonicForUser, type MnemonicResult } from "@/lib/mnemonicUnifiedService";
+import { generateOrReuseMnemonicForUser, type MnemonicResult, type MnemonicResponse } from "@/lib/mnemonicUnifiedService";
 import { useSubtopicSuggestions } from "@/hooks/useSubtopicSuggestions";
 import { toast } from "sonner";
 
@@ -22,6 +22,11 @@ const CONTENT_TYPES = [
   { value: "componentes", label: "Componentes / Elementos" },
 ];
 
+interface RejectionState {
+  error: string;
+  audit?: { medical_score: number; pedagogical_score: number; combined_score?: number };
+}
+
 const MnemonicGenerator = () => {
   const [topic, setTopic] = useState("");
   const [subtopic, setSubtopic] = useState("");
@@ -30,6 +35,7 @@ const MnemonicGenerator = () => {
   const [loading, setLoading] = useState(false);
   const [loadingItems, setLoadingItems] = useState(false);
   const [result, setResult] = useState<MnemonicResult | null>(null);
+  const [rejection, setRejection] = useState<RejectionState | null>(null);
   const [showReview, setShowReview] = useState(false);
 
   const { suggestions, loading: loadingSuggestions } = useSubtopicSuggestions(topic);
@@ -78,6 +84,7 @@ const MnemonicGenerator = () => {
 
     setLoading(true);
     setResult(null);
+    setRejection(null);
     setShowReview(false);
 
     try {
@@ -94,18 +101,24 @@ const MnemonicGenerator = () => {
       });
 
       if (!response.success) {
-        toast.error(response.error || "Erro ao gerar mnemônico.");
+        if (response.rejected) {
+          setRejection({ error: response.error || "Rejeitado pelos auditores.", audit: response.audit });
+        } else {
+          toast.error(response.error || "Erro ao gerar mnemônico.");
+        }
         return;
       }
 
-      setResult(response.result!);
-      toast.success(response.result?.cached ? "Mnemônico recuperado do cache! 🧠" : "Mnemônico gerado com sucesso! 🧠");
+      if (response.result) {
+        setResult(response.result);
+        toast.success(response.result.cached ? "Mnemônico recuperado do cache! 🧠" : "Mnemônico gerado com sucesso! 🧠");
+      }
     } catch (e: any) {
-      toast.error(e.message || "Erro ao gerar mnemônico.");
+      toast.error(e?.message || "Erro ao gerar mnemônico.");
     } finally {
       setLoading(false);
     }
-  }, [topic, items, contentType]);
+  }, [topic, subtopic, items, contentType]);
 
   return (
     <div className="space-y-6 animate-fade-in max-w-3xl mx-auto pb-20">
@@ -222,6 +235,46 @@ const MnemonicGenerator = () => {
           </Button>
         </CardContent>
       </Card>
+
+      {rejection && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2 text-destructive">
+              <ShieldAlert className="h-5 w-5" />
+              Mnemônico reprovado pela auditoria
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {rejection.error.length > 300
+                ? rejection.error.slice(0, 300) + "…"
+                : rejection.error}
+            </p>
+            {rejection.audit && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-lg bg-secondary/50 space-y-1">
+                  <p className="text-xs font-medium">🩺 Auditor Médico</p>
+                  <p className="text-lg font-bold">{rejection.audit.medical_score}/100</p>
+                </div>
+                <div className="p-3 rounded-lg bg-secondary/50 space-y-1">
+                  <p className="text-xs font-medium">📚 Auditor Pedagógico</p>
+                  <p className="text-lg font-bold">{rejection.audit.pedagogical_score}/100</p>
+                </div>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1 gap-1.5" onClick={() => { setRejection(null); }}>
+                <Pencil className="h-4 w-4" />
+                Ajustar itens
+              </Button>
+              <Button className="flex-1 gap-1.5" onClick={() => { setRejection(null); handleGenerate(); }}>
+                <RotateCcw className="h-4 w-4" />
+                Tentar novamente
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {result && (
         <MnemonicResultDisplay result={result} items={items} showReview={showReview} setShowReview={setShowReview} />
