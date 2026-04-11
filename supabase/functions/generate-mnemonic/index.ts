@@ -474,6 +474,10 @@ function reconcileMnemonicAudit(
   }
   const avgScore = Math.round((medical.score + pedagogical.score) / 2);
   if (!medical.approved) {
+    // If medical score >= 55, allow regeneration (fixable issues) instead of hard reject
+    if (medical.score >= 55) {
+      return { verdict: "regenerate", score: avgScore, reason: `Auditor médico reprovou (score ${medical.score}): ${medical.summary}` };
+    }
     return { verdict: "reject", score: avgScore, reason: `Auditor médico reprovou: ${medical.summary}` };
   }
   if (!pedagogical.approved && avgScore < 60) {
