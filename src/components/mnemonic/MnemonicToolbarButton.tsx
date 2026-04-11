@@ -181,7 +181,7 @@ export const MnemonicToolbarButton = () => {
   };
 
   const handleClose = () => {
-    setOpen(false); setResult(null); setTopic(""); setSubtopic("");
+    setOpen(false); setResult(null); setRejection(null); setTopic(""); setSubtopic("");
     setSubtopicSuggestions([]); setItemsText(""); setSuggestion(null); setShowSubtopicDropdown(false);
   };
 
