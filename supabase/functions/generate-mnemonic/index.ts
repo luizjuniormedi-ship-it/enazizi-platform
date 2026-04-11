@@ -43,107 +43,246 @@ function validateMnemonicEligibility(
 }
 
 // ══════════════════════════════════════════════════
-// STEP 1.5 — CONCEPT UNIQUENESS VALIDATION
+// STEP 1.5 — HYBRID CONCEPT NORMALIZATION
+// Deterministic map first, AI fallback only if needed
 // ══════════════════════════════════════════════════
 
-interface UniquenessResult {
+const CONCEPT_EQUIVALENCE_MAP: Record<string, string> = {
+  "pr prolongado": "bav de 1º grau",
+  "bloqueio av de primeiro grau": "bav de 1º grau",
+  "bloqueio av 1o grau": "bav de 1º grau",
+  "bav 1 grau": "bav de 1º grau",
+  "bav primeiro grau": "bav de 1º grau",
+  "bloqueio av total": "bav total",
+  "bavt": "bav total",
+  "bav 3 grau": "bav total",
+  "bav de 3º grau": "bav total",
+  "bav terceiro grau": "bav total",
+  "wenckebach": "mobitz i",
+  "bloqueio av mobitz i": "mobitz i",
+  "bav mobitz i": "mobitz i",
+  "bloqueio av mobitz ii": "mobitz ii",
+  "bav mobitz ii": "mobitz ii",
+  "iam com supra": "stemi",
+  "infarto com supra": "stemi",
+  "iam com supra de st": "stemi",
+  "infarto com supradesnivelamento de st": "stemi",
+  "iam sem supra": "nstemi",
+  "infarto sem supra": "nstemi",
+  "hiperglicemia": "glicose elevada",
+  "glicemia elevada": "glicose elevada",
+  "hipoglicemia": "glicose baixa",
+  "glicemia baixa": "glicose baixa",
+  "taquicardia ventricular": "tv",
+  "fibrilação ventricular": "fv",
+  "fibrilação atrial": "fa",
+  "flutter atrial": "fla",
+  "taquicardia supraventricular": "tsv",
+  "tsvp": "tsv",
+  "edema agudo de pulmão": "eap",
+  "edema pulmonar agudo": "eap",
+  "insuficiência cardíaca congestiva": "icc",
+  "insuficiencia cardiaca congestiva": "icc",
+  "tromboembolismo pulmonar": "tep",
+  "embolia pulmonar": "tep",
+  "acidente vascular cerebral": "avc",
+  "acidente vascular encefálico": "avc",
+  "ave": "avc",
+  "doença pulmonar obstrutiva crônica": "dpoc",
+  "doenca pulmonar obstrutiva cronica": "dpoc",
+  "síndrome coronariana aguda": "sca",
+  "sindrome coronariana aguda": "sca",
+  "pressão arterial elevada": "hipertensão",
+  "pa elevada": "hipertensão",
+  "pressão alta": "hipertensão",
+  "has": "hipertensão",
+  "diabetes mellitus": "dm",
+  "diabetes mellitus tipo 2": "dm2",
+  "dm tipo 2": "dm2",
+  "diabetes mellitus tipo 1": "dm1",
+  "dm tipo 1": "dm1",
+};
+
+interface HybridNormResult {
   ok: boolean;
-  cleanedItems?: string[];
+  cleanedItems: string[];
+  removedItems: string[];
+  replacements: Array<{
+    original: string;
+    replacedBy: string;
+    reason: string;
+    source: "deterministic" | "ai";
+  }>;
+  usedAI: boolean;
+  blocked: boolean;
   error?: string;
-  redundancies?: Array<{ kept: string; removed: string; reason: string }>;
 }
 
-async function validateConceptUniqueness(
-  items: string[], apiKey: string
-): Promise<UniquenessResult> {
-  // Skip if 3 or fewer items — not enough to have meaningful redundancy
-  if (items.length <= 3) return { ok: true, cleanedItems: items };
+async function normalizeMnemonicItemsHybrid(
+  items: string[],
+  apiKey: string,
+  topic?: string,
+  subtopic?: string,
+): Promise<HybridNormResult> {
+  const replacements: HybridNormResult["replacements"] = [];
+  const removedItems: string[] = [];
 
-  const prompt = `Você é um especialista médico. Analise esta lista e identifique itens que são conceitualmente equivalentes ou redundantes (um é definição do outro, ou descrevem o mesmo conceito clínico).
+  // ── PHASE 1: Normalize via deterministic map ──
+  const normalized: string[] = [];
+  const seenCanonical = new Map<string, string>(); // canonical -> original display form
+
+  for (const raw of items) {
+    const key = raw.toLowerCase().trim();
+    const canonical = CONCEPT_EQUIVALENCE_MAP[key] || key;
+
+    if (canonical !== key && !CONCEPT_EQUIVALENCE_MAP[key]) {
+      // No mapping found, keep as-is
+    }
+
+    if (CONCEPT_EQUIVALENCE_MAP[key]) {
+      replacements.push({
+        original: raw,
+        replacedBy: canonical,
+        reason: `Mapa determinístico: "${raw}" → "${canonical}"`,
+        source: "deterministic",
+      });
+    }
+
+    if (seenCanonical.has(canonical)) {
+      // Duplicate after normalization — remove
+      removedItems.push(raw);
+      continue;
+    }
+
+    seenCanonical.set(canonical, CONCEPT_EQUIVALENCE_MAP[key] ? canonical : raw);
+    normalized.push(CONCEPT_EQUIVALENCE_MAP[key] ? canonical : raw);
+  }
+
+  if (replacements.length > 0 || removedItems.length > 0) {
+    console.log("mnemonic_items_normalized_deterministic", { replacements, removedItems });
+  }
+
+  // Check minimum after deterministic pass
+  if (normalized.length < 3) {
+    console.log("mnemonic_items_blocked", { reason: "below_minimum_after_deterministic", normalized });
+    return {
+      ok: false, cleanedItems: normalized, removedItems, replacements,
+      usedAI: false, blocked: true,
+      error: "Lista contém itens redundantes demais. Após normalização, restam menos de 3 itens únicos.",
+    };
+  }
+
+  // ── PHASE 2: AI fallback for remaining items not in map ──
+  // Only invoke AI if we have 2+ items that weren't resolved by the map
+  const unmappedItems = normalized.filter(it => {
+    const key = it.toLowerCase().trim();
+    return !Object.values(CONCEPT_EQUIVALENCE_MAP).includes(key);
+  });
+
+  // If all items were resolved deterministically or there are fewer than 2 unmapped, skip AI
+  if (unmappedItems.length < 2) {
+    return { ok: true, cleanedItems: normalized, removedItems, replacements, usedAI: false, blocked: false };
+  }
+
+  // AI check: pairwise equivalence only for unmapped items
+  try {
+    const aiPrompt = `Você é um especialista médico. Verifique se algum par de itens abaixo é conceitualmente equivalente (um é definição ou sinônimo do outro).
 
 LISTA:
-${items.map((it, i) => `${i + 1}. ${it}`).join("\n")}
+${unmappedItems.map((it, i) => `${i + 1}. ${it}`).join("\n")}
+${topic ? `\nTEMA: ${topic}` : ""}${subtopic ? `\nSUBTEMA: ${subtopic}` : ""}
 
 REGRAS:
-- "PR prolongado" e "BAV de 1º grau" = REDUNDANTES (um define o outro)
-- "Hiperglicemia" e "glicose elevada" = REDUNDANTES
-- "IAM com supra" e "STEMI" = REDUNDANTES
-- Itens que são SUBTIPOS diferentes NÃO são redundantes (ex: Mobitz I e Mobitz II)
+- Subtipos diferentes NÃO são equivalentes (Mobitz I ≠ Mobitz II)
+- Apenas marque como equivalente se um item é definição direta ou sinônimo clínico do outro
 
 Responda APENAS em JSON:
-{
-  "has_redundancy": true/false,
-  "redundancies": [
-    {"item_a": "item 1", "item_b": "item 2", "keep": "qual manter (mais técnico/usado em prova)", "reason": "por que são equivalentes"}
-  ]
-}
+{"pairs": [{"item_a": "...", "item_b": "...", "equivalent": true, "preferred": "termo preferido", "reason": "curto"}]}
 
-Se não houver redundância, retorne: {"has_redundancy": false, "redundancies": []}`;
+Se nenhum par for equivalente: {"pairs": []}`;
 
-  try {
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [{ role: "user", content: prompt }],
+        messages: [{ role: "user", content: aiPrompt }],
         temperature: 0.1,
       }),
     });
 
     if (!resp.ok) {
-      // FAIL-CLOSED: if AI call fails, block generation
-      console.error("Concept uniqueness AI call failed:", resp.status);
-      return { ok: false, error: "Falha na validação de unicidade conceitual. Tente novamente." };
+      console.error("mnemonic_items_blocked", { reason: "ai_call_failed", status: resp.status });
+      return {
+        ok: false, cleanedItems: normalized, removedItems, replacements,
+        usedAI: true, blocked: true,
+        error: "Não foi possível validar unicidade conceitual com segurança.",
+      };
     }
 
     const data = await resp.json();
     const text = data.choices?.[0]?.message?.content || "";
     const match = text.match(/\{[\s\S]*\}/);
     if (!match) {
-      // FAIL-CLOSED: can't parse = block
-      console.error("Concept uniqueness parse failed");
-      return { ok: false, error: "Falha ao processar validação de unicidade. Tente novamente." };
-    }
-
-    const parsed = JSON.parse(match[0]);
-
-    if (!parsed.has_redundancy || !Array.isArray(parsed.redundancies) || parsed.redundancies.length === 0) {
-      return { ok: true, cleanedItems: items };
-    }
-
-    // Build set of items to remove
-    const toRemove = new Set<string>();
-    const redundancyLog: Array<{ kept: string; removed: string; reason: string }> = [];
-
-    for (const r of parsed.redundancies) {
-      const kept = r.keep?.trim();
-      const itemA = r.item_a?.trim();
-      const itemB = r.item_b?.trim();
-      if (!kept || !itemA || !itemB) continue;
-
-      const removed = kept.toLowerCase() === itemA.toLowerCase() ? itemB : itemA;
-      toRemove.add(removed.toLowerCase());
-      redundancyLog.push({ kept, removed, reason: r.reason || "" });
-    }
-
-    const cleaned = items.filter(it => !toRemove.has(it.toLowerCase().trim()));
-
-    // If cleaning drops below minimum, block instead
-    if (cleaned.length < 3) {
+      console.error("mnemonic_items_blocked", { reason: "ai_parse_failed" });
       return {
-        ok: false,
-        error: "Lista contém itens conceitualmente redundantes demais. Após remoção, restam menos de 3 itens únicos. Revise a lista.",
-        redundancies: redundancyLog,
+        ok: false, cleanedItems: normalized, removedItems, replacements,
+        usedAI: true, blocked: true,
+        error: "Não foi possível validar unicidade conceitual com segurança.",
       };
     }
 
-    console.log("Concept uniqueness: removed redundancies", redundancyLog);
-    return { ok: true, cleanedItems: cleaned, redundancies: redundancyLog };
+    const parsed = JSON.parse(match[0]);
+    const pairs = Array.isArray(parsed.pairs) ? parsed.pairs : [];
+    const equivalentPairs = pairs.filter((p: any) => p.equivalent === true);
+
+    if (equivalentPairs.length === 0) {
+      console.log("mnemonic_items_normalized_ai", { result: "no_redundancies" });
+      return { ok: true, cleanedItems: normalized, removedItems, replacements, usedAI: true, blocked: false };
+    }
+
+    // Remove AI-detected redundancies
+    const aiRemoved = new Set<string>();
+    for (const p of equivalentPairs) {
+      const preferred = p.preferred?.trim()?.toLowerCase();
+      const itemA = p.item_a?.trim()?.toLowerCase();
+      const itemB = p.item_b?.trim()?.toLowerCase();
+      if (!preferred || !itemA || !itemB) continue;
+
+      const toRemove = preferred === itemA ? itemB : itemA;
+      if (!aiRemoved.has(toRemove)) {
+        aiRemoved.add(toRemove);
+        const originalForm = normalized.find(it => it.toLowerCase().trim() === toRemove) || toRemove;
+        removedItems.push(originalForm);
+        replacements.push({
+          original: originalForm,
+          replacedBy: p.preferred,
+          reason: p.reason || "Equivalência detectada por IA",
+          source: "ai",
+        });
+      }
+    }
+
+    const finalItems = normalized.filter(it => !aiRemoved.has(it.toLowerCase().trim()));
+    console.log("mnemonic_items_normalized_ai", { removedByAI: Array.from(aiRemoved), replacements: replacements.filter(r => r.source === "ai") });
+
+    if (finalItems.length < 3) {
+      console.log("mnemonic_items_blocked", { reason: "below_minimum_after_ai" });
+      return {
+        ok: false, cleanedItems: finalItems, removedItems, replacements,
+        usedAI: true, blocked: true,
+        error: "Lista contém itens redundantes demais. Após normalização, restam menos de 3 itens únicos.",
+      };
+    }
+
+    return { ok: true, cleanedItems: finalItems, removedItems, replacements, usedAI: true, blocked: false };
   } catch (e) {
-    // FAIL-CLOSED
-    console.error("Concept uniqueness error:", e);
-    return { ok: false, error: "Erro na validação de unicidade conceitual. Tente novamente." };
+    console.error("mnemonic_items_blocked", { reason: "ai_error", error: e });
+    return {
+      ok: false, cleanedItems: normalized, removedItems, replacements,
+      usedAI: true, blocked: true,
+      error: "Não foi possível validar unicidade conceitual com segurança.",
+    };
   }
 }
 
