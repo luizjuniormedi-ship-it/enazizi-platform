@@ -10,6 +10,7 @@
  *  5. Disparar refreshAll (via callback)
  */
 import { supabase } from "@/integrations/supabase/client";
+import { updateMnemonicEfficacy } from "@/lib/mnemonicAdaptiveService";
 
 /* ── Mapa central de tipos ── */
 export type StudyActionType =
@@ -400,6 +401,12 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
 
   // 5. Telemetria (fire-and-forget)
   logTelemetry(payload, tablesUpdated, errors);
+
+  // 5b. Mnemonic efficacy tracking (fire-and-forget)
+  if (topic) {
+    const wasCorrect = taskType === "error_review" && tablesUpdated.includes("error_bank");
+    updateMnemonicEfficacy(userId, topic, wasCorrect).catch(() => {});
+  }
 
   // 6. Auditoria persistente
   const auditEventId = await writeAuditEvent(

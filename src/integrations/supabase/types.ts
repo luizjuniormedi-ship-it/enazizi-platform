@@ -3374,6 +3374,69 @@ export type Database = {
         }
         Relationships: []
       }
+      mnemonic_assets: {
+        Row: {
+          content_type: string
+          created_at: string
+          hash: string
+          id: string
+          image_url: string | null
+          items_json: Json
+          items_map_json: Json
+          medical_score: number
+          mnemonic: string
+          pedagogical_score: number
+          phrase: string
+          quality_score: number
+          review_question: string | null
+          scene_description: string | null
+          source_reference: string | null
+          topic: string
+          updated_at: string
+          verdict: string
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          hash: string
+          id?: string
+          image_url?: string | null
+          items_json: Json
+          items_map_json: Json
+          medical_score?: number
+          mnemonic: string
+          pedagogical_score?: number
+          phrase: string
+          quality_score?: number
+          review_question?: string | null
+          scene_description?: string | null
+          source_reference?: string | null
+          topic: string
+          updated_at?: string
+          verdict?: string
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          hash?: string
+          id?: string
+          image_url?: string | null
+          items_json?: Json
+          items_map_json?: Json
+          medical_score?: number
+          mnemonic?: string
+          pedagogical_score?: number
+          phrase?: string
+          quality_score?: number
+          review_question?: string | null
+          scene_description?: string | null
+          source_reference?: string | null
+          topic?: string
+          updated_at?: string
+          verdict?: string
+        }
+        Relationships: []
+      }
       module_sessions: {
         Row: {
           created_at: string
@@ -6425,6 +6488,71 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_mnemonic_links: {
+        Row: {
+          accuracy_after: number | null
+          accuracy_before: number | null
+          created_at: string
+          first_seen_at: string | null
+          helped_after_error: boolean | null
+          id: string
+          improvement_delta: number | null
+          last_seen_at: string | null
+          mnemonic_asset_id: string
+          mnemonic_not_helping: boolean
+          next_review_at: string
+          times_shown: number
+          topic: string
+          trigger_source: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accuracy_after?: number | null
+          accuracy_before?: number | null
+          created_at?: string
+          first_seen_at?: string | null
+          helped_after_error?: boolean | null
+          id?: string
+          improvement_delta?: number | null
+          last_seen_at?: string | null
+          mnemonic_asset_id: string
+          mnemonic_not_helping?: boolean
+          next_review_at?: string
+          times_shown?: number
+          topic: string
+          trigger_source?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accuracy_after?: number | null
+          accuracy_before?: number | null
+          created_at?: string
+          first_seen_at?: string | null
+          helped_after_error?: boolean | null
+          id?: string
+          improvement_delta?: number | null
+          last_seen_at?: string | null
+          mnemonic_asset_id?: string
+          mnemonic_not_helping?: boolean
+          next_review_at?: string
+          times_shown?: number
+          topic?: string
+          trigger_source?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_mnemonic_links_mnemonic_asset_id_fkey"
+            columns: ["mnemonic_asset_id"]
+            isOneToOne: false
+            referencedRelation: "mnemonic_assets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_module_access: {
         Row: {
