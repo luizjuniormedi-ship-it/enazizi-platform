@@ -414,7 +414,7 @@ serve(async (req) => {
     }
 
     // ── STEP 2: GENERATE MNEMONIC ──
-    const genResult = await callAI(LOVABLE_API_KEY, buildGeneratorPrompt(topic, items));
+    const genResult = await callAI(LOVABLE_API_KEY, buildGeneratorPrompt(topic, cleanedItems));
     if (!genResult.ok) {
       if (genResult.status === 429) return new Response(JSON.stringify({ error: "Limite de requisições atingido. Tente novamente em alguns segundos.", rejected: true }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       if (genResult.status === 402) return new Response(JSON.stringify({ error: "Créditos de IA esgotados.", rejected: true }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
