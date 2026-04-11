@@ -391,7 +391,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceKey);
 
     // ── HASH & CACHE CHECK ──
-    const hash = clientHash || await generateHash(topic, items, contentType);
+    const hash = clientHash || await generateHash(topic, cleanedItems, contentType);
 
     const { data: existing } = await supabase
       .from("mnemonic_assets")
