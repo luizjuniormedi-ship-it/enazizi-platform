@@ -552,7 +552,7 @@ Regras visuais:
     }
 
     const assetVerdict = "approved_visual";
-    const reviewQuestion = `Usando o mnemônico "${generated.mnemonic_word}", quais são os ${items.length} itens de "${topic}"?`;
+    const reviewQuestion = `Usando o mnemônico "${generated.mnemonic_word}", quais são os ${cleanedItems.length} itens de "${topic}"?`;
 
     // ── STEP 7: PERSIST TO mnemonic_assets (FAIL-CLOSED) ──
     const { data: inserted, error: insertErr } = await supabase
@@ -561,7 +561,7 @@ Regras visuais:
         hash,
         topic,
         content_type: contentType,
-        items_json: items,
+        items_json: cleanedItems,
         mnemonic: generated.mnemonic_word,
         phrase: generated.phrase,
         items_map_json: generated.items_mapped,
