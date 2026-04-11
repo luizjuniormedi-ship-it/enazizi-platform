@@ -265,6 +265,21 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    // ── STEP 1.5: CONCEPT UNIQUENESS VALIDATION ──
+    const uniqueness = await validateConceptUniqueness(items, LOVABLE_API_KEY);
+    if (!uniqueness.ok) {
+      return new Response(JSON.stringify({
+        error: uniqueness.error || "Itens redundantes detectados",
+        rejected: true,
+        redundancies: uniqueness.redundancies || [],
+      }), {
+        status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // Use cleaned items (deduplicated) for the rest of the pipeline
+    const cleanedItems = uniqueness.cleanedItems || items;
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
     // Init Supabase client for persistence
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
