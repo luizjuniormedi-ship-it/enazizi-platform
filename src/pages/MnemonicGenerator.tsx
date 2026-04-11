@@ -24,11 +24,14 @@ const CONTENT_TYPES = [
 
 const MnemonicGenerator = () => {
   const [topic, setTopic] = useState("");
+  const [subtopic, setSubtopic] = useState("");
   const [contentType, setContentType] = useState("criterios");
   const [itemsText, setItemsText] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<MnemonicResult | null>(null);
   const [showReview, setShowReview] = useState(false);
+
+  const { suggestions, loading: loadingSuggestions } = useSubtopicSuggestions(topic);
 
   const items = itemsText
     .split("\n")
