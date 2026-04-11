@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Brain, Sparkles, AlertTriangle, CheckCircle2, Lightbulb, Eye } from "lucide-react";
+import { Brain, Sparkles, AlertTriangle, CheckCircle2, Lightbulb, Eye, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { generateOrReuseMnemonicForUser, type MnemonicResult } from "@/lib/mnemonicUnifiedService";
+import { useSubtopicSuggestions } from "@/hooks/useSubtopicSuggestions";
 import { toast } from "sonner";
 
 const CONTENT_TYPES = [
@@ -23,11 +24,14 @@ const CONTENT_TYPES = [
 
 const MnemonicGenerator = () => {
   const [topic, setTopic] = useState("");
+  const [subtopic, setSubtopic] = useState("");
   const [contentType, setContentType] = useState("criterios");
   const [itemsText, setItemsText] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<MnemonicResult | null>(null);
   const [showReview, setShowReview] = useState(false);
+
+  const { suggestions, loading: loadingSuggestions } = useSubtopicSuggestions(topic);
 
   const items = itemsText
     .split("\n")
@@ -47,9 +51,13 @@ const MnemonicGenerator = () => {
     setShowReview(false);
 
     try {
+      const effectiveTopic = subtopic.trim()
+        ? `${topic.trim()} - ${subtopic.trim()}`
+        : topic.trim();
+
       const response = await generateOrReuseMnemonicForUser({
         userId: user.id,
-        topic: topic.trim(),
+        topic: effectiveTopic,
         contentType,
         items,
         source: "manual",
@@ -88,7 +96,42 @@ const MnemonicGenerator = () => {
             <Input
               placeholder="Ex: Critérios de Jones, Sinais de Ranson..."
               value={topic}
-              onChange={(e) => setTopic(e.target.value)}
+              onChange={(e) => { setTopic(e.target.value); setSubtopic(""); }}
+              disabled={loading}
+            />
+            {loadingSuggestions && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" /> Buscando subtemas...
+              </div>
+            )}
+            {!loadingSuggestions && suggestions.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {suggestions.map((s) => (
+                  <button
+                    key={s.name}
+                    type="button"
+                    onClick={() => setSubtopic(s.name)}
+                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                      subtopic === s.name
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-secondary/50 text-foreground border-border hover:bg-secondary"
+                    }`}
+                    disabled={loading}
+                  >
+                    {s.name}
+                    {s.priority === "high" && " 🔥"}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Subtema (opcional)</label>
+            <Input
+              placeholder="Ex: Taquiarritmias, Choque séptico..."
+              value={subtopic}
+              onChange={(e) => setSubtopic(e.target.value)}
               disabled={loading}
             />
           </div>
