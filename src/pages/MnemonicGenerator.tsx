@@ -28,10 +28,40 @@ const MnemonicGenerator = () => {
   const [contentType, setContentType] = useState("criterios");
   const [itemsText, setItemsText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingItems, setLoadingItems] = useState(false);
   const [result, setResult] = useState<MnemonicResult | null>(null);
   const [showReview, setShowReview] = useState(false);
 
   const { suggestions, loading: loadingSuggestions } = useSubtopicSuggestions(topic);
+
+  const fetchItemsForSubtopic = useCallback(async (selectedSubtopic: string) => {
+    if (!topic.trim() || !selectedSubtopic.trim()) return;
+    setLoadingItems(true);
+    try {
+      const effectiveTopic = `${topic.trim()} - ${selectedSubtopic.trim()}`;
+      const { data, error } = await supabase.functions.invoke("suggest-mnemonic-items", {
+        body: { topic: effectiveTopic, contentType },
+      });
+      if (!error && Array.isArray(data?.items) && data.items.length > 0) {
+        const itemNames = data.items.map((it: any) => typeof it === "string" ? it : it.name || it.item || "").filter(Boolean);
+        if (itemNames.length >= 3) {
+          setItemsText(itemNames.join("\n"));
+          toast.success(`${itemNames.length} itens sugeridos automaticamente`);
+        }
+      }
+    } catch {
+      // silent - user can fill manually
+    } finally {
+      setLoadingItems(false);
+    }
+  }, [topic, contentType]);
+
+  const handleSubtopicSelect = useCallback((name: string) => {
+    setSubtopic(name);
+    if (!itemsText.trim()) {
+      fetchItemsForSubtopic(name);
+    }
+  }, [fetchItemsForSubtopic, itemsText]);
 
   const items = itemsText
     .split("\n")
