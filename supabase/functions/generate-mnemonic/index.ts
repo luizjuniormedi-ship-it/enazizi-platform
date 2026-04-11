@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MNEMONIC_PIPELINE_VERSION = "2026-04-11-v3";
+const MNEMONIC_PIPELINE_VERSION = "2026-04-11-v4";
 
 // ══════════════════════════════════════════════════
 // STEP 1 — ELIGIBILITY GATE
@@ -335,15 +335,78 @@ async function generateHash(topic: string, items: string[], contentType: string)
 // STEP 2 — GENERATOR PROMPT
 // ══════════════════════════════════════════════════
 
+const GENERIC_LETTER_WORDS = new Set([
+  "de", "do", "da", "das", "dos", "e", "ou", "sem", "com", "para", "por",
+  "o", "a", "os", "as", "um", "uma", "novo", "nova", "patologico", "patologica",
+  "sinais", "criterios", "criterio", "onda", "ramo",
+]);
+
+function stripDiacritics(value: string): string {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function normalizeForComparison(value: string): string {
+  return stripDiacritics(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function deriveExpectedLetter(item: string): string {
+  const normalized = normalizeForComparison(item);
+
+  if (/\bonda q\b|\bq patologic/.test(normalized)) return "Q";
+  if (/\bsupradesnivelamento\b|\bsupra\b/.test(normalized)) return "S";
+  if (/\binfradesnivelamento\b|\binfra\b/.test(normalized)) return "I";
+  if (/\bbloqueio\s+de?\s*ramo\s+esquerdo\b|\bbre\b/.test(normalized)) return "B";
+  if (/\bbav\b|\bbloqueio av\b/.test(normalized)) return "B";
+  if (/\bmobitz\b/.test(normalized)) return "M";
+  if (/\bkillip\b/.test(normalized)) return "K";
+  if (/\bstemi\b/.test(normalized)) return "S";
+  if (/\bnstemi\b/.test(normalized)) return "N";
+
+  const rawSigla = item.match(/\b[A-ZÁÀÃÂÉÈÊÍÌÎÓÒÕÔÚÙÛÇ][A-ZÁÀÃÂÉÈÊÍÌÎÓÒÕÔÚÙÛÇ0-9-]{1,}\b/u)?.[0];
+  if (rawSigla) return stripDiacritics(rawSigla).charAt(0).toUpperCase();
+
+  const tokens = normalized.split(" ").filter(Boolean);
+  const preferred = tokens.find((token) => !GENERIC_LETTER_WORDS.has(token));
+  return (preferred || tokens[0] || item.trim().charAt(0) || "X").charAt(0).toUpperCase();
+}
+
+function deriveRequiredAnchors(item: string): string[] {
+  const normalized = normalizeForComparison(item);
+  const anchors: string[] = [];
+
+  if (/\bonda q\b|\bq patologic/.test(normalized)) anchors.push("q");
+  if (/\bsupradesnivelamento\b|\binfradesnivelamento\b|\bst\b/.test(normalized)) anchors.push("st");
+  if (/\bbloqueio\s+de?\s*ramo\s+esquerdo\b|\bbre\b/.test(normalized)) anchors.push("ramo esquerdo");
+  if (/\bnovo\b/.test(normalized)) anchors.push("novo");
+  if (/\bb3\b/.test(normalized)) anchors.push("b3");
+
+  return anchors;
+}
+
 function buildGeneratorPrompt(topic: string, items: string[], attempt = 1, previousFeedback?: string): string {
   const retryBlock = attempt > 1 && previousFeedback
-    ? `\n⚠️ TENTATIVA ${attempt} — O mnemônico anterior foi REJEITADO pelo auditor médico:\n"${previousFeedback}"\nVocê DEVE corrigir os problemas apontados. Gere um mnemônico DIFERENTE.\n`
+    ? `\n⚠️ TENTATIVA ${attempt} — O mnemônico anterior foi REJEITADO:\n"${previousFeedback}"\nVocê DEVE corrigir os problemas apontados. Gere um mnemônico DIFERENTE e mais fiel.\n`
     : "";
+
+  const deterministicHints = items
+    .map((item, index) => {
+      const letter = deriveExpectedLetter(item);
+      const anchors = deriveRequiredAnchors(item);
+      return `${index + 1}. ${item} → letra obrigatória: ${letter}${anchors.length ? ` | âncoras obrigatórias: ${anchors.join(", ")}` : ""}`;
+    })
+    .join("\n");
 
   return `Você é um especialista em mnemônicos médicos para residência.
 ${retryBlock}
 TAREFA: Crie um mnemônico + mapeamento visual para memorizar esta lista sobre "${topic}":
 ${items.map((it, i) => `${i + 1}. ${it}`).join("\n")}
+
+ÂNCORAS DETERMINÍSTICAS OBRIGATÓRIAS:
+${deterministicHints}
 
 REGRAS OBRIGATÓRIAS DE FIDELIDADE CLÍNICA:
 - Cada item deve ser representado COM TODOS os seus componentes clínicos — NUNCA simplifique ou omita detalhes
@@ -351,11 +414,12 @@ REGRAS OBRIGATÓRIAS DE FIDELIDADE CLÍNICA:
 - Se um item é uma negação (ex: "Sem sinais"), represente explicitamente O QUE está ausente
 - NÃO substitua termos médicos por sinônimos imprecisos
 - NÃO omita qualificadores importantes (graus, tipos, localizações)
+- Para itens eletrocardiográficos nomeados, preserve o marcador discriminativo exato (ex: Onda Q patológica = Q; supra/infra de ST = ST; bloqueio de ramo esquerdo novo = novo)
 
 REGRAS PARA A LETRA:
-- Para cada item, use a PRIMEIRA LETRA do TERMO PRINCIPAL (substantivo ou sigla médica)
-- Exemplos: "BAV total" → B, "Mobitz I" → M, "STEMI" → S
-- NUNCA use uma letra que represente um conceito DIFERENTE do item original
+- Para cada item, use EXATAMENTE a letra obrigatória indicada acima
+- NÃO troque uma letra obrigatória por uma letra “mais bonita” ou “mais fácil”
+- O campo items_mapped[].letter deve bater com a letra obrigatória do item correspondente
 - Se não conseguir formar uma boa palavra, use uma FRASE onde cada palavra começa com a letra correta
 
 REGRAS PARA SÍMBOLOS:
@@ -368,6 +432,7 @@ FORMATO:
 - A frase deve ter NO MÁXIMO 12 palavras
 - Deve ser fácil de falar e memorável
 - NÃO invente itens que não estão na lista
+- O campo original_item deve repetir o item original com fidelidade máxima
 
 Responda APENAS em JSON válido:
 {
@@ -463,18 +528,102 @@ interface AuditResult {
   summary: string;
 }
 
+interface DeterministicMnemonicValidationResult {
+  ok: boolean;
+  reason?: string;
+}
+
+function extractInitialLettersFromPhrase(phrase: string): string[] {
+  const words = normalizeForComparison(phrase)
+    .split(" ")
+    .filter((word) => word && !GENERIC_LETTER_WORDS.has(word));
+
+  return words.map((word) => word.charAt(0).toUpperCase()).filter(Boolean);
+}
+
+function validateGeneratedMnemonicDeterministically(items: string[], generated: any): DeterministicMnemonicValidationResult {
+  if (!generated || !Array.isArray(generated.items_mapped)) {
+    return { ok: false, reason: "JSON inválido ou items_mapped ausente." };
+  }
+
+  if (generated.items_mapped.length !== items.length) {
+    return { ok: false, reason: `Número de itens incorreto: gerou ${generated.items_mapped.length}, esperado ${items.length}.` };
+  }
+
+  const normalizedOriginals = new Set(items.map((item) => normalizeForComparison(item)));
+  const mappedOriginals = new Set<string>();
+  const expectedLetters = items.map((item) => deriveExpectedLetter(item));
+
+  for (const item of items) {
+    const normalizedItem = normalizeForComparison(item);
+    const mapped = generated.items_mapped.find((entry: any) => normalizeForComparison(String(entry?.original_item || "")) === normalizedItem);
+
+    if (!mapped) {
+      return { ok: false, reason: `O item obrigatório "${item}" não foi representado fielmente em items_mapped.` };
+    }
+
+    mappedOriginals.add(normalizedItem);
+
+    const expectedLetter = deriveExpectedLetter(item);
+    const actualLetter = String(mapped.letter || "").trim().charAt(0).toUpperCase();
+    if (actualLetter !== expectedLetter) {
+      return { ok: false, reason: `Letra inválida para "${item}": esperado ${expectedLetter}, recebido ${actualLetter || "vazio"}.` };
+    }
+
+    const anchorBundle = normalizeForComparison([
+      mapped.word,
+      mapped.original_item,
+      mapped.symbol,
+      mapped.symbol_reason,
+      generated.phrase,
+      generated.scene_description,
+    ].filter(Boolean).join(" "));
+
+    for (const anchor of deriveRequiredAnchors(item)) {
+      if (!anchorBundle.includes(normalizeForComparison(anchor))) {
+        return { ok: false, reason: `O item "${item}" perdeu a âncora clínica obrigatória "${anchor}".` };
+      }
+    }
+  }
+
+  if (mappedOriginals.size !== normalizedOriginals.size) {
+    return { ok: false, reason: "Há itens duplicados ou omitidos no mapeamento final." };
+  }
+
+  const mnemonicLetters = String(generated.mnemonic_word || "")
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "")
+    .split("")
+    .filter(Boolean);
+  const phraseLetters = extractInitialLettersFromPhrase(String(generated.phrase || ""));
+
+  const coversExpectedLetters = (letters: string[]) => expectedLetters.every((letter) => letters.includes(letter));
+  if (!coversExpectedLetters(mnemonicLetters) && !coversExpectedLetters(phraseLetters)) {
+    return {
+      ok: false,
+      reason: `A palavra/frase mnemônica não cobre todas as letras obrigatórias (${expectedLetters.join("-")}).`,
+    };
+  }
+
+  return { ok: true };
+}
+
 function reconcileMnemonicAudit(
   medical: AuditResult, pedagogical: AuditResult
 ): { verdict: "approve" | "reject" | "regenerate"; score: number; reason: string } {
+  const avgScore = Math.round((medical.score + pedagogical.score) / 2);
+
   if (medical.critical_risk) {
-    return { verdict: "reject", score: 0, reason: `Risco clínico crítico: ${medical.summary}` };
+    return {
+      verdict: medical.score >= 55 ? "regenerate" : "reject",
+      score: medical.score >= 55 ? avgScore : 0,
+      reason: `Risco clínico crítico: ${medical.summary}`,
+    };
   }
   if (!medical.approved && !pedagogical.approved) {
-    return { verdict: "reject", score: Math.round((medical.score + pedagogical.score) / 2), reason: "Reprovado por ambos auditores." };
+    return { verdict: "reject", score: avgScore, reason: "Reprovado por ambos auditores." };
   }
-  const avgScore = Math.round((medical.score + pedagogical.score) / 2);
   if (!medical.approved) {
-    // If medical score >= 55, allow regeneration (fixable issues) instead of hard reject
     if (medical.score >= 55) {
       return { verdict: "regenerate", score: avgScore, reason: `Auditor médico reprovou (score ${medical.score}): ${medical.summary}` };
     }
@@ -601,9 +750,10 @@ serve(async (req) => {
         continue;
       }
 
-      if (generated.items_mapped.length !== cleanedItems.length) {
-        console.warn(`Attempt ${attempt}: Item count mismatch (${generated.items_mapped.length} vs ${cleanedItems.length})`);
-        previousFeedback = `Número de itens incorreto: gerou ${generated.items_mapped.length}, esperado ${cleanedItems.length}.`;
+      const deterministicValidation = validateGeneratedMnemonicDeterministically(cleanedItems, generated);
+      if (!deterministicValidation.ok) {
+        console.warn(`Attempt ${attempt}: Deterministic validation failed — ${deterministicValidation.reason}`);
+        previousFeedback = deterministicValidation.reason;
         continue;
       }
 
